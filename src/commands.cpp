@@ -61,6 +61,7 @@ void command_copy(Editor* editor, Command_Source source) {
         for (size_t c = 0; c < buffer->cursors.len(); ++c) {
             uint64_t start = buffer->cursors[c].start();
             uint64_t end = buffer->cursors[c].end();
+            // :CopyLeak We allocate here.
             save_copy(buffer, c,
                       buffer->contents.slice(buffer->copy_buffer.allocator(), start, end));
         }
@@ -77,6 +78,9 @@ void command_paste(Editor* editor, Command_Source source) {
         for (size_t c = 0; c < buffer->cursors.len(); ++c) {
             if (buffer->cursors[c].copy_chain) {
                 Edit edit;
+                // :CopyLeak We sometimes use the value here, but we could also
+                // just copy a bunch of stuff then close the cursors and leak
+                // that memory.
                 edit.value = buffer->cursors[c].copy_chain->value;
                 edit.position = buffer->cursors[c].point + offset;
                 offset += edit.value.len();
