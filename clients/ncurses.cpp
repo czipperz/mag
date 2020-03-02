@@ -305,6 +305,11 @@ void run_ncurses(Server* server, Client* client) {
     }
 
     Cell* cellss[2] = {nullptr, nullptr};
+    CZ_DEFER({
+        free(cellss[0]);
+        free(cellss[1]);
+    });
+
     int total_rows = 0;
     int total_cols = 0;
     render(&total_rows, &total_cols, cellss, &server->editor, client);

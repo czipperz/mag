@@ -21,6 +21,7 @@ struct Editor {
         }
         buffers.drop(cz::heap_allocator());
         key_map.drop();
+        theme.drop(cz::heap_allocator());
     }
 
     Buffer_Handle* lookup(Buffer_Id id) { return &buffers[id.value]; }

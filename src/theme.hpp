@@ -42,6 +42,11 @@ struct Theme {
     /// The way different token types should be displayed.  These should
     /// directly correspond to the token types.
     cz::Vector<Face> faces;
+
+    void drop(cz::Allocator allocator) {
+        colors.drop(allocator);
+        faces.drop(allocator);
+    }
 };
 
 }
