@@ -32,8 +32,8 @@ struct Cell {
         }                             \
         ++y;                          \
         x = 0;                        \
-        if (y == count_rows - 1) {    \
-            goto draw_bottom_row;     \
+        if (y == count_rows) {        \
+            return;                   \
         }                             \
     } while (0)
 
@@ -46,46 +46,45 @@ struct Cell {
         }                      \
     } while (0)
 
-static void draw_buffer_in_box(Cell* cells,
-                               int total_cols,
-                               Editor* editor,
-                               Buffer_Id buffer_id,
-                               bool show_cursors,
-                               int start_row,
-                               int start_col,
-                               int count_rows,
-                               int count_cols) {
+static void draw_buffer_contents(Buffer* buffer,
+                                 Cell* cells,
+                                 int total_cols,
+                                 Editor* editor,
+                                 bool show_cursors,
+                                 int start_row,
+                                 int start_col,
+                                 int count_rows,
+                                 int count_cols) {
     int y = 0;
     int x = 0;
 
-    WITH_BUFFER(buffer, buffer_id, {
-        Token token;
-        bool has_token = buffer->tokenizer.next_token(&buffer->contents, 0, &token);
+    Token token;
+    bool has_token = buffer->tokenizer.next_token(&buffer->contents, 0, &token);
 
-        uint64_t contents_len = buffer->contents.len();
-        int show_mark = 0;
-        for (size_t i = 0; i < contents_len; ++i) {
-            if (i == token.end) {
-                has_token = buffer->tokenizer.next_token(&buffer->contents, token.end, &token);
-            }
+    uint64_t contents_len = buffer->contents.len();
+    int show_mark = 0;
+    for (size_t i = 0; i < contents_len; ++i) {
+        if (i == token.end) {
+            has_token = buffer->tokenizer.next_token(&buffer->contents, token.end, &token);
+        }
 
-            bool has_cursor = false;
-            if (show_cursors) {
-                for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                    Cursor* cursor = &buffer->cursors[c];
-                    if (buffer->show_marks) {
-                        if (i == std::min(cursor->mark, cursor->point)) {
-                            ++show_mark;
-                        }
-                        if (i == std::max(cursor->mark, cursor->point)) {
-                            --show_mark;
-                        }
+        bool has_cursor = false;
+        if (show_cursors) {
+            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+                Cursor* cursor = &buffer->cursors[c];
+                if (buffer->show_marks) {
+                    if (i == std::min(cursor->mark, cursor->point)) {
+                        ++show_mark;
                     }
-                    if (i == cursor->point) {
-                        has_cursor = true;
+                    if (i == std::max(cursor->mark, cursor->point)) {
+                        --show_mark;
                     }
                 }
+                if (i == cursor->point) {
+                    has_cursor = true;
+                }
             }
+        }
 
 #if 0
             if (buffer->contents.is_bucket_separator(i)) {
@@ -93,60 +92,73 @@ static void draw_buffer_in_box(Cell* cells,
             }
 #endif
 
-            int attrs = A_NORMAL;
-            if (has_cursor) {
-                attrs |= A_REVERSE;
-            }
-            if (show_mark) {
-                attrs |= A_REVERSE;
-            }
-
-            int type;
-            if (has_token && i >= token.start && i < token.end) {
-                type = token.type;
-            } else {
-                type = Token_Type::DEFAULT;
-            }
-
-            attrs |= COLOR_PAIR(type + 1);
-
-            Face* face = &editor->theme.faces[type];
-            if (face->flags & Face::BOLD) {
-                attrs |= A_BOLD;
-            }
-            if (face->flags & Face::UNDERSCORE) {
-                attrs |= A_UNDERLINE;
-            }
-
-            char ch = buffer->contents[i];
-            if (ch == '\n') {
-                ADDCH(attrs, ' ');
-                ADD_NEWLINE();
-            } else {
-                ADDCH(attrs, ch);
-            }
+        int attrs = A_NORMAL;
+        if (has_cursor) {
+            attrs |= A_REVERSE;
+        }
+        if (show_mark) {
+            attrs |= A_REVERSE;
         }
 
-        if (show_cursors) {
-            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                if (buffer->cursors[c].point == buffer->contents.len()) {
-                    SET(A_REVERSE, ' ');
-                    ++x;
-                    break;
-                }
-            }
+        int type;
+        if (has_token && i >= token.start && i < token.end) {
+            type = token.type;
+        } else {
+            type = Token_Type::DEFAULT;
         }
 
-        for (; y < count_rows; ++y) {
-            for (; x < count_cols; ++x) {
-                SET(A_NORMAL, ' ');
-            }
-            x = 0;
+        attrs |= COLOR_PAIR(type + 1);
+
+        Face* face = &editor->theme.faces[type];
+        if (face->flags & Face::BOLD) {
+            attrs |= A_BOLD;
+        }
+        if (face->flags & Face::UNDERSCORE) {
+            attrs |= A_UNDERLINE;
         }
 
-    draw_bottom_row:
-        y = count_rows - 1;
+        char ch = buffer->contents[i];
+        if (ch == '\n') {
+            ADDCH(attrs, ' ');
+            ADD_NEWLINE();
+        } else {
+            ADDCH(attrs, ch);
+        }
+    }
+
+    if (show_cursors) {
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            if (buffer->cursors[c].point == buffer->contents.len()) {
+                SET(A_REVERSE, ' ');
+                ++x;
+                break;
+            }
+        }
+    }
+
+    for (; y < count_rows; ++y) {
+        for (; x < count_cols; ++x) {
+            SET(A_NORMAL, ' ');
+        }
         x = 0;
+    }
+}
+
+static void draw_buffer(Cell* cells,
+                        int total_cols,
+                        Editor* editor,
+                        Buffer_Id buffer_id,
+                        bool show_cursors,
+                        int start_row,
+                        int start_col,
+                        int count_rows,
+                        int count_cols) {
+    WITH_BUFFER(buffer, buffer_id, {
+        draw_buffer_contents(buffer, cells, total_cols, editor, show_cursors, start_row, start_col,
+                             count_rows - 1, count_cols);
+
+        int y = count_rows - 1;
+        int x = 0;
 
         int attrs = A_REVERSE;
         SET(attrs, '-');
@@ -180,8 +192,8 @@ static void draw_window(Cell* cells,
                         int count_cols) {
     switch (window->tag) {
     case Window::UNIFIED:
-        draw_buffer_in_box(cells, total_cols, editor, window->v.unified_id,
-                           window == selected_window, start_row, start_col, count_rows, count_cols);
+        draw_buffer(cells, total_cols, editor, window->v.unified_id, window == selected_window,
+                    start_row, start_col, count_rows, count_cols);
         break;
 
     case Window::VERTICAL_SPLIT: {
@@ -233,9 +245,9 @@ static void render_to_cells(Cell* cells,
                 total_rows - (client->_message.tag != Message::NONE), total_cols);
 
     {
-        int y = total_rows - 1;
+        int y = 0;
         int x = 0;
-        int start_row = 0;
+        int start_row = total_rows - 1;
         int start_col = 0;
         int attrs = A_NORMAL;
         if (client->_message.tag != Message::NONE) {
@@ -243,13 +255,23 @@ static void render_to_cells(Cell* cells,
                 SET(attrs, client->_message.text[i]);
                 ++x;
             }
-            for (; x < total_cols; ++x) {
-                SET(attrs, ' ');
-            }
 
-            if (std::chrono::system_clock::now() - client->_message_time >
-                std::chrono::seconds(5)) {
-                client->_message.tag = Message::NONE;
+            if (client->_message.tag > Message::SHOW) {
+                start_col = x;
+                // WITH_BUFFER(buffer, client->mini_buffer_id(), {
+                //     draw_buffer_contents(buffer, cells, total_cols, editor,
+                //                          client->_select_mini_buffer, start_row, start_col,
+                //                          total_rows, total_cols);
+                // });
+            } else {
+                for (; x < total_cols; ++x) {
+                    SET(attrs, ' ');
+                }
+
+                if (std::chrono::system_clock::now() - client->_message_time >
+                    std::chrono::seconds(5)) {
+                    client->_message.tag = Message::NONE;
+                }
             }
         }
     }
@@ -389,4 +411,5 @@ void run_ncurses(Server* server, Client* client) {
 
     endwin();
 }
+
 }
