@@ -12,7 +12,10 @@ static void skip_whitespace(const Contents* contents, uint64_t* point) {
     }
 }
 
-static bool matches(const Contents* contents, uint64_t point, cz::Str query) {
+static bool matches(const Contents* contents, uint64_t point, uint64_t end, cz::Str query) {
+    if (end - point != query.len) {
+        return false;
+    }
     if (point + query.len > contents->len()) {
         return false;
     }
@@ -65,7 +68,13 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token) {
         return true;
     }
 
-    if (isalpha(first_char)) {
+    if (isalpha(first_char) || first_char == '_') {
+        token->start = point;
+        while (++point < contents->len() &&
+               (isalnum((*contents)[point]) || (*contents)[point] == '_')) {
+        }
+        token->end = point;
+
         cz::Str keywords[] = {
             "alignas",
             "alignof",
@@ -151,9 +160,7 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token) {
             "xor_eq",
         };
         for (size_t i = 0; i < sizeof(keywords) / sizeof(*keywords); ++i) {
-            if (matches(contents, point, keywords[i])) {
-                token->start = point;
-                token->end = point + keywords[i].len;
+            if (matches(contents, token->start, token->end, keywords[i])) {
                 token->type = Token_Type::KEYWORD;
                 return true;
             }
@@ -164,20 +171,42 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token) {
             "int",  "long", "short", "signed",  "unsigned", "void",     "wchar_t",
         };
         for (size_t i = 0; i < sizeof(type_keywords) / sizeof(*type_keywords); ++i) {
-            if (matches(contents, point, type_keywords[i])) {
-                token->start = point;
-                token->end = point + type_keywords[i].len;
+            if (matches(contents, token->start, token->end, type_keywords[i])) {
                 token->type = Token_Type::TYPE;
                 return true;
             }
         }
 
         // generic identifier
+        token->type = Token_Type::IDENTIFIER;
+        return true;
+    }
+
+    if (first_char == '/' && point + 1 < contents->len() && (*contents)[point + 1] == '/') {
         token->start = point;
-        while (++point < contents->len() && isalnum((*contents)[point])) {
+        // TODO: Replace with end_of_line if we reform it to take Contents*
+        while (point < contents->len() && (*contents)[point] != '\n') {
+            ++point;
         }
         token->end = point;
-        token->type = Token_Type::IDENTIFIER;
+        token->type = Token_Type::COMMENT;
+        return true;
+    }
+
+    if (first_char == '/' && point + 1 < contents->len() && (*contents)[point + 1] == '*') {
+        token->start = point;
+        point += 2;
+        while (point < contents->len()) {
+            if (point + 1 < contents->len() && (*contents)[point] == '*' &&
+                (*contents)[point + 1] == '/') {
+                point += 2;
+                break;
+            }
+            ++point;
+        }
+        token->end = point;
+        token->type = Token_Type::COMMENT;
+        return true;
     }
 
     token->start = point;
@@ -185,5 +214,4 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token) {
     token->type = Token_Type::DEFAULT;
     return true;
 }
-
 }
