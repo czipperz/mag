@@ -220,6 +220,19 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token) {
         return true;
     }
 
+    if (ispunct(first_char)) {
+        token->start = point;
+        token->end = point + 1;
+        if (first_char == '(' || first_char == '{' || first_char == '[') {
+            token->type = Token_Type::OPEN_PAIR;
+        } else if (first_char == ')' || first_char == '}' || first_char == ']') {
+            token->type = Token_Type::CLOSE_PAIR;
+        } else {
+            token->type = Token_Type::PUNCTUATION;
+        }
+        return true;
+    }
+
     token->start = point;
     token->end = point + 1;
     token->type = Token_Type::DEFAULT;
