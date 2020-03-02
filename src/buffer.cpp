@@ -15,6 +15,7 @@ void Buffer::init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory) {
     edit_buffer.create();
     commit_buffer.create();
 
+    copy_buffer.create();
     cursors.reserve(cz::heap_allocator(), 1);
     cursors.push({});
 
@@ -28,6 +29,7 @@ void Buffer::drop() {
     commit_buffer.drop();
     commits.drop(cz::heap_allocator());
     contents.drop();
+    copy_buffer.drop();
     cursors.drop(cz::heap_allocator());
 }
 

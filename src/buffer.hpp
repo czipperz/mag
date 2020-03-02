@@ -23,6 +23,7 @@ struct Buffer {
 
     Contents contents;
 
+    cz::BufferArray copy_buffer;
     cz::Vector<Cursor> cursors;
     bool show_marks;
 

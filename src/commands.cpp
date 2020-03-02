@@ -11,21 +11,36 @@ namespace mag {
 
 void command_set_mark(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
-        for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-            buffer->cursors[i].mark = buffer->cursors[i].point;
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            buffer->cursors[c].mark = buffer->cursors[c].point;
         }
         buffer->show_marks = true;
     });
 }
 
-void command_delete_region(Editor* editor, Command_Source source) {
+void command_swap_mark_point(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER({
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            cz::swap(buffer->cursors[c].point, buffer->cursors[c].mark);
+        }
+    });
+}
+
+static void save_copy(Buffer* buffer, size_t c, SSOStr value) {
+    Copy_Chain* chain = buffer->copy_buffer.allocator().alloc<Copy_Chain>();
+    chain->value = value;
+    chain->previous = buffer->cursors[c].copy_chain;
+    buffer->cursors[c].copy_chain = chain;
+}
+
+void command_cut(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(WITH_TRANSACTION({
         transaction.reserve(buffer->cursors.len());
 
         size_t offset = 0;
-        for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-            uint64_t start = buffer->cursors[i].start();
-            uint64_t end = buffer->cursors[i].end();
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            uint64_t start = buffer->cursors[c].start();
+            uint64_t end = buffer->cursors[c].end();
 
             Edit edit;
             edit.value = buffer->contents.slice(buffer->edit_buffer.allocator(), start, end);
@@ -33,18 +48,43 @@ void command_delete_region(Editor* editor, Command_Source source) {
             offset += end - start;
             edit.is_insert = false;
             transaction.push(edit);
+
+            save_copy(buffer, c, edit.value);
         }
 
         buffer->show_marks = false;
     }));
 }
 
-void command_swap_mark_point(Editor* editor, Command_Source source) {
+void command_copy(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
-        for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-            cz::swap(buffer->cursors[i].point, buffer->cursors[i].mark);
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            uint64_t start = buffer->cursors[c].start();
+            uint64_t end = buffer->cursors[c].end();
+            save_copy(buffer, c,
+                      buffer->contents.slice(buffer->copy_buffer.allocator(), start, end));
         }
+
+        buffer->show_marks = false;
     });
+}
+
+void command_paste(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(WITH_TRANSACTION({
+        transaction.reserve(buffer->cursors.len());
+
+        size_t offset = 0;
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            if (buffer->cursors[c].copy_chain) {
+                Edit edit;
+                edit.value = buffer->cursors[c].copy_chain->value;
+                edit.position = buffer->cursors[c].point + offset;
+                offset += edit.value.len();
+                edit.is_insert = true;
+                transaction.push(edit);
+            }
+        }
+    }));
 }
 
 void command_forward_char(Editor* editor, Command_Source source) {
@@ -109,10 +149,10 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         WITH_TRANSACTION({
             transaction.reserve(buffer->cursors.len() * 3);
 
-            for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-                uint64_t start = start_of_line(buffer, buffer->cursors[i].point);
-                uint64_t end = end_of_line(buffer, buffer->cursors[i].point);
-                uint64_t column = buffer->cursors[i].point - start;
+            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+                uint64_t start = start_of_line(buffer, buffer->cursors[c].point);
+                uint64_t end = end_of_line(buffer, buffer->cursors[c].point);
+                uint64_t column = buffer->cursors[c].point - start;
                 uint64_t insertion_point = end_of_line(buffer, forward_char(buffer, end));
                 if (insertion_point == end) {
                     continue;
@@ -185,8 +225,8 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
             }
         });
 
-        for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-            buffer->cursors[i].point = cursor_positions[i];
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            buffer->cursors[c].point = cursor_positions[c];
         }
     });
 }
@@ -200,10 +240,10 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         WITH_TRANSACTION({
             transaction.reserve(buffer->cursors.len() * 3);
 
-            for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-                uint64_t start = start_of_line(buffer, buffer->cursors[i].point);
-                uint64_t end = end_of_line(buffer, buffer->cursors[i].point);
-                uint64_t column = buffer->cursors[i].point - start;
+            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+                uint64_t start = start_of_line(buffer, buffer->cursors[c].point);
+                uint64_t end = end_of_line(buffer, buffer->cursors[c].point);
+                uint64_t column = buffer->cursors[c].point - start;
                 uint64_t insertion_point = backward_line(buffer, start);
                 if (insertion_point == start) {
                     continue;
@@ -278,8 +318,8 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
             }
         });
 
-        for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-            buffer->cursors[i].point = cursor_positions[i];
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            buffer->cursors[c].point = cursor_positions[c];
         }
     });
 }
@@ -356,6 +396,7 @@ static void create_cursor_forward_line(Buffer* buffer) {
         Cursor cursor;
         cursor.point = new_last_point;
         cursor.mark = cursor.point;
+        cursor.copy_chain = buffer->cursors.last().copy_chain;
 
         buffer->cursors.reserve(cz::heap_allocator(), 1);
         buffer->cursors.push(cursor);
@@ -374,6 +415,7 @@ static void create_cursor_backward_line(Buffer* buffer) {
         Cursor cursor;
         cursor.point = new_first_point;
         cursor.mark = cursor.point;
+        cursor.copy_chain = buffer->cursors[0].copy_chain;
 
         buffer->cursors.reserve(cz::heap_allocator(), 1);
         buffer->cursors.insert(0, cursor);
@@ -421,6 +463,7 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer, uint64_t start,
             Cursor new_cursor;                                        \
             new_cursor.point = new_start.value;                       \
             new_cursor.mark = new_start.value + end - start;          \
+            new_cursor.copy_chain = buffer->cursors[c].copy_chain;    \
             if (buffer->cursors[c].point > buffer->cursors[c].mark) { \
                 cz::swap(new_cursor.point, new_cursor.mark);          \
             }                                                         \
@@ -436,6 +479,7 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer, uint64_t start,
             Cursor new_cursor;                                       \
             new_cursor.point = new_start.value + query.len();        \
             new_cursor.mark = new_start.value;                       \
+            new_cursor.copy_chain = buffer->cursors[c].copy_chain;   \
             THEN;                                                    \
         }                                                            \
     } while (0)

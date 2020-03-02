@@ -6,8 +6,11 @@
 namespace mag {
 
 void command_set_mark(Editor* editor, Command_Source source);
-void command_delete_region(Editor* editor, Command_Source source);
 void command_swap_mark_point(Editor* editor, Command_Source source);
+
+void command_cut(Editor* editor, Command_Source source);
+void command_copy(Editor* editor, Command_Source source);
+void command_paste(Editor* editor, Command_Source source);
 
 void command_forward_char(Editor* editor, Command_Source source);
 void command_backward_char(Editor* editor, Command_Source source);

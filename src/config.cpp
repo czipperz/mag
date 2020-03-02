@@ -9,8 +9,11 @@ Key_Map create_key_map() {
     Key_Map key_map = {};
     key_map.bind("C-\\ ", command_set_mark);
     key_map.bind("C-@", command_set_mark);
-    key_map.bind("C-w", command_delete_region);
     key_map.bind("C-x C-x", command_swap_mark_point);
+
+    key_map.bind("C-w", command_cut);
+    key_map.bind("A-w", command_copy);
+    key_map.bind("C-y", command_paste);
 
     key_map.bind("C-f", command_forward_char);
     key_map.bind("C-b", command_backward_char);
@@ -62,15 +65,15 @@ Key_Map create_key_map() {
 Theme create_theme() {
     Theme theme = {};
     theme.faces.reserve(cz::heap_allocator(), 9);
-    theme.faces.push({7, 0, 0}); // DEFAULT
-    theme.faces.push({1, 0, 0}); // KEYWORD
-    theme.faces.push({4, 0, 0}); // TYPE
-    theme.faces.push({6, 0, 0}); // PUNCTUATION
-    theme.faces.push({3, 0, 0}); // OPEN_PAIR
-    theme.faces.push({3, 0, 0}); // CLOSE_PAIR
-    theme.faces.push({6, 0, 0}); // COMMENT
-    theme.faces.push({2, 0, 0}); // STRING
-    theme.faces.push({7, 0, 0}); // IDENTIFIER
+    theme.faces.push({7, 0, 0});  // DEFAULT
+    theme.faces.push({1, 0, 0});  // KEYWORD
+    theme.faces.push({4, 0, 0});  // TYPE
+    theme.faces.push({6, 0, 0});  // PUNCTUATION
+    theme.faces.push({3, 0, 0});  // OPEN_PAIR
+    theme.faces.push({3, 0, 0});  // CLOSE_PAIR
+    theme.faces.push({6, 0, 0});  // COMMENT
+    theme.faces.push({2, 0, 0});  // STRING
+    theme.faces.push({7, 0, 0});  // IDENTIFIER
     return theme;
 }
 
