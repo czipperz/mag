@@ -71,6 +71,23 @@ void command_backward_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(TRANSFORM_POINTS(backward_line));
 }
 
+void command_end_of_buffer(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER({
+        uint64_t len = buffer->contents.len();
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            buffer->cursors[c].point = len;
+        }
+    });
+}
+
+void command_start_of_buffer(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER({
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            buffer->cursors[c].point = 0;
+        }
+    });
+}
+
 void command_end_of_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(TRANSFORM_POINTS(end_of_line));
 }
@@ -277,6 +294,13 @@ void command_delete_backward_word(Editor* editor, Command_Source source) {
 
 void command_delete_forward_word(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(WITH_TRANSACTION(DELETE_FORWARD(forward_word)));
+}
+
+void command_open_line(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER({
+        insert_char(editor, source.client, '\n');
+        TRANSFORM_POINTS(backward_char);
+    });
 }
 
 void command_undo(Editor* editor, Command_Source source) {

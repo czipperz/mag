@@ -24,6 +24,9 @@ Key_Map create_key_map() {
     key_map.bind("C-A-n", command_create_cursor_forward);
     key_map.bind("C-A-p", command_create_cursor_backward);
 
+    key_map.bind("A-<", command_start_of_buffer);
+    key_map.bind("A->", command_end_of_buffer);
+
     key_map.bind("C-e", command_end_of_line);
     key_map.bind("C-a", command_start_of_line);
 
@@ -34,6 +37,8 @@ Key_Map create_key_map() {
     key_map.bind("C-d", command_delete_forward_char);
     key_map.bind("A-\\-", command_delete_backward_word);
     key_map.bind("A-d", command_delete_forward_word);
+
+    key_map.bind("C-o", command_open_line);
 
     key_map.bind("C-/", command_undo);
     key_map.bind("C-_", command_undo);
