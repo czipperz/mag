@@ -232,8 +232,12 @@ void run_ncurses(Server* server, Client* client) {
     while (1) {
         int ch = getch();
         if (ch == ERR) {
+            render(&server->editor, client);
+            nodelay(stdscr, FALSE);
             continue;
         }
+
+        nodelay(stdscr, TRUE);
 
         Key key = {};
     rerun:
@@ -280,7 +284,6 @@ void run_ncurses(Server* server, Client* client) {
         if (client->queue_quit) {
             break;
         }
-        render(&server->editor, client);
     }
 
     fclose(file);
