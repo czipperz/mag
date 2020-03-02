@@ -166,10 +166,21 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token) {
             }
         }
 
-        cz::Str type_keywords[] = {
-            "auto", "bool", "char",  "char8_t", "char16_t", "char32_t", "double",  "float",
-            "int",  "long", "short", "signed",  "unsigned", "void",     "wchar_t",
-        };
+        cz::Str type_keywords[] = {"auto",           "bool",           "char",
+                                   "char16_t",       "char32_t",       "char8_t",
+                                   "double",         "float",          "int",
+                                   "int16_t",        "int32_t",        "int64_t",
+                                   "int8_t",         "int_fast16_t",   "int_fast32_t",
+                                   "int_fast64_t",   "int_fast8_t",    "int_least16_t",
+                                   "int_least32_t",  "int_least64_t",  "int_least8_t",
+                                   "intmax_t",       "intptr_t",       "long",
+                                   "ptrdiff_t",      "short",          "signed",
+                                   "size_t",         "uint16_t",       "uint32_t",
+                                   "uint64_t",       "uint8_t",        "uint_fast16_t",
+                                   "uint_fast32_t",  "uint_fast64_t",  "uint_fast8_t",
+                                   "uint_least16_t", "uint_least32_t", "uint_least64_t",
+                                   "uint_least8_t",  "uintmax_t",      "uintptr_t",
+                                   "unsigned",       "void",           "wchar_t"};
         for (size_t i = 0; i < sizeof(type_keywords) / sizeof(*type_keywords); ++i) {
             if (matches(contents, token->start, token->end, type_keywords[i])) {
                 token->type = Token_Type::TYPE;
