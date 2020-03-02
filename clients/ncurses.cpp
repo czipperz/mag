@@ -10,7 +10,7 @@ namespace mag {
 
 static void draw_buffer_in_box(Editor* editor,
                                Buffer_Id buffer_id,
-                               bool show_attributes,
+                               bool show_cursors,
                                int start_row,
                                int start_col,
                                int count_rows,
@@ -23,7 +23,7 @@ static void draw_buffer_in_box(Editor* editor,
         int show_mark = 0;
         for (size_t i = 0; i < contents_len; ++i) {
             bool has_cursor = false;
-            if (show_attributes) {
+            if (show_cursors) {
                 for (size_t c = 0; c < buffer->cursors.len(); ++c) {
                     Cursor* cursor = &buffer->cursors[c];
                     if (buffer->show_marks) {
@@ -83,7 +83,7 @@ static void draw_buffer_in_box(Editor* editor,
             }
         }
 
-        if (show_attributes) {
+        if (show_cursors) {
             for (size_t c = 0; c < buffer->cursors.len(); ++c) {
                 if (buffer->cursors[c].point == buffer->contents.len()) {
                     attrset(A_REVERSE);
