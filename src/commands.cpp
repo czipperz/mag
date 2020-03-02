@@ -594,4 +594,64 @@ void command_split_window_vertical(Editor* editor, Command_Source source) {
     source.client->_selected_window = left;
 }
 
+static bool is_first(Window* parent, Window* child) {
+    switch (parent->tag) {
+    case Window::UNIFIED:
+        CZ_PANIC("Unified window has children");
+
+    case Window::VERTICAL_SPLIT:
+        return parent->v.vertical_split.left == child;
+
+    case Window::HORIZONTAL_SPLIT:
+        return parent->v.horizontal_split.top == child;
+    }
+
+    CZ_PANIC("");
+}
+
+static Window* first(Window* window) {
+    switch (window->tag) {
+    case Window::UNIFIED:
+        return window;
+
+    case Window::VERTICAL_SPLIT:
+        return first(window->v.vertical_split.left);
+
+    case Window::HORIZONTAL_SPLIT:
+        return first(window->v.horizontal_split.top);
+    }
+
+    CZ_PANIC("");
+}
+
+static Window* second_side(Window* window) {
+    switch (window->tag) {
+    case Window::UNIFIED:
+        CZ_PANIC("Unified window has children");
+
+    case Window::VERTICAL_SPLIT:
+        return window->v.vertical_split.right;
+
+    case Window::HORIZONTAL_SPLIT:
+        return window->v.horizontal_split.bottom;
+    }
+
+    CZ_PANIC("");
+}
+
+void command_cycle_window(Editor* editor, Command_Source source) {
+    Window* child;
+    Window* parent = source.client->_selected_window;
+    do {
+        child = parent;
+        parent = child->parent;
+        if (!parent) {
+            source.client->_selected_window = first(source.client->window);
+            return;
+        }
+    } while (!is_first(parent, child));
+
+    source.client->_selected_window = first(second_side(parent));
+}
+
 }
