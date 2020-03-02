@@ -1,7 +1,7 @@
 #include "movement.hpp"
 
-#include "buffer.hpp"
 #include <ctype.h>
+#include "buffer.hpp"
 
 namespace mag {
 
@@ -23,6 +23,14 @@ uint64_t start_of_line(Buffer* buffer, uint64_t point) {
 
 uint64_t end_of_line(Buffer* buffer, uint64_t point) {
     while (point < buffer->contents.len() && buffer->contents[point] != '\n') {
+        ++point;
+    }
+    return point;
+}
+
+uint64_t start_of_line_text(Buffer* buffer, uint64_t point) {
+    point = start_of_line(buffer, point);
+    while (point < buffer->contents.len() && isblank(buffer->contents[point])) {
         ++point;
     }
     return point;

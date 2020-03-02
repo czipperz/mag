@@ -96,6 +96,10 @@ void command_start_of_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(TRANSFORM_POINTS(start_of_line));
 }
 
+void command_start_of_line_text(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(TRANSFORM_POINTS(start_of_line_text));
+}
+
 void command_shift_line_forward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
         cz::Vector<uint64_t> cursor_positions = {};

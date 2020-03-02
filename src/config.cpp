@@ -30,6 +30,8 @@ Key_Map create_key_map() {
     key_map.bind("C-e", command_end_of_line);
     key_map.bind("C-a", command_start_of_line);
 
+    key_map.bind("A-m", command_start_of_line_text);
+
     key_map.bind("C-s", command_search_forward);
     key_map.bind("C-r", command_search_backward);
 

@@ -24,6 +24,8 @@ void command_start_of_buffer(Editor* editor, Command_Source source);
 void command_end_of_line(Editor* editor, Command_Source source);
 void command_start_of_line(Editor* editor, Command_Source source);
 
+void command_start_of_line_text(Editor* editor, Command_Source source);
+
 void command_shift_line_forward(Editor* editor, Command_Source source);
 void command_shift_line_backward(Editor* editor, Command_Source source);
 
