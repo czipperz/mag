@@ -52,6 +52,8 @@ Key_Map create_key_map() {
 
     key_map.bind("C-g", command_stop_action);
 
+    key_map.bind("C-x C-f", command_open_file);
+
     key_map.bind("C-x C-c", command_quit);
 
     key_map.bind("C-x 1", command_one_window);

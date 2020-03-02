@@ -4,6 +4,7 @@
 #include <cz/option.hpp>
 #include <cz/util.hpp>
 #include "command_macros.hpp"
+#include "file.hpp"
 #include "movement.hpp"
 #include "transaction.hpp"
 
@@ -732,6 +733,24 @@ void command_cycle_window(Editor* editor, Command_Source source) {
     } while (!is_first(parent, child));
 
     source.client->_selected_window = first(second_side(parent));
+}
+
+static void command_open_file_callback(Editor* editor,
+                                       Client* client,
+                                       Buffer* mini_buffer,
+                                       void* data) {
+    cz::String query = mini_buffer->contents.stringify(cz::heap_allocator());
+    CZ_DEFER(query.drop(cz::heap_allocator()));
+    open_file(editor, client, query);
+}
+
+void command_open_file(Editor* editor, Command_Source source) {
+    Message message;
+    message.tag = Message::RESPOND_FILE;
+    message.text = "Open file: ";
+    message.response_callback = command_open_file_callback;
+    message.response_callback_data = nullptr;
+    source.client->show_message(message);
 }
 
 }

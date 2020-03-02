@@ -10,8 +10,8 @@
 namespace mag {
 
 class Buffer_Handle {
-    std::mutex* mutex;
-    Buffer* buffer;
+    std::mutex mutex;
+    Buffer buffer;
 
 #ifndef NDEBUG
     int simultaneous_access_count;
@@ -19,10 +19,8 @@ class Buffer_Handle {
 
 public:
     void init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory) {
-        mutex = new std::mutex();
-        buffer = new Buffer();
-        *buffer = {};
-        buffer->init(id, name, directory);
+        buffer = {};
+        buffer.init(id, name, directory);
 
 #ifndef NDEBUG
         simultaneous_access_count = 0;
@@ -30,14 +28,14 @@ public:
     }
 
     Buffer* lock() {
-        mutex->lock();
+        mutex.lock();
 
 #ifndef NDEBUG
         ++simultaneous_access_count;
         CZ_ASSERT(simultaneous_access_count == 1);
 #endif
 
-        return buffer;
+        return &buffer;
     }
 
     void unlock() {
@@ -45,13 +43,13 @@ public:
         --simultaneous_access_count;
 #endif
 
-        mutex->unlock();
+        mutex.unlock();
     }
 
     void drop() {
-        delete mutex;
-        buffer->drop();
-        delete buffer;
+        buffer.drop();
+        using std::mutex;
+        this->mutex.~mutex();
     }
 };
 

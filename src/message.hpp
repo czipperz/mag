@@ -14,7 +14,7 @@ struct Message {
         SHOW,
         RESPOND_TEXT,
         // RESPOND_YES_NO,
-        // RESPOND_FILE,
+        RESPOND_FILE,
     } tag;
 
     cz::Str text;
