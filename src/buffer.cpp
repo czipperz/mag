@@ -1,6 +1,31 @@
 #include "buffer.hpp"
 
+#include <cz/heap.hpp>
+#include "config.hpp"
+
 namespace mag {
+
+void Buffer::init(Buffer_Id id, cz::Str name) {
+    this->id = id;
+    this->name = name.duplicate(cz::heap_allocator());
+
+    edit_buffer.create();
+    commit_buffer.create();
+
+    cursors.reserve(cz::heap_allocator(), 1);
+    cursors.push({});
+
+    tokenizer = get_tokenizer(name);
+}
+
+void Buffer::drop() {
+    name.drop(cz::heap_allocator());
+    edit_buffer.drop();
+    commit_buffer.drop();
+    commits.drop(cz::heap_allocator());
+    contents.drop();
+    cursors.drop(cz::heap_allocator());
+}
 
 static void fix_point_insert(uint64_t position, uint64_t len, uint64_t* point) {
     if (*point >= position) {

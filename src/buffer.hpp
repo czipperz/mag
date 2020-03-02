@@ -1,13 +1,12 @@
 #pragma once
 
 #include <cz/buffer_array.hpp>
-#include <cz/heap.hpp>
-#include <cz/string.hpp>
 #include <cz/vector.hpp>
 #include "buffer_id.hpp"
 #include "commit.hpp"
 #include "contents.hpp"
 #include "cursor.hpp"
+#include "tokenizer.hpp"
 
 namespace mag {
 
@@ -25,25 +24,11 @@ struct Buffer {
     cz::Vector<Cursor> cursors;
     bool show_marks;
 
-    void init(Buffer_Id id, cz::Str name) {
-        this->id = id;
-        this->name = name.duplicate(cz::heap_allocator());
+    Tokenizer tokenizer;
 
-        edit_buffer.create();
-        commit_buffer.create();
+    void init(Buffer_Id id, cz::Str name);
 
-        cursors.reserve(cz::heap_allocator(), 1);
-        cursors.push({});
-    }
-
-    void drop() {
-        name.drop(cz::heap_allocator());
-        edit_buffer.drop();
-        commit_buffer.drop();
-        commits.drop(cz::heap_allocator());
-        contents.drop();
-        cursors.drop(cz::heap_allocator());
-    }
+    void drop();
 
     bool undo();
     bool redo();

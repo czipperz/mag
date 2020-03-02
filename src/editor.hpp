@@ -5,12 +5,15 @@
 #include "buffer_handle.hpp"
 #include "buffer_id.hpp"
 #include "key_map.hpp"
+#include "theme.hpp"
 
 namespace mag {
 
 struct Editor {
     cz::Vector<Buffer_Handle> buffers;
+
     Key_Map key_map;
+    Theme theme;
 
     void drop() {
         for (size_t i = 0; i < buffers.len(); ++i) {

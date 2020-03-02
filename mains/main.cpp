@@ -13,6 +13,7 @@ int main(int argc, char** argv) {
     CZ_DEFER(server.drop());
     server.editor.create_buffer("*scratch*");
     server.editor.key_map = create_key_map();
+    server.editor.theme = create_theme();
 
     if (argc == 2) {
         server.editor.create_buffer(argv[1]);

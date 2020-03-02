@@ -1,6 +1,7 @@
 #include "config.hpp"
 
 #include "commands.hpp"
+#include "tokenize_cpp.hpp"
 
 namespace mag {
 
@@ -48,6 +49,27 @@ Key_Map create_key_map() {
     key_map.bind("C-x o", command_cycle_window);
 
     return key_map;
+}
+
+Theme create_theme() {
+    Theme theme = {};
+    theme.faces.reserve(cz::heap_allocator(), 9);
+    theme.faces.push({7, 0, 0}); // DEFAULT
+    theme.faces.push({1, 0, 0}); // KEYWORD
+    theme.faces.push({4, 0, 0}); // TYPE
+    theme.faces.push({6, 0, 0}); // PUNCTUATION
+    theme.faces.push({3, 0, 0}); // OPEN_PAIR
+    theme.faces.push({2, 0, 0}); // CLOSE_PAIR
+    theme.faces.push({5, 0, 0}); // COMMENT
+    theme.faces.push({2, 0, 0}); // STRING
+    theme.faces.push({5, 0, 0}); // IDENTIFIER
+    return theme;
+}
+
+Tokenizer get_tokenizer(cz::Str file_name) {
+    Tokenizer tokenizer;
+    tokenizer.next_token = cpp_next_token;
+    return tokenizer;
 }
 
 }

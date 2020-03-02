@@ -5,6 +5,7 @@
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "server.hpp"
+#include "token.hpp"
 
 namespace mag {
 
@@ -19,9 +20,16 @@ static void draw_buffer_in_box(Editor* editor,
     int x = 0;
 
     WITH_BUFFER(buffer, buffer_id, {
+        Token token;
+        bool has_token = buffer->tokenizer.next_token(&buffer->contents, 0, &token);
+
         uint64_t contents_len = buffer->contents.len();
         int show_mark = 0;
         for (size_t i = 0; i < contents_len; ++i) {
+            if (i == token.end) {
+                has_token = buffer->tokenizer.next_token(&buffer->contents, token.end, &token);
+            }
+
             bool has_cursor = false;
             if (show_cursors) {
                 for (size_t c = 0; c < buffer->cursors.len(); ++c) {
@@ -54,6 +62,22 @@ static void draw_buffer_in_box(Editor* editor,
             if (show_mark) {
                 attrs |= A_REVERSE;
             }
+
+            int type;
+            if (has_token && i >= token.start && i < token.end) {
+                type = token.type;
+            } else {
+                type = Token_Type::DEFAULT;
+            }
+            attrs |= COLOR_PAIR(type + 1);
+            Face* face = &editor->theme.faces[type];
+            if (face->flags & Face::BOLD) {
+                attrs |= A_BOLD;
+            }
+            if (face->flags & Face::UNDERSCORE) {
+                attrs |= A_UNDERLINE;
+            }
+
             attrset(attrs);
 
 #define ADD_NEWLINE()              \
@@ -194,6 +218,12 @@ void run_ncurses(Server* server, Client* client) {
     noecho();
     keypad(stdscr, TRUE);
     curs_set(0);  // hide cursor
+
+    start_color();
+    for (size_t i = 0; i < server->editor.theme.faces.len(); ++i) {
+        Face* face = &server->editor.theme.faces[i];
+        init_pair(i + 1, face->foreground, face->background);
+    }
 
     render(&server->editor, client);
 
