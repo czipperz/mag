@@ -379,7 +379,7 @@ void command_stop_action(Editor* editor, Command_Source source) {
     });
 
     if (!done && source.client->selected_buffer_id() == source.client->mini_buffer_id()) {
-        source.client->hide_mini_buffer();
+        source.client->hide_mini_buffer(editor);
         done = true;
     }
 
