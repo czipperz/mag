@@ -14,6 +14,18 @@ Client Server::make_client() {
     return client;
 }
 
+static void clear_buffer(Editor* editor, Buffer* buffer) {
+    WITH_TRANSACTION({
+        transaction.reserve(1);
+        Edit edit;
+        edit.value =
+            buffer->contents.slice(buffer->edit_buffer.allocator(), 0, buffer->contents.len());
+        edit.position = 0;
+        edit.is_insert = false;
+        transaction.push(edit);
+    });
+}
+
 static void send_message_result(Editor* editor, Client* client) {
     // todo don't lock mini buffer so other people can use it
     WITH_BUFFER(mini_buffer, client->mini_buffer_id(), {
@@ -21,6 +33,8 @@ static void send_message_result(Editor* editor, Client* client) {
         client->_message.response_callback(editor, client, mini_buffer,
                                            client->_message.response_callback_data);
         client->dealloc_message();
+
+        clear_buffer(editor, mini_buffer);
     });
 }
 
