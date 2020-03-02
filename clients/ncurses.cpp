@@ -258,11 +258,11 @@ static void render_to_cells(Cell* cells,
 
             if (client->_message.tag > Message::SHOW) {
                 start_col = x;
-                // WITH_BUFFER(buffer, client->mini_buffer_id(), {
-                //     draw_buffer_contents(buffer, cells, total_cols, editor,
-                //                          client->_select_mini_buffer, start_row, start_col,
-                //                          total_rows, total_cols);
-                // });
+                WITH_BUFFER(buffer, client->mini_buffer_id(), {
+                    draw_buffer_contents(buffer, cells, total_cols, editor,
+                                         client->_select_mini_buffer, start_row, start_col,
+                                         total_rows - start_row, total_cols - start_col);
+                });
             } else {
                 for (; x < total_cols; ++x) {
                     SET(attrs, ' ');
@@ -320,7 +320,7 @@ static void render(int* total_rows,
         }
     }
 
-    memcpy(cellss[0], cellss[1], rows * cols * sizeof(Cell));
+    cz::swap(cellss[0], cellss[1]);
 
     refresh();
 }
