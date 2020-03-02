@@ -131,9 +131,17 @@ static void draw_buffer_in_box(Cell* cells,
             for (size_t c = 0; c < buffer->cursors.len(); ++c) {
                 if (buffer->cursors[c].point == buffer->contents.len()) {
                     SET(A_REVERSE, ' ');
+                    ++x;
                     break;
                 }
             }
+        }
+
+        for (; y < count_rows; ++y) {
+            for (; x < count_cols; ++x) {
+                SET(A_NORMAL, ' ');
+            }
+            x = 0;
         }
 
     draw_bottom_row:
