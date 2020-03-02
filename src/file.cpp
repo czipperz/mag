@@ -32,8 +32,8 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     Buffer_Id buffer_id = editor->create_buffer(name.value, cz::path::directory_component(path));
 
     FILE* file = fopen(path.buffer(), "r");
-    CZ_DEFER(fclose(file));
     if (file) {
+        CZ_DEFER(fclose(file));
         // If it exists read in the buffer
         WITH_BUFFER(buffer, buffer_id, {
             cz::String contents = {};
