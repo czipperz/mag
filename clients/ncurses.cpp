@@ -10,6 +10,7 @@ namespace mag {
 
 static void draw_buffer_in_box(Editor* editor,
                                Buffer_Id buffer_id,
+                               bool show_attributes,
                                int start_row,
                                int start_col,
                                int count_rows,
@@ -22,18 +23,20 @@ static void draw_buffer_in_box(Editor* editor,
         int show_mark = 0;
         for (size_t i = 0; i < contents_len; ++i) {
             bool has_cursor = false;
-            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                Cursor* cursor = &buffer->cursors[c];
-                if (buffer->show_marks) {
-                    if (i == std::min(cursor->mark, cursor->point)) {
-                        ++show_mark;
+            if (show_attributes) {
+                for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+                    Cursor* cursor = &buffer->cursors[c];
+                    if (buffer->show_marks) {
+                        if (i == std::min(cursor->mark, cursor->point)) {
+                            ++show_mark;
+                        }
+                        if (i == std::max(cursor->mark, cursor->point)) {
+                            --show_mark;
+                        }
                     }
-                    if (i == std::max(cursor->mark, cursor->point)) {
-                        --show_mark;
+                    if (i == cursor->point) {
+                        has_cursor = true;
                     }
-                }
-                if (i == cursor->point) {
-                    has_cursor = true;
                 }
             }
 
@@ -80,11 +83,13 @@ static void draw_buffer_in_box(Editor* editor,
             }
         }
 
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            if (buffer->cursors[c].point == buffer->contents.len()) {
-                attrset(A_REVERSE);
-                mvaddch(y + start_row, x + start_col, ' ');
-                break;
+        if (show_attributes) {
+            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+                if (buffer->cursors[c].point == buffer->contents.len()) {
+                    attrset(A_REVERSE);
+                    mvaddch(y + start_row, x + start_col, ' ');
+                    break;
+                }
             }
         }
 
@@ -109,22 +114,22 @@ static void draw_buffer_in_box(Editor* editor,
 
 static void draw_window(Editor* editor,
                         Window* window,
+                        Window* selected_window,
                         int start_row,
                         int start_col,
                         int count_rows,
                         int count_cols) {
     switch (window->tag) {
     case Window::UNIFIED:
-        draw_buffer_in_box(editor, window->v.unified_id, start_row, start_col, count_rows,
-                           count_cols);
+        draw_buffer_in_box(editor, window->v.unified_id, window == selected_window, start_row,
+                           start_col, count_rows, count_cols);
         break;
 
     case Window::VERTICAL_SPLIT: {
         int left_cols = (count_cols - 1) / 2;
         int right_cols = count_cols - left_cols - 1;
 
-        draw_window(editor, window->v.vertical_split.left,
-                    start_row, start_col,
+        draw_window(editor, window->v.vertical_split.left, selected_window, start_row, start_col,
                     count_rows, left_cols);
 
         attrset(A_NORMAL);
@@ -132,9 +137,8 @@ static void draw_window(Editor* editor,
             mvaddch(row, left_cols, '|');
         }
 
-        draw_window(editor, window->v.vertical_split.right,
-                    start_row, start_col + count_cols - right_cols,
-                    count_rows, right_cols);
+        draw_window(editor, window->v.vertical_split.right, selected_window, start_row,
+                    start_col + count_cols - right_cols, count_rows, right_cols);
         break;
     }
 
@@ -142,8 +146,7 @@ static void draw_window(Editor* editor,
         int top_rows = (count_rows - 1) / 2;
         int bottom_rows = count_rows - top_rows - 1;
 
-        draw_window(editor, window->v.horizontal_split.top,
-                    start_row, start_col,
+        draw_window(editor, window->v.horizontal_split.top, selected_window, start_row, start_col,
                     top_rows, count_cols);
 
         attrset(A_NORMAL);
@@ -151,9 +154,8 @@ static void draw_window(Editor* editor,
             mvaddch(top_rows, col, '-');
         }
 
-        draw_window(editor, window->v.horizontal_split.bottom,
-                    start_row + count_rows - bottom_rows, start_col,
-                    bottom_rows, count_cols);
+        draw_window(editor, window->v.horizontal_split.bottom, selected_window,
+                    start_row + count_rows - bottom_rows, start_col, bottom_rows, count_cols);
         break;
     }
     }
@@ -165,7 +167,8 @@ static void render(Editor* editor, Client* client) {
     getmaxyx(stdscr, rows, cols);
     move(0, 0);
 
-    draw_window(editor, client->window, 0, 0, rows - (client->_message.tag != Message::NONE), cols);
+    draw_window(editor, client->window, client->_selected_window, 0, 0,
+                rows - (client->_message.tag != Message::NONE), cols);
 
     {
         move(rows - 1, 0);
