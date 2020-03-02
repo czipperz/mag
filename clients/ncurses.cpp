@@ -233,6 +233,10 @@ static void render_to_cells(Cell* cells,
         if (client->_message.tag != Message::NONE) {
             for (size_t i = 0; i < client->_message.text.len; ++i) {
                 SET(attrs, client->_message.text[i]);
+                ++x;
+            }
+            for (; x < total_cols; ++x) {
+                SET(attrs, ' ');
             }
 
             if (std::chrono::system_clock::now() - client->_message_time >
