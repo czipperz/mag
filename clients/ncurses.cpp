@@ -9,7 +9,46 @@
 
 namespace mag {
 
-static void draw_buffer_in_box(Editor* editor,
+struct Cell {
+    int attrs;
+    char code;
+
+    bool operator==(const Cell& other) const { return attrs == other.attrs && code == other.code; }
+
+    bool operator!=(const Cell& other) const { return !(*this == other); }
+};
+
+#define SET(ATTRS, CH)                                                       \
+    do {                                                                     \
+        Cell* cell = &cells[(y + start_row) * total_cols + (x + start_col)]; \
+        cell->attrs = ATTRS;                                                 \
+        cell->code = CH;                                                     \
+    } while (0)
+
+#define ADD_NEWLINE()                 \
+    do {                              \
+        for (; x < count_cols; ++x) { \
+            SET(A_NORMAL, ' ');       \
+        }                             \
+        ++y;                          \
+        x = 0;                        \
+        if (y == count_rows - 1) {    \
+            goto draw_bottom_row;     \
+        }                             \
+    } while (0)
+
+#define ADDCH(ATTRS, CH)       \
+    do {                       \
+        SET(ATTRS, CH);        \
+        ++x;                   \
+        if (x == count_cols) { \
+            ADD_NEWLINE();     \
+        }                      \
+    } while (0)
+
+static void draw_buffer_in_box(Cell* cells,
+                               int total_cols,
+                               Editor* editor,
                                Buffer_Id buffer_id,
                                bool show_cursors,
                                int start_row,
@@ -50,8 +89,7 @@ static void draw_buffer_in_box(Editor* editor,
 
 #if 0
             if (buffer->contents.is_bucket_separator(i)) {
-                attrset(A_NORMAL);
-                addch('\'');
+                ADDCH(A_NORMAL, '\'');
             }
 #endif
 
@@ -69,7 +107,9 @@ static void draw_buffer_in_box(Editor* editor,
             } else {
                 type = Token_Type::DEFAULT;
             }
+
             attrs |= COLOR_PAIR(type + 1);
+
             Face* face = &editor->theme.faces[type];
             if (face->flags & Face::BOLD) {
                 attrs |= A_BOLD;
@@ -78,65 +118,52 @@ static void draw_buffer_in_box(Editor* editor,
                 attrs |= A_UNDERLINE;
             }
 
-            attrset(attrs);
-
-#define ADD_NEWLINE()              \
-    do {                           \
-        ++y;                       \
-        x = 0;                     \
-        if (y == count_rows - 1) { \
-            goto draw_bottom_row;  \
-        }                          \
-    } while (0)
-
-#define ADDCH(CH)                                  \
-    do {                                           \
-        mvaddch(y + start_row, x + start_col, CH); \
-        ++x;                                       \
-        if (x == count_cols) {                     \
-            ADD_NEWLINE();                         \
-        }                                          \
-    } while (0)
-
             char ch = buffer->contents[i];
             if (ch == '\n') {
-                ADDCH(' ');
+                ADDCH(attrs, ' ');
                 ADD_NEWLINE();
             } else {
-                ADDCH(ch);
+                ADDCH(attrs, ch);
             }
         }
 
         if (show_cursors) {
             for (size_t c = 0; c < buffer->cursors.len(); ++c) {
                 if (buffer->cursors[c].point == buffer->contents.len()) {
-                    attrset(A_REVERSE);
-                    mvaddch(y + start_row, x + start_col, ' ');
+                    SET(A_REVERSE, ' ');
                     break;
                 }
             }
         }
 
     draw_bottom_row:
-        move(start_row + count_rows - 1, start_col);
+        y = count_rows - 1;
+        x = 0;
 
-        attrset(A_REVERSE);
-        addch('-');
-        addch('-');
-        addch('-');
-        addch(' ');
-        size_t max = cz::min<size_t>(buffer->name.len(), count_cols - 4);
+        int attrs = A_REVERSE;
+        SET(attrs, '-');
+        ++x;
+        SET(attrs, '-');
+        ++x;
+        SET(attrs, '-');
+        ++x;
+        SET(attrs, ' ');
+        ++x;
+        size_t max = cz::min<size_t>(buffer->name.len(), count_cols - x);
         size_t i;
         for (i = 0; i < max; ++i) {
-            addch(buffer->name[i]);
+            SET(attrs, buffer->name[i]);
+            ++x;
         }
-        for (; i < (size_t)count_cols - 4; ++i) {
-            addch(' ');
+        for (; x < count_cols; ++x) {
+            SET(attrs, ' ');
         }
     });
 }
 
-static void draw_window(Editor* editor,
+static void draw_window(Cell* cells,
+                        int total_cols,
+                        Editor* editor,
                         Window* window,
                         Window* selected_window,
                         int start_row,
@@ -145,24 +172,26 @@ static void draw_window(Editor* editor,
                         int count_cols) {
     switch (window->tag) {
     case Window::UNIFIED:
-        draw_buffer_in_box(editor, window->v.unified_id, window == selected_window, start_row,
-                           start_col, count_rows, count_cols);
+        draw_buffer_in_box(cells, total_cols, editor, window->v.unified_id,
+                           window == selected_window, start_row, start_col, count_rows, count_cols);
         break;
 
     case Window::VERTICAL_SPLIT: {
         int left_cols = (count_cols - 1) / 2;
         int right_cols = count_cols - left_cols - 1;
 
-        draw_window(editor, window->v.vertical_split.left, selected_window, start_row, start_col,
-                    count_rows, left_cols);
+        draw_window(cells, total_cols, editor, window->v.vertical_split.left, selected_window,
+                    start_row, start_col, count_rows, left_cols);
 
-        attrset(A_NORMAL);
-        for (int row = 0; row < count_rows; ++row) {
-            mvaddch(row, left_cols, '|');
+        {
+            int x = left_cols;
+            for (int y = 0; y < count_rows; ++y) {
+                SET(A_NORMAL, '|');
+            }
         }
 
-        draw_window(editor, window->v.vertical_split.right, selected_window, start_row,
-                    start_col + count_cols - right_cols, count_rows, right_cols);
+        draw_window(cells, total_cols, editor, window->v.vertical_split.right, selected_window,
+                    start_row, start_col + count_cols - right_cols, count_rows, right_cols);
         break;
     }
 
@@ -170,36 +199,40 @@ static void draw_window(Editor* editor,
         int top_rows = (count_rows - 1) / 2;
         int bottom_rows = count_rows - top_rows - 1;
 
-        draw_window(editor, window->v.horizontal_split.top, selected_window, start_row, start_col,
-                    top_rows, count_cols);
+        draw_window(cells, total_cols, editor, window->v.horizontal_split.top, selected_window,
+                    start_row, start_col, top_rows, count_cols);
 
-        attrset(A_NORMAL);
-        for (int col = 0; col < count_cols; ++col) {
-            mvaddch(top_rows, col, '-');
+        {
+            int y = top_rows;
+            for (int x = 0; x < count_cols; ++x) {
+                SET(A_NORMAL, '-');
+            }
         }
 
-        draw_window(editor, window->v.horizontal_split.bottom, selected_window,
+        draw_window(cells, total_cols, editor, window->v.horizontal_split.bottom, selected_window,
                     start_row + count_rows - bottom_rows, start_col, bottom_rows, count_cols);
         break;
     }
     }
 }
 
-static void render(Editor* editor, Client* client) {
-    clear();
-    int rows, cols;
-    getmaxyx(stdscr, rows, cols);
-    move(0, 0);
-
-    draw_window(editor, client->window, client->_selected_window, 0, 0,
-                rows - (client->_message.tag != Message::NONE), cols);
+static void render_to_cells(Cell* cells,
+                            int total_rows,
+                            int total_cols,
+                            Editor* editor,
+                            Client* client) {
+    draw_window(cells, total_cols, editor, client->window, client->_selected_window, 0, 0,
+                total_rows - (client->_message.tag != Message::NONE), total_cols);
 
     {
-        move(rows - 1, 0);
-        attrset(A_NORMAL);
+        int y = total_rows - 1;
+        int x = 0;
+        int start_row = 0;
+        int start_col = 0;
+        int attrs = A_NORMAL;
         if (client->_message.tag != Message::NONE) {
             for (size_t i = 0; i < client->_message.text.len; ++i) {
-                addch(client->_message.text[i]);
+                SET(attrs, client->_message.text[i]);
             }
 
             if (std::chrono::system_clock::now() - client->_message_time >
@@ -208,6 +241,52 @@ static void render(Editor* editor, Client* client) {
             }
         }
     }
+}
+
+static void render(int* total_rows,
+                   int* total_cols,
+                   Cell** cellss,
+                   Editor* editor,
+                   Client* client) {
+    int rows, cols;
+    getmaxyx(stdscr, rows, cols);
+
+    if (rows != *total_rows || cols != *total_cols) {
+        clear();
+
+        free(cellss[0]);
+        free(cellss[1]);
+
+        *total_rows = rows;
+        *total_cols = cols;
+
+        size_t grid_size = rows * cols;
+        cellss[0] = (Cell*)malloc(grid_size * sizeof(Cell));
+        cellss[1] = (Cell*)malloc(grid_size * sizeof(Cell));
+
+        for (size_t i = 0; i < grid_size; ++i) {
+            cellss[0][i].attrs = 0;
+            cellss[0][i].code = ' ';
+            cellss[1][i].attrs = 0;
+            cellss[1][i].code = ' ';
+        }
+    }
+
+    render_to_cells(cellss[1], rows, cols, editor, client);
+
+    int index = 0;
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            Cell* new_cell = &cellss[1][index];
+            if (cellss[0][index] != *new_cell) {
+                attrset(new_cell->attrs);
+                mvaddch(y, x, new_cell->code);
+            }
+            ++index;
+        }
+    }
+
+    memcpy(cellss[0], cellss[1], rows * cols * sizeof(Cell));
 
     refresh();
 }
@@ -225,14 +304,17 @@ void run_ncurses(Server* server, Client* client) {
         init_pair(i + 1, face->foreground, face->background);
     }
 
-    render(&server->editor, client);
+    Cell* cellss[2] = {nullptr, nullptr};
+    int total_rows = 0;
+    int total_cols = 0;
+    render(&total_rows, &total_cols, cellss, &server->editor, client);
 
     FILE* file = fopen("tmp.txt", "w");
 
     while (1) {
         int ch = getch();
         if (ch == ERR) {
-            render(&server->editor, client);
+            render(&total_rows, &total_cols, cellss, &server->editor, client);
             nodelay(stdscr, FALSE);
             continue;
         }
