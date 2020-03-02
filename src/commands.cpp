@@ -307,6 +307,10 @@ void command_open_line(Editor* editor, Command_Source source) {
     });
 }
 
+void command_insert_newline(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(insert_char(buffer, '\n'));
+}
+
 void command_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(buffer->undo());
 }

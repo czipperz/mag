@@ -41,6 +41,7 @@ Key_Map create_key_map() {
     key_map.bind("A-d", command_delete_forward_word);
 
     key_map.bind("C-o", command_open_line);
+    key_map.bind("C-m", command_insert_newline);
 
     key_map.bind("C-/", command_undo);
     key_map.bind("C-_", command_undo);
