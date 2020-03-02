@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cz/defer.hpp>
 #include "buffer.hpp"
 #include "buffer_handle.hpp"
@@ -67,3 +69,10 @@
             }                                                                                     \
         }                                                                                         \
     } while (0)
+
+namespace mag {
+
+void insert(Editor* editor, Client* client, char code);
+void insert_char(Editor* editor, Client* client, char code);
+
+}

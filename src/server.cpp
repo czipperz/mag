@@ -15,22 +15,6 @@ Client Server::make_client() {
     return client;
 }
 
-static void insert_typed(Editor* editor, Client* client, char code) {
-    WITH_BUFFER(buffer, client->selected_buffer_id(), WITH_TRANSACTION({
-                    transaction.reserve(buffer->cursors.len());
-
-                    SSOStr value;
-                    value.init_char(code);
-                    for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-                        Edit edit;
-                        edit.value = value;
-                        edit.position = buffer->cursors[i].point + i;
-                        edit.is_insert = true;
-                        transaction.push(edit);
-                    }
-                }));
-}
-
 static void send_message_result(Editor* editor, Client* client) {
     // todo don't lock mini buffer so other people can use it
     WITH_BUFFER(mini_buffer, client->mini_buffer_id(), {
@@ -59,7 +43,7 @@ top:
                 if (key.code == '\n' && client->selected_buffer_id() == client->mini_buffer_id()) {
                     send_message_result(&editor, client);
                 } else {
-                    insert_typed(&editor, client, key.code);
+                    insert_char(&editor, client, key.code);
                 }
             } else {
                 ++i;
