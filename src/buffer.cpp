@@ -23,6 +23,7 @@ void Buffer::init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory) {
 
 void Buffer::drop() {
     name.drop(cz::heap_allocator());
+    directory.drop(cz::heap_allocator());
     edit_buffer.drop();
     commit_buffer.drop();
     commits.drop(cz::heap_allocator());
