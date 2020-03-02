@@ -244,34 +244,33 @@ static void render_to_cells(Cell* cells,
     draw_window(cells, total_cols, editor, client->window, client->_selected_window, 0, 0,
                 total_rows - (client->_message.tag != Message::NONE), total_cols);
 
-    {
+    if (client->_message.tag != Message::NONE) {
         int y = 0;
         int x = 0;
         int start_row = total_rows - 1;
         int start_col = 0;
         int attrs = A_NORMAL;
-        if (client->_message.tag != Message::NONE) {
-            for (size_t i = 0; i < client->_message.text.len; ++i) {
-                SET(attrs, client->_message.text[i]);
-                ++x;
+
+        for (size_t i = 0; i < client->_message.text.len; ++i) {
+            SET(attrs, client->_message.text[i]);
+            ++x;
+        }
+
+        if (client->_message.tag > Message::SHOW) {
+            start_col = x;
+            WITH_BUFFER(buffer, client->mini_buffer_id(), {
+                draw_buffer_contents(buffer, cells, total_cols, editor, client->_select_mini_buffer,
+                                     start_row, start_col, total_rows - start_row,
+                                     total_cols - start_col);
+            });
+        } else {
+            for (; x < total_cols; ++x) {
+                SET(attrs, ' ');
             }
 
-            if (client->_message.tag > Message::SHOW) {
-                start_col = x;
-                WITH_BUFFER(buffer, client->mini_buffer_id(), {
-                    draw_buffer_contents(buffer, cells, total_cols, editor,
-                                         client->_select_mini_buffer, start_row, start_col,
-                                         total_rows - start_row, total_cols - start_col);
-                });
-            } else {
-                for (; x < total_cols; ++x) {
-                    SET(attrs, ' ');
-                }
-
-                if (std::chrono::system_clock::now() - client->_message_time >
-                    std::chrono::seconds(5)) {
-                    client->_message.tag = Message::NONE;
-                }
+            if (std::chrono::system_clock::now() - client->_message_time >
+                std::chrono::seconds(5)) {
+                client->_message.tag = Message::NONE;
             }
         }
     }
