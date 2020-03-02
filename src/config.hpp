@@ -8,10 +8,10 @@ namespace mag {
 
 struct Key_Map;
 struct Theme;
-struct Tokenizer;
+struct Mode;
 
 Key_Map create_key_map();
 Theme create_theme();
-Tokenizer get_tokenizer(cz::Str file_name);
+Mode get_mode(cz::Str file_name);
 
 }

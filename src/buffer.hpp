@@ -7,7 +7,7 @@
 #include "commit.hpp"
 #include "contents.hpp"
 #include "cursor.hpp"
-#include "tokenizer.hpp"
+#include "mode.hpp"
 
 namespace mag {
 
@@ -27,7 +27,7 @@ struct Buffer {
     cz::Vector<Cursor> cursors;
     bool show_marks;
 
-    Tokenizer tokenizer;
+    Mode mode;
 
     void init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory);
 

@@ -7,7 +7,7 @@ namespace mag {
 struct Contents;
 struct Token;
 
-struct Tokenizer {
+struct Mode {
     bool (*next_token)(const Contents* contents, uint64_t start, Token* token);
 };
 

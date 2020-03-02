@@ -19,7 +19,7 @@ void Buffer::init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory) {
     cursors.reserve(cz::heap_allocator(), 1);
     cursors.push({});
 
-    tokenizer = get_tokenizer(name);
+    mode = get_mode(name);
 }
 
 void Buffer::drop() {

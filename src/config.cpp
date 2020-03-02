@@ -79,14 +79,14 @@ Theme create_theme() {
     return theme;
 }
 
-Tokenizer get_tokenizer(cz::Str file_name) {
-    Tokenizer tokenizer;
+Mode get_mode(cz::Str file_name) {
+    Mode mode;
     if (file_name.ends_with(".cpp")) {
-        tokenizer.next_token = cpp_next_token;
+        mode.next_token = cpp_next_token;
     } else {
-        tokenizer.next_token = default_next_token;
+        mode.next_token = default_next_token;
     }
-    return tokenizer;
+    return mode;
 }
 
 }
