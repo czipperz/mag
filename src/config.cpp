@@ -81,7 +81,11 @@ Theme create_theme() {
 
 Tokenizer get_tokenizer(cz::Str file_name) {
     Tokenizer tokenizer;
-    tokenizer.next_token = cpp_next_token;
+    if (file_name.ends_with(".cpp")) {
+        tokenizer.next_token = cpp_next_token;
+    } else {
+        tokenizer.next_token = default_next_token;
+    }
     return tokenizer;
 }
 
