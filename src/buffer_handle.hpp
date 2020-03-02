@@ -18,11 +18,11 @@ class Buffer_Handle {
 #endif
 
 public:
-    void init(Buffer_Id id, cz::Str name) {
+    void init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory) {
         mutex = new std::mutex();
         buffer = new Buffer();
         *buffer = {};
-        buffer->init(id, name);
+        buffer->init(id, name, directory);
 
 #ifndef NDEBUG
         simultaneous_access_count = 0;

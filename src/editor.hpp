@@ -25,11 +25,12 @@ struct Editor {
 
     Buffer_Handle* lookup(Buffer_Id id) { return &buffers[id.value]; }
 
-    void create_buffer(cz::Str name) {
+    Buffer_Id create_buffer(cz::Str name, cz::Option<cz::Str> directory) {
         Buffer_Handle buffer = {};
-        buffer.init({buffers.len()}, name);
+        buffer.init({buffers.len()}, name, directory);
         buffers.reserve(cz::heap_allocator(), 1);
         buffers.push(buffer);
+        return {buffers.len() - 1};
     }
 };
 

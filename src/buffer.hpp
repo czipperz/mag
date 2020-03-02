@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cz/buffer_array.hpp>
+#include <cz/option.hpp>
 #include <cz/vector.hpp>
 #include "buffer_id.hpp"
 #include "commit.hpp"
@@ -13,6 +14,7 @@ namespace mag {
 struct Buffer {
     Buffer_Id id;
     cz::String name;
+    cz::String directory;
 
     cz::BufferArray edit_buffer;
     cz::BufferArray commit_buffer;
@@ -26,7 +28,7 @@ struct Buffer {
 
     Tokenizer tokenizer;
 
-    void init(Buffer_Id id, cz::Str name);
+    void init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory);
 
     void drop();
 

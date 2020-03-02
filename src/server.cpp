@@ -9,8 +9,7 @@ namespace mag {
 Client Server::make_client() {
     Client client = {};
     Buffer_Id selected_buffer_id = {editor.buffers.len() - 1};
-    editor.create_buffer("*client mini buffer*");
-    Buffer_Id mini_buffer_id = {editor.buffers.len() - 1};
+    Buffer_Id mini_buffer_id = editor.create_buffer("*client mini buffer*", {});
     client.init(selected_buffer_id, mini_buffer_id);
     return client;
 }
@@ -23,6 +22,10 @@ static void send_message_result(Editor* editor, Client* client) {
                                            client->_message.response_callback_data);
         client->dealloc_message();
     });
+}
+
+static void command_insert_char(Editor* editor, Buffer_Id buffer_id, char code) {
+    WITH_BUFFER(buffer, buffer_id, insert_char(buffer, code));
 }
 
 void Server::receive(Client* client, Key key) {
@@ -43,7 +46,7 @@ top:
                 if (key.code == '\n' && client->selected_buffer_id() == client->mini_buffer_id()) {
                     send_message_result(&editor, client);
                 } else {
-                    insert_char(&editor, client, key.code);
+                    command_insert_char(&editor, client->selected_buffer_id(), key.code);
                 }
             } else {
                 ++i;

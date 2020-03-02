@@ -72,7 +72,7 @@
 
 namespace mag {
 
-void insert(Editor* editor, Client* client, char code);
-void insert_char(Editor* editor, Client* client, char code);
+void insert(Buffer* buffer, char code);
+void insert_char(Buffer* buffer, char code);
 
 }

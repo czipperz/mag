@@ -298,7 +298,7 @@ void command_delete_forward_word(Editor* editor, Command_Source source) {
 
 void command_open_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
-        insert_char(editor, source.client, '\n');
+        insert_char(buffer, '\n');
         TRANSFORM_POINTS(backward_char);
     });
 }

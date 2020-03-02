@@ -5,9 +5,12 @@
 
 namespace mag {
 
-void Buffer::init(Buffer_Id id, cz::Str name) {
+void Buffer::init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory) {
     this->id = id;
     this->name = name.duplicate(cz::heap_allocator());
+    if (directory.is_present) {
+        this->directory = {directory.value.duplicate(cz::heap_allocator())};
+    }
 
     edit_buffer.create();
     commit_buffer.create();
