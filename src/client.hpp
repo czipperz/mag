@@ -77,11 +77,7 @@ struct Client {
         _select_mini_buffer = message.tag > Message::SHOW;
     }
 
-    void hide_mini_buffer(Editor* editor) {
-        restore_selected_buffer();
-        dealloc_message();
-        WITH_BUFFER(mini_buffer, mini_buffer_id(), clear_buffer(editor, mini_buffer));
-    }
+    void hide_mini_buffer(Editor* editor);
 
     void dealloc_message() {
         free(_message.response_callback_data);

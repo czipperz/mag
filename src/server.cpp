@@ -14,7 +14,7 @@ Client Server::make_client() {
     return client;
 }
 
-static void clear_buffer(Editor* editor, Buffer* buffer) {
+void clear_buffer(Editor* editor, Buffer* buffer) {
     WITH_TRANSACTION({
         transaction.reserve(1);
         Edit edit;
