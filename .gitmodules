@@ -1,0 +1,3 @@
+[submodule "cz"]
+	path = cz
+	url = https://github.com/czipperz/cz
