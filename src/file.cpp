@@ -37,6 +37,7 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
             CZ_DEFER(contents.drop(cz::heap_allocator()));
             cz::fs::read_to_string(cz::heap_allocator(), &contents, file);
             buffer->contents.insert(0, contents);
+            buffer->saved_commit_index = {0};
         });
     }
 

@@ -18,6 +18,10 @@ struct Buffer {
     cz::Vector<Commit> commits;
     size_t commit_index;
 
+    /// The last saved commit.  If the commit that was saved was overriden (via
+    /// undo and then another change deleting it), this is none.
+    cz::Option<size_t> saved_commit_index;
+
     Contents contents;
 
     cz::BufferArray copy_buffer;

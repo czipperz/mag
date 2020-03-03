@@ -110,6 +110,13 @@ void Buffer::commit(Commit commit) {
         commits[i].drop();
     }
     commits.set_len(commit_index);
+
+    if (saved_commit_index.is_present) {
+        if (saved_commit_index.value > commit_index) {
+            saved_commit_index.is_present = false;
+        }
+    }
+
     commits.reserve(cz::heap_allocator(), 1);
     commits.push(commit);
     redo();

@@ -815,7 +815,10 @@ void command_save_file(Editor* editor, Command_Source source) {
             message.tag = Message::SHOW;
             message.text = "Error saving file";
             source.client->show_message(message);
+            return;
         }
+
+        buffer->saved_commit_index = {buffer->commit_index};
     });
 }
 
