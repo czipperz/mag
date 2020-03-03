@@ -43,6 +43,14 @@ static bool matches(const Contents* contents, uint64_t point, uint64_t end, cz::
     return true;
 }
 
+#define MAKE_COMBINED_STATE(SC)                                              \
+    do {                                                                     \
+        (SC) = normal_state | preprocessor_state | preprocessor_saved_state; \
+        if (in_preprocessor) {                                               \
+            (SC) |= IN_PREPROCESSOR_FLAG;                                    \
+        }                                                                    \
+    } while (0)
+
 bool cpp_next_token(const Contents* contents,
                     uint64_t point,
                     Token* token,
@@ -261,12 +269,17 @@ bool cpp_next_token(const Contents* contents,
         token->type = Token_Type::IDENTIFIER;
 
         if (normal_state == START_OF_STATEMENT || normal_state == START_OF_PARAMETER) {
-            uint64_t temp_state = 0;
+            uint64_t temp_state;
+            MAKE_COMBINED_STATE(temp_state);
             Token next_token;
-            cpp_next_token(contents, token->end, &next_token, &temp_state);
-            if (next_token.type == Token_Type::IDENTIFIER ||
-                (next_token.end == next_token.start + 1 &&
-                 ((*contents)[next_token.start] == '*' || (*contents)[next_token.start] == '&'))) {
+            if (!cpp_next_token(contents, token->end, &next_token, &temp_state)) {
+                // couldn't get next token
+            } else if (in_preprocessor && !(temp_state & IN_PREPROCESSOR_FLAG)) {
+                // next token is outside preprocessor invocation we are in
+            } else if (next_token.type == Token_Type::IDENTIFIER ||
+                       (next_token.end == next_token.start + 1 &&
+                        ((*contents)[next_token.start] == '*' ||
+                         (*contents)[next_token.start] == '&'))) {
                 if (normal_state == START_OF_STATEMENT) {
                     normal_state = IN_VARIABLE_TYPE;
                 } else {
@@ -354,10 +367,7 @@ bool cpp_next_token(const Contents* contents,
     goto done;
 
 done:
-    *state_combined = normal_state | preprocessor_state | preprocessor_saved_state;
-    if (in_preprocessor) {
-        *state_combined |= IN_PREPROCESSOR_FLAG;
-    }
+    MAKE_COMBINED_STATE(*state_combined);
     return true;
 }
 
