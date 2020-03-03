@@ -27,6 +27,16 @@ static bool matches(const Contents* contents, uint64_t point, uint64_t end, cz::
     return true;
 }
 
+enum State : uint64_t {
+    START_OF_STATEMENT = 0,
+    IN_EXPR,
+    IN_VARIABLE_TYPE,
+    AFTER_VARIABLE_DECLARATION,
+    START_OF_PARAMETER,
+    IN_PARAMETER_TYPE,
+    AFTER_PARAMETER_DECLARATION,
+};
+
 bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint64_t* state) {
     skip_whitespace(contents, &point);
 
@@ -52,6 +62,7 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
         }
         token->end = point;
         token->type = Token_Type::STRING;
+        *state = IN_EXPR;
         return true;
     }
 
@@ -65,6 +76,7 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
             token->end = point + 3;
         }
         token->type = Token_Type::STRING;
+        *state = IN_EXPR;
         return true;
     }
 
@@ -184,12 +196,42 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
         for (size_t i = 0; i < sizeof(type_keywords) / sizeof(*type_keywords); ++i) {
             if (matches(contents, token->start, token->end, type_keywords[i])) {
                 token->type = Token_Type::TYPE;
+                if (*state == START_OF_PARAMETER) {
+                    *state = IN_PARAMETER_TYPE;
+                } else {
+                    *state = IN_VARIABLE_TYPE;
+                }
                 return true;
             }
         }
 
         // generic identifier
         token->type = Token_Type::IDENTIFIER;
+
+        if (*state == START_OF_STATEMENT || *state == START_OF_PARAMETER) {
+            uint64_t temp_state = 0;
+            Token next_token;
+            cpp_next_token(contents, token->end, &next_token, &temp_state);
+            if (next_token.type == Token_Type::IDENTIFIER ||
+                (next_token.end == next_token.start + 1 &&
+                 ((*contents)[next_token.start] == '*' || (*contents)[next_token.start] == '&'))) {
+                if (*state == START_OF_STATEMENT) {
+                    *state = IN_VARIABLE_TYPE;
+                } else {
+                    *state = IN_PARAMETER_TYPE;
+                }
+                token->type = Token_Type::TYPE;
+            } else if (*state == START_OF_PARAMETER && next_token.end == next_token.start + 1 &&
+                       (*contents)[next_token.start] == ',') {
+                *state = AFTER_PARAMETER_DECLARATION;
+                token->type = Token_Type::TYPE;
+            }
+        } else if (*state == IN_VARIABLE_TYPE) {
+            *state = AFTER_VARIABLE_DECLARATION;
+        } else if (*state == IN_PARAMETER_TYPE) {
+            *state = AFTER_PARAMETER_DECLARATION;
+        }
+
         return true;
     }
 
@@ -229,6 +271,16 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
             token->type = Token_Type::CLOSE_PAIR;
         } else {
             token->type = Token_Type::PUNCTUATION;
+        }
+
+        if (first_char == ';' || first_char == '{' || first_char == '}') {
+            *state = START_OF_STATEMENT;
+        } else if (*state == START_OF_STATEMENT) {
+            *state = IN_EXPR;
+        } else if (*state == AFTER_VARIABLE_DECLARATION && first_char == '(') {
+            *state = START_OF_PARAMETER;
+        } else if (*state == AFTER_PARAMETER_DECLARATION && first_char == ',') {
+            *state = START_OF_PARAMETER;
         }
         return true;
     }
