@@ -12,7 +12,7 @@ using namespace mag;
     Server server = {};                   \
     CZ_DEFER(server.drop());              \
     Editor* editor = &server.editor;      \
-    editor->create_buffer("*test*", {});  \
+    editor->create_buffer("*test*");      \
                                           \
     Client client = server.make_client(); \
     Command_Source source;                \

@@ -27,9 +27,9 @@ struct Editor {
 
     Buffer_Handle* lookup(Buffer_Id id) { return buffers[id.value]; }
 
-    Buffer_Id create_buffer(cz::Str name, cz::Option<cz::Str> directory) {
+    Buffer_Id create_buffer(cz::Str path) {
         Buffer_Handle* buffer_handle = cz::heap_allocator().alloc<Buffer_Handle>();
-        buffer_handle->init({buffers.len()}, name, directory);
+        buffer_handle->init({buffers.len()}, path);
         buffers.reserve(cz::heap_allocator(), 1);
         buffers.push(buffer_handle);
         return {buffers.len() - 1};

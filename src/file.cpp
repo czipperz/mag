@@ -26,10 +26,7 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
         path.null_terminate();
     }
 
-    cz::Option<cz::Str> name = cz::path::name_component(path);
-    CZ_ASSERT(name.is_present);
-
-    Buffer_Id buffer_id = editor->create_buffer(name.value, cz::path::directory_component(path));
+    Buffer_Id buffer_id = editor->create_buffer(path);
 
     FILE* file = fopen(path.buffer(), "r");
     if (file) {

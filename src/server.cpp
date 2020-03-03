@@ -9,7 +9,7 @@ namespace mag {
 Client Server::make_client() {
     Client client = {};
     Buffer_Id selected_buffer_id = {editor.buffers.len() - 1};
-    Buffer_Id mini_buffer_id = editor.create_buffer("*client mini buffer*", {});
+    Buffer_Id mini_buffer_id = editor.create_buffer("*client mini buffer*");
     client.init(selected_buffer_id, mini_buffer_id);
     return client;
 }

@@ -5,23 +5,19 @@
 
 namespace mag {
 
-void Buffer::init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory) {
+void Buffer::init(Buffer_Id id, cz::Str path) {
     this->id = id;
-    this->name = name.duplicate(cz::heap_allocator());
-    if (directory.is_present) {
-        this->directory = {directory.value.duplicate(cz::heap_allocator())};
-    }
+    this->path = path.duplicate(cz::heap_allocator());
 
     copy_buffer.create();
     cursors.reserve(cz::heap_allocator(), 1);
     cursors.push({});
 
-    mode = get_mode(name);
+    mode = get_mode(path);
 }
 
 void Buffer::drop() {
-    name.drop(cz::heap_allocator());
-    directory.drop(cz::heap_allocator());
+    path.drop(cz::heap_allocator());
     for (size_t commit = 0; commit < commits.len(); ++commit) {
         commits[commit].drop();
     }

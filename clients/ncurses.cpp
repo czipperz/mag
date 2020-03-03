@@ -169,10 +169,10 @@ static void draw_buffer(Cell* cells,
         ++x;
         SET(attrs, ' ');
         ++x;
-        size_t max = cz::min<size_t>(buffer->name.len(), count_cols - x);
+        size_t max = cz::min<size_t>(buffer->path.len(), count_cols - x);
         size_t i;
         for (i = 0; i < max; ++i) {
-            SET(attrs, buffer->name[i]);
+            SET(attrs, buffer->path[i]);
             ++x;
         }
         for (; x < count_cols; ++x) {

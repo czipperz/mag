@@ -18,9 +18,9 @@ class Buffer_Handle {
 #endif
 
 public:
-    void init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory) {
+    void init(Buffer_Id id, cz::Str path) {
         buffer = {};
-        buffer.init(id, name, directory);
+        buffer.init(id, path);
 
 #ifndef NDEBUG
         simultaneous_access_count = 0;

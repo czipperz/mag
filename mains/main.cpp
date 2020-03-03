@@ -12,7 +12,7 @@ using namespace mag;
 int main(int argc, char** argv) {
     Server server = {};
     CZ_DEFER(server.drop());
-    server.editor.create_buffer("*scratch*", {});
+    server.editor.create_buffer("*scratch*");
     server.editor.key_map = create_key_map();
     server.editor.theme = create_theme();
 
