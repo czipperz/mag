@@ -106,6 +106,9 @@ bool Buffer::redo() {
 }
 
 void Buffer::commit(Commit commit) {
+    for (size_t i = commit_index; i < commits.len(); ++i) {
+        commits[i].drop();
+    }
     commits.set_len(commit_index);
     commits.reserve(cz::heap_allocator(), 1);
     commits.push(commit);
