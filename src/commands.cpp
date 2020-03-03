@@ -34,9 +34,19 @@ static void save_copy(Buffer* buffer, size_t c, SSOStr value) {
     buffer->cursors[c].copy_chain = chain;
 }
 
+static size_t sum_region_sizes(Buffer* buffer) {
+    uint64_t sum = 0;
+    for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+        uint64_t start = buffer->cursors[c].start();
+        uint64_t end = buffer->cursors[c].end();
+        sum += end - start;
+    }
+    return (size_t)sum;
+}
+
 void command_cut(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(WITH_TRANSACTION({
-        transaction.reserve(buffer->cursors.len());
+        transaction.init(buffer->cursors.len(), sum_region_sizes(buffer));
 
         size_t offset = 0;
         for (size_t c = 0; c < buffer->cursors.len(); ++c) {
@@ -44,7 +54,7 @@ void command_cut(Editor* editor, Command_Source source) {
             uint64_t end = buffer->cursors[c].end();
 
             Edit edit;
-            edit.value = buffer->contents.slice(buffer->edit_buffer.allocator(), start, end);
+            edit.value = buffer->contents.slice(transaction.value_allocator(), start, end);
             edit.position = start - offset;
             offset += end - start;
             edit.is_insert = false;
@@ -73,7 +83,8 @@ void command_copy(Editor* editor, Command_Source source) {
 
 void command_paste(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(WITH_TRANSACTION({
-        transaction.reserve(buffer->cursors.len());
+        // :CopyLeak Probably we will need to copy all the values herea.
+        transaction.init(buffer->cursors.len(), 0);
 
         size_t offset = 0;
         for (size_t c = 0; c < buffer->cursors.len(); ++c) {
@@ -152,7 +163,14 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         cursor_positions.reserve(cz::heap_allocator(), buffer->cursors.len());
 
         WITH_TRANSACTION({
-            transaction.reserve(buffer->cursors.len() * 3);
+            uint64_t sum_line_lengths = 0;
+            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+                uint64_t start = start_of_line(buffer, buffer->cursors[c].point);
+                uint64_t end = end_of_line(buffer, buffer->cursors[c].point);
+                sum_line_lengths += end - start + 1;
+            }
+
+            transaction.init(buffer->cursors.len() * 3, (size_t)sum_line_lengths);
 
             for (size_t c = 0; c < buffer->cursors.len(); ++c) {
                 uint64_t start = start_of_line(buffer, buffer->cursors[c].point);
@@ -191,7 +209,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
                     ++end;
 
                     SSOStr value =
-                        buffer->contents.slice(buffer->edit_buffer.allocator(), start, end);
+                        buffer->contents.slice(transaction.value_allocator(), start, end);
 
                     Edit edit_insert;
                     cz::Str value_str = value.as_str();
@@ -214,7 +232,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
                     continue;
                 }
 
-                SSOStr value = buffer->contents.slice(buffer->edit_buffer.allocator(), start, end);
+                SSOStr value = buffer->contents.slice(transaction.value_allocator(), start, end);
 
                 Edit edit_insert;
                 edit_insert.value = value;
@@ -243,7 +261,14 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         cursor_positions.reserve(cz::heap_allocator(), buffer->cursors.len());
 
         WITH_TRANSACTION({
-            transaction.reserve(buffer->cursors.len() * 3);
+            uint64_t sum_line_lengths = 0;
+            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+                uint64_t start = start_of_line(buffer, buffer->cursors[c].point);
+                uint64_t end = end_of_line(buffer, buffer->cursors[c].point);
+                sum_line_lengths += end - start + 1;
+            }
+
+            transaction.init(buffer->cursors.len() * 3, (size_t)sum_line_lengths);
 
             for (size_t c = 0; c < buffer->cursors.len(); ++c) {
                 uint64_t start = start_of_line(buffer, buffer->cursors[c].point);
@@ -284,7 +309,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
                     // abc\ndef
                     //      [  )
                     SSOStr value =
-                        buffer->contents.slice(buffer->edit_buffer.allocator(), start - 1, end);
+                        buffer->contents.slice(transaction.value_allocator(), start - 1, end);
 
                     Edit edit_delete;
                     edit_delete.value = value;
@@ -307,7 +332,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
                     continue;
                 }
 
-                SSOStr value = buffer->contents.slice(buffer->edit_buffer.allocator(), start, end);
+                SSOStr value = buffer->contents.slice(transaction.value_allocator(), start, end);
 
                 Edit edit_delete;
                 edit_delete.value = value;

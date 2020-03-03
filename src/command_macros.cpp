@@ -6,15 +6,15 @@ namespace mag {
 
 void insert(Buffer* buffer, SSOStr value) {
     WITH_TRANSACTION({
-                    transaction.reserve(buffer->cursors.len());
-                    for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-                        Edit edit;
-                        edit.value = value;
-                        edit.position = buffer->cursors[i].point + i;
-                        edit.is_insert = true;
-                        transaction.push(edit);
-                    }
-                });
+        transaction.init(buffer->cursors.len(), 0);
+        for (size_t i = 0; i < buffer->cursors.len(); ++i) {
+            Edit edit;
+            edit.value = value;
+            edit.position = buffer->cursors[i].point + i;
+            edit.is_insert = true;
+            transaction.push(edit);
+        }
+    });
 }
 
 void insert_char(Buffer* buffer, char code) {

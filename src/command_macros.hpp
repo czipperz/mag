@@ -19,7 +19,7 @@
 
 #define WITH_TRANSACTION(CODE)        \
     do {                              \
-        Transaction transaction = {}; \
+        Transaction transaction;      \
         CZ_DEFER(transaction.drop()); \
         CODE;                         \
         transaction.commit(buffer);   \
@@ -32,42 +32,56 @@
         }                                                                      \
     } while (0)
 
-#define DELETE_BACKWARD(FUNC)                                                                     \
-    do {                                                                                          \
-        transaction.reserve(buffer->cursors.len());                                               \
-                                                                                                  \
-        uint64_t total = 0;                                                                       \
-        for (size_t i = 0; i < buffer->cursors.len(); ++i) {                                      \
-            uint64_t end = buffer->cursors[i].point;                                              \
-            uint64_t start = FUNC(buffer, end);                                                   \
-            if (start < end) {                                                                    \
-                Edit edit;                                                                        \
-                edit.value = buffer->contents.slice(buffer->edit_buffer.allocator(), start, end); \
-                edit.position = start - total;                                                    \
-                total += end - start;                                                             \
-                edit.is_insert = false;                                                           \
-                transaction.push(edit);                                                           \
-            }                                                                                     \
-        }                                                                                         \
+#define DELETE_BACKWARD(FUNC)                                                                   \
+    do {                                                                                        \
+        uint64_t sum_regions = 0;                                                               \
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                    \
+            uint64_t end = buffer->cursors[c].point;                                            \
+            uint64_t start = FUNC(buffer, end);                                                 \
+            sum_regions += end - start;                                                         \
+        }                                                                                       \
+                                                                                                \
+        transaction.init(buffer->cursors.len(), (size_t)sum_regions);                           \
+                                                                                                \
+        uint64_t total = 0;                                                                     \
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                    \
+            uint64_t end = buffer->cursors[c].point;                                            \
+            uint64_t start = FUNC(buffer, end);                                                 \
+            if (start < end) {                                                                  \
+                Edit edit;                                                                      \
+                edit.value = buffer->contents.slice(transaction.value_allocator(), start, end); \
+                edit.position = start - total;                                                  \
+                total += end - start;                                                           \
+                edit.is_insert = false;                                                         \
+                transaction.push(edit);                                                         \
+            }                                                                                   \
+        }                                                                                       \
     } while (0)
 
-#define DELETE_FORWARD(FUNC)                                                                      \
-    do {                                                                                          \
-        transaction.reserve(buffer->cursors.len());                                               \
-                                                                                                  \
-        uint64_t total = 0;                                                                       \
-        for (size_t i = 0; i < buffer->cursors.len(); ++i) {                                      \
-            uint64_t start = buffer->cursors[i].point;                                            \
-            uint64_t end = FUNC(buffer, start);                                                   \
-            if (start < end) {                                                                    \
-                Edit edit;                                                                        \
-                edit.value = buffer->contents.slice(buffer->edit_buffer.allocator(), start, end); \
-                edit.position = start - total;                                                    \
-                total += end - start;                                                             \
-                edit.is_insert = false;                                                           \
-                transaction.push(edit);                                                           \
-            }                                                                                     \
-        }                                                                                         \
+#define DELETE_FORWARD(FUNC)                                                                    \
+    do {                                                                                        \
+        uint64_t sum_regions = 0;                                                               \
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                    \
+            uint64_t start = buffer->cursors[c].point;                                          \
+            uint64_t end = FUNC(buffer, start);                                                 \
+            sum_regions += end - start;                                                         \
+        }                                                                                       \
+                                                                                                \
+        transaction.init(buffer->cursors.len(), (size_t)sum_regions);                           \
+                                                                                                \
+        uint64_t total = 0;                                                                     \
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                    \
+            uint64_t start = buffer->cursors[c].point;                                          \
+            uint64_t end = FUNC(buffer, start);                                                 \
+            if (start < end) {                                                                  \
+                Edit edit;                                                                      \
+                edit.value = buffer->contents.slice(transaction.value_allocator(), start, end); \
+                edit.position = start - total;                                                  \
+                total += end - start;                                                           \
+                edit.is_insert = false;                                                         \
+                transaction.push(edit);                                                         \
+            }                                                                                   \
+        }                                                                                       \
     } while (0)
 
 namespace mag {

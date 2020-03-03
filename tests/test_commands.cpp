@@ -22,7 +22,7 @@ using namespace mag;
 
 static void insert_default_contents(Editor* editor, Command_Source source, cz::Str contents) {
     WITH_SELECTED_BUFFER(WITH_TRANSACTION({
-        transaction.reserve(buffer->cursors.len());
+        transaction.init(buffer->cursors.len(), 0);
         SSOStr value;
         value.init_from_constant(contents);
         for (size_t i = 0; i < buffer->cursors.len(); ++i) {

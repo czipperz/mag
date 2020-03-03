@@ -12,9 +12,6 @@ void Buffer::init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory) {
         this->directory = {directory.value.duplicate(cz::heap_allocator())};
     }
 
-    edit_buffer.create();
-    commit_buffer.create();
-
     copy_buffer.create();
     cursors.reserve(cz::heap_allocator(), 1);
     cursors.push({});
@@ -25,8 +22,9 @@ void Buffer::init(Buffer_Id id, cz::Str name, cz::Option<cz::Str> directory) {
 void Buffer::drop() {
     name.drop(cz::heap_allocator());
     directory.drop(cz::heap_allocator());
-    edit_buffer.drop();
-    commit_buffer.drop();
+    for (size_t commit = 0; commit < commits.len(); ++commit) {
+        commits[commit].drop();
+    }
     commits.drop(cz::heap_allocator());
     contents.drop();
     copy_buffer.drop();

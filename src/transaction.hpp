@@ -1,21 +1,24 @@
 #pragma once
 
-#include <cz/heap.hpp>
-#include <cz/vector.hpp>
-#include "edit.hpp"
+#include <cz/allocator.hpp>
 
 namespace mag {
 
 struct Buffer;
+struct Edit;
 
 struct Transaction {
-    cz::Vector<Edit> edits;
+    void* memory;
+    size_t edit_offset;
+    size_t value_offset;
 
-    void reserve(size_t num) { edits.reserve(cz::heap_allocator(), num); }
+    void init(size_t num_edits, size_t total_edit_values);
 
-    void push(Edit edit) { edits.push(edit); }
+    void drop();
 
-    void drop() { edits.drop(cz::heap_allocator()); }
+    cz::Allocator value_allocator();
+
+    void push(Edit edit);
 
     void commit(Buffer* buffer);
 };

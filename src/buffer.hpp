@@ -16,8 +16,6 @@ struct Buffer {
     cz::String name;
     cz::String directory;
 
-    cz::BufferArray edit_buffer;
-    cz::BufferArray commit_buffer;
     cz::Vector<Commit> commits;
     size_t commit_index;
 
