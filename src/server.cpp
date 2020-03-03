@@ -38,9 +38,11 @@ static void send_message_result(Editor* editor, Client* client) {
     });
 }
 
-static void command_insert_char(Editor* editor, Buffer_Id buffer_id, char code, bool merge) {
-    WITH_BUFFER(buffer, buffer_id, {
-        if (merge) {
+static void command_insert_char(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER({
+        char code = source.keys[0].code;
+
+        if (source.previous_command == command_insert_char) {
             CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
             Commit commit = buffer->commits[buffer->commit_index - 1];
             size_t len = commit.edits[0].value.len();
@@ -79,10 +81,15 @@ top:
 
                 if (key.code == '\n' && client->selected_buffer_id() == client->mini_buffer_id()) {
                     send_message_result(&editor, client);
+                    previous_command = nullptr;
                 } else {
-                    command_insert_char(&editor, client->selected_buffer_id(), key.code,
-                                        last_action_was_insert_char);
-                    last_action_was_insert_char = true;
+                    Command_Source source;
+                    source.client = client;
+                    source.keys = {client->key_chain.start() + start, i - start};
+                    source.previous_command = previous_command;
+
+                    command_insert_char(&editor, source);
+                    previous_command = command_insert_char;
                 }
             } else {
                 ++i;
@@ -91,18 +98,22 @@ top:
                 message.tag = Message::SHOW;
                 message.text = "Invalid key combo";
                 client->show_message(message);
-                last_action_was_insert_char = false;
+                previous_command = nullptr;
             }
             goto top;
         }
 
         if (bind->is_command) {
+            ++i;
+
             Command_Source source;
             source.client = client;
-            ++i;
             source.keys = {client->key_chain.start() + start, i - start};
-            bind->v.command(&editor, source);
-            last_action_was_insert_char = false;
+            source.previous_command = previous_command;
+
+            Command command = bind->v.command;
+            command(&editor, source);
+            previous_command = command;
             goto top;
         } else {
             map = bind->v.map;
