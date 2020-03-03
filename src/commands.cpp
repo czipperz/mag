@@ -359,7 +359,29 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
 }
 
 void command_delete_forward_char(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(WITH_TRANSACTION(DELETE_FORWARD(forward_char)));
+    WITH_SELECTED_BUFFER({
+        if (source.previous_command == command_delete_forward_char) {
+            CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
+            Commit commit = buffer->commits[buffer->commit_index - 1];
+            size_t len = commit.edits[0].value.len();
+            if (len < SSOStr::MAX_SHORT_LEN) {
+                CZ_DEBUG_ASSERT(commit.edits.len == buffer->cursors.len());
+                buffer->undo();
+                for (size_t e = 0; e < commit.edits.len; ++e) {
+                    CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
+                    CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+                    commit.edits[e].value.short_._buffer[len] =
+                        buffer->contents[buffer->cursors[e].point];
+                    commit.edits[e].value.short_.set_len(len + 1);
+                    commit.edits[e].position -= e;
+                }
+                buffer->redo();
+                return;
+            }
+        }
+
+        WITH_TRANSACTION(DELETE_FORWARD(forward_char));
+    });
 }
 
 void command_delete_backward_word(Editor* editor, Command_Source source) {
