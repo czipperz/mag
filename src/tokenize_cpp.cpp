@@ -17,6 +17,7 @@ enum State : uint64_t {
     START_OF_PARAMETER = 0x0000000000000004,
     IN_PARAMETER_TYPE = 0x0000000000000005,
     AFTER_PARAMETER_DECLARATION = 0x0000000000000006,
+    IN_TYPE_DEFINITION = 0x0000000000000007,
 
     PREPROCESSOR_SAVED_STATE_MASK = 0x0000000000000038,
     PREPROCESSOR_SAVE_SHIFT = 3,
@@ -147,6 +148,21 @@ bool cpp_next_token(const Contents* contents,
             goto done;
         }
 
+        cz::Str type_definition_keywords[] = {
+            "class",
+            "enum",
+            "union",
+            "struct",
+        };
+        for (size_t i = 0; i < sizeof(type_definition_keywords) / sizeof(*type_definition_keywords);
+             ++i) {
+            if (matches(contents, token->start, token->end, type_definition_keywords[i])) {
+                token->type = Token_Type::KEYWORD;
+                normal_state = IN_TYPE_DEFINITION;
+                goto done;
+            }
+        }
+
         cz::Str keywords[] = {
             "alignas",
             "alignof",
@@ -161,7 +177,6 @@ bool cpp_next_token(const Contents* contents,
             "break",
             "case",
             "catch",
-            "class",
             "compl",
             "concept",
             "const",
@@ -179,7 +194,6 @@ bool cpp_next_token(const Contents* contents,
             "do",
             "dynamic_cast",
             "else",
-            "enum",
             "explicit",
             "export",
             "extern",
@@ -211,7 +225,6 @@ bool cpp_next_token(const Contents* contents,
             "static",
             "static_assert",
             "static_cast",
-            "struct",
             "switch",
             "synchronized",
             "template",
@@ -223,7 +236,6 @@ bool cpp_next_token(const Contents* contents,
             "typedef",
             "typeid",
             "typename",
-            "union",
             "using",
             "virtual",
             "volatile",
@@ -292,6 +304,9 @@ bool cpp_next_token(const Contents* contents,
                 normal_state = AFTER_PARAMETER_DECLARATION;
                 token->type = Token_Type::TYPE;
             }
+        } else if (normal_state == IN_TYPE_DEFINITION) {
+            normal_state = IN_EXPR;
+            token->type = Token_Type::TYPE;
         } else if (normal_state == IN_VARIABLE_TYPE) {
             normal_state = AFTER_VARIABLE_DECLARATION;
         } else if (normal_state == IN_PARAMETER_TYPE) {
