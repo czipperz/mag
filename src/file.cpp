@@ -43,4 +43,21 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     client->_selected_window->v.unified_id = buffer_id;
 }
 
+bool save_contents(const Contents* contents, const char* path) {
+    FILE* file = fopen(path, "w");
+    if (!file) {
+        return false;
+    }
+    CZ_DEFER(fclose(file));
+
+    // TODO: Make this not have shit performance.  We should write each bucket
+    // using fwrite but that requires us to figure out how to dig into the
+    // encapsulation of Contents.
+    for (uint64_t i = 0, len = contents->len(); i < len; ++i) {
+        fputc((*contents)[i], file);
+    }
+
+    return true;
+}
+
 }

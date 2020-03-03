@@ -64,5 +64,6 @@ void command_split_window_vertical(Editor* editor, Command_Source source);
 void command_cycle_window(Editor* editor, Command_Source source);
 
 void command_open_file(Editor* editor, Command_Source source);
+void command_save_file(Editor* editor, Command_Source source);
 
 }

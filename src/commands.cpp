@@ -800,4 +800,23 @@ void command_open_file(Editor* editor, Command_Source source) {
     source.client->show_message(message);
 }
 
+void command_save_file(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER({
+        if (!buffer->path.find('/')) {
+            Message message = {};
+            message.tag = Message::SHOW;
+            message.text = "File must have path";
+            source.client->show_message(message);
+            return;
+        }
+
+        if (!save_contents(&buffer->contents, buffer->path.buffer())) {
+            Message message = {};
+            message.tag = Message::SHOW;
+            message.text = "Error saving file";
+            source.client->show_message(message);
+        }
+    });
+}
+
 }
