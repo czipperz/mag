@@ -27,7 +27,8 @@ enum State : uint64_t {
     PREPROCESSOR_AFTER_INCLUDE = 0x1000000000000000,
     PREPROCESSOR_AFTER_DEFINE = 0x2000000000000000,
     PREPROCESSOR_AFTER_DEFINE_NAME = 0x3000000000000000,
-    PREPROCESSOR_GENERAL = 0x4000000000000000,
+    PREPROCESSOR_IN_DEFINE_PARAMETERS = 0x4000000000000000,
+    PREPROCESSOR_GENERAL = 0x5000000000000000,
 };
 
 static bool matches(const Contents* contents, uint64_t point, uint64_t end, cz::Str query) {
@@ -70,6 +71,9 @@ bool cpp_next_token(const Contents* contents,
             }
         }
         ++point;
+        if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
+            preprocessor_state = PREPROCESSOR_GENERAL;
+        }
     }
 
     if (point == contents->len()) {
@@ -131,6 +135,12 @@ bool cpp_next_token(const Contents* contents,
         goto done;
     }
 
+    if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME &&
+        first_char != '(') {
+        preprocessor_state = PREPROCESSOR_GENERAL;
+        normal_state = START_OF_STATEMENT;
+    }
+
     if (isalpha(first_char) || first_char == '_') {
         token->start = point;
         while (++point < contents->len() &&
@@ -139,15 +149,17 @@ bool cpp_next_token(const Contents* contents,
         token->end = point;
 
         if (in_preprocessor && preprocessor_state == PREPROCESSOR_START_STATEMENT) {
+            token->type = Token_Type::KEYWORD;
             if (matches(contents, token->start, token->end, "include")) {
                 preprocessor_state = PREPROCESSOR_AFTER_INCLUDE;
+                goto done_no_skip;
             } else if (matches(contents, token->start, token->end, "define")) {
                 preprocessor_state = PREPROCESSOR_AFTER_DEFINE;
+                goto done_no_skip;
             } else {
                 preprocessor_state = PREPROCESSOR_GENERAL;
+                goto done;
             }
-            token->type = Token_Type::KEYWORD;
-            goto done;
         }
 
         if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_DEFINE) {
@@ -392,6 +404,18 @@ bool cpp_next_token(const Contents* contents,
         } else if (normal_state == AFTER_PARAMETER_DECLARATION && first_char == ',') {
             normal_state = START_OF_PARAMETER;
         }
+
+        if (in_preprocessor) {
+            if (first_char == '(' && preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
+                preprocessor_state = PREPROCESSOR_IN_DEFINE_PARAMETERS;
+                normal_state = IN_EXPR;
+            } else if (first_char == ')' &&
+                       preprocessor_state == PREPROCESSOR_IN_DEFINE_PARAMETERS) {
+                preprocessor_state = PREPROCESSOR_GENERAL;
+                normal_state = START_OF_STATEMENT;
+            }
+        }
+
         goto done;
     }
 
@@ -401,6 +425,13 @@ bool cpp_next_token(const Contents* contents,
     goto done;
 
 done:
+    if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_INCLUDE &&
+        preprocessor_state == PREPROCESSOR_AFTER_DEFINE &&
+        preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
+        preprocessor_state = PREPROCESSOR_GENERAL;
+    }
+
+done_no_skip:
     MAKE_COMBINED_STATE(*state_combined);
     return true;
 }
