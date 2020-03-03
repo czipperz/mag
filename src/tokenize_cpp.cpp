@@ -237,10 +237,20 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
 
     if (first_char == '/' && point + 1 < contents->len() && (*contents)[point + 1] == '/') {
         token->start = point;
-        // TODO: Replace with end_of_line if we reform it to take Contents*
-        while (point < contents->len() && (*contents)[point] != '\n') {
-            ++point;
+
+        for (bool continue_into_next_line = false; point < contents->len(); ++point) {
+            if ((*contents)[point] == '\n') {
+                if (!continue_into_next_line) {
+                    break;
+                }
+                continue_into_next_line = false;
+            } else if ((*contents)[point] == '\\') {
+                continue_into_next_line = true;
+            } else if (!isblank((*contents)[point])) {
+                continue_into_next_line = false;
+            }
         }
+
         token->end = point;
         token->type = Token_Type::COMMENT;
         return true;
