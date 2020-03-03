@@ -19,6 +19,7 @@ enum State : uint64_t {
     AFTER_PARAMETER_DECLARATION = 0x0000000000000006,
 
     PREPROCESSOR_SAVED_STATE_MASK = 0x0000000000000038,
+    PREPROCESSOR_SAVE_SHIFT = 3,
 
     PREPROCESSOR_STATE_MASK = 0x6000000000000000,
     PREPROCESSOR_START_STATEMENT = 0x0000000000000000,
@@ -55,7 +56,7 @@ bool cpp_next_token(const Contents* contents,
         if ((*contents)[point] == '\n') {
             if (in_preprocessor) {
                 in_preprocessor = false;
-                normal_state = preprocessor_saved_state >> 3;
+                normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
             }
         }
         ++point;
@@ -70,7 +71,7 @@ bool cpp_next_token(const Contents* contents,
     if (first_char == '#') {
         in_preprocessor = true;
         preprocessor_state = PREPROCESSOR_START_STATEMENT;
-        preprocessor_saved_state = normal_state << 3;
+        preprocessor_saved_state = normal_state << PREPROCESSOR_SAVE_SHIFT;
         token->start = point;
         token->end = point + 1;
         token->type = Token_Type::PUNCTUATION;
