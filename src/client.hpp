@@ -43,7 +43,7 @@ struct Client {
         } else {
             Window* w = _selected_window;
             CZ_DEBUG_ASSERT(w->tag == Window::UNIFIED);
-            return w->v.unified_id;
+            return w->v.unified.id;
         }
     }
 

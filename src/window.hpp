@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+#include <stdint.h>
 #include "buffer_id.hpp"
 
 namespace mag {
@@ -7,13 +9,19 @@ namespace mag {
 struct Window {
     Window* parent;
 
+    size_t rows;
+    size_t cols;
+
     enum Tag {
         UNIFIED,
         VERTICAL_SPLIT,
         HORIZONTAL_SPLIT,
     } tag;
     union {
-        Buffer_Id unified_id;
+        struct {
+            Buffer_Id id;
+            uint64_t start_line;
+        } unified;
         struct {
             Window* left;
             Window* right;

@@ -12,7 +12,8 @@ Window* Window::create(Buffer_Id buffer_id) {
     Window* window = Window::alloc();
     window->parent = nullptr;
     window->tag = Window::UNIFIED;
-    window->v.unified_id = buffer_id;
+    window->v.unified.id = buffer_id;
+    window->v.unified.start_line = 0;
     return window;
 }
 

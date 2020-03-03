@@ -46,26 +46,54 @@ struct Cell {
         }                      \
     } while (0)
 
-static void draw_buffer_contents(Buffer* buffer,
-                                 Cell* cells,
+static void draw_buffer_contents(Cell* cells,
                                  int total_cols,
                                  Editor* editor,
+                                 Buffer* buffer,
+                                 uint64_t* start_line,
                                  bool show_cursors,
                                  int start_row,
                                  int start_col,
                                  int count_rows,
                                  int count_cols) {
+    uint64_t selected_cursor_position = buffer->cursors[0].point;
+    uint64_t selected_cursor_line = 0;
+    // Todo: Optimize this somehow; iterating the buffer each frame is not good.
+    for (uint64_t i = 0; i < selected_cursor_position; ++i) {
+        if (buffer->contents[i] == '\n') {
+            ++selected_cursor_line;
+        }
+    }
+
+    if (selected_cursor_line + 1 < *start_line) {
+        *start_line = selected_cursor_line;
+        if (*start_line > 0) {
+            --*start_line;
+        }
+    }
+    // Todo: handle lines that wrap
+    if (selected_cursor_line > *start_line + count_rows - 2) {
+        *start_line = selected_cursor_line - count_rows + 2;
+    }
+
     int y = 0;
     int x = 0;
 
-    Token token;
+    Token token = {};
     uint64_t state = 0;
-    bool has_token = buffer->mode.next_token(&buffer->contents, 0, &token, &state);
+    bool has_token = true;
 
     uint64_t contents_len = buffer->contents.len();
     int show_mark = 0;
-    for (size_t i = 0; i < contents_len; ++i) {
-        if (has_token && i == token.end) {
+    uint64_t i = 0;
+    for (uint64_t line_counter = 0; i < contents_len && line_counter < *start_line; ++i) {
+        if (buffer->contents[i] == '\n') {
+            ++line_counter;
+        }
+    }
+
+    for (; i < contents_len; ++i) {
+        while (has_token && i >= token.end) {
             has_token = buffer->mode.next_token(&buffer->contents, token.end, &token, &state);
         }
 
@@ -149,14 +177,15 @@ static void draw_buffer(Cell* cells,
                         int total_cols,
                         Editor* editor,
                         Buffer_Id buffer_id,
+                        uint64_t* start_line,
                         bool show_cursors,
                         int start_row,
                         int start_col,
                         int count_rows,
                         int count_cols) {
     WITH_BUFFER(buffer, buffer_id, {
-        draw_buffer_contents(buffer, cells, total_cols, editor, show_cursors, start_row, start_col,
-                             count_rows - 1, count_cols);
+        draw_buffer_contents(cells, total_cols, editor, buffer, start_line, show_cursors, start_row,
+                             start_col, count_rows - 1, count_cols);
 
         int y = count_rows - 1;
         int x = 0;
@@ -196,10 +225,13 @@ static void draw_window(Cell* cells,
                         int start_col,
                         int count_rows,
                         int count_cols) {
+    window->rows = count_rows;
+    window->cols = count_cols;
+
     switch (window->tag) {
     case Window::UNIFIED:
-        draw_buffer(cells, total_cols, editor, window->v.unified_id, window == selected_window,
-                    start_row, start_col, count_rows, count_cols);
+        draw_buffer(cells, total_cols, editor, window->v.unified.id, &window->v.unified.start_line,
+                    window == selected_window, start_row, start_col, count_rows, count_cols);
         break;
 
     case Window::VERTICAL_SPLIT: {
@@ -265,9 +297,10 @@ static void render_to_cells(Cell* cells,
         if (client->_message.tag > Message::SHOW) {
             start_col = x;
             WITH_BUFFER(buffer, client->mini_buffer_id(), {
-                draw_buffer_contents(buffer, cells, total_cols, editor, client->_select_mini_buffer,
-                                     start_row, start_col, total_rows - start_row,
-                                     total_cols - start_col);
+                uint64_t start_line = 0;
+                draw_buffer_contents(cells, total_cols, editor, buffer, &start_line,
+                                     client->_select_mini_buffer, start_row, start_col,
+                                     total_rows - start_row, total_cols - start_col);
             });
         } else {
             for (; x < total_cols; ++x) {
