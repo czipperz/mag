@@ -81,7 +81,8 @@ Theme create_theme() {
 
 Mode get_mode(cz::Str file_name) {
     Mode mode;
-    if (file_name.ends_with(".cpp")) {
+    if (file_name.ends_with(".c") || file_name.ends_with(".h") || file_name.ends_with(".cc") ||
+        file_name.ends_with(".hh") || file_name.ends_with(".cpp") || file_name.ends_with(".hpp")) {
         mode.next_token = cpp_next_token;
     } else {
         mode.next_token = default_next_token;
