@@ -18,6 +18,8 @@ enum State : uint64_t {
     IN_PARAMETER_TYPE = 0x0000000000000005,
     AFTER_PARAMETER_DECLARATION = 0x0000000000000006,
 
+    PREPROCESSOR_SAVED_STATE_MASK = 0x0000000000000038,
+
     PREPROCESSOR_STATE_MASK = 0x6000000000000000,
     PREPROCESSOR_START_STATEMENT = 0x0000000000000000,
     PREPROCESSOR_AFTER_INCLUDE = 0x2000000000000000,
@@ -44,9 +46,17 @@ bool cpp_next_token(const Contents* contents,
                     uint64_t point,
                     Token* token,
                     uint64_t* state_combined) {
+    bool in_preprocessor = *state_combined & IN_PREPROCESSOR_FLAG;
+    uint64_t normal_state = *state_combined & NORMAL_STATE_MASK;
+    uint64_t preprocessor_state = *state_combined & PREPROCESSOR_STATE_MASK;
+    uint64_t preprocessor_saved_state = *state_combined & PREPROCESSOR_SAVED_STATE_MASK;
+
     while (point < contents->len() && isspace((*contents)[point])) {
         if ((*contents)[point] == '\n') {
-            *state_combined &= ~IN_PREPROCESSOR_FLAG;
+            if (in_preprocessor) {
+                in_preprocessor = false;
+                normal_state = preprocessor_saved_state >> 3;
+            }
         }
         ++point;
     }
@@ -57,13 +67,10 @@ bool cpp_next_token(const Contents* contents,
 
     char first_char = (*contents)[point];
 
-    bool in_preprocessor = *state_combined & IN_PREPROCESSOR_FLAG;
-    uint64_t normal_state = *state_combined & NORMAL_STATE_MASK;
-    uint64_t preprocessor_state = *state_combined & PREPROCESSOR_STATE_MASK;
-
     if (first_char == '#') {
         in_preprocessor = true;
         preprocessor_state = PREPROCESSOR_START_STATEMENT;
+        preprocessor_saved_state = normal_state << 3;
         token->start = point;
         token->end = point + 1;
         token->type = Token_Type::PUNCTUATION;
@@ -346,7 +353,7 @@ bool cpp_next_token(const Contents* contents,
     goto done;
 
 done:
-    *state_combined = normal_state | preprocessor_state;
+    *state_combined = normal_state | preprocessor_state | preprocessor_saved_state;
     if (in_preprocessor) {
         *state_combined |= IN_PREPROCESSOR_FLAG;
     }
