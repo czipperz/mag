@@ -24,14 +24,4 @@ int main(int argc, char** argv) {
     }
 
     run_ncurses(&server, &client);
-
-    Editor* editor = &server.editor;
-    Command_Source source = {};
-    source.client = &client;
-    WITH_SELECTED_BUFFER({
-        cz::String contents = buffer->contents.stringify(cz::heap_allocator());
-        CZ_DEFER(contents.drop(cz::heap_allocator()));
-        fwrite(contents.buffer(), 1, contents.len(), stdout);
-        putchar('\n');
-    });
 }
