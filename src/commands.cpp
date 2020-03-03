@@ -869,7 +869,7 @@ void command_save_file(Editor* editor, Command_Source source) {
             return;
         }
 
-        buffer->saved_commit_index = {buffer->commit_index};
+        buffer->mark_saved();
     });
 }
 

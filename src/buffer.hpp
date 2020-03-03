@@ -18,9 +18,11 @@ struct Buffer {
     cz::Vector<Commit> commits;
     size_t commit_index;
 
-    /// The last saved commit.  If the commit that was saved was overriden (via
-    /// undo and then another change deleting it), this is none.
-    cz::Option<size_t> saved_commit_index;
+    uint64_t _commit_id_counter;
+
+    /// The last saved commit.  If no commits have been made (ie a file is
+    /// opened), this is none, showing that no changes have been made.
+    cz::Option<uint64_t> saved_commit_id;
 
     Contents contents;
 
@@ -39,6 +41,11 @@ struct Buffer {
 
     /// Add this commit and apply it
     void commit(Commit commit);
+
+    uint64_t generate_commit_id() { return _commit_id_counter++; }
+
+    bool is_unchanged() const;
+    void mark_saved();
 };
 
 }

@@ -111,15 +111,27 @@ void Buffer::commit(Commit commit) {
     }
     commits.set_len(commit_index);
 
-    if (saved_commit_index.is_present) {
-        if (saved_commit_index.value > commit_index) {
-            saved_commit_index.is_present = false;
-        }
-    }
-
+    commit.id = generate_commit_id();
     commits.reserve(cz::heap_allocator(), 1);
     commits.push(commit);
+
     redo();
+}
+
+bool Buffer::is_unchanged() const {
+    if (saved_commit_id.is_present) {
+        return commit_index > 0 && commits[commit_index - 1].id == saved_commit_id.value;
+    } else {
+        return commit_index == 0;
+    }
+}
+
+void Buffer::mark_saved() {
+    if (commit_index == 0) {
+        saved_commit_id = {};
+    } else {
+        saved_commit_id = {commits[commit_index - 1].id};
+    }
 }
 
 }

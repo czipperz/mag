@@ -193,8 +193,7 @@ static void draw_buffer(Cell* cells,
         int attrs = A_REVERSE;
         SET(attrs, '-');
         ++x;
-        if (buffer->saved_commit_index.is_present &&
-            buffer->saved_commit_index.value == buffer->commit_index) {
+        if (buffer->is_unchanged()) {
             SET(attrs, '-');
         } else {
             SET(attrs, '*');

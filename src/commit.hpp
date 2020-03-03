@@ -7,6 +7,7 @@ namespace mag {
 
 struct Commit {
     cz::Slice<Edit> edits;
+    uint64_t id;
 
     void drop();
 };
