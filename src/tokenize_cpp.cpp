@@ -6,11 +6,24 @@
 
 namespace mag {
 
-static void skip_whitespace(const Contents* contents, uint64_t* point) {
-    while (*point < contents->len() && isspace((*contents)[*point])) {
-        ++*point;
-    }
-}
+enum State : uint64_t {
+    IN_PREPROCESSOR_FLAG = 0x8000000000000000,
+
+    NORMAL_STATE_MASK = 0x0000000000000007,
+    START_OF_STATEMENT = 0x0000000000000000,
+    IN_EXPR = 0x0000000000000001,
+    IN_VARIABLE_TYPE = 0x0000000000000002,
+    AFTER_VARIABLE_DECLARATION = 0x0000000000000003,
+    START_OF_PARAMETER = 0x0000000000000004,
+    IN_PARAMETER_TYPE = 0x0000000000000005,
+    AFTER_PARAMETER_DECLARATION = 0x0000000000000006,
+
+    PREPROCESSOR_STATE_MASK = 0x6000000000000000,
+    PREPROCESSOR_START_STATEMENT = 0x0000000000000000,
+    PREPROCESSOR_AFTER_INCLUDE = 0x2000000000000000,
+    PREPROCESSOR_AFTER_DEFINE = 0x4000000000000000,
+    PREPROCESSOR_GENERAL = 0x6000000000000000,
+};
 
 static bool matches(const Contents* contents, uint64_t point, uint64_t end, cz::Str query) {
     if (end - point != query.len) {
@@ -27,29 +40,48 @@ static bool matches(const Contents* contents, uint64_t point, uint64_t end, cz::
     return true;
 }
 
-enum State : uint64_t {
-    START_OF_STATEMENT = 0,
-    IN_EXPR,
-    IN_VARIABLE_TYPE,
-    AFTER_VARIABLE_DECLARATION,
-    START_OF_PARAMETER,
-    IN_PARAMETER_TYPE,
-    AFTER_PARAMETER_DECLARATION,
-};
-
-bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint64_t* state) {
-    skip_whitespace(contents, &point);
+bool cpp_next_token(const Contents* contents,
+                    uint64_t point,
+                    Token* token,
+                    uint64_t* state_combined) {
+    while (point < contents->len() && isspace((*contents)[point])) {
+        if ((*contents)[point] == '\n') {
+            *state_combined &= ~IN_PREPROCESSOR_FLAG;
+        }
+        ++point;
+    }
 
     if (point == contents->len()) {
         return false;
     }
 
     char first_char = (*contents)[point];
-    if (first_char == '"') {
+
+    bool in_preprocessor = *state_combined & IN_PREPROCESSOR_FLAG;
+    uint64_t normal_state = *state_combined & NORMAL_STATE_MASK;
+    uint64_t preprocessor_state = *state_combined & PREPROCESSOR_STATE_MASK;
+
+    if (first_char == '#') {
+        in_preprocessor = true;
+        preprocessor_state = PREPROCESSOR_START_STATEMENT;
+        token->start = point;
+        token->end = point + 1;
+        token->type = Token_Type::PUNCTUATION;
+        goto done;
+    }
+
+    if (first_char == '"' || (first_char == '<' && in_preprocessor &&
+                              preprocessor_state == PREPROCESSOR_AFTER_INCLUDE)) {
         token->start = point;
         ++point;
         for (; point < contents->len(); ++point) {
             if ((*contents)[point] == '"') {
+                ++point;
+                break;
+            }
+            if ((*contents)[point] == '>' && in_preprocessor &&
+                preprocessor_state == PREPROCESSOR_AFTER_INCLUDE) {
+                preprocessor_state = PREPROCESSOR_GENERAL;
                 ++point;
                 break;
             }
@@ -62,8 +94,8 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
         }
         token->end = point;
         token->type = Token_Type::STRING;
-        *state = IN_EXPR;
-        return true;
+        normal_state = IN_EXPR;
+        goto done;
     }
 
     if (first_char == '\'') {
@@ -76,8 +108,8 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
             token->end = point + 3;
         }
         token->type = Token_Type::STRING;
-        *state = IN_EXPR;
-        return true;
+        normal_state = IN_EXPR;
+        goto done;
     }
 
     if (isalpha(first_char) || first_char == '_') {
@@ -86,6 +118,18 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
                (isalnum((*contents)[point]) || (*contents)[point] == '_')) {
         }
         token->end = point;
+
+        if (in_preprocessor && preprocessor_state == PREPROCESSOR_START_STATEMENT) {
+            if (matches(contents, token->start, token->end, "include")) {
+                preprocessor_state = PREPROCESSOR_AFTER_INCLUDE;
+            } else if (matches(contents, token->start, token->end, "define")) {
+                preprocessor_state = PREPROCESSOR_AFTER_DEFINE;
+            } else {
+                preprocessor_state = PREPROCESSOR_GENERAL;
+            }
+            token->type = Token_Type::IDENTIFIER;
+            goto done;
+        }
 
         cz::Str keywords[] = {
             "alignas",
@@ -174,7 +218,7 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
         for (size_t i = 0; i < sizeof(keywords) / sizeof(*keywords); ++i) {
             if (matches(contents, token->start, token->end, keywords[i])) {
                 token->type = Token_Type::KEYWORD;
-                return true;
+                goto done;
             }
         }
 
@@ -196,43 +240,44 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
         for (size_t i = 0; i < sizeof(type_keywords) / sizeof(*type_keywords); ++i) {
             if (matches(contents, token->start, token->end, type_keywords[i])) {
                 token->type = Token_Type::TYPE;
-                if (*state == START_OF_PARAMETER) {
-                    *state = IN_PARAMETER_TYPE;
+                if (normal_state == START_OF_PARAMETER) {
+                    normal_state = IN_PARAMETER_TYPE;
                 } else {
-                    *state = IN_VARIABLE_TYPE;
+                    normal_state = IN_VARIABLE_TYPE;
                 }
-                return true;
+                goto done;
             }
         }
 
         // generic identifier
         token->type = Token_Type::IDENTIFIER;
 
-        if (*state == START_OF_STATEMENT || *state == START_OF_PARAMETER) {
+        if (normal_state == START_OF_STATEMENT || normal_state == START_OF_PARAMETER) {
             uint64_t temp_state = 0;
             Token next_token;
             cpp_next_token(contents, token->end, &next_token, &temp_state);
             if (next_token.type == Token_Type::IDENTIFIER ||
                 (next_token.end == next_token.start + 1 &&
                  ((*contents)[next_token.start] == '*' || (*contents)[next_token.start] == '&'))) {
-                if (*state == START_OF_STATEMENT) {
-                    *state = IN_VARIABLE_TYPE;
+                if (normal_state == START_OF_STATEMENT) {
+                    normal_state = IN_VARIABLE_TYPE;
                 } else {
-                    *state = IN_PARAMETER_TYPE;
+                    normal_state = IN_PARAMETER_TYPE;
                 }
                 token->type = Token_Type::TYPE;
-            } else if (*state == START_OF_PARAMETER && next_token.end == next_token.start + 1 &&
+            } else if (normal_state == START_OF_PARAMETER &&
+                       next_token.end == next_token.start + 1 &&
                        (*contents)[next_token.start] == ',') {
-                *state = AFTER_PARAMETER_DECLARATION;
+                normal_state = AFTER_PARAMETER_DECLARATION;
                 token->type = Token_Type::TYPE;
             }
-        } else if (*state == IN_VARIABLE_TYPE) {
-            *state = AFTER_VARIABLE_DECLARATION;
-        } else if (*state == IN_PARAMETER_TYPE) {
-            *state = AFTER_PARAMETER_DECLARATION;
+        } else if (normal_state == IN_VARIABLE_TYPE) {
+            normal_state = AFTER_VARIABLE_DECLARATION;
+        } else if (normal_state == IN_PARAMETER_TYPE) {
+            normal_state = AFTER_PARAMETER_DECLARATION;
         }
 
-        return true;
+        goto done;
     }
 
     if (first_char == '/' && point + 1 < contents->len() && (*contents)[point + 1] == '/') {
@@ -253,7 +298,7 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
 
         token->end = point;
         token->type = Token_Type::COMMENT;
-        return true;
+        goto done;
     }
 
     if (first_char == '/' && point + 1 < contents->len() && (*contents)[point + 1] == '*') {
@@ -269,7 +314,7 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
         }
         token->end = point;
         token->type = Token_Type::COMMENT;
-        return true;
+        goto done;
     }
 
     if (ispunct(first_char)) {
@@ -284,20 +329,27 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint
         }
 
         if (first_char == ';' || first_char == '{' || first_char == '}') {
-            *state = START_OF_STATEMENT;
-        } else if (*state == START_OF_STATEMENT) {
-            *state = IN_EXPR;
-        } else if (*state == AFTER_VARIABLE_DECLARATION && first_char == '(') {
-            *state = START_OF_PARAMETER;
-        } else if (*state == AFTER_PARAMETER_DECLARATION && first_char == ',') {
-            *state = START_OF_PARAMETER;
+            normal_state = START_OF_STATEMENT;
+        } else if (normal_state == START_OF_STATEMENT) {
+            normal_state = IN_EXPR;
+        } else if (normal_state == AFTER_VARIABLE_DECLARATION && first_char == '(') {
+            normal_state = START_OF_PARAMETER;
+        } else if (normal_state == AFTER_PARAMETER_DECLARATION && first_char == ',') {
+            normal_state = START_OF_PARAMETER;
         }
-        return true;
+        goto done;
     }
 
     token->start = point;
     token->end = point + 1;
     token->type = Token_Type::DEFAULT;
+    goto done;
+
+done:
+    *state_combined = normal_state | preprocessor_state;
+    if (in_preprocessor) {
+        *state_combined |= IN_PREPROCESSOR_FLAG;
+    }
     return true;
 }
 
