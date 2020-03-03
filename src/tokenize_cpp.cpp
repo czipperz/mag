@@ -22,11 +22,12 @@ enum State : uint64_t {
     PREPROCESSOR_SAVED_STATE_MASK = 0x0000000000000038,
     PREPROCESSOR_SAVE_SHIFT = 3,
 
-    PREPROCESSOR_STATE_MASK = 0x6000000000000000,
+    PREPROCESSOR_STATE_MASK = 0x7000000000000000,
     PREPROCESSOR_START_STATEMENT = 0x0000000000000000,
-    PREPROCESSOR_AFTER_INCLUDE = 0x2000000000000000,
-    PREPROCESSOR_AFTER_DEFINE = 0x4000000000000000,
-    PREPROCESSOR_GENERAL = 0x6000000000000000,
+    PREPROCESSOR_AFTER_INCLUDE = 0x1000000000000000,
+    PREPROCESSOR_AFTER_DEFINE = 0x2000000000000000,
+    PREPROCESSOR_AFTER_DEFINE_NAME = 0x3000000000000000,
+    PREPROCESSOR_GENERAL = 0x4000000000000000,
 };
 
 static bool matches(const Contents* contents, uint64_t point, uint64_t end, cz::Str query) {
@@ -81,6 +82,7 @@ bool cpp_next_token(const Contents* contents,
         in_preprocessor = true;
         preprocessor_state = PREPROCESSOR_START_STATEMENT;
         preprocessor_saved_state = normal_state << PREPROCESSOR_SAVE_SHIFT;
+        normal_state = IN_EXPR;
         token->start = point;
         token->end = point + 1;
         token->type = Token_Type::PUNCTUATION;
@@ -144,6 +146,13 @@ bool cpp_next_token(const Contents* contents,
             } else {
                 preprocessor_state = PREPROCESSOR_GENERAL;
             }
+            token->type = Token_Type::KEYWORD;
+            goto done;
+        }
+
+        if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_DEFINE) {
+            preprocessor_state = PREPROCESSOR_AFTER_DEFINE_NAME;
+            normal_state = START_OF_STATEMENT;
             token->type = Token_Type::IDENTIFIER;
             goto done;
         }
