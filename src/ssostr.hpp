@@ -30,9 +30,7 @@ struct AllocatedStr {
         }
     }
 
-    void drop(cz::Allocator allocator) {
-        allocator.dealloc({(char*)_buffer, _len});
-    }
+    void drop(cz::Allocator allocator) { allocator.dealloc({(char*)_buffer, _len}); }
 
     const char* buffer() const { return _buffer; }
 
@@ -52,15 +50,17 @@ struct ShortStr {
 
     void init(cz::Str str) {
         memcpy(_buffer, str.buffer, str.len);
-        _buffer[MAX] = ((str.len << 1) | 1);
+        set_len(str.len);
     }
 
     const char* buffer() const { return _buffer; }
 
+    void set_len(size_t len) { _buffer[MAX] = ((len << 1) | 1); }
     size_t len() const { return _buffer[MAX] >> 1; }
 
     bool is_short() const { return _buffer[MAX] & 1; }
 };
+
 }
 
 struct SSOStr {
@@ -79,9 +79,7 @@ struct SSOStr {
         }
     }
 
-    void init_char(char c) {
-        short_.init({&c, 1});
-    }
+    void init_char(char c) { short_.init({&c, 1}); }
 
     void init_duplicate(cz::Allocator allocator, cz::Str str) {
         if (str.len <= impl::ShortStr::MAX) {
