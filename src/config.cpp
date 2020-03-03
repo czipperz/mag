@@ -48,7 +48,8 @@ Key_Map create_key_map() {
 
     key_map.bind("C-/", command_undo);
     key_map.bind("C-_", command_undo);
-    key_map.bind("C-?", command_redo);
+    key_map.bind("A-/", command_redo);
+    key_map.bind("A-_", command_redo);
 
     key_map.bind("C-g", command_stop_action);
 
