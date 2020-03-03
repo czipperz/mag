@@ -5,9 +5,16 @@
 
 namespace mag {
 
+struct Commit_Id {
+    uint64_t value;
+
+    bool operator==(const Commit_Id& other) const { return value == other.value; }
+    bool operator!=(const Commit_Id& other) const { return !(*this == other); }
+};
+
 struct Commit {
     cz::Slice<Edit> edits;
-    uint64_t id;
+    Commit_Id id;
 
     void drop();
 };
