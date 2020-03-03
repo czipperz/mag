@@ -38,8 +38,28 @@ static void send_message_result(Editor* editor, Client* client) {
     });
 }
 
-static void command_insert_char(Editor* editor, Buffer_Id buffer_id, char code) {
-    WITH_BUFFER(buffer, buffer_id, insert_char(buffer, code));
+static void command_insert_char(Editor* editor, Buffer_Id buffer_id, char code, bool merge) {
+    WITH_BUFFER(buffer, buffer_id, {
+        if (merge) {
+            CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
+            Commit commit = buffer->commits[buffer->commit_index - 1];
+            size_t len = commit.edits[0].value.len();
+            if (len < SSOStr::MAX_SHORT_LEN) {
+                buffer->undo();
+                for (size_t e = 0; e < commit.edits.len; ++e) {
+                    CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
+                    CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+                    commit.edits[e].value.short_._buffer[len] = code;
+                    commit.edits[e].value.short_.set_len(len + 1);
+                    commit.edits[e].position += e;
+                }
+                buffer->redo();
+                return;
+            }
+        }
+
+        insert_char(buffer, code);
+    });
 }
 
 void Server::receive(Client* client, Key key) {
@@ -60,7 +80,9 @@ top:
                 if (key.code == '\n' && client->selected_buffer_id() == client->mini_buffer_id()) {
                     send_message_result(&editor, client);
                 } else {
-                    command_insert_char(&editor, client->selected_buffer_id(), key.code);
+                    command_insert_char(&editor, client->selected_buffer_id(), key.code,
+                                        last_action_was_insert_char);
+                    last_action_was_insert_char = true;
                 }
             } else {
                 ++i;
@@ -69,6 +91,7 @@ top:
                 message.tag = Message::SHOW;
                 message.text = "Invalid key combo";
                 client->show_message(message);
+                last_action_was_insert_char = false;
             }
             goto top;
         }
@@ -79,6 +102,7 @@ top:
             ++i;
             source.keys = {client->key_chain.start() + start, i - start};
             bind->v.command(&editor, source);
+            last_action_was_insert_char = false;
             goto top;
         } else {
             map = bind->v.map;
