@@ -59,13 +59,14 @@ static void draw_buffer_contents(Buffer* buffer,
     int x = 0;
 
     Token token;
-    bool has_token = buffer->mode.next_token(&buffer->contents, 0, &token);
+    uint64_t state = 0;
+    bool has_token = buffer->mode.next_token(&buffer->contents, 0, &token, &state);
 
     uint64_t contents_len = buffer->contents.len();
     int show_mark = 0;
     for (size_t i = 0; i < contents_len; ++i) {
         if (has_token && i == token.end) {
-            has_token = buffer->mode.next_token(&buffer->contents, token.end, &token);
+            has_token = buffer->mode.next_token(&buffer->contents, token.end, &token, &state);
         }
 
         bool has_cursor = false;

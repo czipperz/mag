@@ -27,7 +27,7 @@ static bool matches(const Contents* contents, uint64_t point, uint64_t end, cz::
     return true;
 }
 
-bool cpp_next_token(const Contents* contents, uint64_t point, Token* token) {
+bool cpp_next_token(const Contents* contents, uint64_t point, Token* token, uint64_t* state) {
     skip_whitespace(contents, &point);
 
     if (point == contents->len()) {
@@ -238,4 +238,5 @@ bool cpp_next_token(const Contents* contents, uint64_t point, Token* token) {
     token->type = Token_Type::DEFAULT;
     return true;
 }
+
 }
