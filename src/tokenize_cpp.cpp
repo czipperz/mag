@@ -282,7 +282,17 @@ bool cpp_next_token(const Contents* contents,
 
         if (normal_state == START_OF_STATEMENT || normal_state == START_OF_PARAMETER) {
             uint64_t temp_state;
-            MAKE_COMBINED_STATE(temp_state);
+            {
+                uint64_t backup_normal_state = normal_state;
+                if (normal_state == START_OF_STATEMENT) {
+                    normal_state = IN_VARIABLE_TYPE;
+                } else {
+                    normal_state = IN_PARAMETER_TYPE;
+                }
+                MAKE_COMBINED_STATE(temp_state);
+                normal_state = backup_normal_state;
+            }
+
             Token next_token;
             if (!cpp_next_token(contents, token->end, &next_token, &temp_state)) {
                 // couldn't get next token
