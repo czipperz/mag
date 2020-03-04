@@ -118,12 +118,16 @@ void Buffer::commit(Commit commit) {
     redo();
 }
 
-bool Buffer::is_unchanged() const {
-    if (saved_commit_id.is_present) {
-        return commit_index > 0 && commits[commit_index - 1].id == saved_commit_id.value;
+cz::Option<Commit_Id> Buffer::current_commit_id() const {
+    if (commit_index > 0) {
+        return {commits[commit_index - 1].id};
     } else {
-        return commit_index == 0;
+        return {};
     }
+}
+
+bool Buffer::is_unchanged() const {
+    return current_commit_id() == saved_commit_id;
 }
 
 void Buffer::mark_saved() {

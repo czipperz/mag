@@ -20,7 +20,7 @@ struct Window {
     union {
         struct {
             Buffer_Id id;
-            uint64_t start_line;
+            uint64_t start_position;
         } unified;
         struct {
             Window* left;

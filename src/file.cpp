@@ -40,8 +40,9 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
         });
     }
 
+    CZ_DEBUG_ASSERT(client->_selected_window->tag == Window::UNIFIED);
     client->_selected_window->v.unified.id = buffer_id;
-    client->_selected_window->v.unified.start_line = 0;
+    client->_selected_window->v.unified.start_position = 0;
 }
 
 bool save_contents(const Contents* contents, const char* path) {

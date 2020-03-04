@@ -4,6 +4,7 @@
 #include <ncurses.h>
 #include "client.hpp"
 #include "command_macros.hpp"
+#include "movement.hpp"
 #include "server.hpp"
 #include "token.hpp"
 
@@ -46,34 +47,175 @@ struct Cell {
         }                      \
     } while (0)
 
+struct Tokenizer_Check_Point {
+    uint64_t position;
+    uint64_t state;
+};
+
+struct Window_Cache {
+    Window::Tag tag;
+    union {
+        struct {
+            Buffer_Id id;
+            cz::Option<Commit_Id> commit;
+            uint64_t visible_end;
+            cz::Vector<Tokenizer_Check_Point> tokenizer_check_points;
+        } unified;
+        struct {
+            Window_Cache* left;
+            Window_Cache* right;
+        } vertical_split;
+        struct {
+            Window_Cache* top;
+            Window_Cache* bottom;
+        } horizontal_split;
+    } v;
+};
+
+static void destroy_window_cache(Window_Cache* window_cache);
+static void destroy_window_cache_children(Window_Cache* window_cache) {
+    switch (window_cache->tag) {
+    case Window::UNIFIED:
+        window_cache->v.unified.tokenizer_check_points.drop(cz::heap_allocator());
+        break;
+    case Window::VERTICAL_SPLIT:
+        destroy_window_cache(window_cache->v.vertical_split.left);
+        destroy_window_cache(window_cache->v.vertical_split.right);
+        break;
+    case Window::HORIZONTAL_SPLIT:
+        destroy_window_cache(window_cache->v.horizontal_split.top);
+        destroy_window_cache(window_cache->v.horizontal_split.bottom);
+        break;
+    }
+}
+
+static void destroy_window_cache(Window_Cache* window_cache) {
+    if (!window_cache) {
+        return;
+    }
+
+    destroy_window_cache_children(window_cache);
+
+    free(window_cache);
+}
+
+static uint64_t compute_visible_end(Buffer* buffer,
+                                    uint64_t line_start_position,
+                                    int count_rows,
+                                    int count_cols) {
+    int rows;
+    for (rows = 0; rows < count_rows;) {
+        uint64_t next_line_start_position = forward_line(buffer, line_start_position);
+        if (next_line_start_position == line_start_position) {
+            break;
+        }
+
+        int line_rows =
+            (next_line_start_position - line_start_position + count_cols - 1) / count_cols;
+        line_start_position = next_line_start_position;
+
+        rows += line_rows;
+    }
+
+    if (rows < count_rows) {
+        ++line_start_position;
+    }
+
+    return line_start_position;
+}
+
+static uint64_t compute_visible_start(Buffer* buffer,
+                                      uint64_t line_start_position,
+                                      int count_rows,
+                                      int count_cols) {
+    for (int rows = 0; rows < count_rows;) {
+        uint64_t next_line_start_position = backward_line(buffer, line_start_position);
+        CZ_DEBUG_ASSERT(next_line_start_position < line_start_position);
+
+        int line_rows =
+            (line_start_position - next_line_start_position + count_cols - 1) / count_cols;
+        line_start_position = next_line_start_position;
+
+        rows += line_rows;
+    }
+    return line_start_position;
+}
+
+static void cache_window_unified_position(Window_Cache* window_cache,
+                                          uint64_t start_position,
+                                          int count_rows,
+                                          int count_cols,
+                                          Buffer* buffer) {
+    window_cache->v.unified.visible_end =
+        compute_visible_end(buffer, start_position, count_rows, count_cols);
+
+    uint64_t state = 0;
+    Token token = {};
+
+    // TODO: Check if this leaks memory and if so remove it / reconfigure it
+    window_cache->v.unified.tokenizer_check_points = {};
+
+    int counter = 0;
+    while (token.end <= start_position) {
+        if (++counter == 128) {
+            window_cache->v.unified.tokenizer_check_points.reserve(cz::heap_allocator(), 1);
+            Tokenizer_Check_Point check_point;
+            check_point.position = token.end;
+            check_point.state = state;
+            window_cache->v.unified.tokenizer_check_points.push(check_point);
+            counter = 0;
+        }
+        if (!buffer->mode.next_token(&buffer->contents, token.end, &token, &state)) {
+            break;
+        }
+    }
+}
+
+static void cache_window_unified(Window_Cache* window_cache,
+                                 Window* window,
+                                 Buffer* buffer,
+                                 cz::Option<Commit_Id> commit) {
+    window_cache->tag = Window::UNIFIED;
+    window_cache->v.unified.id = buffer->id;
+    window_cache->v.unified.commit = commit;
+    cache_window_unified_position(window_cache, window->v.unified.start_position, window->rows,
+                                  window->cols, buffer);
+}
+
+static void cache_window_unified(Editor* editor, Window_Cache* window_cache, Window* window) {
+    WITH_BUFFER(buffer, window->v.unified.id, {
+        cache_window_unified(window_cache, window, buffer, buffer->current_commit_id());
+    });
+}
+
 static void draw_buffer_contents(Cell* cells,
+                                 Window_Cache* window_cache,
                                  int total_cols,
                                  Editor* editor,
                                  Buffer* buffer,
-                                 uint64_t* start_line,
+                                 uint64_t* start_position,
                                  bool show_cursors,
                                  int start_row,
                                  int start_col,
                                  int count_rows,
                                  int count_cols) {
-    uint64_t selected_cursor_position = buffer->cursors[0].point;
-    uint64_t selected_cursor_line = 0;
-    // Todo: Optimize this somehow; iterating the buffer each frame is not good.
-    for (uint64_t i = 0; i < selected_cursor_position; ++i) {
-        if (buffer->contents[i] == '\n') {
-            ++selected_cursor_line;
+    *start_position = start_of_line(buffer, *start_position);
+    if (window_cache) {
+        uint64_t selected_cursor_position = buffer->cursors[0].point;
+        if (selected_cursor_position < *start_position) {
+            *start_position = backward_line(
+                buffer, backward_line(buffer, start_of_line(buffer, selected_cursor_position)));
+            cache_window_unified_position(window_cache, *start_position, count_rows, count_cols,
+                                          buffer);
+        } else if (selected_cursor_position >= window_cache->v.unified.visible_end) {
+            *start_position = forward_line(
+                buffer,
+                forward_line(buffer, compute_visible_start(
+                                         buffer, start_of_line(buffer, selected_cursor_position),
+                                         count_rows, count_cols)));
+            cache_window_unified_position(window_cache, *start_position, count_rows, count_cols,
+                                          buffer);
         }
-    }
-
-    if (selected_cursor_line + 1 < *start_line) {
-        *start_line = selected_cursor_line;
-        if (*start_line > 0) {
-            --*start_line;
-        }
-    }
-    // Todo: handle lines that wrap
-    if (selected_cursor_line > *start_line + count_rows - 2) {
-        *start_line = selected_cursor_line - count_rows + 2;
     }
 
     int y = 0;
@@ -82,17 +224,34 @@ static void draw_buffer_contents(Cell* cells,
     Token token = {};
     uint64_t state = 0;
     bool has_token = true;
-
-    uint64_t contents_len = buffer->contents.len();
-    int show_mark = 0;
-    uint64_t i = 0;
-    for (uint64_t line_counter = 0; i < contents_len && line_counter < *start_line; ++i) {
-        if (buffer->contents[i] == '\n') {
-            ++line_counter;
+    if (window_cache) {
+        cz::Slice<Tokenizer_Check_Point> check_points =
+            window_cache->v.unified.tokenizer_check_points;
+        size_t start = 0;
+        size_t end = check_points.len;
+        while (start < end) {
+            size_t mid = (start + end) / 2;
+            if (check_points[mid].position == *start_position) {
+                token.end = check_points[mid].position;
+                state = check_points[mid].state;
+                break;
+            } else if (check_points[mid].position < *start_position) {
+                token.end = check_points[mid].position;
+                state = check_points[mid].state;
+                start = mid + 1;
+            } else {
+                end = mid;
+            }
         }
     }
 
-    for (; i < contents_len; ++i) {
+    uint64_t contents_len = buffer->contents.len();
+    int show_mark = 0;
+    size_t bucket;
+    size_t bucket_index;
+    buffer->contents.get_bucket(*start_position, &bucket, &bucket_index);
+
+    for (uint64_t i = *start_position; i < contents_len; ++i) {
         while (has_token && i >= token.end) {
             has_token = buffer->mode.next_token(&buffer->contents, token.end, &token, &state);
         }
@@ -116,9 +275,9 @@ static void draw_buffer_contents(Cell* cells,
         }
 
 #if 0
-            if (buffer->contents.is_bucket_separator(i)) {
-                ADDCH(A_NORMAL, '\'');
-            }
+        if (buffer->contents.is_bucket_separator(i)) {
+            ADDCH(A_NORMAL, '\'');
+        }
 #endif
 
         int attrs = A_NORMAL;
@@ -146,12 +305,19 @@ static void draw_buffer_contents(Cell* cells,
             attrs |= A_UNDERLINE;
         }
 
-        char ch = buffer->contents[i];
+        char ch = buffer->contents.buckets[bucket][bucket_index];
         if (ch == '\n') {
             ADDCH(attrs, ' ');
             ADD_NEWLINE();
         } else {
             ADDCH(attrs, ch);
+        }
+
+        ++bucket_index;
+        while (bucket < buffer->contents.buckets.len() &&
+               bucket_index == buffer->contents.buckets[bucket].len) {
+            ++bucket;
+            bucket_index = 0;
         }
     }
 
@@ -174,18 +340,19 @@ static void draw_buffer_contents(Cell* cells,
 }
 
 static void draw_buffer(Cell* cells,
+                        Window_Cache* window_cache,
                         int total_cols,
                         Editor* editor,
                         Buffer_Id buffer_id,
-                        uint64_t* start_line,
+                        uint64_t* start_position,
                         bool show_cursors,
                         int start_row,
                         int start_col,
                         int count_rows,
                         int count_cols) {
     WITH_BUFFER(buffer, buffer_id, {
-        draw_buffer_contents(cells, total_cols, editor, buffer, start_line, show_cursors, start_row,
-                             start_col, count_rows - 1, count_cols);
+        draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, start_position,
+                             show_cursors, start_row, start_col, count_rows - 1, count_cols);
 
         int y = count_rows - 1;
         int x = 0;
@@ -216,6 +383,7 @@ static void draw_buffer(Cell* cells,
 }
 
 static void draw_window(Cell* cells,
+                        Window_Cache** window_cache,
                         int total_cols,
                         Editor* editor,
                         Window* window,
@@ -229,16 +397,44 @@ static void draw_window(Cell* cells,
 
     switch (window->tag) {
     case Window::UNIFIED:
-        draw_buffer(cells, total_cols, editor, window->v.unified.id, &window->v.unified.start_line,
-                    window == selected_window, start_row, start_col, count_rows, count_cols);
+        if (!*window_cache) {
+            *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
+            cache_window_unified(editor, *window_cache, window);
+        } else if ((*window_cache)->tag != window->tag) {
+            destroy_window_cache_children(*window_cache);
+            cache_window_unified(editor, *window_cache, window);
+        } else if ((*window_cache)->v.unified.id != window->v.unified.id) {
+            cache_window_unified(editor, *window_cache, window);
+        } else {
+            WITH_BUFFER(buffer, window->v.unified.id, {
+                auto commit = buffer->current_commit_id();
+                if ((*window_cache)->v.unified.commit != commit) {
+                    cache_window_unified(*window_cache, window, buffer, commit);
+                }
+            });
+        }
+
+        draw_buffer(cells, *window_cache, total_cols, editor, window->v.unified.id,
+                    &window->v.unified.start_position, window == selected_window, start_row,
+                    start_col, count_rows, count_cols);
         break;
 
     case Window::VERTICAL_SPLIT: {
+        if (!*window_cache) {
+            *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
+            (*window_cache)->tag = Window::VERTICAL_SPLIT;
+            (*window_cache)->v.vertical_split = {};
+        } else if ((*window_cache)->tag != window->tag) {
+            destroy_window_cache_children(*window_cache);
+            (*window_cache)->tag = Window::VERTICAL_SPLIT;
+            (*window_cache)->v.vertical_split = {};
+        }
+
         int left_cols = (count_cols - 1) / 2;
         int right_cols = count_cols - left_cols - 1;
 
-        draw_window(cells, total_cols, editor, window->v.vertical_split.left, selected_window,
-                    start_row, start_col, count_rows, left_cols);
+        draw_window(cells, window_cache, total_cols, editor, window->v.vertical_split.left,
+                    selected_window, start_row, start_col, count_rows, left_cols);
 
         {
             int x = left_cols;
@@ -247,17 +443,28 @@ static void draw_window(Cell* cells,
             }
         }
 
-        draw_window(cells, total_cols, editor, window->v.vertical_split.right, selected_window,
-                    start_row, start_col + count_cols - right_cols, count_rows, right_cols);
+        draw_window(cells, window_cache, total_cols, editor, window->v.vertical_split.right,
+                    selected_window, start_row, start_col + count_cols - right_cols, count_rows,
+                    right_cols);
         break;
     }
 
     case Window::HORIZONTAL_SPLIT: {
+        if (!*window_cache) {
+            *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
+            (*window_cache)->tag = Window::HORIZONTAL_SPLIT;
+            (*window_cache)->v.horizontal_split = {};
+        } else if ((*window_cache)->tag != window->tag) {
+            destroy_window_cache_children(*window_cache);
+            (*window_cache)->tag = Window::HORIZONTAL_SPLIT;
+            (*window_cache)->v.horizontal_split = {};
+        }
+
         int top_rows = (count_rows - 1) / 2;
         int bottom_rows = count_rows - top_rows - 1;
 
-        draw_window(cells, total_cols, editor, window->v.horizontal_split.top, selected_window,
-                    start_row, start_col, top_rows, count_cols);
+        draw_window(cells, window_cache, total_cols, editor, window->v.horizontal_split.top,
+                    selected_window, start_row, start_col, top_rows, count_cols);
 
         {
             int y = top_rows;
@@ -266,20 +473,22 @@ static void draw_window(Cell* cells,
             }
         }
 
-        draw_window(cells, total_cols, editor, window->v.horizontal_split.bottom, selected_window,
-                    start_row + count_rows - bottom_rows, start_col, bottom_rows, count_cols);
+        draw_window(cells, window_cache, total_cols, editor, window->v.horizontal_split.bottom,
+                    selected_window, start_row + count_rows - bottom_rows, start_col, bottom_rows,
+                    count_cols);
         break;
     }
     }
 }
 
 static void render_to_cells(Cell* cells,
+                            Window_Cache** window_cache,
                             int total_rows,
                             int total_cols,
                             Editor* editor,
                             Client* client) {
-    draw_window(cells, total_cols, editor, client->window, client->_selected_window, 0, 0,
-                total_rows - (client->_message.tag != Message::NONE), total_cols);
+    draw_window(cells, window_cache, total_cols, editor, client->window, client->_selected_window,
+                0, 0, total_rows - (client->_message.tag != Message::NONE), total_cols);
 
     if (client->_message.tag != Message::NONE) {
         int y = 0;
@@ -297,7 +506,7 @@ static void render_to_cells(Cell* cells,
             start_col = x;
             WITH_BUFFER(buffer, client->mini_buffer_id(), {
                 uint64_t start_line = 0;
-                draw_buffer_contents(cells, total_cols, editor, buffer, &start_line,
+                draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, &start_line,
                                      client->_select_mini_buffer, start_row, start_col,
                                      total_rows - start_row, total_cols - start_col);
             });
@@ -317,6 +526,7 @@ static void render_to_cells(Cell* cells,
 static void render(int* total_rows,
                    int* total_cols,
                    Cell** cellss,
+                   Window_Cache** window_cache,
                    Editor* editor,
                    Client* client) {
     int rows, cols;
@@ -324,6 +534,9 @@ static void render(int* total_rows,
 
     if (rows != *total_rows || cols != *total_cols) {
         clear();
+
+        destroy_window_cache(*window_cache);
+        *window_cache = nullptr;
 
         free(cellss[0]);
         free(cellss[1]);
@@ -343,7 +556,7 @@ static void render(int* total_rows,
         }
     }
 
-    render_to_cells(cellss[1], rows, cols, editor, client);
+    render_to_cells(cellss[1], window_cache, rows, cols, editor, client);
 
     int index = 0;
     for (int y = 0; y < rows; ++y) {
@@ -382,9 +595,12 @@ void run_ncurses(Server* server, Client* client) {
         free(cellss[1]);
     });
 
+    Window_Cache* window_cache = nullptr;
+    CZ_DEFER(destroy_window_cache(window_cache));
+
     int total_rows = 0;
     int total_cols = 0;
-    render(&total_rows, &total_cols, cellss, &server->editor, client);
+    render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client);
 
     FILE* file = fopen("tmp.txt", "w");
     CZ_DEFER(fclose(file));
@@ -392,7 +608,7 @@ void run_ncurses(Server* server, Client* client) {
     while (1) {
         int ch = getch();
         if (ch == ERR) {
-            render(&total_rows, &total_cols, cellss, &server->editor, client);
+            render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client);
             nodelay(stdscr, FALSE);
             continue;
         }

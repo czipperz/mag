@@ -13,7 +13,7 @@ Window* Window::create(Buffer_Id buffer_id) {
     window->parent = nullptr;
     window->tag = Window::UNIFIED;
     window->v.unified.id = buffer_id;
-    window->v.unified.start_line = 0;
+    window->v.unified.start_position = 0;
     return window;
 }
 

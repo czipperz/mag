@@ -8,10 +8,9 @@ namespace mag {
 
 struct SSOStr;
 
-class Contents {
+struct Contents {
     cz::Vector<cz::Slice<char>> buckets;
 
-public:
     void drop();
 
     void remove(uint64_t start, uint64_t len);
@@ -24,6 +23,8 @@ public:
     uint64_t len() const;
 
     bool is_bucket_separator(uint64_t pos) const;
+
+    void get_bucket(uint64_t position, size_t* bucket, size_t* index) const;
 };
 
 }

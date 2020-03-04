@@ -44,6 +44,8 @@ struct Buffer {
 
     Commit_Id generate_commit_id() { return {_commit_id_counter++}; }
 
+    cz::Option<Commit_Id> current_commit_id() const;
+
     bool is_unchanged() const;
     void mark_saved();
 };
