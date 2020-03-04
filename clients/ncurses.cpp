@@ -368,6 +368,7 @@ void run_ncurses(Server* server, Client* client) {
     noecho();
     keypad(stdscr, TRUE);
     curs_set(0);  // hide cursor
+    CZ_DEFER(endwin());
 
     start_color();
     for (size_t i = 0; i < server->editor.theme.faces.len(); ++i) {
@@ -386,6 +387,7 @@ void run_ncurses(Server* server, Client* client) {
     render(&total_rows, &total_cols, cellss, &server->editor, client);
 
     FILE* file = fopen("tmp.txt", "w");
+    CZ_DEFER(fclose(file));
 
     while (1) {
         int ch = getch();
@@ -443,10 +445,6 @@ void run_ncurses(Server* server, Client* client) {
             break;
         }
     }
-
-    fclose(file);
-
-    endwin();
 }
 
 }
