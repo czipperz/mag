@@ -27,45 +27,45 @@ void Buffer::drop() {
     cursors.drop(cz::heap_allocator());
 }
 
-static void insert(Buffer* buffer, uint64_t position, cz::Str str) {
-    CZ_ASSERT(position <= buffer->contents.len());
-    buffer->contents.insert(position, str);
+static void insert(Contents* contents, uint64_t position, cz::Str str) {
+    CZ_ASSERT(position <= contents->len());
+    contents->insert(position, str);
 }
 
-static void remove(Buffer* buffer, uint64_t position, uint64_t len) {
-    CZ_ASSERT(position + len <= buffer->contents.len());
-    buffer->contents.remove(position, len);
+static void remove(Contents* contents, uint64_t position, uint64_t len) {
+    CZ_ASSERT(position + len <= contents->len());
+    contents->remove(position, len);
 }
 
-static void apply_commit(Buffer* buffer, Commit* commit) {
-    for (size_t i = 0; i < commit->edits.len; ++i) {
-        Edit* edit = &commit->edits[i];
+static void apply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
+    for (size_t i = 0; i < edits.len; ++i) {
+        const Edit* edit = &edits[i];
         if (edit->is_insert) {
-            insert(buffer, edit->position, edit->value.as_str());
+            insert(&buffer->contents, edit->position, edit->value.as_str());
         } else {
-            remove(buffer, edit->position, edit->value.len());
+            remove(&buffer->contents, edit->position, edit->value.len());
         }
     }
 
-    for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-        position_after_edits(commit->edits, &buffer->cursors[i].point);
-        position_after_edits(commit->edits, &buffer->cursors[i].mark);
+    for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+        position_after_edits(edits, &buffer->cursors[c].point);
+        position_after_edits(edits, &buffer->cursors[c].mark);
     }
 }
 
-static void unapply_commit(Buffer* buffer, Commit* commit) {
-    for (size_t i = commit->edits.len; i-- > 0;) {
-        Edit* edit = &commit->edits[i];
+static void unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
+    for (size_t i = edits.len; i-- > 0;) {
+        const Edit* edit = &edits[i];
         if (edit->is_insert) {
-            remove(buffer, edit->position, edit->value.len());
+            remove(&buffer->contents, edit->position, edit->value.len());
         } else {
-            insert(buffer, edit->position, edit->value.as_str());
+            insert(&buffer->contents, edit->position, edit->value.as_str());
         }
     }
 
-    for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-        position_before_edits(commit->edits, &buffer->cursors[i].point);
-        position_before_edits(commit->edits, &buffer->cursors[i].mark);
+    for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+        position_before_edits(edits, &buffer->cursors[c].point);
+        position_before_edits(edits, &buffer->cursors[c].mark);
     }
 }
 
