@@ -13,7 +13,7 @@ struct Commit_Id {
 };
 
 struct Commit {
-    cz::Slice<Edit> edits;
+    cz::Slice<const Edit> edits;
     Commit_Id id;
 
     void drop();

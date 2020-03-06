@@ -5,7 +5,7 @@
 namespace mag {
 
 void Commit::drop() {
-    free(edits.elems);
+    free((void*)edits.elems);
 }
 
 }
