@@ -4,6 +4,7 @@
 #include <cz/option.hpp>
 #include <cz/vector.hpp>
 #include "buffer_id.hpp"
+#include "change.hpp"
 #include "commit.hpp"
 #include "contents.hpp"
 #include "cursor.hpp"
@@ -17,6 +18,8 @@ struct Buffer {
 
     cz::Vector<Commit> commits;
     size_t commit_index;
+
+    cz::Vector<Change> changes;
 
     uint64_t _commit_id_counter;
 

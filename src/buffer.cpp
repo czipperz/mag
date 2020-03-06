@@ -18,10 +18,13 @@ void Buffer::init(Buffer_Id id, cz::Str path) {
 
 void Buffer::drop() {
     path.drop(cz::heap_allocator());
-    for (size_t commit = 0; commit < commits.len(); ++commit) {
-        commits[commit].drop();
-    }
     commits.drop(cz::heap_allocator());
+
+    for (size_t i = 0; i < changes.len(); ++i) {
+        changes[i].commit.drop();
+    }
+    changes.drop(cz::heap_allocator());
+
     contents.drop();
     copy_buffer.drop();
     cursors.drop(cz::heap_allocator());
@@ -75,7 +78,15 @@ bool Buffer::undo() {
     }
 
     --commit_index;
-    unapply_commit(this, &commits[commit_index]);
+
+    Change change;
+    change.commit = commits[commit_index];
+    change.is_redo = false;
+    changes.reserve(cz::heap_allocator(), 1);
+    changes.push(change);
+
+    unapply_edits(this, change.commit.edits);
+
     return true;
 }
 
@@ -84,15 +95,20 @@ bool Buffer::redo() {
         return false;
     }
 
-    apply_commit(this, &commits[commit_index]);
+    Change change;
+    change.commit = commits[commit_index];
+    change.is_redo = true;
+    changes.reserve(cz::heap_allocator(), 1);
+    changes.push(change);
+
+    apply_edits(this, change.commit.edits);
+
     ++commit_index;
+
     return true;
 }
 
 void Buffer::commit(Commit commit) {
-    for (size_t i = commit_index; i < commits.len(); ++i) {
-        commits[i].drop();
-    }
     commits.set_len(commit_index);
 
     commit.id = generate_commit_id();
