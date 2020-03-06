@@ -148,6 +148,14 @@ static void cache_window_unified_position(Window_Cache* window_cache,
                                           Buffer* buffer) {
     window_cache->v.unified.visible_end =
         compute_visible_end(buffer, start_position, count_rows, count_cols);
+}
+
+static void cache_window_unified_update(Window_Cache* window_cache,
+                                        Window* window,
+                                        Buffer* buffer) {
+    window_cache->v.unified.change_index = buffer->changes.len();
+    cache_window_unified_position(window_cache, window->v.unified.start_position, window->rows,
+                                  window->cols, buffer);
 
     uint64_t state = 0;
     Token token = {};
@@ -156,7 +164,7 @@ static void cache_window_unified_position(Window_Cache* window_cache,
     window_cache->v.unified.tokenizer_check_points = {};
 
     int counter = 0;
-    while (token.end <= start_position) {
+    while (token.end <= window->v.unified.start_position) {
         if (++counter == 128) {
             window_cache->v.unified.tokenizer_check_points.reserve(cz::heap_allocator(), 1);
             Tokenizer_Check_Point check_point;
@@ -171,20 +179,15 @@ static void cache_window_unified_position(Window_Cache* window_cache,
     }
 }
 
-static void cache_window_unified(Window_Cache* window_cache,
-                                 Window* window,
-                                 Buffer* buffer) {
+static void cache_window_unified_create(Window_Cache* window_cache, Window* window, Buffer* buffer) {
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified.id = buffer->id;
-    window_cache->v.unified.change_index = buffer->changes.len();
-    cache_window_unified_position(window_cache, window->v.unified.start_position, window->rows,
-                                  window->cols, buffer);
+    cache_window_unified_update(window_cache, window, buffer);
 }
 
-static void cache_window_unified(Editor* editor, Window_Cache* window_cache, Window* window) {
-    WITH_BUFFER(buffer, window->v.unified.id, {
-        cache_window_unified(window_cache, window, buffer);
-    });
+static void cache_window_unified_create(Editor* editor, Window_Cache* window_cache, Window* window) {
+    WITH_BUFFER(buffer, window->v.unified.id,
+                { cache_window_unified_create(window_cache, window, buffer); });
 }
 
 static void draw_buffer_contents(Cell* cells,
@@ -398,16 +401,16 @@ static void draw_window(Cell* cells,
     case Window::UNIFIED:
         if (!*window_cache) {
             *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
-            cache_window_unified(editor, *window_cache, window);
+            cache_window_unified_create(editor, *window_cache, window);
         } else if ((*window_cache)->tag != window->tag) {
             destroy_window_cache_children(*window_cache);
-            cache_window_unified(editor, *window_cache, window);
+            cache_window_unified_create(editor, *window_cache, window);
         } else if ((*window_cache)->v.unified.id != window->v.unified.id) {
-            cache_window_unified(editor, *window_cache, window);
+            cache_window_unified_create(editor, *window_cache, window);
         } else {
             WITH_BUFFER(buffer, window->v.unified.id, {
                 if ((*window_cache)->v.unified.change_index != buffer->changes.len()) {
-                    cache_window_unified(*window_cache, window, buffer);
+                    cache_window_unified_update(*window_cache, window, buffer);
                 }
             });
         }
