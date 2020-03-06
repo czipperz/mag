@@ -27,40 +27,14 @@ void Buffer::drop() {
     cursors.drop(cz::heap_allocator());
 }
 
-static void fix_point_insert(uint64_t position, uint64_t len, uint64_t* point) {
-    if (*point >= position) {
-        *point += len;
-    }
-}
-
 static void insert(Buffer* buffer, uint64_t position, cz::Str str) {
     CZ_ASSERT(position <= buffer->contents.len());
     buffer->contents.insert(position, str);
-
-    for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-        fix_point_insert(position, str.len, &buffer->cursors[i].point);
-        fix_point_insert(position, str.len, &buffer->cursors[i].mark);
-    }
-}
-
-static void fix_point_remove(uint64_t position, uint64_t len, uint64_t* point) {
-    if (*point >= position) {
-        if (*point >= position + len) {
-            *point -= len;
-        } else {
-            *point = position;
-        }
-    }
 }
 
 static void remove(Buffer* buffer, uint64_t position, uint64_t len) {
     CZ_ASSERT(position + len <= buffer->contents.len());
     buffer->contents.remove(position, len);
-
-    for (size_t i = 0; i < buffer->cursors.len(); ++i) {
-        fix_point_remove(position, len, &buffer->cursors[i].point);
-        fix_point_remove(position, len, &buffer->cursors[i].mark);
-    }
 }
 
 static void apply_commit(Buffer* buffer, Commit* commit) {
@@ -72,6 +46,11 @@ static void apply_commit(Buffer* buffer, Commit* commit) {
             remove(buffer, edit->position, edit->value.len());
         }
     }
+
+    for (size_t i = 0; i < buffer->cursors.len(); ++i) {
+        position_after_edits(commit->edits, &buffer->cursors[i].point);
+        position_after_edits(commit->edits, &buffer->cursors[i].mark);
+    }
 }
 
 static void unapply_commit(Buffer* buffer, Commit* commit) {
@@ -82,6 +61,11 @@ static void unapply_commit(Buffer* buffer, Commit* commit) {
         } else {
             insert(buffer, edit->position, edit->value.as_str());
         }
+    }
+
+    for (size_t i = 0; i < buffer->cursors.len(); ++i) {
+        position_before_edits(commit->edits, &buffer->cursors[i].point);
+        position_before_edits(commit->edits, &buffer->cursors[i].mark);
     }
 }
 
