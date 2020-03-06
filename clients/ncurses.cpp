@@ -57,7 +57,7 @@ struct Window_Cache {
     union {
         struct {
             Buffer_Id id;
-            cz::Option<Commit_Id> commit;
+            size_t change_index;
             uint64_t visible_end;
             cz::Vector<Tokenizer_Check_Point> tokenizer_check_points;
         } unified;
@@ -173,18 +173,17 @@ static void cache_window_unified_position(Window_Cache* window_cache,
 
 static void cache_window_unified(Window_Cache* window_cache,
                                  Window* window,
-                                 Buffer* buffer,
-                                 cz::Option<Commit_Id> commit) {
+                                 Buffer* buffer) {
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified.id = buffer->id;
-    window_cache->v.unified.commit = commit;
+    window_cache->v.unified.change_index = buffer->changes.len();
     cache_window_unified_position(window_cache, window->v.unified.start_position, window->rows,
                                   window->cols, buffer);
 }
 
 static void cache_window_unified(Editor* editor, Window_Cache* window_cache, Window* window) {
     WITH_BUFFER(buffer, window->v.unified.id, {
-        cache_window_unified(window_cache, window, buffer, buffer->current_commit_id());
+        cache_window_unified(window_cache, window, buffer);
     });
 }
 
@@ -407,9 +406,8 @@ static void draw_window(Cell* cells,
             cache_window_unified(editor, *window_cache, window);
         } else {
             WITH_BUFFER(buffer, window->v.unified.id, {
-                auto commit = buffer->current_commit_id();
-                if ((*window_cache)->v.unified.commit != commit) {
-                    cache_window_unified(*window_cache, window, buffer, commit);
+                if ((*window_cache)->v.unified.change_index != buffer->changes.len()) {
+                    cache_window_unified(*window_cache, window, buffer);
                 }
             });
         }
