@@ -31,17 +31,18 @@ enum State : uint64_t {
     PREPROCESSOR_GENERAL = 0x5000000000000000,
 };
 
-static bool matches(const Contents* contents, uint64_t point, uint64_t end, cz::Str query) {
-    if (end - point != query.len) {
+static bool matches(const Contents* contents, Contents_Iterator it, uint64_t end, cz::Str query) {
+    if (end - it.position != query.len) {
         return false;
     }
-    if (point + query.len > contents->len) {
+    if (it.position + query.len > contents->len) {
         return false;
     }
     for (size_t i = 0; i < query.len; ++i) {
-        if (contents->get_once(point + i) != query[i]) {
+        if (it.get() != query[i]) {
             return false;
         }
+        it.advance();
     }
     return true;
 }

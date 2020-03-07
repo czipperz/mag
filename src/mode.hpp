@@ -5,14 +5,18 @@
 namespace mag {
 
 struct Contents;
+struct Contents_Iterator;
 struct Token;
 
 struct Mode {
-    bool (*next_token)(const Contents* contents, uint64_t start, Token* token, uint64_t* state);
+    bool (*next_token)(const Contents* contents /* in */,
+                       Contents_Iterator* iterator /* in/out */,
+                       Token* token /* out */,
+                       uint64_t* state /* in/out */);
 };
 
 inline bool default_next_token(const Contents* contents,
-                               uint64_t start,
+                               Contents_Iterator* iterator,
                                Token* token,
                                uint64_t* state) {
     return false;
