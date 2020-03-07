@@ -47,6 +47,10 @@ static bool matches(const Contents* contents, Contents_Iterator it, uint64_t end
     return true;
 }
 
+static bool is_identifier_continuation(char ch) {
+    return isalnum(ch) || ch == '_';
+}
+
 #define MAKE_COMBINED_STATE(SC)                                              \
     do {                                                                     \
         (SC) = normal_state | preprocessor_state | preprocessor_saved_state; \
@@ -56,7 +60,7 @@ static bool matches(const Contents* contents, Contents_Iterator it, uint64_t end
     } while (0)
 
 bool cpp_next_token(const Contents* contents,
-                    uint64_t point,
+                    Contents_Iterator* iterator,
                     Token* token,
                     uint64_t* state_combined) {
     bool in_preprocessor = *state_combined & IN_PREPROCESSOR_FLAG;
@@ -64,73 +68,88 @@ bool cpp_next_token(const Contents* contents,
     uint64_t preprocessor_state = *state_combined & PREPROCESSOR_STATE_MASK;
     uint64_t preprocessor_saved_state = *state_combined & PREPROCESSOR_SAVED_STATE_MASK;
 
-    while (point < contents->len && isspace(contents->get_once(point))) {
-        if (contents->get_once(point) == '\n') {
+    char first_char;
+    for (;; iterator->advance()) {
+        if (iterator->at_eob()) {
+            return false;
+        }
+
+        first_char = iterator->get();
+        if (!isspace(first_char)) {
+            break;
+        }
+
+        if (first_char == '\n') {
             if (in_preprocessor) {
                 in_preprocessor = false;
                 normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
             }
         }
-        ++point;
+
         if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
             preprocessor_state = PREPROCESSOR_GENERAL;
         }
     }
-
-    if (point == contents->len) {
-        return false;
-    }
-
-    char first_char = contents->get_once(point);
 
     if (first_char == '#') {
         in_preprocessor = true;
         preprocessor_state = PREPROCESSOR_START_STATEMENT;
         preprocessor_saved_state = normal_state << PREPROCESSOR_SAVE_SHIFT;
         normal_state = IN_EXPR;
-        token->start = point;
-        token->end = point + 1;
+
+        token->start = iterator->position;
+        iterator->advance();
+        token->end = iterator->position;
         token->type = Token_Type::PUNCTUATION;
         goto done;
     }
 
     if (first_char == '"' || (first_char == '<' && in_preprocessor &&
                               preprocessor_state == PREPROCESSOR_AFTER_INCLUDE)) {
-        token->start = point;
-        ++point;
-        for (; point < contents->len; ++point) {
-            if (contents->get_once(point) == '"') {
-                ++point;
+        token->start = iterator->position;
+        for (iterator->advance(); !iterator->at_eob(); iterator->advance()) {
+            char ch = iterator->get();
+            if (ch == '"') {
+                iterator->advance();
                 break;
             }
-            if (contents->get_once(point) == '>' && in_preprocessor &&
-                preprocessor_state == PREPROCESSOR_AFTER_INCLUDE) {
+            if (ch == '>' && in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_INCLUDE) {
                 preprocessor_state = PREPROCESSOR_GENERAL;
-                ++point;
+                iterator->advance();
                 break;
             }
-            if (contents->get_once(point) == '\\') {
-                if (point + 1 < contents->len) {
+            if (ch == '\\') {
+                if (iterator->position + 1 < contents->len) {
                     // only skip over next character if we don't go out of bounds
-                    ++point;
+                    iterator->advance();
                 }
             }
         }
-        token->end = point;
+        token->end = iterator->position;
         token->type = Token_Type::STRING;
         normal_state = IN_EXPR;
         goto done;
     }
 
     if (first_char == '\'') {
-        token->start = point;
-        if (point + 3 >= contents->len) {
-            token->end = contents->len;
-        } else if (contents->get_once(point + 1) == '\\') {
-            token->end = point + 4;
+        token->start = iterator->position;
+        if (iterator->position + 3 >= contents->len) {
+            while (iterator->position < contents->len) {
+                iterator->advance();
+            }
         } else {
-            token->end = point + 3;
+            iterator->advance();
+            if (iterator->get() == '\\') {
+                for (int i = 0; i < 3; ++i) {
+                    iterator->advance();
+                }
+            } else {
+                for (int i = 0; i < 2; ++i) {
+                    iterator->advance();
+                }
+            }
         }
+        token->end = iterator->position;
         token->type = Token_Type::STRING;
         normal_state = IN_EXPR;
         goto done;
@@ -143,18 +162,20 @@ bool cpp_next_token(const Contents* contents,
     }
 
     if (isalpha(first_char) || first_char == '_') {
-        token->start = point;
-        while (++point < contents->len &&
-               (isalnum(contents->get_once(point)) || contents->get_once(point) == '_')) {
+        Contents_Iterator start_iterator = *iterator;
+        token->start = iterator->position;
+        for (iterator->advance();
+             !iterator->at_eob() && is_identifier_continuation(iterator->get());
+             iterator->advance()) {
         }
-        token->end = point;
+        token->end = iterator->position;
 
         if (in_preprocessor && preprocessor_state == PREPROCESSOR_START_STATEMENT) {
             token->type = Token_Type::KEYWORD;
-            if (matches(contents, token->start, token->end, "include")) {
+            if (matches(contents, start_iterator, token->end, "include")) {
                 preprocessor_state = PREPROCESSOR_AFTER_INCLUDE;
                 goto done_no_skip;
-            } else if (matches(contents, token->start, token->end, "define")) {
+            } else if (matches(contents, start_iterator, token->end, "define")) {
                 preprocessor_state = PREPROCESSOR_AFTER_DEFINE;
                 goto done_no_skip;
             } else {
@@ -178,7 +199,7 @@ bool cpp_next_token(const Contents* contents,
         };
         for (size_t i = 0; i < sizeof(type_definition_keywords) / sizeof(*type_definition_keywords);
              ++i) {
-            if (matches(contents, token->start, token->end, type_definition_keywords[i])) {
+            if (matches(contents, start_iterator, token->end, type_definition_keywords[i])) {
                 token->type = Token_Type::KEYWORD;
                 normal_state = IN_TYPE_DEFINITION;
                 goto done;
@@ -266,7 +287,7 @@ bool cpp_next_token(const Contents* contents,
             "xor_eq",
         };
         for (size_t i = 0; i < sizeof(keywords) / sizeof(*keywords); ++i) {
-            if (matches(contents, token->start, token->end, keywords[i])) {
+            if (matches(contents, start_iterator, token->end, keywords[i])) {
                 token->type = Token_Type::KEYWORD;
                 goto done;
             }
@@ -288,7 +309,7 @@ bool cpp_next_token(const Contents* contents,
                                    "uint_least8_t",  "uintmax_t",      "uintptr_t",
                                    "unsigned",       "void",           "wchar_t"};
         for (size_t i = 0; i < sizeof(type_keywords) / sizeof(*type_keywords); ++i) {
-            if (matches(contents, token->start, token->end, type_keywords[i])) {
+            if (matches(contents, start_iterator, token->end, type_keywords[i])) {
                 token->type = Token_Type::TYPE;
                 if (normal_state == START_OF_PARAMETER) {
                     normal_state = IN_PARAMETER_TYPE;
@@ -316,25 +337,28 @@ bool cpp_next_token(const Contents* contents,
             }
 
             Token next_token;
-            if (!cpp_next_token(contents, token->end, &next_token, &temp_state)) {
+            Contents_Iterator next_token_iterator = *iterator;
+            if (!cpp_next_token(contents, &next_token_iterator, &next_token, &temp_state)) {
                 // couldn't get next token
             } else if (in_preprocessor && !(temp_state & IN_PREPROCESSOR_FLAG)) {
                 // next token is outside preprocessor invocation we are in
-            } else if (next_token.type == Token_Type::IDENTIFIER ||
-                       (next_token.end == next_token.start + 1 &&
-                        (contents->get_once(next_token.start) == '*' ||
-                         contents->get_once(next_token.start) == '&'))) {
-                if (normal_state == START_OF_STATEMENT) {
-                    normal_state = IN_VARIABLE_TYPE;
-                } else {
-                    normal_state = IN_PARAMETER_TYPE;
+            } else {
+                // TODO: optimize this to use *iterator
+                char start_ch = contents->get_once(next_token.start);
+                if (next_token.type == Token_Type::IDENTIFIER ||
+                    (next_token.end == next_token.start + 1 &&
+                     (start_ch == '*' || start_ch == '&'))) {
+                    if (normal_state == START_OF_STATEMENT) {
+                        normal_state = IN_VARIABLE_TYPE;
+                    } else {
+                        normal_state = IN_PARAMETER_TYPE;
+                    }
+                    token->type = Token_Type::TYPE;
+                } else if (normal_state == START_OF_PARAMETER &&
+                           next_token.end == next_token.start + 1 && start_ch == ',') {
+                    normal_state = AFTER_PARAMETER_DECLARATION;
+                    token->type = Token_Type::TYPE;
                 }
-                token->type = Token_Type::TYPE;
-            } else if (normal_state == START_OF_PARAMETER &&
-                       next_token.end == next_token.start + 1 &&
-                       contents->get_once(next_token.start) == ',') {
-                normal_state = AFTER_PARAMETER_DECLARATION;
-                token->type = Token_Type::TYPE;
             }
         } else if (normal_state == IN_TYPE_DEFINITION) {
             normal_state = IN_EXPR;
@@ -348,46 +372,59 @@ bool cpp_next_token(const Contents* contents,
         goto done;
     }
 
-    if (first_char == '/' && point + 1 < contents->len && contents->get_once(point + 1) == '/') {
-        token->start = point;
-
-        for (bool continue_into_next_line = false; point < contents->len; ++point) {
-            if (contents->get_once(point) == '\n') {
-                if (!continue_into_next_line) {
-                    break;
+    if (first_char == '/') {
+        Contents_Iterator next_iterator = *iterator;
+        next_iterator.advance();
+        if (!next_iterator.at_eob() && next_iterator.get() == '/') {
+            token->start = iterator->position;
+            next_iterator.advance();
+            *iterator = next_iterator;
+            for (bool continue_into_next_line = false; !iterator->at_eob(); iterator->advance()) {
+                char ch = iterator->get();
+                if (ch == '\n') {
+                    if (!continue_into_next_line) {
+                        break;
+                    }
+                    continue_into_next_line = false;
+                } else if (ch == '\\') {
+                    continue_into_next_line = true;
+                } else if (!isblank(ch)) {
+                    continue_into_next_line = false;
                 }
-                continue_into_next_line = false;
-            } else if (contents->get_once(point) == '\\') {
-                continue_into_next_line = true;
-            } else if (!isblank(contents->get_once(point))) {
-                continue_into_next_line = false;
             }
+
+            token->end = iterator->position;
+            token->type = Token_Type::COMMENT;
+            goto done;
         }
 
-        token->end = point;
-        token->type = Token_Type::COMMENT;
-        goto done;
-    }
-
-    if (first_char == '/' && point + 1 < contents->len && contents->get_once(point + 1) == '*') {
-        token->start = point;
-        point += 2;
-        while (point < contents->len) {
-            if (point + 1 < contents->len && contents->get_once(point) == '*' &&
-                contents->get_once(point + 1) == '/') {
-                point += 2;
-                break;
+        if (!next_iterator.at_eob() && next_iterator.get() == '*') {
+            token->start = iterator->position;
+            next_iterator.advance();
+            *iterator = next_iterator;
+            if (!iterator->at_eob()) {
+                iterator->advance();
+                char previous = 0;
+                for (; !iterator->at_eob(); iterator->advance()) {
+                    char ch = iterator->get();
+                    if (previous == '*' && ch == '/') {
+                        iterator->advance();
+                        break;
+                    }
+                    previous = ch;
+                }
             }
-            ++point;
+            token->end = iterator->position;
+            token->type = Token_Type::COMMENT;
+            goto done;
         }
-        token->end = point;
-        token->type = Token_Type::COMMENT;
-        goto done;
     }
 
     if (ispunct(first_char)) {
-        token->start = point;
-        token->end = point + 1;
+        token->start = iterator->position;
+        iterator->advance();
+        token->end = iterator->position;
+
         if (first_char == '(' || first_char == '{' || first_char == '[') {
             token->type = Token_Type::OPEN_PAIR;
         } else if (first_char == ')' || first_char == '}' || first_char == ']') {
@@ -420,8 +457,9 @@ bool cpp_next_token(const Contents* contents,
         goto done;
     }
 
-    token->start = point;
-    token->end = point + 1;
+    token->start = iterator->position;
+    iterator->advance();
+    token->end = iterator->position;
     token->type = Token_Type::DEFAULT;
     goto done;
 

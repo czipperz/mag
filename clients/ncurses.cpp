@@ -144,9 +144,11 @@ static uint64_t compute_visible_start(Buffer* buffer,
 
 static bool add_window_cache_check_point(Window_Cache* window_cache,
                                          Buffer* buffer,
+                                         // TODO: Convert this to Contents_Iterator*
                                          uint64_t position,
                                          uint64_t state,
                                          Tokenizer_Check_Point* check_point) {
+    Contents_Iterator iterator = buffer->contents.iterator_at(position);
     Token token;
     token.end = position;
     uint64_t contents_len = buffer->contents.len;
@@ -157,7 +159,7 @@ static bool add_window_cache_check_point(Window_Cache* window_cache,
             return true;
         }
 
-        if (!buffer->mode.next_token(&buffer->contents, token.end, &token, &state)) {
+        if (!buffer->mode.next_token(&buffer->contents, &iterator, &token, &state)) {
             break;
         }
     }
@@ -282,9 +284,10 @@ static void cache_window_unified_update(Window_Cache* window_cache,
     for (size_t i = 0; i < check_points.len; ++i) {
         uint64_t end_position = check_points[i].position;
         if (cz::bit_array::get(changed_check_points, i)) {
+            Contents_Iterator iterator = buffer->contents.iterator_at(token.end);
             while (i < check_points.len) {
                 while (token.end < end_position) {
-                    if (!buffer->mode.next_token(&buffer->contents, token.end, &token, &state)) {
+                    if (!buffer->mode.next_token(&buffer->contents, &iterator, &token, &state)) {
                         break;
                     }
                 }
@@ -384,10 +387,11 @@ static void draw_buffer_contents(Cell* cells,
 
     int show_mark = 0;
 
-    for (Contents_Iterator iterator = buffer->contents.iterator_at(*start_position);
+    for (Contents_Iterator iterator = buffer->contents.iterator_at(*start_position),
+                           token_iterator = buffer->contents.iterator_at(token.end);
          !iterator.at_eob(); iterator.advance()) {
         while (has_token && iterator.position >= token.end) {
-            has_token = buffer->mode.next_token(&buffer->contents, token.end, &token, &state);
+            has_token = buffer->mode.next_token(&buffer->contents, &token_iterator, &token, &state);
         }
 
         bool has_cursor = false;
