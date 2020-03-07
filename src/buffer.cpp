@@ -1,5 +1,6 @@
 #include "buffer.hpp"
 
+#include <cz/bit_array.hpp>
 #include <cz/heap.hpp>
 #include "config.hpp"
 
@@ -20,9 +21,15 @@ void Buffer::drop() {
     path.drop(cz::heap_allocator());
     commits.drop(cz::heap_allocator());
 
+    unsigned char* dropped =
+        (unsigned char*)calloc(1, cz::bit_array::alloc_size(_commit_id_counter));
     for (size_t i = 0; i < changes.len(); ++i) {
-        changes[i].commit.drop();
+        if (!cz::bit_array::get(dropped, changes[i].commit.id.value)) {
+            changes[i].commit.drop();
+            cz::bit_array::set(dropped, changes[i].commit.id.value);
+        }
     }
+    free(dropped);
     changes.drop(cz::heap_allocator());
 
     contents.drop();
