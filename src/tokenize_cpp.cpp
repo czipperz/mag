@@ -39,7 +39,7 @@ static bool matches(const Contents* contents, uint64_t point, uint64_t end, cz::
         return false;
     }
     for (size_t i = 0; i < query.len; ++i) {
-        if ((*contents)[point + i] != query[i]) {
+        if (contents->get_once(point + i) != query[i]) {
             return false;
         }
     }
@@ -63,8 +63,8 @@ bool cpp_next_token(const Contents* contents,
     uint64_t preprocessor_state = *state_combined & PREPROCESSOR_STATE_MASK;
     uint64_t preprocessor_saved_state = *state_combined & PREPROCESSOR_SAVED_STATE_MASK;
 
-    while (point < contents->len && isspace((*contents)[point])) {
-        if ((*contents)[point] == '\n') {
+    while (point < contents->len && isspace(contents->get_once(point))) {
+        if (contents->get_once(point) == '\n') {
             if (in_preprocessor) {
                 in_preprocessor = false;
                 normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
@@ -80,7 +80,7 @@ bool cpp_next_token(const Contents* contents,
         return false;
     }
 
-    char first_char = (*contents)[point];
+    char first_char = contents->get_once(point);
 
     if (first_char == '#') {
         in_preprocessor = true;
@@ -98,17 +98,17 @@ bool cpp_next_token(const Contents* contents,
         token->start = point;
         ++point;
         for (; point < contents->len; ++point) {
-            if ((*contents)[point] == '"') {
+            if (contents->get_once(point) == '"') {
                 ++point;
                 break;
             }
-            if ((*contents)[point] == '>' && in_preprocessor &&
+            if (contents->get_once(point) == '>' && in_preprocessor &&
                 preprocessor_state == PREPROCESSOR_AFTER_INCLUDE) {
                 preprocessor_state = PREPROCESSOR_GENERAL;
                 ++point;
                 break;
             }
-            if ((*contents)[point] == '\\') {
+            if (contents->get_once(point) == '\\') {
                 if (point + 1 < contents->len) {
                     // only skip over next character if we don't go out of bounds
                     ++point;
@@ -125,7 +125,7 @@ bool cpp_next_token(const Contents* contents,
         token->start = point;
         if (point + 3 >= contents->len) {
             token->end = contents->len;
-        } else if ((*contents)[point + 1] == '\\') {
+        } else if (contents->get_once(point + 1) == '\\') {
             token->end = point + 4;
         } else {
             token->end = point + 3;
@@ -144,7 +144,7 @@ bool cpp_next_token(const Contents* contents,
     if (isalpha(first_char) || first_char == '_') {
         token->start = point;
         while (++point < contents->len &&
-               (isalnum((*contents)[point]) || (*contents)[point] == '_')) {
+               (isalnum(contents->get_once(point)) || contents->get_once(point) == '_')) {
         }
         token->end = point;
 
@@ -321,8 +321,8 @@ bool cpp_next_token(const Contents* contents,
                 // next token is outside preprocessor invocation we are in
             } else if (next_token.type == Token_Type::IDENTIFIER ||
                        (next_token.end == next_token.start + 1 &&
-                        ((*contents)[next_token.start] == '*' ||
-                         (*contents)[next_token.start] == '&'))) {
+                        (contents->get_once(next_token.start) == '*' ||
+                         contents->get_once(next_token.start) == '&'))) {
                 if (normal_state == START_OF_STATEMENT) {
                     normal_state = IN_VARIABLE_TYPE;
                 } else {
@@ -331,7 +331,7 @@ bool cpp_next_token(const Contents* contents,
                 token->type = Token_Type::TYPE;
             } else if (normal_state == START_OF_PARAMETER &&
                        next_token.end == next_token.start + 1 &&
-                       (*contents)[next_token.start] == ',') {
+                       contents->get_once(next_token.start) == ',') {
                 normal_state = AFTER_PARAMETER_DECLARATION;
                 token->type = Token_Type::TYPE;
             }
@@ -347,18 +347,18 @@ bool cpp_next_token(const Contents* contents,
         goto done;
     }
 
-    if (first_char == '/' && point + 1 < contents->len && (*contents)[point + 1] == '/') {
+    if (first_char == '/' && point + 1 < contents->len && contents->get_once(point + 1) == '/') {
         token->start = point;
 
         for (bool continue_into_next_line = false; point < contents->len; ++point) {
-            if ((*contents)[point] == '\n') {
+            if (contents->get_once(point) == '\n') {
                 if (!continue_into_next_line) {
                     break;
                 }
                 continue_into_next_line = false;
-            } else if ((*contents)[point] == '\\') {
+            } else if (contents->get_once(point) == '\\') {
                 continue_into_next_line = true;
-            } else if (!isblank((*contents)[point])) {
+            } else if (!isblank(contents->get_once(point))) {
                 continue_into_next_line = false;
             }
         }
@@ -368,12 +368,12 @@ bool cpp_next_token(const Contents* contents,
         goto done;
     }
 
-    if (first_char == '/' && point + 1 < contents->len && (*contents)[point + 1] == '*') {
+    if (first_char == '/' && point + 1 < contents->len && contents->get_once(point + 1) == '*') {
         token->start = point;
         point += 2;
         while (point < contents->len) {
-            if (point + 1 < contents->len && (*contents)[point] == '*' &&
-                (*contents)[point + 1] == '/') {
+            if (point + 1 < contents->len && contents->get_once(point) == '*' &&
+                contents->get_once(point + 1) == '/') {
                 point += 2;
                 break;
             }

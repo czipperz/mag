@@ -20,7 +20,7 @@ struct Contents {
     cz::String stringify(cz::Allocator allocator) const;
     SSOStr slice(cz::Allocator allocator, uint64_t start, uint64_t end) const;
 
-    char operator[](uint64_t position) const;
+    char get_once(uint64_t position) const;
 
     bool is_bucket_separator(uint64_t pos) const;
 

@@ -190,7 +190,7 @@ SSOStr Contents::slice(cz::Allocator allocator, uint64_t start, uint64_t end) co
     return value;
 }
 
-char Contents::operator[](uint64_t pos) const {
+char Contents::get_once(uint64_t pos) const {
     for (size_t i = 0; i < buckets.len(); ++i) {
         if (pos < buckets[i].len) {
             return buckets[i][pos];

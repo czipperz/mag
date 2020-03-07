@@ -380,7 +380,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
                         memcpy(edit.value.short_._buffer + 1, commit.edits[e].value.short_._buffer,
                                len);
                         edit.value.short_._buffer[0] =
-                            buffer->contents[buffer->cursors[e].point - len - 1];
+                            buffer->contents.get_once(buffer->cursors[e].point - len - 1);
                         edit.value.short_.set_len(len + 1);
                         edit.position = commit.edits[e].position - offset;
                         offset++;
@@ -415,7 +415,8 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
                         Edit edit;
                         memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer,
                                len);
-                        edit.value.short_._buffer[len] = buffer->contents[buffer->cursors[e].point];
+                        edit.value.short_._buffer[len] =
+                            buffer->contents.get_once(buffer->cursors[e].point);
                         edit.value.short_.set_len(len + 1);
                         edit.position = commit.edits[e].position - e;
                         edit.is_insert = false;
@@ -528,7 +529,7 @@ static cz::Option<uint64_t> search_forward(Buffer* buffer, uint64_t index, cz::S
     for (; index + query.len < buffer->contents.len; ++index) {
         size_t q;
         for (q = 0; q < query.len; ++q) {
-            if (buffer->contents[index + q] != query[q]) {
+            if (buffer->contents.get_once(index + q) != query[q]) {
                 break;
             }
         }
@@ -606,7 +607,7 @@ static cz::Option<uint64_t> search_backward(Buffer* buffer, uint64_t index, cz::
     while (index-- > 0) {
         size_t q;
         for (q = 0; q < query.len; ++q) {
-            if (buffer->contents[index + q] != query[q]) {
+            if (buffer->contents.get_once(index + q) != query[q]) {
                 break;
             }
         }

@@ -56,7 +56,7 @@ bool save_contents(const Contents* contents, const char* path) {
     // using fwrite but that requires us to figure out how to dig into the
     // encapsulation of Contents.
     for (uint64_t i = 0; i < contents->len; ++i) {
-        fputc((*contents)[i], file);
+        fputc(contents->get_once(i), file);
     }
 
     return true;
