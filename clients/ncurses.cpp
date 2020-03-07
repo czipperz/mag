@@ -2,6 +2,7 @@
 
 #include <ctype.h>
 #include <ncurses.h>
+#include <cz/bit_array.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "movement.hpp"
@@ -153,15 +154,59 @@ static void cache_window_unified_position(Window_Cache* window_cache,
 static void cache_window_unified_update(Window_Cache* window_cache,
                                         Window* window,
                                         Buffer* buffer) {
-    window_cache->v.unified.change_index = buffer->changes.len();
     cache_window_unified_position(window_cache, window->v.unified.start_position, window->rows,
                                   window->cols, buffer);
 
-    uint64_t state = 0;
-    Token token = {};
+    size_t changes_len = buffer->changes.len();
+    cz::Slice<Tokenizer_Check_Point> check_points = window_cache->v.unified.tokenizer_check_points;
+    unsigned char* changed_check_points =
+        (unsigned char*)malloc(cz::bit_array::alloc_size(check_points.len));
+    CZ_DEFER(free(changed_check_points));
+    for (size_t i = 0; i < check_points.len; ++i) {
+        uint64_t pos = check_points[i].position;
+        for (size_t c = window_cache->v.unified.change_index; c < changes_len; ++c) {
+            buffer->changes[c].adjust_position(&pos);
+        }
 
-    // TODO: Check if this leaks memory and if so remove it / reconfigure it
-    window_cache->v.unified.tokenizer_check_points = {};
+        if (check_points[i].position != pos) {
+            cz::bit_array::set(changed_check_points, i);
+        } else {
+            cz::bit_array::unset(changed_check_points, i);
+        }
+
+        check_points[i].position = pos;
+    }
+    window_cache->v.unified.change_index = changes_len;
+
+    for (size_t i = 0; i < check_points.len; ++i) {
+        if (!cz::bit_array::get(changed_check_points, i)) {
+            continue;
+        }
+
+        uint64_t state = check_points[i].state;
+        uint64_t end_position = check_points[i + 1].position;
+        Token token;
+        token.end = check_points[i].position;
+        while (token.end < end_position) {
+            if (!buffer->mode.next_token(&buffer->contents, token.end, &token, &state)) {
+                break;
+            }
+        }
+
+        if (token.end > end_position || state != check_points[i + 1].state) {
+            check_points[i + 1].position = token.end;
+            check_points[i + 1].state;
+            cz::bit_array::set(changed_check_points, i + 1);
+        }
+    }
+
+    uint64_t state = 0;
+    Token token;
+    token.end = 0;
+    if (check_points.len > 0) {
+        state = check_points[check_points.len - 1].state;
+        token.end = check_points[check_points.len - 1].position;
+    }
 
     int counter = 0;
     while (token.end <= window->v.unified.start_position) {
@@ -179,13 +224,18 @@ static void cache_window_unified_update(Window_Cache* window_cache,
     }
 }
 
-static void cache_window_unified_create(Window_Cache* window_cache, Window* window, Buffer* buffer) {
+static void cache_window_unified_create(Window_Cache* window_cache,
+                                        Window* window,
+                                        Buffer* buffer) {
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified.id = buffer->id;
+    window_cache->v.unified.tokenizer_check_points = {};
     cache_window_unified_update(window_cache, window, buffer);
 }
 
-static void cache_window_unified_create(Editor* editor, Window_Cache* window_cache, Window* window) {
+static void cache_window_unified_create(Editor* editor,
+                                        Window_Cache* window_cache,
+                                        Window* window) {
     WITH_BUFFER(buffer, window->v.unified.id,
                 { cache_window_unified_create(window_cache, window, buffer); });
 }
