@@ -105,7 +105,7 @@ static uint64_t compute_visible_end(Buffer* buffer,
                                     int count_rows,
                                     int count_cols) {
     int rows;
-    for (rows = 0; rows < count_rows;) {
+    for (rows = 0; rows < count_rows - 1;) {
         uint64_t next_line_start_position = forward_line(buffer, line_start_position);
         if (next_line_start_position == line_start_position) {
             break;
@@ -118,10 +118,6 @@ static uint64_t compute_visible_end(Buffer* buffer,
         rows += line_rows;
     }
 
-    if (rows < count_rows) {
-        ++line_start_position;
-    }
-
     return line_start_position;
 }
 
@@ -129,7 +125,7 @@ static uint64_t compute_visible_start(Buffer* buffer,
                                       uint64_t line_start_position,
                                       int count_rows,
                                       int count_cols) {
-    for (int rows = 0; rows < count_rows;) {
+    for (int rows = 0; rows < count_rows - 2;) {
         uint64_t next_line_start_position = backward_line(buffer, line_start_position);
         if (next_line_start_position == line_start_position) {
             CZ_DEBUG_ASSERT(line_start_position == 0);
@@ -142,6 +138,7 @@ static uint64_t compute_visible_start(Buffer* buffer,
 
         rows += line_rows;
     }
+
     return line_start_position;
 }
 
@@ -345,17 +342,14 @@ static void draw_buffer_contents(Cell* cells,
     *start_position = start_of_line(buffer, *start_position);
     if (window_cache) {
         uint64_t selected_cursor_position = buffer->cursors[0].point;
-        if (selected_cursor_position < *start_position) {
-            *start_position = backward_line(
-                buffer, backward_line(buffer, start_of_line(buffer, selected_cursor_position)));
+        if (selected_cursor_position < forward_line(buffer, *start_position)) {
+            *start_position =
+                backward_line(buffer, start_of_line(buffer, selected_cursor_position));
             cache_window_unified_position(window_cache, *start_position, count_rows, count_cols,
                                           buffer);
         } else if (selected_cursor_position >= window_cache->v.unified.visible_end) {
-            *start_position = forward_line(
-                buffer,
-                forward_line(buffer, compute_visible_start(
-                                         buffer, start_of_line(buffer, selected_cursor_position),
-                                         count_rows, count_cols)));
+            *start_position = compute_visible_start(
+                buffer, start_of_line(buffer, selected_cursor_position), count_rows, count_cols);
             cache_window_unified_position(window_cache, *start_position, count_rows, count_cols,
                                           buffer);
         }
