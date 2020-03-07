@@ -160,7 +160,7 @@ static void cache_window_unified_update(Window_Cache* window_cache,
     size_t changes_len = buffer->changes.len();
     cz::Slice<Tokenizer_Check_Point> check_points = window_cache->v.unified.tokenizer_check_points;
     unsigned char* changed_check_points =
-        (unsigned char*)malloc(cz::bit_array::alloc_size(check_points.len));
+        (unsigned char*)calloc(1, cz::bit_array::alloc_size(check_points.len));
     CZ_DEFER(free(changed_check_points));
     for (size_t i = 0; i < check_points.len; ++i) {
         uint64_t pos = check_points[i].position;
@@ -168,10 +168,8 @@ static void cache_window_unified_update(Window_Cache* window_cache,
             buffer->changes[c].adjust_position(&pos);
         }
 
-        if (check_points[i].position != pos) {
-            cz::bit_array::set(changed_check_points, i);
-        } else {
-            cz::bit_array::unset(changed_check_points, i);
+        if (i > 0 && check_points[i].position != pos) {
+            cz::bit_array::set(changed_check_points, i - 1);
         }
 
         check_points[i].position = pos;
