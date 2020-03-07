@@ -1,1 +1,1 @@
-((nil . ((compile-command . "cd \"$(git rev-parse --show-toplevel)\"/build/debug && cmake -DCMAKE_BUILD_TYPE=Debug ../.. >/dev/null && cmake --build . && cd \"$(git rev-parse --show-toplevel)\" && ./run-tests.sh"))))
+((nil . ((compile-command . "cd \"$(git rev-parse --show-toplevel)\" && ./build-debug.sh"))))
