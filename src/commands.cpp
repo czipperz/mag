@@ -526,16 +526,19 @@ void command_create_cursor_backward_line(Editor* editor, Command_Source source) 
 }
 
 static cz::Option<uint64_t> search_forward(Buffer* buffer, uint64_t index, cz::Str query) {
-    for (; index + query.len < buffer->contents.len; ++index) {
+    Contents_Iterator start_it = buffer->contents.iterator_at(index);
+    for (; start_it.position + query.len < buffer->contents.len; start_it.advance()) {
+        Contents_Iterator it = start_it;
         size_t q;
         for (q = 0; q < query.len; ++q) {
-            if (buffer->contents.get_once(index + q) != query[q]) {
+            if (it.get() != query[q]) {
                 break;
             }
+            it.advance();
         }
 
         if (q == query.len) {
-            return index;
+            return start_it.position;
         }
     }
 
@@ -604,16 +607,20 @@ static cz::Option<uint64_t> search_backward(Buffer* buffer, uint64_t index, cz::
     }
     index = cz::min(index, buffer->contents.len - query.len);
 
-    while (index-- > 0) {
+    Contents_Iterator start_it = buffer->contents.iterator_at(index);
+    while (!start_it.at_bob()) {
+        start_it.retreat();
+        Contents_Iterator it = start_it;
         size_t q;
         for (q = 0; q < query.len; ++q) {
-            if (buffer->contents.get_once(index + q) != query[q]) {
+            if (it.get() != query[q]) {
                 break;
             }
+            it.advance();
         }
 
         if (q == query.len) {
-            return index;
+            return start_it.position;
         }
     }
 

@@ -382,14 +382,11 @@ static void draw_buffer_contents(Cell* cells,
         }
     }
 
-    uint64_t contents_len = buffer->contents.len;
     int show_mark = 0;
-    size_t bucket;
-    size_t bucket_index;
-    buffer->contents.get_bucket(*start_position, &bucket, &bucket_index);
 
-    for (uint64_t i = *start_position; i < contents_len; ++i) {
-        while (has_token && i >= token.end) {
+    for (Contents_Iterator iterator = buffer->contents.iterator_at(*start_position);
+         !iterator.at_eob(); iterator.advance()) {
+        while (has_token && iterator.position >= token.end) {
             has_token = buffer->mode.next_token(&buffer->contents, token.end, &token, &state);
         }
 
@@ -398,21 +395,21 @@ static void draw_buffer_contents(Cell* cells,
             for (size_t c = 0; c < buffer->cursors.len(); ++c) {
                 Cursor* cursor = &buffer->cursors[c];
                 if (buffer->show_marks) {
-                    if (i == std::min(cursor->mark, cursor->point)) {
+                    if (iterator.position == std::min(cursor->mark, cursor->point)) {
                         ++show_mark;
                     }
-                    if (i == std::max(cursor->mark, cursor->point)) {
+                    if (iterator.position == std::max(cursor->mark, cursor->point)) {
                         --show_mark;
                     }
                 }
-                if (i == cursor->point) {
+                if (iterator.position == cursor->point) {
                     has_cursor = true;
                 }
             }
         }
 
 #if 0
-        if (buffer->contents.is_bucket_separator(i)) {
+        if (iterator.index == 0) {
             ADDCH(A_NORMAL, '\'');
         }
 #endif
@@ -426,7 +423,7 @@ static void draw_buffer_contents(Cell* cells,
         }
 
         int type;
-        if (has_token && i >= token.start && i < token.end) {
+        if (has_token && iterator.position >= token.start && iterator.position < token.end) {
             type = token.type;
         } else {
             type = Token_Type::DEFAULT;
@@ -442,19 +439,12 @@ static void draw_buffer_contents(Cell* cells,
             attrs |= A_UNDERLINE;
         }
 
-        char ch = buffer->contents.buckets[bucket][bucket_index];
+        char ch = iterator.get();
         if (ch == '\n') {
             ADDCH(attrs, ' ');
             ADD_NEWLINE();
         } else {
             ADDCH(attrs, ch);
-        }
-
-        ++bucket_index;
-        while (bucket < buffer->contents.buckets.len() &&
-               bucket_index == buffer->contents.buckets[bucket].len) {
-            ++bucket;
-            bucket_index = 0;
         }
     }
 

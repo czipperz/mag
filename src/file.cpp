@@ -52,11 +52,8 @@ bool save_contents(const Contents* contents, const char* path) {
     }
     CZ_DEFER(fclose(file));
 
-    // TODO: Make this not have shit performance.  We should write each bucket
-    // using fwrite but that requires us to figure out how to dig into the
-    // encapsulation of Contents.
-    for (uint64_t i = 0; i < contents->len; ++i) {
-        fputc(contents->get_once(i), file);
+    for (size_t bucket = 0; bucket < contents->buckets.len(); ++bucket) {
+        fwrite(contents->buckets[bucket].elems, 1, contents->buckets[bucket].len, file);
     }
 
     return true;
