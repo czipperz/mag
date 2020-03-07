@@ -142,6 +142,88 @@ static uint64_t compute_visible_start(Buffer* buffer,
     return line_start_position;
 }
 
+static bool add_window_cache_check_point(Window_Cache* window_cache,
+                                         Buffer* buffer,
+                                         uint64_t position,
+                                         uint64_t state,
+                                         Tokenizer_Check_Point* check_point) {
+    Token token;
+    token.end = position;
+    uint64_t contents_len = buffer->contents.len();
+    while (token.end <= contents_len) {
+        if (token.end >= position + 1024) {
+            check_point->position = token.end;
+            check_point->state = state;
+            return true;
+        }
+
+        if (!buffer->mode.next_token(&buffer->contents, token.end, &token, &state)) {
+            break;
+        }
+    }
+
+    return false;
+}
+
+static int cache_windows_check_points(Window_Cache* window_cache, Window* window, Editor* editor) {
+    switch (window->tag) {
+    case Window::UNIFIED:
+        while (1) {
+            // TODO: Make this non blocking!
+            WITH_BUFFER(buffer, window->v.unified.id, {
+                cz::Vector<Tokenizer_Check_Point>* check_points =
+                    &window_cache->v.unified.tokenizer_check_points;
+
+                Tokenizer_Check_Point starting_point;
+                if (check_points->len() > 0) {
+                    starting_point = check_points->last();
+                } else {
+                    starting_point = {};
+                }
+
+                while (1) {
+                    int getch_result = getch();
+                    if (getch_result != ERR) {
+                        return getch_result;
+                    }
+
+                    Tokenizer_Check_Point check_point;
+                    if (!add_window_cache_check_point(window_cache, buffer, starting_point.position,
+                                                      starting_point.state, &check_point)) {
+                        break;
+                    }
+                    starting_point = check_point;
+                    check_points->reserve(cz::heap_allocator(), 1);
+                    check_points->push(check_point);
+                }
+            });
+        }
+        return ERR;
+
+    case Window::VERTICAL_SPLIT: {
+        int left_result = cache_windows_check_points(window_cache->v.vertical_split.left,
+                                                     window->v.vertical_split.left, editor);
+        if (left_result != ERR) {
+            return left_result;
+        }
+        return cache_windows_check_points(window_cache->v.vertical_split.right,
+                                          window->v.vertical_split.right, editor);
+    }
+
+    case Window::HORIZONTAL_SPLIT: {
+        int top_result = cache_windows_check_points(window_cache->v.horizontal_split.top,
+                                                    window->v.horizontal_split.top, editor);
+        if (top_result != ERR) {
+            return top_result;
+        }
+        return cache_windows_check_points(window_cache->v.horizontal_split.bottom,
+                                          window->v.horizontal_split.bottom, editor);
+    }
+    }
+
+    CZ_PANIC("");
+}
+
 static void cache_window_unified_position(Window_Cache* window_cache,
                                           uint64_t start_position,
                                           int count_rows,
@@ -150,29 +232,25 @@ static void cache_window_unified_position(Window_Cache* window_cache,
     window_cache->v.unified.visible_end =
         compute_visible_end(buffer, start_position, count_rows, count_cols);
 
-    uint64_t state = 0;
-    Token token;
-    token.end = 0;
-    cz::Slice<Tokenizer_Check_Point> check_points = window_cache->v.unified.tokenizer_check_points;
-    if (check_points.len > 0) {
-        state = check_points[check_points.len - 1].state;
-        token.end = check_points[check_points.len - 1].position;
+    cz::Vector<Tokenizer_Check_Point>* check_points =
+        &window_cache->v.unified.tokenizer_check_points;
+
+    Tokenizer_Check_Point starting_point;
+    if (check_points->len() > 0) {
+        starting_point = check_points->last();
+    } else {
+        starting_point = {};
     }
 
-    size_t previous_check_point_start = 0;
-    while (token.end <= start_position) {
-        if (token.end >= previous_check_point_start + 1024) {
-            window_cache->v.unified.tokenizer_check_points.reserve(cz::heap_allocator(), 1);
-            Tokenizer_Check_Point check_point;
-            check_point.position = token.end;
-            check_point.state = state;
-            window_cache->v.unified.tokenizer_check_points.push(check_point);
-            previous_check_point_start = token.end;
-        }
-
-        if (!buffer->mode.next_token(&buffer->contents, token.end, &token, &state)) {
+    while (starting_point.position <= start_position) {
+        Tokenizer_Check_Point check_point;
+        if (!add_window_cache_check_point(window_cache, buffer, starting_point.position,
+                                          starting_point.state, &check_point)) {
             break;
         }
+        starting_point = check_point;
+        check_points->reserve(cz::heap_allocator(), 1);
+        check_points->push(check_point);
     }
 }
 
@@ -662,6 +740,7 @@ void run_ncurses(Server* server, Client* client) {
     int total_rows = 0;
     int total_cols = 0;
     render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client);
+    nodelay(stdscr, TRUE);
 
     FILE* file = fopen("tmp.txt", "w");
     CZ_DEFER(fclose(file));
@@ -670,8 +749,12 @@ void run_ncurses(Server* server, Client* client) {
         int ch = getch();
         if (ch == ERR) {
             render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client);
-            nodelay(stdscr, FALSE);
-            continue;
+
+            ch = cache_windows_check_points(window_cache, client->window, &server->editor);
+            if (ch == ERR) {
+                nodelay(stdscr, FALSE);
+                continue;
+            }
         }
 
         nodelay(stdscr, TRUE);
