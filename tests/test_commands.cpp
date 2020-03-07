@@ -63,7 +63,7 @@ TEST_CASE("forward char eob") {
 
     WITH_SELECTED_BUFFER({
         REQUIRE(buffer->cursors.len() == 1);
-        buffer->cursors[0].point = buffer->contents.len();
+        buffer->cursors[0].point = buffer->contents.len;
     });
 
     command_forward_char(editor, source);
@@ -73,7 +73,7 @@ TEST_CASE("forward char eob") {
         CHECK(contents == "ABC\n12\n3456\n");
 
         REQUIRE(buffer->cursors.len() == 1);
-        CHECK(buffer->cursors[0].point == buffer->contents.len());
+        CHECK(buffer->cursors[0].point == buffer->contents.len);
     });
 }
 
@@ -101,7 +101,7 @@ TEST_CASE("backward char eob") {
 
     WITH_SELECTED_BUFFER({
         REQUIRE(buffer->cursors.len() == 1);
-        buffer->cursors[0].point = buffer->contents.len();
+        buffer->cursors[0].point = buffer->contents.len;
     });
 
     command_backward_char(editor, source);
@@ -111,7 +111,7 @@ TEST_CASE("backward char eob") {
         CHECK(contents == "ABC\n12\n3456\n");
 
         REQUIRE(buffer->cursors.len() == 1);
-        CHECK(buffer->cursors[0].point == buffer->contents.len() - 1);
+        CHECK(buffer->cursors[0].point == buffer->contents.len - 1);
     });
 }
 
@@ -196,7 +196,7 @@ TEST_CASE("end of line eob does nothing") {
 
     WITH_SELECTED_BUFFER({
         REQUIRE(buffer->cursors.len() == 1);
-        buffer->cursors[0].point = buffer->contents.len();
+        buffer->cursors[0].point = buffer->contents.len;
     });
 
     command_end_of_line(editor, source);
@@ -206,7 +206,7 @@ TEST_CASE("end of line eob does nothing") {
         CHECK(contents == "ABC\n12\n3456\n");
 
         REQUIRE(buffer->cursors.len() == 1);
-        CHECK(buffer->cursors[0].point == buffer->contents.len());
+        CHECK(buffer->cursors[0].point == buffer->contents.len);
     });
 }
 

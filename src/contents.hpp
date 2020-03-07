@@ -10,6 +10,7 @@ struct SSOStr;
 
 struct Contents {
     cz::Vector<cz::Slice<char>> buckets;
+    uint64_t len;
 
     void drop();
 
@@ -20,7 +21,6 @@ struct Contents {
     SSOStr slice(cz::Allocator allocator, uint64_t start, uint64_t end) const;
 
     char operator[](uint64_t position) const;
-    uint64_t len() const;
 
     bool is_bucket_separator(uint64_t pos) const;
 

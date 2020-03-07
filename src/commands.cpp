@@ -129,7 +129,7 @@ void command_backward_line(Editor* editor, Command_Source source) {
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
-        uint64_t len = buffer->contents.len();
+        uint64_t len = buffer->contents.len;
         for (size_t c = 0; c < buffer->cursors.len(); ++c) {
             buffer->cursors[c].point = len;
         }
@@ -188,7 +188,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
 
                 cursor_positions.push(insertion_point - (end - start) + column);
 
-                if (insertion_point < buffer->contents.len()) {
+                if (insertion_point < buffer->contents.len) {
                     // abc\ndef\nghi\njkl\n
                     //      [    )    ^
                     //  start    end  ^
@@ -286,7 +286,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
 
                 cursor_positions.push(insertion_point + column);
 
-                if (end < buffer->contents.len()) {
+                if (end < buffer->contents.len) {
                     // Normal case: pick up newline after end.
                     //
                     //   abc\ndef\nghi\njkl\n
@@ -525,7 +525,7 @@ void command_create_cursor_backward_line(Editor* editor, Command_Source source) 
 }
 
 static cz::Option<uint64_t> search_forward(Buffer* buffer, uint64_t index, cz::Str query) {
-    for (; index + query.len < buffer->contents.len(); ++index) {
+    for (; index + query.len < buffer->contents.len; ++index) {
         size_t q;
         for (q = 0; q < query.len; ++q) {
             if (buffer->contents[index + q] != query[q]) {
@@ -542,7 +542,7 @@ static cz::Option<uint64_t> search_forward(Buffer* buffer, uint64_t index, cz::S
 }
 
 static cz::Option<uint64_t> search_forward_slice(Buffer* buffer, uint64_t start, uint64_t end) {
-    if (start == buffer->contents.len()) {
+    if (start == buffer->contents.len) {
         return {};
     }
 
@@ -598,10 +598,10 @@ void command_create_cursor_forward_search(Editor* editor, Command_Source source)
 }
 
 static cz::Option<uint64_t> search_backward(Buffer* buffer, uint64_t index, cz::Str query) {
-    if (query.len > buffer->contents.len()) {
+    if (query.len > buffer->contents.len) {
         return {};
     }
-    index = cz::min(index, buffer->contents.len() - query.len);
+    index = cz::min(index, buffer->contents.len - query.len);
 
     while (index-- > 0) {
         size_t q;

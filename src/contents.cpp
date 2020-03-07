@@ -40,6 +40,9 @@ static void bucket_append(cz::Slice<char>* bucket, cz::Str str) {
 }
 
 void Contents::remove(uint64_t start, uint64_t len) {
+    CZ_DEBUG_ASSERT(start + len <= this->len);
+    this->len -= len;
+
     for (size_t v = 0; v < buckets.len(); ++v) {
         if (start < buckets[v].len) {
             if (start + len <= buckets[v].len) {
@@ -60,6 +63,9 @@ void Contents::remove(uint64_t start, uint64_t len) {
 }
 
 void Contents::insert(uint64_t start, cz::Str str) {
+    CZ_DEBUG_ASSERT(start <= this->len);
+    this->len += str.len;
+
     for (size_t b = 0; b < buckets.len(); ++b) {
         if (start <= buckets[b].len) {
             if (buckets[b].len + str.len <= MAX) {
@@ -160,7 +166,7 @@ static void slice_into(char* buffer,
 
 cz::String Contents::stringify(cz::Allocator allocator) const {
     cz::String string = {};
-    string.reserve(allocator, len());
+    string.reserve(allocator, len);
     slice_into(string.buffer(), buckets, 0, string.cap());
     string.set_len(string.cap());
     return string;
@@ -168,7 +174,7 @@ cz::String Contents::stringify(cz::Allocator allocator) const {
 
 SSOStr Contents::slice(cz::Allocator allocator, uint64_t start, uint64_t end) const {
     CZ_DEBUG_ASSERT(start <= end);
-    CZ_DEBUG_ASSERT(end <= len());
+    CZ_DEBUG_ASSERT(end <= len);
 
     SSOStr value;
     uint64_t len = end - start;
@@ -193,14 +199,6 @@ char Contents::operator[](uint64_t pos) const {
     }
 
     CZ_PANIC("Out of bounds");
-}
-
-uint64_t Contents::len() const {
-    uint64_t sum = 0;
-    for (size_t i = 0; i < buckets.len(); ++i) {
-        sum += buckets[i].len;
-    }
-    return sum;
 }
 
 bool Contents::is_bucket_separator(uint64_t pos) const {

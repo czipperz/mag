@@ -149,7 +149,7 @@ static bool add_window_cache_check_point(Window_Cache* window_cache,
                                          Tokenizer_Check_Point* check_point) {
     Token token;
     token.end = position;
-    uint64_t contents_len = buffer->contents.len();
+    uint64_t contents_len = buffer->contents.len;
     while (token.end <= contents_len) {
         if (token.end >= position + 1024) {
             check_point->position = token.end;
@@ -385,7 +385,7 @@ static void draw_buffer_contents(Cell* cells,
         }
     }
 
-    uint64_t contents_len = buffer->contents.len();
+    uint64_t contents_len = buffer->contents.len;
     int show_mark = 0;
     size_t bucket;
     size_t bucket_index;
@@ -463,7 +463,7 @@ static void draw_buffer_contents(Cell* cells,
 
     if (show_cursors) {
         for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            if (buffer->cursors[c].point == buffer->contents.len()) {
+            if (buffer->cursors[c].point == buffer->contents.len) {
                 SET(A_REVERSE, ' ');
                 ++x;
                 break;

@@ -38,12 +38,12 @@ void Buffer::drop() {
 }
 
 static void insert(Contents* contents, uint64_t position, cz::Str str) {
-    CZ_ASSERT(position <= contents->len());
+    CZ_ASSERT(position <= contents->len);
     contents->insert(position, str);
 }
 
 static void remove(Contents* contents, uint64_t position, uint64_t len) {
-    CZ_ASSERT(position + len <= contents->len());
+    CZ_ASSERT(position + len <= contents->len);
     contents->remove(position, len);
 }
 

@@ -16,7 +16,7 @@ Client Server::make_client() {
 
 void clear_buffer(Editor* editor, Buffer* buffer) {
     WITH_TRANSACTION({
-        uint64_t contents_len = buffer->contents.len();
+        uint64_t contents_len = buffer->contents.len;
         transaction.init(1, (size_t)contents_len);
         Edit edit;
         edit.value = buffer->contents.slice(transaction.value_allocator(), 0, contents_len);

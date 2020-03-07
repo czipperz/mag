@@ -55,7 +55,7 @@ bool save_contents(const Contents* contents, const char* path) {
     // TODO: Make this not have shit performance.  We should write each bucket
     // using fwrite but that requires us to figure out how to dig into the
     // encapsulation of Contents.
-    for (uint64_t i = 0, len = contents->len(); i < len; ++i) {
+    for (uint64_t i = 0; i < contents->len; ++i) {
         fputc((*contents)[i], file);
     }
 
