@@ -8,6 +8,8 @@ namespace mag {
 
 struct SSOStr;
 
+struct Contents_Iterator;
+
 struct Contents {
     cz::Vector<cz::Slice<char>> buckets;
     uint64_t len;
@@ -25,6 +27,42 @@ struct Contents {
     bool is_bucket_separator(uint64_t pos) const;
 
     void get_bucket(uint64_t position, size_t* bucket, size_t* index) const;
+
+    Contents_Iterator iterator_at(uint64_t position) const;
+};
+
+struct Contents_Iterator {
+    const Contents* contents;
+    uint64_t position;
+    size_t bucket;
+    size_t index;
+
+    bool at_bob() const { return position == 0; }
+    bool at_eob() const { return position == contents->len; }
+
+    char get() const { return contents->buckets[bucket][index]; }
+
+    void retreat() {
+        CZ_DEBUG_ASSERT(!at_bob());
+        --position;
+        // :EmptyBuckets Once resolved, convert to if
+        while (index == 0) {
+            --bucket;
+            index = contents->buckets[bucket].len;
+        }
+        --index;
+    }
+
+    void advance() {
+        CZ_DEBUG_ASSERT(!at_eob());
+        ++position;
+        ++index;
+        // :EmptyBuckets Once resolved, convert to if
+        while (index == contents->buckets[bucket].len) {
+            ++bucket;
+            index = 0;
+        }
+    }
 };
 
 }
