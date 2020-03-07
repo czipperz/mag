@@ -5,19 +5,20 @@
 namespace mag {
 
 struct Buffer;
+struct Contents_Iterator;
 
-uint64_t start_of_line(Buffer* buffer, uint64_t point);
-uint64_t end_of_line(Buffer* buffer, uint64_t point);
+void start_of_line(Buffer* buffer, Contents_Iterator* iterator);
+void end_of_line(Buffer* buffer, Contents_Iterator* iterator);
 
-uint64_t start_of_line_text(Buffer* buffer, uint64_t point);
+void start_of_line_text(Buffer* buffer, Contents_Iterator* iterator);
 
-uint64_t forward_line(Buffer* buffer, uint64_t point);
-uint64_t backward_line(Buffer* buffer, uint64_t point);
+void forward_line(Buffer* buffer, Contents_Iterator* iterator);
+void backward_line(Buffer* buffer, Contents_Iterator* iterator);
 
-uint64_t forward_word(Buffer* buffer, uint64_t point);
-uint64_t backward_word(Buffer* buffer, uint64_t point);
+void forward_word(Buffer* buffer, Contents_Iterator* iterator);
+void backward_word(Buffer* buffer, Contents_Iterator* iterator);
 
-uint64_t forward_char(Buffer* buffer, uint64_t point);
-uint64_t backward_char(Buffer* buffer, uint64_t point);
+void forward_char(Buffer* buffer, Contents_Iterator* iterator);
+void backward_char(Buffer* buffer, Contents_Iterator* iterator);
 
 }

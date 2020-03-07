@@ -25,63 +25,71 @@
         transaction.commit(buffer);   \
     } while (0)
 
-#define TRANSFORM_POINTS(FUNC)                                                 \
-    do {                                                                       \
-        for (size_t i = 0; i < buffer->cursors.len(); ++i) {                   \
-            buffer->cursors[i].point = FUNC(buffer, buffer->cursors[i].point); \
-        }                                                                      \
+#define TRANSFORM_POINTS(FUNC)                                                                   \
+    do {                                                                                         \
+        for (size_t i = 0; i < buffer->cursors.len(); ++i) {                                     \
+            Contents_Iterator iterator = buffer->contents.iterator_at(buffer->cursors[i].point); \
+            FUNC(buffer, &iterator);                                                             \
+            buffer->cursors[i].point = iterator.position;                                        \
+        }                                                                                        \
     } while (0)
 
-#define DELETE_BACKWARD(FUNC)                                                                   \
-    do {                                                                                        \
-        uint64_t sum_regions = 0;                                                               \
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                    \
-            uint64_t end = buffer->cursors[c].point;                                            \
-            uint64_t start = FUNC(buffer, end);                                                 \
-            sum_regions += end - start;                                                         \
-        }                                                                                       \
-                                                                                                \
-        transaction.init(buffer->cursors.len(), (size_t)sum_regions);                           \
-                                                                                                \
-        uint64_t total = 0;                                                                     \
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                    \
-            uint64_t end = buffer->cursors[c].point;                                            \
-            uint64_t start = FUNC(buffer, end);                                                 \
-            if (start < end) {                                                                  \
-                Edit edit;                                                                      \
-                edit.value = buffer->contents.slice(transaction.value_allocator(), start, end); \
-                edit.position = start - total;                                                  \
-                total += end - start;                                                           \
-                edit.is_insert = false;                                                         \
-                transaction.push(edit);                                                         \
-            }                                                                                   \
-        }                                                                                       \
+#define DELETE_BACKWARD(FUNC)                                                                      \
+    do {                                                                                           \
+        uint64_t sum_regions = 0;                                                                  \
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                       \
+            Contents_Iterator end = buffer->contents.iterator_at(buffer->cursors[c].point);        \
+            Contents_Iterator start = end;                                                         \
+            FUNC(buffer, &start);                                                                  \
+            sum_regions += end.position - start.position;                                          \
+        }                                                                                          \
+                                                                                                   \
+        transaction.init(buffer->cursors.len(), (size_t)sum_regions);                              \
+                                                                                                   \
+        uint64_t total = 0;                                                                        \
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                       \
+            Contents_Iterator end = buffer->contents.iterator_at(buffer->cursors[c].point);        \
+            Contents_Iterator start = end;                                                         \
+            FUNC(buffer, &start);                                                                  \
+            if (start.position < end.position) {                                                   \
+                Edit edit;                                                                         \
+                edit.value = buffer->contents.slice(transaction.value_allocator(), start.position, \
+                                                    end.position);                                 \
+                edit.position = start.position - total;                                            \
+                total += end.position - start.position;                                            \
+                edit.is_insert = false;                                                            \
+                transaction.push(edit);                                                            \
+            }                                                                                      \
+        }                                                                                          \
     } while (0)
 
-#define DELETE_FORWARD(FUNC)                                                                    \
-    do {                                                                                        \
-        uint64_t sum_regions = 0;                                                               \
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                    \
-            uint64_t start = buffer->cursors[c].point;                                          \
-            uint64_t end = FUNC(buffer, start);                                                 \
-            sum_regions += end - start;                                                         \
-        }                                                                                       \
-                                                                                                \
-        transaction.init(buffer->cursors.len(), (size_t)sum_regions);                           \
-                                                                                                \
-        uint64_t total = 0;                                                                     \
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                    \
-            uint64_t start = buffer->cursors[c].point;                                          \
-            uint64_t end = FUNC(buffer, start);                                                 \
-            if (start < end) {                                                                  \
-                Edit edit;                                                                      \
-                edit.value = buffer->contents.slice(transaction.value_allocator(), start, end); \
-                edit.position = start - total;                                                  \
-                total += end - start;                                                           \
-                edit.is_insert = false;                                                         \
-                transaction.push(edit);                                                         \
-            }                                                                                   \
-        }                                                                                       \
+#define DELETE_FORWARD(FUNC)                                                                       \
+    do {                                                                                           \
+        uint64_t sum_regions = 0;                                                                  \
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                       \
+            Contents_Iterator start = buffer->contents.iterator_at(buffer->cursors[c].point);      \
+            Contents_Iterator end = start;                                                         \
+            FUNC(buffer, &end);                                                                    \
+            sum_regions += end.position - start.position;                                          \
+        }                                                                                          \
+                                                                                                   \
+        transaction.init(buffer->cursors.len(), (size_t)sum_regions);                              \
+                                                                                                   \
+        uint64_t total = 0;                                                                        \
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {                                       \
+            Contents_Iterator start = buffer->contents.iterator_at(buffer->cursors[c].point);      \
+            Contents_Iterator end = start;                                                         \
+            FUNC(buffer, &end);                                                                    \
+            if (start.position < end.position) {                                                   \
+                Edit edit;                                                                         \
+                edit.value = buffer->contents.slice(transaction.value_allocator(), start.position, \
+                                                    end.position);                                 \
+                edit.position = start.position - total;                                            \
+                total += end.position - start.position;                                            \
+                edit.is_insert = false;                                                            \
+                transaction.push(edit);                                                            \
+            }                                                                                      \
+        }                                                                                          \
     } while (0)
 
 namespace mag {

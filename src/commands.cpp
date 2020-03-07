@@ -165,19 +165,26 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         WITH_TRANSACTION({
             uint64_t sum_line_lengths = 0;
             for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                uint64_t start = start_of_line(buffer, buffer->cursors[c].point);
-                uint64_t end = end_of_line(buffer, buffer->cursors[c].point);
-                sum_line_lengths += end - start + 1;
+                Contents_Iterator start = buffer->contents.iterator_at(buffer->cursors[c].point);
+                Contents_Iterator end = start;
+                start_of_line(buffer, &start);
+                end_of_line(buffer, &end);
+                sum_line_lengths += end.position - start.position + 1;
             }
 
             transaction.init(buffer->cursors.len() * 3, (size_t)sum_line_lengths);
 
             for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                uint64_t start = start_of_line(buffer, buffer->cursors[c].point);
-                uint64_t end = end_of_line(buffer, buffer->cursors[c].point);
-                uint64_t column = buffer->cursors[c].point - start;
-                uint64_t insertion_point = end_of_line(buffer, forward_char(buffer, end));
-                if (insertion_point == end) {
+                Contents_Iterator start = buffer->contents.iterator_at(buffer->cursors[c].point);
+                Contents_Iterator end = start;
+                start_of_line(buffer, &start);
+                end_of_line(buffer, &end);
+                uint64_t column = buffer->cursors[c].point - start.position;
+
+                Contents_Iterator insertion_point = end;
+                forward_char(buffer, &insertion_point);
+                end_of_line(buffer, &insertion_point);
+                if (insertion_point.position == end.position) {
                     continue;
                 }
 
@@ -186,63 +193,65 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
                 //  start  end  ^
                 //       insertion_point
 
-                cursor_positions.push(insertion_point - (end - start) + column);
+                cursor_positions.push(insertion_point.position - (end.position - start.position) +
+                                      column);
 
-                if (insertion_point < buffer->contents.len) {
+                if (!insertion_point.at_eob()) {
                     // abc\ndef\nghi\njkl\n
                     //      [    )    ^
                     //  start    end  ^
                     //         insertion_point
-                    ++insertion_point;
-                    ++end;
-                } else if (start > 0) {
+                    insertion_point.advance();
+                    end.advance();
+                } else if (!start.at_bob()) {
                     // abc\ndef\nghi
                     //    [    )    ^
                     //  start end   ^
                     //       insertion_point
-                    --start;
+                    start.retreat();
                 } else {
                     //    abc\ndef
                     //    [    )  ^
                     // start  end ^
                     //     insertion_point
-                    ++end;
+                    end.advance();
 
-                    SSOStr value =
-                        buffer->contents.slice(transaction.value_allocator(), start, end);
+                    SSOStr value = buffer->contents.slice(transaction.value_allocator(),
+                                                          start.position, end.position);
 
                     Edit edit_insert;
                     cz::Str value_str = value.as_str();
                     edit_insert.value.init_from_constant({value_str.buffer, value_str.len - 1});
-                    edit_insert.position = insertion_point;
+                    edit_insert.position = insertion_point.position;
                     edit_insert.is_insert = true;
                     transaction.push(edit_insert);
 
                     Edit edit_insert_newline;
                     edit_insert_newline.value.init_char('\n');
-                    edit_insert_newline.position = insertion_point;
+                    edit_insert_newline.position = insertion_point.position;
                     edit_insert_newline.is_insert = true;
                     transaction.push(edit_insert_newline);
 
                     Edit edit_delete;
                     edit_delete.value = value;
-                    edit_delete.position = start;
+                    edit_delete.position = start.position;
                     edit_delete.is_insert = false;
                     transaction.push(edit_delete);
                     continue;
                 }
 
-                SSOStr value = buffer->contents.slice(transaction.value_allocator(), start, end);
+                SSOStr value = buffer->contents.slice(transaction.value_allocator(), start.position,
+                                                      end.position);
 
                 Edit edit_insert;
                 edit_insert.value = value;
-                edit_insert.position = insertion_point;
+                edit_insert.position = insertion_point.position;
                 edit_insert.is_insert = true;
                 transaction.push(edit_insert);
 
                 Edit edit_delete;
                 edit_delete.value = value;
-                edit_delete.position = start;
+                edit_delete.position = start.position;
                 edit_delete.is_insert = false;
                 transaction.push(edit_delete);
             }
@@ -263,19 +272,25 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         WITH_TRANSACTION({
             uint64_t sum_line_lengths = 0;
             for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                uint64_t start = start_of_line(buffer, buffer->cursors[c].point);
-                uint64_t end = end_of_line(buffer, buffer->cursors[c].point);
-                sum_line_lengths += end - start + 1;
+                Contents_Iterator start = buffer->contents.iterator_at(buffer->cursors[c].point);
+                Contents_Iterator end = start;
+                start_of_line(buffer, &start);
+                end_of_line(buffer, &end);
+                sum_line_lengths += end.position - start.position + 1;
             }
 
             transaction.init(buffer->cursors.len() * 3, (size_t)sum_line_lengths);
 
             for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                uint64_t start = start_of_line(buffer, buffer->cursors[c].point);
-                uint64_t end = end_of_line(buffer, buffer->cursors[c].point);
-                uint64_t column = buffer->cursors[c].point - start;
-                uint64_t insertion_point = backward_line(buffer, start);
-                if (insertion_point == start) {
+                Contents_Iterator start = buffer->contents.iterator_at(buffer->cursors[c].point);
+                Contents_Iterator end = start;
+                start_of_line(buffer, &start);
+                end_of_line(buffer, &end);
+                uint64_t column = buffer->cursors[c].point - start.position;
+
+                Contents_Iterator insertion_point = start;
+                backward_line(buffer, &insertion_point);
+                if (insertion_point.position == start.position) {
                     continue;
                 }
 
@@ -284,43 +299,45 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
                 //      ^ start end
                 // insertion_point
 
-                cursor_positions.push(insertion_point + column);
+                cursor_positions.push(insertion_point.position + column);
 
-                if (end < buffer->contents.len) {
+                if (!end.at_eob()) {
                     // Normal case: pick up newline after end.
                     //
                     //   abc\ndef\nghi\njkl\n
                     //        ^    [    )
                     //        ^  start end
                     // insertion_point
-                    ++end;
-                } else if (insertion_point > 0) {
+                    end.advance();
+                } else if (!insertion_point.at_bob()) {
                     // We don't have the line after us.
                     //
                     // abc\ndef\nghi
                     //    ^    [    )
                     //    ^ start   end
                     // insertion_point
-                    --start;
-                    --insertion_point;
+                    start.retreat();
+                    insertion_point.retreat();
                 } else {
                     // We don't have a line after us or before us.
                     //
                     // abc\ndef
                     //      [  )
-                    SSOStr value =
-                        buffer->contents.slice(transaction.value_allocator(), start - 1, end);
+                    start.retreat();
+
+                    SSOStr value = buffer->contents.slice(transaction.value_allocator(),
+                                                          start.position, end.position);
 
                     Edit edit_delete;
                     edit_delete.value = value;
-                    edit_delete.position = start - 1;
+                    edit_delete.position = start.position;
                     edit_delete.is_insert = false;
                     transaction.push(edit_delete);
 
                     Edit edit_insert;
                     cz::Str value_str = value.as_str();
                     edit_insert.value.init_from_constant({value_str.buffer + 1, value_str.len - 1});
-                    edit_insert.position = insertion_point;
+                    edit_insert.position = insertion_point.position;
                     edit_insert.is_insert = true;
                     transaction.push(edit_insert);
 
@@ -332,17 +349,18 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
                     continue;
                 }
 
-                SSOStr value = buffer->contents.slice(transaction.value_allocator(), start, end);
+                SSOStr value = buffer->contents.slice(transaction.value_allocator(), start.position,
+                                                      end.position);
 
                 Edit edit_delete;
                 edit_delete.value = value;
-                edit_delete.position = start;
+                edit_delete.position = start.position;
                 edit_delete.is_insert = false;
                 transaction.push(edit_delete);
 
                 Edit edit_insert;
                 edit_insert.value = value;
-                edit_insert.position = insertion_point;
+                edit_insert.position = insertion_point.position;
                 edit_insert.is_insert = true;
                 transaction.push(edit_insert);
             }
@@ -489,11 +507,13 @@ void command_quit(Editor* editor, Command_Source source) {
 
 static void create_cursor_forward_line(Buffer* buffer) {
     CZ_DEBUG_ASSERT(buffer->cursors.len() >= 1);
-    uint64_t last_point = buffer->cursors.last().point;
-    uint64_t new_last_point = forward_line(buffer, last_point);
-    if (new_last_point != last_point) {
+    Contents_Iterator last_cursor_iterator =
+        buffer->contents.iterator_at(buffer->cursors.last().point);
+    Contents_Iterator new_cursor_iterator = last_cursor_iterator;
+    forward_line(buffer, &new_cursor_iterator);
+    if (new_cursor_iterator.position != last_cursor_iterator.position) {
         Cursor cursor;
-        cursor.point = new_last_point;
+        cursor.point = new_cursor_iterator.position;
         cursor.mark = cursor.point;
         cursor.copy_chain = buffer->cursors.last().copy_chain;
 
@@ -508,11 +528,13 @@ void command_create_cursor_forward_line(Editor* editor, Command_Source source) {
 
 static void create_cursor_backward_line(Buffer* buffer) {
     CZ_DEBUG_ASSERT(buffer->cursors.len() >= 1);
-    uint64_t first_point = buffer->cursors[0].point;
-    uint64_t new_first_point = backward_line(buffer, first_point);
-    if (new_first_point != first_point) {
+    Contents_Iterator first_cursor_iterator =
+        buffer->contents.iterator_at(buffer->cursors[0].point);
+    Contents_Iterator new_cursor_iterator = first_cursor_iterator;
+    backward_line(buffer, &new_cursor_iterator);
+    if (new_cursor_iterator.position != first_cursor_iterator.position) {
         Cursor cursor;
-        cursor.point = new_first_point;
+        cursor.point = new_cursor_iterator.position;
         cursor.mark = cursor.point;
         cursor.copy_chain = buffer->cursors[0].copy_chain;
 
