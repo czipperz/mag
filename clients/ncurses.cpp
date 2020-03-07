@@ -149,77 +149,89 @@ static void cache_window_unified_position(Window_Cache* window_cache,
                                           Buffer* buffer) {
     window_cache->v.unified.visible_end =
         compute_visible_end(buffer, start_position, count_rows, count_cols);
-}
-
-static void cache_window_unified_update(Window_Cache* window_cache,
-                                        Window* window,
-                                        Buffer* buffer) {
-    cache_window_unified_position(window_cache, window->v.unified.start_position, window->rows,
-                                  window->cols, buffer);
-
-    size_t changes_len = buffer->changes.len();
-    cz::Slice<Tokenizer_Check_Point> check_points = window_cache->v.unified.tokenizer_check_points;
-    unsigned char* changed_check_points =
-        (unsigned char*)calloc(1, cz::bit_array::alloc_size(check_points.len));
-    CZ_DEFER(free(changed_check_points));
-    for (size_t i = 0; i < check_points.len; ++i) {
-        uint64_t pos = check_points[i].position;
-        for (size_t c = window_cache->v.unified.change_index; c < changes_len; ++c) {
-            buffer->changes[c].adjust_position(&pos);
-        }
-
-        if (i > 0 && check_points[i].position != pos) {
-            cz::bit_array::set(changed_check_points, i - 1);
-        }
-
-        check_points[i].position = pos;
-    }
-    window_cache->v.unified.change_index = changes_len;
-
-    for (size_t i = 0; i < check_points.len; ++i) {
-        if (!cz::bit_array::get(changed_check_points, i)) {
-            continue;
-        }
-
-        uint64_t state = check_points[i].state;
-        uint64_t end_position = check_points[i + 1].position;
-        Token token;
-        token.end = check_points[i].position;
-        while (token.end < end_position) {
-            if (!buffer->mode.next_token(&buffer->contents, token.end, &token, &state)) {
-                break;
-            }
-        }
-
-        if (token.end > end_position || state != check_points[i + 1].state) {
-            check_points[i + 1].position = token.end;
-            check_points[i + 1].state;
-            cz::bit_array::set(changed_check_points, i + 1);
-        }
-    }
 
     uint64_t state = 0;
     Token token;
     token.end = 0;
+    cz::Slice<Tokenizer_Check_Point> check_points = window_cache->v.unified.tokenizer_check_points;
     if (check_points.len > 0) {
         state = check_points[check_points.len - 1].state;
         token.end = check_points[check_points.len - 1].position;
     }
 
-    int counter = 0;
-    while (token.end <= window->v.unified.start_position) {
-        if (++counter == 128) {
+    size_t previous_check_point_start = 0;
+    while (token.end <= start_position) {
+        if (token.end >= previous_check_point_start + 1024) {
             window_cache->v.unified.tokenizer_check_points.reserve(cz::heap_allocator(), 1);
             Tokenizer_Check_Point check_point;
             check_point.position = token.end;
             check_point.state = state;
             window_cache->v.unified.tokenizer_check_points.push(check_point);
-            counter = 0;
+            previous_check_point_start = token.end;
         }
+
         if (!buffer->mode.next_token(&buffer->contents, token.end, &token, &state)) {
             break;
         }
     }
+}
+
+static void cache_window_unified_update(Window_Cache* window_cache,
+                                        Window* window,
+                                        Buffer* buffer) {
+    cz::Slice<Change> changes = buffer->changes;
+    cz::Slice<Tokenizer_Check_Point> check_points = window_cache->v.unified.tokenizer_check_points;
+    unsigned char* changed_check_points =
+        (unsigned char*)calloc(1, cz::bit_array::alloc_size(check_points.len - 1));
+    CZ_DEFER(free(changed_check_points));
+    for (size_t i = 0; i < check_points.len; ++i) {
+        uint64_t pos = check_points[i].position;
+        for (size_t c = window_cache->v.unified.change_index; c < changes.len; ++c) {
+            changes[c].adjust_position(&pos);
+        }
+
+        if (check_points[i].position != pos) {
+            cz::bit_array::set(changed_check_points, i);
+        }
+
+        check_points[i].position = pos;
+    }
+    window_cache->v.unified.change_index = changes.len;
+
+    Token token;
+    token.end = 0;
+    uint64_t state = 0;
+    for (size_t i = 0; i < check_points.len; ++i) {
+        uint64_t end_position = check_points[i].position;
+        if (cz::bit_array::get(changed_check_points, i)) {
+            while (i < check_points.len) {
+                while (token.end < end_position) {
+                    if (!buffer->mode.next_token(&buffer->contents, token.end, &token, &state)) {
+                        break;
+                    }
+                }
+
+                if (token.end > end_position || state != check_points[i].state) {
+                    check_points[i].position = token.end;
+                    check_points[i].state = state;
+                    end_position = check_points[i + 1].position;
+                    ++i;
+                    if (i == check_points.len) {
+                        goto done;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        token.end = check_points[i].position;
+        state = check_points[i].state;
+    }
+
+done:
+    cache_window_unified_position(window_cache, window->v.unified.start_position, window->rows,
+                                  window->cols, buffer);
 }
 
 static void cache_window_unified_create(Window_Cache* window_cache,
