@@ -4,6 +4,7 @@
 #include <ncurses.h>
 #include <Tracy.hpp>
 #include <cz/bit_array.hpp>
+#include <thread>
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "movement.hpp"
@@ -48,6 +49,34 @@ struct Cell {
             ADD_NEWLINE();     \
         }                      \
     } while (0)
+
+bool is_nodelay = false;
+int mock_getch() {
+    static int keys[] = {27, '>', 24, 3};
+    static int times[] = {800, 800, 1100, 1200};
+    static int index = 0;
+    static auto time_start = std::chrono::steady_clock::now();
+
+    if (index == sizeof(times) / sizeof(*times)) {
+        return ERR;
+    }
+
+    auto duration = std::chrono::steady_clock::now() - time_start;
+    auto time = std::chrono::milliseconds(times[index]);
+    if (duration >= time) {
+        return keys[index++];
+    } else {
+        if (is_nodelay) {
+            return ERR;
+        } else {
+            std::this_thread::sleep_until(time_start + time);
+            return keys[index++];
+        }
+    }
+}
+
+#define nodelay(WINDOW, VALUE) (is_nodelay = VALUE)
+#define getch() (mock_getch())
 
 struct Tokenizer_Check_Point {
     uint64_t position;
