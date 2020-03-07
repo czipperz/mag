@@ -42,23 +42,33 @@ static void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
         char code = source.keys[0].code;
 
-        // if (source.previous_command == command_insert_char) {
-        //     CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
-        //     Commit commit = buffer->commits[buffer->commit_index - 1];
-        //     size_t len = commit.edits[0].value.len();
-        //     if (len < SSOStr::MAX_SHORT_LEN) {
-        //         buffer->undo();
-        //         for (size_t e = 0; e < commit.edits.len; ++e) {
-        //             CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
-        //             CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
-        //             commit.edits[e].value.short_._buffer[len] = code;
-        //             commit.edits[e].value.short_.set_len(len + 1);
-        //             commit.edits[e].position += e;
-        //         }
-        //         buffer->redo();
-        //         return;
-        //     }
-        // }
+        if (source.previous_command == command_insert_char) {
+            CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
+            Commit commit = buffer->commits[buffer->commit_index - 1];
+            size_t len = commit.edits[0].value.len();
+            if (len < SSOStr::MAX_SHORT_LEN) {
+                CZ_DEBUG_ASSERT(commit.edits.len == buffer->cursors.len());
+                buffer->undo();
+
+                WITH_TRANSACTION({
+                    transaction.init(commit.edits.len, 0);
+                    for (size_t e = 0; e < commit.edits.len; ++e) {
+                        CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
+                        CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+
+                        Edit edit;
+                        memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer,
+                               len);
+                        edit.value.short_._buffer[len] = code;
+                        edit.value.short_.set_len(len + 1);
+                        edit.position = commit.edits[e].position + e;
+                        edit.is_insert = true;
+                        transaction.push(edit);
+                    }
+                });
+                return;
+            }
+        }
 
         insert_char(buffer, code);
     });
