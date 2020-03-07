@@ -49,7 +49,9 @@ void Contents::remove(uint64_t start, uint64_t len) {
                 bucket_remove(&buckets[v], start, len);
                 return;
             } else {
-                // TODO: what do we do with empty buckets?
+                // :EmptyBuckets This is where empty buckets are created, and
+                // then never reclaimed.  Perhaps we sort them to the end of the
+                // list periodically and then reuse them that way?
                 len -= buckets[v].len - start;
                 buckets[v].len = start;
                 start = 0;
