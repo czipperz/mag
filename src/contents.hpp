@@ -26,8 +26,6 @@ struct Contents {
 
     bool is_bucket_separator(uint64_t pos) const;
 
-    void get_bucket(uint64_t position, size_t* bucket, size_t* index) const;
-
     Contents_Iterator iterator_at(uint64_t position) const;
 };
 

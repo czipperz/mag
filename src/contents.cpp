@@ -217,18 +217,23 @@ bool Contents::is_bucket_separator(uint64_t pos) const {
     CZ_PANIC("Out of bounds");
 }
 
-void Contents::get_bucket(uint64_t pos, size_t* bucket, size_t* index) const {
+Contents_Iterator Contents::iterator_at(uint64_t pos) const {
+    Contents_Iterator it;
+    it.contents = this;
+    it.position = pos;
+
     for (size_t i = 0; i < buckets.len(); ++i) {
         if (pos < buckets[i].len) {
-            *bucket = i;
-            *index = pos;
-            return;
+            it.bucket = i;
+            it.index = pos;
+            return it;
         }
         pos -= buckets[i].len;
     }
 
-    *bucket = buckets.len();
-    *index = 0;
+    it.bucket = buckets.len();
+    it.index = 0;
+    return it;
 }
 
 }
