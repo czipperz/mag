@@ -59,6 +59,10 @@ struct Contents_Iterator {
         while (index == contents->buckets[bucket].len) {
             ++bucket;
             index = 0;
+            // :EmptyBuckets Once resolved, delete this
+            if (bucket == contents->buckets.len()) {
+                break;
+            }
         }
     }
 };
