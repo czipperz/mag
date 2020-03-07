@@ -131,7 +131,10 @@ static uint64_t compute_visible_start(Buffer* buffer,
                                       int count_cols) {
     for (int rows = 0; rows < count_rows;) {
         uint64_t next_line_start_position = backward_line(buffer, line_start_position);
-        CZ_DEBUG_ASSERT(next_line_start_position < line_start_position);
+        if (next_line_start_position == line_start_position) {
+            CZ_DEBUG_ASSERT(line_start_position == 0);
+            break;
+        }
 
         int line_rows =
             (line_start_position - next_line_start_position + count_cols - 1) / count_cols;
