@@ -269,6 +269,7 @@ static void cache_window_unified_update(Window_Cache* window_cache,
     unsigned char* changed_check_points =
         (unsigned char*)calloc(1, cz::bit_array::alloc_size(check_points.len - 1));
     CZ_DEFER(free(changed_check_points));
+    // Detect check points that changed
     for (size_t i = 0; i < check_points.len; ++i) {
         uint64_t pos = check_points[i].position;
         for (size_t c = window_cache->v.unified.change_index; c < changes.len; ++c) {
@@ -286,10 +287,13 @@ static void cache_window_unified_update(Window_Cache* window_cache,
     Token token;
     token.end = 0;
     uint64_t state = 0;
+    // Fix check points that were changed
     for (size_t i = 0; i < check_points.len; ++i) {
         uint64_t end_position = check_points[i].position;
         if (cz::bit_array::get(changed_check_points, i)) {
             Contents_Iterator iterator = buffer->contents.iterator_at(token.end);
+            // Efficiently loop without recalculating the iterator so long as
+            // the edit is screwing up future check points.
             while (i < check_points.len) {
                 while (token.end < end_position) {
                     if (!buffer->mode.next_token(&buffer->contents, &iterator, &token, &state)) {
@@ -350,6 +354,7 @@ static void draw_buffer_contents(Cell* cells,
     Contents_Iterator iterator = buffer->contents.iterator_at(*start_position_);
     start_of_line(buffer, &iterator);
     if (window_cache) {
+        // Ensure the cursor is visible
         uint64_t selected_cursor_position = buffer->cursors[0].point;
         Contents_Iterator second_line_iterator = iterator;
         forward_line(buffer, &second_line_iterator);
@@ -376,6 +381,7 @@ static void draw_buffer_contents(Cell* cells,
     uint64_t state = 0;
     bool has_token = true;
     if (window_cache) {
+        // Find the last check point before the start position
         cz::Slice<Tokenizer_Check_Point> check_points =
             window_cache->v.unified.tokenizer_check_points;
         size_t start = 0;
