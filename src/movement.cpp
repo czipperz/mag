@@ -5,106 +5,122 @@
 
 namespace mag {
 
-uint64_t start_of_line(Buffer* buffer, uint64_t point) {
-    if (point == 0) {
-        return point;
+void start_of_line(Buffer* buffer, Contents_Iterator* iterator) {
+    if (iterator->at_bob()) {
+        return;
     }
 
-    --point;
-    while (buffer->contents.get_once(point) != '\n') {
-        if (point == 0) {
-            return point;
+    iterator->retreat();
+    while (iterator->get() != '\n') {
+        if (iterator->at_bob()) {
+            return;
         }
-        --point;
+        iterator->retreat();
     }
-    ++point;
-    return point;
+    iterator->advance();
 }
 
-uint64_t end_of_line(Buffer* buffer, uint64_t point) {
-    while (point < buffer->contents.len && buffer->contents.get_once(point) != '\n') {
-        ++point;
+void end_of_line(Buffer* buffer, Contents_Iterator* iterator) {
+    while (!iterator->at_eob() && iterator->get() != '\n') {
+        iterator->advance();
     }
-    return point;
 }
 
-uint64_t start_of_line_text(Buffer* buffer, uint64_t point) {
-    point = start_of_line(buffer, point);
-    while (point < buffer->contents.len && isblank(buffer->contents.get_once(point))) {
-        ++point;
+void start_of_line_text(Buffer* buffer, Contents_Iterator* iterator) {
+    start_of_line(buffer, iterator);
+    while (!iterator->at_eob() && isblank(iterator->get())) {
+        iterator->advance();
     }
-    return point;
 }
 
-uint64_t forward_line(Buffer* buffer, uint64_t point) {
-    uint64_t start = start_of_line(buffer, point);
-    uint64_t end = end_of_line(buffer, point);
-    uint64_t column = point - start;
-    if (end == buffer->contents.len) {
-        return point;
+void forward_line(Buffer* buffer, Contents_Iterator* iterator) {
+    Contents_Iterator start = *iterator;
+    Contents_Iterator end = *iterator;
+    start_of_line(buffer, &start);
+    end_of_line(buffer, &end);
+    uint64_t column = iterator->position - start.position;
+    if (end.at_eob()) {
+        return;
     }
-    uint64_t next_end = end_of_line(buffer, end + 1);
-    return cz::min(next_end, end + 1 + column);
-}
 
-uint64_t backward_line(Buffer* buffer, uint64_t point) {
-    uint64_t start = start_of_line(buffer, point);
-    uint64_t column = point - start;
-    if (start == 0) {
-        return point;
-    }
-    uint64_t previous_start = start_of_line(buffer, start - 1);
-    return cz::min(start - 1, previous_start + column);
-}
-
-uint64_t forward_word(Buffer* buffer, uint64_t point) {
-    if (point == buffer->contents.len) {
-        return point;
-    }
-    ++point;
-    while (point < buffer->contents.len && !isalnum(buffer->contents.get_once(point))) {
-        ++point;
-    }
-    while (point < buffer->contents.len && isalnum(buffer->contents.get_once(point))) {
-        ++point;
-    }
-    return point;
-}
-
-uint64_t backward_word(Buffer* buffer, uint64_t point) {
-    if (point == 0) {
-        return point;
-    }
-    --point;
-    while (!isalnum(buffer->contents.get_once(point))) {
-        if (point == 0) {
-            return point;
-        }
-        --point;
-    }
-    while (isalnum(buffer->contents.get_once(point))) {
-        if (point == 0) {
-            return point;
-        }
-        --point;
-    }
-    ++point;
-    return point;
-}
-
-uint64_t forward_char(Buffer* buffer, uint64_t point) {
-    if (point < buffer->contents.len) {
-        return point + 1;
+    Contents_Iterator next_end = end;
+    next_end.advance();
+    end_of_line(buffer, &next_end);
+    if (next_end.position < end.position + 1 + column) {
+        *iterator = next_end;
     } else {
-        return point;
+        for (uint64_t i = 0; i < column + 1; ++i) {
+            end.advance();
+        }
+        *iterator = end;
     }
 }
 
-uint64_t backward_char(Buffer* buffer, uint64_t point) {
-    if (point > 0) {
-        return point - 1;
+void backward_line(Buffer* buffer, Contents_Iterator* iterator) {
+    Contents_Iterator start = *iterator;
+    start_of_line(buffer, &start);
+    uint64_t column = iterator->position - start.position;
+    if (start.at_bob()) {
+        return;
+    }
+
+    Contents_Iterator previous_start = start;
+    previous_start.retreat();
+    start_of_line(buffer, &previous_start);
+    if (start.position - 1 < previous_start.position + column) {
+        start.retreat();
+        *iterator = start;
     } else {
-        return point;
+        for (uint64_t i = 0; i < column; ++i) {
+            previous_start.advance();
+        }
+        *iterator = previous_start;
+    }
+}
+
+void forward_word(Buffer* buffer, Contents_Iterator* iterator) {
+    if (iterator->at_eob()) {
+        return;
+    }
+    iterator->advance();
+    while (!iterator->at_eob() && !isalnum(iterator->get())) {
+        iterator->advance();
+    }
+    while (!iterator->at_eob() && isalnum(iterator->get())) {
+        iterator->advance();
+    }
+    return;
+}
+
+void backward_word(Buffer* buffer, Contents_Iterator* iterator) {
+    if (iterator->at_bob()) {
+        return;
+    }
+    iterator->retreat();
+    while (!isalnum(iterator->get())) {
+        if (iterator->at_bob()) {
+            return;
+        }
+        iterator->retreat();
+    }
+    while (isalnum(iterator->get())) {
+        if (iterator->at_bob()) {
+            return;
+        }
+        iterator->retreat();
+    }
+    iterator->advance();
+}
+
+void forward_char(Buffer* buffer, Contents_Iterator* iterator) {
+    if (!iterator->at_eob()) {
+        iterator->advance();
+    }
+}
+
+void backward_char(Buffer* buffer, Contents_Iterator* iterator) {
+    if (!iterator->at_bob()) {
+        iterator->retreat();
     }
 }
 
