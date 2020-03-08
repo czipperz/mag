@@ -142,24 +142,18 @@ static void compute_visible_start(Buffer* buffer,
     }
 }
 
-static bool add_window_cache_check_point(Window_Cache* window_cache,
-                                         Buffer* buffer,
-                                         // TODO: Convert this to Contents_Iterator*
-                                         uint64_t position,
-                                         uint64_t state,
-                                         Tokenizer_Check_Point* check_point) {
-    Contents_Iterator iterator = buffer->contents.iterator_at(position);
-    Token token;
-    token.end = position;
-    uint64_t contents_len = buffer->contents.len;
-    while (token.end <= contents_len) {
-        if (token.end >= position + 1024) {
-            check_point->position = token.end;
-            check_point->state = state;
+static bool next_check_point(Window_Cache* window_cache,
+                             Buffer* buffer,
+                             Contents_Iterator* iterator,
+                             uint64_t* state) {
+    uint64_t start_position = iterator->position;
+    while (!iterator->at_eob()) {
+        if (iterator->position >= start_position + 1024) {
             return true;
         }
 
-        if (!buffer->mode.next_token(&buffer->contents, &iterator, &token, &state)) {
+        Token token;
+        if (!buffer->mode.next_token(&buffer->contents, iterator, &token, state)) {
             break;
         }
     }
@@ -176,11 +170,14 @@ static int cache_windows_check_points(Window_Cache* window_cache, Window* window
                 cz::Vector<Tokenizer_Check_Point>* check_points =
                     &window_cache->v.unified.tokenizer_check_points;
 
-                Tokenizer_Check_Point starting_point;
+                uint64_t state;
+                Contents_Iterator iterator;
                 if (check_points->len() > 0) {
-                    starting_point = check_points->last();
+                    state = check_points->last().state;
+                    iterator = buffer->contents.iterator_at(check_points->last().position);
                 } else {
-                    starting_point = {};
+                    state = 0;
+                    iterator = buffer->contents.iterator_at(0);
                 }
 
                 while (1) {
@@ -189,12 +186,13 @@ static int cache_windows_check_points(Window_Cache* window_cache, Window* window
                         return getch_result;
                     }
 
-                    Tokenizer_Check_Point check_point;
-                    if (!add_window_cache_check_point(window_cache, buffer, starting_point.position,
-                                                      starting_point.state, &check_point)) {
+                    if (!next_check_point(window_cache, buffer, &iterator, &state)) {
                         break;
                     }
-                    starting_point = check_point;
+
+                    Tokenizer_Check_Point check_point;
+                    check_point.position = iterator.position;
+                    check_point.state = state;
                     check_points->reserve(cz::heap_allocator(), 1);
                     check_points->push(check_point);
                 }
@@ -238,20 +236,24 @@ static void cache_window_unified_position(Window_Cache* window_cache,
     cz::Vector<Tokenizer_Check_Point>* check_points =
         &window_cache->v.unified.tokenizer_check_points;
 
-    Tokenizer_Check_Point starting_point;
+    uint64_t state;
+    Contents_Iterator iterator;
     if (check_points->len() > 0) {
-        starting_point = check_points->last();
+        state = check_points->last().state;
+        iterator = buffer->contents.iterator_at(check_points->last().position);
     } else {
-        starting_point = {};
+        state = 0;
+        iterator = buffer->contents.iterator_at(0);
     }
 
-    while (starting_point.position <= start_position) {
-        Tokenizer_Check_Point check_point;
-        if (!add_window_cache_check_point(window_cache, buffer, starting_point.position,
-                                          starting_point.state, &check_point)) {
+    while (iterator.position <= start_position) {
+        if (!next_check_point(window_cache, buffer, &iterator, &state)) {
             break;
         }
-        starting_point = check_point;
+
+        Tokenizer_Check_Point check_point;
+        check_point.position = iterator.position;
+        check_point.state = state;
         check_points->reserve(cz::heap_allocator(), 1);
         check_points->push(check_point);
     }
