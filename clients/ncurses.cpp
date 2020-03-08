@@ -100,46 +100,46 @@ static void destroy_window_cache(Window_Cache* window_cache) {
     free(window_cache);
 }
 
-static uint64_t compute_visible_end(Buffer* buffer,
-                                    uint64_t line_start_position,
-                                    int count_rows,
-                                    int count_cols) {
+static void compute_visible_end(Buffer* buffer,
+                                Contents_Iterator* line_start_iterator,
+                                int count_rows,
+                                int count_cols) {
     int rows;
     for (rows = 0; rows < count_rows - 1;) {
-        uint64_t next_line_start_position = forward_line(buffer, line_start_position);
-        if (next_line_start_position == line_start_position) {
+        Contents_Iterator next_line_start_iterator = *line_start_iterator;
+        forward_line(buffer, &next_line_start_iterator);
+        if (next_line_start_iterator.position == line_start_iterator->position) {
             break;
         }
 
         int line_rows =
-            (next_line_start_position - line_start_position + count_cols - 1) / count_cols;
-        line_start_position = next_line_start_position;
+            (next_line_start_iterator.position - line_start_iterator->position + count_cols - 1) /
+            count_cols;
+        *line_start_iterator = next_line_start_iterator;
 
         rows += line_rows;
     }
-
-    return line_start_position;
 }
 
-static uint64_t compute_visible_start(Buffer* buffer,
-                                      uint64_t line_start_position,
-                                      int count_rows,
-                                      int count_cols) {
+static void compute_visible_start(Buffer* buffer,
+                                  Contents_Iterator* line_start_iterator,
+                                  int count_rows,
+                                  int count_cols) {
     for (int rows = 0; rows < count_rows - 2;) {
-        uint64_t next_line_start_position = backward_line(buffer, line_start_position);
-        if (next_line_start_position == line_start_position) {
-            CZ_DEBUG_ASSERT(line_start_position == 0);
+        Contents_Iterator next_line_start_iterator = *line_start_iterator;
+        backward_line(buffer, &next_line_start_iterator);
+        if (next_line_start_iterator.position == line_start_iterator->position) {
+            CZ_DEBUG_ASSERT(line_start_iterator->position == 0);
             break;
         }
 
         int line_rows =
-            (line_start_position - next_line_start_position + count_cols - 1) / count_cols;
-        line_start_position = next_line_start_position;
+            (line_start_iterator->position - next_line_start_iterator.position + count_cols - 1) /
+            count_cols;
+        *line_start_iterator = next_line_start_iterator;
 
         rows += line_rows;
     }
-
-    return line_start_position;
 }
 
 static bool add_window_cache_check_point(Window_Cache* window_cache,
@@ -231,8 +231,9 @@ static void cache_window_unified_position(Window_Cache* window_cache,
                                           int count_rows,
                                           int count_cols,
                                           Buffer* buffer) {
-    window_cache->v.unified.visible_end =
-        compute_visible_end(buffer, start_position, count_rows, count_cols);
+    Contents_Iterator visible_end_iterator = buffer->contents.iterator_at(start_position);
+    compute_visible_end(buffer, &visible_end_iterator, count_rows, count_cols);
+    window_cache->v.unified.visible_end = visible_end_iterator.position;
 
     cz::Vector<Tokenizer_Check_Point>* check_points =
         &window_cache->v.unified.tokenizer_check_points;
@@ -336,27 +337,33 @@ static void draw_buffer_contents(Cell* cells,
                                  int total_cols,
                                  Editor* editor,
                                  Buffer* buffer,
-                                 uint64_t* start_position,
+                                 uint64_t* start_position_,
                                  bool show_cursors,
                                  int start_row,
                                  int start_col,
                                  int count_rows,
                                  int count_cols) {
-    *start_position = start_of_line(buffer, *start_position);
+    Contents_Iterator iterator = buffer->contents.iterator_at(*start_position_);
+    start_of_line(buffer, &iterator);
     if (window_cache) {
         uint64_t selected_cursor_position = buffer->cursors[0].point;
-        if (selected_cursor_position < forward_line(buffer, *start_position)) {
-            *start_position =
-                backward_line(buffer, start_of_line(buffer, selected_cursor_position));
-            cache_window_unified_position(window_cache, *start_position, count_rows, count_cols,
+        Contents_Iterator second_line_iterator = iterator;
+        forward_line(buffer, &second_line_iterator);
+        if (selected_cursor_position < second_line_iterator.position) {
+            iterator = buffer->contents.iterator_at(selected_cursor_position);
+            start_of_line(buffer, &iterator);
+            backward_line(buffer, &iterator);
+            cache_window_unified_position(window_cache, iterator.position, count_rows, count_cols,
                                           buffer);
         } else if (selected_cursor_position >= window_cache->v.unified.visible_end) {
-            *start_position = compute_visible_start(
-                buffer, start_of_line(buffer, selected_cursor_position), count_rows, count_cols);
-            cache_window_unified_position(window_cache, *start_position, count_rows, count_cols,
+            iterator = buffer->contents.iterator_at(selected_cursor_position);
+            start_of_line(buffer, &iterator);
+            compute_visible_start(buffer, &iterator, count_rows, count_cols);
+            cache_window_unified_position(window_cache, iterator.position, count_rows, count_cols,
                                           buffer);
         }
     }
+    *start_position_ = iterator.position;
 
     int y = 0;
     int x = 0;
@@ -371,11 +378,11 @@ static void draw_buffer_contents(Cell* cells,
         size_t end = check_points.len;
         while (start < end) {
             size_t mid = (start + end) / 2;
-            if (check_points[mid].position == *start_position) {
+            if (check_points[mid].position == iterator.position) {
                 token.end = check_points[mid].position;
                 state = check_points[mid].state;
                 break;
-            } else if (check_points[mid].position < *start_position) {
+            } else if (check_points[mid].position < iterator.position) {
                 token.end = check_points[mid].position;
                 state = check_points[mid].state;
                 start = mid + 1;
@@ -387,8 +394,7 @@ static void draw_buffer_contents(Cell* cells,
 
     int show_mark = 0;
 
-    for (Contents_Iterator iterator = buffer->contents.iterator_at(*start_position),
-                           token_iterator = buffer->contents.iterator_at(token.end);
+    for (Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
          !iterator.at_eob(); iterator.advance()) {
         while (has_token && iterator.position >= token.end) {
             has_token = buffer->mode.next_token(&buffer->contents, &token_iterator, &token, &state);
