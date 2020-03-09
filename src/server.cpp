@@ -1,5 +1,6 @@
 #include "server.hpp"
 
+#include <Tracy.hpp>
 #include <cz/heap.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -75,6 +76,8 @@ static void command_insert_char(Editor* editor, Command_Source source) {
 }
 
 void Server::receive(Client* client, Key key) {
+    ZoneScoped;
+
     client->key_chain.reserve(cz::heap_allocator(), 1);
     client->key_chain.push(key);
 
