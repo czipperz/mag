@@ -9,7 +9,7 @@ namespace mag {
 enum State : uint64_t {
     IN_PREPROCESSOR_FLAG = 0x8000000000000000,
 
-    NORMAL_STATE_MASK = 0x0000000000000007,
+    NORMAL_STATE_MASK = 0x000000000000000F,
     START_OF_STATEMENT = 0x0000000000000000,
     IN_EXPR = 0x0000000000000001,
     IN_VARIABLE_TYPE = 0x0000000000000002,
@@ -18,9 +18,10 @@ enum State : uint64_t {
     IN_PARAMETER_TYPE = 0x0000000000000005,
     AFTER_PARAMETER_DECLARATION = 0x0000000000000006,
     IN_TYPE_DEFINITION = 0x0000000000000007,
+    AFTER_FOR = 0x0000000000000008,
 
-    PREPROCESSOR_SAVED_STATE_MASK = 0x0000000000000038,
-    PREPROCESSOR_SAVE_SHIFT = 3,
+    PREPROCESSOR_SAVED_STATE_MASK = 0x00000000000000F0,
+    PREPROCESSOR_SAVE_SHIFT = 4,
 
     PREPROCESSOR_STATE_MASK = 0x7000000000000000,
     PREPROCESSOR_START_STATEMENT = 0x0000000000000000,
@@ -98,8 +99,6 @@ static bool look_for_normal_keyword(const Contents* contents,
                 MATCHES("and");
                 MATCHES("asm");
                 break;
-
-                CASE('f', "for");
 
             case 'n':
                 MATCHES("new");
@@ -495,6 +494,12 @@ bool cpp_next_token(const Contents* contents,
             }
         }
 
+        if (matches(contents, start_iterator, token->end, "for")) {
+            token->type = Token_Type::KEYWORD;
+            normal_state = AFTER_FOR;
+            goto done;
+        }
+
         if (look_for_normal_keyword(contents, start_iterator, token, first_char)) {
             token->type = Token_Type::KEYWORD;
             goto done;
@@ -629,6 +634,8 @@ bool cpp_next_token(const Contents* contents,
             normal_state = START_OF_STATEMENT;
         } else if (normal_state == START_OF_STATEMENT) {
             normal_state = IN_EXPR;
+        } else if (normal_state == AFTER_FOR && first_char == '(') {
+            normal_state = START_OF_STATEMENT;
         } else if (normal_state == AFTER_VARIABLE_DECLARATION && first_char == '(') {
             normal_state = START_OF_PARAMETER;
         } else if (normal_state == AFTER_VARIABLE_DECLARATION && first_char == '=') {
