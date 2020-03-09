@@ -5,6 +5,7 @@ add_subdirectory(cz)
 
 include_directories(cz/include)
 include_directories(src)
+include_directories(tracy)
 
 set(LIBRARY_NAME ${PROJECT_NAME}l)
 file(GLOB_RECURSE SRCS src/*.cpp)
@@ -16,6 +17,9 @@ target_link_libraries(${PROJECT_NAME} ${LIBRARY_NAME})
 target_link_libraries(${PROJECT_NAME} cz)
 target_include_directories(${PROJECT_NAME} PUBLIC clients)
 target_link_libraries(${PROJECT_NAME} ncurses)
+target_link_libraries(${PROJECT_NAME} tracy)
+target_link_libraries(${PROJECT_NAME} pthread)
+target_link_libraries(${PROJECT_NAME} dl)
 
 file(GLOB_RECURSE TEST_SRCS tests/*.cpp)
 set(TEST_EXECUTABLE test)
@@ -26,7 +30,14 @@ target_include_directories(${TEST_EXECUTABLE} PUBLIC cz/test_base)
 target_link_libraries(${TEST_EXECUTABLE} ${LIBRARY_NAME})
 target_link_libraries(${TEST_EXECUTABLE} cz)
 target_link_libraries(${TEST_EXECUTABLE} czt)
+target_link_libraries(${TEST_EXECUTABLE} tracy)
+
+add_library(tracy tracy/TracyClient.cpp)
 
 if (CMAKE_COMPILER_IS_GNUCC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror=switch")
+endif()
+
+if (TRACY_ENABLE)
+  add_compile_definitions(TRACY_ENABLE)
 endif()
