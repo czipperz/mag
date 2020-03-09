@@ -87,6 +87,7 @@ static int mock_getch() {
 #endif
 }
 
+#undef getch
 #define getch() (mock_getch())
 
 struct Tokenizer_Check_Point {
