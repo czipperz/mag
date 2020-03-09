@@ -745,49 +745,59 @@ static void render(int* total_rows,
     FrameMarkStart("ncurses");
 
     int rows, cols;
-    getmaxyx(stdscr, rows, cols);
+    {
+        ZoneScopedN("detect resize");
+        getmaxyx(stdscr, rows, cols);
 
-    if (rows != *total_rows || cols != *total_cols) {
-        clear();
+        if (rows != *total_rows || cols != *total_cols) {
+            clear();
 
-        destroy_window_cache(*window_cache);
-        *window_cache = nullptr;
+            destroy_window_cache(*window_cache);
+            *window_cache = nullptr;
 
-        free(cellss[0]);
-        free(cellss[1]);
+            free(cellss[0]);
+            free(cellss[1]);
 
-        *total_rows = rows;
-        *total_cols = cols;
+            *total_rows = rows;
+            *total_cols = cols;
 
-        size_t grid_size = rows * cols;
-        cellss[0] = (Cell*)malloc(grid_size * sizeof(Cell));
-        cellss[1] = (Cell*)malloc(grid_size * sizeof(Cell));
+            size_t grid_size = rows * cols;
+            cellss[0] = (Cell*)malloc(grid_size * sizeof(Cell));
+            cellss[1] = (Cell*)malloc(grid_size * sizeof(Cell));
 
-        for (size_t i = 0; i < grid_size; ++i) {
-            cellss[0][i].attrs = 0;
-            cellss[0][i].code = ' ';
-            cellss[1][i].attrs = 0;
-            cellss[1][i].code = ' ';
+            for (size_t i = 0; i < grid_size; ++i) {
+                cellss[0][i].attrs = 0;
+                cellss[0][i].code = ' ';
+                cellss[1][i].attrs = 0;
+                cellss[1][i].code = ' ';
+            }
         }
     }
 
     render_to_cells(cellss[1], window_cache, rows, cols, editor, client);
 
-    int index = 0;
-    for (int y = 0; y < rows; ++y) {
-        for (int x = 0; x < cols; ++x) {
-            Cell* new_cell = &cellss[1][index];
-            if (cellss[0][index] != *new_cell) {
-                attrset(new_cell->attrs);
-                mvaddch(y, x, new_cell->code);
+    {
+        ZoneScopedN("blit cells");
+        int index = 0;
+        for (int y = 0; y < rows; ++y) {
+            for (int x = 0; x < cols; ++x) {
+                Cell* new_cell = &cellss[1][index];
+                if (cellss[0][index] != *new_cell) {
+                    attrset(new_cell->attrs);
+                    mvaddch(y, x, new_cell->code);
+                }
+                ++index;
             }
-            ++index;
         }
     }
 
     cz::swap(cellss[0], cellss[1]);
 
-    refresh();
+    {
+        ZoneScopedN("refresh");
+        refresh();
+    }
+
     FrameMarkEnd("ncurses");
 }
 
