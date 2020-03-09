@@ -2,6 +2,7 @@
 
 #include <ctype.h>
 #include <ncurses.h>
+#include <Tracy.hpp>
 #include <cz/bit_array.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -104,6 +105,8 @@ static void compute_visible_end(Buffer* buffer,
                                 Contents_Iterator* line_start_iterator,
                                 int count_rows,
                                 int count_cols) {
+    ZoneScoped;
+
     int rows;
     for (rows = 0; rows < count_rows - 1;) {
         Contents_Iterator next_line_start_iterator = *line_start_iterator;
@@ -125,6 +128,8 @@ static void compute_visible_start(Buffer* buffer,
                                   Contents_Iterator* line_start_iterator,
                                   int count_rows,
                                   int count_cols) {
+    ZoneScoped;
+
     for (int rows = 0; rows < count_rows - 2;) {
         Contents_Iterator next_line_start_iterator = *line_start_iterator;
         backward_line(buffer, &next_line_start_iterator);
@@ -146,6 +151,8 @@ static bool next_check_point(Window_Cache* window_cache,
                              Buffer* buffer,
                              Contents_Iterator* iterator,
                              uint64_t* state) {
+    ZoneScoped;
+
     uint64_t start_position = iterator->position;
     while (!iterator->at_eob()) {
         if (iterator->position >= start_position + 1024) {
@@ -162,6 +169,8 @@ static bool next_check_point(Window_Cache* window_cache,
 }
 
 static int cache_windows_check_points(Window_Cache* window_cache, Window* window, Editor* editor) {
+    ZoneScoped;
+
     CZ_DEBUG_ASSERT(window_cache->tag == window->tag);
 
     switch (window->tag) {
@@ -231,6 +240,8 @@ static void cache_window_unified_position(Window_Cache* window_cache,
                                           int count_rows,
                                           int count_cols,
                                           Buffer* buffer) {
+    ZoneScoped;
+
     Contents_Iterator visible_end_iterator = buffer->contents.iterator_at(start_position);
     compute_visible_end(buffer, &visible_end_iterator, count_rows, count_cols);
     window_cache->v.unified.visible_end = visible_end_iterator.position;
@@ -264,6 +275,8 @@ static void cache_window_unified_position(Window_Cache* window_cache,
 static void cache_window_unified_update(Window_Cache* window_cache,
                                         Window* window,
                                         Buffer* buffer) {
+    ZoneScoped;
+
     cz::Slice<Change> changes = buffer->changes;
     cz::Slice<Tokenizer_Check_Point> check_points = window_cache->v.unified.tokenizer_check_points;
     unsigned char* changed_check_points =
@@ -327,6 +340,8 @@ done:
 static void cache_window_unified_create(Window_Cache* window_cache,
                                         Window* window,
                                         Buffer* buffer) {
+    ZoneScoped;
+
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified.id = buffer->id;
     window_cache->v.unified.tokenizer_check_points = {};
@@ -351,6 +366,8 @@ static void draw_buffer_contents(Cell* cells,
                                  int start_col,
                                  int count_rows,
                                  int count_cols) {
+    ZoneScoped;
+
     Contents_Iterator iterator = buffer->contents.iterator_at(*start_position_);
     start_of_line(buffer, &iterator);
     if (window_cache) {
@@ -497,6 +514,8 @@ static void draw_buffer(Cell* cells,
                         int start_col,
                         int count_rows,
                         int count_cols) {
+    ZoneScoped;
+
     WITH_BUFFER(buffer, buffer_id, {
         draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, start_position,
                              show_cursors, start_row, start_col, count_rows - 1, count_cols);
@@ -539,6 +558,8 @@ static void draw_window(Cell* cells,
                         int start_col,
                         int count_rows,
                         int count_cols) {
+    ZoneScoped;
+
     window->rows = count_rows;
     window->cols = count_cols;
 
@@ -635,6 +656,8 @@ static void render_to_cells(Cell* cells,
                             int total_cols,
                             Editor* editor,
                             Client* client) {
+    ZoneScoped;
+
     draw_window(cells, window_cache, total_cols, editor, client->window, client->_selected_window,
                 0, 0, total_rows - (client->_message.tag != Message::NONE), total_cols);
 
@@ -677,6 +700,9 @@ static void render(int* total_rows,
                    Window_Cache** window_cache,
                    Editor* editor,
                    Client* client) {
+    ZoneScoped;
+    FrameMarkStart("ncurses");
+
     int rows, cols;
     getmaxyx(stdscr, rows, cols);
 
@@ -721,9 +747,12 @@ static void render(int* total_rows,
     cz::swap(cellss[0], cellss[1]);
 
     refresh();
+    FrameMarkEnd("ncurses");
 }
 
 void run_ncurses(Server* server, Client* client) {
+    ZoneScoped;
+
     initscr();
     raw();
     noecho();
