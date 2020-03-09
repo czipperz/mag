@@ -571,7 +571,7 @@ bool cpp_next_token(const Contents* contents,
         token->type = Token_Type::IDENTIFIER;
 
         if (normal_state == START_OF_STATEMENT || normal_state == START_OF_PARAMETER) {
-            ZoneScopedN("look for identifier");
+            ZoneScopedN("look for name of variable");
             uint64_t temp_state;
             {
                 uint64_t backup_normal_state = normal_state;
