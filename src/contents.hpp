@@ -40,27 +40,45 @@ struct Contents_Iterator {
 
     char get() const { return contents->buckets[bucket][index]; }
 
-    void retreat() {
-        CZ_DEBUG_ASSERT(!at_bob());
-        --position;
-        // :EmptyBuckets Once resolved, convert to if
-        while (index == 0) {
+    void retreat(uint64_t offset = 1) {
+        CZ_DEBUG_ASSERT(position >= offset);
+        position -= offset;
+        if (offset > index) {
+            offset -= index;
+            CZ_DEBUG_ASSERT(bucket > 0);
             --bucket;
-            index = contents->buckets[bucket].len;
+            if (offset <= contents->buckets[bucket].len) {
+                index = contents->buckets[bucket].len - offset;
+                return;
+            } else {
+                offset -= contents->buckets[bucket].len;
+                CZ_DEBUG_ASSERT(bucket > 0);
+                while (offset > contents->buckets[bucket].len) {
+                    offset -= contents->buckets[bucket].len;
+                    CZ_DEBUG_ASSERT(bucket > 0);
+                    --bucket;
+                }
+                index = contents->buckets[bucket].len - offset;
+            }
+        } else {
+            index -= offset;
         }
-        --index;
     }
 
-    void advance() {
-        CZ_DEBUG_ASSERT(!at_eob());
-        ++position;
-        ++index;
-        // :EmptyBuckets Once resolved, convert to if
-        while (index == contents->buckets[bucket].len) {
-            ++bucket;
-            index = 0;
-            // :EmptyBuckets Once resolved, delete this
+    void advance(uint64_t offset = 1) {
+        CZ_DEBUG_ASSERT(position + offset <= contents->len);
+        position += offset;
+        index += offset;
+        while (index >= contents->buckets[bucket].len) {
             if (bucket == contents->buckets.len()) {
+                CZ_DEBUG_ASSERT(index == contents->buckets[bucket].len);
+                break;
+            }
+
+            index -= contents->buckets[bucket].len;
+            ++bucket;
+            if (bucket == contents->buckets.len()) {
+                CZ_DEBUG_ASSERT(index == 0);
                 break;
             }
         }
