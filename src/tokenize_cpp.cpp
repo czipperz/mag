@@ -432,15 +432,23 @@ bool cpp_next_token(const Contents* contents,
             }
 
             first_char = iterator->get();
+            if (first_char == '\\') {
+                for (; first_char == '\\' || isblank(first_char); iterator->advance()) {
+                    first_char = iterator->get();
+                }
+
+                if (first_char == '\n') {
+                    continue;
+                }
+            }
+
             if (!isspace(first_char)) {
                 break;
             }
 
-            if (first_char == '\n') {
-                if (in_preprocessor) {
-                    in_preprocessor = false;
-                    normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
-                }
+            if (first_char == '\n' && in_preprocessor) {
+                in_preprocessor = false;
+                normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
             }
 
             if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
