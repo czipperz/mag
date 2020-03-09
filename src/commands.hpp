@@ -38,6 +38,8 @@ void command_delete_forward_char(Editor* editor, Command_Source source);
 void command_delete_backward_word(Editor* editor, Command_Source source);
 void command_delete_forward_word(Editor* editor, Command_Source source);
 
+void command_transpose_characters(Editor* editor, Command_Source source);
+
 void command_open_line(Editor* editor, Command_Source source);
 void command_insert_newline(Editor* editor, Command_Source source);
 

@@ -43,6 +43,8 @@ Key_Map create_key_map() {
     key_map.bind("A-\\-", command_delete_backward_word);
     key_map.bind("A-d", command_delete_forward_word);
 
+    key_map.bind("C-t", command_transpose_characters);
+
     key_map.bind("C-o", command_open_line);
     key_map.bind("C-m", command_insert_newline);
 

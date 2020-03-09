@@ -457,6 +457,30 @@ void command_delete_forward_word(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(WITH_TRANSACTION(DELETE_FORWARD(forward_word)));
 }
 
+void command_transpose_characters(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(WITH_TRANSACTION({
+        transaction.init(2 * buffer->cursors.len(), 0);
+        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+            uint64_t point = buffer->cursors[c].point;
+            if (point == 0 || point == buffer->contents.len) {
+                continue;
+            }
+
+            Edit delete_forward;
+            delete_forward.value.init_char(buffer->contents.get_once(point));
+            delete_forward.position = point;
+            delete_forward.is_insert = false;
+            transaction.push(delete_forward);
+
+            Edit insert_before;
+            insert_before.value = delete_forward.value;
+            insert_before.position = point - 1;
+            insert_before.is_insert = true;
+            transaction.push(insert_before);
+        }
+    }));
+}
+
 void command_open_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
         insert_char(buffer, '\n');
