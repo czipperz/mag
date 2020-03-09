@@ -203,20 +203,6 @@ char Contents::get_once(uint64_t pos) const {
     CZ_PANIC("Out of bounds");
 }
 
-bool Contents::is_bucket_separator(uint64_t pos) const {
-    for (size_t i = 0; i < buckets.len(); ++i) {
-        if (pos < buckets[i].len) {
-            return false;
-        }
-        if (pos == buckets[i].len) {
-            return true;
-        }
-        pos -= buckets[i].len;
-    }
-
-    CZ_PANIC("Out of bounds");
-}
-
 Contents_Iterator Contents::iterator_at(uint64_t pos) const {
     Contents_Iterator it;
     it.contents = this;

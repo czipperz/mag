@@ -23,9 +23,6 @@ struct Contents {
     SSOStr slice(cz::Allocator allocator, uint64_t start, uint64_t end) const;
 
     char get_once(uint64_t position) const;
-
-    bool is_bucket_separator(uint64_t pos) const;
-
     Contents_Iterator iterator_at(uint64_t position) const;
 };
 
