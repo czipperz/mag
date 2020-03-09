@@ -530,20 +530,20 @@ bool cpp_next_token(const Contents* contents,
 
         {
             ZoneScopedN("type definition keyword");
-        cz::Str type_definition_keywords[] = {
-            "class",
-            "enum",
-            "union",
-            "struct",
-        };
-        for (size_t i = 0; i < sizeof(type_definition_keywords) / sizeof(*type_definition_keywords);
-             ++i) {
-            if (matches(contents, start_iterator, token->end, type_definition_keywords[i])) {
-                token->type = Token_Type::KEYWORD;
-                normal_state = IN_TYPE_DEFINITION;
-                goto done;
+            cz::Str type_definition_keywords[] = {
+                "class",
+                "enum",
+                "union",
+                "struct",
+            };
+            for (size_t i = 0;
+                 i < sizeof(type_definition_keywords) / sizeof(*type_definition_keywords); ++i) {
+                if (matches(contents, start_iterator, token->end, type_definition_keywords[i])) {
+                    token->type = Token_Type::KEYWORD;
+                    normal_state = IN_TYPE_DEFINITION;
+                    goto done;
+                }
             }
-        }
         }
 
         if (matches(contents, start_iterator, token->end, "for")) {
