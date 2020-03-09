@@ -236,4 +236,48 @@ Contents_Iterator Contents::iterator_at(uint64_t pos) const {
     return it;
 }
 
+void Contents_Iterator::retreat(uint64_t offset) {
+    CZ_DEBUG_ASSERT(position >= offset);
+    position -= offset;
+    if (offset > index) {
+        offset -= index;
+        CZ_DEBUG_ASSERT(bucket > 0);
+        --bucket;
+        if (offset <= contents->buckets[bucket].len) {
+            index = contents->buckets[bucket].len - offset;
+            return;
+        } else {
+            offset -= contents->buckets[bucket].len;
+            CZ_DEBUG_ASSERT(bucket > 0);
+            while (offset > contents->buckets[bucket].len) {
+                offset -= contents->buckets[bucket].len;
+                CZ_DEBUG_ASSERT(bucket > 0);
+                --bucket;
+            }
+            index = contents->buckets[bucket].len - offset;
+        }
+    } else {
+        index -= offset;
+    }
+}
+
+void Contents_Iterator::advance(uint64_t offset) {
+    CZ_DEBUG_ASSERT(position + offset <= contents->len);
+    position += offset;
+    index += offset;
+    while (index >= contents->buckets[bucket].len) {
+        if (bucket == contents->buckets.len()) {
+            CZ_DEBUG_ASSERT(index == contents->buckets[bucket].len);
+            break;
+        }
+
+        index -= contents->buckets[bucket].len;
+        ++bucket;
+        if (bucket == contents->buckets.len()) {
+            CZ_DEBUG_ASSERT(index == 0);
+            break;
+        }
+    }
+}
+
 }
