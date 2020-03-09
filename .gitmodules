@@ -1,3 +1,6 @@
 [submodule "cz"]
 	path = cz
 	url = https://github.com/czipperz/cz
+[submodule "tracy"]
+	path = tracy
+	url = https://bitbucket.org/wolfpld/tracy
