@@ -50,8 +50,19 @@ struct Cell {
         }                      \
     } while (0)
 
-bool is_nodelay = false;
-int mock_getch() {
+#undef MOCK_INPUT
+
+#ifdef MOCK_INPUT
+static bool is_nodelay = false;
+#define nodelay(WINDOW, VALUE) (is_nodelay = (VALUE))
+#endif
+
+static int mock_getch() {
+    ZoneScoped;
+
+#ifndef MOCK_INPUT
+    return getch();
+#else
     static int keys[] = {27, '>', 24, 3};
     static int times[] = {800, 800, 1100, 1200};
     static int index = 0;
@@ -73,9 +84,9 @@ int mock_getch() {
             return keys[index++];
         }
     }
+#endif
 }
 
-#define nodelay(WINDOW, VALUE) (is_nodelay = VALUE)
 #define getch() (mock_getch())
 
 struct Tokenizer_Check_Point {
