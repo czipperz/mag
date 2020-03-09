@@ -544,6 +544,8 @@ bool cpp_next_token(const Contents* contents,
                            next_token.end == next_token.start + 1 && start_ch == ',') {
                     normal_state = AFTER_PARAMETER_DECLARATION;
                     token->type = Token_Type::TYPE;
+                } else {
+                    normal_state = IN_EXPR;
                 }
             }
         } else if (normal_state == IN_TYPE_DEFINITION) {
@@ -625,6 +627,8 @@ bool cpp_next_token(const Contents* contents,
             normal_state = IN_EXPR;
         } else if (normal_state == AFTER_VARIABLE_DECLARATION && first_char == '(') {
             normal_state = START_OF_PARAMETER;
+        } else if (normal_state == AFTER_VARIABLE_DECLARATION && first_char == '=') {
+            normal_state = IN_EXPR;
         } else if (normal_state == AFTER_PARAMETER_DECLARATION && first_char == ',') {
             normal_state = START_OF_PARAMETER;
         }
