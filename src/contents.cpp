@@ -1,6 +1,7 @@
 #include "contents.hpp"
 
 #include <string.h>
+#include <Tracy.hpp>
 #include <cz/heap.hpp>
 #include <cz/util.hpp>
 #include "ssostr.hpp"
@@ -176,6 +177,8 @@ cz::String Contents::stringify(cz::Allocator allocator) const {
 }
 
 SSOStr Contents::slice(cz::Allocator allocator, uint64_t start, uint64_t end) const {
+    ZoneScoped;
+
     CZ_DEBUG_ASSERT(start <= end);
     CZ_DEBUG_ASSERT(end <= len);
 
@@ -194,6 +197,8 @@ SSOStr Contents::slice(cz::Allocator allocator, uint64_t start, uint64_t end) co
 }
 
 char Contents::get_once(uint64_t pos) const {
+    ZoneScoped;
+
     for (size_t i = 0; i < buckets.len(); ++i) {
         if (pos < buckets[i].len) {
             return buckets[i][pos];
@@ -205,6 +210,8 @@ char Contents::get_once(uint64_t pos) const {
 }
 
 Contents_Iterator Contents::iterator_at(uint64_t pos) const {
+    ZoneScoped;
+
     Contents_Iterator it;
     it.contents = this;
     it.position = pos;
@@ -224,6 +231,8 @@ Contents_Iterator Contents::iterator_at(uint64_t pos) const {
 }
 
 void Contents_Iterator::retreat(uint64_t offset) {
+    ZoneScoped;
+
     CZ_DEBUG_ASSERT(position >= offset);
     position -= offset;
     if (offset > index) {
@@ -249,6 +258,8 @@ void Contents_Iterator::retreat(uint64_t offset) {
 }
 
 void Contents_Iterator::advance(uint64_t offset) {
+    ZoneScoped;
+
     CZ_DEBUG_ASSERT(position + offset <= contents->len);
     position += offset;
     index += offset;
