@@ -105,6 +105,37 @@ static bool is_identifier_continuation(char ch) {
         break;                           \
     }
 
+static bool look_for_type_definition_keyword(const Contents* contents,
+                                             Contents_Iterator iterator,
+                                             Token* token,
+                                             char ch) {
+    ZoneScoped;
+
+    switch (ch) {
+    case 'c':
+        if (matches(contents, iterator, token->end, "class")) {
+            return true;
+        }
+        break;
+    case 'e':
+        if (matches(contents, iterator, token->end, "enum")) {
+            return true;
+        }
+        break;
+    case 'u':
+        if (matches(contents, iterator, token->end, "union")) {
+            return true;
+        }
+        break;
+    case 's':
+        if (matches(contents, iterator, token->end, "struct")) {
+            return true;
+        }
+        break;
+    }
+    return false;
+}
+
 static bool look_for_normal_keyword(const Contents* contents,
                                     Contents_Iterator iterator,
                                     Token* token,
@@ -528,22 +559,10 @@ bool cpp_next_token(const Contents* contents,
             goto done;
         }
 
-        {
-            ZoneScopedN("type definition keyword");
-            cz::Str type_definition_keywords[] = {
-                "class",
-                "enum",
-                "union",
-                "struct",
-            };
-            for (size_t i = 0;
-                 i < sizeof(type_definition_keywords) / sizeof(*type_definition_keywords); ++i) {
-                if (matches(contents, start_iterator, token->end, type_definition_keywords[i])) {
-                    token->type = Token_Type::KEYWORD;
-                    normal_state = IN_TYPE_DEFINITION;
-                    goto done;
-                }
-            }
+        if (look_for_type_definition_keyword(contents, start_iterator, token, first_char)) {
+            token->type = Token_Type::KEYWORD;
+            normal_state = IN_TYPE_DEFINITION;
+            goto done;
         }
 
         if (matches(contents, start_iterator, token->end, "for")) {
