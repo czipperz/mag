@@ -64,17 +64,14 @@ static bool is_identifier_continuation(char ch) {
         }                                                                    \
     } while (0)
 
-static bool look_for_normal_keyword(const Contents* contents,
-                                    Contents_Iterator start_iterator,
-                                    Token* token,
-                                    char first_char) {
-#define LEN(L, BODY)          \
-    case L:                   \
-        switch (first_char) { \
-            BODY;             \
-        default:              \
-            break;            \
-        }                     \
+// Keyword lookup table macros.
+#define LEN(L, BODY)  \
+    case L:           \
+        switch (ch) { \
+            BODY;     \
+        default:      \
+            break;    \
+        }             \
         break
 
 #define CASE(CHAR, STR) \
@@ -82,11 +79,31 @@ static bool look_for_normal_keyword(const Contents* contents,
         MATCHES(STR);   \
         break
 
-#define MATCHES(STR)                                              \
-    if (matches_no_bounds_check(contents, start_iterator, STR)) { \
-        return true;                                              \
+#define MATCHES(STR)                                        \
+    if (matches_no_bounds_check(contents, iterator, STR)) { \
+        return true;                                        \
     }
 
+#define ADVANCE(CHAR, BODY)     \
+    case CHAR:                  \
+        iterator.advance();     \
+        switch (iterator.get()) \
+            BODY;               \
+        break
+
+#define AT_OFFSET(CHAR, OFFSET, BODY)    \
+    case CHAR: {                         \
+        Contents_Iterator mi = iterator; \
+        mi.advance(OFFSET);              \
+        switch (mi.get())                \
+            BODY;                        \
+        break;                           \
+    }
+
+static bool look_for_normal_keyword(const Contents* contents,
+                                    Contents_Iterator iterator,
+                                    Token* token,
+                                    char ch) {
     switch (token->end - token->start) {
         LEN(2, {
             CASE('d', "do");
@@ -95,18 +112,18 @@ static bool look_for_normal_keyword(const Contents* contents,
         });
 
         LEN(3, {
-            case 'a':
-                MATCHES("and");
-                MATCHES("asm");
-                break;
+            ADVANCE('a', {
+                CASE('n', "nd");
+                CASE('s', "sm");
+            });
 
-            case 'n':
-                MATCHES("new");
-                MATCHES("not");
-                break;
+            ADVANCE('n', {
+                CASE('e', "ew");
+                CASE('o', "ot");
+            });
 
-                CASE('t', "try");
-                CASE('x', "xor");
+            CASE('t', "try");
+            CASE('x', "xor");
         });
 
         LEN(4, {
@@ -114,25 +131,29 @@ static bool look_for_normal_keyword(const Contents* contents,
             CASE('e', "else");
             CASE('g', "goto");
 
-        case 't':
-            MATCHES("this");
-            MATCHES("true");
-            break;
+            ADVANCE('t', {
+                CASE('h', "his");
+                CASE('r', "rue");
+            });
         });
 
         LEN(5, {
-            case 'b':
-                MATCHES("bitor");
-                MATCHES("break");
-                break;
+            ADVANCE('b', {
+                CASE('i', "itor");
+                CASE('r', "reak");
+            });
 
-                CASE('e', "else");
-                CASE('g', "goto");
+            AT_OFFSET('c', 4, {
+                CASE('h', "catch");
+                CASE('l', "compl");
+                CASE('t', "const");
+            });
 
-            case 't':
-                MATCHES("this");
-                MATCHES("true");
-                break;
+            CASE('f', "false");
+            CASE('o', "or_eq");
+            CASE('t', "throw");
+            CASE('u', "using");
+            CASE('w', "while");
         });
 
         LEN(6, {
@@ -140,10 +161,12 @@ static bool look_for_normal_keyword(const Contents* contents,
             CASE('b', "bitand");
             CASE('d', "delete");
 
-        case 'e':
-            MATCHES("export");
-            MATCHES("extern");
-            break;
+            ADVANCE('e', {
+                ADVANCE('x', {
+                    CASE('p', "port");
+                    CASE('t', "tern");
+                });
+            });
 
             CASE('f', "friend");
             CASE('i', "inline");
@@ -151,68 +174,67 @@ static bool look_for_normal_keyword(const Contents* contents,
             CASE('p', "public");
             CASE('r', "return");
 
-        case 's':
-            MATCHES("sizeof");
-            MATCHES("static");
-            MATCHES("switch");
-            break;
+            ADVANCE('s', {
+                CASE('i', "izeof");
+                CASE('t', "tatic");
+                CASE('w', "witch");
+            });
 
             CASE('t', "typeid");
             CASE('x', "xor_eq");
         });
 
         LEN(7, {
-            case 'a':
-                MATCHES("alignas");
-                MATCHES("alignof");
-                break;
+            AT_OFFSET('a', 5, {
+                CASE('a', "alignas");
+                CASE('o', "alignof");
+            });
 
-                CASE('c', "concept");
-                CASE('d', "default");
-                CASE('m', "mutable");
-                CASE('n', "nullptr");
-                CASE('p', "private");
-                CASE('t', "typedef");
-                CASE('v', "virtual");
+            CASE('c', "concept");
+            CASE('d', "default");
+            CASE('m', "mutable");
+            CASE('n', "nullptr");
+            CASE('p', "private");
+            CASE('t', "typedef");
+            CASE('v', "virtual");
         });
 
         LEN(8, {
-            case 'c':
-                MATCHES("co_await");
-                MATCHES("co_yield");
-                MATCHES("continue");
-                break;
+            AT_OFFSET('c', 3, {
+                CASE('a', "co_await");
+                CASE('y', "co_yield");
+                CASE('t', "continue");
+            });
 
-                CASE('d', "decltype");
-                CASE('e', "explicit");
-                CASE('n', "noexcept");
-                CASE('o', "operator");
+            CASE('d', "decltype");
+            CASE('e', "explicit");
+            CASE('n', "noexcept");
+            CASE('o', "operator");
 
-            case 'r':
-                MATCHES("reflexpr");
-                MATCHES("register");
-                MATCHES("requires");
-                break;
+            AT_OFFSET('r', 2, {
+                CASE('f', "reflexpr");
+                CASE('g', "register");
+                CASE('q', "requires");
+            });
 
-            case 't':
-                MATCHES("template");
-                MATCHES("typename");
-                break;
+            ADVANCE('t', {
+                CASE('e', "emplate");
+                CASE('y', "ypename");
+            });
 
-                CASE('v', "volatile");
+            CASE('v', "volatile");
         });
 
         LEN(9, {
-            case 'c':
-                // todo test binary search
-                MATCHES("co_return");
-                MATCHES("consteval");
-                MATCHES("constexpr");
-                MATCHES("constinit");
-                break;
+            AT_OFFSET('c', 6, {
+                CASE('u', "co_return");
+                CASE('v', "consteval");
+                CASE('x', "constexpr");
+                CASE('n', "constinit");
+            });
 
-                CASE('n', "namespace");
-                CASE('p', "protected");
+            CASE('n', "namespace");
+            CASE('p', "protected");
         });
 
         LEN(10, CASE('c', "const_cast"));
@@ -225,12 +247,12 @@ static bool look_for_normal_keyword(const Contents* contents,
         });
 
         LEN(13, {
-            case 'a':
-                MATCHES("atomic_cancel");
-                MATCHES("atomic_commit");
-                break;
+            AT_OFFSET('a', 8, {
+                CASE('a', "atomic_cancel");
+                CASE('o', "atomic_commit");
+            });
 
-                CASE('s', "static_assert");
+            CASE('s', "static_assert");
         });
 
         LEN(15, CASE('a', "atomic_noexcept"));
@@ -241,9 +263,9 @@ static bool look_for_normal_keyword(const Contents* contents,
 }
 
 static bool look_for_type_keyword(const Contents* contents,
-                                  Contents_Iterator start_iterator,
+                                  Contents_Iterator iterator,
                                   Token* token,
-                                  char first_char) {
+                                  char ch) {
     switch (token->end - token->start) {
         LEN(3, CASE('i', "int"));
         LEN(4, {
@@ -263,84 +285,87 @@ static bool look_for_type_keyword(const Contents* contents,
             CASE('d', "double");
             CASE('i', "int8_t");
 
-        case 's':
-            MATCHES("signed");
-            MATCHES("size_t");
-            break;
+            AT_OFFSET('s', 2, {
+                CASE('g', "signed");
+                CASE('z', "size_t");
+            });
         });
 
         LEN(7, {
             CASE('c', "char8_t");
-        case 'i':
-            MATCHES("int16_t");
-            MATCHES("int32_t");
-            MATCHES("int64_t");
-            break;
+
+            AT_OFFSET('i', 3, {
+                CASE('1', "int16_t");
+                CASE('3', "int32_t");
+                CASE('6', "int64_t");
+            });
+
             CASE('u', "uint8_t");
             CASE('w', "wchar_t");
         });
 
         LEN(8, {
-            case 'c':
-                MATCHES("char16_t");
-                MATCHES("char32_t");
-                break;
+            AT_OFFSET('c', 4, {
+                CASE('1', "char16_t");
+                CASE('3', "char32_t");
+            });
 
-            case 'i':
-                MATCHES("intmax_t");
-                MATCHES("intptr_t");
-                break;
+            AT_OFFSET('i', 3, {
+                CASE('m', "intmax_t");
+                CASE('p', "intptr_t");
+            });
 
-            case 'u':
-                MATCHES("uint16_t");
-                MATCHES("uint32_t");
-                MATCHES("uint64_t");
-                MATCHES("unsigned");
-                break;
+            AT_OFFSET('u', 4, {
+                CASE('1', "uint16_t");
+                CASE('3', "uint32_t");
+                CASE('6', "uint64_t");
+                CASE('g', "unsigned");
+            });
         });
 
         LEN(9, {
             CASE('p', "ptrdiff_t");
-        case 'u':
-            MATCHES("uintmax_t");
-            MATCHES("uintptr_t");
-            break;
+
+            AT_OFFSET('u', 4, {
+                CASE('m', "uintmax_t");
+                CASE('p', "uintptr_t");
+            });
         });
 
         LEN(11, CASE('i', "int_fast8_t"));
 
         LEN(12, {
-            case 'i':
-                MATCHES("int_fast16_t");
-                MATCHES("int_fast32_t");
-                MATCHES("int_fast64_t");
-                MATCHES("int_least8_t");
-                break;
+            AT_OFFSET('i', 8, {
+                CASE('1', "int_fast16_t");
+                CASE('3', "int_fast32_t");
+                CASE('6', "int_fast64_t");
+                CASE('t', "int_least8_t");
+            });
 
-                CASE('u', "uint_fast8_t");
+            CASE('u', "uint_fast8_t");
         });
 
         LEN(13, {
-            case 'i':
-                MATCHES("int_least16_t");
-                MATCHES("int_least32_t");
-                MATCHES("int_least64_t");
-                break;
+            AT_OFFSET('i', 9, {
+                CASE('1', "int_least16_t");
+                CASE('3', "int_least32_t");
+                CASE('6', "int_least64_t");
+            });
 
-            case 'u':
-                MATCHES("uint_fast16_t");
-                MATCHES("uint_fast32_t");
-                MATCHES("uint_fast64_t");
-                MATCHES("uint_least8_t");
-                break;
+            AT_OFFSET('u', 9, {
+                CASE('1', "uint_fast16_t");
+                CASE('3', "uint_fast32_t");
+                CASE('6', "uint_fast64_t");
+                CASE('t', "uint_least8_t");
+            });
         });
 
         LEN(14, {
-            case 'u':
-                MATCHES("uint_least16_t");
-                MATCHES("uint_least32_t");
-                MATCHES("uint_least64_t");
-                break;
+            AT_OFFSET('u', 10, {
+                CASE('1', "uint_least16_t");
+                CASE('3', "uint_least32_t");
+                CASE('6', "uint_least64_t");
+            });
         });
     }
 
