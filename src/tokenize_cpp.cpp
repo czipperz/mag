@@ -1,6 +1,7 @@
 #include "tokenize_cpp.hpp"
 
 #include <ctype.h>
+#include <Tracy.hpp>
 #include "contents.hpp"
 #include "token.hpp"
 
@@ -33,6 +34,8 @@ enum State : uint64_t {
 };
 
 static bool matches_no_bounds_check(const Contents* contents, Contents_Iterator it, cz::Str query) {
+    ZoneScoped;
+
     for (size_t i = 0; i < query.len; ++i) {
         if (it.get() != query[i]) {
             return false;
@@ -43,6 +46,8 @@ static bool matches_no_bounds_check(const Contents* contents, Contents_Iterator 
 }
 
 static bool matches(const Contents* contents, Contents_Iterator it, uint64_t end, cz::Str query) {
+    ZoneScoped;
+
     if (end - it.position != query.len) {
         return false;
     }
@@ -104,6 +109,8 @@ static bool look_for_normal_keyword(const Contents* contents,
                                     Contents_Iterator iterator,
                                     Token* token,
                                     char ch) {
+    ZoneScoped;
+
     switch (token->end - token->start) {
         LEN(2, {
             CASE('d', "do");
@@ -266,6 +273,8 @@ static bool look_for_type_keyword(const Contents* contents,
                                   Contents_Iterator iterator,
                                   Token* token,
                                   char ch) {
+    ZoneScoped;
+
     switch (token->end - token->start) {
         LEN(3, CASE('i', "int"));
         LEN(4, {
@@ -376,35 +385,41 @@ bool cpp_next_token(const Contents* contents,
                     Contents_Iterator* iterator,
                     Token* token,
                     uint64_t* state_combined) {
+    ZoneScoped;
+
     bool in_preprocessor = *state_combined & IN_PREPROCESSOR_FLAG;
     uint64_t normal_state = *state_combined & NORMAL_STATE_MASK;
     uint64_t preprocessor_state = *state_combined & PREPROCESSOR_STATE_MASK;
     uint64_t preprocessor_saved_state = *state_combined & PREPROCESSOR_SAVED_STATE_MASK;
 
     char first_char;
-    for (;; iterator->advance()) {
-        if (iterator->at_eob()) {
-            return false;
-        }
-
-        first_char = iterator->get();
-        if (!isspace(first_char)) {
-            break;
-        }
-
-        if (first_char == '\n') {
-            if (in_preprocessor) {
-                in_preprocessor = false;
-                normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
+    {
+        ZoneScopedN("skip whitespace");
+        for (;; iterator->advance()) {
+            if (iterator->at_eob()) {
+                return false;
             }
-        }
 
-        if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
-            preprocessor_state = PREPROCESSOR_GENERAL;
+            first_char = iterator->get();
+            if (!isspace(first_char)) {
+                break;
+            }
+
+            if (first_char == '\n') {
+                if (in_preprocessor) {
+                    in_preprocessor = false;
+                    normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
+                }
+            }
+
+            if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
+                preprocessor_state = PREPROCESSOR_GENERAL;
+            }
         }
     }
 
     if (first_char == '#') {
+        ZoneScopedN("preprocessor #");
         in_preprocessor = true;
         preprocessor_state = PREPROCESSOR_START_STATEMENT;
         preprocessor_saved_state = normal_state << PREPROCESSOR_SAVE_SHIFT;
@@ -419,6 +434,7 @@ bool cpp_next_token(const Contents* contents,
 
     if (first_char == '"' || (first_char == '<' && in_preprocessor &&
                               preprocessor_state == PREPROCESSOR_AFTER_INCLUDE)) {
+        ZoneScopedN("string");
         token->start = iterator->position;
         for (iterator->advance(); !iterator->at_eob(); iterator->advance()) {
             char ch = iterator->get();
@@ -445,6 +461,7 @@ bool cpp_next_token(const Contents* contents,
     }
 
     if (first_char == '\'') {
+        ZoneScopedN("character");
         token->start = iterator->position;
         if (iterator->position + 3 >= contents->len) {
             while (iterator->position < contents->len) {
@@ -475,15 +492,21 @@ bool cpp_next_token(const Contents* contents,
     }
 
     if (isalpha(first_char) || first_char == '_') {
+        ZoneScopedN("identifier");
+
         Contents_Iterator start_iterator = *iterator;
-        token->start = iterator->position;
-        for (iterator->advance();
-             !iterator->at_eob() && is_identifier_continuation(iterator->get());
-             iterator->advance()) {
+        {
+            ZoneScopedN("find end");
+            token->start = iterator->position;
+            for (iterator->advance();
+                 !iterator->at_eob() && is_identifier_continuation(iterator->get());
+                 iterator->advance()) {
+            }
+            token->end = iterator->position;
         }
-        token->end = iterator->position;
 
         if (in_preprocessor && preprocessor_state == PREPROCESSOR_START_STATEMENT) {
+            ZoneScopedN("preprocessor keyword");
             token->type = Token_Type::KEYWORD;
             if (matches(contents, start_iterator, token->end, "include")) {
                 preprocessor_state = PREPROCESSOR_AFTER_INCLUDE;
@@ -498,12 +521,15 @@ bool cpp_next_token(const Contents* contents,
         }
 
         if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_DEFINE) {
+            ZoneScopedN("preprocessor definition");
             preprocessor_state = PREPROCESSOR_AFTER_DEFINE_NAME;
             normal_state = START_OF_STATEMENT;
             token->type = Token_Type::IDENTIFIER;
             goto done;
         }
 
+        {
+            ZoneScopedN("type definition keyword");
         cz::Str type_definition_keywords[] = {
             "class",
             "enum",
@@ -517,6 +543,7 @@ bool cpp_next_token(const Contents* contents,
                 normal_state = IN_TYPE_DEFINITION;
                 goto done;
             }
+        }
         }
 
         if (matches(contents, start_iterator, token->end, "for")) {
@@ -544,6 +571,7 @@ bool cpp_next_token(const Contents* contents,
         token->type = Token_Type::IDENTIFIER;
 
         if (normal_state == START_OF_STATEMENT || normal_state == START_OF_PARAMETER) {
+            ZoneScopedN("look for identifier");
             uint64_t temp_state;
             {
                 uint64_t backup_normal_state = normal_state;
@@ -598,6 +626,7 @@ bool cpp_next_token(const Contents* contents,
         Contents_Iterator next_iterator = *iterator;
         next_iterator.advance();
         if (!next_iterator.at_eob() && next_iterator.get() == '/') {
+            ZoneScopedN("line comment");
             token->start = iterator->position;
             next_iterator.advance();
             *iterator = next_iterator;
@@ -621,6 +650,7 @@ bool cpp_next_token(const Contents* contents,
         }
 
         if (!next_iterator.at_eob() && next_iterator.get() == '*') {
+            ZoneScopedN("block comment");
             token->start = iterator->position;
             next_iterator.advance();
             *iterator = next_iterator;
@@ -643,6 +673,7 @@ bool cpp_next_token(const Contents* contents,
     }
 
     if (ispunct(first_char)) {
+        ZoneScopedN("punctuation");
         token->start = iterator->position;
         iterator->advance();
         token->end = iterator->position;
