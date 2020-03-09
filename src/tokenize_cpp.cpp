@@ -59,6 +59,291 @@ static bool is_identifier_continuation(char ch) {
         }                                                                    \
     } while (0)
 
+static bool look_for_normal_keyword(const Contents* contents,
+                                    Contents_Iterator start_iterator,
+                                    Token* token,
+                                    char first_char) {
+#define LEN(L, BODY)          \
+    case L:                   \
+        switch (first_char) { \
+            BODY;             \
+        default:              \
+            break;            \
+        }                     \
+        break
+
+#define CASE(CHAR, STR) \
+    case CHAR:          \
+        MATCHES(STR);   \
+        break
+
+#define MATCHES(STR)                                          \
+    if (matches(contents, start_iterator, token->end, STR)) { \
+        return true;                                          \
+    }
+
+    switch (token->end - token->start) {
+        LEN(2, {
+            CASE('d', "do");
+            CASE('i', "if");
+            CASE('o', "or");
+        });
+
+        LEN(3, {
+            case 'a':
+                MATCHES("and");
+                MATCHES("asm");
+                break;
+
+                CASE('f', "for");
+
+            case 'n':
+                MATCHES("new");
+                MATCHES("not");
+                break;
+
+                CASE('t', "try");
+                CASE('x', "xor");
+        });
+
+        LEN(4, {
+            CASE('c', "case");
+            CASE('e', "else");
+            CASE('g', "goto");
+
+        case 't':
+            MATCHES("this");
+            MATCHES("true");
+            break;
+        });
+
+        LEN(5, {
+            case 'b':
+                MATCHES("bitor");
+                MATCHES("break");
+                break;
+
+                CASE('e', "else");
+                CASE('g', "goto");
+
+            case 't':
+                MATCHES("this");
+                MATCHES("true");
+                break;
+        });
+
+        LEN(6, {
+            CASE('a', "and_eq");
+            CASE('b', "bitand");
+            CASE('d', "delete");
+
+        case 'e':
+            MATCHES("export");
+            MATCHES("extern");
+            break;
+
+            CASE('f', "friend");
+            CASE('i', "inline");
+            CASE('n', "not_eq");
+            CASE('p', "public");
+            CASE('r', "return");
+
+        case 's':
+            MATCHES("sizeof");
+            MATCHES("static");
+            MATCHES("switch");
+            break;
+
+            CASE('t', "typeid");
+            CASE('x', "xor_eq");
+        });
+
+        LEN(7, {
+            case 'a':
+                MATCHES("alignas");
+                MATCHES("alignof");
+                break;
+
+                CASE('c', "concept");
+                CASE('d', "default");
+                CASE('m', "mutable");
+                CASE('n', "nullptr");
+                CASE('p', "private");
+                CASE('t', "typedef");
+                CASE('v', "virtual");
+        });
+
+        LEN(8, {
+            case 'c':
+                MATCHES("co_await");
+                MATCHES("co_yield");
+                MATCHES("continue");
+                break;
+
+                CASE('d', "decltype");
+                CASE('e', "explicit");
+                CASE('n', "noexcept");
+                CASE('o', "operator");
+
+            case 'r':
+                MATCHES("reflexpr");
+                MATCHES("register");
+                MATCHES("requires");
+                break;
+
+            case 't':
+                MATCHES("template");
+                MATCHES("typename");
+                break;
+
+                CASE('v', "volatile");
+        });
+
+        LEN(9, {
+            case 'c':
+                // todo test binary search
+                MATCHES("co_return");
+                MATCHES("consteval");
+                MATCHES("constexpr");
+                MATCHES("constinit");
+                break;
+
+                CASE('n', "namespace");
+                CASE('p', "protected");
+        });
+
+        LEN(10, CASE('c', "const_cast"));
+        LEN(11, CASE('s', "static_cast"));
+
+        LEN(12, {
+            CASE('d', "dynamic_cast");
+            CASE('s', "synchronized");
+            CASE('t', "thread_local");
+        });
+
+        LEN(13, {
+            case 'a':
+                MATCHES("atomic_cancel");
+                MATCHES("atomic_commit");
+                break;
+
+                CASE('s', "static_assert");
+        });
+
+        LEN(15, CASE('a', "atomic_noexcept"));
+
+        LEN(16, CASE('r', "reinterpret_cast"));
+    }
+    return false;
+}
+
+static bool look_for_type_keyword(const Contents* contents,
+                                  Contents_Iterator start_iterator,
+                                  Token* token,
+                                  char first_char) {
+    switch (token->end - token->start) {
+        LEN(3, CASE('i', "int"));
+        LEN(4, {
+            CASE('a', "int");
+            CASE('b', "bool");
+            CASE('c', "char");
+            CASE('l', "long");
+            CASE('v', "void");
+        });
+
+        LEN(5, {
+            CASE('f', "float");
+            CASE('s', "short");
+        });
+
+        LEN(6, {
+            CASE('d', "double");
+            CASE('i', "int8_t");
+
+        case 's':
+            MATCHES("signed");
+            MATCHES("size_t");
+            break;
+        });
+
+        LEN(7, {
+            CASE('c', "char8_t");
+        case 'i':
+            MATCHES("int16_t");
+            MATCHES("int32_t");
+            MATCHES("int64_t");
+            break;
+            CASE('u', "uint8_t");
+            CASE('w', "wchar_t");
+        });
+
+        LEN(8, {
+            case 'c':
+                MATCHES("char16_t");
+                MATCHES("char32_t");
+                break;
+
+            case 'i':
+                MATCHES("intmax_t");
+                MATCHES("intptr_t");
+                break;
+
+            case 'u':
+                MATCHES("uint16_t");
+                MATCHES("uint32_t");
+                MATCHES("uint64_t");
+                MATCHES("unsigned");
+                break;
+        });
+
+        LEN(9, {
+            CASE('p', "ptrdiff_t");
+        case 'u':
+            MATCHES("uintmax_t");
+            MATCHES("uintptr_t");
+            break;
+        });
+
+        LEN(11, CASE('i', "int_fast8_t"));
+
+        LEN(12, {
+            case 'i':
+                MATCHES("int_fast16_t");
+                MATCHES("int_fast32_t");
+                MATCHES("int_fast64_t");
+                MATCHES("int_least8_t");
+                break;
+
+                CASE('u', "uint_fast8_t");
+        });
+
+        LEN(13, {
+            case 'i':
+                MATCHES("int_least16_t");
+                MATCHES("int_least32_t");
+                MATCHES("int_least64_t");
+                break;
+
+            case 'u':
+                MATCHES("uint_fast16_t");
+                MATCHES("uint_fast32_t");
+                MATCHES("uint_fast64_t");
+                MATCHES("uint_least8_t");
+                break;
+        });
+
+        LEN(14, {
+            case 'u':
+                MATCHES("uint_least16_t");
+                MATCHES("uint_least32_t");
+                MATCHES("uint_least64_t");
+                break;
+        });
+    }
+
+    return false;
+}
+
 bool cpp_next_token(const Contents* contents,
                     Contents_Iterator* iterator,
                     Token* token,
@@ -206,118 +491,19 @@ bool cpp_next_token(const Contents* contents,
             }
         }
 
-        cz::Str keywords[] = {
-            "alignas",
-            "alignof",
-            "and",
-            "and_eq",
-            "asm",
-            "atomic_cancel",
-            "atomic_commit",
-            "atomic_noexcept",
-            "bitand",
-            "bitor",
-            "break",
-            "case",
-            "catch",
-            "compl",
-            "concept",
-            "const",
-            "consteval",
-            "constexpr",
-            "constinit",
-            "const_cast",
-            "continue",
-            "co_await",
-            "co_return",
-            "co_yield",
-            "decltype",
-            "default",
-            "delete",
-            "do",
-            "dynamic_cast",
-            "else",
-            "explicit",
-            "export",
-            "extern",
-            "false",
-            "for",
-            "friend",
-            "goto",
-            "if",
-            "inline",
-            "mutable",
-            "namespace",
-            "new",
-            "noexcept",
-            "not",
-            "not_eq",
-            "nullptr",
-            "operator",
-            "or",
-            "or_eq",
-            "private",
-            "protected",
-            "public",
-            "reflexpr",
-            "register",
-            "reinterpret_cast",
-            "requires",
-            "return",
-            "sizeof",
-            "static",
-            "static_assert",
-            "static_cast",
-            "switch",
-            "synchronized",
-            "template",
-            "this",
-            "thread_local",
-            "throw",
-            "true",
-            "try",
-            "typedef",
-            "typeid",
-            "typename",
-            "using",
-            "virtual",
-            "volatile",
-            "while",
-            "xor",
-            "xor_eq",
-        };
-        for (size_t i = 0; i < sizeof(keywords) / sizeof(*keywords); ++i) {
-            if (matches(contents, start_iterator, token->end, keywords[i])) {
-                token->type = Token_Type::KEYWORD;
-                goto done;
-            }
+        if (look_for_normal_keyword(contents, start_iterator, token, first_char)) {
+            token->type = Token_Type::KEYWORD;
+            goto done;
         }
 
-        cz::Str type_keywords[] = {"auto",           "bool",           "char",
-                                   "char16_t",       "char32_t",       "char8_t",
-                                   "double",         "float",          "int",
-                                   "int16_t",        "int32_t",        "int64_t",
-                                   "int8_t",         "int_fast16_t",   "int_fast32_t",
-                                   "int_fast64_t",   "int_fast8_t",    "int_least16_t",
-                                   "int_least32_t",  "int_least64_t",  "int_least8_t",
-                                   "intmax_t",       "intptr_t",       "long",
-                                   "ptrdiff_t",      "short",          "signed",
-                                   "size_t",         "uint16_t",       "uint32_t",
-                                   "uint64_t",       "uint8_t",        "uint_fast16_t",
-                                   "uint_fast32_t",  "uint_fast64_t",  "uint_fast8_t",
-                                   "uint_least16_t", "uint_least32_t", "uint_least64_t",
-                                   "uint_least8_t",  "uintmax_t",      "uintptr_t",
-                                   "unsigned",       "void",           "wchar_t"};
-        for (size_t i = 0; i < sizeof(type_keywords) / sizeof(*type_keywords); ++i) {
-            if (matches(contents, start_iterator, token->end, type_keywords[i])) {
-                token->type = Token_Type::TYPE;
-                if (normal_state == START_OF_PARAMETER) {
-                    normal_state = IN_PARAMETER_TYPE;
-                } else {
-                    normal_state = IN_VARIABLE_TYPE;
-                }
-                goto done;
+        if (look_for_type_keyword(contents, start_iterator, token, first_char)) {
+            token->type = Token_Type::TYPE;
+            if (normal_state == START_OF_PARAMETER) {
+                normal_state = IN_PARAMETER_TYPE;
+            } else {
+                normal_state = IN_VARIABLE_TYPE;
             }
+            goto done;
         }
 
         // generic identifier
