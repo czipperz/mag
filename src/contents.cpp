@@ -7,18 +7,18 @@
 
 namespace mag {
 
-#define MAX 512
-#define DESIRED_LEN (MAX * 3 / 4)
+#define CONTENTS_BUCKET_MAX_SIZE 512
+#define CONTENTS_BUCKET_DESIRED_LEN (CONTENTS_BUCKET_MAX_SIZE * 3 / 4)
 
 void Contents::drop() {
     for (size_t i = 0; i < buckets.len(); ++i) {
-        cz::heap_allocator().dealloc({buckets[i].elems, MAX});
+        cz::heap_allocator().dealloc({buckets[i].elems, CONTENTS_BUCKET_MAX_SIZE});
     }
     buckets.drop(cz::heap_allocator());
 }
 
 static cz::Slice<char> bucket_alloc() {
-    char* buffer = (char*)cz::heap_allocator().alloc({MAX, 1}).buffer;
+    char* buffer = (char*)cz::heap_allocator().alloc({CONTENTS_BUCKET_MAX_SIZE, 1}).buffer;
     return {buffer, 0};
 }
 
@@ -70,19 +70,19 @@ void Contents::insert(uint64_t start, cz::Str str) {
 
     for (size_t b = 0; b < buckets.len(); ++b) {
         if (start <= buckets[b].len) {
-            if (buckets[b].len + str.len <= MAX) {
+            if (buckets[b].len + str.len <= CONTENTS_BUCKET_MAX_SIZE) {
                 bucket_insert(&buckets[b], start, str);
                 return;
             } else {
                 // Overflowing one buffer into multiple buffers.
-                size_t extra_buffers = (buckets[b].len + str.len - 1) / DESIRED_LEN;
+                size_t extra_buffers = (buckets[b].len + str.len - 1) / CONTENTS_BUCKET_DESIRED_LEN;
                 buckets.reserve(cz::heap_allocator(), extra_buffers);
                 for (size_t i = 0; i < extra_buffers; ++i) {
                     buckets.insert(b + i + 1, bucket_alloc());
                 }
 
                 // Characters after the start point are saved for later
-                char overflow[MAX];
+                char overflow[CONTENTS_BUCKET_MAX_SIZE];
                 size_t overflow_offset = start;
                 size_t overflow_len = buckets[b].len - overflow_offset;
                 memcpy(overflow, buckets[b].elems + overflow_offset, overflow_len);
@@ -90,16 +90,16 @@ void Contents::insert(uint64_t start, cz::Str str) {
                 size_t overflow_index = 0;
 
                 // Overflow the initial buffer into the second
-                if (buckets[b].len > DESIRED_LEN) {
-                    bucket_append(&buckets[b + 1],
-                                  {buckets[b].elems + DESIRED_LEN, buckets[b].len - DESIRED_LEN});
-                    buckets[b].len = DESIRED_LEN;
+                if (buckets[b].len > CONTENTS_BUCKET_DESIRED_LEN) {
+                    bucket_append(&buckets[b + 1], {buckets[b].elems + CONTENTS_BUCKET_DESIRED_LEN,
+                                                    buckets[b].len - CONTENTS_BUCKET_DESIRED_LEN});
+                    buckets[b].len = CONTENTS_BUCKET_DESIRED_LEN;
                 }
 
                 // Fill buffers (including initial) except for the last one
                 size_t str_index = 0;
                 for (size_t bucket_index = b; bucket_index < b + extra_buffers; ++bucket_index) {
-                    size_t offset = DESIRED_LEN - buckets[bucket_index].len;
+                    size_t offset = CONTENTS_BUCKET_DESIRED_LEN - buckets[bucket_index].len;
                     if (str_index + offset > str.len) {
                         // Here we are inserting a small string into a big
                         // buffer so need to split the final string into two.
@@ -128,13 +128,14 @@ void Contents::insert(uint64_t start, cz::Str str) {
 
     CZ_DEBUG_ASSERT(start == 0);
     if (str.len > 0) {
-        buckets.reserve(cz::heap_allocator(), (str.len + DESIRED_LEN - 1) / DESIRED_LEN);
+        buckets.reserve(cz::heap_allocator(),
+                        (str.len + CONTENTS_BUCKET_DESIRED_LEN - 1) / CONTENTS_BUCKET_DESIRED_LEN);
         do {
             cz::Slice<char> bucket = bucket_alloc();
-            if (str.len > DESIRED_LEN) {
-                bucket_append(&bucket, {str.buffer, DESIRED_LEN});
-                str.buffer += DESIRED_LEN;
-                str.len -= DESIRED_LEN;
+            if (str.len > CONTENTS_BUCKET_DESIRED_LEN) {
+                bucket_append(&bucket, {str.buffer, CONTENTS_BUCKET_DESIRED_LEN});
+                str.buffer += CONTENTS_BUCKET_DESIRED_LEN;
+                str.len -= CONTENTS_BUCKET_DESIRED_LEN;
             } else {
                 bucket_append(&bucket, {str.buffer, str.len});
                 str.len = 0;
