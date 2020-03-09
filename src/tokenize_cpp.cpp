@@ -31,13 +31,7 @@ enum State : uint64_t {
     PREPROCESSOR_GENERAL = 0x5000000000000000,
 };
 
-static bool matches(const Contents* contents, Contents_Iterator it, uint64_t end, cz::Str query) {
-    if (end - it.position != query.len) {
-        return false;
-    }
-    if (it.position + query.len > contents->len) {
-        return false;
-    }
+static bool matches_no_bounds_check(const Contents* contents, Contents_Iterator it, cz::Str query) {
     for (size_t i = 0; i < query.len; ++i) {
         if (it.get() != query[i]) {
             return false;
@@ -45,6 +39,16 @@ static bool matches(const Contents* contents, Contents_Iterator it, uint64_t end
         it.advance();
     }
     return true;
+}
+
+static bool matches(const Contents* contents, Contents_Iterator it, uint64_t end, cz::Str query) {
+    if (end - it.position != query.len) {
+        return false;
+    }
+    if (it.position + query.len > contents->len) {
+        return false;
+    }
+    return matches_no_bounds_check(contents, it, query);
 }
 
 static bool is_identifier_continuation(char ch) {
@@ -77,9 +81,9 @@ static bool look_for_normal_keyword(const Contents* contents,
         MATCHES(STR);   \
         break
 
-#define MATCHES(STR)                                          \
-    if (matches(contents, start_iterator, token->end, STR)) { \
-        return true;                                          \
+#define MATCHES(STR)                                              \
+    if (matches_no_bounds_check(contents, start_iterator, STR)) { \
+        return true;                                              \
     }
 
     switch (token->end - token->start) {
