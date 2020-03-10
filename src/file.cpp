@@ -1,5 +1,6 @@
 #include "file.hpp"
 
+#include <algorithm>
 #include <cz/defer.hpp>
 #include <cz/fs/directory.hpp>
 #include <cz/fs/read_to_string.hpp>
@@ -28,24 +29,35 @@ static cz::Result load_file(Editor* editor, const char* path, Buffer_Id buffer_i
     return cz::Result::ok();
 }
 
-static cz::Result load_path(Editor* editor, const char* path, Buffer_Id buffer_id) {
-    // Try reading it as a directory, then if that fails read it as a file.
-    cz::fs::DirectoryIterator iterator(cz::heap_allocator());
-    if (iterator.create(path).is_err()) {
-        return load_file(editor, path, buffer_id);
-    }
+static cz::Result load_directory(Editor* editor, const char* path, Buffer_Id buffer_id) {
+    cz::BufferArray buffer_array;
+    buffer_array.create();
+    CZ_DEFER(buffer_array.drop());
 
-    CZ_DEFER(iterator.destroy());
+    cz::Vector<cz::String> files = {};
+    CZ_DEFER(files.drop(cz::heap_allocator()));
+
+    CZ_TRY(cz::fs::files(cz::heap_allocator(), buffer_array.allocator(), path, &files));
+    std::sort(files.start(), files.end());
 
     WITH_BUFFER(buffer, buffer_id, {
-        while (!iterator.done()) {
-            buffer->contents.insert(buffer->contents.len, iterator.file());
+        for (size_t i = 0; i < files.len(); ++i) {
+            buffer->contents.insert(buffer->contents.len, files[i]);
             buffer->contents.insert(buffer->contents.len, "\n");
-            CZ_TRY(iterator.advance());
         }
     });
 
     return cz::Result::ok();
+}
+
+static cz::Result load_path(Editor* editor, const char* path, Buffer_Id buffer_id) {
+    // Try reading it as a directory, then if that fails read it as a file.  On
+    // linux, opening it as a file will succeed even if it is a directory.  Then
+    // reading the file will cause an error.
+    if (load_directory(editor, path, buffer_id).is_ok()) {
+        return cz::Result::ok();
+    }
+    return load_file(editor, path, buffer_id);
 }
 
 void open_file(Editor* editor, Client* client, cz::Str user_path) {
