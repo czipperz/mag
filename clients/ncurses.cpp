@@ -697,6 +697,8 @@ static void render_to_cells(Cell* cells,
                 0, 0, total_rows - (client->_message.tag != Message::NONE), total_cols);
 
     if (client->_message.tag != Message::NONE) {
+        ZoneScopedN("Draw mini buffer");
+
         int y = 0;
         int x = 0;
         int start_row = total_rows - 1;
