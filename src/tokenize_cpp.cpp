@@ -426,33 +426,58 @@ bool cpp_next_token(const Contents* contents,
     char first_char;
     {
         ZoneScopedN("skip whitespace");
-        for (;; iterator->advance()) {
-            if (iterator->at_eob()) {
-                return false;
-            }
 
-            first_char = iterator->get();
-            if (first_char == '\\') {
-                for (; first_char == '\\' || isblank(first_char); iterator->advance()) {
-                    first_char = iterator->get();
+        if (in_preprocessor) {
+            for (;; iterator->advance()) {
+                if (iterator->at_eob()) {
+                    return false;
+                }
+
+                first_char = iterator->get();
+                if (first_char == '\\') {
+                    for (; first_char == '\\' || isblank(first_char); iterator->advance()) {
+                        first_char = iterator->get();
+                    }
+
+                    if (first_char == '\n') {
+                        continue;
+                    }
+                }
+
+                if (!isspace(first_char)) {
+                    break;
+                }
+            }
+        } else {
+            for (;; iterator->advance()) {
+                if (iterator->at_eob()) {
+                    return false;
+                }
+
+                first_char = iterator->get();
+                if (first_char == '\\') {
+                    for (; first_char == '\\' || isblank(first_char); iterator->advance()) {
+                        first_char = iterator->get();
+                    }
+
+                    if (first_char == '\n') {
+                        continue;
+                    }
+                }
+
+                if (!isspace(first_char)) {
+                    break;
                 }
 
                 if (first_char == '\n') {
-                    continue;
+                    in_preprocessor = false;
+                    normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
+                    break;
                 }
-            }
 
-            if (!isspace(first_char)) {
-                break;
-            }
-
-            if (first_char == '\n' && in_preprocessor) {
-                in_preprocessor = false;
-                normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
-            }
-
-            if (in_preprocessor && preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
-                preprocessor_state = PREPROCESSOR_GENERAL;
+                if (preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
+                    preprocessor_state = PREPROCESSOR_GENERAL;
+                }
             }
         }
     }
