@@ -33,6 +33,86 @@ enum State : uint64_t {
     PREPROCESSOR_GENERAL = 0x5000000000000000,
 };
 
+static bool skip_whitespace(Contents_Iterator* iterator,
+                            char* ch,
+                            bool* in_preprocessor,
+                            uint64_t* normal_state,
+                            uint64_t* preprocessor_state,
+                            uint64_t preprocessor_saved_state) {
+    ZoneScoped;
+
+    if (*in_preprocessor) {
+        for (;; iterator->advance()) {
+            if (iterator->at_eob()) {
+                return false;
+            }
+
+            *ch = iterator->get();
+            if (*ch == '\\') {
+                iterator->advance();
+                if (iterator->at_eob()) {
+                    return false;
+                }
+
+                while (*ch = iterator->get(), *ch == '\\' || isblank(*ch)) {
+                    iterator->advance();
+                    if (iterator->at_eob()) {
+                        return false;
+                    }
+                }
+
+                if (*ch == '\n') {
+                    continue;
+                }
+            }
+
+            if (!isspace(*ch)) {
+                return true;
+            }
+
+            if (*ch == '\n') {
+                *in_preprocessor = false;
+                *normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
+                goto not_preprocessor;
+            }
+
+            if (*preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
+                *preprocessor_state = PREPROCESSOR_GENERAL;
+            }
+        }
+    } else {
+    not_preprocessor:
+        for (;; iterator->advance()) {
+            if (iterator->at_eob()) {
+                return false;
+            }
+
+            *ch = iterator->get();
+            if (*ch == '\\') {
+                iterator->advance();
+                if (iterator->at_eob()) {
+                    return false;
+                }
+
+                while (*ch = iterator->get(), *ch == '\\' || isblank(*ch)) {
+                    iterator->advance();
+                    if (iterator->at_eob()) {
+                        return false;
+                    }
+                }
+
+                if (*ch == '\n') {
+                    continue;
+                }
+            }
+
+            if (!isspace(*ch)) {
+                return true;
+            }
+        }
+    }
+}
+
 static bool matches_no_bounds_check(const Contents* contents, Contents_Iterator it, cz::Str query) {
     ZoneScoped;
 
@@ -424,62 +504,9 @@ bool cpp_next_token(const Contents* contents,
     uint64_t preprocessor_saved_state = *state_combined & PREPROCESSOR_SAVED_STATE_MASK;
 
     char first_char;
-    {
-        ZoneScopedN("skip whitespace");
-
-        if (in_preprocessor) {
-            for (;; iterator->advance()) {
-                if (iterator->at_eob()) {
-                    return false;
-                }
-
-                first_char = iterator->get();
-                if (first_char == '\\') {
-                    for (; first_char == '\\' || isblank(first_char); iterator->advance()) {
-                        first_char = iterator->get();
-                    }
-
-                    if (first_char == '\n') {
-                        continue;
-                    }
-                }
-
-                if (!isspace(first_char)) {
-                    break;
-                }
-            }
-        } else {
-            for (;; iterator->advance()) {
-                if (iterator->at_eob()) {
-                    return false;
-                }
-
-                first_char = iterator->get();
-                if (first_char == '\\') {
-                    for (; first_char == '\\' || isblank(first_char); iterator->advance()) {
-                        first_char = iterator->get();
-                    }
-
-                    if (first_char == '\n') {
-                        continue;
-                    }
-                }
-
-                if (!isspace(first_char)) {
-                    break;
-                }
-
-                if (first_char == '\n') {
-                    in_preprocessor = false;
-                    normal_state = preprocessor_saved_state >> PREPROCESSOR_SAVE_SHIFT;
-                    break;
-                }
-
-                if (preprocessor_state == PREPROCESSOR_AFTER_DEFINE_NAME) {
-                    preprocessor_state = PREPROCESSOR_GENERAL;
-                }
-            }
-        }
+    if (!skip_whitespace(iterator, &first_char, &in_preprocessor, &normal_state,
+                         &preprocessor_state, preprocessor_saved_state)) {
+        return false;
     }
 
     if (first_char == '#') {
