@@ -555,19 +555,13 @@ bool cpp_next_token(const Contents* contents,
         ZoneScopedN("character");
         token->start = iterator->position;
         if (iterator->position + 3 >= contents->len) {
-            while (iterator->position < contents->len) {
-                iterator->advance();
-            }
+            iterator->advance(contents->len - iterator->position);
         } else {
             iterator->advance();
             if (iterator->get() == '\\') {
-                for (int i = 0; i < 3; ++i) {
-                    iterator->advance();
-                }
+                iterator->advance(3);
             } else {
-                for (int i = 0; i < 2; ++i) {
-                    iterator->advance();
-                }
+                iterator->advance(2);
             }
         }
         token->end = iterator->position;

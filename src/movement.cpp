@@ -49,9 +49,7 @@ void forward_line(Buffer* buffer, Contents_Iterator* iterator) {
     if (next_end.position < end.position + 1 + column) {
         *iterator = next_end;
     } else {
-        for (uint64_t i = 0; i < column + 1; ++i) {
-            end.advance();
-        }
+        end.advance(column + 1);
         *iterator = end;
     }
 }
@@ -71,9 +69,7 @@ void backward_line(Buffer* buffer, Contents_Iterator* iterator) {
         start.retreat();
         *iterator = start;
     } else {
-        for (uint64_t i = 0; i < column; ++i) {
-            previous_start.advance();
-        }
+        previous_start.advance(column);
         *iterator = previous_start;
     }
 }
