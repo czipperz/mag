@@ -191,12 +191,18 @@ static void compute_visible_start(Buffer* buffer,
 static bool next_check_point(Window_Cache* window_cache,
                              Buffer* buffer,
                              Contents_Iterator* iterator,
-                             uint64_t* state) {
+                             uint64_t* state,
+                             cz::Vector<Tokenizer_Check_Point>* check_points) {
     ZoneScoped;
 
     uint64_t start_position = iterator->position;
     while (!iterator->at_eob()) {
         if (iterator->position >= start_position + 1024) {
+            Tokenizer_Check_Point check_point;
+            check_point.position = iterator->position;
+            check_point.state = *state;
+            check_points->reserve(cz::heap_allocator(), 1);
+            check_points->push(check_point);
             return true;
         }
 
@@ -238,15 +244,9 @@ static int cache_windows_check_points(Window_Cache* window_cache, Window* window
                         return getch_result;
                     }
 
-                    if (!next_check_point(window_cache, buffer, &iterator, &state)) {
+                    if (!next_check_point(window_cache, buffer, &iterator, &state, check_points)) {
                         break;
                     }
-
-                    Tokenizer_Check_Point check_point;
-                    check_point.position = iterator.position;
-                    check_point.state = state;
-                    check_points->reserve(cz::heap_allocator(), 1);
-                    check_points->push(check_point);
                 }
             });
         }
@@ -301,15 +301,9 @@ static void cache_window_unified_position(Window_Cache* window_cache,
     }
 
     while (iterator.position <= start_position) {
-        if (!next_check_point(window_cache, buffer, &iterator, &state)) {
+        if (!next_check_point(window_cache, buffer, &iterator, &state, check_points)) {
             break;
         }
-
-        Tokenizer_Check_Point check_point;
-        check_point.position = iterator.position;
-        check_point.state = state;
-        check_points->reserve(cz::heap_allocator(), 1);
-        check_points->push(check_point);
     }
 }
 
