@@ -103,6 +103,7 @@ struct Window_Cache {
             size_t change_index;
             uint64_t visible_end;
             cz::Vector<Tokenizer_Check_Point> tokenizer_check_points;
+            bool tokenizer_ran_to_end;
         } unified;
         struct {
             Window_Cache* left;
@@ -222,35 +223,37 @@ static int cache_windows_check_points(Window_Cache* window_cache, Window* window
 
     switch (window->tag) {
     case Window::UNIFIED:
-        while (1) {
-            // TODO: Make this non blocking!
-            WITH_BUFFER(buffer, window->v.unified.id, {
-                cz::Vector<Tokenizer_Check_Point>* check_points =
-                    &window_cache->v.unified.tokenizer_check_points;
-
-                uint64_t state;
-                Contents_Iterator iterator;
-                if (check_points->len() > 0) {
-                    state = check_points->last().state;
-                    iterator = buffer->contents.iterator_at(check_points->last().position);
-                } else {
-                    state = 0;
-                    iterator = buffer->contents.iterator_at(0);
-                }
-
-                while (1) {
-                    int getch_result = getch();
-                    if (getch_result != ERR) {
-                        return getch_result;
-                    }
-
-                    if (!next_check_point(window_cache, buffer, &iterator, &state, check_points)) {
-                        break;
-                    }
-                }
-            });
+        if (window_cache->v.unified.tokenizer_ran_to_end) {
+            return ERR;
         }
-        return ERR;
+
+        // TODO: Make this non blocking!
+        WITH_BUFFER(buffer, window->v.unified.id, {
+            cz::Vector<Tokenizer_Check_Point>* check_points =
+                &window_cache->v.unified.tokenizer_check_points;
+
+            uint64_t state;
+            Contents_Iterator iterator;
+            if (check_points->len() > 0) {
+                state = check_points->last().state;
+                iterator = buffer->contents.iterator_at(check_points->last().position);
+            } else {
+                state = 0;
+                iterator = buffer->contents.iterator_at(0);
+            }
+
+            while (1) {
+                int getch_result = getch();
+                if (getch_result != ERR) {
+                    return getch_result;
+                }
+
+                if (!next_check_point(window_cache, buffer, &iterator, &state, check_points)) {
+                    window_cache->v.unified.tokenizer_ran_to_end = true;
+                    return ERR;
+                }
+            }
+        });
 
     case Window::VERTICAL_SPLIT: {
         int left_result = cache_windows_check_points(window_cache->v.vertical_split.left,
@@ -380,6 +383,7 @@ static void cache_window_unified_create(Window_Cache* window_cache,
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified.id = buffer->id;
     window_cache->v.unified.tokenizer_check_points = {};
+    window_cache->v.unified.tokenizer_ran_to_end = false;
     cache_window_unified_update(window_cache, window, buffer);
 }
 
