@@ -1,6 +1,7 @@
 #include "file.hpp"
 
 #include <cz/defer.hpp>
+#include <cz/fs/directory.hpp>
 #include <cz/fs/read_to_string.hpp>
 #include <cz/path.hpp>
 #include "client.hpp"
@@ -8,6 +9,44 @@
 #include "editor.hpp"
 
 namespace mag {
+
+static cz::Result load_file(Editor* editor, const char* path, Buffer_Id buffer_id) {
+    FILE* file = fopen(path, "r");
+    if (!file) {
+        return cz::Result::last_error();
+    }
+
+    CZ_DEFER(fclose(file));
+
+    WITH_BUFFER(buffer, buffer_id, {
+        cz::String contents = {};
+        CZ_DEFER(contents.drop(cz::heap_allocator()));
+        CZ_TRY(cz::fs::read_to_string(cz::heap_allocator(), &contents, file));
+        buffer->contents.insert(0, contents);
+    });
+
+    return cz::Result::ok();
+}
+
+static cz::Result load_path(Editor* editor, const char* path, Buffer_Id buffer_id) {
+    // Try reading it as a directory, then if that fails read it as a file.
+    cz::fs::DirectoryIterator iterator(cz::heap_allocator());
+    if (iterator.create(path).is_err()) {
+        return load_file(editor, path, buffer_id);
+    }
+
+    CZ_DEFER(iterator.destroy());
+
+    WITH_BUFFER(buffer, buffer_id, {
+        while (!iterator.done()) {
+            buffer->contents.insert(buffer->contents.len, iterator.file());
+            buffer->contents.insert(buffer->contents.len, "\n");
+            CZ_TRY(iterator.advance());
+        }
+    });
+
+    return cz::Result::ok();
+}
 
 void open_file(Editor* editor, Client* client, cz::Str user_path) {
     if (user_path.len == 0) {
@@ -27,17 +66,12 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     }
 
     Buffer_Id buffer_id = editor->create_buffer(path);
-
-    FILE* file = fopen(path.buffer(), "r");
-    if (file) {
-        CZ_DEFER(fclose(file));
-        // If it exists read in the buffer
-        WITH_BUFFER(buffer, buffer_id, {
-            cz::String contents = {};
-            CZ_DEFER(contents.drop(cz::heap_allocator()));
-            cz::fs::read_to_string(cz::heap_allocator(), &contents, file);
-            buffer->contents.insert(0, contents);
-        });
+    if (load_path(editor, path.buffer(), buffer_id).is_err()) {
+        Message message = {};
+        message.tag = Message::SHOW;
+        message.text = "File not found";
+        client->show_message(message);
+        // Still open empty file buffer.
     }
 
     CZ_DEBUG_ASSERT(client->_selected_window->tag == Window::UNIFIED);
