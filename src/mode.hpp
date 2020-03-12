@@ -7,8 +7,11 @@ namespace mag {
 struct Contents;
 struct Contents_Iterator;
 struct Token;
+struct Key_Map;
 
 struct Mode {
+    Key_Map* key_map;
+
     bool (*next_token)(const Contents* contents /* in */,
                        Contents_Iterator* iterator /* in/out */,
                        Token* token /* out */,

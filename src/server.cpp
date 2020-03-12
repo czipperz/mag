@@ -152,6 +152,22 @@ static void failed_key_press(Editor* editor,
     }
 }
 
+static bool handle_key_press_buffer(Editor* editor,
+                                    Client* client,
+                                    size_t* start,
+                                    cz::Slice<Key> key_chain,
+                                    Command* previous_command,
+                                    bool* waiting_for_more_keys) {
+    WITH_BUFFER(buffer, client->selected_buffer_id(), {
+        if (buffer->mode.key_map) {
+            return handle_key_press(editor, client, buffer->mode.key_map, start, key_chain,
+                                    previous_command, waiting_for_more_keys);
+        } else {
+            return false;
+        }
+    });
+}
+
 void Server::receive(Client* client, Key key) {
     ZoneScoped;
 
@@ -162,6 +178,12 @@ void Server::receive(Client* client, Key key) {
     size_t start = 0;
     while (start < key_chain.len) {
         bool waiting_for_more_keys = false;
+
+        if (handle_key_press_buffer(&editor, client, &start, key_chain, &previous_command,
+                                    &waiting_for_more_keys)) {
+            continue;
+        }
+
         if (handle_key_press(&editor, client, &editor.key_map, &start, key_chain, &previous_command,
                              &waiting_for_more_keys)) {
             continue;
