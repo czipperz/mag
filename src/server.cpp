@@ -75,62 +75,104 @@ static void command_insert_char(Editor* editor, Command_Source source) {
     });
 }
 
+static Command lookup_key_chain(Key_Map* map, size_t start, size_t* end, cz::Slice<Key> key_chain) {
+    size_t index = 0;
+    for (; index < key_chain.len; ++index) {
+        Key_Bind* bind = map->lookup(key_chain[index]);
+        if (bind == nullptr) {
+            ++index;
+            *end = index;
+            return command_insert_char;
+        }
+
+        if (bind->is_command) {
+            ++index;
+            *end = index;
+            return bind->v.command;
+        } else {
+            map = bind->v.map;
+        }
+    }
+
+    return nullptr;
+}
+
+static bool handle_key_press(Editor* editor,
+                             Client* client,
+                             Key_Map* key_map,
+                             size_t* start,
+                             cz::Slice<Key> key_chain,
+                             Command* previous_command,
+                             bool* waiting_for_more_keys) {
+    size_t index = *start;
+    Command command = lookup_key_chain(key_map, *start, &index, key_chain);
+    if (command && command != command_insert_char) {
+        Command_Source source;
+        source.client = client;
+        source.keys = {client->key_chain.start() + *start, index - *start};
+        source.previous_command = *previous_command;
+
+        command(editor, source);
+        *previous_command = command;
+        *start = index;
+        return true;
+    } else {
+        if (index == *start) {  // in this case we are waiting for the user to press more keys
+            *waiting_for_more_keys = true;
+        }
+
+        return false;
+    }
+}
+
+static void failed_key_press(Editor* editor,
+                             Client* client,
+                             Command* previous_command,
+                             size_t start) {
+    Key key = client->key_chain[start];
+    if (key.modifiers == 0 && (isprint(key.code) || key.code == '\t' || key.code == '\n')) {
+        if (key.code == '\n' && client->selected_buffer_id() == client->mini_buffer_id()) {
+            send_message_result(editor, client);
+            *previous_command = nullptr;
+        } else {
+            Command_Source source;
+            source.client = client;
+            source.keys = {client->key_chain.start() + start, 1};
+            source.previous_command = *previous_command;
+
+            command_insert_char(editor, source);
+            *previous_command = command_insert_char;
+        }
+    } else {
+        Message message = {};
+        message.tag = Message::SHOW;
+        message.text = "Invalid key combo";
+        client->show_message(message);
+        *previous_command = nullptr;
+    }
+}
+
 void Server::receive(Client* client, Key key) {
     ZoneScoped;
 
     client->key_chain.reserve(cz::heap_allocator(), 1);
     client->key_chain.push(key);
 
-    size_t i = 0;
-top:
-    size_t start = i;
-    Key_Map* map = &editor.key_map;
-    for (; i < client->key_chain.len(); ++i) {
-        Key_Bind* bind = map->lookup(client->key_chain[i]);
-        if (bind == nullptr) {
-            if (start == i && key.modifiers == 0 &&
-                (isprint(key.code) || key.code == '\t' || key.code == '\n')) {
-                ++i;
-
-                if (key.code == '\n' && client->selected_buffer_id() == client->mini_buffer_id()) {
-                    send_message_result(&editor, client);
-                    previous_command = nullptr;
-                } else {
-                    Command_Source source;
-                    source.client = client;
-                    source.keys = {client->key_chain.start() + start, i - start};
-                    source.previous_command = previous_command;
-
-                    command_insert_char(&editor, source);
-                    previous_command = command_insert_char;
-                }
-            } else {
-                ++i;
-
-                Message message = {};
-                message.tag = Message::SHOW;
-                message.text = "Invalid key combo";
-                client->show_message(message);
-                previous_command = nullptr;
-            }
-            goto top;
+    cz::Slice<Key> key_chain = client->key_chain;
+    size_t start = 0;
+    while (start < key_chain.len) {
+        bool waiting_for_more_keys = false;
+        if (handle_key_press(&editor, client, &editor.key_map, &start, key_chain, &previous_command,
+                             &waiting_for_more_keys)) {
+            continue;
         }
 
-        if (bind->is_command) {
-            ++i;
-
-            Command_Source source;
-            source.client = client;
-            source.keys = {client->key_chain.start() + start, i - start};
-            source.previous_command = previous_command;
-
-            Command command = bind->v.command;
-            command(&editor, source);
-            previous_command = command;
-            goto top;
-        } else {
-            map = bind->v.map;
+        if (waiting_for_more_keys) {
+            break;
         }
+
+        failed_key_press(&editor, client, &previous_command, start);
+        ++start;
     }
 
     client->key_chain.remove_range(0, start);

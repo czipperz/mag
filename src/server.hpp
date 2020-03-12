@@ -11,7 +11,6 @@ struct Client;
 
 struct Server {
     Command previous_command;
-    bool last_action_was_insert_char;
     Editor editor;
 
     void drop() {
