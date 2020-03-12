@@ -1,6 +1,7 @@
 #include "config.hpp"
 
 #include "commands.hpp"
+#include "directory_commands.hpp"
 #include "tokenize_cpp.hpp"
 
 namespace mag {
@@ -81,6 +82,18 @@ Theme create_theme() {
     theme.faces.push({2, 0, 0});  // STRING
     theme.faces.push({7, 0, 0});  // IDENTIFIER
     return theme;
+}
+
+static Key_Map create_directory_key_map() {
+    Key_Map key_map = {};
+    key_map.bind("C-m", command_directory_open_path);
+    key_map.bind("\n", command_directory_open_path);
+    return key_map;
+}
+
+Key_Map* directory_key_map() {
+    static Key_Map key_map = create_directory_key_map();
+    return &key_map;
 }
 
 Mode get_mode(cz::Str file_name) {
