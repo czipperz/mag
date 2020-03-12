@@ -97,6 +97,34 @@ static Command lookup_key_chain(Key_Map* map, size_t start, size_t* end, cz::Sli
     return nullptr;
 }
 
+static bool get_key_press_command(Editor* editor,
+                                  Client* client,
+                                  Key_Map* key_map,
+                                  size_t* start,
+                                  cz::Slice<Key> key_chain,
+                                  Command* previous_command,
+                                  bool* waiting_for_more_keys,
+                                  Command_Source* source,
+                                  Command* command) {
+    size_t index = *start;
+    *command = lookup_key_chain(key_map, *start, &index, key_chain);
+    if (*command && *command != command_insert_char) {
+        source->client = client;
+        source->keys = {client->key_chain.start() + *start, index - *start};
+        source->previous_command = *previous_command;
+
+        *previous_command = *command;
+        *start = index;
+        return true;
+    } else {
+        if (index == *start) {
+            *waiting_for_more_keys = true;
+        }
+
+        return false;
+    }
+}
+
 static bool handle_key_press(Editor* editor,
                              Client* client,
                              Key_Map* key_map,
@@ -104,23 +132,13 @@ static bool handle_key_press(Editor* editor,
                              cz::Slice<Key> key_chain,
                              Command* previous_command,
                              bool* waiting_for_more_keys) {
-    size_t index = *start;
-    Command command = lookup_key_chain(key_map, *start, &index, key_chain);
-    if (command && command != command_insert_char) {
-        Command_Source source;
-        source.client = client;
-        source.keys = {client->key_chain.start() + *start, index - *start};
-        source.previous_command = *previous_command;
-
+    Command command;
+    Command_Source source;
+    if (get_key_press_command(editor, client, key_map, start, key_chain, previous_command,
+                              waiting_for_more_keys, &source, &command)) {
         command(editor, source);
-        *previous_command = command;
-        *start = index;
         return true;
     } else {
-        if (index == *start) {  // in this case we are waiting for the user to press more keys
-            *waiting_for_more_keys = true;
-        }
-
         return false;
     }
 }
@@ -158,14 +176,26 @@ static bool handle_key_press_buffer(Editor* editor,
                                     cz::Slice<Key> key_chain,
                                     Command* previous_command,
                                     bool* waiting_for_more_keys) {
-    WITH_BUFFER(buffer, client->selected_buffer_id(), {
-        if (buffer->mode.key_map) {
-            return handle_key_press(editor, client, buffer->mode.key_map, start, key_chain,
-                                    previous_command, waiting_for_more_keys);
+    Buffer_Handle* handle = editor->lookup(client->selected_buffer_id());
+    Buffer* buffer = handle->lock();
+    bool unlocked = false;
+    CZ_DEFER(if (!unlocked) handle->unlock());
+
+    if (buffer->mode.key_map) {
+        Command command;
+        Command_Source source;
+        if (get_key_press_command(editor, client, buffer->mode.key_map, start, key_chain,
+                                  previous_command, waiting_for_more_keys, &source, &command)) {
+            unlocked = true;
+            handle->unlock();
+            command(editor, source);
+            return true;
         } else {
             return false;
         }
-    });
+    } else {
+        return false;
+    }
 }
 
 void Server::receive(Client* client, Key key) {
