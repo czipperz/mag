@@ -58,16 +58,16 @@ static bool is_first(Window* parent, Window* child) {
     CZ_PANIC("");
 }
 
-static Window* first(Window* window) {
+Window* window_first(Window* window) {
     switch (window->tag) {
     case Window::UNIFIED:
         return window;
 
     case Window::VERTICAL_SPLIT:
-        return first(window->v.vertical_split.left);
+        return window_first(window->v.vertical_split.left);
 
     case Window::HORIZONTAL_SPLIT:
-        return first(window->v.horizontal_split.top);
+        return window_first(window->v.horizontal_split.top);
     }
 
     CZ_PANIC("");
@@ -95,12 +95,12 @@ void command_cycle_window(Editor* editor, Command_Source source) {
         child = parent;
         parent = child->parent;
         if (!parent) {
-            source.client->_selected_window = first(source.client->window);
+            source.client->_selected_window = window_first(source.client->window);
             return;
         }
     } while (!is_first(parent, child));
 
-    source.client->_selected_window = first(second_side(parent));
+    source.client->_selected_window = window_first(second_side(parent));
 }
 
 }
