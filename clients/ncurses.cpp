@@ -116,6 +116,12 @@ struct Window_Cache {
     } v;
 };
 
+struct Mini_Buffer_Results {
+    cz::String query;
+    bool loaded_results;
+    cz::Vector<cz::Str> results;
+};
+
 static void destroy_window_cache(Window_Cache* window_cache);
 static void destroy_window_cache_children(Window_Cache* window_cache) {
     switch (window_cache->tag) {
@@ -693,6 +699,7 @@ static void draw_window(Cell* cells,
 
 static void render_to_cells(Cell* cells,
                             Window_Cache** window_cache,
+                            Mini_Buffer_Results* mini_buffer_results,
                             int total_rows,
                             int total_cols,
                             Editor* editor,
@@ -741,6 +748,7 @@ static void render(int* total_rows,
                    int* total_cols,
                    Cell** cellss,
                    Window_Cache** window_cache,
+                   Mini_Buffer_Results* mini_buffer_results,
                    Editor* editor,
                    Client* client) {
     ZoneScoped;
@@ -776,7 +784,7 @@ static void render(int* total_rows,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, rows, cols, editor, client);
+    render_to_cells(cellss[1], window_cache, mini_buffer_results, rows, cols, editor, client);
 
     {
         ZoneScopedN("blit cells");
@@ -828,9 +836,12 @@ void run_ncurses(Server* server, Client* client) {
     Window_Cache* window_cache = nullptr;
     CZ_DEFER(destroy_window_cache(window_cache));
 
+    Mini_Buffer_Results mini_buffer_results = {};
+
     int total_rows = 0;
     int total_cols = 0;
-    render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client);
+    render(&total_rows, &total_cols, cellss, &window_cache, &mini_buffer_results, &server->editor,
+           client);
     nodelay(stdscr, TRUE);
 
     FILE* file = fopen("tmp.txt", "w");
@@ -839,7 +850,8 @@ void run_ncurses(Server* server, Client* client) {
     while (1) {
         int ch = getch();
         if (ch == ERR) {
-            render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client);
+            render(&total_rows, &total_cols, cellss, &window_cache, &mini_buffer_results,
+                   &server->editor, client);
 
             ch = cache_windows_check_points(window_cache, client->window, &server->editor);
             if (ch == ERR) {
