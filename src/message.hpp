@@ -18,7 +18,7 @@ struct Message {
     } tag;
 
     cz::Str text;
-    void (*response_callback)(Editor*, Client*, Buffer* mini_buffer, void* data);
+    void (*response_callback)(Editor*, Client*, cz::Str mini_buffer_contents, void* data);
     void* response_callback_data;
 };
 

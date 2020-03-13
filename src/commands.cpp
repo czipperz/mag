@@ -625,14 +625,12 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer, uint64_t start,
         cz::Option<uint64_t> new_start = FUNC(buffer, start, query); \
         if (new_start.is_present) {                                  \
             Cursor new_cursor;                                       \
-            new_cursor.point = new_start.value + query.len();        \
+            new_cursor.point = new_start.value + query.len;          \
             new_cursor.mark = new_start.value;                       \
             new_cursor.copy_chain = buffer->cursors[c].copy_chain;   \
             THEN;                                                    \
         }                                                            \
     } while (0)
-
-#define SEARCH_QUERY_SET_CURSOR(FUNC) SEARCH_QUERY_THEN(FUNC, buffer->cursors[c] = new_cursor)
 
 static void create_cursor_forward_search(Buffer* buffer) {
     CZ_DEBUG_ASSERT(buffer->cursors.len() >= 1);
@@ -719,11 +717,9 @@ void command_create_cursor_backward(Editor* editor, Command_Source source) {
 
 static void command_search_forward_callback(Editor* editor,
                                             Client* client,
-                                            Buffer* mini_buffer,
+                                            cz::Str query,
                                             void* data) {
     WITH_BUFFER(buffer, client->selected_buffer_id(), {
-        cz::String query = mini_buffer->contents.stringify(cz::heap_allocator());
-        CZ_DEFER(query.drop(cz::heap_allocator()));
         for (size_t c = 0; c < buffer->cursors.len(); ++c) {
             SEARCH_QUERY_THEN(search_forward, {
                 buffer->cursors[c] = new_cursor;
@@ -752,11 +748,9 @@ void command_search_forward(Editor* editor, Command_Source source) {
 
 static void command_search_backward_callback(Editor* editor,
                                              Client* client,
-                                             Buffer* mini_buffer,
+                                             cz::Str query,
                                              void* data) {
     WITH_BUFFER(buffer, client->selected_buffer_id(), {
-        cz::String query = mini_buffer->contents.stringify(cz::heap_allocator());
-        CZ_DEFER(query.drop(cz::heap_allocator()));
         for (size_t c = 0; c < buffer->cursors.len(); ++c) {
             SEARCH_QUERY_THEN(search_backward, {
                 buffer->cursors[c] = new_cursor;
@@ -882,12 +876,7 @@ void command_cycle_window(Editor* editor, Command_Source source) {
     source.client->_selected_window = first(second_side(parent));
 }
 
-static void command_open_file_callback(Editor* editor,
-                                       Client* client,
-                                       Buffer* mini_buffer,
-                                       void* data) {
-    cz::String query = mini_buffer->contents.stringify(cz::heap_allocator());
-    CZ_DEFER(query.drop(cz::heap_allocator()));
+static void command_open_file_callback(Editor* editor, Client* client, cz::Str query, void* data) {
     open_file(editor, client, query);
 }
 

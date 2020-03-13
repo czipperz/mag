@@ -43,6 +43,11 @@ void Transaction::push(Edit edit) {
     edit_offset += sizeof(Edit);
 }
 
+cz::Str Transaction::last_edit_value() const {
+    void* ptr = (char*)memory + edit_offset - sizeof(Edit);
+    return ((Edit*)ptr)->value.as_str();
+}
+
 void Transaction::commit(Buffer* buffer) {
     Commit commit;
     commit.edits = {(Edit*)memory, edit_offset / sizeof(Edit)};

@@ -15,7 +15,8 @@ Client Server::make_client() {
     return client;
 }
 
-void clear_buffer(Editor* editor, Buffer* buffer) {
+cz::Str clear_buffer(Editor* editor, Buffer* buffer) {
+    cz::Str buffer_contents;
     WITH_TRANSACTION({
         uint64_t contents_len = buffer->contents.len;
         transaction.init(1, (size_t)contents_len);
@@ -24,19 +25,20 @@ void clear_buffer(Editor* editor, Buffer* buffer) {
         edit.position = 0;
         edit.is_insert = false;
         transaction.push(edit);
+        buffer_contents = transaction.last_edit_value();
     });
+    return buffer_contents;
 }
 
 static void send_message_result(Editor* editor, Client* client) {
-    // todo don't lock mini buffer so other people can use it
-    WITH_BUFFER(mini_buffer, client->mini_buffer_id(), {
-        client->restore_selected_buffer();
-        client->_message.response_callback(editor, client, mini_buffer,
-                                           client->_message.response_callback_data);
-        client->dealloc_message();
+    cz::Str mini_buffer_contents;
+    WITH_BUFFER(mini_buffer, client->mini_buffer_id(),
+                { mini_buffer_contents = clear_buffer(editor, mini_buffer); });
 
-        clear_buffer(editor, mini_buffer);
-    });
+    client->restore_selected_buffer();
+    client->_message.response_callback(editor, client, mini_buffer_contents,
+                                       client->_message.response_callback_data);
+    client->dealloc_message();
 }
 
 static void command_insert_char(Editor* editor, Command_Source source) {

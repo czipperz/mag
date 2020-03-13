@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cz/allocator.hpp>
+#include <cz/str.hpp>
 
 namespace mag {
 
@@ -19,6 +20,7 @@ struct Transaction {
     cz::Allocator value_allocator();
 
     void push(Edit edit);
+    cz::Str last_edit_value() const;
 
     void commit(Buffer* buffer);
 };
