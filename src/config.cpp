@@ -3,6 +3,7 @@
 #include "commands.hpp"
 #include "directory_commands.hpp"
 #include "tokenize_cpp.hpp"
+#include "window_commands.hpp"
 
 namespace mag {
 
