@@ -63,7 +63,26 @@ void command_save_file(Editor* editor, Command_Source source) {
     });
 }
 
-void command_switch_buffer(Editor* editor, Command_Source source) {}
+static void command_switch_buffer_callback(Editor* editor,
+                                           Client* client,
+                                           cz::Str path,
+                                           void* data) {
+    Buffer_Id buffer_id;
+    if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
+        return;
+    }
+
+    client->set_selected_buffer(buffer_id);
+}
+
+void command_switch_buffer(Editor* editor, Command_Source source) {
+    Message message = {};
+    message.tag = Message::RESPOND_BUFFER;
+    message.text = "Buffer to switch to: ";
+    message.response_callback = command_switch_buffer_callback;
+
+    source.client->show_message(message);
+}
 
 int remove_windows_matching(Window* window,
                             Buffer_Id id,
