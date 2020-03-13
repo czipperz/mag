@@ -47,6 +47,12 @@ struct Client {
         }
     }
 
+    void set_selected_buffer(Buffer_Id id) {
+        CZ_DEBUG_ASSERT(_selected_window->tag == Window::UNIFIED);
+        _selected_window->v.unified.id = id;
+        _selected_window->v.unified.start_position = 0;
+    }
+
     void show_message(Message message) {
         _message_time = std::chrono::system_clock::now();
         _message = message;
