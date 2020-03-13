@@ -13,7 +13,6 @@
 namespace mag {
 
 struct Buffer {
-    Buffer_Id id;
     cz::String path;
 
     cz::Vector<Commit> commits;
@@ -35,7 +34,7 @@ struct Buffer {
 
     Mode mode;
 
-    void init(Buffer_Id id, cz::Str path);
+    void init(cz::Str path);
 
     void drop();
 

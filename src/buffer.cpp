@@ -6,8 +6,7 @@
 
 namespace mag {
 
-void Buffer::init(Buffer_Id id, cz::Str path) {
-    this->id = id;
+void Buffer::init(cz::Str path) {
     this->path = path.duplicate_null_terminate(cz::heap_allocator());
 
     copy_buffer.create();

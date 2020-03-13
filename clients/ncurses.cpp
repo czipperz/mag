@@ -377,11 +377,12 @@ done:
 
 static void cache_window_unified_create(Window_Cache* window_cache,
                                         Window* window,
+                                        Buffer_Id buffer_id,
                                         Buffer* buffer) {
     ZoneScoped;
 
     window_cache->tag = Window::UNIFIED;
-    window_cache->v.unified.id = buffer->id;
+    window_cache->v.unified.id = buffer_id;
     window_cache->v.unified.tokenizer_check_points = {};
     window_cache->v.unified.tokenizer_ran_to_end = false;
     cache_window_unified_update(window_cache, window, buffer);
@@ -390,8 +391,9 @@ static void cache_window_unified_create(Window_Cache* window_cache,
 static void cache_window_unified_create(Editor* editor,
                                         Window_Cache* window_cache,
                                         Window* window) {
-    WITH_BUFFER(buffer, window->v.unified.id,
-                { cache_window_unified_create(window_cache, window, buffer); });
+    WITH_BUFFER(buffer, window->v.unified.id, {
+        cache_window_unified_create(window_cache, window, window->v.unified.id, buffer);
+    });
 }
 
 static void draw_buffer_contents(Cell* cells,

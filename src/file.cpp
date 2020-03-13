@@ -64,18 +64,17 @@ static cz::Result load_path(Editor* editor, const char* path, Buffer_Id buffer_i
 
 static bool find_buffer_by_name(Editor* editor, Client* client, cz::Str path) {
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
-        Buffer_Id buffer_id;
+        Buffer_Handle* handle = editor->buffers[i];
+
         {
-            Buffer_Handle* handle = editor->buffers[i];
             Buffer* buffer = handle->lock();
             CZ_DEFER(handle->unlock());
             if (buffer->path != path) {
                 continue;
             }
-            buffer_id = buffer->id;
         }
 
-        client->set_selected_buffer(buffer_id);
+        client->set_selected_buffer(handle->id);
         return true;
     }
     return false;
