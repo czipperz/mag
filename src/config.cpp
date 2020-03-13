@@ -68,6 +68,8 @@ Key_Map create_key_map() {
     key_map.bind("C-x 3", command_split_window_horizontal);
     key_map.bind("C-x o", command_cycle_window);
 
+    key_map.bind("C-x k", command_kill_buffer);
+
     return key_map;
 }
 
