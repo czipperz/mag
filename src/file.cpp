@@ -62,7 +62,7 @@ static cz::Result load_path(Editor* editor, const char* path, Buffer_Id buffer_i
     return load_file(editor, path, buffer_id);
 }
 
-static bool find_buffer_by_name(Editor* editor, Client* client, cz::Str path) {
+bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id) {
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
         Buffer_Handle* handle = editor->buffers[i];
 
@@ -74,7 +74,7 @@ static bool find_buffer_by_name(Editor* editor, Client* client, cz::Str path) {
             }
         }
 
-        client->set_selected_buffer(handle->id);
+        *buffer_id = handle->id;
         return true;
     }
     return false;
@@ -97,17 +97,16 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
         path.null_terminate();
     }
 
-    if (find_buffer_by_name(editor, client, path)) {
-        return;
-    }
-
-    Buffer_Id buffer_id = editor->create_buffer(path);
-    if (load_path(editor, path.buffer(), buffer_id).is_err()) {
-        Message message = {};
-        message.tag = Message::SHOW;
-        message.text = "File not found";
-        client->show_message(message);
-        // Still open empty file buffer.
+    Buffer_Id buffer_id;
+    if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
+        buffer_id = editor->create_buffer(path);
+        if (load_path(editor, path.buffer(), buffer_id).is_err()) {
+            Message message = {};
+            message.tag = Message::SHOW;
+            message.text = "File not found";
+            client->show_message(message);
+            // Still open empty file buffer.
+        }
     }
 
     client->set_selected_buffer(buffer_id);
