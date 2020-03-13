@@ -26,20 +26,20 @@ struct Editor {
     }
 
     Buffer_Handle* lookup(Buffer_Id id) {
-        size_t start = 0;
-        size_t end = buffers.len();
-        while (start < end) {
-            size_t mid = (start + end) / 2;
-            if (buffers[mid]->id.value == id.value) {
-                return buffers[mid];
-            } else if (buffers[mid]->id.value < id.value) {
-                start = mid + 1;
-            } else {
-                end = mid;
-            }
+        size_t index;
+        if (binary_search_buffer_id(id, &index)) {
+            return buffers[index];
         }
-
         return nullptr;
+    }
+
+    void kill(Buffer_Id id) {
+        size_t index;
+        if (binary_search_buffer_id(id, &index)) {
+            buffers[index]->drop();
+            cz::heap_allocator().dealloc({buffers[index], sizeof(Buffer_Handle)});
+            buffers.remove(index);
+        }
     }
 
     Buffer_Id create_buffer(cz::Str path) {
@@ -48,6 +48,25 @@ struct Editor {
         buffers.reserve(cz::heap_allocator(), 1);
         buffers.push(buffer_handle);
         return {buffers.len() - 1};
+    }
+
+private:
+    bool binary_search_buffer_id(Buffer_Id id, size_t* index) {
+        size_t start = 0;
+        size_t end = buffers.len();
+        while (start < end) {
+            size_t mid = (start + end) / 2;
+            if (buffers[mid]->id.value == id.value) {
+                *index = mid;
+                return true;
+            } else if (buffers[mid]->id.value < id.value) {
+                start = mid + 1;
+            } else {
+                end = mid;
+            }
+        }
+
+        return false;
     }
 };
 
