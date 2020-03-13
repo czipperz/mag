@@ -63,6 +63,8 @@ void command_save_file(Editor* editor, Command_Source source) {
     });
 }
 
+void command_switch_buffer(Editor* editor, Command_Source source) {}
+
 int remove_windows_matching(Window* window,
                             Buffer_Id id,
                             Buffer_Id selected_buffer_id,
