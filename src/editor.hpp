@@ -25,7 +25,22 @@ struct Editor {
         theme.drop(cz::heap_allocator());
     }
 
-    Buffer_Handle* lookup(Buffer_Id id) { return buffers[id.value]; }
+    Buffer_Handle* lookup(Buffer_Id id) {
+        size_t start = 0;
+        size_t end = buffers.len();
+        while (start < end) {
+            size_t mid = (start + end) / 2;
+            if (buffers[mid]->id.value == id.value) {
+                return buffers[mid];
+            } else if (buffers[mid]->id.value < id.value) {
+                start = mid + 1;
+            } else {
+                end = mid;
+            }
+        }
+
+        return nullptr;
+    }
 
     Buffer_Id create_buffer(cz::Str path) {
         Buffer_Handle* buffer_handle = cz::heap_allocator().create<Buffer_Handle>();
