@@ -161,6 +161,7 @@ void remove_windows_for_buffer(Client* client, Buffer_Id buffer_id, Buffer_Id re
                                 &client->_selected_window)) {
         Window::drop(client->window);
         client->window = Window::create(replacement_id);
+        client->_selected_window = client->window;
     }
 }
 
