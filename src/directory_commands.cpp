@@ -18,9 +18,22 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
         end_of_line(buffer, &end);
 
         if (start.position < end.position) {
-            SSOStr str = buffer->contents.slice(cz::heap_allocator(), start.position, end.position);
-            CZ_DEFER(str.drop(cz::heap_allocator()));
-            open_file(editor, source.client, str.as_str());
+            cz::String path = {};
+            CZ_DEFER(path.drop(cz::heap_allocator()));
+            path.reserve(cz::heap_allocator(), buffer->path.len() + 1);
+            path.append(buffer->path);
+            path.push('/');
+
+            {
+                SSOStr file_name =
+                    buffer->contents.slice(cz::heap_allocator(), start.position, end.position);
+                CZ_DEFER(file_name.drop(cz::heap_allocator()));
+                cz::Str str = file_name.as_str();
+                path.reserve(cz::heap_allocator(), str.len);
+                path.append(str);
+            }
+
+            open_file(editor, source.client, path);
         }
     });
 }
