@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "command_macros.hpp"
 #include "file.hpp"
+#include "window_commands.hpp"
 
 namespace mag {
 
@@ -62,6 +63,78 @@ void command_save_file(Editor* editor, Command_Source source) {
     });
 }
 
+static int remove_windows_matching(Window* window,
+                                   Buffer_Id id,
+                                   Buffer_Id selected_buffer_id,
+                                   Window** selected_window) {
+    switch (window->tag) {
+    case Window::UNIFIED:
+        if (id == window->v.unified.id) {
+            if (id == selected_buffer_id) {
+                return 2;
+            } else {
+                return 1;
+            }
+        } else {
+            return 0;
+        }
+
+    case Window::VERTICAL_SPLIT: {
+        int left_matches = remove_windows_matching(window->v.vertical_split.left, id,
+                                                   selected_buffer_id, selected_window);
+        int right_matches = remove_windows_matching(window->v.vertical_split.right, id,
+                                                    selected_buffer_id, selected_window);
+        if (left_matches && right_matches) {
+            return cz::max(left_matches, right_matches);
+        } else if (left_matches) {
+            Window::drop(window->v.vertical_split.left);
+            *window = *window->v.vertical_split.right;
+            if (left_matches == 2) {
+                *selected_window = window_first(window);
+            }
+            return 0;
+        } else if (right_matches) {
+            Window::drop(window->v.vertical_split.right);
+            *window = *window->v.vertical_split.left;
+            if (right_matches == 2) {
+                *selected_window = window_first(window);
+            }
+            return 0;
+        } else {
+            return 0;
+        }
+    }
+
+    case Window::HORIZONTAL_SPLIT: {
+        int top_matches = remove_windows_matching(window->v.horizontal_split.top, id,
+                                                  selected_buffer_id, selected_window);
+        int bottom_matches = remove_windows_matching(window->v.horizontal_split.bottom, id,
+                                                     selected_buffer_id, selected_window);
+        if (top_matches && bottom_matches) {
+            return cz::max(top_matches, bottom_matches);
+        } else if (top_matches) {
+            Window::drop(window->v.horizontal_split.top);
+            *window = *window->v.horizontal_split.bottom;
+            if (top_matches == 2) {
+                *selected_window = window_first(window);
+            }
+            return 0;
+        } else if (bottom_matches) {
+            Window::drop(window->v.horizontal_split.bottom);
+            *window = *window->v.horizontal_split.top;
+            if (bottom_matches == 2) {
+                *selected_window = window_first(window);
+            }
+            return 0;
+        } else {
+            return 0;
+        }
+    }
+    }
+
+    CZ_PANIC("");
+}
+
 static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str path, void* data) {
     Buffer_Id buffer_id;
     if (path.len == 0) {
@@ -70,6 +143,15 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
         if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
             return;
         }
+    }
+
+    // TODO: prevent killing *scratch*
+    editor->kill(buffer_id);
+
+    if (remove_windows_matching(client->window, buffer_id, client->selected_buffer_id(),
+                                &client->_selected_window)) {
+        Window::drop(client->window);
+        client->window = Window::create(editor->buffers[0]->id);
     }
 }
 
