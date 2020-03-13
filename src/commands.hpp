@@ -60,7 +60,4 @@ void command_create_cursor_backward(Editor* editor, Command_Source source);
 void command_search_forward(Editor* editor, Command_Source source);
 void command_search_backward(Editor* editor, Command_Source source);
 
-void command_open_file(Editor* editor, Command_Source source);
-void command_save_file(Editor* editor, Command_Source source);
-
 }

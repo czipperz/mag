@@ -1,5 +1,6 @@
 #include "config.hpp"
 
+#include "buffer_commands.hpp"
 #include "commands.hpp"
 #include "directory_commands.hpp"
 #include "tokenize_cpp.hpp"
