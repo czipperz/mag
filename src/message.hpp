@@ -15,6 +15,7 @@ struct Message {
         RESPOND_TEXT,
         // RESPOND_YES_NO,
         RESPOND_FILE,
+        RESPOND_BUFFER,
     } tag;
 
     cz::Str text;
