@@ -63,10 +63,10 @@ void command_save_file(Editor* editor, Command_Source source) {
     });
 }
 
-static int remove_windows_matching(Window* window,
-                                   Buffer_Id id,
-                                   Buffer_Id selected_buffer_id,
-                                   Window** selected_window) {
+int remove_windows_matching(Window* window,
+                            Buffer_Id id,
+                            Buffer_Id selected_buffer_id,
+                            Window** selected_window) {
     switch (window->tag) {
     case Window::UNIFIED:
         if (id == window->v.unified.id) {
@@ -135,6 +135,14 @@ static int remove_windows_matching(Window* window,
     CZ_PANIC("");
 }
 
+void remove_windows_for_buffer(Client* client, Buffer_Id buffer_id, Buffer_Id replacement_id) {
+    if (remove_windows_matching(client->window, buffer_id, client->selected_buffer_id(),
+                                &client->_selected_window)) {
+        Window::drop(client->window);
+        client->window = Window::create(replacement_id);
+    }
+}
+
 static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str path, void* data) {
     Buffer_Id buffer_id;
     if (path.len == 0) {
@@ -148,11 +156,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
     // TODO: prevent killing *scratch*
     editor->kill(buffer_id);
 
-    if (remove_windows_matching(client->window, buffer_id, client->selected_buffer_id(),
-                                &client->_selected_window)) {
-        Window::drop(client->window);
-        client->window = Window::create(editor->buffers[0]->id);
-    }
+    remove_windows_for_buffer(client, buffer_id, editor->buffers[0]->id);
 }
 
 void command_kill_buffer(Editor* editor, Command_Source source) {
