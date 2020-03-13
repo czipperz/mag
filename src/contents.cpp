@@ -148,22 +148,19 @@ void Contents::insert(uint64_t start, cz::Str str) {
 
 static void slice_into(char* buffer,
                        cz::Slice<const cz::Slice<char>> buckets,
-                       uint64_t start,
+                       Contents_Iterator start,
                        uint64_t len) {
-    for (size_t i = 0; i < buckets.len; ++i) {
-        if (start < buckets[i].len) {
-            if (start + len < buckets[i].len) {
-                memcpy(buffer, buckets[i].elems + start, len);
-                return;
-            } else {
-                size_t offset = buckets[i].len - start;
-                memcpy(buffer, buckets[i].elems + start, offset);
-                buffer += offset;
-                start = 0;
-                len -= offset;
-            }
+    uint64_t bucket_index = start.index;
+    for (size_t bucket = start.bucket; bucket < buckets.len; ++bucket) {
+        if (bucket_index + len <= buckets[bucket].len) {
+            memcpy(buffer, buckets[bucket].elems + bucket_index, len);
+            return;
         } else {
-            start -= buckets[i].len;
+            size_t offset = buckets[bucket].len - bucket_index;
+            memcpy(buffer, buckets[bucket].elems + bucket_index, offset);
+            buffer += offset;
+            len -= offset;
+            bucket_index = 0;
         }
     }
 }
@@ -171,20 +168,22 @@ static void slice_into(char* buffer,
 cz::String Contents::stringify(cz::Allocator allocator) const {
     cz::String string = {};
     string.reserve(allocator, len);
-    slice_into(string.buffer(), buckets, 0, string.cap());
+
+    slice_into(string.buffer(), buckets, start(), len);
+
     string.set_len(string.cap());
     return string;
 }
 
-SSOStr Contents::slice(cz::Allocator allocator, uint64_t start, uint64_t end) const {
+SSOStr Contents::slice(cz::Allocator allocator, Contents_Iterator start, uint64_t end) const {
     ZoneScoped;
 
-    CZ_DEBUG_ASSERT(start <= end);
+    CZ_DEBUG_ASSERT(start.position <= end);
     CZ_DEBUG_ASSERT(end <= len);
 
     SSOStr value;
-    uint64_t len = end - start;
-    if (end > start + SSOStr::MAX_SHORT_LEN) {
+    uint64_t len = end - start.position;
+    if (len > SSOStr::MAX_SHORT_LEN) {
         char* buffer = (char*)allocator.alloc({len, 1}).buffer;
         slice_into(buffer, buckets, start, len);
         value.allocated.init({buffer, len});

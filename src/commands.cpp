@@ -54,7 +54,8 @@ void command_cut(Editor* editor, Command_Source source) {
             uint64_t end = buffer->cursors[c].end();
 
             Edit edit;
-            edit.value = buffer->contents.slice(transaction.value_allocator(), start, end);
+            edit.value = buffer->contents.slice(transaction.value_allocator(),
+                                                buffer->contents.iterator_at(start), end);
             edit.position = start - offset;
             offset += end - start;
             edit.is_insert = false;
@@ -74,7 +75,8 @@ void command_copy(Editor* editor, Command_Source source) {
             uint64_t end = buffer->cursors[c].end();
             // :CopyLeak We allocate here.
             save_copy(buffer, c,
-                      buffer->contents.slice(buffer->copy_buffer.allocator(), start, end));
+                      buffer->contents.slice(buffer->copy_buffer.allocator(),
+                                             buffer->contents.iterator_at(start), end));
         }
 
         buffer->show_marks = false;
@@ -216,8 +218,8 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
                     //     insertion_point
                     end.advance();
 
-                    SSOStr value = buffer->contents.slice(transaction.value_allocator(),
-                                                          start.position, end.position);
+                    SSOStr value =
+                        buffer->contents.slice(transaction.value_allocator(), start, end.position);
 
                     Edit edit_insert;
                     cz::Str value_str = value.as_str();
@@ -240,8 +242,8 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
                     continue;
                 }
 
-                SSOStr value = buffer->contents.slice(transaction.value_allocator(), start.position,
-                                                      end.position);
+                SSOStr value =
+                    buffer->contents.slice(transaction.value_allocator(), start, end.position);
 
                 Edit edit_insert;
                 edit_insert.value = value;
@@ -325,8 +327,8 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
                     //      [  )
                     start.retreat();
 
-                    SSOStr value = buffer->contents.slice(transaction.value_allocator(),
-                                                          start.position, end.position);
+                    SSOStr value =
+                        buffer->contents.slice(transaction.value_allocator(), start, end.position);
 
                     Edit edit_delete;
                     edit_delete.value = value;
@@ -349,8 +351,8 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
                     continue;
                 }
 
-                SSOStr value = buffer->contents.slice(transaction.value_allocator(), start.position,
-                                                      end.position);
+                SSOStr value =
+                    buffer->contents.slice(transaction.value_allocator(), start, end.position);
 
                 Edit edit_delete;
                 edit_delete.value = value;
@@ -571,8 +573,9 @@ void command_create_cursor_backward_line(Editor* editor, Command_Source source) 
     WITH_SELECTED_BUFFER(create_cursor_backward_line(buffer));
 }
 
-static cz::Option<uint64_t> search_forward(Buffer* buffer, uint64_t index, cz::Str query) {
-    Contents_Iterator start_it = buffer->contents.iterator_at(index);
+static cz::Option<uint64_t> search_forward(Buffer* buffer,
+                                           Contents_Iterator start_it,
+                                           cz::Str query) {
     for (; start_it.position + query.len < buffer->contents.len; start_it.advance()) {
         Contents_Iterator it = start_it;
         size_t q;
@@ -591,45 +594,49 @@ static cz::Option<uint64_t> search_forward(Buffer* buffer, uint64_t index, cz::S
     return {};
 }
 
-static cz::Option<uint64_t> search_forward_slice(Buffer* buffer, uint64_t start, uint64_t end) {
-    if (start == buffer->contents.len) {
+static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
+                                                 Contents_Iterator start,
+                                                 uint64_t end) {
+    if (start.at_eob()) {
         return {};
     }
 
     // Optimize: don't allocate when the slice is inside one bucket
     SSOStr slice = buffer->contents.slice(cz::heap_allocator(), start, end);
     CZ_DEFER(slice.drop(cz::heap_allocator()));
-    return search_forward(buffer, start + 1, slice.as_str());
+
+    start.advance();
+    return search_forward(buffer, start, slice.as_str());
 }
 
-#define SEARCH_SLICE_THEN(FUNC, THEN)                                 \
-    do {                                                              \
-        uint64_t start = buffer->cursors[c].start();                  \
-        uint64_t end = buffer->cursors[c].end();                      \
-        cz::Option<uint64_t> new_start = FUNC(buffer, start, end);    \
-        if (new_start.is_present) {                                   \
-            Cursor new_cursor;                                        \
-            new_cursor.point = new_start.value;                       \
-            new_cursor.mark = new_start.value + end - start;          \
-            new_cursor.copy_chain = buffer->cursors[c].copy_chain;    \
-            if (buffer->cursors[c].point > buffer->cursors[c].mark) { \
-                cz::swap(new_cursor.point, new_cursor.mark);          \
-            }                                                         \
-            THEN;                                                     \
-        }                                                             \
+#define SEARCH_SLICE_THEN(FUNC, THEN)                                                            \
+    do {                                                                                         \
+        uint64_t start = buffer->cursors[c].start();                                             \
+        uint64_t end = buffer->cursors[c].end();                                                 \
+        cz::Option<uint64_t> new_start = FUNC(buffer, buffer->contents.iterator_at(start), end); \
+        if (new_start.is_present) {                                                              \
+            Cursor new_cursor;                                                                   \
+            new_cursor.point = new_start.value;                                                  \
+            new_cursor.mark = new_start.value + end - start;                                     \
+            new_cursor.copy_chain = buffer->cursors[c].copy_chain;                               \
+            if (buffer->cursors[c].point > buffer->cursors[c].mark) {                            \
+                cz::swap(new_cursor.point, new_cursor.mark);                                     \
+            }                                                                                    \
+            THEN;                                                                                \
+        }                                                                                        \
     } while (0)
 
-#define SEARCH_QUERY_THEN(FUNC, THEN)                                \
-    do {                                                             \
-        uint64_t start = buffer->cursors[c].start();                 \
-        cz::Option<uint64_t> new_start = FUNC(buffer, start, query); \
-        if (new_start.is_present) {                                  \
-            Cursor new_cursor;                                       \
-            new_cursor.point = new_start.value + query.len;          \
-            new_cursor.mark = new_start.value;                       \
-            new_cursor.copy_chain = buffer->cursors[c].copy_chain;   \
-            THEN;                                                    \
-        }                                                            \
+#define SEARCH_QUERY_THEN(FUNC, THEN)                                                              \
+    do {                                                                                           \
+        uint64_t start = buffer->cursors[c].start();                                               \
+        cz::Option<uint64_t> new_start = FUNC(buffer, buffer->contents.iterator_at(start), query); \
+        if (new_start.is_present) {                                                                \
+            Cursor new_cursor;                                                                     \
+            new_cursor.point = new_start.value + query.len;                                        \
+            new_cursor.mark = new_start.value;                                                     \
+            new_cursor.copy_chain = buffer->cursors[c].copy_chain;                                 \
+            THEN;                                                                                  \
+        }                                                                                          \
     } while (0)
 
 static void create_cursor_forward_search(Buffer* buffer) {
@@ -645,13 +652,17 @@ void command_create_cursor_forward_search(Editor* editor, Command_Source source)
     WITH_SELECTED_BUFFER(create_cursor_forward_search(buffer));
 }
 
-static cz::Option<uint64_t> search_backward(Buffer* buffer, uint64_t index, cz::Str query) {
+static cz::Option<uint64_t> search_backward(Buffer* buffer,
+                                            Contents_Iterator start_it,
+                                            cz::Str query) {
     if (query.len > buffer->contents.len) {
         return {};
     }
-    index = cz::min(index, buffer->contents.len - query.len);
 
-    Contents_Iterator start_it = buffer->contents.iterator_at(index);
+    if (buffer->contents.len - query.len < start_it.position) {
+        start_it.retreat(start_it.position - (buffer->contents.len - query.len));
+    }
+
     while (!start_it.at_bob()) {
         start_it.retreat();
         Contents_Iterator it = start_it;
@@ -671,15 +682,19 @@ static cz::Option<uint64_t> search_backward(Buffer* buffer, uint64_t index, cz::
     return {};
 }
 
-static cz::Option<uint64_t> search_backward_slice(Buffer* buffer, uint64_t start, uint64_t end) {
-    if (start == 0) {
+static cz::Option<uint64_t> search_backward_slice(Buffer* buffer,
+                                                  Contents_Iterator start,
+                                                  uint64_t end) {
+    if (start.at_bob()) {
         return {};
     }
 
     // Optimize: don't allocate when the slice is inside one bucket
     SSOStr slice = buffer->contents.slice(cz::heap_allocator(), start, end);
     CZ_DEFER(slice.drop(cz::heap_allocator()));
-    return search_backward(buffer, start - 1, slice.as_str());
+
+    start.retreat();
+    return search_backward(buffer, start, slice.as_str());
 }
 
 static void create_cursor_backward_search(Buffer* buffer) {

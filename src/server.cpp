@@ -18,10 +18,10 @@ Client Server::make_client() {
 cz::Str clear_buffer(Editor* editor, Buffer* buffer) {
     cz::Str buffer_contents;
     WITH_TRANSACTION({
-        uint64_t contents_len = buffer->contents.len;
-        transaction.init(1, (size_t)contents_len);
+        transaction.init(1, (size_t)buffer->contents.len);
         Edit edit;
-        edit.value = buffer->contents.slice(transaction.value_allocator(), 0, contents_len);
+        edit.value = buffer->contents.slice(transaction.value_allocator(),
+                                            buffer->contents.iterator_at(0), buffer->contents.len);
         edit.position = 0;
         edit.is_insert = false;
         transaction.push(edit);

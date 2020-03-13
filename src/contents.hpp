@@ -20,10 +20,12 @@ struct Contents {
     void insert(uint64_t position, cz::Str str);
 
     cz::String stringify(cz::Allocator allocator) const;
-    SSOStr slice(cz::Allocator allocator, uint64_t start, uint64_t end) const;
+    SSOStr slice(cz::Allocator allocator, Contents_Iterator start, uint64_t end) const;
 
     char get_once(uint64_t position) const;
     Contents_Iterator iterator_at(uint64_t position) const;
+
+    inline Contents_Iterator start() const;
 };
 
 struct Contents_Iterator {
@@ -40,5 +42,11 @@ struct Contents_Iterator {
     void retreat(uint64_t offset = 1);
     void advance(uint64_t offset = 1);
 };
+
+inline Contents_Iterator Contents::start() const {
+    Contents_Iterator it = {};
+    it.contents = this;
+    return it;
+}
 
 }
