@@ -62,6 +62,25 @@ static cz::Result load_path(Editor* editor, const char* path, Buffer_Id buffer_i
     return load_file(editor, path, buffer_id);
 }
 
+static bool find_buffer_by_name(Editor* editor, Client* client, cz::Str path) {
+    for (size_t i = 0; i < editor->buffers.len(); ++i) {
+        Buffer_Id buffer_id;
+        {
+            Buffer_Handle* handle = editor->buffers[i];
+            Buffer* buffer = handle->lock();
+            CZ_DEFER(handle->unlock());
+            if (buffer->path != path) {
+                continue;
+            }
+            buffer_id = buffer->id;
+        }
+
+        client->set_selected_buffer(buffer_id);
+        return true;
+    }
+    return false;
+}
+
 void open_file(Editor* editor, Client* client, cz::Str user_path) {
     if (user_path.len == 0) {
         Message message = {};
@@ -79,6 +98,10 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
         path.null_terminate();
     }
 
+    if (find_buffer_by_name(editor, client, path)) {
+        return;
+    }
+
     Buffer_Id buffer_id = editor->create_buffer(path);
     if (load_path(editor, path.buffer(), buffer_id).is_err()) {
         Message message = {};
@@ -88,9 +111,7 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
         // Still open empty file buffer.
     }
 
-    CZ_DEBUG_ASSERT(client->_selected_window->tag == Window::UNIFIED);
-    client->_selected_window->v.unified.id = buffer_id;
-    client->_selected_window->v.unified.start_position = 0;
+    client->set_selected_buffer(buffer_id);
 }
 
 bool save_contents(const Contents* contents, const char* path) {
