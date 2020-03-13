@@ -164,7 +164,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
 void command_kill_buffer(Editor* editor, Command_Source source) {
     Message message = {};
     message.tag = Message::RESPOND_BUFFER;
-    message.text = "Buffer to kill";
+    message.text = "Buffer to kill: ";
     message.response_callback = command_kill_buffer_callback;
 
     Buffer_Id* buffer_id = (Buffer_Id*)malloc(sizeof(Buffer_Id));
