@@ -20,6 +20,7 @@ struct Contents {
     void insert(uint64_t position, cz::Str str);
 
     cz::String stringify(cz::Allocator allocator) const;
+    void stringify_into(cz::Allocator allocator, cz::String* string) const;
     SSOStr slice(cz::Allocator allocator, Contents_Iterator start, uint64_t end) const;
 
     char get_once(uint64_t position) const;

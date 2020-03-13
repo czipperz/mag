@@ -165,13 +165,15 @@ static void slice_into(char* buffer,
     }
 }
 
+void Contents::stringify_into(cz::Allocator allocator, cz::String* string) const {
+    string->reserve(allocator, len);
+    slice_into(string->buffer(), buckets, start(), len);
+    string->set_len(string->len() + len);
+}
+
 cz::String Contents::stringify(cz::Allocator allocator) const {
     cz::String string = {};
-    string.reserve(allocator, len);
-
-    slice_into(string.buffer(), buckets, start(), len);
-
-    string.set_len(string.cap());
+    stringify_into(allocator, &string);
     return string;
 }
 
