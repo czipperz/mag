@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <Tracy.hpp>
 #include <cz/slice.hpp>
 #include <cz/vector.hpp>
 
@@ -44,6 +45,8 @@ struct Contents_Iterator {
     void advance(uint64_t offset);
 
     void retreat() {
+        ZoneScopedN("retreat 1");
+
         CZ_DEBUG_ASSERT(!at_bob());
         --position;
         // :EmptyBuckets Once resolved, convert to if
@@ -55,6 +58,8 @@ struct Contents_Iterator {
     }
 
     void advance() {
+        ZoneScopedN("advance 1");
+
         CZ_DEBUG_ASSERT(!at_eob());
         ++position;
         ++index;
