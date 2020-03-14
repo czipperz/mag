@@ -890,27 +890,32 @@ void run_ncurses(Server* server, Client* client) {
 
     int total_rows = 0;
     int total_cols = 0;
-    render(&total_rows, &total_cols, cellss, &window_cache, &mini_buffer_results, &server->editor,
-           client);
-    nodelay(stdscr, TRUE);
 
     while (1) {
-        int ch = getch();
-        if (ch == ERR) {
-            render(&total_rows, &total_cols, cellss, &window_cache, &mini_buffer_results,
-                   &server->editor, client);
+        render(&total_rows, &total_cols, cellss, &window_cache, &mini_buffer_results,
+               &server->editor, client);
 
-            ch = cache_windows_check_points(window_cache, client->window, &server->editor);
-            if (ch == ERR) {
-                nodelay(stdscr, FALSE);
-                continue;
-            }
+        nodelay(stdscr, TRUE);
+
+        int ch = cache_windows_check_points(window_cache, client->window, &server->editor);
+
+        if (ch == ERR) {
+            nodelay(stdscr, FALSE);
+            ch = getch();
         }
 
         nodelay(stdscr, TRUE);
-        process_key_press(server, client, ch);
-        if (client->queue_quit) {
-            break;
+
+        while (1) {
+            process_key_press(server, client, ch);
+            if (client->queue_quit) {
+                return;
+            }
+
+            ch = getch();
+            if (ch == ERR) {
+                break;
+            }
         }
     }
 }
