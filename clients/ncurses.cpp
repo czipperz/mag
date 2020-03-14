@@ -706,15 +706,16 @@ static void render_to_cells(Cell* cells,
                             Client* client) {
     ZoneScoped;
 
-    draw_window(cells, window_cache, total_cols, editor, client->window, client->_selected_window,
-                0, 0, total_rows - (client->_message.tag != Message::NONE), total_cols);
+    int mini_buffer_height = 0;
 
     if (client->_message.tag != Message::NONE) {
         ZoneScopedN("Draw mini buffer");
 
+        mini_buffer_height = 1;
+
         int y = 0;
         int x = 0;
-        int start_row = total_rows - 1;
+        int start_row = total_rows - mini_buffer_height;
         int start_col = 0;
         int attrs = A_NORMAL;
 
@@ -742,6 +743,9 @@ static void render_to_cells(Cell* cells,
             }
         }
     }
+
+    draw_window(cells, window_cache, total_cols, editor, client->window, client->_selected_window,
+                0, 0, total_rows - mini_buffer_height, total_cols);
 }
 
 static void render(int* total_rows,
