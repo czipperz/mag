@@ -27,8 +27,8 @@ void command_swap_mark_point(Editor* editor, Command_Source source) {
     });
 }
 
-static void save_copy(Buffer* buffer, size_t c, SSOStr value) {
-    Copy_Chain* chain = buffer->copy_buffer.allocator().alloc<Copy_Chain>();
+static void save_copy(Editor* editor, Buffer* buffer, size_t c, SSOStr value) {
+    Copy_Chain* chain = editor->copy_buffer.allocator().alloc<Copy_Chain>();
     chain->value = value;
     chain->previous = buffer->cursors[c].copy_chain;
     buffer->cursors[c].copy_chain = chain;
@@ -61,7 +61,7 @@ void command_cut(Editor* editor, Command_Source source) {
             edit.is_insert = false;
             transaction.push(edit);
 
-            save_copy(buffer, c, edit.value);
+            save_copy(editor, buffer, c, edit.value);
         }
 
         buffer->show_marks = false;
@@ -74,8 +74,8 @@ void command_copy(Editor* editor, Command_Source source) {
             uint64_t start = buffer->cursors[c].start();
             uint64_t end = buffer->cursors[c].end();
             // :CopyLeak We allocate here.
-            save_copy(buffer, c,
-                      buffer->contents.slice(buffer->copy_buffer.allocator(),
+            save_copy(editor, buffer, c,
+                      buffer->contents.slice(editor->copy_buffer.allocator(),
                                              buffer->contents.iterator_at(start), end));
         }
 

@@ -15,6 +15,8 @@ struct Editor {
     Key_Map key_map;
     Theme theme;
 
+    cz::BufferArray copy_buffer;
+
     void drop() {
         for (size_t i = 0; i < buffers.len(); ++i) {
             buffers[i]->drop();
@@ -23,6 +25,7 @@ struct Editor {
         buffers.drop(cz::heap_allocator());
         key_map.drop();
         theme.drop(cz::heap_allocator());
+        copy_buffer.drop();
     }
 
     Buffer_Handle* lookup(Buffer_Id id) {

@@ -9,7 +9,6 @@ namespace mag {
 void Buffer::init(cz::Str path) {
     this->path = path.duplicate_null_terminate(cz::heap_allocator());
 
-    copy_buffer.create();
     cursors.reserve(cz::heap_allocator(), 1);
     cursors.push({});
 
@@ -32,7 +31,6 @@ void Buffer::drop() {
     changes.drop(cz::heap_allocator());
 
     contents.drop();
-    copy_buffer.drop();
     cursors.drop(cz::heap_allocator());
 }
 
