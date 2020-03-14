@@ -40,8 +40,34 @@ struct Contents_Iterator {
 
     char get() const { return contents->buckets[bucket][index]; }
 
-    void retreat(uint64_t offset = 1);
-    void advance(uint64_t offset = 1);
+    void retreat(uint64_t offset);
+    void advance(uint64_t offset);
+
+    void retreat() {
+        CZ_DEBUG_ASSERT(!at_bob());
+        --position;
+        // :EmptyBuckets Once resolved, convert to if
+        while (index == 0) {
+            --bucket;
+            index = contents->buckets[bucket].len;
+        }
+        --index;
+    }
+
+    void advance() {
+        CZ_DEBUG_ASSERT(!at_eob());
+        ++position;
+        ++index;
+        // :EmptyBuckets Once resolved, convert to if
+        while (index == contents->buckets[bucket].len) {
+            ++bucket;
+            index = 0;
+            // :EmptyBuckets Once resolved, delete this
+            if (bucket == contents->buckets.len()) {
+                break;
+            }
+        }
+    }
 };
 
 inline Contents_Iterator Contents::start() const {
