@@ -848,9 +848,6 @@ void run_ncurses(Server* server, Client* client) {
            client);
     nodelay(stdscr, TRUE);
 
-    FILE* file = fopen("tmp.txt", "w");
-    CZ_DEFER(fclose(file));
-
     while (1) {
         int ch = getch();
         if (ch == ERR) {
@@ -868,7 +865,6 @@ void run_ncurses(Server* server, Client* client) {
 
         Key key = {};
     rerun:
-        fprintf(file, "%s %d\n", keyname(ch), ch);
         if (ch == '\n' || ch == '\t') {
             key.code = ch;
         } else if (ch == 0) {
