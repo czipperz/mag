@@ -815,6 +815,52 @@ static void render(int* total_rows,
     FrameMarkEnd("ncurses");
 }
 
+static void process_key_press(Server* server, Client* client, char ch) {
+    ZoneScoped;
+
+    Key key = {};
+rerun:
+    if (ch == '\n' || ch == '\t') {
+        key.code = ch;
+    } else if (ch == 0) {
+        // C-@, C-\\ .
+        key.modifiers |= CONTROL;
+        key.code = '@';
+    } else if (ch >= 1 && ch <= 26) {
+        // C-a, C-b, ..., C-z
+        key.modifiers |= CONTROL;
+        key.code = 'a' - 1 + ch;
+    } else if (ch == 27) {
+        // ESCAPE (\\^), C-[
+        ch = getch();
+        key.modifiers |= ALT;
+        goto rerun;
+    } else if (ch == 28) {
+        key.modifiers |= CONTROL;
+        key.code = '\\';
+    } else if (ch == 29) {
+        key.modifiers |= CONTROL;
+        key.code = ']';
+    } else if (ch == 30) {
+        key.modifiers |= CONTROL;
+        key.code = '^';
+    } else if (ch == 31) {
+        // C-_, C-/
+        key.modifiers |= CONTROL;
+        key.code = '_';
+    } else if (ch == 127) {
+        // BACKSPACE (\\-), C-?
+        key.code = 127;
+    } else if (ch >= 0 && ch < 128) {
+        // normal keys
+        key.code = ch;
+    } else {
+        return;
+    }
+
+    server->receive(client, key);
+}
+
 void run_ncurses(Server* server, Client* client) {
     ZoneScoped;
 
@@ -862,48 +908,7 @@ void run_ncurses(Server* server, Client* client) {
         }
 
         nodelay(stdscr, TRUE);
-
-        Key key = {};
-    rerun:
-        if (ch == '\n' || ch == '\t') {
-            key.code = ch;
-        } else if (ch == 0) {
-            // C-@, C-\\ .
-            key.modifiers |= CONTROL;
-            key.code = '@';
-        } else if (ch >= 1 && ch <= 26) {
-            // C-a, C-b, ..., C-z
-            key.modifiers |= CONTROL;
-            key.code = 'a' - 1 + ch;
-        } else if (ch == 27) {
-            // ESCAPE (\\^), C-[
-            ch = getch();
-            key.modifiers |= ALT;
-            goto rerun;
-        } else if (ch == 28) {
-            key.modifiers |= CONTROL;
-            key.code = '\\';
-        } else if (ch == 29) {
-            key.modifiers |= CONTROL;
-            key.code = ']';
-        } else if (ch == 30) {
-            key.modifiers |= CONTROL;
-            key.code = '^';
-        } else if (ch == 31) {
-            // C-_, C-/
-            key.modifiers |= CONTROL;
-            key.code = '_';
-        } else if (ch == 127) {
-            // BACKSPACE (\\-), C-?
-            key.code = 127;
-        } else if (ch >= 0 && ch < 128) {
-            // normal keys
-            key.code = ch;
-        } else {
-            continue;
-        }
-
-        server->receive(client, key);
+        process_key_press(server, client, ch);
         if (client->queue_quit) {
             break;
         }
