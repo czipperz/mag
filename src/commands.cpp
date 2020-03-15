@@ -11,47 +11,46 @@
 namespace mag {
 
 void command_set_mark(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            buffer->cursors[c].mark = buffer->cursors[c].point;
-        }
-        buffer->show_marks = true;
-    });
+    Window_Unified* window = source.client->selected_window();
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        cursors[c].mark = cursors[c].point;
+    }
+    window->show_marks = true;
 }
 
 void command_swap_mark_point(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            cz::swap(buffer->cursors[c].point, buffer->cursors[c].mark);
-        }
-    });
+    Window_Unified* window = source.client->selected_window();
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        cz::swap(cursors[c].point, cursors[c].mark);
+    }
 }
 
-static void save_copy(Editor* editor, Buffer* buffer, size_t c, SSOStr value) {
+static void save_copy(Copy_Chain** cursor_chain, Editor* editor, SSOStr value) {
     Copy_Chain* chain = editor->copy_buffer.allocator().alloc<Copy_Chain>();
     chain->value = value;
-    chain->previous = buffer->cursors[c].copy_chain;
-    buffer->cursors[c].copy_chain = chain;
+    chain->previous = *cursor_chain;
+    *cursor_chain = chain;
 }
 
-static size_t sum_region_sizes(Buffer* buffer) {
+static size_t sum_region_sizes(cz::Slice<Cursor> cursors) {
     uint64_t sum = 0;
-    for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-        uint64_t start = buffer->cursors[c].start();
-        uint64_t end = buffer->cursors[c].end();
-        sum += end - start;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        sum += cursors[c].end() - cursors[c].start();
     }
     return (size_t)sum;
 }
 
 void command_cut(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(WITH_TRANSACTION({
-        transaction.init(buffer->cursors.len(), sum_region_sizes(buffer));
+        cz::Slice<Cursor> cursors = window->cursors;
+        transaction.init(cursors.len, sum_region_sizes(cursors));
 
         size_t offset = 0;
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            uint64_t start = buffer->cursors[c].start();
-            uint64_t end = buffer->cursors[c].end();
+        for (size_t c = 0; c < cursors.len; ++c) {
+            uint64_t start = cursors[c].start();
+            uint64_t end = cursors[c].end();
 
             Edit edit;
             edit.value = buffer->contents.slice(transaction.value_allocator(),
@@ -61,42 +60,44 @@ void command_cut(Editor* editor, Command_Source source) {
             edit.is_insert = false;
             transaction.push(edit);
 
-            save_copy(editor, buffer, c, edit.value);
+            save_copy(&cursors[c].copy_chain, editor, edit.value);
         }
 
-        buffer->show_marks = false;
+        window->show_marks = false;
     }));
 }
 
 void command_copy(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            uint64_t start = buffer->cursors[c].start();
-            uint64_t end = buffer->cursors[c].end();
+        cz::Slice<Cursor> cursors = window->cursors;
+        for (size_t c = 0; c < cursors.len; ++c) {
+            uint64_t start = cursors[c].start();
+            uint64_t end = cursors[c].end();
             // :CopyLeak We allocate here.
-            save_copy(editor, buffer, c,
+            save_copy(&cursors[c].copy_chain, editor,
                       buffer->contents.slice(editor->copy_buffer.allocator(),
                                              buffer->contents.iterator_at(start), end));
         }
 
-        buffer->show_marks = false;
+        window->show_marks = false;
     });
 }
 
 void command_paste(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(WITH_TRANSACTION({
+        cz::Slice<Cursor> cursors = window->cursors;
         // :CopyLeak Probably we will need to copy all the values herea.
-        transaction.init(buffer->cursors.len(), 0);
+        transaction.init(cursors.len, 0);
 
         size_t offset = 0;
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            if (buffer->cursors[c].copy_chain) {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            if (cursors[c].copy_chain) {
                 Edit edit;
                 // :CopyLeak We sometimes use the value here, but we could also
                 // just copy a bunch of stuff then close the cursors and leak
                 // that memory.
-                edit.value = buffer->cursors[c].copy_chain->value;
-                edit.position = buffer->cursors[c].point + offset;
+                edit.value = cursors[c].copy_chain->value;
+                edit.position = cursors[c].point + offset;
                 offset += edit.value.len();
                 edit.is_insert = true;
                 transaction.push(edit);
@@ -131,19 +132,20 @@ void command_backward_line(Editor* editor, Command_Source source) {
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
+        cz::Slice<Cursor> cursors = window->cursors;
         uint64_t len = buffer->contents.len;
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            buffer->cursors[c].point = len;
+        for (size_t c = 0; c < cursors.len; ++c) {
+            cursors[c].point = len;
         }
     });
 }
 
 void command_start_of_buffer(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            buffer->cursors[c].point = 0;
-        }
-    });
+    Window_Unified* window = source.client->selected_window();
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        cursors[c].point = 0;
+    }
 }
 
 void command_end_of_line(Editor* editor, Command_Source source) {
@@ -160,28 +162,30 @@ void command_start_of_line_text(Editor* editor, Command_Source source) {
 
 void command_shift_line_forward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
+        cz::Slice<Cursor> cursors = window->cursors;
+
         cz::Vector<uint64_t> cursor_positions = {};
         CZ_DEFER(cursor_positions.drop(cz::heap_allocator()));
-        cursor_positions.reserve(cz::heap_allocator(), buffer->cursors.len());
+        cursor_positions.reserve(cz::heap_allocator(), cursors.len);
 
         WITH_TRANSACTION({
             uint64_t sum_line_lengths = 0;
-            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                Contents_Iterator start = buffer->contents.iterator_at(buffer->cursors[c].point);
+            for (size_t c = 0; c < cursors.len; ++c) {
+                Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
                 Contents_Iterator end = start;
                 start_of_line(buffer, &start);
                 end_of_line(buffer, &end);
                 sum_line_lengths += end.position - start.position + 1;
             }
 
-            transaction.init(buffer->cursors.len() * 3, (size_t)sum_line_lengths);
+            transaction.init(cursors.len * 3, (size_t)sum_line_lengths);
 
-            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                Contents_Iterator start = buffer->contents.iterator_at(buffer->cursors[c].point);
+            for (size_t c = 0; c < cursors.len; ++c) {
+                Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
                 Contents_Iterator end = start;
                 start_of_line(buffer, &start);
                 end_of_line(buffer, &end);
-                uint64_t column = buffer->cursors[c].point - start.position;
+                uint64_t column = cursors[c].point - start.position;
 
                 Contents_Iterator insertion_point = end;
                 forward_char(buffer, &insertion_point);
@@ -259,36 +263,38 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
             }
         });
 
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            buffer->cursors[c].point = cursor_positions[c];
+        for (size_t c = 0; c < cursors.len; ++c) {
+            cursors[c].point = cursor_positions[c];
         }
     });
 }
 
 void command_shift_line_backward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
+        cz::Slice<Cursor> cursors = window->cursors;
+
         cz::Vector<uint64_t> cursor_positions = {};
         CZ_DEFER(cursor_positions.drop(cz::heap_allocator()));
-        cursor_positions.reserve(cz::heap_allocator(), buffer->cursors.len());
+        cursor_positions.reserve(cz::heap_allocator(), cursors.len);
 
         WITH_TRANSACTION({
             uint64_t sum_line_lengths = 0;
-            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                Contents_Iterator start = buffer->contents.iterator_at(buffer->cursors[c].point);
+            for (size_t c = 0; c < cursors.len; ++c) {
+                Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
                 Contents_Iterator end = start;
                 start_of_line(buffer, &start);
                 end_of_line(buffer, &end);
                 sum_line_lengths += end.position - start.position + 1;
             }
 
-            transaction.init(buffer->cursors.len() * 3, (size_t)sum_line_lengths);
+            transaction.init(cursors.len * 3, (size_t)sum_line_lengths);
 
-            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                Contents_Iterator start = buffer->contents.iterator_at(buffer->cursors[c].point);
+            for (size_t c = 0; c < cursors.len; ++c) {
+                Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
                 Contents_Iterator end = start;
                 start_of_line(buffer, &start);
                 end_of_line(buffer, &end);
-                uint64_t column = buffer->cursors[c].point - start.position;
+                uint64_t column = cursors[c].point - start.position;
 
                 Contents_Iterator insertion_point = start;
                 backward_line(buffer, &insertion_point);
@@ -368,8 +374,8 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
             }
         });
 
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            buffer->cursors[c].point = cursor_positions[c];
+        for (size_t c = 0; c < cursors.len; ++c) {
+            cursors[c].point = cursor_positions[c];
         }
     });
 }
@@ -381,7 +387,9 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
             Commit commit = buffer->commits[buffer->commit_index - 1];
             size_t len = commit.edits[0].value.len();
             if (len < SSOStr::MAX_SHORT_LEN) {
-                CZ_DEBUG_ASSERT(commit.edits.len == buffer->cursors.len());
+                cz::Slice<Cursor> cursors = window->cursors;
+
+                CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
                 buffer->undo();
 
                 WITH_TRANSACTION({
@@ -389,7 +397,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
 
                     uint64_t offset = 1;
                     for (size_t e = 0; e < commit.edits.len; ++e) {
-                        if (buffer->cursors[e].point == 0) {
+                        if (cursors[e].point == 0) {
                             continue;
                         }
 
@@ -400,7 +408,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
                         memcpy(edit.value.short_._buffer + 1, commit.edits[e].value.short_._buffer,
                                len);
                         edit.value.short_._buffer[0] =
-                            buffer->contents.get_once(buffer->cursors[e].point - len - 1);
+                            buffer->contents.get_once(cursors[e].point - len - 1);
                         edit.value.short_.set_len(len + 1);
                         edit.position = commit.edits[e].position - offset;
                         offset++;
@@ -423,7 +431,9 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
             Commit commit = buffer->commits[buffer->commit_index - 1];
             size_t len = commit.edits[0].value.len();
             if (len < SSOStr::MAX_SHORT_LEN) {
-                CZ_DEBUG_ASSERT(commit.edits.len == buffer->cursors.len());
+                cz::Slice<Cursor> cursors = window->cursors;
+
+                CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
                 buffer->undo();
 
                 WITH_TRANSACTION({
@@ -436,7 +446,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
                         memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer,
                                len);
                         edit.value.short_._buffer[len] =
-                            buffer->contents.get_once(buffer->cursors[e].point);
+                            buffer->contents.get_once(cursors[e].point);
                         edit.value.short_.set_len(len + 1);
                         edit.position = commit.edits[e].position - e;
                         edit.is_insert = false;
@@ -461,9 +471,10 @@ void command_delete_forward_word(Editor* editor, Command_Source source) {
 
 void command_transpose_characters(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(WITH_TRANSACTION({
-        transaction.init(2 * buffer->cursors.len(), 0);
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            uint64_t point = buffer->cursors[c].point;
+        cz::Slice<Cursor> cursors = window->cursors;
+        transaction.init(2 * cursors.len, 0);
+        for (size_t c = 0; c < cursors.len; ++c) {
+            uint64_t point = cursors[c].point;
             if (point == 0 || point == buffer->contents.len) {
                 continue;
             }
@@ -485,13 +496,13 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
 
 void command_open_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
-        insert_char(buffer, '\n');
+        insert_char(buffer, window, '\n');
         TRANSFORM_POINTS(backward_char);
     });
 }
 
 void command_insert_newline(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(insert_char(buffer, '\n'));
+    WITH_SELECTED_BUFFER(insert_char(buffer, window, '\n'));
 }
 
 void command_undo(Editor* editor, Command_Source source) {
@@ -504,19 +515,19 @@ void command_redo(Editor* editor, Command_Source source) {
 
 void command_stop_action(Editor* editor, Command_Source source) {
     bool done = false;
-    WITH_SELECTED_BUFFER({
-        if (!done && buffer->show_marks) {
-            buffer->show_marks = false;
-            done = true;
-        }
 
-        if (!done && buffer->cursors.len() > 1) {
-            buffer->cursors.set_len(1);
-            done = true;
-        }
-    });
+    Window_Unified* window = source.client->selected_window();
+    if (!done && window->show_marks) {
+        window->show_marks = false;
+        done = true;
+    }
 
-    if (!done && source.client->selected_buffer_id() == source.client->mini_buffer_id()) {
+    if (!done && window->cursors.len() > 1) {
+        window->cursors.set_len(1);
+        done = true;
+    }
+
+    if (!done && window->id == source.client->mini_buffer_window()->id) {
         source.client->hide_mini_buffer(editor);
         done = true;
     }
@@ -531,46 +542,46 @@ void command_quit(Editor* editor, Command_Source source) {
     source.client->queue_quit = true;
 }
 
-static void create_cursor_forward_line(Buffer* buffer) {
-    CZ_DEBUG_ASSERT(buffer->cursors.len() >= 1);
+static void create_cursor_forward_line(Buffer* buffer, Window_Unified* window) {
+    CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
     Contents_Iterator last_cursor_iterator =
-        buffer->contents.iterator_at(buffer->cursors.last().point);
+        buffer->contents.iterator_at(window->cursors.last().point);
     Contents_Iterator new_cursor_iterator = last_cursor_iterator;
     forward_line(buffer, &new_cursor_iterator);
     if (new_cursor_iterator.position != last_cursor_iterator.position) {
         Cursor cursor;
         cursor.point = new_cursor_iterator.position;
         cursor.mark = cursor.point;
-        cursor.copy_chain = buffer->cursors.last().copy_chain;
+        cursor.copy_chain = window->cursors.last().copy_chain;
 
-        buffer->cursors.reserve(cz::heap_allocator(), 1);
-        buffer->cursors.push(cursor);
+        window->cursors.reserve(cz::heap_allocator(), 1);
+        window->cursors.push(cursor);
     }
 }
 
 void command_create_cursor_forward_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(create_cursor_forward_line(buffer));
+    WITH_SELECTED_BUFFER(create_cursor_forward_line(buffer, window));
 }
 
-static void create_cursor_backward_line(Buffer* buffer) {
-    CZ_DEBUG_ASSERT(buffer->cursors.len() >= 1);
+static void create_cursor_backward_line(Buffer* buffer, Window_Unified* window) {
+    CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
     Contents_Iterator first_cursor_iterator =
-        buffer->contents.iterator_at(buffer->cursors[0].point);
+        buffer->contents.iterator_at(window->cursors[0].point);
     Contents_Iterator new_cursor_iterator = first_cursor_iterator;
     backward_line(buffer, &new_cursor_iterator);
     if (new_cursor_iterator.position != first_cursor_iterator.position) {
         Cursor cursor;
         cursor.point = new_cursor_iterator.position;
         cursor.mark = cursor.point;
-        cursor.copy_chain = buffer->cursors[0].copy_chain;
+        cursor.copy_chain = window->cursors[0].copy_chain;
 
-        buffer->cursors.reserve(cz::heap_allocator(), 1);
-        buffer->cursors.insert(0, cursor);
+        window->cursors.reserve(cz::heap_allocator(), 1);
+        window->cursors.insert(0, cursor);
     }
 }
 
 void command_create_cursor_backward_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(create_cursor_backward_line(buffer));
+    WITH_SELECTED_BUFFER(create_cursor_backward_line(buffer, window));
 }
 
 static cz::Option<uint64_t> search_forward(Buffer* buffer,
@@ -611,15 +622,15 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
 
 #define SEARCH_SLICE_THEN(FUNC, THEN)                                                            \
     do {                                                                                         \
-        uint64_t start = buffer->cursors[c].start();                                             \
-        uint64_t end = buffer->cursors[c].end();                                                 \
+        uint64_t start = cursors[c].start();                                                     \
+        uint64_t end = cursors[c].end();                                                         \
         cz::Option<uint64_t> new_start = FUNC(buffer, buffer->contents.iterator_at(start), end); \
         if (new_start.is_present) {                                                              \
             Cursor new_cursor;                                                                   \
             new_cursor.point = new_start.value;                                                  \
             new_cursor.mark = new_start.value + end - start;                                     \
-            new_cursor.copy_chain = buffer->cursors[c].copy_chain;                               \
-            if (buffer->cursors[c].point > buffer->cursors[c].mark) {                            \
+            new_cursor.copy_chain = cursors[c].copy_chain;                                       \
+            if (cursors[c].point > cursors[c].mark) {                                            \
                 cz::swap(new_cursor.point, new_cursor.mark);                                     \
             }                                                                                    \
             THEN;                                                                                \
@@ -628,28 +639,29 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
 
 #define SEARCH_QUERY_THEN(FUNC, THEN)                                                              \
     do {                                                                                           \
-        uint64_t start = buffer->cursors[c].start();                                               \
+        uint64_t start = cursors[c].start();                                                       \
         cz::Option<uint64_t> new_start = FUNC(buffer, buffer->contents.iterator_at(start), query); \
         if (new_start.is_present) {                                                                \
             Cursor new_cursor;                                                                     \
             new_cursor.point = new_start.value + query.len;                                        \
             new_cursor.mark = new_start.value;                                                     \
-            new_cursor.copy_chain = buffer->cursors[c].copy_chain;                                 \
+            new_cursor.copy_chain = cursors[c].copy_chain;                                         \
             THEN;                                                                                  \
         }                                                                                          \
     } while (0)
 
-static void create_cursor_forward_search(Buffer* buffer) {
-    CZ_DEBUG_ASSERT(buffer->cursors.len() >= 1);
-    size_t c = buffer->cursors.len() - 1;
+static void create_cursor_forward_search(Buffer* buffer, Window_Unified* window) {
+    cz::Slice<Cursor> cursors = window->cursors;
+    CZ_DEBUG_ASSERT(cursors.len >= 1);
+    size_t c = cursors.len - 1;
     SEARCH_SLICE_THEN(search_forward_slice, {
-        buffer->cursors.reserve(cz::heap_allocator(), 1);
-        buffer->cursors.push(new_cursor);
+        window->cursors.reserve(cz::heap_allocator(), 1);
+        window->cursors.push(new_cursor);
     });
 }
 
 void command_create_cursor_forward_search(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(create_cursor_forward_search(buffer));
+    WITH_SELECTED_BUFFER(create_cursor_forward_search(buffer, window));
 }
 
 static cz::Option<uint64_t> search_backward(Buffer* buffer,
@@ -697,35 +709,36 @@ static cz::Option<uint64_t> search_backward_slice(Buffer* buffer,
     return search_backward(buffer, start, slice.as_str());
 }
 
-static void create_cursor_backward_search(Buffer* buffer) {
-    CZ_DEBUG_ASSERT(buffer->cursors.len() >= 1);
-    size_t c = buffer->cursors.len() - 1;
+static void create_cursor_backward_search(Buffer* buffer, Window_Unified* window) {
+    cz::Slice<Cursor> cursors = window->cursors;
+    CZ_DEBUG_ASSERT(cursors.len >= 1);
+    size_t c = cursors.len - 1;
     SEARCH_SLICE_THEN(search_backward_slice, {
-        buffer->cursors.reserve(cz::heap_allocator(), 1);
-        buffer->cursors.insert(0, new_cursor);
+        window->cursors.reserve(cz::heap_allocator(), 1);
+        window->cursors.insert(0, new_cursor);
     });
 }
 
 void command_create_cursor_backward_search(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(create_cursor_backward_search(buffer));
+    WITH_SELECTED_BUFFER(create_cursor_backward_search(buffer, window));
 }
 
 void command_create_cursor_forward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
-        if (buffer->show_marks) {
-            create_cursor_forward_search(buffer);
+        if (window->show_marks) {
+            create_cursor_forward_search(buffer, window);
         } else {
-            create_cursor_forward_line(buffer);
+            create_cursor_forward_line(buffer, window);
         }
     });
 }
 
 void command_create_cursor_backward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
-        if (buffer->show_marks) {
-            create_cursor_backward_search(buffer);
+        if (window->show_marks) {
+            create_cursor_backward_search(buffer, window);
         } else {
-            create_cursor_backward_line(buffer);
+            create_cursor_backward_line(buffer, window);
         }
     });
 }
@@ -734,11 +747,13 @@ static void command_search_forward_callback(Editor* editor,
                                             Client* client,
                                             cz::Str query,
                                             void* data) {
-    WITH_BUFFER(buffer, client->selected_buffer_id(), {
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+    Window_Unified* window = client->selected_window();
+    WITH_BUFFER(window->id, {
+        cz::Slice<Cursor> cursors = window->cursors;
+        for (size_t c = 0; c < cursors.len; ++c) {
             SEARCH_QUERY_THEN(search_forward, {
-                buffer->cursors[c] = new_cursor;
-                buffer->show_marks = true;
+                cursors[c] = new_cursor;
+                window->show_marks = true;
             });
         }
     });
@@ -746,9 +761,10 @@ static void command_search_forward_callback(Editor* editor,
 
 void command_search_forward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
-        if (buffer->show_marks) {
-            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                SEARCH_SLICE_THEN(search_forward_slice, buffer->cursors[c] = new_cursor);
+        if (window->show_marks) {
+            cz::Slice<Cursor> cursors = window->cursors;
+            for (size_t c = 0; c < cursors.len; ++c) {
+                SEARCH_SLICE_THEN(search_forward_slice, cursors[c] = new_cursor);
             }
         } else {
             Message message;
@@ -765,11 +781,13 @@ static void command_search_backward_callback(Editor* editor,
                                              Client* client,
                                              cz::Str query,
                                              void* data) {
-    WITH_BUFFER(buffer, client->selected_buffer_id(), {
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
+    Window_Unified* window = client->selected_window();
+    WITH_BUFFER(window->id, {
+        cz::Slice<Cursor> cursors = window->cursors;
+        for (size_t c = 0; c < cursors.len; ++c) {
             SEARCH_QUERY_THEN(search_backward, {
-                buffer->cursors[c] = new_cursor;
-                buffer->show_marks = true;
+                cursors[c] = new_cursor;
+                window->show_marks = true;
             });
         }
     });
@@ -777,9 +795,10 @@ static void command_search_backward_callback(Editor* editor,
 
 void command_search_backward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
-        if (buffer->show_marks) {
-            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                SEARCH_SLICE_THEN(search_backward_slice, buffer->cursors[c] = new_cursor);
+        if (window->show_marks) {
+            cz::Slice<Cursor> cursors = window->cursors;
+            for (size_t c = 0; c < cursors.len; ++c) {
+                SEARCH_SLICE_THEN(search_backward_slice, cursors[c] = new_cursor);
             }
         } else {
             Message message;

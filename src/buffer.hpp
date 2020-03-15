@@ -7,7 +7,6 @@
 #include "change.hpp"
 #include "commit.hpp"
 #include "contents.hpp"
-#include "cursor.hpp"
 #include "mode.hpp"
 
 namespace mag {
@@ -27,9 +26,6 @@ struct Buffer {
     cz::Option<Commit_Id> saved_commit_id;
 
     Contents contents;
-
-    cz::Vector<Cursor> cursors;
-    bool show_marks;
 
     Mode mode;
 

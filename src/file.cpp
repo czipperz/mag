@@ -20,7 +20,7 @@ static cz::Result load_file(Editor* editor, const char* path, Buffer_Id buffer_i
 
     CZ_DEFER(fclose(file));
 
-    WITH_BUFFER(buffer, buffer_id, {
+    WITH_BUFFER(buffer_id, {
         cz::String contents = {};
         CZ_DEFER(contents.drop(cz::heap_allocator()));
         CZ_TRY(cz::fs::read_to_string(cz::heap_allocator(), &contents, file));
@@ -41,7 +41,7 @@ static cz::Result load_directory(Editor* editor, const char* path, Buffer_Id buf
     CZ_TRY(cz::fs::files(cz::heap_allocator(), buffer_array.allocator(), path, &files));
     std::sort(files.start(), files.end());
 
-    WITH_BUFFER(buffer, buffer_id, {
+    WITH_BUFFER(buffer_id, {
         for (size_t i = 0; i < files.len(); ++i) {
             buffer->contents.insert(buffer->contents.len, files[i]);
             buffer->contents.insert(buffer->contents.len, "\n");

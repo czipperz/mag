@@ -32,8 +32,8 @@ cz::Str clear_buffer(Editor* editor, Buffer* buffer) {
 
 static void send_message_result(Editor* editor, Client* client) {
     cz::Str mini_buffer_contents;
-    WITH_BUFFER(mini_buffer, client->mini_buffer_id(),
-                { mini_buffer_contents = clear_buffer(editor, mini_buffer); });
+    WITH_BUFFER(client->mini_buffer_window()->id,
+                { mini_buffer_contents = clear_buffer(editor, buffer); });
 
     client->restore_selected_buffer();
     client->_message.response_callback(editor, client, mini_buffer_contents,
@@ -50,7 +50,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
             Commit commit = buffer->commits[buffer->commit_index - 1];
             size_t len = commit.edits[0].value.len();
             if (len < SSOStr::MAX_SHORT_LEN) {
-                CZ_DEBUG_ASSERT(commit.edits.len == buffer->cursors.len());
+                CZ_DEBUG_ASSERT(commit.edits.len == window->cursors.len());
                 buffer->undo();
 
                 WITH_TRANSACTION({
@@ -73,7 +73,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
             }
         }
 
-        insert_char(buffer, code);
+        insert_char(buffer, window, code);
     });
 }
 
@@ -151,7 +151,7 @@ static void failed_key_press(Editor* editor,
                              size_t start) {
     Key key = client->key_chain[start];
     if (key.modifiers == 0 && (isprint(key.code) || key.code == '\t' || key.code == '\n')) {
-        if (key.code == '\n' && client->selected_buffer_id() == client->mini_buffer_id()) {
+        if (key.code == '\n' && client->selected_window() == client->mini_buffer_window()) {
             send_message_result(editor, client);
             *previous_command = nullptr;
         } else {
@@ -178,7 +178,7 @@ static bool handle_key_press_buffer(Editor* editor,
                                     cz::Slice<Key> key_chain,
                                     Command* previous_command,
                                     bool* waiting_for_more_keys) {
-    Buffer_Handle* handle = editor->lookup(client->selected_buffer_id());
+    Buffer_Handle* handle = editor->lookup(client->selected_window()->id);
     Buffer* buffer = handle->lock();
     bool unlocked = false;
     CZ_DEFER(if (!unlocked) handle->unlock());

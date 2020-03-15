@@ -2,12 +2,16 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <cz/vector.hpp>
 #include "buffer_id.hpp"
+#include "cursor.hpp"
 
 namespace mag {
 
+struct Window_Split;
+
 struct Window {
-    Window* parent;
+    Window_Split* parent;
 
     size_t rows;
     size_t cols;
@@ -17,24 +21,28 @@ struct Window {
         VERTICAL_SPLIT,
         HORIZONTAL_SPLIT,
     } tag;
-    union {
-        struct {
-            Buffer_Id id;
-            uint64_t start_position;
-        } unified;
-        struct {
-            Window* left;
-            Window* right;
-        } vertical_split;
-        struct {
-            Window* top;
-            Window* bottom;
-        } horizontal_split;
-    } v;
 
-    static Window* alloc();
-    static Window* create(Buffer_Id buffer_id);
-    static void drop(Window* window);
+    static void drop_(Window* window);
+};
+
+struct Window_Unified : Window {
+    Buffer_Id id;
+    uint64_t start_position;
+
+    size_t change_index;
+    cz::Vector<Cursor> cursors;
+    bool show_marks;
+
+    static Window_Unified* create(Buffer_Id buffer_id);
+    Window_Unified* clone();
+};
+
+struct Window_Split : Window {
+    Window* first;
+    Window* second;
+
+    static Window_Split* create(Window::Tag tag, Window* first, Window* second);
+    static void drop_non_recursive(Window_Split* window);
 };
 
 }

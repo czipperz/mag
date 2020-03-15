@@ -222,19 +222,21 @@ static bool next_check_point(Window_Cache* window_cache,
     return false;
 }
 
-static int cache_windows_check_points(Window_Cache* window_cache, Window* window, Editor* editor) {
+static int cache_windows_check_points(Window_Cache* window_cache, Window* w, Editor* editor) {
     ZoneScoped;
 
-    CZ_DEBUG_ASSERT(window_cache->tag == window->tag);
+    CZ_DEBUG_ASSERT(window_cache->tag == w->tag);
 
-    switch (window->tag) {
-    case Window::UNIFIED:
+    switch (w->tag) {
+    case Window::UNIFIED: {
+        Window_Unified* window = (Window_Unified*)w;
+
         if (window_cache->v.unified.tokenizer_ran_to_end) {
             return ERR;
         }
 
         // TODO: Make this non blocking!
-        WITH_BUFFER(buffer, window->v.unified.id, {
+        WITH_BUFFER(window->id, {
             cz::Vector<Tokenizer_Check_Point>* check_points =
                 &window_cache->v.unified.tokenizer_check_points;
 
@@ -260,25 +262,18 @@ static int cache_windows_check_points(Window_Cache* window_cache, Window* window
                 }
             }
         });
-
-    case Window::VERTICAL_SPLIT: {
-        int left_result = cache_windows_check_points(window_cache->v.vertical_split.left,
-                                                     window->v.vertical_split.left, editor);
-        if (left_result != ERR) {
-            return left_result;
-        }
-        return cache_windows_check_points(window_cache->v.vertical_split.right,
-                                          window->v.vertical_split.right, editor);
     }
 
+    case Window::VERTICAL_SPLIT:
     case Window::HORIZONTAL_SPLIT: {
-        int top_result = cache_windows_check_points(window_cache->v.horizontal_split.top,
-                                                    window->v.horizontal_split.top, editor);
-        if (top_result != ERR) {
-            return top_result;
+        Window_Split* window = (Window_Split*)w;
+        int first_result =
+            cache_windows_check_points(window_cache->v.vertical_split.left, window->first, editor);
+        if (first_result != ERR) {
+            return first_result;
         }
-        return cache_windows_check_points(window_cache->v.horizontal_split.bottom,
-                                          window->v.horizontal_split.bottom, editor);
+        return cache_windows_check_points(window_cache->v.vertical_split.right, window->second,
+                                          editor);
     }
     }
 
@@ -317,7 +312,7 @@ static void cache_window_unified_position(Window_Cache* window_cache,
 }
 
 static void cache_window_unified_update(Window_Cache* window_cache,
-                                        Window* window,
+                                        Window_Unified* window,
                                         Buffer* buffer) {
     ZoneScoped;
 
@@ -377,12 +372,12 @@ static void cache_window_unified_update(Window_Cache* window_cache,
     }
 
 done:
-    cache_window_unified_position(window_cache, window->v.unified.start_position, window->rows,
-                                  window->cols, buffer);
+    cache_window_unified_position(window_cache, window->start_position, window->rows, window->cols,
+                                  buffer);
 }
 
 static void cache_window_unified_create(Window_Cache* window_cache,
-                                        Window* window,
+                                        Window_Unified* window,
                                         Buffer_Id buffer_id,
                                         Buffer* buffer) {
     ZoneScoped;
@@ -396,10 +391,9 @@ static void cache_window_unified_create(Window_Cache* window_cache,
 
 static void cache_window_unified_create(Editor* editor,
                                         Window_Cache* window_cache,
-                                        Window* window) {
-    WITH_BUFFER(buffer, window->v.unified.id, {
-        cache_window_unified_create(window_cache, window, window->v.unified.id, buffer);
-    });
+                                        Window_Unified* window) {
+    WITH_BUFFER(window->id,
+                { cache_window_unified_create(window_cache, window, window->id, buffer); });
 }
 
 static void draw_buffer_contents(Cell* cells,
@@ -407,7 +401,7 @@ static void draw_buffer_contents(Cell* cells,
                                  int total_cols,
                                  Editor* editor,
                                  Buffer* buffer,
-                                 uint64_t* start_position_,
+                                 Window_Unified* window,
                                  bool show_cursors,
                                  int start_row,
                                  int start_col,
@@ -415,11 +409,11 @@ static void draw_buffer_contents(Cell* cells,
                                  int count_cols) {
     ZoneScoped;
 
-    Contents_Iterator iterator = buffer->contents.iterator_at(*start_position_);
+    Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     start_of_line(buffer, &iterator);
     if (window_cache) {
         // Ensure the cursor is visible
-        uint64_t selected_cursor_position = buffer->cursors[0].point;
+        uint64_t selected_cursor_position = window->cursors[0].point;
         Contents_Iterator second_line_iterator = iterator;
         forward_line(buffer, &second_line_iterator);
         if (selected_cursor_position < second_line_iterator.position) {
@@ -436,7 +430,7 @@ static void draw_buffer_contents(Cell* cells,
                                           buffer);
         }
     }
-    *start_position_ = iterator.position;
+    window->start_position = iterator.position;
 
     int y = 0;
     int x = 0;
@@ -476,17 +470,17 @@ static void draw_buffer_contents(Cell* cells,
 
         bool has_cursor = false;
         if (show_cursors) {
-            for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-                Cursor* cursor = &buffer->cursors[c];
-                if (buffer->show_marks) {
-                    if (iterator.position == std::min(cursor->mark, cursor->point)) {
+            cz::Slice<Cursor> cursors = window->cursors;
+            for (size_t c = 0; c < cursors.len; ++c) {
+                if (window->show_marks) {
+                    if (iterator.position == std::min(cursors[c].mark, cursors[c].point)) {
                         ++show_mark;
                     }
-                    if (iterator.position == std::max(cursor->mark, cursor->point)) {
+                    if (iterator.position == std::max(cursors[c].mark, cursors[c].point)) {
                         --show_mark;
                     }
                 }
-                if (iterator.position == cursor->point) {
+                if (iterator.position == cursors[c].point) {
                     has_cursor = true;
                 }
             }
@@ -533,8 +527,9 @@ static void draw_buffer_contents(Cell* cells,
     }
 
     if (show_cursors) {
-        for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-            if (buffer->cursors[c].point == buffer->contents.len) {
+        cz::Slice<Cursor> cursors = window->cursors;
+        for (size_t c = 0; c < cursors.len; ++c) {
+            if (cursors[c].point == buffer->contents.len) {
                 SET(A_REVERSE, ' ');
                 ++x;
                 break;
@@ -554,8 +549,7 @@ static void draw_buffer(Cell* cells,
                         Window_Cache* window_cache,
                         int total_cols,
                         Editor* editor,
-                        Buffer_Id buffer_id,
-                        uint64_t* start_position,
+                        Window_Unified* window,
                         bool show_cursors,
                         int start_row,
                         int start_col,
@@ -563,9 +557,9 @@ static void draw_buffer(Cell* cells,
                         int count_cols) {
     ZoneScoped;
 
-    WITH_BUFFER(buffer, buffer_id, {
-        draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, start_position,
-                             show_cursors, start_row, start_col, count_rows - 1, count_cols);
+    WITH_BUFFER(window->id, {
+        draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, show_cursors,
+                             start_row, start_col, count_rows - 1, count_cols);
 
         int y = count_rows - 1;
         int x = 0;
@@ -599,7 +593,7 @@ static void draw_window(Cell* cells,
                         Window_Cache** window_cache,
                         int total_cols,
                         Editor* editor,
-                        Window* window,
+                        Window* w,
                         Window* selected_window,
                         int start_row,
                         int start_col,
@@ -607,91 +601,84 @@ static void draw_window(Cell* cells,
                         int count_cols) {
     ZoneScoped;
 
-    window->rows = count_rows;
-    window->cols = count_cols;
+    w->rows = count_rows;
+    w->cols = count_cols;
 
-    switch (window->tag) {
-    case Window::UNIFIED:
+    switch (w->tag) {
+    case Window::UNIFIED: {
+        Window_Unified* window = (Window_Unified*)w;
+
         if (!*window_cache) {
             *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
             cache_window_unified_create(editor, *window_cache, window);
         } else if ((*window_cache)->tag != window->tag) {
             destroy_window_cache_children(*window_cache);
             cache_window_unified_create(editor, *window_cache, window);
-        } else if ((*window_cache)->v.unified.id != window->v.unified.id) {
+        } else if ((*window_cache)->v.unified.id != window->id) {
             cache_window_unified_create(editor, *window_cache, window);
         } else {
-            WITH_BUFFER(buffer, window->v.unified.id, {
+            WITH_BUFFER(window->id, {
                 if ((*window_cache)->v.unified.change_index != buffer->changes.len()) {
                     cache_window_unified_update(*window_cache, window, buffer);
                 }
             });
         }
 
-        draw_buffer(cells, *window_cache, total_cols, editor, window->v.unified.id,
-                    &window->v.unified.start_position, window == selected_window, start_row,
-                    start_col, count_rows, count_cols);
-        break;
-
-    case Window::VERTICAL_SPLIT: {
-        if (!*window_cache) {
-            *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
-            (*window_cache)->tag = Window::VERTICAL_SPLIT;
-            (*window_cache)->v.vertical_split = {};
-        } else if ((*window_cache)->tag != window->tag) {
-            destroy_window_cache_children(*window_cache);
-            (*window_cache)->tag = Window::VERTICAL_SPLIT;
-            (*window_cache)->v.vertical_split = {};
-        }
-
-        int left_cols = (count_cols - 1) / 2;
-        int right_cols = count_cols - left_cols - 1;
-
-        draw_window(cells, &(*window_cache)->v.vertical_split.left, total_cols, editor,
-                    window->v.vertical_split.left, selected_window, start_row, start_col,
-                    count_rows, left_cols);
-
-        {
-            int x = left_cols;
-            for (int y = 0; y < count_rows; ++y) {
-                SET(A_NORMAL, '|');
-            }
-        }
-
-        draw_window(cells, &(*window_cache)->v.vertical_split.right, total_cols, editor,
-                    window->v.vertical_split.right, selected_window, start_row,
-                    start_col + count_cols - right_cols, count_rows, right_cols);
+        draw_buffer(cells, *window_cache, total_cols, editor, window, window == selected_window,
+                    start_row, start_col, count_rows, count_cols);
         break;
     }
 
+    case Window::VERTICAL_SPLIT:
     case Window::HORIZONTAL_SPLIT: {
+        Window_Split* window = (Window_Split*)w;
+
         if (!*window_cache) {
             *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
-            (*window_cache)->tag = Window::HORIZONTAL_SPLIT;
-            (*window_cache)->v.horizontal_split = {};
+            (*window_cache)->tag = window->tag;
+            (*window_cache)->v.vertical_split = {};
         } else if ((*window_cache)->tag != window->tag) {
             destroy_window_cache_children(*window_cache);
-            (*window_cache)->tag = Window::HORIZONTAL_SPLIT;
-            (*window_cache)->v.horizontal_split = {};
+            (*window_cache)->tag = window->tag;
+            (*window_cache)->v.vertical_split = {};
         }
 
-        int top_rows = (count_rows - 1) / 2;
-        int bottom_rows = count_rows - top_rows - 1;
+        if (window->tag == Window::VERTICAL_SPLIT) {
+            int left_cols = (count_cols - 1) / 2;
+            int right_cols = count_cols - left_cols - 1;
 
-        draw_window(cells, &(*window_cache)->v.horizontal_split.top, total_cols, editor,
-                    window->v.horizontal_split.top, selected_window, start_row, start_col, top_rows,
-                    count_cols);
+            draw_window(cells, &(*window_cache)->v.vertical_split.left, total_cols, editor,
+                        window->first, selected_window, start_row, start_col, count_rows,
+                        left_cols);
 
-        {
-            int y = top_rows;
-            for (int x = 0; x < count_cols; ++x) {
-                SET(A_NORMAL, '-');
+            {
+                int x = left_cols;
+                for (int y = 0; y < count_rows; ++y) {
+                    SET(A_NORMAL, '|');
+                }
             }
-        }
 
-        draw_window(cells, &(*window_cache)->v.horizontal_split.bottom, total_cols, editor,
-                    window->v.horizontal_split.bottom, selected_window,
-                    start_row + count_rows - bottom_rows, start_col, bottom_rows, count_cols);
+            draw_window(cells, &(*window_cache)->v.vertical_split.right, total_cols, editor,
+                        window->second, selected_window, start_row,
+                        start_col + count_cols - right_cols, count_rows, right_cols);
+        } else {
+            int top_rows = (count_rows - 1) / 2;
+            int bottom_rows = count_rows - top_rows - 1;
+
+            draw_window(cells, &(*window_cache)->v.horizontal_split.top, total_cols, editor,
+                        window->first, selected_window, start_row, start_col, top_rows, count_cols);
+
+            {
+                int y = top_rows;
+                for (int x = 0; x < count_cols; ++x) {
+                    SET(A_NORMAL, '-');
+                }
+            }
+
+            draw_window(cells, &(*window_cache)->v.horizontal_split.bottom, total_cols, editor,
+                        window->second, selected_window, start_row + count_rows - bottom_rows,
+                        start_col, bottom_rows, count_cols);
+        }
         break;
     }
     }
@@ -726,9 +713,9 @@ static void render_to_cells(Cell* cells,
 
         if (client->_message.tag > Message::SHOW) {
             start_col = x;
-            WITH_BUFFER(buffer, client->mini_buffer_id(), {
-                uint64_t start_line = 0;
-                draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, &start_line,
+            Window_Unified* window = client->mini_buffer_window();
+            WITH_BUFFER(window->id, {
+                draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window,
                                      client->_select_mini_buffer, start_row, start_col,
                                      total_rows - start_row, total_cols - start_col);
             });
@@ -744,8 +731,8 @@ static void render_to_cells(Cell* cells,
         }
     }
 
-    draw_window(cells, window_cache, total_cols, editor, client->window, client->_selected_window,
-                0, 0, total_rows - mini_buffer_height, total_cols);
+    draw_window(cells, window_cache, total_cols, editor, client->window,
+                client->selected_normal_window, 0, 0, total_rows - mini_buffer_height, total_cols);
 }
 
 static void render(int* total_rows,

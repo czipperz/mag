@@ -9,9 +9,6 @@ namespace mag {
 void Buffer::init(cz::Str path) {
     this->path = path.duplicate_null_terminate(cz::heap_allocator());
 
-    cursors.reserve(cz::heap_allocator(), 1);
-    cursors.push({});
-
     mode = get_mode(path);
 }
 
@@ -31,7 +28,6 @@ void Buffer::drop() {
     changes.drop(cz::heap_allocator());
 
     contents.drop();
-    cursors.drop(cz::heap_allocator());
 }
 
 static void insert(Contents* contents, uint64_t position, cz::Str str) {
@@ -54,10 +50,7 @@ static void apply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
         }
     }
 
-    for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-        position_after_edits(edits, &buffer->cursors[c].point);
-        position_after_edits(edits, &buffer->cursors[c].mark);
-    }
+    // TODO: do position_after_edits for point and mark
 }
 
 static void unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
@@ -70,10 +63,7 @@ static void unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
         }
     }
 
-    for (size_t c = 0; c < buffer->cursors.len(); ++c) {
-        position_before_edits(edits, &buffer->cursors[c].point);
-        position_before_edits(edits, &buffer->cursors[c].mark);
-    }
+    // TODO: do position_before_edits for point and mark
 }
 
 bool Buffer::undo() {

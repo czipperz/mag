@@ -4,103 +4,78 @@
 
 namespace mag {
 
+static void save_other_windows(Client* client, Window* w, Window* selected_window) {
+    switch (w->tag) {
+    case Window::UNIFIED: {
+        Window_Unified* window = (Window_Unified*)w;
+        client->save_offscreen_window(window);
+        break;
+    }
+
+    case Window::VERTICAL_SPLIT:
+    case Window::HORIZONTAL_SPLIT: {
+        Window_Split* window = (Window_Split*)w;
+        save_other_windows(client, window->first, selected_window);
+        save_other_windows(client, window->second, selected_window);
+        Window_Split::drop_non_recursive(window);
+        break;
+    }
+    }
+}
+
 void command_one_window(Editor* editor, Command_Source source) {
-    Buffer_Id buffer_id = source.client->selected_buffer_id();
-    Window::drop(source.client->window);
-    source.client->window = Window::create(buffer_id);
-    source.client->_selected_window = source.client->window;
+    save_other_windows(source.client, source.client->window, source.client->selected_normal_window);
+    source.client->window = source.client->selected_normal_window;
+}
+
+static void split_window(Editor* editor, Command_Source source, Window::Tag tag) {
+    Window_Unified* top = source.client->selected_normal_window;
+    Window_Unified* bottom = top->clone();
+
+    Window_Split* parent = Window_Split::create(tag, top, bottom);
+    top->parent = parent;
+    bottom->parent = parent;
+
+    source.client->replace_window(top, parent);
+
+    source.client->selected_normal_window = top;
 }
 
 void command_split_window_horizontal(Editor* editor, Command_Source source) {
-    Window* top = Window::create(source.client->selected_buffer_id());
-    Window* bottom = Window::create(source.client->selected_buffer_id());
-
-    Window* selected_window = source.client->_selected_window;
-    selected_window->tag = Window::HORIZONTAL_SPLIT;
-
-    selected_window->v.horizontal_split.top = top;
-    top->parent = selected_window;
-
-    selected_window->v.horizontal_split.bottom = bottom;
-    bottom->parent = selected_window;
-
-    source.client->_selected_window = top;
+    split_window(editor, source, Window::HORIZONTAL_SPLIT);
 }
 
 void command_split_window_vertical(Editor* editor, Command_Source source) {
-    Window* left = Window::create(source.client->selected_buffer_id());
-    Window* right = Window::create(source.client->selected_buffer_id());
-
-    Window* selected_window = source.client->_selected_window;
-    selected_window->tag = Window::VERTICAL_SPLIT;
-
-    selected_window->v.vertical_split.left = left;
-    left->parent = selected_window;
-
-    selected_window->v.vertical_split.right = right;
-    right->parent = selected_window;
-
-    source.client->_selected_window = left;
+    split_window(editor, source, Window::VERTICAL_SPLIT);
 }
 
-static bool is_first(Window* parent, Window* child) {
-    switch (parent->tag) {
-    case Window::UNIFIED:
-        CZ_PANIC("Unified window has children");
-
-    case Window::VERTICAL_SPLIT:
-        return parent->v.vertical_split.left == child;
-
-    case Window::HORIZONTAL_SPLIT:
-        return parent->v.horizontal_split.top == child;
-    }
-
-    CZ_PANIC("");
-}
-
-Window* window_first(Window* window) {
+Window_Unified* window_first(Window* window) {
     switch (window->tag) {
     case Window::UNIFIED:
-        return window;
+        return (Window_Unified*)window;
 
     case Window::VERTICAL_SPLIT:
-        return window_first(window->v.vertical_split.left);
-
     case Window::HORIZONTAL_SPLIT:
-        return window_first(window->v.horizontal_split.top);
-    }
-
-    CZ_PANIC("");
-}
-
-static Window* second_side(Window* window) {
-    switch (window->tag) {
-    case Window::UNIFIED:
-        CZ_PANIC("Unified window has children");
-
-    case Window::VERTICAL_SPLIT:
-        return window->v.vertical_split.right;
-
-    case Window::HORIZONTAL_SPLIT:
-        return window->v.horizontal_split.bottom;
+        return window_first(((Window_Split*)window)->first);
     }
 
     CZ_PANIC("");
 }
 
 void command_cycle_window(Editor* editor, Command_Source source) {
-    Window* child;
-    Window* parent = source.client->_selected_window;
-    do {
-        child = parent;
-        parent = child->parent;
-        if (!parent) {
-            source.client->_selected_window = window_first(source.client->window);
+    Window* child = source.client->selected_normal_window;
+    Window_Split* parent = child->parent;
+    while (parent) {
+        if (parent->first == child) {
+            source.client->selected_normal_window = window_first(parent->second);
             return;
         }
-    } while (!is_first(parent, child));
 
-    source.client->_selected_window = window_first(second_side(parent));
+        child = parent;
+        parent = child->parent;
+    };
+
+    source.client->selected_normal_window = window_first(source.client->window);
 }
 
 }
