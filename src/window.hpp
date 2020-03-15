@@ -8,6 +8,7 @@
 
 namespace mag {
 
+struct Change;
 struct Window_Split;
 
 struct Window {
@@ -35,6 +36,8 @@ struct Window_Unified : Window {
 
     static Window_Unified* create(Buffer_Id buffer_id);
     Window_Unified* clone();
+
+    void update_cursors(cz::Slice<Change> changes);
 };
 
 struct Window_Split : Window {

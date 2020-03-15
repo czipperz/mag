@@ -409,6 +409,8 @@ static void draw_buffer_contents(Cell* cells,
                                  int count_cols) {
     ZoneScoped;
 
+    window->update_cursors(buffer->changes);
+
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     start_of_line(buffer, &iterator);
     if (window_cache) {
