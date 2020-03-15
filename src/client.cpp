@@ -115,12 +115,15 @@ void Client::replace_window(Window* o, Window* n) {
                         o->parent->tag == Window::HORIZONTAL_SPLIT);
         if (o->parent->first == o) {
             o->parent->first = n;
+            n->parent = o->parent;
         } else {
             CZ_DEBUG_ASSERT(o->parent->second == o);
             o->parent->second = n;
+            n->parent = o->parent;
         }
     } else {
         this->window = n;
+        n->parent = nullptr;
     }
 }
 
