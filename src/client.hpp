@@ -40,6 +40,7 @@ struct Client {
         for (size_t i = 0; i < _offscreen_windows.len(); ++i) {
             Window::drop_(_offscreen_windows[i]);
         }
+        _offscreen_windows.drop(cz::heap_allocator());
     }
 
     Window_Unified* mini_buffer_window() const { return _mini_buffer; }
