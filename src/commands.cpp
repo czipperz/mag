@@ -141,11 +141,12 @@ void command_end_of_buffer(Editor* editor, Command_Source source) {
 }
 
 void command_start_of_buffer(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_window();
-    cz::Slice<Cursor> cursors = window->cursors;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        cursors[c].point = 0;
-    }
+    WITH_SELECTED_BUFFER({
+        cz::Slice<Cursor> cursors = window->cursors;
+        for (size_t c = 0; c < cursors.len; ++c) {
+            cursors[c].point = 0;
+        }
+    });
 }
 
 void command_end_of_line(Editor* editor, Command_Source source) {
@@ -263,6 +264,8 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
             }
         });
 
+        window->update_cursors(buffer->changes);
+
         for (size_t c = 0; c < cursors.len; ++c) {
             cursors[c].point = cursor_positions[c];
         }
@@ -374,6 +377,8 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
             }
         });
 
+        window->update_cursors(buffer->changes);
+
         for (size_t c = 0; c < cursors.len; ++c) {
             cursors[c].point = cursor_positions[c];
         }
@@ -391,6 +396,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
 
                 CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
                 buffer->undo();
+                window->update_cursors(buffer->changes);
 
                 WITH_TRANSACTION({
                     transaction.init(commit.edits.len, 0);
@@ -435,6 +441,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
 
                 CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
                 buffer->undo();
+                window->update_cursors(buffer->changes);
 
                 WITH_TRANSACTION({
                     transaction.init(commit.edits.len, 0);
@@ -497,6 +504,7 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
 void command_open_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
         insert_char(buffer, window, '\n');
+        window->update_cursors(buffer->changes);
         TRANSFORM_POINTS(backward_char);
     });
 }

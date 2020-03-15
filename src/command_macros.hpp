@@ -10,7 +10,10 @@
 #define WITH_SELECTED_BUFFER(CODE)                                 \
     do {                                                           \
         Window_Unified* window = source.client->selected_window(); \
-        WITH_BUFFER(window->id, CODE);                             \
+        WITH_BUFFER(window->id, {                                  \
+            window->update_cursors(buffer->changes);               \
+            CODE;                                                  \
+        });                                                        \
     } while (0)
 
 #define WITH_BUFFER(BUFFER_ID, CODE)                       \

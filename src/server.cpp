@@ -52,6 +52,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
             if (len < SSOStr::MAX_SHORT_LEN) {
                 CZ_DEBUG_ASSERT(commit.edits.len == window->cursors.len());
                 buffer->undo();
+                // We don't need to update cursors here because insertion doesn't care.
 
                 WITH_TRANSACTION({
                     transaction.init(commit.edits.len, 0);

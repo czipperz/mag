@@ -49,8 +49,6 @@ static void apply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
             remove(&buffer->contents, edit->position, edit->value.len());
         }
     }
-
-    // TODO: do position_after_edits for point and mark
 }
 
 static void unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
@@ -62,8 +60,6 @@ static void unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
             insert(&buffer->contents, edit->position, edit->value.as_str());
         }
     }
-
-    // TODO: do position_before_edits for point and mark
 }
 
 bool Buffer::undo() {
