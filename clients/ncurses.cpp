@@ -617,6 +617,7 @@ static void draw_window(Cell* cells,
             destroy_window_cache_children(*window_cache);
             cache_window_unified_create(editor, *window_cache, window);
         } else if ((*window_cache)->v.unified.id != window->id) {
+            (*window_cache)->v.unified.tokenizer_check_points.drop(cz::heap_allocator());
             cache_window_unified_create(editor, *window_cache, window);
         } else {
             WITH_BUFFER(window->id, {
