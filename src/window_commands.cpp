@@ -33,10 +33,11 @@ static void split_window(Editor* editor, Command_Source source, Window::Tag tag)
     Window_Unified* bottom = top->clone();
 
     Window_Split* parent = Window_Split::create(tag, top, bottom);
-    top->parent = parent;
-    bottom->parent = parent;
 
     source.client->replace_window(top, parent);
+
+    top->parent = parent;
+    bottom->parent = parent;
 
     source.client->selected_normal_window = top;
 }
