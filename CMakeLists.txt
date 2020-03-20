@@ -18,6 +18,7 @@ target_link_libraries(${PROJECT_NAME} ${LIBRARY_NAME})
 target_link_libraries(${PROJECT_NAME} cz)
 target_link_libraries(${PROJECT_NAME} custom)
 target_link_libraries(${PROJECT_NAME} prose)
+target_link_libraries(${PROJECT_NAME} clang-format)
 target_include_directories(${PROJECT_NAME} PUBLIC clients)
 target_link_libraries(${PROJECT_NAME} ncurses)
 target_link_libraries(${PROJECT_NAME} tracy)
@@ -30,6 +31,9 @@ target_include_directories(custom PUBLIC .)
 
 file(GLOB_RECURSE PROSE_SRCS prose/*.cpp)
 add_library(prose ${PROSE_SRCS})
+
+file(GLOB_RECURSE CLANG_FORMAT_SRCS clang-format/*.cpp)
+add_library(clang-format ${PROSE_SRCS})
 
 if (!TRACY_ENABLE)
   file(GLOB_RECURSE TEST_SRCS tests/*.cpp)
