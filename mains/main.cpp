@@ -15,8 +15,8 @@ int main(int argc, char** argv) {
         server.editor.copy_buffer.create();
         CZ_DEFER(server.drop());
         server.editor.create_buffer("*scratch*");
-        server.editor.key_map = create_key_map();
-        server.editor.theme = create_theme();
+        server.editor.key_map = custom::create_key_map();
+        server.editor.theme = custom::create_theme();
 
         Client client = server.make_client();
         CZ_DEFER(client.drop());

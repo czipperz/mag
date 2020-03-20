@@ -9,7 +9,7 @@ namespace mag {
 void Buffer::init(cz::Str path) {
     this->path = path.duplicate_null_terminate(cz::heap_allocator());
 
-    mode = get_mode(path);
+    mode = custom::get_mode(path);
 }
 
 void Buffer::drop() {

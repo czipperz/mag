@@ -1,10 +1,12 @@
 #pragma once
 
 namespace mag {
-
 struct Editor;
 struct Command_Source;
+}
 
-void command_directory_open_path(Editor* editor, Command_Source source);
+namespace custom {
+
+void command_directory_open_path(mag::Editor* editor, mag::Command_Source source);
 
 }

@@ -7,7 +7,9 @@
 #include "tokenize_cpp.hpp"
 #include "window_commands.hpp"
 
-namespace mag {
+namespace custom {
+
+using namespace mag;
 
 Key_Map create_key_map() {
     Key_Map key_map = {};

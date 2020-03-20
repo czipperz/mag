@@ -1,18 +1,18 @@
 #pragma once
 
-namespace cz {
-struct Str;
-}
+#include <cz/str.hpp>
 
 namespace mag {
-
 struct Key_Map;
 struct Theme;
 struct Mode;
+}
 
-Key_Map create_key_map();
-Theme create_theme();
-Key_Map* directory_key_map();
-Mode get_mode(cz::Str file_name);
+namespace custom {
+
+mag::Key_Map create_key_map();
+mag::Theme create_theme();
+mag::Key_Map* directory_key_map();
+mag::Mode get_mode(cz::Str file_name);
 
 }

@@ -8,7 +8,9 @@
 #include "file.hpp"
 #include "movement.hpp"
 
-namespace mag {
+namespace custom {
+
+using namespace mag;
 
 void command_directory_open_path(Editor* editor, Command_Source source) {
     cz::String path = {};

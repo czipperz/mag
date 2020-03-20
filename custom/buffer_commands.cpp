@@ -5,7 +5,9 @@
 #include "file.hpp"
 #include "window_commands.hpp"
 
-namespace mag {
+namespace custom {
+
+using namespace mag;
 
 static void command_open_file_callback(Editor* editor, Client* client, cz::Str query, void* data) {
     open_file(editor, client, query);
