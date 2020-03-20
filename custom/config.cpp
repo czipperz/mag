@@ -3,6 +3,7 @@
 #include "buffer_commands.hpp"
 #include "commands.hpp"
 #include "directory_commands.hpp"
+#include "prose/alternate.hpp"
 #include "tokenize_cpp.hpp"
 #include "window_commands.hpp"
 
@@ -70,6 +71,8 @@ Key_Map create_key_map() {
 
     key_map.bind("C-x b", command_switch_buffer);
     key_map.bind("C-x k", command_kill_buffer);
+
+    key_map.bind("C-c p a", prose::command_alternate);
 
     return key_map;
 }
