@@ -17,6 +17,8 @@ struct Editor {
 
     cz::BufferArray copy_buffer;
 
+    size_t buffer_counter;
+
     void drop() {
         for (size_t i = 0; i < buffers.len(); ++i) {
             buffers[i]->drop();
@@ -47,10 +49,10 @@ struct Editor {
 
     Buffer_Id create_buffer(cz::Str path) {
         Buffer_Handle* buffer_handle = cz::heap_allocator().create<Buffer_Handle>();
-        buffer_handle->init({buffers.len()}, path);
+        buffer_handle->init({buffer_counter++}, path);
         buffers.reserve(cz::heap_allocator(), 1);
         buffers.push(buffer_handle);
-        return {buffers.len() - 1};
+        return buffer_handle->id;
     }
 
 private:
