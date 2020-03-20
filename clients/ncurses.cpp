@@ -319,7 +319,7 @@ static void cache_window_unified_update(Window_Cache* window_cache,
     cz::Slice<Change> changes = buffer->changes;
     cz::Slice<Tokenizer_Check_Point> check_points = window_cache->v.unified.tokenizer_check_points;
     unsigned char* changed_check_points =
-        (unsigned char*)calloc(1, cz::bit_array::alloc_size(check_points.len - 1));
+        (unsigned char*)calloc(1, cz::bit_array::alloc_size(check_points.len));
     CZ_DEFER(free(changed_check_points));
     // Detect check points that changed
     for (size_t i = 0; i < check_points.len; ++i) {
