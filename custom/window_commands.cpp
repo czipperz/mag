@@ -33,6 +33,23 @@ void command_one_window(Editor* editor, Command_Source source) {
     source.client->window->parent = nullptr;
 }
 
+void command_close_window(Editor* editor, Command_Source source) {
+    Window_Unified* child = source.client->selected_normal_window;
+    Window_Split* parent = child->parent;
+    if (parent) {
+        if (parent->first == child) {
+            source.client->replace_window(parent, parent->second);
+            source.client->selected_normal_window = window_first(parent->second);
+        } else {
+            CZ_DEBUG_ASSERT(parent->second == child);
+            source.client->replace_window(parent, parent->first);
+            source.client->selected_normal_window = window_first(parent->first);
+        }
+        source.client->save_removed_window(child);
+        Window_Split::drop_non_recursive(parent);
+    }
+}
+
 static void split_window(Editor* editor, Command_Source source, Window::Tag tag) {
     Window_Unified* top = source.client->selected_normal_window;
     Window_Unified* bottom = top->clone();
