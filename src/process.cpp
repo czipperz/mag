@@ -8,7 +8,19 @@
 
 namespace mag {
 
-bool run_process_synchronously(const char* script,
+bool run_script_synchronously(const char* script,
+                              const char* working_directory,
+                              cz::Allocator allocator,
+                              cz::String* out,
+                              int* return_value) {
+    const char* shell = "/bin/sh";
+    const char* args[] = {shell, "-c", script, nullptr};
+    return run_process_synchronously(shell, args, working_directory, allocator, out, return_value);
+}
+
+bool run_process_synchronously(const char* path,
+                               const char** args,
+                               const char* working_directory,
                                cz::Allocator allocator,
                                cz::String* out,
                                int* return_value) {
@@ -30,9 +42,12 @@ bool run_process_synchronously(const char* script,
         dup2(pipe_fds[1], 2);
         close(pipe_fds[1]);
 
+        if (working_directory) {
+            chdir(working_directory);
+        }
+
         // Launch the script by running it through the shell.
-        const char* shell = "/bin/sh";
-        execl(shell, shell, "-c", script, nullptr);
+        execv(path, (char**)args);
 
         // If exec returns there is an error launching.
         const char* message = "Error executing /bin/sh";
