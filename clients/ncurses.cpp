@@ -158,7 +158,7 @@ static void compute_visible_end(Buffer* buffer,
     int rows;
     for (rows = 0; rows < count_rows - 1;) {
         Contents_Iterator next_line_start_iterator = *line_start_iterator;
-        forward_line(buffer, &next_line_start_iterator);
+        forward_line(&next_line_start_iterator);
         if (next_line_start_iterator.position == line_start_iterator->position) {
             break;
         }
@@ -180,7 +180,7 @@ static void compute_visible_start(Buffer* buffer,
 
     for (int rows = 0; rows < count_rows - 2;) {
         Contents_Iterator next_line_start_iterator = *line_start_iterator;
-        backward_line(buffer, &next_line_start_iterator);
+        backward_line(&next_line_start_iterator);
         if (next_line_start_iterator.position == line_start_iterator->position) {
             CZ_DEBUG_ASSERT(line_start_iterator->position == 0);
             break;
@@ -412,21 +412,21 @@ static void draw_buffer_contents(Cell* cells,
     window->update_cursors(buffer->changes);
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
-    start_of_line(buffer, &iterator);
+    start_of_line(&iterator);
     if (window_cache) {
         // Ensure the cursor is visible
         uint64_t selected_cursor_position = window->cursors[0].point;
         Contents_Iterator second_line_iterator = iterator;
-        forward_line(buffer, &second_line_iterator);
+        forward_line(&second_line_iterator);
         if (selected_cursor_position < second_line_iterator.position) {
             iterator = buffer->contents.iterator_at(selected_cursor_position);
-            start_of_line(buffer, &iterator);
-            backward_line(buffer, &iterator);
+            start_of_line(&iterator);
+            backward_line(&iterator);
             cache_window_unified_position(window_cache, iterator.position, count_rows, count_cols,
                                           buffer);
         } else if (selected_cursor_position >= window_cache->v.unified.visible_end) {
             iterator = buffer->contents.iterator_at(selected_cursor_position);
-            start_of_line(buffer, &iterator);
+            start_of_line(&iterator);
             compute_visible_start(buffer, &iterator, count_rows, count_cols);
             cache_window_unified_position(window_cache, iterator.position, count_rows, count_cols,
                                           buffer);

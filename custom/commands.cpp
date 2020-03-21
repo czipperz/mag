@@ -176,8 +176,8 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
             for (size_t c = 0; c < cursors.len; ++c) {
                 Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
                 Contents_Iterator end = start;
-                start_of_line(buffer, &start);
-                end_of_line(buffer, &end);
+                start_of_line(&start);
+                end_of_line(&end);
                 sum_line_lengths += end.position - start.position + 1;
             }
 
@@ -186,13 +186,13 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
             for (size_t c = 0; c < cursors.len; ++c) {
                 Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
                 Contents_Iterator end = start;
-                start_of_line(buffer, &start);
-                end_of_line(buffer, &end);
+                start_of_line(&start);
+                end_of_line(&end);
                 uint64_t column = cursors[c].point - start.position;
 
                 Contents_Iterator insertion_point = end;
-                forward_char(buffer, &insertion_point);
-                end_of_line(buffer, &insertion_point);
+                forward_char(&insertion_point);
+                end_of_line(&insertion_point);
                 if (insertion_point.position == end.position) {
                     continue;
                 }
@@ -287,8 +287,8 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
             for (size_t c = 0; c < cursors.len; ++c) {
                 Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
                 Contents_Iterator end = start;
-                start_of_line(buffer, &start);
-                end_of_line(buffer, &end);
+                start_of_line(&start);
+                end_of_line(&end);
                 sum_line_lengths += end.position - start.position + 1;
             }
 
@@ -297,12 +297,12 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
             for (size_t c = 0; c < cursors.len; ++c) {
                 Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
                 Contents_Iterator end = start;
-                start_of_line(buffer, &start);
-                end_of_line(buffer, &end);
+                start_of_line(&start);
+                end_of_line(&end);
                 uint64_t column = cursors[c].point - start.position;
 
                 Contents_Iterator insertion_point = start;
-                backward_line(buffer, &insertion_point);
+                backward_line(&insertion_point);
                 if (insertion_point.position == start.position) {
                     continue;
                 }
@@ -557,7 +557,7 @@ static void create_cursor_forward_line(Buffer* buffer, Window_Unified* window) {
     Contents_Iterator last_cursor_iterator =
         buffer->contents.iterator_at(window->cursors.last().point);
     Contents_Iterator new_cursor_iterator = last_cursor_iterator;
-    forward_line(buffer, &new_cursor_iterator);
+    forward_line(&new_cursor_iterator);
     if (new_cursor_iterator.position != last_cursor_iterator.position) {
         Cursor cursor;
         cursor.point = new_cursor_iterator.position;
@@ -578,7 +578,7 @@ static void create_cursor_backward_line(Buffer* buffer, Window_Unified* window) 
     Contents_Iterator first_cursor_iterator =
         buffer->contents.iterator_at(window->cursors[0].point);
     Contents_Iterator new_cursor_iterator = first_cursor_iterator;
-    backward_line(buffer, &new_cursor_iterator);
+    backward_line(&new_cursor_iterator);
     if (new_cursor_iterator.position != first_cursor_iterator.position) {
         Cursor cursor;
         cursor.point = new_cursor_iterator.position;
@@ -594,10 +594,8 @@ void command_create_cursor_backward_line(Editor* editor, Command_Source source) 
     WITH_SELECTED_BUFFER(create_cursor_backward_line(buffer, window));
 }
 
-static cz::Option<uint64_t> search_forward(Buffer* buffer,
-                                           Contents_Iterator start_it,
-                                           cz::Str query) {
-    for (; start_it.position + query.len < buffer->contents.len; start_it.advance()) {
+static cz::Option<uint64_t> search_forward(Contents_Iterator start_it, cz::Str query) {
+    for (; start_it.position + query.len < start_it.contents->len; start_it.advance()) {
         Contents_Iterator it = start_it;
         size_t q;
         for (q = 0; q < query.len; ++q) {
@@ -627,7 +625,7 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
     CZ_DEFER(slice.drop(cz::heap_allocator()));
 
     start.advance();
-    return search_forward(buffer, start, slice.as_str());
+    return search_forward(start, slice.as_str());
 }
 
 #define SEARCH_SLICE_THEN(FUNC, THEN)                                                            \
@@ -647,17 +645,17 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
         }                                                                                        \
     } while (0)
 
-#define SEARCH_QUERY_THEN(FUNC, THEN)                                                              \
-    do {                                                                                           \
-        uint64_t start = cursors[c].start();                                                       \
-        cz::Option<uint64_t> new_start = FUNC(buffer, buffer->contents.iterator_at(start), query); \
-        if (new_start.is_present) {                                                                \
-            Cursor new_cursor;                                                                     \
-            new_cursor.point = new_start.value + query.len;                                        \
-            new_cursor.mark = new_start.value;                                                     \
-            new_cursor.copy_chain = cursors[c].copy_chain;                                         \
-            THEN;                                                                                  \
-        }                                                                                          \
+#define SEARCH_QUERY_THEN(FUNC, THEN)                                                      \
+    do {                                                                                   \
+        uint64_t start = cursors[c].start();                                               \
+        cz::Option<uint64_t> new_start = FUNC(buffer->contents.iterator_at(start), query); \
+        if (new_start.is_present) {                                                        \
+            Cursor new_cursor;                                                             \
+            new_cursor.point = new_start.value + query.len;                                \
+            new_cursor.mark = new_start.value;                                             \
+            new_cursor.copy_chain = cursors[c].copy_chain;                                 \
+            THEN;                                                                          \
+        }                                                                                  \
     } while (0)
 
 static void create_cursor_forward_search(Buffer* buffer, Window_Unified* window) {
@@ -674,15 +672,13 @@ void command_create_cursor_forward_search(Editor* editor, Command_Source source)
     WITH_SELECTED_BUFFER(create_cursor_forward_search(buffer, window));
 }
 
-static cz::Option<uint64_t> search_backward(Buffer* buffer,
-                                            Contents_Iterator start_it,
-                                            cz::Str query) {
-    if (query.len > buffer->contents.len) {
+static cz::Option<uint64_t> search_backward(Contents_Iterator start_it, cz::Str query) {
+    if (query.len > start_it.contents->len) {
         return {};
     }
 
-    if (buffer->contents.len - query.len < start_it.position) {
-        start_it.retreat(start_it.position - (buffer->contents.len - query.len));
+    if (start_it.contents->len - query.len < start_it.position) {
+        start_it.retreat(start_it.position - (start_it.contents->len - query.len));
     }
 
     while (!start_it.at_bob()) {
@@ -716,7 +712,7 @@ static cz::Option<uint64_t> search_backward_slice(Buffer* buffer,
     CZ_DEFER(slice.drop(cz::heap_allocator()));
 
     start.retreat();
-    return search_backward(buffer, start, slice.as_str());
+    return search_backward(start, slice.as_str());
 }
 
 static void create_cursor_backward_search(Buffer* buffer, Window_Unified* window) {

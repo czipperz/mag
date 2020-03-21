@@ -37,7 +37,7 @@
         cz::Slice<Cursor> cursors = window->cursors;                                     \
         for (size_t i = 0; i < cursors.len; ++i) {                                       \
             Contents_Iterator iterator = buffer->contents.iterator_at(cursors[i].point); \
-            FUNC(buffer, &iterator);                                                     \
+            FUNC(&iterator);                                                             \
             cursors[i].point = iterator.position;                                        \
         }                                                                                \
     } while (0)
@@ -49,7 +49,7 @@
         for (size_t c = 0; c < cursors.len; ++c) {                                              \
             Contents_Iterator end = buffer->contents.iterator_at(cursors[c].point);             \
             Contents_Iterator start = end;                                                      \
-            FUNC(buffer, &start);                                                               \
+            FUNC(&start);                                                                       \
             sum_regions += end.position - start.position;                                       \
         }                                                                                       \
                                                                                                 \
@@ -59,7 +59,7 @@
         for (size_t c = 0; c < cursors.len; ++c) {                                              \
             Contents_Iterator end = buffer->contents.iterator_at(cursors[c].point);             \
             Contents_Iterator start = end;                                                      \
-            FUNC(buffer, &start);                                                               \
+            FUNC(&start);                                                                       \
             if (start.position < end.position) {                                                \
                 Edit edit;                                                                      \
                 edit.value =                                                                    \
@@ -79,7 +79,7 @@
         for (size_t c = 0; c < cursors.len; ++c) {                                              \
             Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);           \
             Contents_Iterator end = start;                                                      \
-            FUNC(buffer, &end);                                                                 \
+            FUNC(&end);                                                                         \
             sum_regions += end.position - start.position;                                       \
         }                                                                                       \
                                                                                                 \
@@ -89,7 +89,7 @@
         for (size_t c = 0; c < cursors.len; ++c) {                                              \
             Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);           \
             Contents_Iterator end = start;                                                      \
-            FUNC(buffer, &end);                                                                 \
+            FUNC(&end);                                                                         \
             if (start.position < end.position) {                                                \
                 Edit edit;                                                                      \
                 edit.value =                                                                    \
