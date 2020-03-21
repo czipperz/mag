@@ -31,7 +31,7 @@ bool run_process_synchronously(const char* script,
 
         // Launch the script by running it through the shell.
         const char* shell = "/bin/sh";
-        int exec_result = execl(shell, shell, "-c", script, nullptr);
+        execl(shell, shell, "-c", script, nullptr);
 
         // If exec returns there is an error launching.
         const char* message = "Error executing /bin/sh";
