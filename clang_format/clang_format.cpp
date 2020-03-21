@@ -21,14 +21,15 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
         cz::String script = {};
         CZ_DEFER(script.drop(cz::heap_allocator()));
         cz::Str base = "clang-format --output-replacements-xml ";
-        script.reserve(cz::heap_allocator(), base.len + temp_file_str.len);
+        script.reserve(cz::heap_allocator(), base.len + temp_file_str.len + 1);
         script.append(base);
         script.append(temp_file_str);
+        script.null_terminate();
 
         cz::String output_xml = {};
         CZ_DEFER(output_xml.drop(cz::heap_allocator()));
         int return_value;
-        if (!run_process_synchronously("clang-format ", cz::heap_allocator(), &output_xml,
+        if (!run_process_synchronously(script.buffer(), cz::heap_allocator(), &output_xml,
                                        &return_value) ||
             return_value != 0) {
             Message message = {};
