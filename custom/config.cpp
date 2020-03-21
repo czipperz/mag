@@ -78,6 +78,8 @@ Key_Map create_key_map() {
 
     key_map.bind("C-c p a", prose::command_alternate);
 
+    key_map.bind("A-g A-g", command_goto_line);
+
     return key_map;
 }
 

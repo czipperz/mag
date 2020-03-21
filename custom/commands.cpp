@@ -817,4 +817,36 @@ void command_search_backward(Editor* editor, Command_Source source) {
     });
 }
 
+static void command_goto_line_callback(Editor* editor, Client* client, cz::Str query, void* data) {
+    uint64_t lines = 0;
+    for (size_t i = 0; i < query.len; ++i) {
+        if (!isdigit(query[i])) {
+            break;
+        }
+        lines *= 10;
+        lines += query[i] - '0';
+    }
+
+    Window_Unified* window = client->selected_window();
+    WITH_BUFFER(window->id, {
+        Contents_Iterator iterator = buffer->contents.iterator_at(0);
+        while (!iterator.at_eob() && lines > 1) {
+            if (iterator.get() == '\n') {
+                --lines;
+            }
+            iterator.advance();
+        }
+
+        window->cursors[0].point = iterator.position;
+    });
+}
+
+void command_goto_line(Editor* editor, Command_Source source) {
+    Message message = {};
+    message.tag = Message::RESPOND_TEXT;
+    message.text = "Goto line: ";
+    message.response_callback = command_goto_line_callback;
+    source.client->show_message(message);
+}
+
 }

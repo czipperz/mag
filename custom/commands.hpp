@@ -60,4 +60,6 @@ void command_create_cursor_backward(mag::Editor* editor, mag::Command_Source sou
 void command_search_forward(mag::Editor* editor, mag::Command_Source source);
 void command_search_backward(mag::Editor* editor, mag::Command_Source source);
 
+void command_goto_line(mag::Editor* editor, mag::Command_Source source);
+
 }
