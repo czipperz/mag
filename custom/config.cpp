@@ -1,6 +1,7 @@
 #include "config.hpp"
 
 #include "buffer_commands.hpp"
+#include "clang_format/clang_format.hpp"
 #include "commands.hpp"
 #include "directory_commands.hpp"
 #include "prose/alternate.hpp"
@@ -106,11 +107,23 @@ Key_Map* directory_key_map() {
     return &key_map;
 }
 
+static Key_Map create_cpp_key_map() {
+    Key_Map key_map = {};
+    key_map.bind("C-c C-f", clang_format::command_clang_format_buffer);
+    return key_map;
+}
+
+static Key_Map* cpp_key_map() {
+    static Key_Map key_map = create_cpp_key_map();
+    return &key_map;
+}
+
 Mode get_mode(cz::Str file_name) {
     Mode mode = {};
     if (file_name.ends_with(".c") || file_name.ends_with(".h") || file_name.ends_with(".cc") ||
         file_name.ends_with(".hh") || file_name.ends_with(".cpp") || file_name.ends_with(".hpp")) {
         mode.next_token = cpp_next_token;
+        mode.key_map = cpp_key_map();
     } else {
         mode.next_token = default_next_token;
     }
