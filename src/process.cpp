@@ -25,6 +25,7 @@ bool run_process_synchronously(const char* script,
     } else if (fork_result == 0) {  // child process
         // Make stdout (1) and stderr (2) write to the pipe then decrement the reference count.
         close(pipe_fds[0]);
+        close(0);
         dup2(pipe_fds[1], 1);
         dup2(pipe_fds[1], 2);
         close(pipe_fds[1]);
