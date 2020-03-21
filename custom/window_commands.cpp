@@ -30,6 +30,7 @@ static void save_other_windows(Client* client, Window* w, Window* selected_windo
 void command_one_window(Editor* editor, Command_Source source) {
     save_other_windows(source.client, source.client->window, source.client->selected_normal_window);
     source.client->window = source.client->selected_normal_window;
+    source.client->window->parent = nullptr;
 }
 
 static void split_window(Editor* editor, Command_Source source, Window::Tag tag) {
