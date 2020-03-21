@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <Tracy.hpp>
 
 namespace mag {
 
@@ -24,6 +25,8 @@ bool run_process_synchronously(const char* path,
                                cz::Allocator allocator,
                                cz::String* out,
                                int* return_value) {
+    ZoneScoped;
+
     int pipe_fds[2];  // 0 = read, 1 = write
     if (pipe(pipe_fds) < 0) {
         return false;
