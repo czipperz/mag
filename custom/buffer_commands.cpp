@@ -116,7 +116,7 @@ int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** selected_
             Window_Split::drop_non_recursive(window);
 
             if (left_matches == 2) {
-                *selected_window = window_first(window);
+                *selected_window = window_first(*w);
             }
 
             return 0;
@@ -127,7 +127,7 @@ int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** selected_
             Window_Split::drop_non_recursive(window);
 
             if (right_matches == 2) {
-                *selected_window = window_first(window);
+                *selected_window = window_first(*w);
             }
 
             return 0;
