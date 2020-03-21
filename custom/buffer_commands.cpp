@@ -86,7 +86,7 @@ void command_switch_buffer(Editor* editor, Command_Source source) {
     source.client->show_message(message);
 }
 
-int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** selected_window) {
+static int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** selected_window) {
     switch ((*w)->tag) {
     case Window::UNIFIED: {
         Window_Unified* window = (Window_Unified*)*w;
