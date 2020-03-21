@@ -79,7 +79,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
 }
 
 static Command lookup_key_chain(Key_Map* map, size_t start, size_t* end, cz::Slice<Key> key_chain) {
-    size_t index = 0;
+    size_t index = start;
     for (; index < key_chain.len; ++index) {
         Key_Bind* bind = map->lookup(key_chain[index]);
         if (bind == nullptr) {
