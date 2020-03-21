@@ -9,8 +9,10 @@ using namespace mag;
 static void save_other_windows(Client* client, Window* w, Window* selected_window) {
     switch (w->tag) {
     case Window::UNIFIED: {
-        Window_Unified* window = (Window_Unified*)w;
-        client->save_offscreen_window(window);
+        if (w != selected_window) {
+            Window_Unified* window = (Window_Unified*)w;
+            client->save_offscreen_window(window);
+        }
         break;
     }
 
