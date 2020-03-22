@@ -6,6 +6,7 @@
 #include "copy_commands.hpp"
 #include "directory_commands.hpp"
 #include "prose/alternate.hpp"
+#include "shift_commands.hpp"
 #include "tokenize_cpp.hpp"
 #include "window_commands.hpp"
 
