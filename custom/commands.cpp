@@ -36,14 +36,6 @@ static void save_copy(Copy_Chain** cursor_chain, Editor* editor, SSOStr value) {
     *cursor_chain = chain;
 }
 
-static size_t sum_region_sizes(cz::Slice<Cursor> cursors) {
-    uint64_t sum = 0;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        sum += cursors[c].end() - cursors[c].start();
-    }
-    return (size_t)sum;
-}
-
 static void cut_cursor(Cursor* cursor,
                        Transaction* transaction,
                        Copy_Chain** copy_chain,
@@ -67,7 +59,12 @@ static void cut_cursor(Cursor* cursor,
 void command_cut(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(WITH_TRANSACTION({
         cz::Slice<Cursor> cursors = window->cursors;
-        transaction.init(cursors.len, sum_region_sizes(cursors));
+
+        uint64_t sum_region_sizes = 0;
+        for (size_t c = 0; c < cursors.len; ++c) {
+            sum_region_sizes += cursors[c].end() - cursors[c].start();
+        }
+        transaction.init(cursors.len, sum_region_sizes);
 
         size_t offset = 0;
         if (cursors.len == 1) {
