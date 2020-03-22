@@ -5,6 +5,7 @@
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
 #include "buffer_id.hpp"
+#include "copy_chain.hpp"
 #include "key.hpp"
 #include "message.hpp"
 #include "window.hpp"
@@ -14,6 +15,8 @@ namespace mag {
 struct Client {
     cz::Vector<Key> key_chain;
     bool queue_quit;
+
+    Copy_Chain* global_copy_chain;
 
     cz::Vector<Window_Unified*> _offscreen_windows;
     Window* window;
