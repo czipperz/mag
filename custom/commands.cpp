@@ -62,7 +62,7 @@ void command_cut(Editor* editor, Command_Source source) {
             edit.is_insert = false;
             transaction.push(edit);
 
-            save_copy(&cursors[c].copy_chain, editor, edit.value);
+            save_copy(&cursors[c].local_copy_chain, editor, edit.value);
         }
 
         window->show_marks = false;
@@ -76,7 +76,7 @@ void command_copy(Editor* editor, Command_Source source) {
             uint64_t start = cursors[c].start();
             uint64_t end = cursors[c].end();
             // :CopyLeak We allocate here.
-            save_copy(&cursors[c].copy_chain, editor,
+            save_copy(&cursors[c].local_copy_chain, editor,
                       buffer->contents.slice(editor->copy_buffer.allocator(),
                                              buffer->contents.iterator_at(start), end));
         }
@@ -93,12 +93,12 @@ void command_paste(Editor* editor, Command_Source source) {
 
         size_t offset = 0;
         for (size_t c = 0; c < cursors.len; ++c) {
-            if (cursors[c].copy_chain) {
+            if (cursors[c].local_copy_chain) {
                 Edit edit;
                 // :CopyLeak We sometimes use the value here, but we could also
                 // just copy a bunch of stuff then close the cursors and leak
                 // that memory.
-                edit.value = cursors[c].copy_chain->value;
+                edit.value = cursors[c].local_copy_chain->value;
                 edit.position = cursors[c].point + offset;
                 offset += edit.value.len();
                 edit.is_insert = true;
@@ -562,7 +562,7 @@ static void create_cursor_forward_line(Buffer* buffer, Window_Unified* window) {
         Cursor cursor;
         cursor.point = new_cursor_iterator.position;
         cursor.mark = cursor.point;
-        cursor.copy_chain = window->cursors.last().copy_chain;
+        cursor.local_copy_chain = window->cursors.last().local_copy_chain;
 
         window->cursors.reserve(cz::heap_allocator(), 1);
         window->cursors.push(cursor);
@@ -583,7 +583,7 @@ static void create_cursor_backward_line(Buffer* buffer, Window_Unified* window) 
         Cursor cursor;
         cursor.point = new_cursor_iterator.position;
         cursor.mark = cursor.point;
-        cursor.copy_chain = window->cursors[0].copy_chain;
+        cursor.local_copy_chain = window->cursors[0].local_copy_chain;
 
         window->cursors.reserve(cz::heap_allocator(), 1);
         window->cursors.insert(0, cursor);
@@ -637,7 +637,7 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
             Cursor new_cursor;                                                                   \
             new_cursor.point = new_start.value;                                                  \
             new_cursor.mark = new_start.value + end - start;                                     \
-            new_cursor.copy_chain = cursors[c].copy_chain;                                       \
+            new_cursor.local_copy_chain = cursors[c].local_copy_chain;                           \
             if (cursors[c].point > cursors[c].mark) {                                            \
                 cz::swap(new_cursor.point, new_cursor.mark);                                     \
             }                                                                                    \
@@ -653,7 +653,7 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
             Cursor new_cursor;                                                             \
             new_cursor.point = new_start.value + query.len;                                \
             new_cursor.mark = new_start.value;                                             \
-            new_cursor.copy_chain = cursors[c].copy_chain;                                 \
+            new_cursor.local_copy_chain = cursors[c].local_copy_chain;                     \
             THEN;                                                                          \
         }                                                                                  \
     } while (0)
