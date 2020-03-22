@@ -3,6 +3,7 @@
 #include "buffer_commands.hpp"
 #include "clang_format/clang_format.hpp"
 #include "commands.hpp"
+#include "copy_commands.hpp"
 #include "directory_commands.hpp"
 #include "prose/alternate.hpp"
 #include "tokenize_cpp.hpp"

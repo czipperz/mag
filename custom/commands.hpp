@@ -8,10 +8,6 @@ namespace custom {
 void command_set_mark(mag::Editor* editor, mag::Command_Source source);
 void command_swap_mark_point(mag::Editor* editor, mag::Command_Source source);
 
-void command_cut(mag::Editor* editor, mag::Command_Source source);
-void command_copy(mag::Editor* editor, mag::Command_Source source);
-void command_paste(mag::Editor* editor, mag::Command_Source source);
-
 void command_forward_char(mag::Editor* editor, mag::Command_Source source);
 void command_backward_char(mag::Editor* editor, mag::Command_Source source);
 
