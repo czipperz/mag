@@ -2,14 +2,9 @@
 
 #include <stdint.h>
 #include <cz/util.hpp>
-#include "ssostr.hpp"
+#include "copy_chain.hpp"
 
 namespace mag {
-
-struct Copy_Chain {
-    SSOStr value;
-    Copy_Chain* previous;
-};
 
 struct Cursor {
     uint64_t point;
