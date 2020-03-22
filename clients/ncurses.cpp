@@ -4,6 +4,7 @@
 #include <ncurses.h>
 #include <Tracy.hpp>
 #include <cz/bit_array.hpp>
+#include <cz/fs/directory.hpp>
 #include <thread>
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -117,9 +118,17 @@ struct Window_Cache {
 };
 
 struct Mini_Buffer_Results {
+    enum State {
+        INITIAL,
+        LOADING,
+        LOADED,
+    };
+
+    State state;
     cz::String query;
-    bool loaded_results;
     cz::Vector<cz::Str> results;
+    size_t selected;
+    Message::Tag response_tag;
 };
 
 static void destroy_window_cache(Window_Cache* window_cache);
@@ -702,14 +711,70 @@ static void render_to_cells(Cell* cells,
         ZoneScopedN("Draw mini buffer");
 
         mini_buffer_height = 1;
+        int results_height = 0;
+
+        if (mini_buffer_results->response_tag != client->_message.tag) {
+            mini_buffer_results->results.set_len(0);
+            mini_buffer_results->state = Mini_Buffer_Results::INITIAL;
+        }
+
+        if (client->_message.tag > Message::SHOW) {
+            WITH_BUFFER(client->mini_buffer_window()->id, {
+                Contents_Iterator iterator = buffer->contents.iterator_at(0);
+                size_t i = 0;
+                cz::Str query = mini_buffer_results->query;
+                while (1) {
+                    if (i == query.len && iterator.at_eob()) {
+                        break;
+                    } else if (i == query.len || iterator.at_eob()) {
+                        mini_buffer_results->state = Mini_Buffer_Results::INITIAL;
+                        break;
+                    }
+
+                    if (query[i] != iterator.get()) {
+                        mini_buffer_results->state = Mini_Buffer_Results::INITIAL;
+                        break;
+                    }
+
+                    ++i;
+                    iterator.advance();
+                }
+            });
+
+            switch (mini_buffer_results->state) {
+            case Mini_Buffer_Results::INITIAL:
+                WITH_BUFFER(client->mini_buffer_window()->id, {
+                    mini_buffer_results->query.set_len(0);
+                    buffer->contents.stringify_into(cz::heap_allocator(),
+                                                    &mini_buffer_results->query);
+                });
+                mini_buffer_results->results.set_len(0);
+                mini_buffer_results->response_tag = client->_message.tag;
+                mini_buffer_results->state = Mini_Buffer_Results::LOADING;
+                break;
+
+            case Mini_Buffer_Results::LOADING:
+                break;
+
+            case Mini_Buffer_Results::LOADED:
+                results_height = mini_buffer_results->results.len();
+                if (results_height > 5) {
+                    results_height = 5;
+                }
+                if (results_height > total_rows / 2) {
+                    results_height = total_rows / 2;
+                }
+                break;
+            }
+        }
 
         int y = 0;
         int x = 0;
-        int start_row = total_rows - mini_buffer_height;
+        int start_row = total_rows - mini_buffer_height - results_height;
         int start_col = 0;
         int attrs = A_NORMAL;
 
-        for (size_t i = 0; i < client->_message.text.len; ++i) {
+        for (size_t i = 0; i < client->_message.text.len && i < total_cols; ++i) {
             SET(attrs, client->_message.text[i]);
             ++x;
         }
@@ -720,7 +785,7 @@ static void render_to_cells(Cell* cells,
             WITH_BUFFER(window->id, {
                 draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window,
                                      client->_select_mini_buffer, start_row, start_col,
-                                     total_rows - start_row, total_cols - start_col);
+                                     mini_buffer_height, total_cols - start_col);
             });
         } else {
             for (; x < total_cols; ++x) {
@@ -732,10 +797,33 @@ static void render_to_cells(Cell* cells,
                 client->_message.tag = Message::NONE;
             }
         }
+
+        {
+            int y = 0;
+            int x = 0;
+            int start_row = total_rows - results_height;
+            int start_col = 0;
+            for (int r = 0; r < results_height; ++r) {
+                cz::Str result = mini_buffer_results->results[r];
+                for (size_t i = 0; i < total_cols && i < result.len; ++i) {
+                    SET(attrs, result[i]);
+                    ++x;
+                }
+
+                for (; x < total_cols; ++x) {
+                    SET(attrs, ' ');
+                }
+
+                x = 0;
+                ++y;
+            }
+        }
+
+        total_rows = start_row;
     }
 
     draw_window(cells, window_cache, total_cols, editor, client->window,
-                client->selected_normal_window, 0, 0, total_rows - mini_buffer_height, total_cols);
+                client->selected_normal_window, 0, 0, total_rows, total_cols);
 }
 
 static void render(int* total_rows,
@@ -867,6 +955,36 @@ static void process_key_presses(Server* server, Client* client, char ch) {
     }
 }
 
+static int load_mini_buffer_results(Mini_Buffer_Results* mini_buffer_results) {
+    ZoneScoped;
+
+    switch (mini_buffer_results->response_tag) {
+    case Message::RESPOND_FILE:
+        mini_buffer_results->query.reserve(cz::heap_allocator(), 1);
+        mini_buffer_results->query.null_terminate();
+        mini_buffer_results->results.reserve(cz::heap_allocator(), 1);
+        cz::fs::files(cz::heap_allocator(), cz::heap_allocator(),
+                      mini_buffer_results->query.buffer(), &mini_buffer_results->results);
+        mini_buffer_results->state = Mini_Buffer_Results::LOADED;
+        break;
+
+    case Message::RESPOND_BUFFER:
+        mini_buffer_results->state = Mini_Buffer_Results::LOADED;
+        break;
+
+    case Message::RESPOND_TEXT:
+        mini_buffer_results->state = Mini_Buffer_Results::LOADED;
+        break;
+
+    case Message::NONE:
+    case Message::SHOW:
+        CZ_PANIC("");
+        break;
+    }
+
+    return ERR;
+}
+
 void run_ncurses(Server* server, Client* client) {
     ZoneScoped;
 
@@ -905,7 +1023,17 @@ void run_ncurses(Server* server, Client* client) {
         render(&total_rows, &total_cols, cellss, &window_cache, &mini_buffer_results,
                &server->editor, client);
 
-        int ch = cache_windows_check_points(window_cache, client->window, &server->editor);
+        int ch = ERR;
+        if (ch == ERR && mini_buffer_results.state == Mini_Buffer_Results::LOADING) {
+            ch = load_mini_buffer_results(&mini_buffer_results);
+            if (ch == ERR) {
+                continue;
+            }
+        }
+
+        if (ch == ERR) {
+            ch = cache_windows_check_points(window_cache, client->window, &server->editor);
+        }
 
         if (ch == ERR) {
             nodelay(stdscr, FALSE);
