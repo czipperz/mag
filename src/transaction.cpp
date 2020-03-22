@@ -49,10 +49,13 @@ cz::Str Transaction::last_edit_value() const {
 }
 
 void Transaction::commit(Buffer* buffer) {
-    Commit commit;
-    commit.edits = {(Edit*)memory, edit_offset / sizeof(Edit)};
-    buffer->commit(commit);
-    memory = nullptr;
+    // Only commit if edits were made.
+    if (edit_offset > 0) {
+        Commit commit;
+        commit.edits = {(Edit*)memory, edit_offset / sizeof(Edit)};
+        buffer->commit(commit);
+        memory = nullptr;
+    }
 }
 
 }
