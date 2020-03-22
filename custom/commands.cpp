@@ -817,15 +817,19 @@ void command_search_backward(Editor* editor, Command_Source source) {
     });
 }
 
-static void command_goto_line_callback(Editor* editor, Client* client, cz::Str query, void* data) {
-    uint64_t lines = 0;
-    for (size_t i = 0; i < query.len; ++i) {
-        if (!isdigit(query[i])) {
+static void parse_number(cz::Str str, uint64_t* number) {
+    for (size_t i = 0; i < str.len; ++i) {
+        if (!isdigit(str[i])) {
             break;
         }
-        lines *= 10;
-        lines += query[i] - '0';
+        *number *= 10;
+        *number += str[i] - '0';
     }
+}
+
+static void command_goto_line_callback(Editor* editor, Client* client, cz::Str str, void* data) {
+    uint64_t lines = 0;
+    parse_number(str, &lines);
 
     Window_Unified* window = client->selected_window();
     WITH_BUFFER(window->id, {
@@ -841,11 +845,30 @@ static void command_goto_line_callback(Editor* editor, Client* client, cz::Str q
     });
 }
 
+static void command_goto_position_callback(Editor* editor,
+                                           Client* client,
+                                           cz::Str str,
+                                           void* data) {
+    uint64_t position = 0;
+    parse_number(str, &position);
+
+    Window_Unified* window = client->selected_window();
+    window->cursors[0].point = position;
+}
+
 void command_goto_line(Editor* editor, Command_Source source) {
     Message message = {};
     message.tag = Message::RESPOND_TEXT;
     message.text = "Goto line: ";
     message.response_callback = command_goto_line_callback;
+    source.client->show_message(message);
+}
+
+void command_goto_position(Editor* editor, Command_Source source) {
+    Message message = {};
+    message.tag = Message::RESPOND_TEXT;
+    message.text = "Goto position: ";
+    message.response_callback = command_goto_position_callback;
     source.client->show_message(message);
 }
 
