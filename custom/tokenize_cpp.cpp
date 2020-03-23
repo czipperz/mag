@@ -530,7 +530,7 @@ bool cpp_next_token(const Contents* contents,
         token->start = iterator->position;
         for (iterator->advance(); !iterator->at_eob(); iterator->advance()) {
             char ch = iterator->get();
-            if (ch == '"') {
+            if (ch == '"' || ch == '\n') {
                 iterator->advance();
                 break;
             }
@@ -541,8 +541,17 @@ bool cpp_next_token(const Contents* contents,
             }
             if (ch == '\\') {
                 if (iterator->position + 1 < contents->len) {
-                    // only skip over next character if we don't go out of bounds
+                    // Only skip over the next character if we don't go out of bounds.
                     iterator->advance();
+
+                    // Skip all spaces and then we eat newline in the outer loop.
+                    while (!iterator->at_eob() && isblank(iterator->get())) {
+                        iterator->advance();
+                    }
+
+                    if (iterator->at_eob()) {
+                        break;
+                    }
                 }
             }
         }
