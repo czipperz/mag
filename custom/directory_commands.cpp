@@ -23,9 +23,9 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
         end_of_line(&end);
 
         if (start.position < end.position) {
-            path.reserve(cz::heap_allocator(), buffer->path.len() + 1);
+            path.reserve(cz::heap_allocator(), buffer->path.len());
             path.append(buffer->path);
-            path.push('/');
+            CZ_DEBUG_ASSERT(path[path.len() - 1] == '/');
 
             SSOStr file_name = buffer->contents.slice(cz::heap_allocator(), start, end.position);
             CZ_DEFER(file_name.drop(cz::heap_allocator()));

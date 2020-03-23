@@ -30,7 +30,13 @@ static cz::Result load_file(Editor* editor, const char* path, Buffer_Id buffer_i
     return cz::Result::ok();
 }
 
-static cz::Result load_directory(Editor* editor, const char* path, Buffer_Id buffer_id) {
+static cz::Result load_directory(Editor* editor,
+                                 char* path,
+                                 size_t path_len,
+                                 Buffer_Id* buffer_id) {
+    path[path_len++] = '/';
+    path[path_len] = '\0';
+
     cz::BufferArray buffer_array;
     buffer_array.create();
     CZ_DEFER(buffer_array.drop());
@@ -39,9 +45,12 @@ static cz::Result load_directory(Editor* editor, const char* path, Buffer_Id buf
     CZ_DEFER(files.drop(cz::heap_allocator()));
 
     CZ_TRY(cz::fs::files(cz::heap_allocator(), buffer_array.allocator(), path, &files));
+
+    *buffer_id = editor->create_buffer({path, path_len});
+
     std::sort(files.start(), files.end());
 
-    WITH_BUFFER(buffer_id, {
+    WITH_BUFFER(*buffer_id, {
         for (size_t i = 0; i < files.len(); ++i) {
             buffer->contents.insert(buffer->contents.len, files[i]);
             buffer->contents.insert(buffer->contents.len, "\n");
@@ -52,24 +61,36 @@ static cz::Result load_directory(Editor* editor, const char* path, Buffer_Id buf
     return cz::Result::ok();
 }
 
-static cz::Result load_path(Editor* editor, const char* path, Buffer_Id buffer_id) {
+static cz::Result load_path(Editor* editor, char* path, size_t path_len, Buffer_Id* buffer_id) {
     // Try reading it as a directory, then if that fails read it as a file.  On
     // linux, opening it as a file will succeed even if it is a directory.  Then
     // reading the file will cause an error.
-    if (load_directory(editor, path, buffer_id).is_ok()) {
+    if (load_directory(editor, path, path_len, buffer_id).is_ok()) {
         return cz::Result::ok();
     }
-    return load_file(editor, path, buffer_id);
+
+    *buffer_id = editor->create_buffer({path, path_len});
+    path[path_len] = '\0';
+    return load_file(editor, path, *buffer_id);
 }
 
 bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id) {
+    if (path.len > 0 && path[path.len - 1] == '/') {
+        --path.len;
+    }
+
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
         Buffer_Handle* handle = editor->buffers[i];
 
         {
             Buffer* buffer = handle->lock();
             CZ_DEFER(handle->unlock());
-            if (buffer->path != path) {
+            cz::Str buffer_path = buffer->path;
+
+            if (buffer_path.len > 0 && buffer_path[buffer_path.len - 1] == '/') {
+                --buffer_path.len;
+            }
+            if (buffer_path != path) {
                 continue;
             }
         }
@@ -94,13 +115,12 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     cz::path::make_absolute(user_path, cz::heap_allocator(), &path);
     if (path[path.len() - 1] == '/') {
         path.pop();
-        path.null_terminate();
     }
+    path.reserve(cz::heap_allocator(), 2);
 
     Buffer_Id buffer_id;
     if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
-        buffer_id = editor->create_buffer(path);
-        if (load_path(editor, path.buffer(), buffer_id).is_err()) {
+        if (load_path(editor, path.buffer(), path.len(), &buffer_id).is_err()) {
             Message message = {};
             message.tag = Message::SHOW;
             message.text = "File not found";
