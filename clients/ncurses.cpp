@@ -1027,24 +1027,30 @@ static int load_mini_buffer_results(Mini_Buffer_Results* mini_buffer_results) {
         mini_buffer_results->query.reserve(cz::heap_allocator(), 1);
         mini_buffer_results->query.null_terminate();
         char* dir_sep = mini_buffer_results->query.rfind('/');
+        cz::Str prefix;
         if (dir_sep) {
             *dir_sep = '\0';
             cz::fs::files(cz::heap_allocator(), cz::heap_allocator(),
                           mini_buffer_results->query.buffer(), &mini_buffer_results->results);
-            std::sort(mini_buffer_results->results.start(), mini_buffer_results->results.end());
             *dir_sep = '/';
-
-            cz::Str prefix = dir_sep + 1;
-            size_t start;
-            if (binary_search_string_prefix_start(mini_buffer_results->results, prefix, &start)) {
-                size_t end =
-                    binary_search_string_prefix_end(mini_buffer_results->results, start, prefix);
-                mini_buffer_results->results.set_len(end);
-                mini_buffer_results->results.remove_range(0, start);
-            } else {
-                mini_buffer_results->results.set_len(0);
-            }
+            prefix = dir_sep + 1;
+        } else {
+            cz::fs::files(cz::heap_allocator(), cz::heap_allocator(), ".",
+                          &mini_buffer_results->results);
+            prefix = mini_buffer_results->query;
         }
+        std::sort(mini_buffer_results->results.start(), mini_buffer_results->results.end());
+
+        size_t start;
+        if (binary_search_string_prefix_start(mini_buffer_results->results, prefix, &start)) {
+            size_t end =
+                binary_search_string_prefix_end(mini_buffer_results->results, start, prefix);
+            mini_buffer_results->results.set_len(end);
+            mini_buffer_results->results.remove_range(0, start);
+        } else {
+            mini_buffer_results->results.set_len(0);
+        }
+
         mini_buffer_results->state = Mini_Buffer_Results::LOADED;
         break;
     }
