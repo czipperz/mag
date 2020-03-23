@@ -754,10 +754,24 @@ bool cpp_next_token(const Contents* contents,
 
         if (!iterator->at_eob()) {
             char second_char = iterator->get();
-            if (first_char == ':' && second_char == ':') {
+            if (first_char == '.' && second_char == '*') {
+                iterator->advance();
+            } else if (first_char == '.' && second_char == '.') {
+                Contents_Iterator it = *iterator;
+                it.advance();
+                if (!it.at_eob()) {
+                    if (it.get() == '.') {
+                        it.advance();
+                        *iterator = it;
+                    }
+                }
+            } else if (first_char == ':' && second_char == ':') {
                 iterator->advance();
             } else if (first_char == '-' && second_char == '>') {
                 iterator->advance();
+                if (!iterator->at_eob() && iterator->get() == '*') {
+                    iterator->advance();
+                }
             } else if ((first_char == '&' || first_char == '|' || first_char == '-' ||
                         first_char == '+' || first_char == '=') &&
                        second_char == first_char) {
