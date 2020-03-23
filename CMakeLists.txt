@@ -17,6 +17,7 @@ add_executable(${PROJECT_NAME} mains/main.cpp ${CLIENT_SRCS})
 target_link_libraries(${PROJECT_NAME} custom)
 target_link_libraries(${PROJECT_NAME} prose)
 target_link_libraries(${PROJECT_NAME} clang_format)
+target_link_libraries(${PROJECT_NAME} git)
 target_link_libraries(${PROJECT_NAME} ${LIBRARY_NAME})
 target_link_libraries(${PROJECT_NAME} cz)
 target_include_directories(${PROJECT_NAME} PUBLIC clients)
@@ -34,6 +35,9 @@ add_library(prose ${PROSE_SRCS})
 
 file(GLOB_RECURSE CLANG_FORMAT_SRCS clang_format/*.cpp)
 add_library(clang_format ${CLANG_FORMAT_SRCS})
+
+file(GLOB_RECURSE GIT_SRCS git/*.cpp)
+add_library(git ${GIT_SRCS})
 
 if (!TRACY_ENABLE)
   file(GLOB_RECURSE TEST_SRCS tests/*.cpp)

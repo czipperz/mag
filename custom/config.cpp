@@ -5,6 +5,7 @@
 #include "commands.hpp"
 #include "copy_commands.hpp"
 #include "directory_commands.hpp"
+#include "git/git.hpp"
 #include "prose/alternate.hpp"
 #include "shift_commands.hpp"
 #include "tokenize_cpp.hpp"
@@ -81,6 +82,8 @@ Key_Map create_key_map() {
 
     key_map.bind("A-g A-g", command_goto_line);
     key_map.bind("A-g c", command_goto_position);
+
+    key_map.bind("A-g s", git::command_git_grep);
 
     return key_map;
 }
