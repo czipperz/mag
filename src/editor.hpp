@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
 #include "buffer_handle.hpp"
@@ -17,7 +18,7 @@ struct Editor {
 
     cz::BufferArray copy_buffer;
 
-    size_t buffer_counter;
+    uint64_t buffer_counter;
 
     void drop() {
         for (size_t i = 0; i < buffers.len(); ++i) {
