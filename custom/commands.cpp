@@ -228,6 +228,7 @@ void kill_extra_cursors(Window_Unified* window, Client* client) {
         }
         copy_chain->previous = client->global_copy_chain;
         client->global_copy_chain = copy_chain;
+        window->cursors[0].local_copy_chain = nullptr;
     }
 }
 
