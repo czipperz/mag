@@ -5,9 +5,8 @@
 #include "contents.hpp"
 #include "token.hpp"
 
+namespace mag {
 namespace custom {
-
-using namespace mag;
 
 enum State : uint64_t {
     IN_PREPROCESSOR_FLAG = 0x8000000000000000,
@@ -845,4 +844,5 @@ done_no_skip:
     return true;
 }
 
+}
 }

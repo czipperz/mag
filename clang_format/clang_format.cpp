@@ -9,9 +9,8 @@
 #include "file.hpp"
 #include "process.hpp"
 
+namespace mag {
 namespace clang_format {
-
-using namespace mag;
 
 struct Replacement {
     uint64_t offset;
@@ -184,4 +183,5 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     });
 }
 
+}
 }

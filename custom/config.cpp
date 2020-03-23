@@ -10,9 +10,8 @@
 #include "tokenize_cpp.hpp"
 #include "window_commands.hpp"
 
+namespace mag {
 namespace custom {
-
-using namespace mag;
 
 Key_Map create_key_map() {
     Key_Map key_map = {};
@@ -136,4 +135,5 @@ Mode get_mode(cz::Str file_name) {
     return mode;
 }
 
+}
 }

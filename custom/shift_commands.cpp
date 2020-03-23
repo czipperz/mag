@@ -3,9 +3,8 @@
 #include "command_macros.hpp"
 #include "movement.hpp"
 
+namespace mag {
 namespace custom {
-
-using namespace mag;
 
 void command_shift_line_forward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER({
@@ -231,4 +230,5 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
     });
 }
 
+}
 }

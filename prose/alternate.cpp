@@ -3,9 +3,8 @@
 #include "command_macros.hpp"
 #include "file.hpp"
 
+namespace mag {
 namespace prose {
-
-using namespace mag;
 
 void command_alternate(Editor* editor, Command_Source source) {
     cz::String path = {};
@@ -26,4 +25,5 @@ void command_alternate(Editor* editor, Command_Source source) {
     open_file(editor, source.client, path);
 }
 
+}
 }

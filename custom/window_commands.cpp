@@ -2,9 +2,8 @@
 
 #include "client.hpp"
 
+namespace mag {
 namespace custom {
-
-using namespace mag;
 
 static void save_other_windows(Client* client, Window* w, Window* selected_window) {
     switch (w->tag) {
@@ -101,4 +100,5 @@ void command_cycle_window(Editor* editor, Command_Source source) {
     source.client->selected_normal_window = window_first(source.client->window);
 }
 
+}
 }

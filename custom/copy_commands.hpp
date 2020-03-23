@@ -3,10 +3,12 @@
 #include "command.hpp"
 #include "editor.hpp"
 
+namespace mag {
 namespace custom {
 
-void command_cut(mag::Editor* editor, mag::Command_Source source);
-void command_copy(mag::Editor* editor, mag::Command_Source source);
-void command_paste(mag::Editor* editor, mag::Command_Source source);
+void command_cut(Editor* editor, Command_Source source);
+void command_copy(Editor* editor, Command_Source source);
+void command_paste(Editor* editor, Command_Source source);
 
+}
 }

@@ -3,10 +3,10 @@
 #include <cz/str.hpp>
 
 namespace mag {
+
 struct Key_Map;
 struct Theme;
 struct Mode;
-}
 
 namespace custom {
 
@@ -15,4 +15,5 @@ mag::Theme create_theme();
 mag::Key_Map* directory_key_map();
 mag::Mode get_mode(cz::Str file_name);
 
+}
 }

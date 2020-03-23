@@ -2,9 +2,8 @@
 
 #include "command_macros.hpp"
 
+namespace mag {
 namespace custom {
-
-using namespace mag;
 
 static void save_copy(Copy_Chain** cursor_chain, Editor* editor, SSOStr value) {
     Copy_Chain* chain = editor->copy_buffer.allocator().alloc<Copy_Chain>();
@@ -113,4 +112,5 @@ void command_paste(Editor* editor, Command_Source source) {
     }));
 }
 
+}
 }

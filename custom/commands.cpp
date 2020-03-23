@@ -8,9 +8,8 @@
 #include "movement.hpp"
 #include "transaction.hpp"
 
+namespace mag {
 namespace custom {
-
-using namespace mag;
 
 void command_set_mark(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
@@ -581,4 +580,5 @@ void command_goto_position(Editor* editor, Command_Source source) {
     source.client->show_message(message);
 }
 
+}
 }
