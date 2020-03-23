@@ -751,6 +751,30 @@ bool cpp_next_token(const Contents* contents,
         ZoneScopedN("punctuation");
         token->start = iterator->position;
         iterator->advance();
+
+        if (!iterator->at_eob()) {
+            char second_char = iterator->get();
+            if (first_char == ':' && second_char == ':') {
+                iterator->advance();
+            } else if (first_char == '-' && second_char == '>') {
+                iterator->advance();
+            } else if ((first_char == '&' || first_char == '|' || first_char == '-' ||
+                        first_char == '+' || first_char == '=') &&
+                       second_char == first_char) {
+                iterator->advance();
+            } else if ((first_char == '<' || first_char == '>') && second_char == first_char) {
+                iterator->advance();
+                if (!iterator->at_eob() && iterator->get() == '=') {
+                    iterator->advance();
+                }
+            } else if ((first_char == '!' || first_char == '>' || first_char == '<' ||
+                        first_char == '+' || first_char == '-' || first_char == '*' ||
+                        first_char == '/' || first_char == '%' || first_char == '&' ||
+                        first_char == '|' || first_char == '^') &&
+                       second_char == '=') {
+                iterator->advance();
+            }
+        }
         token->end = iterator->position;
 
         if (first_char == '(' || first_char == '{' || first_char == '[') {
