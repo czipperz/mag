@@ -19,6 +19,7 @@ struct Editor {
     cz::BufferArray copy_buffer;
 
     uint64_t buffer_counter;
+    uint64_t temp_counter;
 
     void drop() {
         for (size_t i = 0; i < buffers.len(); ++i) {
@@ -55,6 +56,8 @@ struct Editor {
         buffers.push(buffer_handle);
         return buffer_handle->id;
     }
+
+    Buffer_Id create_temp_buffer(cz::Str temp_name);
 
 private:
     bool binary_search_buffer_id(Buffer_Id id, size_t* index) {
