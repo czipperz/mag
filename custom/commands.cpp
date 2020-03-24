@@ -427,7 +427,7 @@ static cz::Option<uint64_t> search_backward_slice(Buffer* buffer,
 static void create_cursor_backward_search(Buffer* buffer, Window_Unified* window) {
     cz::Slice<Cursor> cursors = window->cursors;
     CZ_DEBUG_ASSERT(cursors.len >= 1);
-    size_t c = cursors.len - 1;
+    size_t c = 0;
     SEARCH_SLICE_THEN(search_backward_slice, {
         window->cursors.reserve(cz::heap_allocator(), 1);
         window->cursors.insert(0, new_cursor);
