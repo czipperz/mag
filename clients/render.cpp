@@ -162,6 +162,11 @@ static void draw_buffer_contents(Cell* cells,
         if (ch == '\n') {
             ADDCH(attrs, ' ');
             ADD_NEWLINE();
+        } else if (ch == '\t') {
+            int end_x = (x + 4) & ~3;
+            while (x < end_x) {
+                ADDCH(attrs, ' ');
+            }
         } else {
             ADDCH(attrs, ch);
         }
