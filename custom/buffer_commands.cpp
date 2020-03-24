@@ -31,14 +31,17 @@ void command_open_file(Editor* editor, Command_Source source) {
 
     if (has_default_value) {
         WITH_BUFFER(source.client->mini_buffer_window()->id);
-        WITH_TRANSACTION({
-            transaction.init(1, default_value.len());
-            Edit edit;
-            edit.value.init_duplicate(transaction.value_allocator(), default_value);
-            edit.position = 0;
-            edit.is_insert = true;
-            transaction.push(edit);
-        });
+        Transaction transaction;
+        transaction.init(1, default_value.len());
+        CZ_DEFER(transaction.drop());
+
+        Edit edit;
+        edit.value.init_duplicate(transaction.value_allocator(), default_value);
+        edit.position = 0;
+        edit.is_insert = true;
+        transaction.push(edit);
+
+        transaction.commit(buffer);
     }
 
     source.client->show_message(message);

@@ -34,28 +34,31 @@ static void cut_cursor(Cursor* cursor,
 
 void command_cut(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER();
-    WITH_TRANSACTION({
-        cz::Slice<Cursor> cursors = window->cursors;
+    cz::Slice<Cursor> cursors = window->cursors;
 
-        uint64_t sum_region_sizes = 0;
+    uint64_t sum_region_sizes = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        sum_region_sizes += cursors[c].end() - cursors[c].start();
+    }
+
+    Transaction transaction;
+    transaction.init(cursors.len, sum_region_sizes);
+    CZ_DEFER(transaction.drop());
+
+    size_t offset = 0;
+    if (cursors.len == 1) {
+        cut_cursor(&cursors[0], &transaction, &source.client->global_copy_chain, editor, buffer,
+                   &offset);
+    } else {
         for (size_t c = 0; c < cursors.len; ++c) {
-            sum_region_sizes += cursors[c].end() - cursors[c].start();
-        }
-        transaction.init(cursors.len, sum_region_sizes);
-
-        size_t offset = 0;
-        if (cursors.len == 1) {
-            cut_cursor(&cursors[0], &transaction, &source.client->global_copy_chain, editor, buffer,
+            cut_cursor(&cursors[c], &transaction, &cursors[c].local_copy_chain, editor, buffer,
                        &offset);
-        } else {
-            for (size_t c = 0; c < cursors.len; ++c) {
-                cut_cursor(&cursors[c], &transaction, &cursors[c].local_copy_chain, editor, buffer,
-                           &offset);
-            }
         }
+    }
 
-        window->show_marks = false;
-    });
+    transaction.commit(buffer);
+
+    window->show_marks = false;
 }
 
 static void copy_cursor(Cursor* cursor, Copy_Chain** copy_chain, Editor* editor, Buffer* buffer) {
@@ -83,34 +86,37 @@ void command_copy(Editor* editor, Command_Source source) {
 
 void command_paste(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER();
-    WITH_TRANSACTION({
-        cz::Slice<Cursor> cursors = window->cursors;
-        // :CopyLeak Probably we will need to copy all the values herea.
-        transaction.init(cursors.len, 0);
+    cz::Slice<Cursor> cursors = window->cursors;
 
-        size_t offset = 0;
-        for (size_t c = 0; c < cursors.len; ++c) {
-            Copy_Chain* copy_chain = nullptr;
-            if (!copy_chain) {
-                copy_chain = cursors[c].local_copy_chain;
-            }
-            if (!copy_chain) {
-                copy_chain = source.client->global_copy_chain;
-            }
+    // :CopyLeak Probably we will need to copy all the values here.
+    Transaction transaction;
+    transaction.init(cursors.len, 0);
+    CZ_DEFER(transaction.drop());
 
-            if (copy_chain) {
-                Edit edit;
-                // :CopyLeak We sometimes use the value here, but we could also
-                // just copy a bunch of stuff then close the cursors and leak
-                // that memory.
-                edit.value = copy_chain->value;
-                edit.position = cursors[c].point + offset;
-                offset += edit.value.len();
-                edit.is_insert = true;
-                transaction.push(edit);
-            }
+    size_t offset = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        Copy_Chain* copy_chain = nullptr;
+        if (!copy_chain) {
+            copy_chain = cursors[c].local_copy_chain;
         }
-    });
+        if (!copy_chain) {
+            copy_chain = source.client->global_copy_chain;
+        }
+
+        if (copy_chain) {
+            Edit edit;
+            // :CopyLeak We sometimes use the value here, but we could also
+            // just copy a bunch of stuff then close the cursors and leak
+            // that memory.
+            edit.value = copy_chain->value;
+            edit.position = cursors[c].point + offset;
+            offset += edit.value.len();
+            edit.is_insert = true;
+            transaction.push(edit);
+        }
+    }
+
+    transaction.commit(buffer);
 }
 
 }

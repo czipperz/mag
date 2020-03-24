@@ -171,15 +171,17 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     size_t total_len = 0;
     parse_replacements(&replacements, output_xml, &total_len);
 
-    WITH_TRANSACTION({
-        transaction.init(2 * replacements.len(), total_len);
+    Transaction transaction;
+    transaction.init(2 * replacements.len(), total_len);
+    CZ_DEFER(transaction.drop());
 
-        uint64_t offset = 0;
-        for (size_t i = 0; i < replacements.len(); ++i) {
-            Replacement* repl = &replacements[i];
-            apply_replacement(repl, &transaction, buffer, &offset);
-        }
-    });
+    uint64_t offset = 0;
+    for (size_t i = 0; i < replacements.len(); ++i) {
+        Replacement* repl = &replacements[i];
+        apply_replacement(repl, &transaction, buffer, &offset);
+    }
+
+    transaction.commit(buffer);
 }
 
 }

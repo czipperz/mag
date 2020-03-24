@@ -16,17 +16,21 @@ Client Server::make_client() {
 }
 
 cz::Str clear_buffer(Editor* editor, Buffer* buffer) {
-    cz::Str buffer_contents;
-    WITH_TRANSACTION({
-        transaction.init(1, (size_t)buffer->contents.len);
-        Edit edit;
-        edit.value = buffer->contents.slice(transaction.value_allocator(),
-                                            buffer->contents.iterator_at(0), buffer->contents.len);
-        edit.position = 0;
-        edit.is_insert = false;
-        transaction.push(edit);
-        buffer_contents = transaction.last_edit_value();
-    });
+    Transaction transaction;
+    transaction.init(1, (size_t)buffer->contents.len);
+    CZ_DEFER(transaction.drop());
+
+    Edit edit;
+    edit.value = buffer->contents.slice(transaction.value_allocator(),
+                                        buffer->contents.iterator_at(0), buffer->contents.len);
+    edit.position = 0;
+    edit.is_insert = false;
+    transaction.push(edit);
+
+    cz::Str buffer_contents = transaction.last_edit_value();
+
+    transaction.commit(buffer);
+
     return buffer_contents;
 }
 
@@ -56,21 +60,25 @@ static void command_insert_char(Editor* editor, Command_Source source) {
             buffer->undo();
             // We don't need to update cursors here because insertion doesn't care.
 
-            WITH_TRANSACTION({
-                transaction.init(commit.edits.len, 0);
-                for (size_t e = 0; e < commit.edits.len; ++e) {
-                    CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
-                    CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+            Transaction transaction;
+            transaction.init(commit.edits.len, 0);
+            CZ_DEFER(transaction.drop());
 
-                    Edit edit;
-                    memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer, len);
-                    edit.value.short_._buffer[len] = code;
-                    edit.value.short_.set_len(len + 1);
-                    edit.position = commit.edits[e].position + e;
-                    edit.is_insert = true;
-                    transaction.push(edit);
-                }
-            });
+            for (size_t e = 0; e < commit.edits.len; ++e) {
+                CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
+                CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+
+                Edit edit;
+                memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer, len);
+                edit.value.short_._buffer[len] = code;
+                edit.value.short_.set_len(len + 1);
+                edit.position = commit.edits[e].position + e;
+                edit.is_insert = true;
+                transaction.push(edit);
+            }
+
+            transaction.commit(buffer);
+
             return;
         }
     }

@@ -17,14 +17,6 @@
     Buffer* buffer = handle->lock();                   \
     CZ_DEFER(handle->unlock())
 
-#define WITH_TRANSACTION(CODE)        \
-    do {                              \
-        Transaction transaction;      \
-        CZ_DEFER(transaction.drop()); \
-        CODE;                         \
-        transaction.commit(buffer);   \
-    } while (0)
-
 #define TRANSFORM_POINTS(FUNC)                                                           \
     do {                                                                                 \
         cz::Slice<Cursor> cursors = window->cursors;                                     \
@@ -46,7 +38,9 @@
             sum_regions += end.position - start.position;                                       \
         }                                                                                       \
                                                                                                 \
+        Transaction transaction;                                                                \
         transaction.init(cursors.len, (size_t)sum_regions);                                     \
+        CZ_DEFER(transaction.drop());                                                           \
                                                                                                 \
         uint64_t total = 0;                                                                     \
         for (size_t c = 0; c < cursors.len; ++c) {                                              \
@@ -63,6 +57,8 @@
                 transaction.push(edit);                                                         \
             }                                                                                   \
         }                                                                                       \
+                                                                                                \
+        transaction.commit(buffer);                                                             \
     } while (0)
 
 #define DELETE_FORWARD(FUNC)                                                                    \
@@ -76,7 +72,9 @@
             sum_regions += end.position - start.position;                                       \
         }                                                                                       \
                                                                                                 \
+        Transaction transaction;                                                                \
         transaction.init(cursors.len, (size_t)sum_regions);                                     \
+        CZ_DEFER(transaction.drop());                                                           \
                                                                                                 \
         uint64_t total = 0;                                                                     \
         for (size_t c = 0; c < cursors.len; ++c) {                                              \
@@ -93,6 +91,8 @@
                 transaction.push(edit);                                                         \
             }                                                                                   \
         }                                                                                       \
+                                                                                                \
+        transaction.commit(buffer);                                                             \
     } while (0)
 
 namespace mag {
