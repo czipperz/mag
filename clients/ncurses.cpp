@@ -335,9 +335,10 @@ static void cache_window_unified_update(Window_Cache* window_cache,
     // Detect check points that changed
     for (size_t i = 0; i < check_points.len; ++i) {
         uint64_t pos = check_points[i].position;
-        for (size_t c = window_cache->v.unified.change_index; c < changes.len; ++c) {
-            changes[c].adjust_position(&pos);
-        }
+
+        position_after_changes({changes.elems + window_cache->v.unified.change_index,
+                                changes.len - window_cache->v.unified.change_index},
+                               &pos);
 
         if (check_points[i].position != pos) {
             cz::bit_array::set(changed_check_points, i);
