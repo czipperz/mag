@@ -253,7 +253,7 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
         value[region_size - 1] = '\n';
 
         Edit edit;
-        edit.value.init_from_constant(value);
+        edit.value.init_from_constant({value, region_size});
         edit.position = start.position;
         edit.is_insert = true;
         transaction.push(edit);
