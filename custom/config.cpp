@@ -7,6 +7,7 @@
 #include "directory_commands.hpp"
 #include "git/git.hpp"
 #include "prose/alternate.hpp"
+#include "search_commands.hpp"
 #include "shift_commands.hpp"
 #include "tokenize_cpp.hpp"
 #include "window_commands.hpp"
@@ -126,12 +127,27 @@ static Key_Map* cpp_key_map() {
     return &key_map;
 }
 
+static Key_Map create_search_key_map() {
+    Key_Map key_map = {};
+    key_map.bind("C-m", command_search_open);
+    key_map.bind("\n", command_search_open);
+    return key_map;
+}
+
+static Key_Map* search_key_map() {
+    static Key_Map key_map = create_search_key_map();
+    return &key_map;
+}
+
 Mode get_mode(cz::Str file_name) {
     Mode mode = {};
     if (file_name.ends_with(".c") || file_name.ends_with(".h") || file_name.ends_with(".cc") ||
         file_name.ends_with(".hh") || file_name.ends_with(".cpp") || file_name.ends_with(".hpp")) {
         mode.next_token = cpp_next_token;
         mode.key_map = cpp_key_map();
+    } else if (file_name.starts_with("*git grep ")) {
+        mode.next_token = default_next_token;
+        mode.key_map = search_key_map();
     } else {
         mode.next_token = default_next_token;
     }
