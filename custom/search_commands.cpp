@@ -49,7 +49,7 @@ void command_search_open(Editor* editor, Command_Source source) {
     uint64_t column = 0;
 
     {
-        WITH_SELECTED_BUFFER();
+        WITH_SELECTED_BUFFER(source.client);
         Contents_Iterator relative_start = buffer->contents.iterator_at(window->cursors[0].point);
         start_of_line(&relative_start);
         Contents_Iterator relative_end = relative_start;
@@ -82,7 +82,7 @@ void command_search_open(Editor* editor, Command_Source source) {
     open_file(editor, source.client, path);
 
     {
-        WITH_SELECTED_BUFFER();
+        WITH_SELECTED_BUFFER(source.client);
         kill_extra_cursors(window, source.client);
 
         Contents_Iterator iterator = buffer->contents.start();

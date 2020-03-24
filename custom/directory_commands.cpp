@@ -16,7 +16,7 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     {
-        WITH_SELECTED_BUFFER();
+        WITH_SELECTED_BUFFER(source.client);
         Contents_Iterator start = buffer->contents.iterator_at(window->cursors[0].point);
         Contents_Iterator end = start;
         start_of_line(&start);

@@ -50,7 +50,7 @@ int cache_windows_check_points(Window_Cache* window_cache, Window* w, Editor* ed
 
         // TODO: Make this non blocking!
         {
-            WITH_BUFFER(window->id);
+            WITH_WINDOW_BUFFER(window);
             cz::Vector<Tokenizer_Check_Point>* check_points =
                 &window_cache->v.unified.tokenizer_check_points;
 
@@ -194,7 +194,7 @@ void cache_window_unified_create(Editor* editor,
                                  Window_Unified* window) {
     ZoneScoped;
 
-    WITH_BUFFER(window->id);
+    WITH_WINDOW_BUFFER(window);
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified.id = window->id;
     window_cache->v.unified.tokenizer_check_points = {};

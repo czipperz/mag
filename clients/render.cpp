@@ -50,8 +50,6 @@ static void draw_buffer_contents(Cell* cells,
                                  int start_col) {
     ZoneScoped;
 
-    window->update_cursors(buffer->changes);
-
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     start_of_line(&iterator);
     if (window_cache) {
@@ -202,7 +200,7 @@ static void draw_buffer(Cell* cells,
     ZoneScoped;
 
     {
-        WITH_BUFFER(window->id);
+        WITH_WINDOW_BUFFER(window);
         draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, show_cursors,
                              start_row, start_col);
 
@@ -263,7 +261,7 @@ static void draw_window(Cell* cells,
             cache_window_unified_create(editor, *window_cache, window);
         } else {
             {
-                WITH_BUFFER(window->id);
+                WITH_WINDOW_BUFFER(window);
                 if ((*window_cache)->v.unified.change_index != buffer->changes.len()) {
                     cache_window_unified_update(*window_cache, window, buffer);
                 }
@@ -354,7 +352,8 @@ void render_to_cells(Cell* cells,
 
         if (client->_message.tag > Message::SHOW) {
             {
-                WITH_BUFFER(client->mini_buffer_window()->id);
+                Window_Unified* window = client->mini_buffer_window();
+                WITH_WINDOW_BUFFER(window);
                 Contents_Iterator iterator = buffer->contents.iterator_at(0);
                 size_t i = 0;
                 cz::Str query = mini_buffer_results->query;
@@ -378,7 +377,8 @@ void render_to_cells(Cell* cells,
 
             switch (mini_buffer_results->state) {
             case Mini_Buffer_Results::INITIAL: {
-                WITH_BUFFER(client->mini_buffer_window()->id);
+                Window_Unified* window = client->mini_buffer_window();
+                WITH_WINDOW_BUFFER(window);
                 mini_buffer_results->query.set_len(0);
                 buffer->contents.stringify_into(cz::heap_allocator(), &mini_buffer_results->query);
             }
@@ -416,7 +416,7 @@ void render_to_cells(Cell* cells,
         if (client->_message.tag > Message::SHOW) {
             start_col = x;
             Window_Unified* window = client->mini_buffer_window();
-            WITH_BUFFER(window->id);
+            WITH_WINDOW_BUFFER(window);
             window->rows = mini_buffer_height;
             window->cols = total_cols - start_col;
             draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window,

@@ -137,7 +137,7 @@ static void apply_replacement(Replacement* repl,
 void command_clang_format_buffer(Editor* editor, Command_Source source) {
     ZoneScoped;
 
-    WITH_SELECTED_BUFFER();
+    WITH_SELECTED_BUFFER(source.client);
 
     char temp_file_buffer[L_tmpnam];
     tmpnam(temp_file_buffer);

@@ -22,7 +22,7 @@ void command_open_file(Editor* editor, Command_Source source) {
     CZ_DEFER(default_value.drop(cz::heap_allocator()));
     bool has_default_value;
     {
-        WITH_SELECTED_BUFFER();
+        WITH_SELECTED_BUFFER(source.client);
         has_default_value = buffer->path.find('/') != nullptr;
         if (has_default_value) {
             default_value = buffer->path.clone(cz::heap_allocator());
@@ -30,7 +30,9 @@ void command_open_file(Editor* editor, Command_Source source) {
     }
 
     if (has_default_value) {
-        WITH_BUFFER(source.client->mini_buffer_window()->id);
+        Window_Unified* window = source.client->mini_buffer_window();
+        WITH_WINDOW_BUFFER(window);
+
         Transaction transaction;
         transaction.init(1, default_value.len());
         CZ_DEFER(transaction.drop());
@@ -48,7 +50,7 @@ void command_open_file(Editor* editor, Command_Source source) {
 }
 
 void command_save_file(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER();
+    WITH_SELECTED_BUFFER(source.client);
 
     if (!buffer->path.find('/')) {
         Message message = {};

@@ -33,7 +33,7 @@ static void cut_cursor(Cursor* cursor,
 }
 
 void command_cut(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER();
+    WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 
     uint64_t sum_region_sizes = 0;
@@ -71,7 +71,7 @@ static void copy_cursor(Cursor* cursor, Copy_Chain** copy_chain, Editor* editor,
 }
 
 void command_copy(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER();
+    WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
     if (cursors.len == 1) {
         copy_cursor(&cursors[0], &source.client->global_copy_chain, editor, buffer);
@@ -85,7 +85,7 @@ void command_copy(Editor* editor, Command_Source source) {
 }
 
 void command_paste(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER();
+    WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 
     // :CopyLeak Probably we will need to copy all the values here.

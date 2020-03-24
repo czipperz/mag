@@ -37,7 +37,8 @@ cz::Str clear_buffer(Editor* editor, Buffer* buffer) {
 static void send_message_result(Editor* editor, Client* client) {
     cz::Str mini_buffer_contents;
     {
-        WITH_BUFFER(client->mini_buffer_window()->id);
+        Window_Unified* window = client->mini_buffer_window();
+        WITH_WINDOW_BUFFER(window);
         mini_buffer_contents = clear_buffer(editor, buffer);
     }
 
@@ -48,7 +49,7 @@ static void send_message_result(Editor* editor, Client* client) {
 }
 
 static void command_insert_char(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER();
+    WITH_SELECTED_BUFFER(source.client);
     char code = source.keys[0].code;
 
     if (source.previous_command == command_insert_char) {

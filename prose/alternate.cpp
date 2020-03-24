@@ -10,7 +10,7 @@ void command_alternate(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
-        WITH_SELECTED_BUFFER();
+        WITH_SELECTED_BUFFER(source.client);
         if (!buffer->path.ends_with(".cpp") && !buffer->path.ends_with(".hpp")) {
             return;
         }

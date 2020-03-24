@@ -12,7 +12,8 @@ void Client::hide_mini_buffer(Editor* editor) {
     dealloc_message();
 
     {
-        WITH_BUFFER(mini_buffer_window()->id);
+        Window_Unified* window = mini_buffer_window();
+        WITH_WINDOW_BUFFER(window);
         clear_buffer(editor, buffer);
     }
 }
