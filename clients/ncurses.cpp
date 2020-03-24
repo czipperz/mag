@@ -31,25 +31,25 @@ struct Cell {
         cell->code = CH;                                                     \
     } while (0)
 
-#define ADD_NEWLINE()                 \
-    do {                              \
-        for (; x < count_cols; ++x) { \
-            SET(A_NORMAL, ' ');       \
-        }                             \
-        ++y;                          \
-        x = 0;                        \
-        if (y == count_rows) {        \
-            return;                   \
-        }                             \
+#define ADD_NEWLINE()                   \
+    do {                                \
+        for (; x < window->cols; ++x) { \
+            SET(A_NORMAL, ' ');         \
+        }                               \
+        ++y;                            \
+        x = 0;                          \
+        if (y == window->rows) {        \
+            return;                     \
+        }                               \
     } while (0)
 
-#define ADDCH(ATTRS, CH)       \
-    do {                       \
-        SET(ATTRS, CH);        \
-        ++x;                   \
-        if (x == count_cols) { \
-            ADD_NEWLINE();     \
-        }                      \
+#define ADDCH(ATTRS, CH)         \
+    do {                         \
+        SET(ATTRS, CH);          \
+        ++x;                     \
+        if (x == window->cols) { \
+            ADD_NEWLINE();       \
+        }                        \
     } while (0)
 
 #undef MOCK_INPUT
@@ -159,36 +159,10 @@ static void destroy_window_cache(Window_Cache* window_cache) {
     free(window_cache);
 }
 
-static void compute_visible_end(Buffer* buffer,
-                                Contents_Iterator* line_start_iterator,
-                                int count_rows,
-                                int count_cols) {
+static void compute_visible_start(Window* window, Contents_Iterator* line_start_iterator) {
     ZoneScoped;
 
-    int rows;
-    for (rows = 0; rows < count_rows - 1;) {
-        Contents_Iterator next_line_start_iterator = *line_start_iterator;
-        forward_line(&next_line_start_iterator);
-        if (next_line_start_iterator.position == line_start_iterator->position) {
-            break;
-        }
-
-        int line_rows =
-            (next_line_start_iterator.position - line_start_iterator->position + count_cols - 1) /
-            count_cols;
-        *line_start_iterator = next_line_start_iterator;
-
-        rows += line_rows;
-    }
-}
-
-static void compute_visible_start(Buffer* buffer,
-                                  Contents_Iterator* line_start_iterator,
-                                  int count_rows,
-                                  int count_cols) {
-    ZoneScoped;
-
-    for (int rows = 0; rows < count_rows - 2;) {
+    for (int rows = 0; rows < window->rows - 2;) {
         Contents_Iterator next_line_start_iterator = *line_start_iterator;
         backward_line(&next_line_start_iterator);
         if (next_line_start_iterator.position == line_start_iterator->position) {
@@ -197,8 +171,28 @@ static void compute_visible_start(Buffer* buffer,
         }
 
         int line_rows =
-            (line_start_iterator->position - next_line_start_iterator.position + count_cols - 1) /
-            count_cols;
+            (line_start_iterator->position - next_line_start_iterator.position + window->cols - 1) /
+            window->cols;
+        *line_start_iterator = next_line_start_iterator;
+
+        rows += line_rows;
+    }
+}
+
+static void compute_visible_end(Window* window, Contents_Iterator* line_start_iterator) {
+    ZoneScoped;
+
+    int rows;
+    for (rows = 0; rows < window->rows - 1;) {
+        Contents_Iterator next_line_start_iterator = *line_start_iterator;
+        forward_line(&next_line_start_iterator);
+        if (next_line_start_iterator.position == line_start_iterator->position) {
+            break;
+        }
+
+        int line_rows =
+            (next_line_start_iterator.position - line_start_iterator->position + window->cols - 1) /
+            window->cols;
         *line_start_iterator = next_line_start_iterator;
 
         rows += line_rows;
@@ -291,15 +285,14 @@ static int cache_windows_check_points(Window_Cache* window_cache, Window* w, Edi
     CZ_PANIC("");
 }
 
-static void cache_window_unified_position(Window_Cache* window_cache,
+static void cache_window_unified_position(Window_Unified* window,
+                                          Window_Cache* window_cache,
                                           uint64_t start_position,
-                                          int count_rows,
-                                          int count_cols,
                                           Buffer* buffer) {
     ZoneScoped;
 
     Contents_Iterator visible_end_iterator = buffer->contents.iterator_at(start_position);
-    compute_visible_end(buffer, &visible_end_iterator, count_rows, count_cols);
+    compute_visible_end(window, &visible_end_iterator);
     window_cache->v.unified.visible_end = visible_end_iterator.position;
 
     cz::Vector<Tokenizer_Check_Point>* check_points =
@@ -384,8 +377,7 @@ static void cache_window_unified_update(Window_Cache* window_cache,
     }
 
 done:
-    cache_window_unified_position(window_cache, window->start_position, window->rows, window->cols,
-                                  buffer);
+    cache_window_unified_position(window, window_cache, window->start_position, buffer);
 }
 
 static void cache_window_unified_create(Window_Cache* window_cache,
@@ -418,9 +410,7 @@ static void draw_buffer_contents(Cell* cells,
                                  Window_Unified* window,
                                  bool show_cursors,
                                  int start_row,
-                                 int start_col,
-                                 int count_rows,
-                                 int count_cols) {
+                                 int start_col) {
     ZoneScoped;
 
     window->update_cursors(buffer->changes);
@@ -436,14 +426,12 @@ static void draw_buffer_contents(Cell* cells,
             iterator = buffer->contents.iterator_at(selected_cursor_position);
             start_of_line(&iterator);
             backward_line(&iterator);
-            cache_window_unified_position(window_cache, iterator.position, count_rows, count_cols,
-                                          buffer);
+            cache_window_unified_position(window, window_cache, iterator.position, buffer);
         } else if (selected_cursor_position >= window_cache->v.unified.visible_end) {
             iterator = buffer->contents.iterator_at(selected_cursor_position);
             start_of_line(&iterator);
-            compute_visible_start(buffer, &iterator, count_rows, count_cols);
-            cache_window_unified_position(window_cache, iterator.position, count_rows, count_cols,
-                                          buffer);
+            compute_visible_start(window, &iterator);
+            cache_window_unified_position(window, window_cache, iterator.position, buffer);
         }
     }
     window->start_position = iterator.position;
@@ -553,8 +541,8 @@ static void draw_buffer_contents(Cell* cells,
         }
     }
 
-    for (; y < count_rows; ++y) {
-        for (; x < count_cols; ++x) {
+    for (; y < window->rows; ++y) {
+        for (; x < window->cols; ++x) {
             SET(A_NORMAL, ' ');
         }
         x = 0;
@@ -568,17 +556,15 @@ static void draw_buffer(Cell* cells,
                         Window_Unified* window,
                         bool show_cursors,
                         int start_row,
-                        int start_col,
-                        int count_rows,
-                        int count_cols) {
+                        int start_col) {
     ZoneScoped;
 
     {
         WITH_BUFFER(window->id);
         draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, show_cursors,
-                             start_row, start_col, count_rows - 1, count_cols);
+                             start_row, start_col);
 
-        int y = count_rows - 1;
+        int y = window->rows;
         int x = 0;
 
         int attrs = A_REVERSE;
@@ -594,13 +580,12 @@ static void draw_buffer(Cell* cells,
         ++x;
         SET(attrs, ' ');
         ++x;
-        size_t max = cz::min<size_t>(buffer->path.len(), count_cols - x);
-        size_t i;
-        for (i = 0; i < max; ++i) {
+        size_t max = cz::min<size_t>(buffer->path.len(), window->cols - x);
+        for (size_t i = 0; i < max; ++i) {
             SET(attrs, buffer->path[i]);
             ++x;
         }
-        for (; x < count_cols; ++x) {
+        for (; x < window->cols; ++x) {
             SET(attrs, ' ');
         }
     }
@@ -618,7 +603,7 @@ static void draw_window(Cell* cells,
                         int count_cols) {
     ZoneScoped;
 
-    w->rows = count_rows;
+    w->rows = count_rows - 1;
     w->cols = count_cols;
 
     switch (w->tag) {
@@ -644,7 +629,7 @@ static void draw_window(Cell* cells,
         }
 
         draw_buffer(cells, *window_cache, total_cols, editor, window, window == selected_window,
-                    start_row, start_col, count_rows, count_cols);
+                    start_row, start_col);
         break;
     }
 
@@ -790,9 +775,10 @@ static void render_to_cells(Cell* cells,
             start_col = x;
             Window_Unified* window = client->mini_buffer_window();
             WITH_BUFFER(window->id);
+            window->rows = mini_buffer_height;
+            window->cols = total_cols - start_col;
             draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window,
-                                 client->_select_mini_buffer, start_row, start_col,
-                                 mini_buffer_height, total_cols - start_col);
+                                 client->_select_mini_buffer, start_row, start_col);
         } else {
             for (; x < total_cols; ++x) {
                 SET(attrs, ' ');
