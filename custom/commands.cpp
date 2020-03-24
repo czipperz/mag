@@ -433,7 +433,7 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
 
 #define SEARCH_QUERY_THEN(FUNC, THEN)                                                      \
     do {                                                                                   \
-        uint64_t start = cursors[c].start();                                               \
+        uint64_t start = cursors[c].point;                                                 \
         cz::Option<uint64_t> new_start = FUNC(buffer->contents.iterator_at(start), query); \
         if (new_start.is_present) {                                                        \
             Cursor new_cursor;                                                             \
