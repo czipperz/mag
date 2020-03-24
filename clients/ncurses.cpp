@@ -231,6 +231,7 @@ void run(Server* server, Client* client) {
         int ch = ERR;
         if (mini_buffer_results.state == Mini_Buffer_Results::LOADING) {
             load_mini_buffer_results(&mini_buffer_results);
+            continue;
         }
 
         if (ch == ERR) {
