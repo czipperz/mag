@@ -12,29 +12,11 @@ namespace git {
 
 static bool add_backslash(char c) {
     switch (c) {
-    case ' ':
     case '!':
     case '"':
-    case '#':
     case '$':
-    case '&':
-    case '\'':
-    case '(':
-    case ')':
-    case '*':
-    case ',':
-    case ';':
-    case '<':
-    case '>':
-    case '?':
-    case '[':
     case '\\':
-    case ']':
-    case '^':
     case '`':
-    case '{':
-    case '|':
-    case '}':
         return true;
 
     default:
