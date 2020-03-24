@@ -4,6 +4,7 @@
 #include <Tracy.hpp>
 #include <cz/heap.hpp>
 #include "change.hpp"
+#include "client.hpp"
 
 namespace mag {
 
@@ -89,6 +90,19 @@ Window_Split* Window_Split::create(Window::Tag tag, Window* first, Window* secon
 
 void Window_Split::drop_non_recursive(Window_Split* window) {
     free(window);
+}
+
+void kill_extra_cursors(Window_Unified* window, Client* client) {
+    window->cursors.set_len(1);
+    Copy_Chain* copy_chain = window->cursors[0].local_copy_chain;
+    if (copy_chain) {
+        while (copy_chain->previous) {
+            copy_chain = copy_chain->previous;
+        }
+        copy_chain->previous = client->global_copy_chain;
+        client->global_copy_chain = copy_chain;
+        window->cursors[0].local_copy_chain = nullptr;
+    }
 }
 
 }

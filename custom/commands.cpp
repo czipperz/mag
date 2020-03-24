@@ -219,19 +219,6 @@ void command_redo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(buffer->redo());
 }
 
-void kill_extra_cursors(Window_Unified* window, Client* client) {
-    window->cursors.set_len(1);
-    Copy_Chain* copy_chain = window->cursors[0].local_copy_chain;
-    if (copy_chain) {
-        while (copy_chain->previous) {
-            copy_chain = copy_chain->previous;
-        }
-        copy_chain->previous = client->global_copy_chain;
-        client->global_copy_chain = copy_chain;
-        window->cursors[0].local_copy_chain = nullptr;
-    }
-}
-
 void command_stop_action(Editor* editor, Command_Source source) {
     bool done = false;
 

@@ -48,4 +48,7 @@ struct Window_Split : Window {
     static void drop_non_recursive(Window_Split* window);
 };
 
+struct Client;
+void kill_extra_cursors(Window_Unified* window, Client* client);
+
 }
