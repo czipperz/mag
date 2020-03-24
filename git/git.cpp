@@ -143,6 +143,11 @@ void command_git_grep(Editor* editor, Command_Source source) {
     message.tag = Message::RESPOND_TEXT;
     message.text = "git grep: ";
     message.response_callback = command_git_grep_callback;
+
+    Buffer_Id* selected_buffer_id = (Buffer_Id*)malloc(sizeof(Buffer_Id));
+    *selected_buffer_id = source.client->selected_window()->id;
+    message.response_callback_data = selected_buffer_id;
+
     source.client->show_message(message);
 }
 
