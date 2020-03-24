@@ -19,6 +19,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         } else {
             start_next = buffer->contents.iterator_at(cursors[c].point);
         }
+
         end_of_line(&start_next);
         forward_char(&start_next);
         if (start_next.at_eob()) {
@@ -28,6 +29,21 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
 
         Contents_Iterator end_next = start_next;
         end_of_line(&end_next);
+
+        if (c + 1 < cursors.len) {
+            uint64_t next_cursor_position;
+            if (window->show_marks) {
+                next_cursor_position = cursors[c + 1].start();
+            } else {
+                next_cursor_position = cursors[c + 1].point;
+            }
+
+            if (next_cursor_position <= end_next.position) {
+                num_edits -= 2;
+                continue;
+            }
+        }
+
         sum_line_lengths += end_next.position - start_next.position;
     }
 
@@ -35,15 +51,24 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
     transaction.init(num_edits, (size_t)sum_line_lengths + num_edits);
     CZ_DEFER(transaction.drop());
 
+    bool override_start = false;
+    Contents_Iterator start;
     for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator start;
         Contents_Iterator start_next;
         if (window->show_marks) {
-            start = buffer->contents.iterator_at(cursors[c].start());
             start_next = buffer->contents.iterator_at(cursors[c].end());
         } else {
-            start = buffer->contents.iterator_at(cursors[c].point);
-            start_next = start;
+            start_next = buffer->contents.iterator_at(cursors[c].point);
+        }
+
+        if (override_start) {
+            override_start = false;
+        } else {
+            if (window->show_marks) {
+                start = buffer->contents.iterator_at(cursors[c].start());
+            } else {
+                start = start_next;
+            }
         }
 
         end_of_line(&start_next);
@@ -53,8 +78,23 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         }
 
         start_of_line(&start);
+
         Contents_Iterator end_next = start_next;
         end_of_line(&end_next);
+
+        if (c + 1 < cursors.len) {
+            uint64_t next_cursor_position;
+            if (window->show_marks) {
+                next_cursor_position = cursors[c + 1].start();
+            } else {
+                next_cursor_position = cursors[c + 1].point;
+            }
+
+            if (next_cursor_position <= end_next.position) {
+                override_start = true;
+                continue;
+            }
+        }
 
         //     def\nghi
         //     [    [  )
@@ -89,7 +129,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
 
     uint64_t sum_line_lengths = 0;
     size_t num_edits = cursors.len * 2;
-    for (size_t c = 0; c < cursors.len; ++c) {
+    for (size_t c = cursors.len; c-- > 0;) {
         Contents_Iterator end_prev;
         if (window->show_marks) {
             end_prev = buffer->contents.iterator_at(cursors[c].start());
@@ -106,6 +146,21 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
 
         Contents_Iterator start_prev = end_prev;
         start_of_line(&start_prev);
+
+        if (c >= 1) {
+            uint64_t next_cursor_position;
+            if (window->show_marks) {
+                next_cursor_position = cursors[c - 1].end();
+            } else {
+                next_cursor_position = cursors[c - 1].point;
+            }
+
+            if (next_cursor_position >= start_prev.position) {
+                num_edits -= 2;
+                continue;
+            }
+        }
+
         sum_line_lengths += end_prev.position - start_prev.position;
     }
 
@@ -113,15 +168,24 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
     transaction.init(num_edits, (size_t)sum_line_lengths + num_edits);
     CZ_DEFER(transaction.drop());
 
-    for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator end;
+    bool override_end = false;
+    Contents_Iterator end;
+    for (size_t c = cursors.len; c-- > 0;) {
         Contents_Iterator end_prev;
         if (window->show_marks) {
-            end = buffer->contents.iterator_at(cursors[c].end());
             end_prev = buffer->contents.iterator_at(cursors[c].start());
         } else {
-            end = buffer->contents.iterator_at(cursors[c].point);
-            end_prev = end;
+            end_prev = buffer->contents.iterator_at(cursors[c].point);
+        }
+
+        if (override_end) {
+            override_end = false;
+        } else {
+            if (window->show_marks) {
+                end = buffer->contents.iterator_at(cursors[c].end());
+            } else {
+                end = end_prev;
+            }
         }
 
         start_of_line(&end_prev);
@@ -132,8 +196,23 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         }
 
         end_of_line(&end);
+
         Contents_Iterator start_prev = end_prev;
         start_of_line(&start_prev);
+
+        if (c >= 1) {
+            uint64_t next_cursor_position;
+            if (window->show_marks) {
+                next_cursor_position = cursors[c - 1].start();
+            } else {
+                next_cursor_position = cursors[c - 1].point;
+            }
+
+            if (next_cursor_position >= start_prev.position) {
+                override_end = true;
+                continue;
+            }
+        }
 
         //          def\nghi
         //          [  )    )
