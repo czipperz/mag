@@ -5,6 +5,11 @@ namespace mag {
 struct Server;
 struct Client;
 
-void run_ncurses(Server* server, Client* client);
+namespace client {
+namespace ncurses {
 
+void run(Server* server, Client* client);
+
+}
+}
 }

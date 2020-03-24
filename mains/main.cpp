@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
             open_file(&server.editor, &client, argv[1]);
         }
 
-        run_ncurses(&server, &client);
+        client::ncurses::run(&server, &client);
         return 0;
     } catch (cz::PanicReachedException& ex) {
         fprintf(stderr, "Fatal error: %s\n", ex.what());
