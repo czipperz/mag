@@ -21,6 +21,8 @@ struct Editor {
     uint64_t buffer_counter;
     uint64_t temp_counter;
 
+    void create() { copy_buffer.create(); }
+
     void drop() {
         for (size_t i = 0; i < buffers.len(); ++i) {
             buffers[i]->drop();
