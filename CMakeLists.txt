@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 2.6)
 add_subdirectory(cz)
 
 include_directories(cz/include)
+include_directories(.)
 include_directories(src)
 include_directories(tracy)
 
@@ -15,6 +16,7 @@ target_include_directories(${LIBRARY_NAME} PUBLIC custom)
 file(GLOB_RECURSE CLIENT_SRCS clients/*.cpp)
 add_executable(${PROJECT_NAME} mains/main.cpp ${CLIENT_SRCS})
 target_link_libraries(${PROJECT_NAME} custom)
+target_link_libraries(${PROJECT_NAME} builtin_commands)
 target_link_libraries(${PROJECT_NAME} prose)
 target_link_libraries(${PROJECT_NAME} clang_format)
 target_link_libraries(${PROJECT_NAME} git)
@@ -28,7 +30,10 @@ target_link_libraries(${PROJECT_NAME} dl)
 
 file(GLOB_RECURSE CUSTOM_SRCS custom/*.cpp)
 add_library(custom ${CUSTOM_SRCS})
-target_include_directories(custom PUBLIC .)
+target_include_directories(custom PUBLIC builtin_commands)
+
+file(GLOB_RECURSE BUILTIN_COMMANDS_SRCS builtin_commands/*.cpp)
+add_library(builtin_commands ${BUILTIN_COMMANDS_SRCS})
 
 file(GLOB_RECURSE PROSE_SRCS prose/*.cpp)
 add_library(prose ${PROSE_SRCS})
