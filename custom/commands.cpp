@@ -211,6 +211,78 @@ void command_insert_newline(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(insert_char(buffer, window, '\n'));
 }
 
+void command_duplicate_line(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER({
+        cz::Slice<Cursor> cursors = window->cursors;
+
+        uint64_t sum_region_sizes = 0;
+        for (size_t c = 0; c < cursors.len; ++c) {
+            Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
+            Contents_Iterator end = start;
+            start_of_line(&start);
+            end_of_line(&end);
+            sum_region_sizes += end.position - start.position;
+        }
+
+        WITH_TRANSACTION({
+            transaction.init(cursors.len, sum_region_sizes + cursors.len);
+
+            for (size_t c = 0; c < cursors.len; ++c) {
+                Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
+                Contents_Iterator end = start;
+                start_of_line(&start);
+                end_of_line(&end);
+
+                size_t region_size = end.position - start.position + 1;
+                char* value = (char*)transaction.value_allocator().alloc({region_size, 1}).buffer;
+                buffer->contents.slice_into(start, end.position, value);
+                value[region_size - 1] = '\n';
+
+                Edit edit;
+                edit.value.init_from_constant(value);
+                edit.position = start.position;
+                edit.is_insert = true;
+                transaction.push(edit);
+            }
+        });
+    });
+}
+
+void command_delete_line(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER({
+        cz::Slice<Cursor> cursors = window->cursors;
+
+        uint64_t sum_region_sizes = 0;
+        for (size_t c = 0; c < cursors.len; ++c) {
+            Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
+            Contents_Iterator end = start;
+            start_of_line(&start);
+            end_of_line(&end);
+            forward_char(&end);
+            sum_region_sizes += end.position - start.position;
+        }
+
+        WITH_TRANSACTION({
+            transaction.init(cursors.len, sum_region_sizes);
+
+            for (size_t c = 0; c < cursors.len; ++c) {
+                Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
+                Contents_Iterator end = start;
+                start_of_line(&start);
+                end_of_line(&end);
+                forward_char(&end);
+
+                Edit edit;
+                edit.value =
+                    buffer->contents.slice(transaction.value_allocator(), start, end.position);
+                edit.position = start.position;
+                edit.is_insert = false;
+                transaction.push(edit);
+            }
+        });
+    });
+}
+
 void command_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(buffer->undo());
 }

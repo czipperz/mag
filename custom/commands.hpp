@@ -37,6 +37,9 @@ void command_transpose_characters(Editor* editor, Command_Source source);
 void command_open_line(Editor* editor, Command_Source source);
 void command_insert_newline(Editor* editor, Command_Source source);
 
+void command_duplicate_line(Editor* editor, Command_Source source);
+void command_delete_line(Editor* editor, Command_Source source);
+
 void command_undo(Editor* editor, Command_Source source);
 void command_redo(Editor* editor, Command_Source source);
 
