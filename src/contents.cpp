@@ -146,7 +146,7 @@ void Contents::insert(uint64_t start, cz::Str str) {
     }
 }
 
-static void slice_into(char* buffer,
+static void slice_impl(char* buffer,
                        cz::Slice<const cz::Slice<char>> buckets,
                        Contents_Iterator start,
                        uint64_t len) {
@@ -167,7 +167,7 @@ static void slice_into(char* buffer,
 
 void Contents::stringify_into(cz::Allocator allocator, cz::String* string) const {
     string->reserve(allocator, len);
-    slice_into(string->buffer(), buckets, start(), len);
+    slice_impl(string->buffer(), buckets, start(), len);
     string->set_len(string->len() + len);
 }
 
@@ -187,14 +187,18 @@ SSOStr Contents::slice(cz::Allocator allocator, Contents_Iterator start, uint64_
     uint64_t len = end - start.position;
     if (len > SSOStr::MAX_SHORT_LEN) {
         char* buffer = (char*)allocator.alloc({len, 1}).buffer;
-        slice_into(buffer, buckets, start, len);
+        slice_impl(buffer, buckets, start, len);
         value.allocated.init({buffer, len});
     } else {
         char buffer[SSOStr::MAX_SHORT_LEN];
-        slice_into(buffer, buckets, start, len);
+        slice_impl(buffer, buckets, start, len);
         value.short_.init({buffer, len});
     }
     return value;
+}
+
+void Contents::slice_into(Contents_Iterator start, uint64_t end, char* string) const {
+    slice_impl(string, buckets, start, end - start.position);
 }
 
 char Contents::get_once(uint64_t pos) const {
