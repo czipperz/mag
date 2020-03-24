@@ -14,8 +14,8 @@ struct Window_Split;
 struct Window {
     Window_Split* parent;
 
-    size_t rows;
-    size_t cols;
+    uint32_t rows;
+    uint32_t cols;
 
     enum Tag {
         UNIFIED,
