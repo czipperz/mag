@@ -2,6 +2,7 @@
 
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include <cz/util.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "movement.hpp"
@@ -41,6 +42,12 @@ static bool parse_number(Contents_Iterator* iterator, uint64_t* num) {
 }
 
 void command_search_open(Editor* editor, Command_Source source) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+
+    uint64_t line = 0;
+    uint64_t column = 0;
+
     WITH_SELECTED_BUFFER({
         Contents_Iterator relative_start = buffer->contents.iterator_at(window->cursors[0].point);
         start_of_line(&relative_start);
@@ -50,8 +57,6 @@ void command_search_open(Editor* editor, Command_Source source) {
         }
 
         Contents_Iterator iterator = relative_end;
-        uint64_t line = 0;
-        uint64_t column = 0;
         if (!parse_number(&iterator, &line)) {
             return;
         }
@@ -64,17 +69,29 @@ void command_search_open(Editor* editor, Command_Source source) {
             return;
         }
 
-        cz::String path = {};
         path.reserve(cz::heap_allocator(),
                      base_end.position + 1 + relative_end.position - relative_start.position);
-        CZ_DEFER(path.drop(cz::heap_allocator()));
         buffer->contents.slice_into(buffer->contents.start(), base_end.position, path.end());
         path.set_len(path.len() + base_end.position);
         path.push('/');
         buffer->contents.slice_into(relative_start, relative_end.position, path.end());
         path.set_len(path.len() + relative_end.position - relative_start.position);
+    });
 
-        open_file(editor, source.client, path);
+    open_file(editor, source.client, path);
+
+    WITH_SELECTED_BUFFER({
+        kill_extra_cursors(window, source.client);
+
+        Contents_Iterator iterator = buffer->contents.start();
+        while (!iterator.at_eob() && line > 1) {
+            if (iterator.get() == '\n') {
+                --line;
+            }
+            iterator.advance();
+        }
+
+        window->cursors[0].point = cz::min(buffer->contents.len, iterator.position + column - 1);
     });
 }
 
