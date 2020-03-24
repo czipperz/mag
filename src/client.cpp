@@ -10,7 +10,11 @@ cz::Str clear_buffer(Editor* editor, Buffer* buffer);
 void Client::hide_mini_buffer(Editor* editor) {
     restore_selected_buffer();
     dealloc_message();
-    WITH_BUFFER(mini_buffer_window()->id, clear_buffer(editor, buffer));
+
+    {
+        WITH_BUFFER(mini_buffer_window()->id);
+        clear_buffer(editor, buffer);
+    }
 }
 
 static bool binary_search_offscreen_windows(cz::Slice<Window_Unified*> offscreen_windows,

@@ -20,12 +20,13 @@ static cz::Result load_file(Editor* editor, const char* path, Buffer_Id buffer_i
 
     CZ_DEFER(fclose(file));
 
-    WITH_BUFFER(buffer_id, {
+    {
+        WITH_BUFFER(buffer_id);
         cz::String contents = {};
         CZ_DEFER(contents.drop(cz::heap_allocator()));
         CZ_TRY(cz::fs::read_to_string(cz::heap_allocator(), &contents, file));
         buffer->contents.insert(0, contents);
-    });
+    }
 
     return cz::Result::ok();
 }
@@ -50,13 +51,14 @@ static cz::Result load_directory(Editor* editor,
 
     std::sort(files.start(), files.end());
 
-    WITH_BUFFER(*buffer_id, {
+    {
+        WITH_BUFFER(*buffer_id);
         for (size_t i = 0; i < files.len(); ++i) {
             buffer->contents.insert(buffer->contents.len, files[i]);
             buffer->contents.insert(buffer->contents.len, "\n");
         }
         buffer->mode.key_map = custom::directory_key_map();
-    });
+    }
 
     return cz::Result::ok();
 }

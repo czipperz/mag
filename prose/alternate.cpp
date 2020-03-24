@@ -9,12 +9,13 @@ namespace prose {
 void command_alternate(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
-    WITH_SELECTED_BUFFER({
+    {
+        WITH_SELECTED_BUFFER();
         if (!buffer->path.ends_with(".cpp") && !buffer->path.ends_with(".hpp")) {
             return;
         }
         path = buffer->path.clone(cz::heap_allocator());
-    });
+    }
 
     if (path.ends_with(".cpp")) {
         path[path.len() - 3] = 'h';

@@ -94,9 +94,10 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
 
     cz::String top_level_path = {};
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
-    WITH_BUFFER(*(Buffer_Id*)data, {
+    {
+        WITH_BUFFER(*(Buffer_Id*)data);
         get_git_top_level(client, buffer->path, cz::heap_allocator(), &top_level_path);
-    });
+    }
 
     cz::String script = {};
     CZ_DEFER(script.drop(cz::heap_allocator()));
@@ -127,13 +128,14 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
     }
 
     Buffer_Id buffer_id = editor->create_temp_buffer("git grep");
-    WITH_BUFFER(buffer_id, {
+    {
+        WITH_BUFFER(buffer_id);
         buffer->contents.insert(0, top_level_path);
         buffer->contents.insert(buffer->contents.len, ": ");
         buffer->contents.insert(buffer->contents.len, script);
         buffer->contents.insert(buffer->contents.len, "\n");
         buffer->contents.insert(buffer->contents.len, results);
-    });
+    }
 
     client->set_selected_buffer(buffer_id);
 }

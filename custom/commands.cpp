@@ -29,153 +29,161 @@ void command_swap_mark_point(Editor* editor, Command_Source source) {
 }
 
 void command_forward_char(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(TRANSFORM_POINTS(forward_char));
+    WITH_SELECTED_BUFFER();
+    TRANSFORM_POINTS(forward_char);
 }
 
 void command_backward_char(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(TRANSFORM_POINTS(backward_char));
+    WITH_SELECTED_BUFFER();
+    TRANSFORM_POINTS(backward_char);
 }
 
 void command_forward_word(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(TRANSFORM_POINTS(forward_word));
+    WITH_SELECTED_BUFFER();
+    TRANSFORM_POINTS(forward_word);
 }
 
 void command_backward_word(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(TRANSFORM_POINTS(backward_word));
+    WITH_SELECTED_BUFFER();
+    TRANSFORM_POINTS(backward_word);
 }
 
 void command_forward_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(TRANSFORM_POINTS(forward_line));
+    WITH_SELECTED_BUFFER();
+    TRANSFORM_POINTS(forward_line);
 }
 
 void command_backward_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(TRANSFORM_POINTS(backward_line));
+    WITH_SELECTED_BUFFER();
+    TRANSFORM_POINTS(backward_line);
 }
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        cz::Slice<Cursor> cursors = window->cursors;
-        uint64_t len = buffer->contents.len;
-        for (size_t c = 0; c < cursors.len; ++c) {
-            cursors[c].point = len;
-        }
-    });
+    WITH_SELECTED_BUFFER();
+    cz::Slice<Cursor> cursors = window->cursors;
+    uint64_t len = buffer->contents.len;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        cursors[c].point = len;
+    }
 }
 
 void command_start_of_buffer(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        cz::Slice<Cursor> cursors = window->cursors;
-        for (size_t c = 0; c < cursors.len; ++c) {
-            cursors[c].point = 0;
-        }
-    });
+    WITH_SELECTED_BUFFER();
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        cursors[c].point = 0;
+    }
 }
 
 void command_end_of_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(TRANSFORM_POINTS(end_of_line));
+    WITH_SELECTED_BUFFER();
+    TRANSFORM_POINTS(end_of_line);
 }
 
 void command_start_of_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(TRANSFORM_POINTS(start_of_line));
+    WITH_SELECTED_BUFFER();
+    TRANSFORM_POINTS(start_of_line);
 }
 
 void command_start_of_line_text(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(TRANSFORM_POINTS(start_of_line_text));
+    WITH_SELECTED_BUFFER();
+    TRANSFORM_POINTS(start_of_line_text);
 }
 
 void command_delete_backward_char(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        if (source.previous_command == command_delete_backward_char) {
-            CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
-            Commit commit = buffer->commits[buffer->commit_index - 1];
-            size_t len = commit.edits[0].value.len();
-            if (len < SSOStr::MAX_SHORT_LEN) {
-                cz::Slice<Cursor> cursors = window->cursors;
+    WITH_SELECTED_BUFFER();
 
-                CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
-                buffer->undo();
-                window->update_cursors(buffer->changes);
+    if (source.previous_command == command_delete_backward_char) {
+        CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
+        Commit commit = buffer->commits[buffer->commit_index - 1];
+        size_t len = commit.edits[0].value.len();
+        if (len < SSOStr::MAX_SHORT_LEN) {
+            cz::Slice<Cursor> cursors = window->cursors;
 
-                WITH_TRANSACTION({
-                    transaction.init(commit.edits.len, 0);
+            CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
+            buffer->undo();
+            window->update_cursors(buffer->changes);
 
-                    uint64_t offset = 1;
-                    for (size_t e = 0; e < commit.edits.len; ++e) {
-                        if (cursors[e].point == 0) {
-                            continue;
-                        }
+            WITH_TRANSACTION({
+                transaction.init(commit.edits.len, 0);
 
-                        CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
-                        CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
-
-                        Edit edit;
-                        memcpy(edit.value.short_._buffer + 1, commit.edits[e].value.short_._buffer,
-                               len);
-                        edit.value.short_._buffer[0] =
-                            buffer->contents.get_once(cursors[e].point - len - 1);
-                        edit.value.short_.set_len(len + 1);
-                        edit.position = commit.edits[e].position - offset;
-                        offset++;
-                        edit.is_insert = false;
-                        transaction.push(edit);
+                uint64_t offset = 1;
+                for (size_t e = 0; e < commit.edits.len; ++e) {
+                    if (cursors[e].point == 0) {
+                        continue;
                     }
-                });
-                return;
-            }
-        }
 
-        WITH_TRANSACTION(DELETE_BACKWARD(backward_char));
-    });
+                    CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
+                    CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+
+                    Edit edit;
+                    memcpy(edit.value.short_._buffer + 1, commit.edits[e].value.short_._buffer,
+                           len);
+                    edit.value.short_._buffer[0] =
+                        buffer->contents.get_once(cursors[e].point - len - 1);
+                    edit.value.short_.set_len(len + 1);
+                    edit.position = commit.edits[e].position - offset;
+                    offset++;
+                    edit.is_insert = false;
+                    transaction.push(edit);
+                }
+            });
+            return;
+        }
+    }
+
+    WITH_TRANSACTION(DELETE_BACKWARD(backward_char));
 }
 
 void command_delete_forward_char(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        if (source.previous_command == command_delete_forward_char) {
-            CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
-            Commit commit = buffer->commits[buffer->commit_index - 1];
-            size_t len = commit.edits[0].value.len();
-            if (len < SSOStr::MAX_SHORT_LEN) {
-                cz::Slice<Cursor> cursors = window->cursors;
+    WITH_SELECTED_BUFFER();
 
-                CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
-                buffer->undo();
-                window->update_cursors(buffer->changes);
+    if (source.previous_command == command_delete_forward_char) {
+        CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
+        Commit commit = buffer->commits[buffer->commit_index - 1];
+        size_t len = commit.edits[0].value.len();
+        if (len < SSOStr::MAX_SHORT_LEN) {
+            cz::Slice<Cursor> cursors = window->cursors;
 
-                WITH_TRANSACTION({
-                    transaction.init(commit.edits.len, 0);
-                    for (size_t e = 0; e < commit.edits.len; ++e) {
-                        CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
-                        CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+            CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
+            buffer->undo();
+            window->update_cursors(buffer->changes);
 
-                        Edit edit;
-                        memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer,
-                               len);
-                        edit.value.short_._buffer[len] =
-                            buffer->contents.get_once(cursors[e].point);
-                        edit.value.short_.set_len(len + 1);
-                        edit.position = commit.edits[e].position - e;
-                        edit.is_insert = false;
-                        transaction.push(edit);
-                    }
-                });
-                return;
-            }
+            WITH_TRANSACTION({
+                transaction.init(commit.edits.len, 0);
+                for (size_t e = 0; e < commit.edits.len; ++e) {
+                    CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
+                    CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+
+                    Edit edit;
+                    memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer, len);
+                    edit.value.short_._buffer[len] = buffer->contents.get_once(cursors[e].point);
+                    edit.value.short_.set_len(len + 1);
+                    edit.position = commit.edits[e].position - e;
+                    edit.is_insert = false;
+                    transaction.push(edit);
+                }
+            });
+            return;
         }
+    }
 
-        WITH_TRANSACTION(DELETE_FORWARD(forward_char));
-    });
+    WITH_TRANSACTION(DELETE_FORWARD(forward_char));
 }
 
 void command_delete_backward_word(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(WITH_TRANSACTION(DELETE_BACKWARD(backward_word)));
+    WITH_SELECTED_BUFFER();
+    WITH_TRANSACTION(DELETE_BACKWARD(backward_word));
 }
 
 void command_delete_forward_word(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(WITH_TRANSACTION(DELETE_FORWARD(forward_word)));
+    WITH_SELECTED_BUFFER();
+    WITH_TRANSACTION(DELETE_FORWARD(forward_word));
 }
 
 void command_transpose_characters(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(WITH_TRANSACTION({
+    WITH_SELECTED_BUFFER();
+    WITH_TRANSACTION({
         cz::Slice<Cursor> cursors = window->cursors;
         transaction.init(2 * cursors.len, 0);
         for (size_t c = 0; c < cursors.len; ++c) {
@@ -196,99 +204,98 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
             insert_before.is_insert = true;
             transaction.push(insert_before);
         }
-    }));
-}
-
-void command_open_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        insert_char(buffer, window, '\n');
-        window->update_cursors(buffer->changes);
-        TRANSFORM_POINTS(backward_char);
     });
 }
 
+void command_open_line(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER();
+    insert_char(buffer, window, '\n');
+    window->update_cursors(buffer->changes);
+    TRANSFORM_POINTS(backward_char);
+}
+
 void command_insert_newline(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(insert_char(buffer, window, '\n'));
+    WITH_SELECTED_BUFFER();
+    insert_char(buffer, window, '\n');
 }
 
 void command_duplicate_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        cz::Slice<Cursor> cursors = window->cursors;
+    WITH_SELECTED_BUFFER();
+    cz::Slice<Cursor> cursors = window->cursors;
 
-        uint64_t sum_region_sizes = 0;
+    uint64_t sum_region_sizes = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
+        Contents_Iterator end = start;
+        start_of_line(&start);
+        end_of_line(&end);
+        sum_region_sizes += end.position - start.position;
+    }
+
+    WITH_TRANSACTION({
+        transaction.init(cursors.len, sum_region_sizes + cursors.len);
+
         for (size_t c = 0; c < cursors.len; ++c) {
             Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
             Contents_Iterator end = start;
             start_of_line(&start);
             end_of_line(&end);
-            sum_region_sizes += end.position - start.position;
+
+            size_t region_size = end.position - start.position + 1;
+            char* value = (char*)transaction.value_allocator().alloc({region_size, 1}).buffer;
+            buffer->contents.slice_into(start, end.position, value);
+            value[region_size - 1] = '\n';
+
+            Edit edit;
+            edit.value.init_from_constant(value);
+            edit.position = start.position;
+            edit.is_insert = true;
+            transaction.push(edit);
         }
-
-        WITH_TRANSACTION({
-            transaction.init(cursors.len, sum_region_sizes + cursors.len);
-
-            for (size_t c = 0; c < cursors.len; ++c) {
-                Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
-                Contents_Iterator end = start;
-                start_of_line(&start);
-                end_of_line(&end);
-
-                size_t region_size = end.position - start.position + 1;
-                char* value = (char*)transaction.value_allocator().alloc({region_size, 1}).buffer;
-                buffer->contents.slice_into(start, end.position, value);
-                value[region_size - 1] = '\n';
-
-                Edit edit;
-                edit.value.init_from_constant(value);
-                edit.position = start.position;
-                edit.is_insert = true;
-                transaction.push(edit);
-            }
-        });
     });
 }
 
 void command_delete_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        cz::Slice<Cursor> cursors = window->cursors;
+    WITH_SELECTED_BUFFER();
+    cz::Slice<Cursor> cursors = window->cursors;
 
-        uint64_t sum_region_sizes = 0;
+    uint64_t sum_region_sizes = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
+        Contents_Iterator end = start;
+        start_of_line(&start);
+        end_of_line(&end);
+        forward_char(&end);
+        sum_region_sizes += end.position - start.position;
+    }
+
+    WITH_TRANSACTION({
+        transaction.init(cursors.len, sum_region_sizes);
+
         for (size_t c = 0; c < cursors.len; ++c) {
             Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
             Contents_Iterator end = start;
             start_of_line(&start);
             end_of_line(&end);
             forward_char(&end);
-            sum_region_sizes += end.position - start.position;
+
+            Edit edit;
+            edit.value = buffer->contents.slice(transaction.value_allocator(), start, end.position);
+            edit.position = start.position;
+            edit.is_insert = false;
+            transaction.push(edit);
         }
-
-        WITH_TRANSACTION({
-            transaction.init(cursors.len, sum_region_sizes);
-
-            for (size_t c = 0; c < cursors.len; ++c) {
-                Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
-                Contents_Iterator end = start;
-                start_of_line(&start);
-                end_of_line(&end);
-                forward_char(&end);
-
-                Edit edit;
-                edit.value =
-                    buffer->contents.slice(transaction.value_allocator(), start, end.position);
-                edit.position = start.position;
-                edit.is_insert = false;
-                transaction.push(edit);
-            }
-        });
     });
 }
 
 void command_undo(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(buffer->undo());
+    WITH_SELECTED_BUFFER();
+    buffer->undo();
 }
 
 void command_redo(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(buffer->redo());
+    WITH_SELECTED_BUFFER();
+    buffer->redo();
 }
 
 void command_stop_action(Editor* editor, Command_Source source) {
@@ -338,7 +345,8 @@ static void create_cursor_forward_line(Buffer* buffer, Window_Unified* window) {
 }
 
 void command_create_cursor_forward_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(create_cursor_forward_line(buffer, window));
+    WITH_SELECTED_BUFFER();
+    create_cursor_forward_line(buffer, window);
 }
 
 static void create_cursor_backward_line(Buffer* buffer, Window_Unified* window) {
@@ -359,7 +367,8 @@ static void create_cursor_backward_line(Buffer* buffer, Window_Unified* window) 
 }
 
 void command_create_cursor_backward_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(create_cursor_backward_line(buffer, window));
+    WITH_SELECTED_BUFFER();
+    create_cursor_backward_line(buffer, window);
 }
 
 static cz::Option<uint64_t> search_forward(Contents_Iterator start_it, cz::Str query) {
@@ -437,7 +446,8 @@ static void create_cursor_forward_search(Buffer* buffer, Window_Unified* window)
 }
 
 void command_create_cursor_forward_search(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(create_cursor_forward_search(buffer, window));
+    WITH_SELECTED_BUFFER();
+    create_cursor_forward_search(buffer, window);
 }
 
 static cz::Option<uint64_t> search_backward(Contents_Iterator start_it, cz::Str query) {
@@ -494,27 +504,26 @@ static void create_cursor_backward_search(Buffer* buffer, Window_Unified* window
 }
 
 void command_create_cursor_backward_search(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(create_cursor_backward_search(buffer, window));
+    WITH_SELECTED_BUFFER();
+    create_cursor_backward_search(buffer, window);
 }
 
 void command_create_cursor_forward(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        if (window->show_marks) {
-            create_cursor_forward_search(buffer, window);
-        } else {
-            create_cursor_forward_line(buffer, window);
-        }
-    });
+    WITH_SELECTED_BUFFER();
+    if (window->show_marks) {
+        create_cursor_forward_search(buffer, window);
+    } else {
+        create_cursor_forward_line(buffer, window);
+    }
 }
 
 void command_create_cursor_backward(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        if (window->show_marks) {
-            create_cursor_backward_search(buffer, window);
-        } else {
-            create_cursor_backward_line(buffer, window);
-        }
-    });
+    WITH_SELECTED_BUFFER();
+    if (window->show_marks) {
+        create_cursor_backward_search(buffer, window);
+    } else {
+        create_cursor_backward_line(buffer, window);
+    }
 }
 
 static void command_search_forward_callback(Editor* editor,
@@ -522,33 +531,31 @@ static void command_search_forward_callback(Editor* editor,
                                             cz::Str query,
                                             void* data) {
     Window_Unified* window = client->selected_window();
-    WITH_BUFFER(window->id, {
-        cz::Slice<Cursor> cursors = window->cursors;
-        for (size_t c = 0; c < cursors.len; ++c) {
-            SEARCH_QUERY_THEN(search_forward, {
-                cursors[c] = new_cursor;
-                window->show_marks = true;
-            });
-        }
-    });
+    WITH_BUFFER(window->id);
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        SEARCH_QUERY_THEN(search_forward, {
+            cursors[c] = new_cursor;
+            window->show_marks = true;
+        });
+    }
 }
 
 void command_search_forward(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        if (window->show_marks) {
-            cz::Slice<Cursor> cursors = window->cursors;
-            for (size_t c = 0; c < cursors.len; ++c) {
-                SEARCH_SLICE_THEN(search_forward_slice, cursors[c] = new_cursor);
-            }
-        } else {
-            Message message;
-            message.tag = Message::RESPOND_TEXT;
-            message.text = "Search forward: ";
-            message.response_callback = command_search_forward_callback;
-            message.response_callback_data = nullptr;
-            source.client->show_message(message);
+    WITH_SELECTED_BUFFER();
+    if (window->show_marks) {
+        cz::Slice<Cursor> cursors = window->cursors;
+        for (size_t c = 0; c < cursors.len; ++c) {
+            SEARCH_SLICE_THEN(search_forward_slice, cursors[c] = new_cursor);
         }
-    });
+    } else {
+        Message message;
+        message.tag = Message::RESPOND_TEXT;
+        message.text = "Search forward: ";
+        message.response_callback = command_search_forward_callback;
+        message.response_callback_data = nullptr;
+        source.client->show_message(message);
+    }
 }
 
 static void command_search_backward_callback(Editor* editor,
@@ -556,33 +563,31 @@ static void command_search_backward_callback(Editor* editor,
                                              cz::Str query,
                                              void* data) {
     Window_Unified* window = client->selected_window();
-    WITH_BUFFER(window->id, {
-        cz::Slice<Cursor> cursors = window->cursors;
-        for (size_t c = 0; c < cursors.len; ++c) {
-            SEARCH_QUERY_THEN(search_backward, {
-                cursors[c] = new_cursor;
-                window->show_marks = true;
-            });
-        }
-    });
+    WITH_BUFFER(window->id);
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        SEARCH_QUERY_THEN(search_backward, {
+            cursors[c] = new_cursor;
+            window->show_marks = true;
+        });
+    }
 }
 
 void command_search_backward(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        if (window->show_marks) {
-            cz::Slice<Cursor> cursors = window->cursors;
-            for (size_t c = 0; c < cursors.len; ++c) {
-                SEARCH_SLICE_THEN(search_backward_slice, cursors[c] = new_cursor);
-            }
-        } else {
-            Message message;
-            message.tag = Message::RESPOND_TEXT;
-            message.text = "Search backward: ";
-            message.response_callback = command_search_backward_callback;
-            message.response_callback_data = nullptr;
-            source.client->show_message(message);
+    WITH_SELECTED_BUFFER();
+    if (window->show_marks) {
+        cz::Slice<Cursor> cursors = window->cursors;
+        for (size_t c = 0; c < cursors.len; ++c) {
+            SEARCH_SLICE_THEN(search_backward_slice, cursors[c] = new_cursor);
         }
-    });
+    } else {
+        Message message;
+        message.tag = Message::RESPOND_TEXT;
+        message.text = "Search backward: ";
+        message.response_callback = command_search_backward_callback;
+        message.response_callback_data = nullptr;
+        source.client->show_message(message);
+    }
 }
 
 static void parse_number(cz::Str str, uint64_t* number) {
@@ -600,17 +605,16 @@ static void command_goto_line_callback(Editor* editor, Client* client, cz::Str s
     parse_number(str, &lines);
 
     Window_Unified* window = client->selected_window();
-    WITH_BUFFER(window->id, {
-        Contents_Iterator iterator = buffer->contents.iterator_at(0);
-        while (!iterator.at_eob() && lines > 1) {
-            if (iterator.get() == '\n') {
-                --lines;
-            }
-            iterator.advance();
+    WITH_BUFFER(window->id);
+    Contents_Iterator iterator = buffer->contents.iterator_at(0);
+    while (!iterator.at_eob() && lines > 1) {
+        if (iterator.get() == '\n') {
+            --lines;
         }
+        iterator.advance();
+    }
 
-        window->cursors[0].point = iterator.position;
-    });
+    window->cursors[0].point = iterator.position;
 }
 
 static void command_goto_position_callback(Editor* editor,

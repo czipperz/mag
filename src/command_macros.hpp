@@ -7,22 +7,15 @@
 #include "ssostr.hpp"
 #include "transaction.hpp"
 
-#define WITH_SELECTED_BUFFER(CODE)                                 \
-    do {                                                           \
-        Window_Unified* window = source.client->selected_window(); \
-        WITH_BUFFER(window->id, {                                  \
-            window->update_cursors(buffer->changes);               \
-            CODE;                                                  \
-        });                                                        \
-    } while (0)
+#define WITH_SELECTED_BUFFER()                                 \
+    Window_Unified* window = source.client->selected_window(); \
+    WITH_BUFFER(window->id);                                   \
+    window->update_cursors(buffer->changes)
 
-#define WITH_BUFFER(BUFFER_ID, CODE)                       \
-    do {                                                   \
-        Buffer_Handle* handle = editor->lookup(BUFFER_ID); \
-        Buffer* buffer = handle->lock();                   \
-        CZ_DEFER(handle->unlock());                        \
-        CODE;                                              \
-    } while (0)
+#define WITH_BUFFER(BUFFER_ID)                         \
+    Buffer_Handle* handle = editor->lookup(BUFFER_ID); \
+    Buffer* buffer = handle->lock();                   \
+    CZ_DEFER(handle->unlock())
 
 #define WITH_TRANSACTION(CODE)        \
     do {                              \

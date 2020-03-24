@@ -21,47 +21,49 @@ void command_open_file(Editor* editor, Command_Source source) {
     cz::String default_value = {};
     CZ_DEFER(default_value.drop(cz::heap_allocator()));
     bool has_default_value;
-    WITH_SELECTED_BUFFER({
+    {
+        WITH_SELECTED_BUFFER();
         has_default_value = buffer->path.find('/') != nullptr;
         if (has_default_value) {
             default_value = buffer->path.clone(cz::heap_allocator());
         }
-    });
+    }
 
     if (has_default_value) {
-        WITH_BUFFER(source.client->mini_buffer_window()->id, WITH_TRANSACTION({
-                        transaction.init(1, default_value.len());
-                        Edit edit;
-                        edit.value.init_duplicate(transaction.value_allocator(), default_value);
-                        edit.position = 0;
-                        edit.is_insert = true;
-                        transaction.push(edit);
-                    }));
+        WITH_BUFFER(source.client->mini_buffer_window()->id);
+        WITH_TRANSACTION({
+            transaction.init(1, default_value.len());
+            Edit edit;
+            edit.value.init_duplicate(transaction.value_allocator(), default_value);
+            edit.position = 0;
+            edit.is_insert = true;
+            transaction.push(edit);
+        });
     }
 
     source.client->show_message(message);
 }
 
 void command_save_file(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        if (!buffer->path.find('/')) {
-            Message message = {};
-            message.tag = Message::SHOW;
-            message.text = "File must have path";
-            source.client->show_message(message);
-            return;
-        }
+    WITH_SELECTED_BUFFER();
 
-        if (!save_contents(&buffer->contents, buffer->path.buffer())) {
-            Message message = {};
-            message.tag = Message::SHOW;
-            message.text = "Error saving file";
-            source.client->show_message(message);
-            return;
-        }
+    if (!buffer->path.find('/')) {
+        Message message = {};
+        message.tag = Message::SHOW;
+        message.text = "File must have path";
+        source.client->show_message(message);
+        return;
+    }
 
-        buffer->mark_saved();
-    });
+    if (!save_contents(&buffer->contents, buffer->path.buffer())) {
+        Message message = {};
+        message.tag = Message::SHOW;
+        message.text = "Error saving file";
+        source.client->show_message(message);
+        return;
+    }
+
+    buffer->mark_saved();
 }
 
 static void command_switch_buffer_callback(Editor* editor,

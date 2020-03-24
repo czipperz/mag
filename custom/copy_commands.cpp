@@ -33,7 +33,8 @@ static void cut_cursor(Cursor* cursor,
 }
 
 void command_cut(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(WITH_TRANSACTION({
+    WITH_SELECTED_BUFFER();
+    WITH_TRANSACTION({
         cz::Slice<Cursor> cursors = window->cursors;
 
         uint64_t sum_region_sizes = 0;
@@ -54,7 +55,7 @@ void command_cut(Editor* editor, Command_Source source) {
         }
 
         window->show_marks = false;
-    }));
+    });
 }
 
 static void copy_cursor(Cursor* cursor, Copy_Chain** copy_chain, Editor* editor, Buffer* buffer) {
@@ -67,22 +68,22 @@ static void copy_cursor(Cursor* cursor, Copy_Chain** copy_chain, Editor* editor,
 }
 
 void command_copy(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        cz::Slice<Cursor> cursors = window->cursors;
-        if (cursors.len == 1) {
-            copy_cursor(&cursors[0], &source.client->global_copy_chain, editor, buffer);
-        } else {
-            for (size_t c = 0; c < cursors.len; ++c) {
-                copy_cursor(&cursors[c], &cursors[c].local_copy_chain, editor, buffer);
-            }
+    WITH_SELECTED_BUFFER();
+    cz::Slice<Cursor> cursors = window->cursors;
+    if (cursors.len == 1) {
+        copy_cursor(&cursors[0], &source.client->global_copy_chain, editor, buffer);
+    } else {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            copy_cursor(&cursors[c], &cursors[c].local_copy_chain, editor, buffer);
         }
+    }
 
-        window->show_marks = false;
-    });
+    window->show_marks = false;
 }
 
 void command_paste(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(WITH_TRANSACTION({
+    WITH_SELECTED_BUFFER();
+    WITH_TRANSACTION({
         cz::Slice<Cursor> cursors = window->cursors;
         // :CopyLeak Probably we will need to copy all the values herea.
         transaction.init(cursors.len, 0);
@@ -109,7 +110,7 @@ void command_paste(Editor* editor, Command_Source source) {
                 transaction.push(edit);
             }
         }
-    }));
+    });
 }
 
 }

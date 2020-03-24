@@ -137,49 +137,48 @@ static void apply_replacement(Replacement* repl,
 void command_clang_format_buffer(Editor* editor, Command_Source source) {
     ZoneScoped;
 
-    WITH_SELECTED_BUFFER({
-        char temp_file_buffer[L_tmpnam];
-        tmpnam(temp_file_buffer);
-        save_contents(&buffer->contents, temp_file_buffer);
-        cz::Str temp_file_str = temp_file_buffer;
+    WITH_SELECTED_BUFFER();
 
-        cz::String script = {};
-        CZ_DEFER(script.drop(cz::heap_allocator()));
-        cz::Str base = "clang-format -output-replacements-xml -style=file -assume-filename=";
-        script.reserve(cz::heap_allocator(),
-                       base.len + buffer->path.len() + 3 + temp_file_str.len + 1);
-        script.append(base);
-        script.append(buffer->path);
-        script.append(" < ");
-        script.append(temp_file_str);
-        script.null_terminate();
+    char temp_file_buffer[L_tmpnam];
+    tmpnam(temp_file_buffer);
+    save_contents(&buffer->contents, temp_file_buffer);
+    cz::Str temp_file_str = temp_file_buffer;
 
-        cz::String output_xml = {};
-        CZ_DEFER(output_xml.drop(cz::heap_allocator()));
-        int return_value;
-        if (!run_script_synchronously(script.buffer(), nullptr, cz::heap_allocator(), &output_xml,
-                                      &return_value) ||
-            return_value != 0) {
-            Message message = {};
-            message.tag = Message::SHOW;
-            message.text = "Error: Couldn't launch clang-format";
-            source.client->show_message(message);
+    cz::String script = {};
+    CZ_DEFER(script.drop(cz::heap_allocator()));
+    cz::Str base = "clang-format -output-replacements-xml -style=file -assume-filename=";
+    script.reserve(cz::heap_allocator(), base.len + buffer->path.len() + 3 + temp_file_str.len + 1);
+    script.append(base);
+    script.append(buffer->path);
+    script.append(" < ");
+    script.append(temp_file_str);
+    script.null_terminate();
+
+    cz::String output_xml = {};
+    CZ_DEFER(output_xml.drop(cz::heap_allocator()));
+    int return_value;
+    if (!run_script_synchronously(script.buffer(), nullptr, cz::heap_allocator(), &output_xml,
+                                  &return_value) ||
+        return_value != 0) {
+        Message message = {};
+        message.tag = Message::SHOW;
+        message.text = "Error: Couldn't launch clang-format";
+        source.client->show_message(message);
+    }
+
+    cz::Vector<Replacement> replacements = {};
+    CZ_DEFER(replacements.drop(cz::heap_allocator()));
+    size_t total_len = 0;
+    parse_replacements(&replacements, output_xml, &total_len);
+
+    WITH_TRANSACTION({
+        transaction.init(2 * replacements.len(), total_len);
+
+        uint64_t offset = 0;
+        for (size_t i = 0; i < replacements.len(); ++i) {
+            Replacement* repl = &replacements[i];
+            apply_replacement(repl, &transaction, buffer, &offset);
         }
-
-        cz::Vector<Replacement> replacements = {};
-        CZ_DEFER(replacements.drop(cz::heap_allocator()));
-        size_t total_len = 0;
-        parse_replacements(&replacements, output_xml, &total_len);
-
-        WITH_TRANSACTION({
-            transaction.init(2 * replacements.len(), total_len);
-
-            uint64_t offset = 0;
-            for (size_t i = 0; i < replacements.len(); ++i) {
-                Replacement* repl = &replacements[i];
-                apply_replacement(repl, &transaction, buffer, &offset);
-            }
-        });
     });
 }
 

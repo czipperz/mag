@@ -48,7 +48,8 @@ void command_search_open(Editor* editor, Command_Source source) {
     uint64_t line = 0;
     uint64_t column = 0;
 
-    WITH_SELECTED_BUFFER({
+    {
+        WITH_SELECTED_BUFFER();
         Contents_Iterator relative_start = buffer->contents.iterator_at(window->cursors[0].point);
         start_of_line(&relative_start);
         Contents_Iterator relative_end = relative_start;
@@ -76,11 +77,12 @@ void command_search_open(Editor* editor, Command_Source source) {
         path.push('/');
         buffer->contents.slice_into(relative_start, relative_end.position, path.end());
         path.set_len(path.len() + relative_end.position - relative_start.position);
-    });
+    };
 
     open_file(editor, source.client, path);
 
-    WITH_SELECTED_BUFFER({
+    {
+        WITH_SELECTED_BUFFER();
         kill_extra_cursors(window, source.client);
 
         Contents_Iterator iterator = buffer->contents.start();
@@ -92,7 +94,7 @@ void command_search_open(Editor* editor, Command_Source source) {
         }
 
         window->cursors[0].point = cz::min(buffer->contents.len, iterator.position + column - 1);
-    });
+    }
 }
 
 }

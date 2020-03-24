@@ -32,8 +32,10 @@ cz::Str clear_buffer(Editor* editor, Buffer* buffer) {
 
 static void send_message_result(Editor* editor, Client* client) {
     cz::Str mini_buffer_contents;
-    WITH_BUFFER(client->mini_buffer_window()->id,
-                { mini_buffer_contents = clear_buffer(editor, buffer); });
+    {
+        WITH_BUFFER(client->mini_buffer_window()->id);
+        mini_buffer_contents = clear_buffer(editor, buffer);
+    }
 
     client->restore_selected_buffer();
     client->_message.response_callback(editor, client, mini_buffer_contents,
@@ -42,40 +44,38 @@ static void send_message_result(Editor* editor, Client* client) {
 }
 
 static void command_insert_char(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER({
-        char code = source.keys[0].code;
+    WITH_SELECTED_BUFFER();
+    char code = source.keys[0].code;
 
-        if (source.previous_command == command_insert_char) {
-            CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
-            Commit commit = buffer->commits[buffer->commit_index - 1];
-            size_t len = commit.edits[0].value.len();
-            if (len < SSOStr::MAX_SHORT_LEN) {
-                CZ_DEBUG_ASSERT(commit.edits.len == window->cursors.len());
-                buffer->undo();
-                // We don't need to update cursors here because insertion doesn't care.
+    if (source.previous_command == command_insert_char) {
+        CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
+        Commit commit = buffer->commits[buffer->commit_index - 1];
+        size_t len = commit.edits[0].value.len();
+        if (len < SSOStr::MAX_SHORT_LEN) {
+            CZ_DEBUG_ASSERT(commit.edits.len == window->cursors.len());
+            buffer->undo();
+            // We don't need to update cursors here because insertion doesn't care.
 
-                WITH_TRANSACTION({
-                    transaction.init(commit.edits.len, 0);
-                    for (size_t e = 0; e < commit.edits.len; ++e) {
-                        CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
-                        CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+            WITH_TRANSACTION({
+                transaction.init(commit.edits.len, 0);
+                for (size_t e = 0; e < commit.edits.len; ++e) {
+                    CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
+                    CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
 
-                        Edit edit;
-                        memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer,
-                               len);
-                        edit.value.short_._buffer[len] = code;
-                        edit.value.short_.set_len(len + 1);
-                        edit.position = commit.edits[e].position + e;
-                        edit.is_insert = true;
-                        transaction.push(edit);
-                    }
-                });
-                return;
-            }
+                    Edit edit;
+                    memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer, len);
+                    edit.value.short_._buffer[len] = code;
+                    edit.value.short_.set_len(len + 1);
+                    edit.position = commit.edits[e].position + e;
+                    edit.is_insert = true;
+                    transaction.push(edit);
+                }
+            });
+            return;
         }
+    }
 
-        insert_char(buffer, window, code);
-    });
+    insert_char(buffer, window, code);
 }
 
 static Command lookup_key_chain(Key_Map* map, size_t start, size_t* end, cz::Slice<Key> key_chain) {

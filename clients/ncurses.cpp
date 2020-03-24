@@ -246,7 +246,8 @@ static int cache_windows_check_points(Window_Cache* window_cache, Window* w, Edi
         }
 
         // TODO: Make this non blocking!
-        WITH_BUFFER(window->id, {
+        {
+            WITH_BUFFER(window->id);
             cz::Vector<Tokenizer_Check_Point>* check_points =
                 &window_cache->v.unified.tokenizer_check_points;
 
@@ -271,7 +272,7 @@ static int cache_windows_check_points(Window_Cache* window_cache, Window* w, Edi
                     return ERR;
                 }
             }
-        });
+        }
     }
 
     case Window::VERTICAL_SPLIT:
@@ -402,8 +403,10 @@ static void cache_window_unified_create(Window_Cache* window_cache,
 static void cache_window_unified_create(Editor* editor,
                                         Window_Cache* window_cache,
                                         Window_Unified* window) {
-    WITH_BUFFER(window->id,
-                { cache_window_unified_create(window_cache, window, window->id, buffer); });
+    {
+        WITH_BUFFER(window->id);
+        cache_window_unified_create(window_cache, window, window->id, buffer);
+    }
 }
 
 static void draw_buffer_contents(Cell* cells,
@@ -569,7 +572,8 @@ static void draw_buffer(Cell* cells,
                         int count_cols) {
     ZoneScoped;
 
-    WITH_BUFFER(window->id, {
+    {
+        WITH_BUFFER(window->id);
         draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, show_cursors,
                              start_row, start_col, count_rows - 1, count_cols);
 
@@ -598,7 +602,7 @@ static void draw_buffer(Cell* cells,
         for (; x < count_cols; ++x) {
             SET(attrs, ' ');
         }
-    });
+    }
 }
 
 static void draw_window(Cell* cells,
@@ -630,11 +634,12 @@ static void draw_window(Cell* cells,
             (*window_cache)->v.unified.tokenizer_check_points.drop(cz::heap_allocator());
             cache_window_unified_create(editor, *window_cache, window);
         } else {
-            WITH_BUFFER(window->id, {
+            {
+                WITH_BUFFER(window->id);
                 if ((*window_cache)->v.unified.change_index != buffer->changes.len()) {
                     cache_window_unified_update(*window_cache, window, buffer);
                 }
-            });
+            }
         }
 
         draw_buffer(cells, *window_cache, total_cols, editor, window, window == selected_window,
@@ -720,7 +725,8 @@ static void render_to_cells(Cell* cells,
         }
 
         if (client->_message.tag > Message::SHOW) {
-            WITH_BUFFER(client->mini_buffer_window()->id, {
+            {
+                WITH_BUFFER(client->mini_buffer_window()->id);
                 Contents_Iterator iterator = buffer->contents.iterator_at(0);
                 size_t i = 0;
                 cz::Str query = mini_buffer_results->query;
@@ -740,15 +746,14 @@ static void render_to_cells(Cell* cells,
                     ++i;
                     iterator.advance();
                 }
-            });
+            }
 
             switch (mini_buffer_results->state) {
-            case Mini_Buffer_Results::INITIAL:
-                WITH_BUFFER(client->mini_buffer_window()->id, {
-                    mini_buffer_results->query.set_len(0);
-                    buffer->contents.stringify_into(cz::heap_allocator(),
-                                                    &mini_buffer_results->query);
-                });
+            case Mini_Buffer_Results::INITIAL: {
+                WITH_BUFFER(client->mini_buffer_window()->id);
+                mini_buffer_results->query.set_len(0);
+                buffer->contents.stringify_into(cz::heap_allocator(), &mini_buffer_results->query);
+            }
                 mini_buffer_results->results.set_len(0);
                 mini_buffer_results->response_tag = client->_message.tag;
                 mini_buffer_results->state = Mini_Buffer_Results::LOADING;
@@ -783,11 +788,10 @@ static void render_to_cells(Cell* cells,
         if (client->_message.tag > Message::SHOW) {
             start_col = x;
             Window_Unified* window = client->mini_buffer_window();
-            WITH_BUFFER(window->id, {
-                draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window,
-                                     client->_select_mini_buffer, start_row, start_col,
-                                     mini_buffer_height, total_cols - start_col);
-            });
+            WITH_BUFFER(window->id);
+            draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window,
+                                 client->_select_mini_buffer, start_row, start_col,
+                                 mini_buffer_height, total_cols - start_col);
         } else {
             for (; x < total_cols; ++x) {
                 SET(attrs, ' ');
