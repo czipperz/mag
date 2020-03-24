@@ -13,7 +13,12 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
     uint64_t sum_line_lengths = 0;
     size_t num_edits = cursors.len * 2;
     for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator start_next = buffer->contents.iterator_at(cursors[c].point);
+        Contents_Iterator start_next;
+        if (window->show_marks) {
+            start_next = buffer->contents.iterator_at(cursors[c].end());
+        } else {
+            start_next = buffer->contents.iterator_at(cursors[c].point);
+        }
         end_of_line(&start_next);
         forward_char(&start_next);
         if (start_next.at_eob()) {
@@ -31,8 +36,16 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
     CZ_DEFER(transaction.drop());
 
     for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
-        Contents_Iterator start_next = start;
+        Contents_Iterator start;
+        Contents_Iterator start_next;
+        if (window->show_marks) {
+            start = buffer->contents.iterator_at(cursors[c].start());
+            start_next = buffer->contents.iterator_at(cursors[c].end());
+        } else {
+            start = buffer->contents.iterator_at(cursors[c].point);
+            start_next = start;
+        }
+
         end_of_line(&start_next);
         forward_char(&start_next);
         if (start_next.at_eob()) {
@@ -77,7 +90,13 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
     uint64_t sum_line_lengths = 0;
     size_t num_edits = cursors.len * 2;
     for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator end_prev = buffer->contents.iterator_at(cursors[c].point);
+        Contents_Iterator end_prev;
+        if (window->show_marks) {
+            end_prev = buffer->contents.iterator_at(cursors[c].start());
+        } else {
+            end_prev = buffer->contents.iterator_at(cursors[c].point);
+        }
+
         start_of_line(&end_prev);
         backward_char(&end_prev);
         if (end_prev.at_bob()) {
@@ -95,8 +114,16 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
     CZ_DEFER(transaction.drop());
 
     for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator end = buffer->contents.iterator_at(cursors[c].point);
-        Contents_Iterator end_prev = end;
+        Contents_Iterator end;
+        Contents_Iterator end_prev;
+        if (window->show_marks) {
+            end = buffer->contents.iterator_at(cursors[c].end());
+            end_prev = buffer->contents.iterator_at(cursors[c].start());
+        } else {
+            end = buffer->contents.iterator_at(cursors[c].point);
+            end_prev = end;
+        }
+
         start_of_line(&end_prev);
         backward_char(&end_prev);
         if (end_prev.at_bob()) {
