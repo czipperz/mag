@@ -43,6 +43,8 @@ void Window_Unified::update_cursors(cz::Slice<Change> changes) {
         position_after_changes(new_changes, &cursors[c].mark);
     }
 
+    position_after_changes(new_changes, &start_position);
+
     this->change_index = changes.len;
 }
 
