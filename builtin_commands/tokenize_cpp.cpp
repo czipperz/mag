@@ -674,11 +674,42 @@ bool cpp_next_token(const Contents* contents,
             } else if (in_preprocessor && !(temp_state & IN_PREPROCESSOR_FLAG)) {
                 // next token is outside preprocessor invocation we are in
             } else {
-                // TODO: optimize this to use *iterator
-                char start_ch = contents->get_once(next_token.start);
-                if (next_token.type == Token_Type::IDENTIFIER ||
-                    (next_token.end == next_token.start + 1 &&
-                     (start_ch == '*' || start_ch == '&'))) {
+                Contents_Iterator it = next_token_iterator;
+                CZ_DEBUG_ASSERT(it.position > next_token.start);
+                it.retreat(next_token_iterator.position - next_token.start);
+                char start_ch = it.get();
+
+                bool is_type = false;
+                if (next_token.type == Token_Type::IDENTIFIER) {
+                    is_type = true;
+                } else if (next_token.type == Token_Type::PUNCTUATION) {
+                    if (next_token.end == next_token.start + 1) {
+                        if (start_ch == '*' || start_ch == '&') {
+                            is_type = true;
+                        }
+                    } else if (next_token.end == next_token.start + 2) {
+                        it.advance();
+                        char start_ch2 = it.get();
+                        if (start_ch == ':' || start_ch2 == ':') {
+                            if (normal_state == START_OF_PARAMETER) {
+                                is_type = true;
+                            } else {
+                                // See if the part after the namespace is a type declaration.
+                                if (!cpp_next_token(contents, &next_token_iterator, &next_token,
+                                                    &temp_state)) {
+                                    // couldn't get next token
+                                } else if (in_preprocessor &&
+                                           !(temp_state & IN_PREPROCESSOR_FLAG)) {
+                                    // next token is outside preprocessor invocation we are in
+                                } else if (next_token.type == Token_Type::TYPE) {
+                                    is_type = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (is_type) {
                     if (normal_state == START_OF_STATEMENT) {
                         normal_state = IN_VARIABLE_TYPE;
                     } else {
@@ -760,8 +791,9 @@ bool cpp_next_token(const Contents* contents,
         token->start = iterator->position;
         iterator->advance();
 
+        char second_char = 0;
         if (!iterator->at_eob()) {
-            char second_char = iterator->get();
+            second_char = iterator->get();
             if (first_char == '.' && second_char == '*') {
                 iterator->advance();
             } else if (first_char == '.' && second_char == '.') {
@@ -809,6 +841,10 @@ bool cpp_next_token(const Contents* contents,
 
         if (first_char == ';' || first_char == '{' || first_char == '}') {
             normal_state = START_OF_STATEMENT;
+        } else if (normal_state == IN_VARIABLE_TYPE && first_char == ':' && second_char == ':') {
+            normal_state = START_OF_STATEMENT;
+        } else if (normal_state == IN_PARAMETER_TYPE && first_char == ':' && second_char == ':') {
+            normal_state = START_OF_PARAMETER;
         } else if (normal_state == START_OF_STATEMENT) {
             normal_state = IN_EXPR;
         } else if (normal_state == AFTER_FOR && first_char == '(') {
