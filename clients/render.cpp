@@ -189,6 +189,40 @@ static void draw_buffer_contents(Cell* cells,
     }
 }
 
+static void draw_buffer_decoration(Cell* cells,
+                                   int total_cols,
+                                   Window* window,
+                                   Buffer* buffer,
+                                   int start_row,
+                                   int start_col) {
+    ZoneScoped;
+
+    int y = window->rows;
+    int x = 0;
+
+    int attrs = A_REVERSE;
+    SET(attrs, '-');
+    ++x;
+    if (buffer->is_unchanged()) {
+        SET(attrs, '-');
+    } else {
+        SET(attrs, '*');
+    }
+    ++x;
+    SET(attrs, '-');
+    ++x;
+    SET(attrs, ' ');
+    ++x;
+    size_t max = cz::min<size_t>(buffer->path.len(), window->cols - x);
+    for (size_t i = 0; i < max; ++i) {
+        SET(attrs, buffer->path[i]);
+        ++x;
+    }
+    for (; x < window->cols; ++x) {
+        SET(attrs, ' ');
+    }
+}
+
 static void draw_buffer(Cell* cells,
                         Window_Cache* window_cache,
                         int total_cols,
@@ -199,36 +233,10 @@ static void draw_buffer(Cell* cells,
                         int start_col) {
     ZoneScoped;
 
-    {
-        WITH_WINDOW_BUFFER(window);
-        draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, show_cursors,
-                             start_row, start_col);
-
-        int y = window->rows;
-        int x = 0;
-
-        int attrs = A_REVERSE;
-        SET(attrs, '-');
-        ++x;
-        if (buffer->is_unchanged()) {
-            SET(attrs, '-');
-        } else {
-            SET(attrs, '*');
-        }
-        ++x;
-        SET(attrs, '-');
-        ++x;
-        SET(attrs, ' ');
-        ++x;
-        size_t max = cz::min<size_t>(buffer->path.len(), window->cols - x);
-        for (size_t i = 0; i < max; ++i) {
-            SET(attrs, buffer->path[i]);
-            ++x;
-        }
-        for (; x < window->cols; ++x) {
-            SET(attrs, ' ');
-        }
-    }
+    WITH_WINDOW_BUFFER(window);
+    draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, show_cursors,
+                         start_row, start_col);
+    draw_buffer_decoration(cells, total_cols, window, buffer, start_row, start_col);
 }
 
 static void draw_window(Cell* cells,
