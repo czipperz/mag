@@ -9,7 +9,7 @@
 #include "prose/alternate.hpp"
 #include "search_commands.hpp"
 #include "shift_commands.hpp"
-#include "tokenize_cpp.hpp"
+#include "syntax/tokenize_cpp.hpp"
 #include "window_commands.hpp"
 
 namespace mag {
