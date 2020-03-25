@@ -22,13 +22,9 @@ struct Window_Cache {
             bool tokenizer_ran_to_end;
         } unified;
         struct {
-            Window_Cache* left;
-            Window_Cache* right;
-        } vertical_split;
-        struct {
-            Window_Cache* top;
-            Window_Cache* bottom;
-        } horizontal_split;
+            Window_Cache* first;
+            Window_Cache* second;
+        } split;
     } v;
 };
 

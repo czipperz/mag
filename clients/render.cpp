@@ -288,20 +288,19 @@ static void draw_window(Cell* cells,
         if (!*window_cache) {
             *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
             (*window_cache)->tag = window->tag;
-            (*window_cache)->v.vertical_split = {};
+            (*window_cache)->v.split = {};
         } else if ((*window_cache)->tag != window->tag) {
             destroy_window_cache_children(*window_cache);
             (*window_cache)->tag = window->tag;
-            (*window_cache)->v.vertical_split = {};
+            (*window_cache)->v.split = {};
         }
 
         if (window->tag == Window::VERTICAL_SPLIT) {
             int left_cols = (count_cols - 1) / 2;
             int right_cols = count_cols - left_cols - 1;
 
-            draw_window(cells, &(*window_cache)->v.vertical_split.left, total_cols, editor,
-                        window->first, selected_window, start_row, start_col, count_rows,
-                        left_cols);
+            draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, window->first,
+                        selected_window, start_row, start_col, count_rows, left_cols);
 
             {
                 int x = left_cols;
@@ -310,15 +309,15 @@ static void draw_window(Cell* cells,
                 }
             }
 
-            draw_window(cells, &(*window_cache)->v.vertical_split.right, total_cols, editor,
-                        window->second, selected_window, start_row,
-                        start_col + count_cols - right_cols, count_rows, right_cols);
+            draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, window->second,
+                        selected_window, start_row, start_col + count_cols - right_cols, count_rows,
+                        right_cols);
         } else {
             int top_rows = (count_rows - 1) / 2;
             int bottom_rows = count_rows - top_rows - 1;
 
-            draw_window(cells, &(*window_cache)->v.horizontal_split.top, total_cols, editor,
-                        window->first, selected_window, start_row, start_col, top_rows, count_cols);
+            draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, window->first,
+                        selected_window, start_row, start_col, top_rows, count_cols);
 
             {
                 int y = top_rows;
@@ -327,9 +326,9 @@ static void draw_window(Cell* cells,
                 }
             }
 
-            draw_window(cells, &(*window_cache)->v.horizontal_split.bottom, total_cols, editor,
-                        window->second, selected_window, start_row + count_rows - bottom_rows,
-                        start_col, bottom_rows, count_cols);
+            draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, window->second,
+                        selected_window, start_row + count_rows - bottom_rows, start_col,
+                        bottom_rows, count_cols);
         }
         break;
     }

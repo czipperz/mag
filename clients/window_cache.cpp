@@ -15,12 +15,9 @@ void destroy_window_cache_children(Window_Cache* window_cache) {
         window_cache->v.unified.tokenizer_check_points.drop(cz::heap_allocator());
         break;
     case Window::VERTICAL_SPLIT:
-        destroy_window_cache(window_cache->v.vertical_split.left);
-        destroy_window_cache(window_cache->v.vertical_split.right);
-        break;
     case Window::HORIZONTAL_SPLIT:
-        destroy_window_cache(window_cache->v.horizontal_split.top);
-        destroy_window_cache(window_cache->v.horizontal_split.bottom);
+        destroy_window_cache(window_cache->v.split.first);
+        destroy_window_cache(window_cache->v.split.second);
         break;
     }
 }
@@ -82,12 +79,11 @@ int cache_windows_check_points(Window_Cache* window_cache, Window* w, Editor* ed
     case Window::HORIZONTAL_SPLIT: {
         Window_Split* window = (Window_Split*)w;
         int first_result =
-            cache_windows_check_points(window_cache->v.vertical_split.left, window->first, editor);
+            cache_windows_check_points(window_cache->v.split.first, window->first, editor);
         if (first_result != ERR) {
             return first_result;
         }
-        return cache_windows_check_points(window_cache->v.vertical_split.right, window->second,
-                                          editor);
+        return cache_windows_check_points(window_cache->v.split.second, window->second, editor);
     }
     }
 
