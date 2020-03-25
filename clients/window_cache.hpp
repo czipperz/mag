@@ -11,16 +11,18 @@
 namespace mag {
 namespace client {
 
+struct Window_Unified_Cache {
+    Buffer_Id id;
+    size_t change_index;
+    uint64_t visible_end;
+    cz::Vector<Tokenizer_Check_Point> tokenizer_check_points;
+    bool tokenizer_ran_to_end;
+};
+
 struct Window_Cache {
     Window::Tag tag;
     union {
-        struct {
-            Buffer_Id id;
-            size_t change_index;
-            uint64_t visible_end;
-            cz::Vector<Tokenizer_Check_Point> tokenizer_check_points;
-            bool tokenizer_ran_to_end;
-        } unified;
+        Window_Unified_Cache unified;
         struct {
             Window_Cache* first;
             Window_Cache* second;
