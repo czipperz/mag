@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stddef.h>
-#include <stdint.h>
 #include <cz/vector.hpp>
 #include "buffer_id.hpp"
 #include "cursor.hpp"
@@ -14,8 +13,8 @@ struct Window_Split;
 struct Window {
     Window_Split* parent;
 
-    uint32_t rows;
-    uint32_t cols;
+    size_t rows;
+    size_t cols;
 
     enum Tag {
         UNIFIED,

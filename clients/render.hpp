@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include "cell.hpp"
 #include "client.hpp"
 #include "completion_results.hpp"
@@ -12,8 +13,8 @@ namespace client {
 
 void render_to_cells(Cell* cells,
                      Window_Cache** window_cache,
-                     int total_rows,
-                     int total_cols,
+                     size_t total_rows,
+                     size_t total_cols,
                      Editor* editor,
                      Client* client);
 

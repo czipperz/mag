@@ -40,13 +40,13 @@ namespace client {
 
 static void draw_buffer_contents(Cell* cells,
                                  Window_Cache* window_cache,
-                                 int total_cols,
+                                 size_t total_cols,
                                  Editor* editor,
                                  Buffer* buffer,
                                  Window_Unified* window,
                                  bool show_cursors,
-                                 int start_row,
-                                 int start_col) {
+                                 size_t start_row,
+                                 size_t start_col) {
     ZoneScoped;
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
@@ -70,8 +70,8 @@ static void draw_buffer_contents(Cell* cells,
     }
     window->start_position = iterator.position;
 
-    int y = 0;
-    int x = 0;
+    size_t y = 0;
+    size_t x = 0;
 
     Token token = {};
     uint64_t state = 0;
@@ -160,7 +160,7 @@ static void draw_buffer_contents(Cell* cells,
             ADDCH(attrs, ' ');
             ADD_NEWLINE();
         } else if (ch == '\t') {
-            int end_x = (x + 4) & ~3;
+            size_t end_x = (x + 4) & ~3;
             while (x < end_x) {
                 ADDCH(attrs, ' ');
             }
@@ -189,15 +189,15 @@ static void draw_buffer_contents(Cell* cells,
 }
 
 static void draw_buffer_decoration(Cell* cells,
-                                   int total_cols,
+                                   size_t total_cols,
                                    Window* window,
                                    Buffer* buffer,
-                                   int start_row,
-                                   int start_col) {
+                                   size_t start_row,
+                                   size_t start_col) {
     ZoneScoped;
 
-    int y = window->rows;
-    int x = 0;
+    size_t y = window->rows;
+    size_t x = 0;
 
     int attrs = A_REVERSE;
     SET(attrs, '-');
@@ -224,12 +224,12 @@ static void draw_buffer_decoration(Cell* cells,
 
 static void draw_buffer(Cell* cells,
                         Window_Cache* window_cache,
-                        int total_cols,
+                        size_t total_cols,
                         Editor* editor,
                         Window_Unified* window,
                         bool show_cursors,
-                        int start_row,
-                        int start_col) {
+                        size_t start_row,
+                        size_t start_col) {
     ZoneScoped;
 
     WITH_WINDOW_BUFFER(window);
@@ -240,14 +240,14 @@ static void draw_buffer(Cell* cells,
 
 static void draw_window(Cell* cells,
                         Window_Cache** window_cache,
-                        int total_cols,
+                        size_t total_cols,
                         Editor* editor,
                         Window* w,
                         Window* selected_window,
-                        int start_row,
-                        int start_col,
-                        int count_rows,
-                        int count_cols) {
+                        size_t start_row,
+                        size_t start_col,
+                        size_t count_rows,
+                        size_t count_cols) {
     ZoneScoped;
 
     w->rows = count_rows - 1;
@@ -295,15 +295,15 @@ static void draw_window(Cell* cells,
         }
 
         if (window->tag == Window::VERTICAL_SPLIT) {
-            int left_cols = (count_cols - 1) / 2;
-            int right_cols = count_cols - left_cols - 1;
+            size_t left_cols = (count_cols - 1) / 2;
+            size_t right_cols = count_cols - left_cols - 1;
 
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, window->first,
                         selected_window, start_row, start_col, count_rows, left_cols);
 
             {
-                int x = left_cols;
-                for (int y = 0; y < count_rows; ++y) {
+                size_t x = left_cols;
+                for (size_t y = 0; y < count_rows; ++y) {
                     SET(A_NORMAL, '|');
                 }
             }
@@ -312,15 +312,15 @@ static void draw_window(Cell* cells,
                         selected_window, start_row, start_col + count_cols - right_cols, count_rows,
                         right_cols);
         } else {
-            int top_rows = (count_rows - 1) / 2;
-            int bottom_rows = count_rows - top_rows - 1;
+            size_t top_rows = (count_rows - 1) / 2;
+            size_t bottom_rows = count_rows - top_rows - 1;
 
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, window->first,
                         selected_window, start_row, start_col, top_rows, count_cols);
 
             {
-                int y = top_rows;
-                for (int x = 0; x < count_cols; ++x) {
+                size_t y = top_rows;
+                for (size_t x = 0; x < count_cols; ++x) {
                     SET(A_NORMAL, '-');
                 }
             }
@@ -336,19 +336,19 @@ static void draw_window(Cell* cells,
 
 void render_to_cells(Cell* cells,
                      Window_Cache** window_cache,
-                     int total_rows,
-                     int total_cols,
+                     size_t total_rows,
+                     size_t total_cols,
                      Editor* editor,
                      Client* client) {
     ZoneScoped;
 
-    int mini_buffer_height = 0;
+    size_t mini_buffer_height = 0;
 
     if (client->_message.tag != Message::NONE) {
         ZoneScopedN("Draw mini buffer");
 
         mini_buffer_height = 1;
-        int results_height = 0;
+        size_t results_height = 0;
 
         Completion_Results* completion_results = &client->mini_buffer_completion_results;
         if (client->_message.tag > Message::SHOW) {
@@ -402,10 +402,10 @@ void render_to_cells(Cell* cells,
             }
         }
 
-        int y = 0;
-        int x = 0;
-        int start_row = total_rows - mini_buffer_height - results_height;
-        int start_col = 0;
+        size_t y = 0;
+        size_t x = 0;
+        size_t start_row = total_rows - mini_buffer_height - results_height;
+        size_t start_col = 0;
         int attrs = A_NORMAL;
 
         for (size_t i = 0; i < client->_message.text.len && i < total_cols; ++i) {
@@ -433,11 +433,11 @@ void render_to_cells(Cell* cells,
         }
 
         {
-            int y = 0;
-            int x = 0;
-            int start_row = total_rows - results_height;
-            int start_col = 0;
-            for (int r = 0; r < results_height; ++r) {
+            size_t y = 0;
+            size_t x = 0;
+            size_t start_row = total_rows - results_height;
+            size_t start_col = 0;
+            for (size_t r = 0; r < results_height; ++r) {
                 cz::Str result = completion_results->results[r];
                 for (size_t i = 0; i < total_cols && i < result.len; ++i) {
                     SET(attrs, result[i]);
