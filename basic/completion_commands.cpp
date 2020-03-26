@@ -57,5 +57,18 @@ void command_previous_completion(Editor* editor, Command_Source source) {
     --results->selected;
 }
 
+void command_first_completion(Editor* editor, Command_Source source) {
+    Completion_Results* results = &source.client->mini_buffer_completion_results;
+    results->selected = 0;
+}
+
+void command_last_completion(Editor* editor, Command_Source source) {
+    Completion_Results* results = &source.client->mini_buffer_completion_results;
+    results->selected = results->results.len();
+    if (results->selected > 0) {
+        --results->selected;
+    }
+}
+
 }
 }

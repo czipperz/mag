@@ -8,8 +8,12 @@ namespace mag {
 namespace basic {
 
 void command_insert_completion(Editor* editor, Command_Source source);
+
 void command_next_completion(Editor* editor, Command_Source source);
 void command_previous_completion(Editor* editor, Command_Source source);
+
+void command_first_completion(Editor* editor, Command_Source source);
+void command_last_completion(Editor* editor, Command_Source source);
 
 }
 }
