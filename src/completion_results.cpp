@@ -7,7 +7,6 @@
 #include <cz/util.hpp>
 
 namespace mag {
-namespace client {
 
 static bool binary_search_string_prefix_start(cz::Slice<cz::Str> results,
                                               cz::Str prefix,
@@ -120,5 +119,4 @@ void load_completion_results(Completion_Results* completion_results) {
     }
 }
 
-}
 }

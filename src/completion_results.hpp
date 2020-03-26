@@ -5,7 +5,6 @@
 #include "message.hpp"
 
 namespace mag {
-namespace client {
 
 struct Completion_Results {
     enum State {
@@ -23,5 +22,4 @@ struct Completion_Results {
 
 void load_completion_results(Completion_Results* completion_results);
 
-}
 }

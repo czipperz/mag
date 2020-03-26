@@ -65,7 +65,6 @@ static void render(int* total_rows,
                    int* total_cols,
                    Cell** cellss,
                    Window_Cache** window_cache,
-                   Completion_Results* completion_results,
                    Editor* editor,
                    Client* client) {
     ZoneScoped;
@@ -101,7 +100,7 @@ static void render(int* total_rows,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, completion_results, rows, cols, editor, client);
+    render_to_cells(cellss[1], window_cache, rows, cols, editor, client);
 
     {
         ZoneScopedN("blit cells");
@@ -215,8 +214,6 @@ void run(Server* server, Client* client) {
     Window_Cache* window_cache = nullptr;
     CZ_DEFER(destroy_window_cache(window_cache));
 
-    Completion_Results completion_results = {};
-
     int total_rows = 0;
     int total_cols = 0;
 
@@ -225,12 +222,11 @@ void run(Server* server, Client* client) {
     while (1) {
         ZoneScopedN("ncurses main loop");
 
-        render(&total_rows, &total_cols, cellss, &window_cache, &completion_results,
-               &server->editor, client);
+        render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client);
 
         int ch = ERR;
-        if (completion_results.state == Completion_Results::LOADING) {
-            load_completion_results(&completion_results);
+        if (client->mini_buffer_completion_results.state == Completion_Results::LOADING) {
+            load_completion_results(&client->mini_buffer_completion_results);
             continue;
         }
 

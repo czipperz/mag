@@ -336,7 +336,6 @@ static void draw_window(Cell* cells,
 
 void render_to_cells(Cell* cells,
                      Window_Cache** window_cache,
-                     Completion_Results* completion_results,
                      int total_rows,
                      int total_cols,
                      Editor* editor,
@@ -351,6 +350,7 @@ void render_to_cells(Cell* cells,
         mini_buffer_height = 1;
         int results_height = 0;
 
+        Completion_Results* completion_results = &client->mini_buffer_completion_results;
         if (completion_results->response_tag != client->_message.tag) {
             completion_results->results.set_len(0);
             completion_results->state = Completion_Results::INITIAL;

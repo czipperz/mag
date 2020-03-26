@@ -5,6 +5,7 @@
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
 #include "buffer_id.hpp"
+#include "completion_results.hpp"
 #include "copy_chain.hpp"
 #include "key.hpp"
 #include "message.hpp"
@@ -24,6 +25,8 @@ struct Client {
 
     Window_Unified* _mini_buffer;
     bool _select_mini_buffer;
+
+    Completion_Results mini_buffer_completion_results;
 
     std::chrono::system_clock::time_point _message_time;
     Message _message;
