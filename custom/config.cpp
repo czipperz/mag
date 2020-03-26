@@ -3,6 +3,7 @@
 #include "basic/buffer_commands.hpp"
 #include "basic/capitalization_commands.hpp"
 #include "basic/commands.hpp"
+#include "basic/completion_commands.hpp"
 #include "basic/copy_commands.hpp"
 #include "basic/directory_commands.hpp"
 #include "basic/search_commands.hpp"
@@ -153,6 +154,19 @@ static Key_Map* search_key_map() {
     return &key_map;
 }
 
+static Key_Map create_path_key_map() {
+    Key_Map key_map = {};
+    key_map.bind("A-i", command_insert_completion);
+    key_map.bind("C-n", command_next_completion);
+    key_map.bind("C-p", command_previous_completion);
+    return key_map;
+}
+
+static Key_Map* path_key_map() {
+    static Key_Map key_map = create_path_key_map();
+    return &key_map;
+}
+
 Mode get_mode(cz::Str file_name) {
     Mode mode = {};
     mode.next_token = default_next_token;
@@ -165,6 +179,9 @@ Mode get_mode(cz::Str file_name) {
         mode.key_map = cpp_key_map();
     } else if (file_name.ends_with(".md")) {
         mode.next_token = syntax::md_next_token;
+    } else if (file_name == "*client mini buffer*") {
+        //mode.next_token = syntax::path_next_token;
+        mode.key_map = path_key_map();
     } else if (file_name.starts_with("*git grep ")) {
         mode.key_map = search_key_map();
     }
