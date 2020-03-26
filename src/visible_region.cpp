@@ -10,7 +10,7 @@ namespace client {
 void compute_visible_start(Window* window, Contents_Iterator* line_start_iterator) {
     ZoneScoped;
 
-    for (int rows = 0; rows < window->rows - 2;) {
+    for (size_t rows = 0; rows < window->rows - 2;) {
         Contents_Iterator next_line_start_iterator = *line_start_iterator;
         backward_line(&next_line_start_iterator);
         if (next_line_start_iterator.position == line_start_iterator->position) {
@@ -30,8 +30,7 @@ void compute_visible_start(Window* window, Contents_Iterator* line_start_iterato
 void compute_visible_end(Window* window, Contents_Iterator* line_start_iterator) {
     ZoneScoped;
 
-    int rows;
-    for (rows = 0; rows < window->rows - 1;) {
+    for (size_t rows = 0; rows < window->rows - 1;) {
         Contents_Iterator next_line_start_iterator = *line_start_iterator;
         forward_line(&next_line_start_iterator);
         if (next_line_start_iterator.position == line_start_iterator->position) {
