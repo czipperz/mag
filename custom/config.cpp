@@ -103,7 +103,7 @@ Key_Map create_key_map() {
 
     key_map.bind("A-g s", git::command_git_grep);
 
-    key_map.bind("A-r", command_goto_center_of_window);
+    key_map.bind("A-l", command_goto_center_of_window);
     key_map.bind("C-l", command_center_in_window);
 
     return key_map;
