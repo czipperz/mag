@@ -119,8 +119,8 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
 void command_git_grep(Editor* editor, Command_Source source) {
     Buffer_Id* selected_buffer_id = (Buffer_Id*)malloc(sizeof(Buffer_Id));
     *selected_buffer_id = source.client->selected_window()->id;
-    source.client->show_dialog("git grep: ", no_completion_engine, command_git_grep_callback,
-                               selected_buffer_id);
+    source.client->show_dialog(editor, "git grep: ", no_completion_engine,
+                               command_git_grep_callback, selected_buffer_id);
 }
 
 }

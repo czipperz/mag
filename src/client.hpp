@@ -79,10 +79,14 @@ struct Client {
         _select_mini_buffer = false;
     }
 
-    void show_dialog(cz::Str prompt,
+    void show_dialog(Editor* editor,
+                     cz::Str prompt,
                      Completion_Engine completion_engine,
                      Message::Response_Callback response_callback,
                      void* response_callback_data) {
+        dealloc_message();
+        clear_mini_buffer(editor);
+
         _message_time = std::chrono::system_clock::now();
         _message = {};
         _message.text = prompt;
@@ -93,7 +97,13 @@ struct Client {
         _select_mini_buffer = true;
     }
 
-    void hide_mini_buffer(Editor* editor);
+    void hide_mini_buffer(Editor* editor) {
+        restore_selected_buffer();
+        dealloc_message();
+        clear_mini_buffer(editor);
+    }
+
+    void clear_mini_buffer(Editor* editor);
 
     void dealloc_message() {
         free(_message.response_callback_data);

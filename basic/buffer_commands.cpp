@@ -13,11 +13,14 @@ static void command_open_file_callback(Editor* editor, Client* client, cz::Str q
 }
 
 void command_open_file(Editor* editor, Command_Source source) {
+    source.client->show_dialog(editor, "Open file: ", file_completion_engine,
+                               command_open_file_callback, nullptr);
+
     cz::String default_value = {};
     CZ_DEFER(default_value.drop(cz::heap_allocator()));
     bool has_default_value;
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_WINDOW_BUFFER(source.client->selected_normal_window);
         has_default_value = buffer->path.find('/') != nullptr;
         if (has_default_value) {
             default_value = buffer->path.clone(cz::heap_allocator());
@@ -40,9 +43,6 @@ void command_open_file(Editor* editor, Command_Source source) {
 
         transaction.commit(buffer);
     }
-
-    source.client->show_dialog("Open file: ", file_completion_engine, command_open_file_callback,
-                               nullptr);
 }
 
 void command_save_file(Editor* editor, Command_Source source) {
@@ -74,7 +74,7 @@ static void command_switch_buffer_callback(Editor* editor,
 }
 
 void command_switch_buffer(Editor* editor, Command_Source source) {
-    source.client->show_dialog("Buffer to switch to: ", buffer_completion_engine,
+    source.client->show_dialog(editor, "Buffer to switch to: ", buffer_completion_engine,
                                command_switch_buffer_callback, nullptr);
 }
 
@@ -160,7 +160,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
 void command_kill_buffer(Editor* editor, Command_Source source) {
     Buffer_Id* buffer_id = (Buffer_Id*)malloc(sizeof(Buffer_Id));
     *buffer_id = source.client->selected_window()->id;
-    source.client->show_dialog("Buffer to kill: ", buffer_completion_engine,
+    source.client->show_dialog(editor, "Buffer to kill: ", buffer_completion_engine,
                                command_kill_buffer_callback, buffer_id);
 }
 

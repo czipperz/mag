@@ -7,15 +7,10 @@ namespace mag {
 
 cz::Str clear_buffer(Editor* editor, Buffer* buffer);
 
-void Client::hide_mini_buffer(Editor* editor) {
-    restore_selected_buffer();
-    dealloc_message();
-
-    {
-        Window_Unified* window = mini_buffer_window();
-        WITH_WINDOW_BUFFER(window);
-        clear_buffer(editor, buffer);
-    }
+void Client::clear_mini_buffer(Editor* editor) {
+    Window_Unified* window = mini_buffer_window();
+    WITH_WINDOW_BUFFER(window);
+    clear_buffer(editor, buffer);
 }
 
 static bool binary_search_offscreen_windows(cz::Slice<Window_Unified*> offscreen_windows,
