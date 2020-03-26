@@ -230,8 +230,18 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
 
     uint64_t sum_region_sizes = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
-        Contents_Iterator end = start;
+        Contents_Iterator start;
+        Contents_Iterator end;
+        if (window->show_marks) {
+            start = buffer->contents.iterator_at(cursors[c].start());
+            end = buffer->contents.iterator_at(cursors[c].end());
+            if (end.position > start.position) {
+                end.retreat();
+            }
+        } else {
+            start = buffer->contents.iterator_at(cursors[c].point);
+            end = start;
+        }
         start_of_line(&start);
         end_of_line(&end);
         sum_region_sizes += end.position - start.position;
@@ -242,8 +252,18 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
     CZ_DEFER(transaction.drop());
 
     for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
-        Contents_Iterator end = start;
+        Contents_Iterator start;
+        Contents_Iterator end;
+        if (window->show_marks) {
+            start = buffer->contents.iterator_at(cursors[c].start());
+            end = buffer->contents.iterator_at(cursors[c].end());
+            if (end.position > start.position) {
+                end.retreat();
+            }
+        } else {
+            start = buffer->contents.iterator_at(cursors[c].point);
+            end = start;
+        }
         start_of_line(&start);
         end_of_line(&end);
 
