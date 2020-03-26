@@ -14,6 +14,7 @@
 #include "prose/alternate.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_md.hpp"
+#include "syntax/tokenize_path.hpp"
 
 namespace mag {
 namespace custom {
@@ -180,7 +181,7 @@ Mode get_mode(cz::Str file_name) {
     } else if (file_name.ends_with(".md")) {
         mode.next_token = syntax::md_next_token;
     } else if (file_name == "*client mini buffer*") {
-        //mode.next_token = syntax::path_next_token;
+        mode.next_token = syntax::path_next_token;
         mode.key_map = path_key_map();
     } else if (file_name.starts_with("*git grep ")) {
         mode.key_map = search_key_map();
