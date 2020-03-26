@@ -13,21 +13,28 @@ void command_insert_completion(Editor* editor, Command_Source source) {
         return;
     }
 
+    size_t query_offset = 0;
+    const char* last_slash = results->query.rfind('/');
+    if (last_slash) {
+        query_offset = last_slash - results->query.start() + 1;
+    }
+
     cz::Str value = results->results[results->selected];
 
     Transaction transaction;
-    transaction.init(2, buffer->contents.len + value.len);
+    transaction.init(2, results->query.len() - query_offset + value.len);
 
     Edit remove;
-    remove.value = buffer->contents.slice(transaction.value_allocator(), buffer->contents.start(),
-                                          buffer->contents.len);
-    remove.position = 0;
+    remove.value.init_duplicate(
+        transaction.value_allocator(),
+        {results->query.buffer() + query_offset, results->query.len() - query_offset});
+    remove.position = query_offset;
     remove.flags = Edit::REMOVE;
     transaction.push(remove);
 
     Edit insert;
     insert.value.init_duplicate(transaction.value_allocator(), value);
-    insert.position = 0;
+    insert.position = query_offset;
     insert.flags = Edit::INSERT;
     transaction.push(insert);
 
@@ -36,7 +43,7 @@ void command_insert_completion(Editor* editor, Command_Source source) {
 
 void command_next_completion(Editor* editor, Command_Source source) {
     Completion_Results* results = &source.client->mini_buffer_completion_results;
-    if (results->selected >= results->results.len()) {
+    if (results->selected + 1 >= results->results.len()) {
         return;
     }
     ++results->selected;
