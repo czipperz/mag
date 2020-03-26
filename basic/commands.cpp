@@ -251,6 +251,8 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
     transaction.init(cursors.len, sum_region_sizes + cursors.len);
     CZ_DEFER(transaction.drop());
 
+    uint64_t offset = 0;
+
     for (size_t c = 0; c < cursors.len; ++c) {
         Contents_Iterator start;
         Contents_Iterator end;
@@ -274,7 +276,8 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
 
         Edit edit;
         edit.value.init_from_constant({value, region_size});
-        edit.position = start.position;
+        edit.position = start.position + offset;
+        offset += edit.value.len();
         edit.flags = Edit::INSERT;
         transaction.push(edit);
     }
@@ -300,6 +303,8 @@ void command_delete_line(Editor* editor, Command_Source source) {
     transaction.init(cursors.len, sum_region_sizes);
     CZ_DEFER(transaction.drop());
 
+    uint64_t offset = 0;
+
     for (size_t c = 0; c < cursors.len; ++c) {
         Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
         Contents_Iterator end = start;
@@ -309,7 +314,8 @@ void command_delete_line(Editor* editor, Command_Source source) {
 
         Edit edit;
         edit.value = buffer->contents.slice(transaction.value_allocator(), start, end.position);
-        edit.position = start.position;
+        edit.position = start.position - offset;
+        offset += edit.value.len();
         edit.flags = Edit::REMOVE;
         transaction.push(edit);
     }
