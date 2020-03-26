@@ -27,6 +27,10 @@
 
 * Write file to path
 
+* Multi cursors
+  - Message when no cursor created
+  - Make all cursors
+
 * Jobs (run in background)
   - Syntax highlighting
   - Process for clang format
