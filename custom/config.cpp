@@ -75,6 +75,7 @@ Key_Map create_key_map() {
     key_map.bind("C-g", command_stop_action);
 
     key_map.bind("C-o", command_open_file);
+    key_map.bind("A-o", command_cycle_window);
     key_map.bind("C-s", command_save_file);
 
     key_map.bind("C-x C-c", command_quit);
@@ -83,7 +84,6 @@ Key_Map create_key_map() {
     key_map.bind("C-x 2", command_split_window_horizontal);
     key_map.bind("C-x 3", command_split_window_vertical);
     key_map.bind("C-x 0", command_close_window);
-    key_map.bind("C-x o", command_cycle_window);
 
     key_map.bind("C-x b", command_switch_buffer);
     key_map.bind("C-x k", command_kill_buffer);
