@@ -8,6 +8,7 @@
 #include "basic/directory_commands.hpp"
 #include "basic/search_commands.hpp"
 #include "basic/shift_commands.hpp"
+#include "basic/visible_region_commands.hpp"
 #include "basic/window_commands.hpp"
 #include "clang_format/clang_format.hpp"
 #include "git/git.hpp"
@@ -99,6 +100,9 @@ Key_Map create_key_map() {
     key_map.bind("A-g c", command_goto_position);
 
     key_map.bind("A-g s", git::command_git_grep);
+
+    key_map.bind("A-r", command_goto_center_of_window);
+    key_map.bind("C-l", command_center_in_window);
 
     return key_map;
 }
