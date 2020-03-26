@@ -363,34 +363,17 @@ void render_to_cells(Cell* cells,
             {
                 Window_Unified* window = client->mini_buffer_window();
                 WITH_WINDOW_BUFFER(window);
-                Contents_Iterator iterator = buffer->contents.iterator_at(0);
-                size_t i = 0;
-                cz::Str query = completion_results->query;
-                while (1) {
-                    if (i == query.len && iterator.at_eob()) {
-                        break;
-                    } else if (i == query.len || iterator.at_eob()) {
-                        completion_results->state = Completion_Results::INITIAL;
-                        break;
-                    }
-
-                    if (query[i] != iterator.get()) {
-                        completion_results->state = Completion_Results::INITIAL;
-                        break;
-                    }
-
-                    ++i;
-                    iterator.advance();
+                if (completion_results->change_index != buffer->changes.len()) {
+                    completion_results->change_index = buffer->changes.len();
+                    completion_results->state = Completion_Results::INITIAL;
+                    completion_results->query.set_len(0);
+                    buffer->contents.stringify_into(cz::heap_allocator(),
+                                                    &completion_results->query);
                 }
             }
 
             switch (completion_results->state) {
-            case Completion_Results::INITIAL: {
-                Window_Unified* window = client->mini_buffer_window();
-                WITH_WINDOW_BUFFER(window);
-                completion_results->query.set_len(0);
-                buffer->contents.stringify_into(cz::heap_allocator(), &completion_results->query);
-            }
+            case Completion_Results::INITIAL:
                 completion_results->results.set_len(0);
                 completion_results->state = Completion_Results::LOADING;
                 completion_results->selected = 0;

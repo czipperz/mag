@@ -16,6 +16,7 @@ struct Completion_Results {
     cz::String query;
     cz::Vector<cz::Str> results;
     size_t selected;
+    size_t change_index;
 };
 
 typedef void (*Completion_Engine)(Completion_Results*);
