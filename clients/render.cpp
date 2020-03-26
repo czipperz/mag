@@ -447,10 +447,16 @@ void render_to_cells(Cell* cells,
                 offset -= results_height / 2;
             }
             for (size_t r = offset; r < results_height + offset; ++r) {
-                cz::Str result = completion_results->results[r];
-                for (size_t i = 0; i < total_cols && i < result.len; ++i) {
-                    SET(attrs, result[i]);
-                    ++x;
+                {
+                    int attrs = A_NORMAL;
+                    if (r == completion_results->selected) {
+                        attrs |= A_UNDERLINE;
+                    }
+                    cz::Str result = completion_results->results[r];
+                    for (size_t i = 0; i < total_cols && i < result.len; ++i) {
+                        SET(attrs, result[i]);
+                        ++x;
+                    }
                 }
 
                 for (; x < total_cols; ++x) {
