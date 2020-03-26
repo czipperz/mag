@@ -26,6 +26,7 @@
   - Center screen and move cursor to top and bottom of screen
 
 * Write file to path
+* Paste previous copies
 
 * Multi cursors
   - Message when no cursor created
