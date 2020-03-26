@@ -63,5 +63,7 @@ void command_goto_position(Editor* editor, Command_Source source);
 
 void command_path_up_directory(Editor* editor, Command_Source source);
 
+void command_mark_buffer(Editor* editor, Command_Source source);
+
 }
 }

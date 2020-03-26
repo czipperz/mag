@@ -86,6 +86,8 @@ Key_Map create_key_map() {
     key_map.bind("C-x 3", command_split_window_vertical);
     key_map.bind("C-x 0", command_close_window);
 
+    key_map.bind("C-x h", command_mark_buffer);
+
     key_map.bind("C-x b", command_switch_buffer);
     key_map.bind("C-x k", command_kill_buffer);
 

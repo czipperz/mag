@@ -718,5 +718,14 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
     transaction.commit(buffer);
 }
 
+void command_mark_buffer(Editor* editor, Command_Source source) {
+    Window_Unified* window = source.client->selected_window();
+    kill_extra_cursors(window, source.client);
+    window->show_marks = true;
+    window->cursors[0].mark = 0;
+    WITH_WINDOW_BUFFER(window);
+    window->cursors[0].point = buffer->contents.len;
+}
+
 }
 }
