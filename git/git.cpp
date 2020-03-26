@@ -53,10 +53,7 @@ static bool get_git_top_level(Client* client,
     if (!run_script_synchronously("git rev-parse --show-toplevel", dir_cstr, allocator,
                                   top_level_path, &return_value) ||
         return_value != 0) {
-        Message message = {};
-        message.tag = Message::SHOW;
-        message.text = "No git repository found";
-        client->show_message(message);
+        client->show_message("No git repository found");
         return false;
     }
 
@@ -102,10 +99,7 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
     if (!run_script_synchronously(script.buffer(), top_level_path.buffer(), cz::heap_allocator(),
                                   &results, &return_value) ||
         return_value != 0) {
-        Message message = {};
-        message.tag = Message::SHOW;
-        message.text = "Git grep error";
-        client->show_message(message);
+        client->show_message("Git grep error");
         return;
     }
 
@@ -123,16 +117,10 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
 }
 
 void command_git_grep(Editor* editor, Command_Source source) {
-    Message message = {};
-    message.tag = Message::RESPOND_TEXT;
-    message.text = "git grep: ";
-    message.response_callback = command_git_grep_callback;
-
     Buffer_Id* selected_buffer_id = (Buffer_Id*)malloc(sizeof(Buffer_Id));
     *selected_buffer_id = source.client->selected_window()->id;
-    message.response_callback_data = selected_buffer_id;
-
-    source.client->show_message(message);
+    source.client->show_dialog("git grep: ", Message::RESPOND_TEXT, command_git_grep_callback,
+                               selected_buffer_id);
 }
 
 }

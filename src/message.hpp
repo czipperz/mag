@@ -17,9 +17,10 @@ struct Message {
         RESPOND_FILE,
         RESPOND_BUFFER,
     } tag;
+    typedef void (*Response_Callback)(Editor*, Client*, cz::Str mini_buffer_contents, void* data);
 
     cz::Str text;
-    void (*response_callback)(Editor*, Client*, cz::Str mini_buffer_contents, void* data);
+    Response_Callback response_callback;
     void* response_callback_data;
 };
 

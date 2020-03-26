@@ -71,10 +71,25 @@ struct Client {
 
     void replace_window(Window* o, Window* n);
 
-    void show_message(Message message) {
+    void show_message(cz::Str text) {
         _message_time = std::chrono::system_clock::now();
-        _message = message;
-        _select_mini_buffer = message.tag > Message::SHOW;
+        _message = {};
+        _message.text = text;
+        _message.tag = Message::SHOW;
+        _select_mini_buffer = false;
+    }
+
+    void show_dialog(cz::Str prompt,
+                     Message::Tag tag,
+                     Message::Response_Callback response_callback,
+                     void* response_callback_data) {
+        _message_time = std::chrono::system_clock::now();
+        _message = {};
+        _message.text = prompt;
+        _message.tag = tag;
+        _message.response_callback = response_callback;
+        _message.response_callback_data = response_callback_data;
+        _select_mini_buffer = true;
     }
 
     void hide_mini_buffer(Editor* editor);

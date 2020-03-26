@@ -346,10 +346,7 @@ void command_stop_action(Editor* editor, Command_Source source) {
         done = true;
     }
 
-    Message message = {};
-    message.tag = Message::SHOW;
-    message.text = "Quit";
-    source.client->show_message(message);
+    source.client->show_message("Quit");
 }
 
 void command_quit(Editor* editor, Command_Source source) {
@@ -577,12 +574,8 @@ void command_search_forward(Editor* editor, Command_Source source) {
             SEARCH_SLICE_THEN(search_forward_slice, cursors[c] = new_cursor);
         }
     } else {
-        Message message;
-        message.tag = Message::RESPOND_TEXT;
-        message.text = "Search forward: ";
-        message.response_callback = command_search_forward_callback;
-        message.response_callback_data = nullptr;
-        source.client->show_message(message);
+        source.client->show_dialog("Search forward: ", Message::RESPOND_TEXT,
+                                   command_search_forward_callback, nullptr);
     }
 }
 
@@ -608,12 +601,8 @@ void command_search_backward(Editor* editor, Command_Source source) {
             SEARCH_SLICE_THEN(search_backward_slice, cursors[c] = new_cursor);
         }
     } else {
-        Message message;
-        message.tag = Message::RESPOND_TEXT;
-        message.text = "Search backward: ";
-        message.response_callback = command_search_backward_callback;
-        message.response_callback_data = nullptr;
-        source.client->show_message(message);
+        source.client->show_dialog("Search backward: ", Message::RESPOND_TEXT,
+                                   command_search_backward_callback, nullptr);
     }
 }
 
@@ -655,19 +644,13 @@ static void command_goto_position_callback(Editor* editor,
 }
 
 void command_goto_line(Editor* editor, Command_Source source) {
-    Message message = {};
-    message.tag = Message::RESPOND_TEXT;
-    message.text = "Goto line: ";
-    message.response_callback = command_goto_line_callback;
-    source.client->show_message(message);
+    source.client->show_dialog("Goto line: ", Message::RESPOND_TEXT, command_goto_line_callback,
+                               nullptr);
 }
 
 void command_goto_position(Editor* editor, Command_Source source) {
-    Message message = {};
-    message.tag = Message::RESPOND_TEXT;
-    message.text = "Goto position: ";
-    message.response_callback = command_goto_position_callback;
-    source.client->show_message(message);
+    source.client->show_dialog("Goto position: ", Message::RESPOND_TEXT,
+                               command_goto_position_callback, nullptr);
 }
 
 }

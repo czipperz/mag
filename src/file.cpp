@@ -104,10 +104,7 @@ bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id
 
 void open_file(Editor* editor, Client* client, cz::Str user_path) {
     if (user_path.len == 0) {
-        Message message = {};
-        message.tag = Message::SHOW;
-        message.text = "File path must not be empty";
-        client->show_message(message);
+        client->show_message("File path must not be empty");
         return;
     }
 
@@ -122,10 +119,7 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     Buffer_Id buffer_id;
     if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
         if (load_path(editor, path.buffer(), path.len(), &buffer_id).is_err()) {
-            Message message = {};
-            message.tag = Message::SHOW;
-            message.text = "File not found";
-            client->show_message(message);
+            client->show_message("File not found");
             // Still open empty file buffer.
         }
     }

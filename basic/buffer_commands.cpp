@@ -13,11 +13,6 @@ static void command_open_file_callback(Editor* editor, Client* client, cz::Str q
 }
 
 void command_open_file(Editor* editor, Command_Source source) {
-    Message message = {};
-    message.tag = Message::RESPOND_FILE;
-    message.text = "Open file: ";
-    message.response_callback = command_open_file_callback;
-
     cz::String default_value = {};
     CZ_DEFER(default_value.drop(cz::heap_allocator()));
     bool has_default_value;
@@ -46,25 +41,20 @@ void command_open_file(Editor* editor, Command_Source source) {
         transaction.commit(buffer);
     }
 
-    source.client->show_message(message);
+    source.client->show_dialog("Open file: ", Message::RESPOND_FILE, command_open_file_callback,
+                               nullptr);
 }
 
 void command_save_file(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     if (!buffer->path.find('/')) {
-        Message message = {};
-        message.tag = Message::SHOW;
-        message.text = "File must have path";
-        source.client->show_message(message);
+        source.client->show_message("File must have path");
         return;
     }
 
     if (!save_contents(&buffer->contents, buffer->path.buffer())) {
-        Message message = {};
-        message.tag = Message::SHOW;
-        message.text = "Error saving file";
-        source.client->show_message(message);
+        source.client->show_message("Error saving file");
         return;
     }
 
@@ -84,12 +74,8 @@ static void command_switch_buffer_callback(Editor* editor,
 }
 
 void command_switch_buffer(Editor* editor, Command_Source source) {
-    Message message = {};
-    message.tag = Message::RESPOND_BUFFER;
-    message.text = "Buffer to switch to: ";
-    message.response_callback = command_switch_buffer_callback;
-
-    source.client->show_message(message);
+    source.client->show_dialog("Buffer to switch to: ", Message::RESPOND_BUFFER,
+                               command_switch_buffer_callback, nullptr);
 }
 
 static int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** selected_window) {
@@ -172,16 +158,10 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
 }
 
 void command_kill_buffer(Editor* editor, Command_Source source) {
-    Message message = {};
-    message.tag = Message::RESPOND_BUFFER;
-    message.text = "Buffer to kill: ";
-    message.response_callback = command_kill_buffer_callback;
-
     Buffer_Id* buffer_id = (Buffer_Id*)malloc(sizeof(Buffer_Id));
     *buffer_id = source.client->selected_window()->id;
-    message.response_callback_data = buffer_id;
-
-    source.client->show_message(message);
+    source.client->show_dialog("Buffer to kill: ", Message::RESPOND_BUFFER,
+                               command_kill_buffer_callback, buffer_id);
 }
 
 }

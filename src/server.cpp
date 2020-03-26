@@ -174,10 +174,7 @@ static void failed_key_press(Editor* editor,
             *previous_command = command_insert_char;
         }
     } else {
-        Message message = {};
-        message.tag = Message::SHOW;
-        message.text = "Invalid key combo";
-        client->show_message(message);
+        client->show_message("Invalid key combo");
         *previous_command = nullptr;
     }
 }

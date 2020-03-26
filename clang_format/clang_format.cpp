@@ -160,10 +160,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     if (!run_script_synchronously(script.buffer(), nullptr, cz::heap_allocator(), &output_xml,
                                   &return_value) ||
         return_value != 0) {
-        Message message = {};
-        message.tag = Message::SHOW;
-        message.text = "Error: Couldn't launch clang-format";
-        source.client->show_message(message);
+        source.client->show_message("Error: Couldn't launch clang-format");
     }
 
     cz::Vector<Replacement> replacements = {};
