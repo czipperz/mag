@@ -19,6 +19,8 @@
   - Git ls files
 
 * Capitalization
+* File listeners
+  - Automatically update files when file system is updated
 
 * Screen based movement
   - Up and down page
