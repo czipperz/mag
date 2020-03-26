@@ -18,7 +18,6 @@
 * Git integration
   - Git ls files
 
-* Capitalization
 * File listeners
   - Automatically update files when file system is updated
 

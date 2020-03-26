@@ -1,6 +1,7 @@
 #include "config.hpp"
 
 #include "basic/buffer_commands.hpp"
+#include "basic/capitalization_commands.hpp"
 #include "basic/commands.hpp"
 #include "basic/copy_commands.hpp"
 #include "basic/directory_commands.hpp"
@@ -86,6 +87,11 @@ Key_Map create_key_map() {
     key_map.bind("C-x k", command_kill_buffer);
 
     key_map.bind("C-c p a", prose::command_alternate);
+
+    key_map.bind("C-c u", command_uppercase_letter);
+    key_map.bind("C-c l", command_lowercase_letter);
+    key_map.bind("C-c C-u", command_uppercase_region);
+    key_map.bind("C-c C-l", command_lowercase_region);
 
     key_map.bind("A-g A-g", command_goto_line);
     key_map.bind("A-g c", command_goto_position);
