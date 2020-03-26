@@ -323,6 +323,40 @@ void command_delete_line(Editor* editor, Command_Source source) {
     transaction.commit(buffer);
 }
 
+void command_delete_end_of_line(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    uint64_t sum_region_sizes = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
+        Contents_Iterator end = start;
+        end_of_line(&end);
+        sum_region_sizes += end.position - start.position;
+    }
+
+    Transaction transaction;
+    transaction.init(cursors.len, sum_region_sizes);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+
+    for (size_t c = 0; c < cursors.len; ++c) {
+        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
+        Contents_Iterator end = start;
+        end_of_line(&end);
+
+        Edit edit;
+        edit.value = buffer->contents.slice(transaction.value_allocator(), start, end.position);
+        edit.position = start.position - offset;
+        offset += edit.value.len();
+        edit.flags = Edit::REMOVE;
+        transaction.push(edit);
+    }
+
+    transaction.commit(buffer);
+}
+
 void command_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     buffer->undo();

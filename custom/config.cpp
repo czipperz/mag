@@ -60,6 +60,7 @@ Key_Map create_key_map() {
 
     key_map.bind("C-k", command_delete_line);
     key_map.bind("A-k", command_duplicate_line);
+    key_map.bind("C-A-k", command_delete_end_of_line);
 
     key_map.bind("C-t", command_transpose_characters);
 
