@@ -23,7 +23,7 @@
 
 * Screen based movement
   - Up and down page
-  - Center screen and move cursor to top and bottom of screen
+  - Move cursor to top and bottom of screen
 
 * Write file to path
 * Paste previous copies
