@@ -3,7 +3,6 @@
 #include <ncurses.h>
 #include <Tracy.hpp>
 #include "command_macros.hpp"
-#include "mini_buffer_results.hpp"
 #include "movement.hpp"
 #include "token.hpp"
 #include "visible_region.hpp"
@@ -337,7 +336,7 @@ static void draw_window(Cell* cells,
 
 void render_to_cells(Cell* cells,
                      Window_Cache** window_cache,
-                     Mini_Buffer_Results* mini_buffer_results,
+                     Completion_Results* completion_results,
                      int total_rows,
                      int total_cols,
                      Editor* editor,
@@ -352,9 +351,9 @@ void render_to_cells(Cell* cells,
         mini_buffer_height = 1;
         int results_height = 0;
 
-        if (mini_buffer_results->response_tag != client->_message.tag) {
-            mini_buffer_results->results.set_len(0);
-            mini_buffer_results->state = Mini_Buffer_Results::INITIAL;
+        if (completion_results->response_tag != client->_message.tag) {
+            completion_results->results.set_len(0);
+            completion_results->state = Completion_Results::INITIAL;
         }
 
         if (client->_message.tag > Message::SHOW) {
@@ -363,17 +362,17 @@ void render_to_cells(Cell* cells,
                 WITH_WINDOW_BUFFER(window);
                 Contents_Iterator iterator = buffer->contents.iterator_at(0);
                 size_t i = 0;
-                cz::Str query = mini_buffer_results->query;
+                cz::Str query = completion_results->query;
                 while (1) {
                     if (i == query.len && iterator.at_eob()) {
                         break;
                     } else if (i == query.len || iterator.at_eob()) {
-                        mini_buffer_results->state = Mini_Buffer_Results::INITIAL;
+                        completion_results->state = Completion_Results::INITIAL;
                         break;
                     }
 
                     if (query[i] != iterator.get()) {
-                        mini_buffer_results->state = Mini_Buffer_Results::INITIAL;
+                        completion_results->state = Completion_Results::INITIAL;
                         break;
                     }
 
@@ -382,23 +381,23 @@ void render_to_cells(Cell* cells,
                 }
             }
 
-            switch (mini_buffer_results->state) {
-            case Mini_Buffer_Results::INITIAL: {
+            switch (completion_results->state) {
+            case Completion_Results::INITIAL: {
                 Window_Unified* window = client->mini_buffer_window();
                 WITH_WINDOW_BUFFER(window);
-                mini_buffer_results->query.set_len(0);
-                buffer->contents.stringify_into(cz::heap_allocator(), &mini_buffer_results->query);
+                completion_results->query.set_len(0);
+                buffer->contents.stringify_into(cz::heap_allocator(), &completion_results->query);
             }
-                mini_buffer_results->results.set_len(0);
-                mini_buffer_results->response_tag = client->_message.tag;
-                mini_buffer_results->state = Mini_Buffer_Results::LOADING;
+                completion_results->results.set_len(0);
+                completion_results->response_tag = client->_message.tag;
+                completion_results->state = Completion_Results::LOADING;
                 break;
 
-            case Mini_Buffer_Results::LOADING:
+            case Completion_Results::LOADING:
                 break;
 
-            case Mini_Buffer_Results::LOADED:
-                results_height = mini_buffer_results->results.len();
+            case Completion_Results::LOADED:
+                results_height = completion_results->results.len();
                 if (results_height > 5) {
                     results_height = 5;
                 }
@@ -445,7 +444,7 @@ void render_to_cells(Cell* cells,
             int start_row = total_rows - results_height;
             int start_col = 0;
             for (int r = 0; r < results_height; ++r) {
-                cz::Str result = mini_buffer_results->results[r];
+                cz::Str result = completion_results->results[r];
                 for (size_t i = 0; i < total_cols && i < result.len; ++i) {
                     SET(attrs, result[i]);
                     ++x;

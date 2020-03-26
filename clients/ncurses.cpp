@@ -10,7 +10,7 @@
 #include <thread>
 #include "cell.hpp"
 #include "client.hpp"
-#include "mini_buffer_results.hpp"
+#include "completion_results.hpp"
 #include "movement.hpp"
 #include "render.hpp"
 #include "server.hpp"
@@ -65,7 +65,7 @@ static void render(int* total_rows,
                    int* total_cols,
                    Cell** cellss,
                    Window_Cache** window_cache,
-                   Mini_Buffer_Results* mini_buffer_results,
+                   Completion_Results* completion_results,
                    Editor* editor,
                    Client* client) {
     ZoneScoped;
@@ -101,7 +101,7 @@ static void render(int* total_rows,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, mini_buffer_results, rows, cols, editor, client);
+    render_to_cells(cellss[1], window_cache, completion_results, rows, cols, editor, client);
 
     {
         ZoneScopedN("blit cells");
@@ -215,7 +215,7 @@ void run(Server* server, Client* client) {
     Window_Cache* window_cache = nullptr;
     CZ_DEFER(destroy_window_cache(window_cache));
 
-    Mini_Buffer_Results mini_buffer_results = {};
+    Completion_Results completion_results = {};
 
     int total_rows = 0;
     int total_cols = 0;
@@ -225,12 +225,12 @@ void run(Server* server, Client* client) {
     while (1) {
         ZoneScopedN("ncurses main loop");
 
-        render(&total_rows, &total_cols, cellss, &window_cache, &mini_buffer_results,
+        render(&total_rows, &total_cols, cellss, &window_cache, &completion_results,
                &server->editor, client);
 
         int ch = ERR;
-        if (mini_buffer_results.state == Mini_Buffer_Results::LOADING) {
-            load_mini_buffer_results(&mini_buffer_results);
+        if (completion_results.state == Completion_Results::LOADING) {
+            load_completion_results(&completion_results);
             continue;
         }
 

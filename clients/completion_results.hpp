@@ -7,7 +7,7 @@
 namespace mag {
 namespace client {
 
-struct Mini_Buffer_Results {
+struct Completion_Results {
     enum State {
         INITIAL,
         LOADING,
@@ -21,7 +21,7 @@ struct Mini_Buffer_Results {
     Message::Tag response_tag;
 };
 
-void load_mini_buffer_results(Mini_Buffer_Results* mini_buffer_results);
+void load_completion_results(Completion_Results* completion_results);
 
 }
 }
