@@ -385,6 +385,7 @@ void render_to_cells(Cell* cells,
             }
                 completion_results->results.set_len(0);
                 completion_results->state = Completion_Results::LOADING;
+                completion_results->selected = 0;
                 break;
 
             case Completion_Results::LOADING:
@@ -437,7 +438,15 @@ void render_to_cells(Cell* cells,
             size_t x = 0;
             size_t start_row = total_rows - results_height;
             size_t start_col = 0;
-            for (size_t r = 0; r < results_height; ++r) {
+            size_t offset = completion_results->selected;
+            if (offset >= completion_results->results.len() - results_height / 2) {
+                offset = completion_results->results.len() - results_height;
+            } else if (offset < results_height / 2) {
+                offset = 0;
+            } else {
+                offset -= results_height / 2;
+            }
+            for (size_t r = offset; r < results_height + offset; ++r) {
                 cz::Str result = completion_results->results[r];
                 for (size_t i = 0; i < total_cols && i < result.len; ++i) {
                     SET(attrs, result[i]);
