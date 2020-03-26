@@ -10,6 +10,7 @@
 #include "search_commands.hpp"
 #include "shift_commands.hpp"
 #include "syntax/tokenize_cpp.hpp"
+#include "syntax/tokenize_md.hpp"
 #include "window_commands.hpp"
 
 namespace mag {
@@ -94,7 +95,7 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
-    theme.faces.reserve(cz::heap_allocator(), 9);
+    theme.faces.reserve(cz::heap_allocator(), 11);
     theme.faces.push({7, 0, 0});  // DEFAULT
     theme.faces.push({1, 0, 0});  // KEYWORD
     theme.faces.push({4, 0, 0});  // TYPE
@@ -104,6 +105,9 @@ Theme create_theme() {
     theme.faces.push({6, 0, 0});  // COMMENT
     theme.faces.push({2, 0, 0});  // STRING
     theme.faces.push({7, 0, 0});  // IDENTIFIER
+
+    theme.faces.push({3, 0, 0});  // TITLE
+    theme.faces.push({2, 0, 0});  // CODE
     return theme;
 }
 
@@ -152,6 +156,8 @@ Mode get_mode(cz::Str file_name) {
                file_name.ends_with(".cpp") || file_name.ends_with(".hpp")) {
         mode.next_token = cpp_next_token;
         mode.key_map = cpp_key_map();
+    } else if (file_name.ends_with(".md")) {
+        mode.next_token = md_next_token;
     } else if (file_name.starts_with("*git grep ")) {
         mode.key_map = search_key_map();
     }

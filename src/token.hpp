@@ -15,6 +15,9 @@ enum Token_Type {
     COMMENT,
     STRING,
     IDENTIFIER,
+
+    TITLE,
+    CODE,
 };
 }
 using Token_Type_::Token_Type;
