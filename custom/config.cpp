@@ -114,7 +114,7 @@ static Key_Map create_directory_key_map() {
     return key_map;
 }
 
-Key_Map* directory_key_map() {
+static Key_Map* directory_key_map() {
     static Key_Map key_map = create_directory_key_map();
     return &key_map;
 }
@@ -144,15 +144,16 @@ static Key_Map* search_key_map() {
 
 Mode get_mode(cz::Str file_name) {
     Mode mode = {};
-    if (file_name.ends_with(".c") || file_name.ends_with(".h") || file_name.ends_with(".cc") ||
-        file_name.ends_with(".hh") || file_name.ends_with(".cpp") || file_name.ends_with(".hpp")) {
+    mode.next_token = default_next_token;
+    if (file_name.ends_with("/")) {
+        mode.key_map = directory_key_map();
+    } else if (file_name.ends_with(".c") || file_name.ends_with(".h") ||
+               file_name.ends_with(".cc") || file_name.ends_with(".hh") ||
+               file_name.ends_with(".cpp") || file_name.ends_with(".hpp")) {
         mode.next_token = cpp_next_token;
         mode.key_map = cpp_key_map();
     } else if (file_name.starts_with("*git grep ")) {
-        mode.next_token = default_next_token;
         mode.key_map = search_key_map();
-    } else {
-        mode.next_token = default_next_token;
     }
     return mode;
 }

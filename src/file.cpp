@@ -57,7 +57,6 @@ static cz::Result load_directory(Editor* editor,
             buffer->contents.insert(buffer->contents.len, files[i]);
             buffer->contents.insert(buffer->contents.len, "\n");
         }
-        buffer->mode.key_map = custom::directory_key_map();
     }
 
     return cz::Result::ok();
