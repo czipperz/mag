@@ -98,6 +98,8 @@ static void draw_buffer_contents(Cell* cells,
         }
     }
 
+    cz::Slice<Cursor> cursors = window->cursors;
+
     int show_mark = 0;
 
     for (Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
@@ -108,13 +110,12 @@ static void draw_buffer_contents(Cell* cells,
 
         bool has_cursor = false;
         if (show_cursors) {
-            cz::Slice<Cursor> cursors = window->cursors;
             for (size_t c = 0; c < cursors.len; ++c) {
                 if (window->show_marks) {
-                    if (iterator.position == std::min(cursors[c].mark, cursors[c].point)) {
+                    if (iterator.position == cursors[c].start()) {
                         ++show_mark;
                     }
-                    if (iterator.position == std::max(cursors[c].mark, cursors[c].point)) {
+                    if (iterator.position == cursors[c].end()) {
                         --show_mark;
                     }
                 }
@@ -170,7 +171,6 @@ static void draw_buffer_contents(Cell* cells,
     }
 
     if (show_cursors) {
-        cz::Slice<Cursor> cursors = window->cursors;
         for (size_t c = 0; c < cursors.len; ++c) {
             if (cursors[c].point == buffer->contents.len) {
                 SET(A_REVERSE, ' ');
