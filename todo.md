@@ -27,6 +27,7 @@
 
 * Write file to path
 * Paste previous copies
+* Histogram of used commands
 
 * Multi cursors
   - Message when no cursor created
