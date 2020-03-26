@@ -43,7 +43,7 @@ static void remove(Contents* contents, uint64_t position, uint64_t len) {
 static void apply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
     for (size_t i = 0; i < edits.len; ++i) {
         const Edit* edit = &edits[i];
-        if (edit->is_insert) {
+        if (edit->flags & Edit::INSERT_MASK) {
             insert(&buffer->contents, edit->position, edit->value.as_str());
         } else {
             remove(&buffer->contents, edit->position, edit->value.len());
@@ -54,7 +54,7 @@ static void apply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
 static void unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
     for (size_t i = edits.len; i-- > 0;) {
         const Edit* edit = &edits[i];
-        if (edit->is_insert) {
+        if (edit->flags & Edit::INSERT_MASK) {
             remove(&buffer->contents, edit->position, edit->value.len());
         } else {
             insert(&buffer->contents, edit->position, edit->value.as_str());

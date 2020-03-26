@@ -40,7 +40,7 @@ void command_open_file(Editor* editor, Command_Source source) {
         Edit edit;
         edit.value.init_duplicate(transaction.value_allocator(), default_value);
         edit.position = 0;
-        edit.is_insert = true;
+        edit.flags = Edit::INSERT;
         transaction.push(edit);
 
         transaction.commit(buffer);

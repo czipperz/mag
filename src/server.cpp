@@ -24,7 +24,7 @@ cz::Str clear_buffer(Editor* editor, Buffer* buffer) {
     edit.value = buffer->contents.slice(transaction.value_allocator(),
                                         buffer->contents.iterator_at(0), buffer->contents.len);
     edit.position = 0;
-    edit.is_insert = false;
+    edit.flags = Edit::REMOVE;
     transaction.push(edit);
 
     cz::Str buffer_contents = transaction.last_edit_value();
@@ -74,7 +74,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
                 edit.value.short_._buffer[len] = code;
                 edit.value.short_.set_len(len + 1);
                 edit.position = commit.edits[e].position + e;
-                edit.is_insert = true;
+                edit.flags = Edit::INSERT;
                 transaction.push(edit);
             }
 

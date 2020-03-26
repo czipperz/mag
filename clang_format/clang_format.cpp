@@ -122,13 +122,13 @@ static void apply_replacement(Replacement* repl,
         buffer->contents.slice(transaction->value_allocator(),
                                buffer->contents.iterator_at(position), position + repl->length);
     removal.position = position + *offset;
-    removal.is_insert = false;
+    removal.flags = Edit::REMOVE;
     transaction->push(removal);
 
     Edit insertion;
     insertion.value.init_duplicate(transaction->value_allocator(), repl->text);
     insertion.position = position + *offset;
-    insertion.is_insert = true;
+    insertion.flags = Edit::INSERT;
     transaction->push(insertion);
 
     *offset += repl->text.len - repl->length;

@@ -56,7 +56,7 @@
                     buffer->contents.slice(transaction.value_allocator(), start, end.position); \
                 edit.position = start.position - total;                                         \
                 total += end.position - start.position;                                         \
-                edit.is_insert = false;                                                         \
+                edit.flags = Edit::REMOVE;                                                      \
                 transaction.push(edit);                                                         \
             }                                                                                   \
         }                                                                                       \
@@ -90,7 +90,7 @@
                     buffer->contents.slice(transaction.value_allocator(), start, end.position); \
                 edit.position = start.position - total;                                         \
                 total += end.position - start.position;                                         \
-                edit.is_insert = false;                                                         \
+                edit.flags = Edit::REMOVE_AFTER_POSITION;                                       \
                 transaction.push(edit);                                                         \
             }                                                                                   \
         }                                                                                       \

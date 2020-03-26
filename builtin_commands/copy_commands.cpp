@@ -26,7 +26,7 @@ static void cut_cursor(Cursor* cursor,
                                         buffer->contents.iterator_at(start), end);
     edit.position = start - *offset;
     *offset += end - start;
-    edit.is_insert = false;
+    edit.flags = Edit::REMOVE;
     transaction->push(edit);
 
     save_copy(copy_chain, editor, edit.value);
@@ -111,7 +111,7 @@ void command_paste(Editor* editor, Command_Source source) {
             edit.value = copy_chain->value;
             edit.position = cursors[c].point + offset;
             offset += edit.value.len();
-            edit.is_insert = true;
+            edit.flags = Edit::INSERT;
             transaction.push(edit);
         }
     }

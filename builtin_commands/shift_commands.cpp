@@ -110,13 +110,13 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         Edit remove;
         remove.value.init_from_constant({buf, end_next.position - start_next.position + 1});
         remove.position = start_next.position - 1;
-        remove.is_insert = false;
+        remove.flags = Edit::REMOVE_AFTER_POSITION;
         transaction.push(remove);
 
         Edit insert;
         insert.value.init_from_constant({buf + 1, end_next.position - start_next.position + 1});
         insert.position = start.position;
-        insert.is_insert = true;
+        insert.flags = Edit::INSERT;
         transaction.push(insert);
     }
 
@@ -228,13 +228,13 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         Edit insert;
         insert.value.init_from_constant({buf, end_prev.position - start_prev.position + 1});
         insert.position = end.position;
-        insert.is_insert = true;
+        insert.flags = Edit::INSERT_AFTER_POSITION;
         transaction.push(insert);
 
         Edit remove;
         remove.value.init_from_constant({buf + 1, end_prev.position - start_prev.position + 1});
         remove.position = start_prev.position;
-        remove.is_insert = false;
+        remove.flags = Edit::REMOVE;
         transaction.push(remove);
     }
 

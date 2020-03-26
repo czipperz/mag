@@ -17,7 +17,7 @@ void insert(Buffer* buffer, Window_Unified* window, SSOStr value) {
         Edit edit;
         edit.value = value;
         edit.position = cursors[i].point + i;
-        edit.is_insert = true;
+        edit.flags = Edit::INSERT;
         transaction.push(edit);
     }
 

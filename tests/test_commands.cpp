@@ -35,7 +35,7 @@ static void insert_default_contents(Editor* editor, Client* client, cz::Str cont
         Edit edit;
         edit.value = value;
         edit.position = cursors[i].point;
-        edit.is_insert = true;
+        edit.flags = Edit::INSERT;
         transaction.push(edit);
     }
 

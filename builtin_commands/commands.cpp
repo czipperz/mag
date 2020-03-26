@@ -124,7 +124,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
                 edit.value.short_.set_len(len + 1);
                 edit.position = commit.edits[e].position - offset;
                 offset++;
-                edit.is_insert = false;
+                edit.flags = Edit::REMOVE;
                 transaction.push(edit);
             }
 
@@ -162,7 +162,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
                 edit.value.short_._buffer[len] = buffer->contents.get_once(cursors[e].point);
                 edit.value.short_.set_len(len + 1);
                 edit.position = commit.edits[e].position - e;
-                edit.is_insert = false;
+                edit.flags = Edit::REMOVE;
                 transaction.push(edit);
             }
             transaction.commit(buffer);
@@ -199,13 +199,13 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
         Edit delete_forward;
         delete_forward.value.init_char(buffer->contents.get_once(point));
         delete_forward.position = point;
-        delete_forward.is_insert = false;
+        delete_forward.flags = Edit::REMOVE_AFTER_POSITION;
         transaction.push(delete_forward);
 
         Edit insert_before;
         insert_before.value = delete_forward.value;
         insert_before.position = point - 1;
-        insert_before.is_insert = true;
+        insert_before.flags = Edit::INSERT;
         transaction.push(insert_before);
     }
 
@@ -275,7 +275,7 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
         Edit edit;
         edit.value.init_from_constant({value, region_size});
         edit.position = start.position;
-        edit.is_insert = true;
+        edit.flags = Edit::INSERT;
         transaction.push(edit);
     }
 
@@ -310,7 +310,7 @@ void command_delete_line(Editor* editor, Command_Source source) {
         Edit edit;
         edit.value = buffer->contents.slice(transaction.value_allocator(), start, end.position);
         edit.position = start.position;
-        edit.is_insert = false;
+        edit.flags = Edit::REMOVE;
         transaction.push(edit);
     }
 
