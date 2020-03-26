@@ -693,5 +693,30 @@ void command_goto_position(Editor* editor, Command_Source source) {
                                command_goto_position_callback, nullptr);
 }
 
+void command_path_up_directory(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    Contents_Iterator start = buffer->contents.iterator_at(buffer->contents.len);
+    while (1) {
+        if (start.at_bob()) {
+            return;
+        }
+        start.retreat();
+        if (start.get() == '/') {
+            break;
+        }
+    }
+
+    Transaction transaction;
+    transaction.init(1, buffer->contents.len - start.position);
+
+    Edit edit;
+    edit.value = buffer->contents.slice(transaction.value_allocator(), start, buffer->contents.len);
+    edit.position = start.position;
+    edit.flags = Edit::REMOVE;
+    transaction.push(edit);
+
+    transaction.commit(buffer);
+}
+
 }
 }

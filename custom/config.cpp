@@ -161,6 +161,7 @@ static Key_Map create_path_key_map() {
     key_map.bind("A-i", command_insert_completion);
     key_map.bind("C-n", command_next_completion);
     key_map.bind("C-p", command_previous_completion);
+    key_map.bind("C-l", command_path_up_directory);
     return key_map;
 }
 
