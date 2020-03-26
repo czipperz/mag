@@ -101,6 +101,14 @@ static void draw_buffer_contents(Cell* cells,
     cz::Slice<Cursor> cursors = window->cursors;
 
     int show_mark = 0;
+    // Initialize show_mark to number of regions at start of visible region.
+    if (show_cursors && window->show_marks) {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            if (iterator.position > cursors[c].start() && iterator.position < cursors[c].end()) {
+                ++show_mark;
+            }
+        }
+    }
 
     for (Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
          !iterator.at_eob(); iterator.advance()) {
