@@ -6,7 +6,7 @@
 #include "token.hpp"
 
 namespace mag {
-namespace custom {
+namespace syntax {
 
 enum State : uint64_t {
     IN_PREPROCESSOR_FLAG = 0x8000000000000000,

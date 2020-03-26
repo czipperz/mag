@@ -156,10 +156,10 @@ Mode get_mode(cz::Str file_name) {
     } else if (file_name.ends_with(".c") || file_name.ends_with(".h") ||
                file_name.ends_with(".cc") || file_name.ends_with(".hh") ||
                file_name.ends_with(".cpp") || file_name.ends_with(".hpp")) {
-        mode.next_token = cpp_next_token;
+        mode.next_token = syntax::cpp_next_token;
         mode.key_map = cpp_key_map();
     } else if (file_name.ends_with(".md")) {
-        mode.next_token = md_next_token;
+        mode.next_token = syntax::md_next_token;
     } else if (file_name.starts_with("*git grep ")) {
         mode.key_map = search_key_map();
     }

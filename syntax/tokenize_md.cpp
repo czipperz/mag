@@ -5,7 +5,7 @@
 #include "token.hpp"
 
 namespace mag {
-namespace custom {
+namespace syntax {
 
 static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* state) {
     while (1) {

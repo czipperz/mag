@@ -8,7 +8,7 @@ struct Contents;
 struct Contents_Iterator;
 struct Token;
 
-namespace custom {
+namespace syntax {
 
 bool cpp_next_token(const mag::Contents* contents,
                     mag::Contents_Iterator* iterator,

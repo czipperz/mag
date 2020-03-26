@@ -8,7 +8,7 @@ struct Contents;
 struct Contents_Iterator;
 struct Token;
 
-namespace custom {
+namespace syntax {
 
 bool md_next_token(const Contents* contents,
                    Contents_Iterator* iterator,
