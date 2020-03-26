@@ -5,7 +5,7 @@
 #include "editor.hpp"
 
 namespace mag {
-namespace custom {
+namespace basic {
 
 void command_open_file(Editor* editor, Command_Source source);
 void command_save_file(Editor* editor, Command_Source source);

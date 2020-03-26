@@ -4,7 +4,7 @@
 #include "editor.hpp"
 
 namespace mag {
-namespace custom {
+namespace basic {
 
 void command_search_open(Editor* editor, Command_Source source);
 

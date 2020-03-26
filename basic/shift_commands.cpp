@@ -4,7 +4,7 @@
 #include "movement.hpp"
 
 namespace mag {
-namespace custom {
+namespace basic {
 
 void command_shift_line_forward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);

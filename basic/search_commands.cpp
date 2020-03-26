@@ -8,7 +8,7 @@
 #include "movement.hpp"
 
 namespace mag {
-namespace custom {
+namespace basic {
 
 static bool eat_until_colon(Contents_Iterator* iterator) {
     while (1) {

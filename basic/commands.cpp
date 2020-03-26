@@ -9,7 +9,7 @@
 #include "transaction.hpp"
 
 namespace mag {
-namespace custom {
+namespace basic {
 
 void command_set_mark(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();

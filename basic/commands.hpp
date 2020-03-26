@@ -4,7 +4,7 @@
 #include "editor.hpp"
 
 namespace mag {
-namespace custom {
+namespace basic {
 
 void command_set_mark(Editor* editor, Command_Source source);
 void command_swap_mark_point(Editor* editor, Command_Source source);

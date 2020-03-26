@@ -3,7 +3,7 @@
 #include "client.hpp"
 
 namespace mag {
-namespace custom {
+namespace basic {
 
 static void save_other_windows(Client* client, Window* w, Window* selected_window) {
     switch (w->tag) {

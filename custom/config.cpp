@@ -1,20 +1,22 @@
 #include "config.hpp"
 
-#include "buffer_commands.hpp"
+#include "basic/buffer_commands.hpp"
+#include "basic/commands.hpp"
+#include "basic/copy_commands.hpp"
+#include "basic/directory_commands.hpp"
+#include "basic/search_commands.hpp"
+#include "basic/shift_commands.hpp"
+#include "basic/window_commands.hpp"
 #include "clang_format/clang_format.hpp"
-#include "commands.hpp"
-#include "copy_commands.hpp"
-#include "directory_commands.hpp"
 #include "git/git.hpp"
 #include "prose/alternate.hpp"
-#include "search_commands.hpp"
-#include "shift_commands.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_md.hpp"
-#include "window_commands.hpp"
 
 namespace mag {
 namespace custom {
+
+using namespace basic;
 
 Key_Map create_key_map() {
     Key_Map key_map = {};

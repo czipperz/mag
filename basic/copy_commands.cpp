@@ -3,7 +3,7 @@
 #include "command_macros.hpp"
 
 namespace mag {
-namespace custom {
+namespace basic {
 
 static void save_copy(Copy_Chain** cursor_chain, Editor* editor, SSOStr value) {
     Copy_Chain* chain = editor->copy_buffer.allocator().alloc<Copy_Chain>();

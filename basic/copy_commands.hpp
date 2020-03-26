@@ -4,7 +4,7 @@
 #include "editor.hpp"
 
 namespace mag {
-namespace custom {
+namespace basic {
 
 void command_cut(Editor* editor, Command_Source source);
 void command_copy(Editor* editor, Command_Source source);

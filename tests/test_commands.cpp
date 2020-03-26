@@ -1,14 +1,14 @@
 #include <czt/test_base.hpp>
 
 #include <cz/defer.hpp>
+#include "basic/commands.hpp"
+#include "basic/shift_commands.hpp"
 #include "command_macros.hpp"
-#include "commands.hpp"
 #include "server.hpp"
-#include "shift_commands.hpp"
 
 using namespace cz;
 using namespace mag;
-using namespace mag::custom;
+using namespace mag::basic;
 
 #define SETUP_TEST(CONTENTS)              \
     Server server = {};                   \

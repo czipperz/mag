@@ -8,7 +8,7 @@ namespace mag {
 struct Window;
 struct Window_Unified;
 
-namespace custom {
+namespace basic {
 
 Window_Unified* window_first(Window* window);
 
