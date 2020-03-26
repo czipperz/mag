@@ -41,7 +41,7 @@ void command_open_file(Editor* editor, Command_Source source) {
         transaction.commit(buffer);
     }
 
-    source.client->show_dialog("Open file: ", Message::RESPOND_FILE, command_open_file_callback,
+    source.client->show_dialog("Open file: ", file_completion_engine, command_open_file_callback,
                                nullptr);
 }
 
@@ -74,7 +74,7 @@ static void command_switch_buffer_callback(Editor* editor,
 }
 
 void command_switch_buffer(Editor* editor, Command_Source source) {
-    source.client->show_dialog("Buffer to switch to: ", Message::RESPOND_BUFFER,
+    source.client->show_dialog("Buffer to switch to: ", buffer_completion_engine,
                                command_switch_buffer_callback, nullptr);
 }
 
@@ -160,7 +160,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
 void command_kill_buffer(Editor* editor, Command_Source source) {
     Buffer_Id* buffer_id = (Buffer_Id*)malloc(sizeof(Buffer_Id));
     *buffer_id = source.client->selected_window()->id;
-    source.client->show_dialog("Buffer to kill: ", Message::RESPOND_BUFFER,
+    source.client->show_dialog("Buffer to kill: ", buffer_completion_engine,
                                command_kill_buffer_callback, buffer_id);
 }
 

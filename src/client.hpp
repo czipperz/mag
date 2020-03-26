@@ -80,13 +80,14 @@ struct Client {
     }
 
     void show_dialog(cz::Str prompt,
-                     Message::Tag tag,
+                     Completion_Engine completion_engine,
                      Message::Response_Callback response_callback,
                      void* response_callback_data) {
         _message_time = std::chrono::system_clock::now();
         _message = {};
         _message.text = prompt;
-        _message.tag = tag;
+        _message.tag = Message::RESPOND;
+        _message.completion_engine = completion_engine;
         _message.response_callback = response_callback;
         _message.response_callback_data = response_callback_data;
         _select_mini_buffer = true;

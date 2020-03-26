@@ -574,7 +574,7 @@ void command_search_forward(Editor* editor, Command_Source source) {
             SEARCH_SLICE_THEN(search_forward_slice, cursors[c] = new_cursor);
         }
     } else {
-        source.client->show_dialog("Search forward: ", Message::RESPOND_TEXT,
+        source.client->show_dialog("Search forward: ", no_completion_engine,
                                    command_search_forward_callback, nullptr);
     }
 }
@@ -601,7 +601,7 @@ void command_search_backward(Editor* editor, Command_Source source) {
             SEARCH_SLICE_THEN(search_backward_slice, cursors[c] = new_cursor);
         }
     } else {
-        source.client->show_dialog("Search backward: ", Message::RESPOND_TEXT,
+        source.client->show_dialog("Search backward: ", no_completion_engine,
                                    command_search_backward_callback, nullptr);
     }
 }
@@ -644,12 +644,12 @@ static void command_goto_position_callback(Editor* editor,
 }
 
 void command_goto_line(Editor* editor, Command_Source source) {
-    source.client->show_dialog("Goto line: ", Message::RESPOND_TEXT, command_goto_line_callback,
+    source.client->show_dialog("Goto line: ", no_completion_engine, command_goto_line_callback,
                                nullptr);
 }
 
 void command_goto_position(Editor* editor, Command_Source source) {
-    source.client->show_dialog("Goto position: ", Message::RESPOND_TEXT,
+    source.client->show_dialog("Goto position: ", no_completion_engine,
                                command_goto_position_callback, nullptr);
 }
 

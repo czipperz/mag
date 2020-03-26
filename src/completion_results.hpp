@@ -2,7 +2,6 @@
 
 #include <cz/string.hpp>
 #include <cz/vector.hpp>
-#include "message.hpp"
 
 namespace mag {
 
@@ -17,9 +16,11 @@ struct Completion_Results {
     cz::String query;
     cz::Vector<cz::Str> results;
     size_t selected;
-    Message::Tag response_tag;
 };
 
-void load_completion_results(Completion_Results* completion_results);
+typedef void (*Completion_Engine)(Completion_Results*);
+void file_completion_engine(Completion_Results* completion_results);
+void buffer_completion_engine(Completion_Results* completion_results);
+void no_completion_engine(Completion_Results* completion_results);
 
 }

@@ -351,11 +351,6 @@ void render_to_cells(Cell* cells,
         int results_height = 0;
 
         Completion_Results* completion_results = &client->mini_buffer_completion_results;
-        if (completion_results->response_tag != client->_message.tag) {
-            completion_results->results.set_len(0);
-            completion_results->state = Completion_Results::INITIAL;
-        }
-
         if (client->_message.tag > Message::SHOW) {
             {
                 Window_Unified* window = client->mini_buffer_window();
@@ -389,7 +384,6 @@ void render_to_cells(Cell* cells,
                 buffer->contents.stringify_into(cz::heap_allocator(), &completion_results->query);
             }
                 completion_results->results.set_len(0);
-                completion_results->response_tag = client->_message.tag;
                 completion_results->state = Completion_Results::LOADING;
                 break;
 

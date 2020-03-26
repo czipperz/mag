@@ -226,7 +226,7 @@ void run(Server* server, Client* client) {
 
         int ch = ERR;
         if (client->mini_buffer_completion_results.state == Completion_Results::LOADING) {
-            load_completion_results(&client->mini_buffer_completion_results);
+            client->_message.completion_engine(&client->mini_buffer_completion_results);
             continue;
         }
 
