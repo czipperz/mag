@@ -46,10 +46,9 @@ Key_Map create_key_map() {
 
     key_map.bind("C-e", command_end_of_line);
     key_map.bind("C-a", command_start_of_line);
+    key_map.bind("A-a", command_start_of_line_text);
 
-    key_map.bind("A-m", command_start_of_line_text);
-
-    key_map.bind("C-s", command_search_forward);
+    key_map.bind("A-r", command_search_forward);
     key_map.bind("C-r", command_search_backward);
 
     key_map.bind("\\-", command_delete_backward_char);
@@ -62,7 +61,7 @@ Key_Map create_key_map() {
 
     key_map.bind("C-t", command_transpose_characters);
 
-    key_map.bind("C-o", command_open_line);
+    key_map.bind("A-m", command_open_line);
     key_map.bind("C-m", command_insert_newline);
 
     key_map.bind("C-/", command_undo);
@@ -72,8 +71,8 @@ Key_Map create_key_map() {
 
     key_map.bind("C-g", command_stop_action);
 
-    key_map.bind("C-x C-f", command_open_file);
-    key_map.bind("C-x C-s", command_save_file);
+    key_map.bind("C-o", command_open_file);
+    key_map.bind("C-s", command_save_file);
 
     key_map.bind("C-x C-c", command_quit);
 
@@ -86,7 +85,7 @@ Key_Map create_key_map() {
     key_map.bind("C-x b", command_switch_buffer);
     key_map.bind("C-x k", command_kill_buffer);
 
-    key_map.bind("C-c p a", prose::command_alternate);
+    key_map.bind("C-c a", prose::command_alternate);
 
     key_map.bind("C-c u", command_uppercase_letter);
     key_map.bind("C-c l", command_lowercase_letter);
