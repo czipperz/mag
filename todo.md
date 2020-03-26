@@ -46,3 +46,4 @@
 * Adjust window cache position by changes
   - I did a minimal version of this and it bugs out now in that the screen won't scroll up when text is insert at bob.
 * Sometimes mini buffer gets double contents.  Probably this happens because mini buffer is closed without being cleared.
+  - This is reproducible by doing `C-x C-o C-x C-o` where `C-x C-o` is unbound and `C-o` is.
