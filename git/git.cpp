@@ -10,25 +10,51 @@
 namespace mag {
 namespace git {
 
+struct Job_Process_Append {
+    Buffer_Handle* handle;
+    Process process;
+};
+
+static bool tick_job_process_append(void* data) {
+    Job_Process_Append* job = (Job_Process_Append*)data;
+    char buf[1024];
+    ssize_t read_result = job->process.read(buf, sizeof(buf));
+    if (read_result > 0) {
+        Buffer* buffer = job->handle->lock();
+        CZ_DEFER(job->handle->unlock());
+        buffer->contents.insert(buffer->contents.len, {buf, (size_t)read_result});
+        return false;
+    } else if (read_result == 0) {
+        // End of file
+        job->process.destroy();
+        free(data);
+        return true;
+    } else {
+        // Nothing to read right now
+        return false;
+    }
+}
+
+static Job job_process_append(Buffer_Handle* handle, Process process) {
+    Job_Process_Append* data = (Job_Process_Append*)malloc(sizeof(Job_Process_Append));
+    CZ_ASSERT(data);
+    data->handle = handle;
+    data->process = process;
+
+    Job job;
+    job.tick = tick_job_process_append;
+    job.data = data;
+    return job;
+}
+
 static bool run_console_command(Client* client,
                                 Editor* editor,
                                 const char* working_directory,
                                 const char* script,
                                 cz::Str buffer_name,
                                 cz::Str error) {
-    cz::String results = {};
-    CZ_DEFER(results.drop(cz::heap_allocator()));
-
-    // Todo: Make this a job
     Process process;
     if (!process.launch_script(script, working_directory)) {
-        client->show_message(error);
-        return false;
-    }
-    process.read_to_string(cz::heap_allocator(), &results);
-    int return_value = process.join();
-    process.destroy();
-    if (return_value != 0) {
         client->show_message(error);
         return false;
     }
@@ -40,10 +66,11 @@ static bool run_console_command(Client* client,
         buffer->contents.insert(buffer->contents.len, ": ");
         buffer->contents.insert(buffer->contents.len, script);
         buffer->contents.insert(buffer->contents.len, "\n");
-        buffer->contents.insert(buffer->contents.len, results);
     }
 
     client->set_selected_buffer(buffer_id);
+
+    editor->add_job(job_process_append(editor->lookup(buffer_id), process));
     return true;
 }
 
