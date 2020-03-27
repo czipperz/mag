@@ -3,19 +3,24 @@
 #include <cz/allocator.hpp>
 #include <cz/string.hpp>
 
+#include <sys/types.h>
+
 namespace mag {
 
-bool run_process_synchronously(const char* path,
-                               const char** args,
-                               const char* working_directory,
-                               cz::Allocator,
-                               cz::String* out,
-                               int* return_value);
+class Process {
+    int fd;
+    pid_t pid;
 
-bool run_script_synchronously(const char* script,
-                              const char* working_directory,
-                              cz::Allocator allocator,
-                              cz::String* out,
-                              int* return_value);
+public:
+    bool launch_program(const char* path, const char** args, const char* working_directory);
+    bool launch_script(const char* script, const char* working_directory);
+
+    int join();
+
+    int64_t read(char* buffer, size_t buffer_size);
+    void read_to_string(cz::Allocator allocator, cz::String* out);
+
+    void destroy();
+};
 
 }

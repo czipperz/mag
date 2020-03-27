@@ -18,10 +18,17 @@ static bool run_console_command(Client* client,
                                 cz::Str error) {
     cz::String results = {};
     CZ_DEFER(results.drop(cz::heap_allocator()));
-    int return_value = 0;
-    if (!run_script_synchronously(script, working_directory, cz::heap_allocator(), &results,
-                                  &return_value) ||
-        return_value != 0) {
+
+    // Todo: Make this a job
+    Process process;
+    if (!process.launch_script(script, working_directory)) {
+        client->show_message(error);
+        return false;
+    }
+    process.read_to_string(cz::heap_allocator(), &results);
+    int return_value = process.join();
+    process.destroy();
+    if (return_value != 0) {
         client->show_message(error);
         return false;
     }
@@ -65,10 +72,15 @@ static bool get_git_top_level(Client* client,
         dir_cstr = nullptr;
     }
 
-    int return_value = 0;
-    if (!run_script_synchronously("git rev-parse --show-toplevel", dir_cstr, allocator,
-                                  top_level_path, &return_value) ||
-        return_value != 0) {
+    Process process;
+    if (!process.launch_script("git rev-parse --show-toplevel", dir_cstr)) {
+        client->show_message("No git repository found");
+        return false;
+    }
+    process.read_to_string(allocator, top_level_path);
+    int return_value = process.join();
+    process.destroy();
+    if (return_value != 0) {
         client->show_message("No git repository found");
         return false;
     }

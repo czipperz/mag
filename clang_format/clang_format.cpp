@@ -156,11 +156,19 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
 
     cz::String output_xml = {};
     CZ_DEFER(output_xml.drop(cz::heap_allocator()));
-    int return_value;
-    if (!run_script_synchronously(script.buffer(), nullptr, cz::heap_allocator(), &output_xml,
-                                  &return_value) ||
-        return_value != 0) {
+
+    // Todo: make this a job
+    Process process;
+    if (!process.launch_script(script.buffer(), nullptr)) {
         source.client->show_message("Error: Couldn't launch clang-format");
+        return;
+    }
+    process.read_to_string(cz::heap_allocator(), &output_xml);
+    int return_value = process.join();
+    process.destroy();
+    if (return_value != 0) {
+        source.client->show_message("Error: Syntax error");
+        return;
     }
 
     cz::Vector<Replacement> replacements = {};
