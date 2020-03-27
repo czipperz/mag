@@ -5,6 +5,7 @@
 #include <cz/vector.hpp>
 #include "buffer_handle.hpp"
 #include "buffer_id.hpp"
+#include "job.hpp"
 #include "key_map.hpp"
 #include "theme.hpp"
 
@@ -21,6 +22,8 @@ struct Editor {
     uint64_t buffer_counter;
     uint64_t temp_counter;
 
+    cz::Vector<Job> jobs;
+
     void create() { copy_buffer.create(); }
 
     void drop() {
@@ -32,6 +35,22 @@ struct Editor {
         key_map.drop();
         theme.drop(cz::heap_allocator());
         copy_buffer.drop();
+        jobs.drop(cz::heap_allocator());
+    }
+
+    void add_job(Job job) {
+        jobs.reserve(cz::heap_allocator(), 1);
+        jobs.push(job);
+    }
+
+    void tick_jobs() {
+        for (size_t i = 0; i < jobs.len(); ++i) {
+            if (jobs[i].tick(jobs[i].data)) {
+                // Todo: optimize by doing swap with last
+                jobs.remove(i);
+                --i;
+            }
+        }
     }
 
     Buffer_Handle* lookup(Buffer_Id id) {

@@ -230,6 +230,8 @@ void run(Server* server, Client* client) {
             continue;
         }
 
+        server->editor.tick_jobs();
+
         if (ch == ERR) {
             ch = cache_windows_check_points(window_cache, client->window, &server->editor);
         }
