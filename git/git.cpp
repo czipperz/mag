@@ -10,18 +10,34 @@
 namespace mag {
 namespace git {
 
-static bool add_backslash(char c) {
-    switch (c) {
-    case '!':
-    case '"':
-    case '$':
-    case '\\':
-    case '`':
-        return true;
-
-    default:
+static bool run_console_command(Client* client,
+                                Editor* editor,
+                                const char* working_directory,
+                                const char* script,
+                                cz::Str buffer_name,
+                                cz::Str error) {
+    cz::String results = {};
+    CZ_DEFER(results.drop(cz::heap_allocator()));
+    int return_value = 0;
+    if (!run_script_synchronously(script, working_directory, cz::heap_allocator(), &results,
+                                  &return_value) ||
+        return_value != 0) {
+        client->show_message(error);
         return false;
     }
+
+    Buffer_Id buffer_id = editor->create_temp_buffer(buffer_name);
+    {
+        WITH_BUFFER(buffer_id);
+        buffer->contents.insert(0, working_directory);
+        buffer->contents.insert(buffer->contents.len, ": ");
+        buffer->contents.insert(buffer->contents.len, script);
+        buffer->contents.insert(buffer->contents.len, "\n");
+        buffer->contents.insert(buffer->contents.len, results);
+    }
+
+    client->set_selected_buffer(buffer_id);
+    return true;
 }
 
 static bool get_git_top_level(Client* client,
@@ -63,19 +79,33 @@ static bool get_git_top_level(Client* client,
     return true;
 }
 
-static void command_git_grep_callback(Editor* editor, Client* client, cz::Str query, void* data) {
-    size_t backslashes = 0;
-    for (size_t i = 0; i < query.len; ++i) {
-        if (add_backslash(query[i])) {
-            ++backslashes;
-        }
-    }
+static bool add_backslash(char c) {
+    switch (c) {
+    case '!':
+    case '"':
+    case '$':
+    case '\\':
+    case '`':
+        return true;
 
+    default:
+        return false;
+    }
+}
+
+static void command_git_grep_callback(Editor* editor, Client* client, cz::Str query, void* data) {
     cz::String top_level_path = {};
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
     {
         WITH_BUFFER(*(Buffer_Id*)data);
         get_git_top_level(client, buffer->path, cz::heap_allocator(), &top_level_path);
+    }
+
+    size_t backslashes = 0;
+    for (size_t i = 0; i < query.len; ++i) {
+        if (add_backslash(query[i])) {
+            ++backslashes;
+        }
     }
 
     cz::String script = {};
@@ -93,27 +123,8 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
     script.append(postfix);
     script.null_terminate();
 
-    cz::String results = {};
-    CZ_DEFER(results.drop(cz::heap_allocator()));
-    int return_value = 0;
-    if (!run_script_synchronously(script.buffer(), top_level_path.buffer(), cz::heap_allocator(),
-                                  &results, &return_value) ||
-        return_value != 0) {
-        client->show_message("Git grep error");
-        return;
-    }
-
-    Buffer_Id buffer_id = editor->create_temp_buffer("git grep");
-    {
-        WITH_BUFFER(buffer_id);
-        buffer->contents.insert(0, top_level_path);
-        buffer->contents.insert(buffer->contents.len, ": ");
-        buffer->contents.insert(buffer->contents.len, script);
-        buffer->contents.insert(buffer->contents.len, "\n");
-        buffer->contents.insert(buffer->contents.len, results);
-    }
-
-    client->set_selected_buffer(buffer_id);
+    run_console_command(client, editor, top_level_path.buffer(), script.buffer(), "git grep",
+                        "Git grep error");
 }
 
 void command_git_grep(Editor* editor, Command_Source source) {
