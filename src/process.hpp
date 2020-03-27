@@ -17,6 +17,7 @@ public:
 
     int join();
 
+    bool set_read_blocking();
     int64_t read(char* buffer, size_t buffer_size);
     void read_to_string(cz::Allocator allocator, cz::String* out);
 

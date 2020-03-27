@@ -1,6 +1,9 @@
+// Expose pipe2(2).  See feature_test_macros(7).
+#define _GNU_SOURCE
 #include "process.hpp"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -17,7 +20,20 @@ void Process::destroy() {
     close(fd);
 }
 
+bool Process::set_read_blocking() {
+    int res = fcntl(fd, F_GETFL);
+    if (res < 0) {
+        return false;
+    }
+    if (fcntl(fd, F_SETFL, res & ~O_NONBLOCK) < 0) {
+        return false;
+    }
+    return true;
+}
+
 void Process::read_to_string(cz::Allocator allocator, cz::String* out) {
+    set_read_blocking();
+
     char buffer[1024];
     while (1) {
         ssize_t read_result = read(buffer, sizeof(buffer));
@@ -53,7 +69,7 @@ bool Process::launch_program(const char* path, const char** args, const char* wo
     ZoneScoped;
 
     int pipe_fds[2];  // 0 = read, 1 = write
-    if (pipe(pipe_fds) < 0) {
+    if (pipe2(pipe_fds, O_NONBLOCK) < 0) {
         return false;
     }
 
