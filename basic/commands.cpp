@@ -400,7 +400,7 @@ static void create_cursor_forward_line(Buffer* buffer, Window_Unified* window) {
     Contents_Iterator new_cursor_iterator = last_cursor_iterator;
     forward_line(&new_cursor_iterator);
     if (new_cursor_iterator.position != last_cursor_iterator.position) {
-        Cursor cursor;
+        Cursor cursor = {};
         cursor.point = new_cursor_iterator.position;
         cursor.mark = cursor.point;
         cursor.local_copy_chain = window->cursors.last().local_copy_chain;
@@ -422,7 +422,7 @@ static void create_cursor_backward_line(Buffer* buffer, Window_Unified* window) 
     Contents_Iterator new_cursor_iterator = first_cursor_iterator;
     backward_line(&new_cursor_iterator);
     if (new_cursor_iterator.position != first_cursor_iterator.position) {
-        Cursor cursor;
+        Cursor cursor = {};
         cursor.point = new_cursor_iterator.position;
         cursor.mark = cursor.point;
         cursor.local_copy_chain = window->cursors[0].local_copy_chain;
@@ -477,7 +477,7 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
         uint64_t end = cursors[c].end();                                                         \
         cz::Option<uint64_t> new_start = FUNC(buffer, buffer->contents.iterator_at(start), end); \
         if (new_start.is_present) {                                                              \
-            Cursor new_cursor;                                                                   \
+            Cursor new_cursor = {};                                                              \
             new_cursor.point = new_start.value;                                                  \
             new_cursor.mark = new_start.value + end - start;                                     \
             new_cursor.local_copy_chain = cursors[c].local_copy_chain;                           \
@@ -493,7 +493,7 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
         uint64_t start = cursors[c].point;                                                 \
         cz::Option<uint64_t> new_start = FUNC(buffer->contents.iterator_at(start), query); \
         if (new_start.is_present) {                                                        \
-            Cursor new_cursor;                                                             \
+            Cursor new_cursor = {};                                                        \
             new_cursor.point = new_start.value + query.len;                                \
             new_cursor.mark = new_start.value;                                             \
             new_cursor.local_copy_chain = cursors[c].local_copy_chain;                     \
