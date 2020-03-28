@@ -159,10 +159,10 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
 
                 Edit edit;
                 memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer, len);
-                edit.value.short_._buffer[len] = buffer->contents.get_once(cursors[e].point);
+                edit.value.short_._buffer[len] = buffer->contents.get_once(cursors[e].point + len);
                 edit.value.short_.set_len(len + 1);
                 edit.position = commit.edits[e].position - e;
-                edit.flags = Edit::REMOVE;
+                edit.flags = Edit::REMOVE_AFTER_POSITION;
                 transaction.push(edit);
             }
             transaction.commit(buffer);
