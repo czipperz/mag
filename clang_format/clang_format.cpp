@@ -8,6 +8,7 @@
 #include "editor.hpp"
 #include "file.hpp"
 #include "process.hpp"
+#include "rebase.hpp"
 
 namespace mag {
 namespace clang_format {
@@ -111,29 +112,6 @@ static void parse_replacements(cz::Vector<Replacement>* replacements,
     }
 }
 
-static void apply_replacement(Replacement* repl,
-                              Transaction* transaction,
-                              Buffer* buffer,
-                              uint64_t* offset) {
-    uint64_t position = repl->offset;
-
-    Edit removal;
-    removal.value =
-        buffer->contents.slice(transaction->value_allocator(),
-                               buffer->contents.iterator_at(position), position + repl->length);
-    removal.position = position + *offset;
-    removal.flags = Edit::REMOVE;
-    transaction->push(removal);
-
-    Edit insertion;
-    insertion.value.init_duplicate(transaction->value_allocator(), repl->text);
-    insertion.position = position + *offset;
-    insertion.flags = Edit::INSERT;
-    transaction->push(insertion);
-
-    *offset += repl->text.len - repl->length;
-}
-
 void command_clang_format_buffer(Editor* editor, Command_Source source) {
     ZoneScoped;
 
@@ -183,7 +161,34 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     uint64_t offset = 0;
     for (size_t i = 0; i < replacements.len(); ++i) {
         Replacement* repl = &replacements[i];
-        apply_replacement(repl, &transaction, buffer, &offset);
+
+        uint64_t position = repl->offset;
+
+        Edit removal;
+        removal.value =
+            buffer->contents.slice(transaction.value_allocator(),
+                                   buffer->contents.iterator_at(position), position + repl->length);
+        removal.position = position;
+        removal.flags = Edit::REMOVE;
+
+        Edit insertion;
+        insertion.value.init_duplicate(transaction.value_allocator(), repl->text);
+        insertion.position = position;
+        insertion.flags = Edit::INSERT;
+
+        // Todo: when making this into a job, change these to the elapsed changes
+        cz::Slice<const Change> changes = {};
+        if (offset_unmerged_edit_by_merged_changes(changes, &removal) ||
+            offset_unmerged_edit_by_merged_changes(changes, &insertion)) {
+            continue;
+        }
+
+        removal.position += offset;
+        insertion.position += offset;
+        transaction.push(removal);
+        transaction.push(insertion);
+
+        offset += repl->text.len - repl->length;
     }
 
     transaction.commit(buffer);
