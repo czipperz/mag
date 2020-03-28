@@ -22,93 +22,95 @@ namespace custom {
 
 using namespace basic;
 
+#define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, {FUNC, #FUNC}))
+
 Key_Map create_key_map() {
     Key_Map key_map = {};
-    key_map.bind("C-\\ ", command_set_mark);
-    key_map.bind("C-@", command_set_mark);
-    key_map.bind("C-x C-x", command_swap_mark_point);
+    BIND(key_map, "C-\\ ", command_set_mark);
+    BIND(key_map, "C-@", command_set_mark);
+    BIND(key_map, "C-x C-x", command_swap_mark_point);
 
-    key_map.bind("C-w", command_cut);
-    key_map.bind("A-w", command_copy);
-    key_map.bind("C-y", command_paste);
-    key_map.bind("A-y", command_paste_previous);
+    BIND(key_map, "C-w", command_cut);
+    BIND(key_map, "A-w", command_copy);
+    BIND(key_map, "C-y", command_paste);
+    BIND(key_map, "A-y", command_paste_previous);
 
-    key_map.bind("C-f", command_forward_char);
-    key_map.bind("C-b", command_backward_char);
-    key_map.bind("A-f", command_forward_word);
-    key_map.bind("A-b", command_backward_word);
+    BIND(key_map, "C-f", command_forward_char);
+    BIND(key_map, "C-b", command_backward_char);
+    BIND(key_map, "A-f", command_forward_word);
+    BIND(key_map, "A-b", command_backward_word);
 
-    key_map.bind("C-n", command_forward_line);
-    key_map.bind("C-p", command_backward_line);
-    key_map.bind("A-n", command_shift_line_forward);
-    key_map.bind("A-p", command_shift_line_backward);
-    key_map.bind("C-A-n", command_create_cursor_forward);
-    key_map.bind("C-A-p", command_create_cursor_backward);
+    BIND(key_map, "C-n", command_forward_line);
+    BIND(key_map, "C-p", command_backward_line);
+    BIND(key_map, "A-n", command_shift_line_forward);
+    BIND(key_map, "A-p", command_shift_line_backward);
+    BIND(key_map, "C-A-n", command_create_cursor_forward);
+    BIND(key_map, "C-A-p", command_create_cursor_backward);
 
-    key_map.bind("A-<", command_start_of_buffer);
-    key_map.bind("A->", command_end_of_buffer);
+    BIND(key_map, "A-<", command_start_of_buffer);
+    BIND(key_map, "A->", command_end_of_buffer);
 
-    key_map.bind("C-e", command_end_of_line);
-    key_map.bind("C-a", command_start_of_line);
-    key_map.bind("A-a", command_start_of_line_text);
+    BIND(key_map, "C-e", command_end_of_line);
+    BIND(key_map, "C-a", command_start_of_line);
+    BIND(key_map, "A-a", command_start_of_line_text);
 
-    key_map.bind("A-r", command_search_forward);
-    key_map.bind("C-r", command_search_backward);
+    BIND(key_map, "A-r", command_search_forward);
+    BIND(key_map, "C-r", command_search_backward);
 
-    key_map.bind("\\-", command_delete_backward_char);
-    key_map.bind("C-d", command_delete_forward_char);
-    key_map.bind("A-\\-", command_delete_backward_word);
-    key_map.bind("A-d", command_delete_forward_word);
+    BIND(key_map, "\\-", command_delete_backward_char);
+    BIND(key_map, "C-d", command_delete_forward_char);
+    BIND(key_map, "A-\\-", command_delete_backward_word);
+    BIND(key_map, "A-d", command_delete_forward_word);
 
-    key_map.bind("C-k", command_delete_line);
-    key_map.bind("A-k", command_duplicate_line);
-    key_map.bind("C-A-k", command_delete_end_of_line);
+    BIND(key_map, "C-k", command_delete_line);
+    BIND(key_map, "A-k", command_duplicate_line);
+    BIND(key_map, "C-A-k", command_delete_end_of_line);
 
-    key_map.bind("C-t", command_transpose_characters);
+    BIND(key_map, "C-t", command_transpose_characters);
 
-    key_map.bind("A-m", command_open_line);
-    key_map.bind("C-m", command_insert_newline);
+    BIND(key_map, "A-m", command_open_line);
+    BIND(key_map, "C-m", command_insert_newline);
 
-    key_map.bind("C-/", command_undo);
-    key_map.bind("C-_", command_undo);
-    key_map.bind("A-/", command_redo);
-    key_map.bind("A-_", command_redo);
+    BIND(key_map, "C-/", command_undo);
+    BIND(key_map, "C-_", command_undo);
+    BIND(key_map, "A-/", command_redo);
+    BIND(key_map, "A-_", command_redo);
 
-    key_map.bind("C-g", command_stop_action);
+    BIND(key_map, "C-g", command_stop_action);
 
-    key_map.bind("C-o", command_open_file);
-    key_map.bind("A-o", command_cycle_window);
-    key_map.bind("C-s", command_save_file);
+    BIND(key_map, "C-o", command_open_file);
+    BIND(key_map, "A-o", command_cycle_window);
+    BIND(key_map, "C-s", command_save_file);
 
-    key_map.bind("C-x C-c", command_quit);
+    BIND(key_map, "C-x C-c", command_quit);
 
-    key_map.bind("C-x 1", command_one_window);
-    key_map.bind("C-x 2", command_split_window_horizontal);
-    key_map.bind("C-x 3", command_split_window_vertical);
-    key_map.bind("C-x 0", command_close_window);
+    BIND(key_map, "C-x 1", command_one_window);
+    BIND(key_map, "C-x 2", command_split_window_horizontal);
+    BIND(key_map, "C-x 3", command_split_window_vertical);
+    BIND(key_map, "C-x 0", command_close_window);
 
-    key_map.bind("C-x h", command_mark_buffer);
+    BIND(key_map, "C-x h", command_mark_buffer);
 
-    key_map.bind("C-x b", command_switch_buffer);
-    key_map.bind("C-x k", command_kill_buffer);
+    BIND(key_map, "C-x b", command_switch_buffer);
+    BIND(key_map, "C-x k", command_kill_buffer);
 
-    key_map.bind("C-c a", prose::command_alternate);
+    BIND(key_map, "C-c a", prose::command_alternate);
 
-    key_map.bind("C-c u", command_uppercase_letter);
-    key_map.bind("C-c l", command_lowercase_letter);
-    key_map.bind("C-c C-u", command_uppercase_region);
-    key_map.bind("C-c C-l", command_lowercase_region);
+    BIND(key_map, "C-c u", command_uppercase_letter);
+    BIND(key_map, "C-c l", command_lowercase_letter);
+    BIND(key_map, "C-c C-u", command_uppercase_region);
+    BIND(key_map, "C-c C-l", command_lowercase_region);
 
-    key_map.bind("A-g A-g", command_goto_line);
-    key_map.bind("A-g c", command_goto_position);
+    BIND(key_map, "A-g A-g", command_goto_line);
+    BIND(key_map, "A-g c", command_goto_position);
 
-    key_map.bind("A-g s", git::command_git_grep);
+    BIND(key_map, "A-g s", git::command_git_grep);
 
-    key_map.bind("A-l", command_goto_center_of_window);
-    key_map.bind("C-l", command_center_in_window);
+    BIND(key_map, "A-l", command_goto_center_of_window);
+    BIND(key_map, "C-l", command_center_in_window);
 
-    key_map.bind("A-v", command_up_page);
-    key_map.bind("C-v", command_down_page);
+    BIND(key_map, "A-v", command_up_page);
+    BIND(key_map, "C-v", command_down_page);
 
     return key_map;
 }
@@ -133,8 +135,8 @@ Theme create_theme() {
 
 static Key_Map create_directory_key_map() {
     Key_Map key_map = {};
-    key_map.bind("C-m", command_directory_open_path);
-    key_map.bind("\n", command_directory_open_path);
+    BIND(key_map, "C-m", command_directory_open_path);
+    BIND(key_map, "\n", command_directory_open_path);
     return key_map;
 }
 
@@ -145,7 +147,7 @@ static Key_Map* directory_key_map() {
 
 static Key_Map create_cpp_key_map() {
     Key_Map key_map = {};
-    key_map.bind("C-c C-f", clang_format::command_clang_format_buffer);
+    BIND(key_map, "C-c C-f", clang_format::command_clang_format_buffer);
     return key_map;
 }
 
@@ -156,8 +158,8 @@ static Key_Map* cpp_key_map() {
 
 static Key_Map create_search_key_map() {
     Key_Map key_map = {};
-    key_map.bind("C-m", command_search_open);
-    key_map.bind("\n", command_search_open);
+    BIND(key_map, "C-m", command_search_open);
+    BIND(key_map, "\n", command_search_open);
     return key_map;
 }
 
@@ -168,12 +170,12 @@ static Key_Map* search_key_map() {
 
 static Key_Map create_path_key_map() {
     Key_Map key_map = {};
-    key_map.bind("A-i", command_insert_completion);
-    key_map.bind("C-n", command_next_completion);
-    key_map.bind("C-p", command_previous_completion);
-    key_map.bind("A-<", command_first_completion);
-    key_map.bind("A->", command_last_completion);
-    key_map.bind("C-l", command_path_up_directory);
+    BIND(key_map, "A-i", command_insert_completion);
+    BIND(key_map, "C-n", command_next_completion);
+    BIND(key_map, "C-p", command_previous_completion);
+    BIND(key_map, "A-<", command_first_completion);
+    BIND(key_map, "A->", command_last_completion);
+    BIND(key_map, "C-l", command_path_up_directory);
     return key_map;
 }
 

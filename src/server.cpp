@@ -103,7 +103,7 @@ static Command lookup_key_chain(Key_Map* map, size_t start, size_t* end, cz::Sli
         if (bind == nullptr) {
             ++index;
             *end = index;
-            return command_insert_char;
+            return {command_insert_char, "command_insert_char"};
         }
 
         if (bind->is_command) {
@@ -115,7 +115,7 @@ static Command lookup_key_chain(Key_Map* map, size_t start, size_t* end, cz::Sli
         }
     }
 
-    return nullptr;
+    return {};
 }
 
 static bool get_key_press_command(Editor* editor,
@@ -129,10 +129,10 @@ static bool get_key_press_command(Editor* editor,
                                   Command* command) {
     size_t index = *start;
     *command = lookup_key_chain(key_map, *start, &index, key_chain);
-    if (*command && *command != command_insert_char) {
+    if (command->function && command->function != command_insert_char) {
         source->client = client;
         source->keys = {client->key_chain.start() + *start, index - *start};
-        source->previous_command = *previous_command;
+        source->previous_command = previous_command->function;
 
         *previous_command = *command;
         *start = index;
@@ -143,6 +143,16 @@ static bool get_key_press_command(Editor* editor,
         }
 
         return false;
+    }
+}
+
+static void run_command(Command command, Editor* editor, Command_Source source) {
+    command.function(editor, source);
+
+    FILE* file = fopen("log.txt", "a");
+    if (file) {
+        fprintf(file, "%s\n", command.string);
+        fclose(file);
     }
 }
 
@@ -157,7 +167,7 @@ static bool handle_key_press(Editor* editor,
     Command_Source source;
     if (get_key_press_command(editor, client, key_map, start, key_chain, previous_command,
                               waiting_for_more_keys, &source, &command)) {
-        command(editor, source);
+        run_command(command, editor, source);
         return true;
     } else {
         return false;
@@ -172,19 +182,20 @@ static void failed_key_press(Editor* editor,
     if (key.modifiers == 0 && (isprint(key.code) || key.code == '\t' || key.code == '\n')) {
         if (key.code == '\n' && client->selected_window() == client->mini_buffer_window()) {
             send_message_result(editor, client);
-            *previous_command = nullptr;
+            *previous_command = {};
         } else {
             Command_Source source;
             source.client = client;
             source.keys = {client->key_chain.start() + start, 1};
-            source.previous_command = *previous_command;
+            source.previous_command = previous_command->function;
 
-            command_insert_char(editor, source);
-            *previous_command = command_insert_char;
+            Command command = {command_insert_char, "command_insert_char"};
+            run_command(command, editor, source);
+            *previous_command = command;
         }
     } else {
         client->show_message("Invalid key combo");
-        *previous_command = nullptr;
+        *previous_command = {};
     }
 }
 
@@ -206,7 +217,7 @@ static bool handle_key_press_buffer(Editor* editor,
                                   previous_command, waiting_for_more_keys, &source, &command)) {
             unlocked = true;
             handle->unlock();
-            command(editor, source);
+            run_command(command, editor, source);
             return true;
         } else {
             return false;
