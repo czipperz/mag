@@ -30,7 +30,6 @@
 
 * Syntax C++
   - Highlight doc comments and code inside them
-  - Preprocessor `#` and `##` recognition
 
 * Multi cursors
   - Message when no cursor created

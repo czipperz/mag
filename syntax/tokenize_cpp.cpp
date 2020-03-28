@@ -510,7 +510,8 @@ bool cpp_next_token(const Contents* contents,
         return false;
     }
 
-    if (first_char == '#') {
+#define OOGA #BOOGA
+    if (first_char == '#' && !in_preprocessor) {
         ZoneScopedN("preprocessor #");
         in_preprocessor = true;
         preprocessor_state = PREPROCESSOR_START_STATEMENT;
@@ -794,7 +795,9 @@ bool cpp_next_token(const Contents* contents,
         char second_char = 0;
         if (!iterator->at_eob()) {
             second_char = iterator->get();
-            if (first_char == '.' && second_char == '*') {
+            if (first_char == '#' && second_char == '#') {
+                iterator->advance();
+            } else if (first_char == '.' && second_char == '*') {
                 iterator->advance();
             } else if (first_char == '.' && second_char == '.') {
                 Contents_Iterator it = *iterator;
