@@ -2,10 +2,12 @@
 #define _GNU_SOURCE
 #include "process.hpp"
 
+#include <sys/types.h>
+
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <Tracy.hpp>
@@ -47,6 +49,10 @@ void Process::read_to_string(cz::Allocator allocator, cz::String* out) {
             out->append({buffer, (size_t)read_result});
         }
     }
+}
+
+void Process::kill() {
+    ::kill(pid, SIGTERM);
 }
 
 int Process::join() {

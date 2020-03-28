@@ -15,6 +15,7 @@ public:
     bool launch_program(const char* path, const char** args, const char* working_directory);
     bool launch_script(const char* script, const char* working_directory);
 
+    void kill();
     int join();
 
     bool set_read_blocking();
