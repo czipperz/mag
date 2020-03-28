@@ -28,6 +28,7 @@
 * Write file to path
 * Paste previous copies
 * Histogram of used commands
+* Highlight doc comments and code inside them
 
 * Multi cursors
   - Message when no cursor created
@@ -46,5 +47,6 @@
 * Remove all keys when sequence doesn't match instead of just the first
 * Adjust window cache position by changes
   - I did a minimal version of this and it bugs out now in that the screen won't scroll up when text is insert at bob.
-* Sometimes mini buffer gets double contents.  Probably this happens because mini buffer is closed without being cleared.
-  - This is reproducible by doing `C-x C-o C-x C-o` where `C-x C-o` is unbound and `C-o` is.
+* Adjust end of visible region cache when start changes
+* Don't merge insert changes across newlines, maybe even individual words.
+  - This will fix a rendering bug where inserting a newline at start of visible region shifts screen down a line.
