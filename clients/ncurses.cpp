@@ -230,6 +230,7 @@ void run(Server* server, Client* client) {
             continue;
         }
 
+        bool has_jobs = server->editor.jobs.len() > 0;
         server->editor.tick_jobs();
 
         if (ch == ERR) {
@@ -237,9 +238,16 @@ void run(Server* server, Client* client) {
         }
 
         if (ch == ERR) {
-            nodelay(stdscr, FALSE);
-            ch = getch();
-            nodelay(stdscr, TRUE);
+            if (has_jobs) {
+                ch = getch();
+                if (ch == ERR) {
+                    continue;
+                }
+            } else {
+                nodelay(stdscr, FALSE);
+                ch = getch();
+                nodelay(stdscr, TRUE);
+            }
         }
 
         process_key_presses(server, client, ch);
