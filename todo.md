@@ -47,4 +47,3 @@
 * Remove all keys when sequence doesn't match instead of just the first
 * Adjust window cache position by changes
   - I did a minimal version of this and it bugs out now in that the screen won't scroll up when text is insert at bob.
-* Don't merge insert changes across words.

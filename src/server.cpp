@@ -1,5 +1,6 @@
 #include "server.hpp"
 
+#include <ctype.h>
 #include <Tracy.hpp>
 #include <cz/heap.hpp>
 #include "client.hpp"
@@ -48,11 +49,12 @@ static void send_message_result(Editor* editor, Client* client) {
     client->dealloc_message();
 }
 
+static bool is_word_char(char c) {
+    return isalnum(c) || c == '_';
+}
 static bool can_merge_insert(cz::Str str, char code) {
-    if (code == '\n' || str[str.len - 1] == '\n') {
-        return false;
-    }
-    return true;
+    char last = str[str.len - 1];
+    return is_word_char(last) && is_word_char(code);
 }
 
 static void command_insert_char(Editor* editor, Command_Source source) {
