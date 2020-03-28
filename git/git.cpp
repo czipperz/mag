@@ -30,8 +30,9 @@ static bool tick_job_process_append(Editor* editor, void* data) {
         buffer->contents.insert(buffer->contents.len, {buf, (size_t)read_result});
         return false;
     } else if (read_result == 0) {
-    cleanup:
         // End of file
+        job->process.join();
+    cleanup:
         job->process.destroy();
         free(data);
         return true;
