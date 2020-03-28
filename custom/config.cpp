@@ -106,6 +106,9 @@ Key_Map create_key_map() {
     key_map.bind("A-l", command_goto_center_of_window);
     key_map.bind("C-l", command_center_in_window);
 
+    key_map.bind("A-v", command_up_page);
+    key_map.bind("C-v", command_down_page);
+
     return key_map;
 }
 
