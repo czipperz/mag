@@ -9,7 +9,7 @@ namespace mag {
 void compute_visible_start(Window* window, Contents_Iterator* iterator) {
     ZoneScoped;
 
-    iterator->retreat();
+    backward_char(iterator);
 
     size_t row = 0;
     size_t col = 0;
