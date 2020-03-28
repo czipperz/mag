@@ -85,6 +85,7 @@ void Window_Split::drop_non_recursive(Window_Split* window) {
 }
 
 void kill_extra_cursors(Window_Unified* window, Client* client) {
+    // :CopyLeak we don't deallocate here
     window->cursors.set_len(1);
     Copy_Chain* copy_chain = window->cursors[0].local_copy_chain;
     if (copy_chain) {
