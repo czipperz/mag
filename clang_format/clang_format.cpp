@@ -181,7 +181,7 @@ static bool tick_job_process_append(Editor* editor, void* data) {
     ssize_t read_result = job->process.read(buf, sizeof(buf));
     if (read_result > 0) {
         job->output_xml.reserve(cz::heap_allocator(), read_result);
-        job->output_xml.append({buf, read_result});
+        job->output_xml.append({buf, (size_t)read_result});
         return false;
     } else if (read_result == 0) {
         // End of file
