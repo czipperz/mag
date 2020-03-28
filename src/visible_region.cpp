@@ -6,42 +6,63 @@
 
 namespace mag {
 
-void compute_visible_start(Window* window, Contents_Iterator* line_start_iterator) {
+void compute_visible_start(Window* window, Contents_Iterator* iterator) {
     ZoneScoped;
 
-    for (size_t rows = 0; rows < window->rows - 2;) {
-        Contents_Iterator next_line_start_iterator = *line_start_iterator;
-        backward_line(&next_line_start_iterator);
-        if (next_line_start_iterator.position == line_start_iterator->position) {
-            CZ_DEBUG_ASSERT(line_start_iterator->position == 0);
-            break;
+    iterator->retreat();
+
+    size_t row = 0;
+    size_t col = 0;
+    size_t target_rows = window->rows;
+    for (; !iterator->at_bob(); iterator->retreat()) {
+        if (iterator->get() == '\n') {
+            ++row;
+            if (row >= target_rows) {
+                start_of_line(iterator);
+                forward_line(iterator);
+                break;
+            }
+            col = 0;
+        } else {
+            ++col;
+            if (col >= window->cols) {
+                col -= window->cols;
+                ++row;
+                if (row >= target_rows) {
+                    start_of_line(iterator);
+                    forward_line(iterator);
+                    break;
+                }
+            }
         }
-
-        size_t line_rows =
-            (line_start_iterator->position - next_line_start_iterator.position + window->cols - 1) /
-            window->cols;
-        *line_start_iterator = next_line_start_iterator;
-
-        rows += line_rows;
     }
 }
 
-void compute_visible_end(Window* window, Contents_Iterator* line_start_iterator) {
+void compute_visible_end(Window* window, Contents_Iterator* iterator) {
     ZoneScoped;
 
-    for (size_t rows = 0; rows < window->rows - 1;) {
-        Contents_Iterator next_line_start_iterator = *line_start_iterator;
-        forward_line(&next_line_start_iterator);
-        if (next_line_start_iterator.position == line_start_iterator->position) {
-            break;
+    size_t row = 0;
+    size_t col = 0;
+    size_t target_rows = window->rows - 1;
+    for (; !iterator->at_eob(); iterator->advance()) {
+        if (iterator->get() == '\n') {
+            ++row;
+            if (row >= target_rows) {
+                iterator->advance();
+                break;
+            }
+            col = 0;
+        } else {
+            ++col;
+            if (col >= window->cols) {
+                ++row;
+                if (row >= target_rows) {
+                    iterator->advance();
+                    break;
+                }
+                col -= window->cols;
+            }
         }
-
-        size_t line_rows =
-            (next_line_start_iterator.position - line_start_iterator->position + window->cols - 1) /
-            window->cols;
-        *line_start_iterator = next_line_start_iterator;
-
-        rows += line_rows;
     }
 }
 
