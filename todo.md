@@ -27,8 +27,11 @@
 
 * Write file to path
 * Paste previous copies
-* Histogram of used commands
-* Highlight doc comments and code inside them
+* Comment region
+
+* Syntax C++
+  - Highlight doc comments and code inside them
+  - Preprocessor `#` and `##` recognition
 
 * Multi cursors
   - Message when no cursor created
