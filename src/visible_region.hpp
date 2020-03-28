@@ -4,10 +4,7 @@ namespace mag {
 struct Window;
 struct Contents_Iterator;
 
-namespace client {
-
 void compute_visible_start(Window* window, Contents_Iterator* line_start_iterator);
 void compute_visible_end(Window* window, Contents_Iterator* line_start_iterator);
 
-}
 }

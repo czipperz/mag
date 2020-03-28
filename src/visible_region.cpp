@@ -5,7 +5,6 @@
 #include "window.hpp"
 
 namespace mag {
-namespace client {
 
 void compute_visible_start(Window* window, Contents_Iterator* line_start_iterator) {
     ZoneScoped;
@@ -18,7 +17,7 @@ void compute_visible_start(Window* window, Contents_Iterator* line_start_iterato
             break;
         }
 
-        int line_rows =
+        size_t line_rows =
             (line_start_iterator->position - next_line_start_iterator.position + window->cols - 1) /
             window->cols;
         *line_start_iterator = next_line_start_iterator;
@@ -37,7 +36,7 @@ void compute_visible_end(Window* window, Contents_Iterator* line_start_iterator)
             break;
         }
 
-        int line_rows =
+        size_t line_rows =
             (next_line_start_iterator.position - line_start_iterator->position + window->cols - 1) /
             window->cols;
         *line_start_iterator = next_line_start_iterator;
@@ -46,5 +45,4 @@ void compute_visible_end(Window* window, Contents_Iterator* line_start_iterator)
     }
 }
 
-}
 }
