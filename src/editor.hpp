@@ -45,7 +45,7 @@ struct Editor {
 
     void tick_jobs() {
         for (size_t i = 0; i < jobs.len(); ++i) {
-            if (jobs[i].tick(jobs[i].data)) {
+            if (jobs[i].tick(this, jobs[i].data)) {
                 // Todo: optimize by doing swap with last
                 jobs.remove(i);
                 --i;

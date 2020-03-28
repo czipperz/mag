@@ -1,6 +1,7 @@
 #pragma once
 
 namespace mag {
+struct Editor;
 
 /// A Job represents a task to be performed in the background.
 struct Job {
@@ -8,7 +9,7 @@ struct Job {
     ///
     /// When true is return, the job is removed from the work queue.  When this occurs, the tick
     /// function should clean up the Job, unlocking held locks and deallocating memory.
-    bool (*tick)(void* data);
+    bool (*tick)(Editor* editor, void* data);
     void* data;
 };
 

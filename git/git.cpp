@@ -11,20 +11,26 @@ namespace mag {
 namespace git {
 
 struct Job_Process_Append {
-    Buffer_Handle* handle;
+    Buffer_Id buffer_id;
     Process process;
 };
 
-static bool tick_job_process_append(void* data) {
+static bool tick_job_process_append(Editor* editor, void* data) {
     Job_Process_Append* job = (Job_Process_Append*)data;
     char buf[1024];
     ssize_t read_result = job->process.read(buf, sizeof(buf));
     if (read_result > 0) {
-        Buffer* buffer = job->handle->lock();
-        CZ_DEFER(job->handle->unlock());
+        Buffer_Handle* handle = editor->lookup(job->buffer_id);
+        if (!handle) {
+            job->process.kill();
+            goto cleanup;
+        }
+        Buffer* buffer = handle->lock();
+        CZ_DEFER(handle->unlock());
         buffer->contents.insert(buffer->contents.len, {buf, (size_t)read_result});
         return false;
     } else if (read_result == 0) {
+    cleanup:
         // End of file
         job->process.destroy();
         free(data);
@@ -35,10 +41,10 @@ static bool tick_job_process_append(void* data) {
     }
 }
 
-static Job job_process_append(Buffer_Handle* handle, Process process) {
+static Job job_process_append(Buffer_Id buffer_id, Process process) {
     Job_Process_Append* data = (Job_Process_Append*)malloc(sizeof(Job_Process_Append));
     CZ_ASSERT(data);
-    data->handle = handle;
+    data->buffer_id = buffer_id;
     data->process = process;
 
     Job job;
@@ -70,7 +76,7 @@ static bool run_console_command(Client* client,
 
     client->set_selected_buffer(buffer_id);
 
-    editor->add_job(job_process_append(editor->lookup(buffer_id), process));
+    editor->add_job(job_process_append(buffer_id, process));
     return true;
 }
 
