@@ -31,6 +31,7 @@ Key_Map create_key_map() {
     key_map.bind("C-w", command_cut);
     key_map.bind("A-w", command_copy);
     key_map.bind("C-y", command_paste);
+    key_map.bind("A-y", command_paste_previous);
 
     key_map.bind("C-f", command_forward_char);
     key_map.bind("C-b", command_backward_char);

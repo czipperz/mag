@@ -84,10 +84,18 @@ void command_copy(Editor* editor, Command_Source source) {
     window->show_marks = false;
 }
 
-void command_paste(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-    cz::Slice<Cursor> cursors = window->cursors;
+static bool setup_paste(cz::Slice<Cursor> cursors, Copy_Chain* global_copy_chain) {
+    for (size_t c = 0; c < cursors.len; ++c) {
+        cursors[c].paste_local = cursors[c].local_copy_chain;
+        cursors[c].paste_global = global_copy_chain;
+        if (!cursors[c].paste_local && !cursors[c].paste_global) {
+            return false;
+        }
+    }
+    return true;
+}
 
+static void run_paste(cz::Slice<Cursor> cursors, Editor* editor, Buffer* buffer) {
     // :CopyLeak Probably we will need to copy all the values here.
     Transaction transaction;
     transaction.init(cursors.len, 0);
@@ -95,12 +103,9 @@ void command_paste(Editor* editor, Command_Source source) {
 
     size_t offset = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
-        Copy_Chain* copy_chain = nullptr;
+        Copy_Chain* copy_chain = cursors[c].paste_local;
         if (!copy_chain) {
-            copy_chain = cursors[c].local_copy_chain;
-        }
-        if (!copy_chain) {
-            copy_chain = source.client->global_copy_chain;
+            copy_chain = cursors[c].paste_global;
         }
 
         if (copy_chain) {
@@ -117,6 +122,56 @@ void command_paste(Editor* editor, Command_Source source) {
     }
 
     transaction.commit(buffer);
+}
+
+void command_paste(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    cz::Slice<Cursor> cursors = window->cursors;
+    if (!setup_paste(cursors, source.client->global_copy_chain)) {
+        return;
+    }
+
+    run_paste(cursors, editor, buffer);
+}
+
+void command_paste_previous(Editor* editor, Command_Source source) {
+    Window_Unified* window = source.client->selected_window();
+    cz::Slice<Cursor> cursors = window->cursors;
+    if (source.previous_command == command_paste) {
+        if (!setup_paste(cursors, source.client->global_copy_chain)) {
+            return;
+        }
+    }
+
+    if (source.previous_command == command_paste ||
+        source.previous_command == command_paste_previous) {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            Copy_Chain** chain = &cursors[c].paste_local;
+            if (*chain) {
+                *chain = (*chain)->previous;
+                if (!*chain) {
+                    chain = &cursors[c].paste_global;
+                }
+            } else {
+                chain = &cursors[c].paste_global;
+                if (*chain) {
+                    *chain = (*chain)->previous;
+                }
+                if (!*chain) {
+                    return;
+                }
+            }
+        }
+
+        {
+            WITH_WINDOW_BUFFER(window);
+            buffer->undo();
+            window->update_cursors(buffer->changes);
+            run_paste(cursors, editor, buffer);
+        }
+    } else {
+        source.client->show_message("Error: previous command was not paste");
+    }
 }
 
 }
