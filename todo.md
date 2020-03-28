@@ -26,7 +26,6 @@
   - Move cursor to top and bottom of screen
 
 * Write file to path
-* Paste previous copies
 * Comment region
 
 * Syntax C++
