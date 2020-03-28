@@ -1,6 +1,7 @@
 #include "visible_region_commands.hpp"
 
 #include "command_macros.hpp"
+#include "movement.hpp"
 #include "visible_region.hpp"
 #include "window.hpp"
 
@@ -8,39 +9,63 @@ namespace mag {
 namespace basic {
 
 void center_in_window(Window_Unified* window, Contents_Iterator iterator) {
-    if (iterator.at_eob() && !iterator.at_bob()) {
-        iterator.retreat();
-    }
+    backward_char(&iterator);
 
-    size_t traversed_rows = 0;
+    size_t row = 0;
+    size_t col = 0;
     size_t target_rows = window->rows / 2;
-    while (1) {
-        if (iterator.at_bob() || traversed_rows > target_rows) {
-            window->start_position = iterator.position;
-            break;
-        }
-
+    for (; !iterator.at_bob(); iterator.retreat()) {
         if (iterator.get() == '\n') {
-            ++traversed_rows;
+            ++row;
+            if (row >= target_rows) {
+                start_of_line(&iterator);
+                //forward_line(&iterator);
+                break;
+            }
+            col = 0;
+        } else {
+            ++col;
+            if (col >= window->cols) {
+                col -= window->cols;
+                ++row;
+                if (row >= target_rows) {
+                    start_of_line(&iterator);
+                    //forward_line(&iterator);
+                    break;
+                }
+            }
         }
-        iterator.retreat();
     }
+
+    window->start_position = iterator.position;
 }
 
 Contents_Iterator center_of_window(Window_Unified* window, const Contents* contents) {
     Contents_Iterator iterator = contents->iterator_at(window->start_position);
-    size_t traversed_rows = 0;
+    size_t row = 0;
+    size_t col = 0;
     size_t target_rows = window->rows / 2;
-    while (1) {
-        if (iterator.at_eob() || traversed_rows > target_rows) {
-            return iterator;
-        }
-
+    for (; !iterator.at_eob(); iterator.advance()) {
         if (iterator.get() == '\n') {
-            ++traversed_rows;
+            ++row;
+            if (row >= target_rows) {
+                iterator.advance();
+                break;
+            }
+            col = 0;
+        } else {
+            ++col;
+            if (col >= window->cols) {
+                ++row;
+                if (row >= target_rows) {
+                    iterator.advance();
+                    break;
+                }
+                col -= window->cols;
+            }
         }
-        iterator.advance();
     }
+    return iterator;
 }
 
 void command_center_in_window(Editor* editor, Command_Source source) {
