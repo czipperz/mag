@@ -146,6 +146,10 @@ void Contents::insert(uint64_t start, cz::Str str) {
     }
 }
 
+void Contents::append(cz::Str str) {
+    insert(len, str);
+}
+
 static void slice_impl(char* buffer,
                        cz::Slice<const cz::Slice<char>> buckets,
                        Contents_Iterator start,

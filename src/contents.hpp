@@ -19,6 +19,7 @@ struct Contents {
 
     void remove(uint64_t start, uint64_t len);
     void insert(uint64_t position, cz::Str str);
+    void append(cz::Str str);
 
     cz::String stringify(cz::Allocator allocator) const;
     void stringify_into(cz::Allocator allocator, cz::String* string) const;
