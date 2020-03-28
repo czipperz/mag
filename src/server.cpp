@@ -48,6 +48,13 @@ static void send_message_result(Editor* editor, Client* client) {
     client->dealloc_message();
 }
 
+static bool can_merge_insert(cz::Str str, char code) {
+    if (code == '\n' || str[str.len - 1] == '\n') {
+        return false;
+    }
+    return true;
+}
+
 static void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     char code = source.keys[0].code;
@@ -56,7 +63,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
         Commit commit = buffer->commits[buffer->commit_index - 1];
         size_t len = commit.edits[0].value.len();
-        if (len < SSOStr::MAX_SHORT_LEN) {
+        if (len < SSOStr::MAX_SHORT_LEN && can_merge_insert(commit.edits[0].value.as_str(), code)) {
             CZ_DEBUG_ASSERT(commit.edits.len == window->cursors.len());
             buffer->undo();
             // We don't need to update cursors here because insertion doesn't care.
