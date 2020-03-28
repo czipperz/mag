@@ -98,6 +98,7 @@ void cache_window_unified_position(Window_Unified* window,
 
     Contents_Iterator visible_end_iterator = buffer->contents.iterator_at(start_position);
     compute_visible_end(window, &visible_end_iterator);
+    window_cache->v.unified.visible_start = start_position;
     window_cache->v.unified.visible_end = visible_end_iterator.position;
 
     cz::Vector<Tokenizer_Check_Point>* check_points =

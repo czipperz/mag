@@ -52,6 +52,15 @@ static void draw_buffer_contents(Cell* cells,
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     start_of_line(&iterator);
     if (window_cache) {
+        if (window->start_position != window_cache->v.unified.visible_start) {
+            // Start position updated in a command so recalculate end position.
+            Contents_Iterator visible_end_iterator =
+                buffer->contents.iterator_at(window->start_position);
+            compute_visible_end(window, &visible_end_iterator);
+            window_cache->v.unified.visible_start = window->start_position;
+            window_cache->v.unified.visible_end = visible_end_iterator.position;
+        }
+
         // Ensure the cursor is visible
         uint64_t selected_cursor_position = window->cursors[0].point;
         Contents_Iterator second_line_iterator = iterator;
