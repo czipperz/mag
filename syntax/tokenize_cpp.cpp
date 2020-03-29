@@ -9,8 +9,6 @@ namespace mag {
 namespace syntax {
 
 enum State : uint64_t {
-    IN_PREPROCESSOR_FLAG = 0x8000000000000000,
-
     NORMAL_STATE_MASK = 0x000000000000000F,
     START_OF_STATEMENT = 0x0000000000000000,
     IN_EXPR = 0x0000000000000001,
@@ -22,24 +20,39 @@ enum State : uint64_t {
     IN_TYPE_DEFINITION = 0x0000000000000007,
     AFTER_FOR = 0x0000000000000008,
 
+    IN_PREPROCESSOR_FLAG = 0x0000000000000800,
+
     PREPROCESSOR_SAVED_STATE_MASK = 0x00000000000000F0,
     PREPROCESSOR_SAVE_SHIFT = 4,
 
-    PREPROCESSOR_STATE_MASK = 0x7000000000000000,
+    PREPROCESSOR_STATE_MASK = 0x0000000000000700,
     PREPROCESSOR_START_STATEMENT = 0x0000000000000000,
-    PREPROCESSOR_AFTER_INCLUDE = 0x1000000000000000,
-    PREPROCESSOR_AFTER_DEFINE = 0x2000000000000000,
-    PREPROCESSOR_AFTER_DEFINE_NAME = 0x3000000000000000,
-    PREPROCESSOR_IN_DEFINE_PARAMETERS = 0x4000000000000000,
-    PREPROCESSOR_GENERAL = 0x5000000000000000,
+    PREPROCESSOR_AFTER_INCLUDE = 0x0000000000000100,
+    PREPROCESSOR_AFTER_DEFINE = 0x0000000000000200,
+    PREPROCESSOR_AFTER_DEFINE_NAME = 0x0000000000000300,
+    PREPROCESSOR_IN_DEFINE_PARAMETERS = 0x0000000000000400,
+    PREPROCESSOR_GENERAL = 0x0000000000000500,
+
+    COMMENT_MULTILINE_FLAG = 0x1000000000000000,
+    COMMENT_ONELINE_FLAG = 0x2000000000000000,
+    COMMENT_PREVIOUS_ONELINE_FLAG = 0x4000000000000000,
+
+    COMMENT_STATE_MASK = 0x0700000000000000,
+    COMMENT_START_OF_LINE = 0x0000000000000000,
+    COMMENT_TITLE = 0x0100000000000000,
+    COMMENT_MIDDLE_OF_LINE = 0x0200000000000000,
+    COMMENT_CODE_INLINE = 0x0300000000000000,
+    COMMENT_CODE_MULTILINE = 0x0400000000000000,
 };
 
 static bool skip_whitespace(Contents_Iterator* iterator,
                             char* ch,
                             bool* in_preprocessor,
+                            bool* in_oneline_comment,
                             uint64_t* normal_state,
                             uint64_t* preprocessor_state,
-                            uint64_t preprocessor_saved_state) {
+                            uint64_t preprocessor_saved_state,
+                            uint64_t* comment_state) {
     ZoneScoped;
 
     if (*in_preprocessor) {
@@ -107,6 +120,12 @@ static bool skip_whitespace(Contents_Iterator* iterator,
                 }
             }
 
+            if (*ch == '\n') {
+                *in_oneline_comment = false;
+                if (*comment_state == COMMENT_TITLE || *comment_state == COMMENT_MIDDLE_OF_LINE) {
+                    *comment_state = COMMENT_START_OF_LINE;
+                }
+            }
             if (!isspace(*ch)) {
                 return true;
             }
@@ -142,12 +161,22 @@ static bool is_identifier_continuation(char ch) {
     return isalnum(ch) || ch == '_';
 }
 
-#define MAKE_COMBINED_STATE(SC)                                              \
-    do {                                                                     \
-        (SC) = normal_state | preprocessor_state | preprocessor_saved_state; \
-        if (in_preprocessor) {                                               \
-            (SC) |= IN_PREPROCESSOR_FLAG;                                    \
-        }                                                                    \
+#define MAKE_COMBINED_STATE(SC)                                                               \
+    do {                                                                                      \
+        (SC) = normal_state | preprocessor_state | preprocessor_saved_state | comment_state | \
+               comment_saved_state;                                                           \
+        if (in_preprocessor) {                                                                \
+            (SC) |= IN_PREPROCESSOR_FLAG;                                                     \
+        }                                                                                     \
+        if (in_multiline_comment) {                                                           \
+            (SC) |= COMMENT_MULTILINE_FLAG;                                                   \
+        }                                                                                     \
+        if (in_oneline_comment) {                                                             \
+            (SC) |= COMMENT_ONELINE_FLAG;                                                     \
+        }                                                                                     \
+        if (previous_in_oneline_comment) {                                                    \
+            (SC) |= COMMENT_PREVIOUS_ONELINE_FLAG;                                            \
+        }                                                                                     \
     } while (0)
 
 // Keyword lookup table macros.
@@ -493,6 +522,80 @@ static bool look_for_type_keyword(const Contents* contents,
     return false;
 }
 
+static void continue_inside_oneline_comment(Contents_Iterator* iterator,
+                                            bool* in_oneline_comment,
+                                            uint64_t* comment_state) {
+    for (bool continue_into_next_line = false; !iterator->at_eob(); iterator->advance()) {
+        char ch = iterator->get();
+        if (ch == '\n') {
+            if (!continue_into_next_line) {
+                *in_oneline_comment = false;
+                break;
+            }
+            continue_into_next_line = false;
+        } else if (ch == '\\') {
+            continue_into_next_line = true;
+        } else if (isblank(ch)) {
+        } else if (ch == '`') {
+            *comment_state = COMMENT_MIDDLE_OF_LINE;
+            break;
+        } else if (*comment_state == COMMENT_START_OF_LINE &&
+                   (ch == '#' || ch == '*' || ch == '-' || ch == '+')) {
+            break;
+        } else {
+            continue_into_next_line = false;
+        }
+    }
+}
+
+static void continue_inside_multiline_comment(Contents_Iterator* iterator,
+                                              bool* in_multiline_comment,
+                                              uint64_t* comment_state) {
+    char previous = 0;
+    for (; !iterator->at_eob(); iterator->advance()) {
+        char ch = iterator->get();
+        if (previous == '*' && ch == '/') {
+            iterator->advance();
+            *in_multiline_comment = false;
+            break;
+        } else if (ch == '\n') {
+            *comment_state = COMMENT_START_OF_LINE;
+        } else if (ch == '`') {
+            *comment_state = COMMENT_MIDDLE_OF_LINE;
+            break;
+        } else if (*comment_state == COMMENT_START_OF_LINE &&
+                   (ch == '#' || ch == '*' || ch == '-' || ch == '+')) {
+            break;
+        }
+
+        previous = ch;
+    }
+}
+
+static void continue_inside_multiline_comment_title(Contents_Iterator* iterator,
+                                                    bool* in_multiline_comment,
+                                                    uint64_t* comment_state) {
+    char previous = 0;
+    for (; !iterator->at_eob(); iterator->advance()) {
+        char ch = iterator->get();
+        if (previous == '*' && ch == '/') {
+            iterator->advance();
+            *in_multiline_comment = false;
+            break;
+        } else if (ch == '\n') {
+            break;
+        } else if (ch == '`') {
+            *comment_state = COMMENT_MIDDLE_OF_LINE;
+            break;
+        } else if (*comment_state == COMMENT_START_OF_LINE &&
+                   (ch == '#' || ch == '*' || ch == '-' || ch == '+')) {
+            break;
+        }
+
+        previous = ch;
+    }
+}
+
 bool cpp_next_token(const Contents* contents,
                     Contents_Iterator* iterator,
                     Token* token,
@@ -503,14 +606,124 @@ bool cpp_next_token(const Contents* contents,
     uint64_t normal_state = *state_combined & NORMAL_STATE_MASK;
     uint64_t preprocessor_state = *state_combined & PREPROCESSOR_STATE_MASK;
     uint64_t preprocessor_saved_state = *state_combined & PREPROCESSOR_SAVED_STATE_MASK;
+    bool in_multiline_comment = *state_combined & COMMENT_MULTILINE_FLAG;
+    bool in_oneline_comment = *state_combined & COMMENT_ONELINE_FLAG;
+    bool previous_in_oneline_comment = in_oneline_comment;
+    uint64_t comment_state = *state_combined & COMMENT_STATE_MASK;
+    uint64_t comment_saved_state = *state_combined & COMMENT_SAVED_STATE_MASK;
 
     char first_char;
-    if (!skip_whitespace(iterator, &first_char, &in_preprocessor, &normal_state,
-                         &preprocessor_state, preprocessor_saved_state)) {
+    if (!skip_whitespace(iterator, &first_char, &in_preprocessor, &in_oneline_comment,
+                         &normal_state, &preprocessor_state, preprocessor_saved_state,
+                         &comment_state)) {
         return false;
     }
 
-#define OOGA #BOOGA
+    if (in_oneline_comment || in_multiline_comment) {
+        // The fact that we stopped here in the middle of a comment means we hit a special
+        // character.  As of right now that is one of `, #, *, -, or +.
+        switch (comment_state) {
+        case COMMENT_START_OF_LINE:
+            switch (first_char) {
+            case '#':
+                comment_state = COMMENT_TITLE;
+                token->start = iterator->position;
+                iterator->advance();
+                while (!iterator->at_eob() && iterator->get() == '#') {
+                    iterator->advance();
+                }
+                token->end = iterator->position;
+                token->type = Token_Type::PUNCTUATION;
+                break;
+            case '*':
+            case '-':
+            case '+':
+                comment_state = COMMENT_MIDDLE_OF_LINE;
+                token->start = iterator->position;
+                iterator->advance();
+                token->end = iterator->position;
+                token->type = Token_Type::PUNCTUATION;
+                break;
+            default:
+                goto comment_normal;
+            }
+            goto done;
+
+        case COMMENT_TITLE:
+            token->start = iterator->position;
+            if (in_oneline_comment) {
+                continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
+            } else {
+                continue_inside_multiline_comment_title(iterator, &in_multiline_comment,
+                                                        &comment_state);
+            }
+            token->end = iterator->position;
+            token->type = Token_Type::TITLE;
+            goto done;
+
+        case COMMENT_MIDDLE_OF_LINE:
+            if (first_char == '`') {
+                token->start = iterator->position;
+                iterator->advance();
+                comment_state = COMMENT_CODE_INLINE;
+                if (!iterator->at_eob() && iterator->get() == '`') {
+                    iterator->advance();
+                    if (!iterator->at_eob() && iterator->get() == '`') {
+                        iterator->advance();
+                        comment_state = COMMENT_CODE_MULTILINE;
+                    } else {
+                        comment_state = COMMENT_MIDDLE_OF_LINE;
+                    }
+                }
+                token->end = iterator->position;
+                token->type = Token_Type::CODE;
+                goto done;
+            } else {
+            comment_normal:
+                token->start = iterator->position;
+                if (in_oneline_comment) {
+                    continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
+                } else {
+                    continue_inside_multiline_comment(iterator, &in_multiline_comment,
+                                                      &comment_state);
+                }
+                token->end = iterator->position;
+                token->type = Token_Type::COMMENT;
+                goto done;
+            }
+
+        case COMMENT_CODE_INLINE:
+            if (first_char == '`') {
+                comment_state = COMMENT_MIDDLE_OF_LINE;
+                token->start = iterator->position;
+                iterator->advance();
+                token->end = iterator->position;
+                token->type = Token_Type::CODE;
+                goto done;
+            }
+            break;
+
+        case COMMENT_CODE_MULTILINE: {
+            if (first_char == '`') {
+                Contents_Iterator it = *iterator;
+                it.advance();
+                if (!it.at_eob() && it.get() == '`') {
+                    it.advance();
+                    if (!it.at_eob() && it.get() == '`') {
+                        comment_state = COMMENT_MIDDLE_OF_LINE;
+                        token->start = iterator->position;
+                        it.advance();
+                        *iterator = it;
+                        token->end = iterator->position;
+                        token->type = Token_Type::CODE;
+                        goto done;
+                    }
+                }
+            }
+        }
+        }
+    }
+
     if (first_char == '#' && !in_preprocessor) {
         ZoneScopedN("preprocessor #");
         in_preprocessor = true;
@@ -742,23 +955,17 @@ bool cpp_next_token(const Contents* contents,
         next_iterator.advance();
         if (!next_iterator.at_eob() && next_iterator.get() == '/') {
             ZoneScopedN("line comment");
+            in_oneline_comment = true;
             token->start = iterator->position;
             next_iterator.advance();
             *iterator = next_iterator;
-            for (bool continue_into_next_line = false; !iterator->at_eob(); iterator->advance()) {
-                char ch = iterator->get();
-                if (ch == '\n') {
-                    if (!continue_into_next_line) {
-                        break;
-                    }
-                    continue_into_next_line = false;
-                } else if (ch == '\\') {
-                    continue_into_next_line = true;
-                } else if (!isblank(ch)) {
-                    continue_into_next_line = false;
-                }
+            if (previous_in_oneline_comment &&
+                (comment_state == COMMENT_CODE_INLINE || comment_state == COMMENT_CODE_MULTILINE)) {
+                // Merge consecutive online comments where a code block extends between them.
+            } else {
+                comment_state = COMMENT_START_OF_LINE;
+                continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
             }
-
             token->end = iterator->position;
             token->type = Token_Type::COMMENT;
             goto done;
@@ -766,21 +973,12 @@ bool cpp_next_token(const Contents* contents,
 
         if (!next_iterator.at_eob() && next_iterator.get() == '*') {
             ZoneScopedN("block comment");
+            in_multiline_comment = true;
+            comment_state = COMMENT_START_OF_LINE;
             token->start = iterator->position;
             next_iterator.advance();
             *iterator = next_iterator;
-            if (!iterator->at_eob()) {
-                iterator->advance();
-                char previous = 0;
-                for (; !iterator->at_eob(); iterator->advance()) {
-                    char ch = iterator->get();
-                    if (previous == '*' && ch == '/') {
-                        iterator->advance();
-                        break;
-                    }
-                    previous = ch;
-                }
-            }
+            continue_inside_multiline_comment(iterator, &in_multiline_comment, &comment_state);
             token->end = iterator->position;
             token->type = Token_Type::COMMENT;
             goto done;
