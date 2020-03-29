@@ -572,6 +572,7 @@ static void continue_inside_multiline_comment(Contents_Iterator* iterator,
     for (; !iterator->at_eob(); iterator->advance()) {
         char ch = iterator->get();
         if (previous == '*' && ch == '/') {
+end_comment:
             iterator->advance();
             *in_multiline_comment = false;
             break;
@@ -582,6 +583,12 @@ static void continue_inside_multiline_comment(Contents_Iterator* iterator,
             break;
         } else if (*comment_state == COMMENT_START_OF_LINE &&
                    (ch == '#' || ch == '*' || ch == '-' || ch == '+')) {
+            Contents_Iterator it = *iterator;
+            it.advance();
+            if (ch == '*' && !it.at_eob() && it.get() == '/') {
+*iterator = it;
+                goto end_comment;
+            }
             break;
         }
 
