@@ -696,12 +696,17 @@ void command_goto_position(Editor* editor, Command_Source source) {
 void command_path_up_directory(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     Contents_Iterator start = buffer->contents.iterator_at(buffer->contents.len);
+    if (start.at_bob()) {
+        return;
+    }
+    start.retreat();
     while (1) {
         if (start.at_bob()) {
             return;
         }
         start.retreat();
         if (start.get() == '/') {
+            start.advance();
             break;
         }
     }
