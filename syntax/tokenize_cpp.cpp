@@ -1031,6 +1031,7 @@ bool cpp_next_token(const Contents* contents,
             next_iterator.advance();
             *iterator = next_iterator;
             if (!iterator->at_eob() && iterator->get() == '/') {
+                iterator->advance();
                 in_oneline_comment = true;
                 if (previous_in_oneline_comment && (comment_state == COMMENT_CODE_INLINE ||
                                                     comment_state == COMMENT_CODE_MULTILINE)) {
@@ -1054,10 +1055,17 @@ bool cpp_next_token(const Contents* contents,
             next_iterator.advance();
             *iterator = next_iterator;
             if (!iterator->at_eob() && iterator->get() == '*') {
-                in_multiline_comment = true;
-                comment_state = COMMENT_START_OF_LINE;
-                continue_inside_multiline_comment(iterator, &in_multiline_comment, &comment_state);
-                token->type = Token_Type::DOC_COMMENT;
+                iterator->advance();
+                if (!iterator->at_eob() && iterator->get() == '/') {
+                    iterator->advance();
+                    token->type = Token_Type::COMMENT;
+                } else {
+                    in_multiline_comment = true;
+                    comment_state = COMMENT_START_OF_LINE;
+                    continue_inside_multiline_comment(iterator, &in_multiline_comment,
+                                                      &comment_state);
+                    token->type = Token_Type::DOC_COMMENT;
+                }
             } else {
                 continue_around_multiline_comment(iterator);
                 token->type = Token_Type::COMMENT;
