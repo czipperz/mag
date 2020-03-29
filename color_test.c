@@ -14,14 +14,14 @@ int main() {
     attrset(A_NORMAL);
     printw(" %.3d: ", 0);
 
-    for (size_t i; i < COLORS && i + 1 < COLOR_PAIRS; ++i) {
-        if ((i + 1) % 6 == 0) {
+    for (size_t i = 0; i < COLORS && i + 1 < COLOR_PAIRS; ++i) {
+        if ((i + 2) % 6 == 0) {
             addch('\n');
             attrset(A_NORMAL);
             printw(" %.3d: ", i);
         }
 
-        attrset(COLOR_PAIR(i));
+        attrset(COLOR_PAIR(i + 1));
         addch('X');
     }
 
