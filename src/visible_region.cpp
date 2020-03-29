@@ -48,7 +48,6 @@ void compute_visible_end(Window* window, Contents_Iterator* iterator) {
         if (iterator->get() == '\n') {
             ++row;
             if (row >= target_rows) {
-                iterator->advance();
                 break;
             }
             col = 0;
@@ -57,7 +56,6 @@ void compute_visible_end(Window* window, Contents_Iterator* iterator) {
             if (col >= window->cols) {
                 ++row;
                 if (row >= target_rows) {
-                    iterator->advance();
                     break;
                 }
                 col -= window->cols;
