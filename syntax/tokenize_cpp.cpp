@@ -565,6 +565,23 @@ static void continue_inside_oneline_comment(Contents_Iterator* iterator,
     }
 }
 
+static void continue_around_oneline_comment(Contents_Iterator* iterator) {
+    for (bool continue_into_next_line = false; !iterator->at_eob(); iterator->advance()) {
+        char ch = iterator->get();
+        if (ch == '\n') {
+            if (!continue_into_next_line) {
+                break;
+            }
+            continue_into_next_line = false;
+        } else if (ch == '\\') {
+            continue_into_next_line = true;
+        } else if (isblank(ch)) {
+        } else {
+            continue_into_next_line = false;
+        }
+    }
+}
+
 static void continue_inside_multiline_comment(Contents_Iterator* iterator,
                                               bool* in_multiline_comment,
                                               uint64_t* comment_state) {
@@ -572,7 +589,7 @@ static void continue_inside_multiline_comment(Contents_Iterator* iterator,
     for (; !iterator->at_eob(); iterator->advance()) {
         char ch = iterator->get();
         if (previous == '*' && ch == '/') {
-end_comment:
+        end_comment:
             iterator->advance();
             *in_multiline_comment = false;
             break;
@@ -586,9 +603,22 @@ end_comment:
             Contents_Iterator it = *iterator;
             it.advance();
             if (ch == '*' && !it.at_eob() && it.get() == '/') {
-*iterator = it;
+                *iterator = it;
                 goto end_comment;
             }
+            break;
+        }
+
+        previous = ch;
+    }
+}
+
+static void continue_around_multiline_comment(Contents_Iterator* iterator) {
+    char previous = 0;
+    for (; !iterator->at_eob(); iterator->advance()) {
+        char ch = iterator->get();
+        if (previous == '*' && ch == '/') {
+            iterator->advance();
             break;
         }
 
@@ -997,16 +1027,20 @@ bool cpp_next_token(const Contents* contents,
         next_iterator.advance();
         if (!next_iterator.at_eob() && next_iterator.get() == '/') {
             ZoneScopedN("line comment");
-            in_oneline_comment = true;
             token->start = iterator->position;
             next_iterator.advance();
             *iterator = next_iterator;
-            if (previous_in_oneline_comment &&
-                (comment_state == COMMENT_CODE_INLINE || comment_state == COMMENT_CODE_MULTILINE)) {
-                // Merge consecutive online comments where a code block extends between them.
+            if (!iterator->at_eob() && iterator->get() == '/') {
+                in_oneline_comment = true;
+                if (previous_in_oneline_comment && (comment_state == COMMENT_CODE_INLINE ||
+                                                    comment_state == COMMENT_CODE_MULTILINE)) {
+                    // Merge consecutive online comments where a code block extends between them.
+                } else {
+                    comment_state = COMMENT_START_OF_LINE;
+                    continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
+                }
             } else {
-                comment_state = COMMENT_START_OF_LINE;
-                continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
+                continue_around_oneline_comment(iterator);
             }
             token->end = iterator->position;
             token->type = Token_Type::COMMENT;
@@ -1015,12 +1049,16 @@ bool cpp_next_token(const Contents* contents,
 
         if (!next_iterator.at_eob() && next_iterator.get() == '*') {
             ZoneScopedN("block comment");
-            in_multiline_comment = true;
-            comment_state = COMMENT_START_OF_LINE;
             token->start = iterator->position;
             next_iterator.advance();
             *iterator = next_iterator;
-            continue_inside_multiline_comment(iterator, &in_multiline_comment, &comment_state);
+            if (!iterator->at_eob() && iterator->get() == '*') {
+                in_multiline_comment = true;
+                comment_state = COMMENT_START_OF_LINE;
+                continue_inside_multiline_comment(iterator, &in_multiline_comment, &comment_state);
+            } else {
+                continue_around_multiline_comment(iterator);
+            }
             token->end = iterator->position;
             token->type = Token_Type::COMMENT;
             goto done;
