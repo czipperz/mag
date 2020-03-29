@@ -149,11 +149,13 @@ static bool get_key_press_command(Editor* editor,
 static void run_command(Command command, Editor* editor, Command_Source source) {
     command.function(editor, source);
 
+#ifndef NDEBUG
     FILE* file = fopen("log.txt", "a");
     if (file) {
         fprintf(file, "%s\n", command.string);
         fclose(file);
     }
+#endif
 }
 
 static bool handle_key_press(Editor* editor,
