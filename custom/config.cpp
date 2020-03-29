@@ -13,6 +13,8 @@
 #include "basic/window_commands.hpp"
 #include "clang_format/clang_format.hpp"
 #include "git/git.hpp"
+#include "git/tokenize_git_commit_edit_message.hpp"
+#include "git/tokenize_patch.hpp"
 #include "prose/alternate.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_md.hpp"
@@ -118,7 +120,7 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
-    theme.faces.reserve(cz::heap_allocator(), 12);
+    theme.faces.reserve(cz::heap_allocator(), 16);
     theme.faces.push({7, 0, 0});   // DEFAULT
     theme.faces.push({1, 0, 0});   // KEYWORD
     theme.faces.push({4, 0, 0});   // TYPE
@@ -132,6 +134,11 @@ Theme create_theme() {
 
     theme.faces.push({3, 0, 0});  // TITLE
     theme.faces.push({2, 0, 0});  // CODE
+
+    theme.faces.push({1, 0, 0});    // PATCH_REMOVE
+    theme.faces.push({46, 0, 0});   // PATCH_ADD
+    theme.faces.push({246, 0, 0});  // PATCH_NEUTRAL
+    theme.faces.push({7, 0, 0});    // PATCH_ANNOTATION
     return theme;
 }
 
@@ -199,11 +206,15 @@ Mode get_mode(cz::Str file_name) {
         mode.key_map = cpp_key_map();
     } else if (file_name.ends_with(".md")) {
         mode.next_token = syntax::md_next_token;
+    } else if (file_name.ends_with(".patch")) {
+        mode.next_token = syntax::patch_next_token;
     } else if (file_name == "*client mini buffer*") {
         mode.next_token = syntax::path_next_token;
         mode.key_map = path_key_map();
     } else if (file_name.starts_with("*git grep ")) {
         mode.key_map = search_key_map();
+    } else if (file_name.ends_with("/COMMIT_EDITMSG")) {
+        mode.next_token = syntax::git_commit_edit_message_next_token;
     }
     return mode;
 }

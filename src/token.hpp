@@ -19,6 +19,11 @@ enum Token_Type {
 
     TITLE,
     CODE,
+
+    PATCH_REMOVE,
+    PATCH_ADD,
+    PATCH_NEUTRAL,
+    PATCH_ANNOTATION,
 };
 }
 using Token_Type_::Token_Type;
