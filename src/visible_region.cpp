@@ -18,8 +18,8 @@ void compute_visible_start(Window* window, Contents_Iterator* iterator) {
         if (iterator->get() == '\n') {
             ++row;
             if (row >= target_rows) {
-                start_of_line(iterator);
-                forward_line(iterator);
+                end_of_line(iterator);
+                forward_char(iterator);
                 break;
             }
             col = 0;
@@ -29,8 +29,8 @@ void compute_visible_start(Window* window, Contents_Iterator* iterator) {
                 col -= window->cols;
                 ++row;
                 if (row >= target_rows) {
-                    start_of_line(iterator);
-                    forward_line(iterator);
+                    end_of_line(iterator);
+                    forward_char(iterator);
                     break;
                 }
             }
