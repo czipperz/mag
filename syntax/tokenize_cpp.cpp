@@ -754,7 +754,7 @@ bool cpp_next_token(const Contents* contents,
                                                       &comment_state);
                 }
                 token->end = iterator->position;
-                token->type = Token_Type::COMMENT;
+                token->type = Token_Type::DOC_COMMENT;
                 goto done;
             }
 
@@ -1039,11 +1039,12 @@ bool cpp_next_token(const Contents* contents,
                     comment_state = COMMENT_START_OF_LINE;
                     continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
                 }
+                token->type = Token_Type::DOC_COMMENT;
             } else {
                 continue_around_oneline_comment(iterator);
+                token->type = Token_Type::COMMENT;
             }
             token->end = iterator->position;
-            token->type = Token_Type::COMMENT;
             goto done;
         }
 
@@ -1056,11 +1057,12 @@ bool cpp_next_token(const Contents* contents,
                 in_multiline_comment = true;
                 comment_state = COMMENT_START_OF_LINE;
                 continue_inside_multiline_comment(iterator, &in_multiline_comment, &comment_state);
+                token->type = Token_Type::DOC_COMMENT;
             } else {
                 continue_around_multiline_comment(iterator);
+                token->type = Token_Type::COMMENT;
             }
             token->end = iterator->position;
-            token->type = Token_Type::COMMENT;
             goto done;
         }
     }

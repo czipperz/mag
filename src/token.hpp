@@ -13,6 +13,7 @@ enum Token_Type {
     OPEN_PAIR,
     CLOSE_PAIR,
     COMMENT,
+    DOC_COMMENT,
     STRING,
     IDENTIFIER,
 
