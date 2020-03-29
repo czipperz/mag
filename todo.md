@@ -28,9 +28,6 @@
 * Write file to path
 * Comment region
 
-* Syntax C++
-  - Highlight doc comments and code inside them
-
 * Multi cursors
   - Message when no cursor created
   - Make all cursors
