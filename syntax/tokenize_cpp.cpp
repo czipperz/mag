@@ -33,6 +33,10 @@ enum State : uint64_t {
     PREPROCESSOR_IN_DEFINE_PARAMETERS = 0x0000000000000400,
     PREPROCESSOR_GENERAL = 0x0000000000000500,
 
+    COMMENT_STATE_TO_SAVE_MASK = 0x0000000000000FFF,
+    COMMENT_SAVED_STATE_MASK = 0x0000000000FFF000,
+    COMMENT_SAVE_SHIFT = 12,
+
     COMMENT_MULTILINE_FLAG = 0x1000000000000000,
     COMMENT_ONELINE_FLAG = 0x2000000000000000,
     COMMENT_PREVIOUS_ONELINE_FLAG = 0x4000000000000000,
@@ -160,6 +164,19 @@ static bool matches(const Contents* contents, Contents_Iterator it, uint64_t end
 static bool is_identifier_continuation(char ch) {
     return isalnum(ch) || ch == '_';
 }
+
+#define LOAD_COMBINED_STATE(SC)                                          \
+    do {                                                                 \
+        in_preprocessor = IN_PREPROCESSOR_FLAG & (SC);                   \
+        normal_state = NORMAL_STATE_MASK & (SC);                         \
+        preprocessor_state = PREPROCESSOR_STATE_MASK & (SC);             \
+        preprocessor_saved_state = PREPROCESSOR_SAVED_STATE_MASK & (SC); \
+        in_multiline_comment = COMMENT_MULTILINE_FLAG & (SC);            \
+        in_oneline_comment = COMMENT_ONELINE_FLAG & (SC);                \
+        previous_in_oneline_comment = in_oneline_comment;                \
+        comment_state = COMMENT_STATE_MASK & (SC);                       \
+        comment_saved_state = COMMENT_SAVED_STATE_MASK & (SC);           \
+    } while (0)
 
 #define MAKE_COMBINED_STATE(SC)                                                               \
     do {                                                                                      \
@@ -602,15 +619,16 @@ bool cpp_next_token(const Contents* contents,
                     uint64_t* state_combined) {
     ZoneScoped;
 
-    bool in_preprocessor = *state_combined & IN_PREPROCESSOR_FLAG;
-    uint64_t normal_state = *state_combined & NORMAL_STATE_MASK;
-    uint64_t preprocessor_state = *state_combined & PREPROCESSOR_STATE_MASK;
-    uint64_t preprocessor_saved_state = *state_combined & PREPROCESSOR_SAVED_STATE_MASK;
-    bool in_multiline_comment = *state_combined & COMMENT_MULTILINE_FLAG;
-    bool in_oneline_comment = *state_combined & COMMENT_ONELINE_FLAG;
-    bool previous_in_oneline_comment = in_oneline_comment;
-    uint64_t comment_state = *state_combined & COMMENT_STATE_MASK;
-    uint64_t comment_saved_state = *state_combined & COMMENT_SAVED_STATE_MASK;
+    bool in_preprocessor;
+    uint64_t normal_state;
+    uint64_t preprocessor_state;
+    uint64_t preprocessor_saved_state;
+    bool in_multiline_comment;
+    bool in_oneline_comment;
+    bool previous_in_oneline_comment;
+    uint64_t comment_state;
+    uint64_t comment_saved_state;
+    LOAD_COMBINED_STATE(*state_combined);
 
     char first_char;
     if (!skip_whitespace(iterator, &first_char, &in_preprocessor, &in_oneline_comment,
@@ -675,6 +693,17 @@ bool cpp_next_token(const Contents* contents,
                         comment_state = COMMENT_MIDDLE_OF_LINE;
                     }
                 }
+
+                if (comment_state == COMMENT_CODE_INLINE ||
+                    comment_state == COMMENT_CODE_MULTILINE) {
+                    MAKE_COMBINED_STATE(*state_combined);
+                    *state_combined &= ~COMMENT_SAVED_STATE_MASK;
+                    *state_combined |= (*state_combined & COMMENT_STATE_TO_SAVE_MASK)
+                                       << COMMENT_SAVE_SHIFT;
+                    *state_combined &= ~COMMENT_STATE_TO_SAVE_MASK;
+                    LOAD_COMBINED_STATE(*state_combined);
+                }
+
                 token->end = iterator->position;
                 token->type = Token_Type::CODE;
                 goto done;
@@ -694,10 +723,18 @@ bool cpp_next_token(const Contents* contents,
 
         case COMMENT_CODE_INLINE:
             if (first_char == '`') {
-                comment_state = COMMENT_MIDDLE_OF_LINE;
                 token->start = iterator->position;
                 iterator->advance();
                 token->end = iterator->position;
+
+            end_comment_code:
+                MAKE_COMBINED_STATE(*state_combined);
+                *state_combined &= ~COMMENT_STATE_TO_SAVE_MASK;
+                *state_combined |=
+                    (*state_combined & COMMENT_SAVED_STATE_MASK) >> COMMENT_SAVE_SHIFT;
+                LOAD_COMBINED_STATE(*state_combined);
+
+                comment_state = COMMENT_MIDDLE_OF_LINE;
                 token->type = Token_Type::CODE;
                 goto done;
             }
@@ -710,13 +747,11 @@ bool cpp_next_token(const Contents* contents,
                 if (!it.at_eob() && it.get() == '`') {
                     it.advance();
                     if (!it.at_eob() && it.get() == '`') {
-                        comment_state = COMMENT_MIDDLE_OF_LINE;
                         token->start = iterator->position;
                         it.advance();
                         *iterator = it;
                         token->end = iterator->position;
-                        token->type = Token_Type::CODE;
-                        goto done;
+                        goto end_comment_code;
                     }
                 }
             }
