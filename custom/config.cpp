@@ -127,8 +127,8 @@ Theme create_theme() {
     theme.faces.push({6, 0, 0});   // PUNCTUATION
     theme.faces.push({3, 0, 0});   // OPEN_PAIR
     theme.faces.push({3, 0, 0});   // CLOSE_PAIR
-    theme.faces.push({10, 0, 0});  // COMMENT
-    theme.faces.push({12, 0, 0});  // DOC_COMMENT
+    theme.faces.push({12, 0, 0});  // COMMENT
+    theme.faces.push({142, 0, 0});  // DOC_COMMENT
     theme.faces.push({2, 0, 0});   // STRING
     theme.faces.push({7, 0, 0});   // IDENTIFIER
 
