@@ -5,6 +5,7 @@
 #include "basic/commands.hpp"
 #include "basic/completion_commands.hpp"
 #include "basic/copy_commands.hpp"
+#include "basic/cpp_commands.hpp"
 #include "basic/directory_commands.hpp"
 #include "basic/search_commands.hpp"
 #include "basic/shift_commands.hpp"
@@ -148,6 +149,7 @@ static Key_Map* directory_key_map() {
 static Key_Map create_cpp_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-c C-f", clang_format::command_clang_format_buffer);
+    BIND(key_map, "A-;", cpp::command_comment);
     return key_map;
 }
 
