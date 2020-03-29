@@ -177,29 +177,31 @@ struct Job_Clang_Format {
 
 static bool tick_job_process_append(Editor* editor, void* data) {
     Job_Clang_Format* job = (Job_Clang_Format*)data;
-    char buf[1024];
-    ssize_t read_result = job->process.read(buf, sizeof(buf));
-    if (read_result > 0) {
-        job->output_xml.reserve(cz::heap_allocator(), read_result);
-        job->output_xml.append({buf, (size_t)read_result});
-        return false;
-    } else if (read_result == 0) {
-        // End of file
-        job->process.join();
-        job->process.destroy();
+    while (1) {
+        char buf[1024];
+        ssize_t read_result = job->process.read(buf, sizeof(buf));
+        if (read_result > 0) {
+            job->output_xml.reserve(cz::heap_allocator(), read_result);
+            job->output_xml.append({buf, (size_t)read_result});
+            continue;
+        } else if (read_result == 0) {
+            // End of file
+            job->process.join();
+            job->process.destroy();
 
-        Buffer_Handle* handle = editor->lookup(job->buffer_id);
-        if (handle) {
-            parse_and_apply_replacements(handle, {job->output_xml.buffer(), job->output_xml.len()},
-                                         job->change_index);
+            Buffer_Handle* handle = editor->lookup(job->buffer_id);
+            if (handle) {
+                parse_and_apply_replacements(
+                    handle, {job->output_xml.buffer(), job->output_xml.len()}, job->change_index);
+            }
+
+            job->output_xml.drop(cz::heap_allocator());
+            free(data);
+            return true;
+        } else {
+            // Nothing to read right now
+            return false;
         }
-
-        job->output_xml.drop(cz::heap_allocator());
-        free(data);
-        return true;
-    } else {
-        // Nothing to read right now
-        return false;
     }
 }
 
