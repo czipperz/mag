@@ -1130,7 +1130,8 @@ bool cpp_next_token(const Contents* contents,
             token->type = Token_Type::PUNCTUATION;
         }
 
-        if (first_char == ';' || first_char == '{' || first_char == '}') {
+        if (first_char == ';' || first_char == '{' || first_char == '}' ||
+            (first_char == ':' && second_char != ':')) {
             normal_state = START_OF_STATEMENT;
         } else if (normal_state == IN_VARIABLE_TYPE && first_char == ':' && second_char == ':') {
             normal_state = START_OF_STATEMENT;
