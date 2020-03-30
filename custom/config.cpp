@@ -121,16 +121,16 @@ Key_Map create_key_map() {
 Theme create_theme() {
     Theme theme = {};
     theme.faces.reserve(cz::heap_allocator(), 16);
-    theme.faces.push({7, 0, 0});   // DEFAULT
-    theme.faces.push({1, 0, 0});   // KEYWORD
-    theme.faces.push({4, 0, 0});   // TYPE
-    theme.faces.push({6, 0, 0});   // PUNCTUATION
-    theme.faces.push({3, 0, 0});   // OPEN_PAIR
-    theme.faces.push({3, 0, 0});   // CLOSE_PAIR
-    theme.faces.push({12, 0, 0});  // COMMENT
+    theme.faces.push({7, 0, 0});    // DEFAULT
+    theme.faces.push({1, 0, 0});    // KEYWORD
+    theme.faces.push({4, 0, 0});    // TYPE
+    theme.faces.push({6, 0, 0});    // PUNCTUATION
+    theme.faces.push({3, 0, 0});    // OPEN_PAIR
+    theme.faces.push({3, 0, 0});    // CLOSE_PAIR
+    theme.faces.push({12, 0, 0});   // COMMENT
     theme.faces.push({142, 0, 0});  // DOC_COMMENT
-    theme.faces.push({2, 0, 0});   // STRING
-    theme.faces.push({7, 0, 0});   // IDENTIFIER
+    theme.faces.push({2, 0, 0});    // STRING
+    theme.faces.push({7, 0, 0});    // IDENTIFIER
 
     theme.faces.push({3, 0, 0});  // TITLE
     theme.faces.push({2, 0, 0});  // CODE
