@@ -206,7 +206,7 @@ Mode get_mode(cz::Str file_name) {
         mode.key_map = cpp_key_map();
     } else if (file_name.ends_with(".md")) {
         mode.next_token = syntax::md_next_token;
-    } else if (file_name.ends_with(".patch")) {
+    } else if (file_name.ends_with(".patch") || file_name.ends_with(".diff")) {
         mode.next_token = syntax::patch_next_token;
     } else if (file_name == "*client mini buffer*") {
         mode.next_token = syntax::path_next_token;
