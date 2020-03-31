@@ -7,6 +7,7 @@
 #include "file.hpp"
 #include "movement.hpp"
 #include "transaction.hpp"
+#include "visible_region_commands.hpp"
 
 namespace mag {
 namespace basic {
@@ -359,12 +360,30 @@ void command_delete_end_of_line(Editor* editor, Command_Source source) {
 
 void command_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    buffer->undo();
+    if (!buffer->undo()) {
+        source.client->show_message("Nothing to undo");
+        return;
+    }
+
+    if (window->cursors.len() == 1) {
+        uint64_t position = buffer->changes.last().commit.edits[0].position;
+        window->cursors[0].point = position;
+        center_in_window(window, buffer->contents.iterator_at(position));
+    }
 }
 
 void command_redo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    buffer->redo();
+    if (!buffer->redo()) {
+        source.client->show_message("Nothing to rdo");
+        return;
+    }
+
+    if (window->cursors.len() == 1) {
+        uint64_t position = buffer->changes.last().commit.edits[0].position;
+        window->cursors[0].point = position;
+        center_in_window(window, buffer->contents.iterator_at(position));
+    }
 }
 
 void command_stop_action(Editor* editor, Command_Source source) {

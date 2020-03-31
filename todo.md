@@ -27,7 +27,6 @@
 * Write file to path
 * Comment region
 * Uncomment line and region
-* Go to change position on undo and redo
 * Run compile
 
 * Multi cursors
