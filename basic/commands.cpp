@@ -375,7 +375,7 @@ void command_undo(Editor* editor, Command_Source source) {
 void command_redo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->redo()) {
-        source.client->show_message("Nothing to rdo");
+        source.client->show_message("Nothing to redo");
         return;
     }
 
