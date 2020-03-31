@@ -367,8 +367,11 @@ void command_undo(Editor* editor, Command_Source source) {
 
     if (window->cursors.len() == 1) {
         uint64_t position = buffer->changes.last().commit.edits[0].position;
-        window->cursors[0].point = position;
-        center_in_window(window, buffer->contents.iterator_at(position));
+        Contents_Iterator iterator = buffer->contents.iterator_at(position);
+        if (!is_visible(window, iterator)) {
+            window->cursors[0].point = position;
+            center_in_window(window, iterator);
+        }
     }
 }
 
@@ -381,8 +384,11 @@ void command_redo(Editor* editor, Command_Source source) {
 
     if (window->cursors.len() == 1) {
         uint64_t position = buffer->changes.last().commit.edits[0].position;
-        window->cursors[0].point = position;
-        center_in_window(window, buffer->contents.iterator_at(position));
+        Contents_Iterator iterator = buffer->contents.iterator_at(position);
+        if (!is_visible(window, iterator)) {
+            window->cursors[0].point = position;
+            center_in_window(window, iterator);
+        }
     }
 }
 

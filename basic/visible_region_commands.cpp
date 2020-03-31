@@ -68,6 +68,23 @@ Contents_Iterator center_of_window(Window_Unified* window, const Contents* conte
     return iterator;
 }
 
+bool is_visible(Window_Unified* window, Contents_Iterator iterator) {
+    if (iterator.position < window->start_position) {
+        return false;
+    }
+
+    Contents_Iterator end = iterator;
+    // Go to start position
+    end.retreat(end.position - window->start_position);
+    // Then advance to end of visible region
+    compute_visible_end(window, &end);
+    if (iterator.position > end.position) {
+        return false;
+    }
+
+    return true;
+}
+
 void command_center_in_window(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     center_in_window(window, buffer->contents.iterator_at(window->cursors[0].point));
