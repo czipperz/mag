@@ -17,6 +17,10 @@ Client Server::make_client() {
 }
 
 cz::Str clear_buffer(Editor* editor, Buffer* buffer) {
+    if (buffer->contents.len == 0) {
+        return {};
+    }
+
     Transaction transaction;
     transaction.init(1, (size_t)buffer->contents.len);
     CZ_DEFER(transaction.drop());
