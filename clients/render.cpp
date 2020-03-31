@@ -167,7 +167,7 @@ static void draw_buffer_contents(Cell* cells,
             type = Token_Type::DEFAULT;
         }
 
-        attrs |= COLOR_PAIR(type + 1);
+        attrs |= COLOR_PAIR(type + 2);
 
         Face* face = &editor->theme.faces[type];
         if (face->flags & Face::BOLD) {
@@ -220,7 +220,13 @@ static void draw_buffer_decoration(Cell* cells,
     size_t y = window->rows;
     size_t x = 0;
 
-    int attrs = A_REVERSE;
+    int attrs;
+    if (buffer->is_unchanged()) {
+        attrs = A_REVERSE;
+    } else {
+        attrs = COLOR_PAIR(1);
+    }
+
     SET(attrs, '-');
     ++x;
     if (buffer->is_unchanged()) {

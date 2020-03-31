@@ -120,7 +120,9 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
-    theme.faces.reserve(cz::heap_allocator(), 16);
+    theme.faces.reserve(cz::heap_allocator(), 17);
+    theme.faces.push({0, 1, 0});  // UNSAVED BUFFER
+
     theme.faces.push({7, 0, 0});    // DEFAULT
     theme.faces.push({1, 0, 0});    // KEYWORD
     theme.faces.push({4, 0, 0});    // TYPE
