@@ -22,15 +22,19 @@
   - Automatically update files when file system is updated
 
 * Screen based movement
-  - Up and down page
   - Move cursor to top and bottom of screen
 
 * Write file to path
 * Comment region
+* Uncomment line and region
+* Go to change position on undo and redo
+* Run compile
 
 * Multi cursors
   - Message when no cursor created
   - Make all cursors
+  - When creating a cursor, try to fit it on the screen
+  - Cycle selected cursor
 
 * Jobs (run in background)
   - Syntax highlighting
