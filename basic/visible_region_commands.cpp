@@ -19,7 +19,7 @@ void center_in_window(Window_Unified* window, Contents_Iterator iterator) {
             ++row;
             if (row >= target_rows) {
                 start_of_line(&iterator);
-                //forward_line(&iterator);
+                // forward_line(&iterator);
                 break;
             }
             col = 0;
@@ -30,7 +30,7 @@ void center_in_window(Window_Unified* window, Contents_Iterator iterator) {
                 ++row;
                 if (row >= target_rows) {
                     start_of_line(&iterator);
-                    //forward_line(&iterator);
+                    // forward_line(&iterator);
                     break;
                 }
             }
