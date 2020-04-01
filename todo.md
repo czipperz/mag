@@ -36,6 +36,9 @@
 * Multiple modes
   - Merging key_maps is trivial
   - Merge faces: flags are bit-ored.  Colors are taken from first `Face` with color not `SIZE_MAX`.
+  - Use case 1: spell check
+  - Use case 2: highlighting occurrences of current token / current selected region
+  - Use case 3: highlighting all search results
 
 * Multi cursors
   - When creating a cursor, try to fit it on the screen
