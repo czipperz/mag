@@ -179,7 +179,8 @@ static void draw_buffer_contents(Cell* cells,
 
         char ch = iterator.get();
         if (ch == '\n') {
-            ADDCH(attrs, ' ');
+            SET(attrs, ' ');
+            ++x;
             ADD_NEWLINE();
         } else if (ch == '\t') {
             size_t end_x = (x + 4) & ~3;
