@@ -37,7 +37,6 @@
   - Merge faces: flags are bit-ored.  Colors are taken from first `Face` with color not `SIZE_MAX`.
 
 * Multi cursors
-  - Make all cursors
   - When creating a cursor, try to fit it on the screen
   - Cycle selected cursor
 

@@ -55,6 +55,10 @@ void command_create_cursor_backward_search(Editor* editor, Command_Source source
 void command_create_cursor_forward(Editor* editor, Command_Source source);
 void command_create_cursor_backward(Editor* editor, Command_Source source);
 
+void command_create_cursors_all_search(Editor* editor, Command_Source source);
+void command_create_cursors_to_end_search(Editor* editor, Command_Source source);
+void command_create_cursors_to_start_search(Editor* editor, Command_Source source);
+
 void command_search_forward(Editor* editor, Command_Source source);
 void command_search_backward(Editor* editor, Command_Source source);
 

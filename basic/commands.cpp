@@ -648,6 +648,45 @@ void command_create_cursor_backward(Editor* editor, Command_Source source) {
     }
 }
 
+void command_create_cursors_all_search(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    bool any = false;
+    if (create_cursor_backward_search(buffer, window)) {
+        any = true;
+        while (create_cursor_backward_search(buffer, window)) {
+        }
+    }
+    if (create_cursor_forward_search(buffer, window)) {
+        any = true;
+        while (create_cursor_forward_search(buffer, window)) {
+        }
+    }
+
+    if (!any) {
+        show_no_create_cursor_message(source.client);
+    }
+}
+
+void command_create_cursors_to_end_search(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    if (create_cursor_forward_search(buffer, window)) {
+        while (create_cursor_forward_search(buffer, window)) {
+        }
+    } else {
+        show_no_create_cursor_message(source.client);
+    }
+}
+
+void command_create_cursors_to_start_search(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    if (create_cursor_backward_search(buffer, window)) {
+        while (create_cursor_backward_search(buffer, window)) {
+        }
+    } else {
+        show_no_create_cursor_message(source.client);
+    }
+}
+
 static void command_search_forward_callback(Editor* editor,
                                             Client* client,
                                             cz::Str query,
