@@ -124,12 +124,14 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
-    theme.faces.reserve(cz::heap_allocator(), 23);
+    theme.faces.reserve(cz::heap_allocator(), 24);
     theme.faces.push({7, 0, Face::REVERSE});  // saved buffer
     theme.faces.push({1, 0, Face::REVERSE});  // unsaved buffer
 
     theme.faces.push({7, 0, Face::REVERSE});   // cursor
     theme.faces.push({12, 0, Face::REVERSE});  // marked region
+
+    theme.faces.push({SIZE_MAX, SIZE_MAX, Face::REVERSE});  // completion selected item
 
     theme.faces.push({7, 0, 0});    // Token_Type::DEFAULT
     theme.faces.push({1, 0, 0});    // Token_Type::KEYWORD

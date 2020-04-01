@@ -181,7 +181,7 @@ static void draw_buffer_contents(Cell* cells,
             }
         }
 
-        int type_face = 4;
+        int type_face = 5;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
             type_face += token.type;
         } else {
@@ -485,7 +485,10 @@ void render_to_cells(Cell* cells,
                 {
                     int attrs = A_NORMAL;
                     if (r == completion_results->selected) {
-                        attrs |= A_UNDERLINE;
+                        int completion_face = 4;
+                        if (!apply_face(&attrs, &editor->theme.faces[completion_face])) {
+                            attrs |= COLOR_PAIR(completion_face + 1);
+                        }
                     }
                     cz::Str result = completion_results->results[r];
                     for (size_t i = 0; i < total_cols && i < result.len; ++i) {
