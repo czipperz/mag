@@ -78,7 +78,6 @@ void forward_word(Contents_Iterator* iterator) {
     if (iterator->at_eob()) {
         return;
     }
-    iterator->advance();
     while (!iterator->at_eob() && !isalnum(iterator->get())) {
         iterator->advance();
     }
