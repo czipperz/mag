@@ -12,8 +12,11 @@
 * Read only mode
 
 * Autocomplete
-  - Select a response
   - Buffer responses
+  - While typing in normal buffers
+    + file names
+    + identifiers
+    + tags
 
 * Git integration
   - Git ls files
@@ -28,6 +31,10 @@
 * Comment region
 * Uncomment line and region
 * Run compile
+
+* Multiple modes
+  - Merging key_maps is trivial
+  - Merge faces: flags are bit-ored.  Colors are taken from first `Face` with color not `SIZE_MAX`.
 
 * Multi cursors
   - Make all cursors
