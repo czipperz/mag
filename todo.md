@@ -30,7 +30,6 @@
 * Run compile
 
 * Multi cursors
-  - Message when no cursor created
   - Make all cursors
   - When creating a cursor, try to fit it on the screen
   - Cycle selected cursor
