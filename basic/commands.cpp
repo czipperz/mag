@@ -418,7 +418,11 @@ void command_quit(Editor* editor, Command_Source source) {
     source.client->queue_quit = true;
 }
 
-static void create_cursor_forward_line(Buffer* buffer, Window_Unified* window, Client* client) {
+static void show_no_create_cursor_message(Client* client) {
+    client->show_message("No more cursors to create");
+}
+
+static bool create_cursor_forward_line(Buffer* buffer, Window_Unified* window) {
     CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
     Contents_Iterator last_cursor_iterator =
         buffer->contents.iterator_at(window->cursors.last().point);
@@ -432,17 +436,20 @@ static void create_cursor_forward_line(Buffer* buffer, Window_Unified* window, C
 
         window->cursors.reserve(cz::heap_allocator(), 1);
         window->cursors.push(cursor);
+        return true;
     } else {
-        client->show_message("No more cursors to create");
+        return false;
     }
 }
 
 void command_create_cursor_forward_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    create_cursor_forward_line(buffer, window, source.client);
+    if (!create_cursor_forward_line(buffer, window)) {
+        show_no_create_cursor_message(source.client);
+    }
 }
 
-static void create_cursor_backward_line(Buffer* buffer, Window_Unified* window, Client* client) {
+static bool create_cursor_backward_line(Buffer* buffer, Window_Unified* window) {
     CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
     Contents_Iterator first_cursor_iterator =
         buffer->contents.iterator_at(window->cursors[0].point);
@@ -456,14 +463,17 @@ static void create_cursor_backward_line(Buffer* buffer, Window_Unified* window, 
 
         window->cursors.reserve(cz::heap_allocator(), 1);
         window->cursors.insert(0, cursor);
+        return true;
     } else {
-        client->show_message("No more cursors to create");
+        return false;
     }
 }
 
 void command_create_cursor_backward_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    create_cursor_backward_line(buffer, window, source.client);
+    if (!create_cursor_backward_line(buffer, window)) {
+        show_no_create_cursor_message(source.client);
+    }
 }
 
 static cz::Option<uint64_t> search_forward(Contents_Iterator start_it, cz::Str query) {
@@ -500,12 +510,13 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
     return search_forward(start, slice.as_str());
 }
 
-#define SEARCH_SLICE_THEN(FUNC, THEN, OTHERWISE)                                                 \
+#define SEARCH_SLICE_THEN(FUNC, CREATED, THEN)                                                   \
     do {                                                                                         \
         uint64_t start = cursors[c].start();                                                     \
         uint64_t end = cursors[c].end();                                                         \
         cz::Option<uint64_t> new_start = FUNC(buffer, buffer->contents.iterator_at(start), end); \
-        if (new_start.is_present) {                                                              \
+        (CREATED) = new_start.is_present;                                                        \
+        if (CREATED) {                                                                           \
             Cursor new_cursor = {};                                                              \
             new_cursor.point = new_start.value;                                                  \
             new_cursor.mark = new_start.value + end - start;                                     \
@@ -514,8 +525,6 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
                 cz::swap(new_cursor.point, new_cursor.mark);                                     \
             }                                                                                    \
             THEN;                                                                                \
-        } else {                                                                                 \
-            OTHERWISE;                                                                           \
         }                                                                                        \
     } while (0)
 
@@ -532,22 +541,23 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
         }                                                                                  \
     } while (0)
 
-static void create_cursor_forward_search(Buffer* buffer, Window_Unified* window, Client* client) {
+static bool create_cursor_forward_search(Buffer* buffer, Window_Unified* window) {
     cz::Slice<Cursor> cursors = window->cursors;
     CZ_DEBUG_ASSERT(cursors.len >= 1);
     size_t c = cursors.len - 1;
-    SEARCH_SLICE_THEN(
-        search_forward_slice,
-        {
-            window->cursors.reserve(cz::heap_allocator(), 1);
-            window->cursors.push(new_cursor);
-        },
-        { client->show_message("No more cursors to create"); });
+    bool created;
+    SEARCH_SLICE_THEN(search_forward_slice, created, {
+        window->cursors.reserve(cz::heap_allocator(), 1);
+        window->cursors.push(new_cursor);
+    });
+    return created;
 }
 
 void command_create_cursor_forward_search(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    create_cursor_forward_search(buffer, window, source.client);
+    if (!create_cursor_forward_search(buffer, window)) {
+        show_no_create_cursor_message(source.client);
+    }
 }
 
 static cz::Option<uint64_t> search_backward(Contents_Iterator start_it, cz::Str query) {
@@ -593,39 +603,48 @@ static cz::Option<uint64_t> search_backward_slice(Buffer* buffer,
     return search_backward(start, slice.as_str());
 }
 
-static void create_cursor_backward_search(Buffer* buffer, Window_Unified* window, Client* client) {
+static bool create_cursor_backward_search(Buffer* buffer, Window_Unified* window) {
     cz::Slice<Cursor> cursors = window->cursors;
     CZ_DEBUG_ASSERT(cursors.len >= 1);
     size_t c = 0;
-    SEARCH_SLICE_THEN(
-        search_backward_slice,
-        {
-            window->cursors.reserve(cz::heap_allocator(), 1);
-            window->cursors.insert(0, new_cursor);
-        },
-        { client->show_message("No more cursors to create"); });
+    bool created;
+    SEARCH_SLICE_THEN(search_backward_slice, created, {
+        window->cursors.reserve(cz::heap_allocator(), 1);
+        window->cursors.insert(0, new_cursor);
+    });
+    return created;
 }
 
 void command_create_cursor_backward_search(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    create_cursor_backward_search(buffer, window, source.client);
+    if (!create_cursor_backward_search(buffer, window)) {
+        show_no_create_cursor_message(source.client);
+    }
 }
 
 void command_create_cursor_forward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+    bool created;
     if (window->show_marks) {
-        create_cursor_forward_search(buffer, window, source.client);
+        created = create_cursor_forward_search(buffer, window);
     } else {
-        create_cursor_forward_line(buffer, window, source.client);
+        created = create_cursor_forward_line(buffer, window);
+    }
+    if (!created) {
+        show_no_create_cursor_message(source.client);
     }
 }
 
 void command_create_cursor_backward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+    bool created;
     if (window->show_marks) {
-        create_cursor_backward_search(buffer, window, source.client);
+        created = create_cursor_backward_search(buffer, window);
     } else {
-        create_cursor_backward_line(buffer, window, source.client);
+        created = create_cursor_backward_line(buffer, window);
+    }
+    if (!created) {
+        show_no_create_cursor_message(source.client);
     }
 }
 
@@ -648,7 +667,8 @@ void command_search_forward(Editor* editor, Command_Source source) {
     if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
         for (size_t c = 0; c < cursors.len; ++c) {
-            SEARCH_SLICE_THEN(search_forward_slice, cursors[c] = new_cursor, {});
+            bool created;
+            SEARCH_SLICE_THEN(search_forward_slice, created, cursors[c] = new_cursor);
         }
     } else {
         source.client->show_dialog(editor, "Search forward: ", no_completion_engine,
@@ -675,7 +695,8 @@ void command_search_backward(Editor* editor, Command_Source source) {
     if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
         for (size_t c = 0; c < cursors.len; ++c) {
-            SEARCH_SLICE_THEN(search_backward_slice, cursors[c] = new_cursor, {});
+            bool created;
+            SEARCH_SLICE_THEN(search_backward_slice, created, cursors[c] = new_cursor);
         }
     } else {
         source.client->show_dialog(editor, "Search backward: ", no_completion_engine,
