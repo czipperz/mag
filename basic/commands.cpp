@@ -702,9 +702,10 @@ static void command_search_forward_callback(Editor* editor,
 }
 
 void command_search_forward(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    Window_Unified* window = source.client->selected_window();
     if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
+        WITH_WINDOW_BUFFER(window);
         for (size_t c = 0; c < cursors.len; ++c) {
             bool created;
             SEARCH_SLICE_THEN(search_forward_slice, created, cursors[c] = new_cursor);
@@ -730,9 +731,10 @@ static void command_search_backward_callback(Editor* editor,
 }
 
 void command_search_backward(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    Window_Unified* window = source.client->selected_window();
     if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
+        WITH_WINDOW_BUFFER(window);
         for (size_t c = 0; c < cursors.len; ++c) {
             bool created;
             SEARCH_SLICE_THEN(search_backward_slice, created, cursors[c] = new_cursor);
