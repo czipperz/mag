@@ -120,27 +120,31 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
-    theme.faces.reserve(cz::heap_allocator(), 17);
-    theme.faces.push({0, 1, 0});  // UNSAVED BUFFER
+    theme.faces.reserve(cz::heap_allocator(), 20);
+    theme.faces.push({7, 0, Face::REVERSE});  // saved buffer
+    theme.faces.push({1, 0, Face::REVERSE});  // unsaved buffer
 
-    theme.faces.push({7, 0, 0});    // DEFAULT
-    theme.faces.push({1, 0, 0});    // KEYWORD
-    theme.faces.push({4, 0, 0});    // TYPE
-    theme.faces.push({6, 0, 0});    // PUNCTUATION
-    theme.faces.push({3, 0, 0});    // OPEN_PAIR
-    theme.faces.push({3, 0, 0});    // CLOSE_PAIR
-    theme.faces.push({12, 0, 0});   // COMMENT
-    theme.faces.push({142, 0, 0});  // DOC_COMMENT
-    theme.faces.push({2, 0, 0});    // STRING
-    theme.faces.push({7, 0, 0});    // IDENTIFIER
+    theme.faces.push({7, 0, Face::REVERSE});   // cursor
+    theme.faces.push({12, 0, Face::REVERSE});  // marked region
 
-    theme.faces.push({3, 0, 0});  // TITLE
-    theme.faces.push({2, 0, 0});  // CODE
+    theme.faces.push({7, 0, 0});    // Token_Type::DEFAULT
+    theme.faces.push({1, 0, 0});    // Token_Type::KEYWORD
+    theme.faces.push({4, 0, 0});    // Token_Type::TYPE
+    theme.faces.push({6, 0, 0});    // Token_Type::PUNCTUATION
+    theme.faces.push({3, 0, 0});    // Token_Type::OPEN_PAIR
+    theme.faces.push({3, 0, 0});    // Token_Type::CLOSE_PAIR
+    theme.faces.push({12, 0, 0});   // Token_Type::COMMENT
+    theme.faces.push({142, 0, 0});  // Token_Type::DOC_COMMENT
+    theme.faces.push({2, 0, 0});    // Token_Type::STRING
+    theme.faces.push({7, 0, 0});    // Token_Type::IDENTIFIER
 
-    theme.faces.push({1, 0, 0});    // PATCH_REMOVE
-    theme.faces.push({46, 0, 0});   // PATCH_ADD
-    theme.faces.push({246, 0, 0});  // PATCH_NEUTRAL
-    theme.faces.push({7, 0, 0});    // PATCH_ANNOTATION
+    theme.faces.push({3, 0, 0});  // Token_Type::TITLE
+    theme.faces.push({2, 0, 0});  // Token_Type::CODE
+
+    theme.faces.push({1, 0, 0});    // Token_Type::PATCH_REMOVE
+    theme.faces.push({46, 0, 0});   // Token_Type::PATCH_ADD
+    theme.faces.push({246, 0, 0});  // Token_Type::PATCH_NEUTRAL
+    theme.faces.push({7, 0, 0});    // Token_Type::PATCH_ANNOTATION
     return theme;
 }
 

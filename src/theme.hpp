@@ -16,6 +16,7 @@ struct Face {
     enum Flags {
         BOLD = 1,
         UNDERSCORE = 2,
+        REVERSE = 4,
     };
     uint32_t flags;
 };

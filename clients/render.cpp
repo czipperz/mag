@@ -38,6 +38,19 @@ namespace client {
         }                        \
     } while (0)
 
+static bool apply_face(int* attrs, Face* face) {
+    if (face->flags & Face::BOLD) {
+        *attrs |= A_BOLD;
+    }
+    if (face->flags & Face::UNDERSCORE) {
+        *attrs |= A_UNDERLINE;
+    }
+    if (face->flags & Face::REVERSE) {
+        *attrs |= A_REVERSE;
+    }
+    return face->foreground < SIZE_MAX || face->background < SIZE_MAX;
+}
+
 static void draw_buffer_contents(Cell* cells,
                                  Window_Cache* window_cache,
                                  size_t total_cols,
@@ -153,28 +166,34 @@ static void draw_buffer_contents(Cell* cells,
 #endif
 
         int attrs = A_NORMAL;
+        int color_face = 0;
         if (has_cursor) {
-            attrs |= A_REVERSE;
+            int cursor_face = 2;
+            if (apply_face(&attrs, &editor->theme.faces[cursor_face]) && color_face == 0) {
+                color_face = cursor_face;
+            }
         }
+
         if (show_mark) {
-            attrs |= A_REVERSE;
+            int mark_face = 3;
+            if (apply_face(&attrs, &editor->theme.faces[mark_face]) && color_face == 0) {
+                color_face = mark_face;
+            }
         }
 
-        int type;
+        int type_face = 4;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
-            type = token.type;
+            type_face += token.type;
         } else {
-            type = Token_Type::DEFAULT;
+            type_face += Token_Type::DEFAULT;
         }
 
-        attrs |= COLOR_PAIR(type + 2);
-
-        Face* face = &editor->theme.faces[type];
-        if (face->flags & Face::BOLD) {
-            attrs |= A_BOLD;
+        if (apply_face(&attrs, &editor->theme.faces[type_face]) && color_face == 0) {
+            color_face = type_face;
         }
-        if (face->flags & Face::UNDERSCORE) {
-            attrs |= A_UNDERLINE;
+
+        if (color_face != 0) {
+            attrs |= COLOR_PAIR(color_face + 1);
         }
 
         char ch = iterator.get();
@@ -212,6 +231,7 @@ static void draw_buffer_contents(Cell* cells,
 
 static void draw_buffer_decoration(Cell* cells,
                                    size_t total_cols,
+                                   Editor* editor,
                                    Window* window,
                                    Buffer* buffer,
                                    size_t start_row,
@@ -221,11 +241,15 @@ static void draw_buffer_decoration(Cell* cells,
     size_t y = window->rows;
     size_t x = 0;
 
-    int attrs;
+    int attrs = A_NORMAL;
     if (buffer->is_unchanged()) {
-        attrs = A_REVERSE;
+        if (apply_face(&attrs, &editor->theme.faces[0])) {
+            attrs |= COLOR_PAIR(1);
+        }
     } else {
-        attrs = COLOR_PAIR(1);
+        if (apply_face(&attrs, &editor->theme.faces[1])) {
+            attrs |= COLOR_PAIR(2);
+        }
     }
 
     SET(attrs, '-');
@@ -263,7 +287,7 @@ static void draw_buffer(Cell* cells,
     WITH_WINDOW_BUFFER(window);
     draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, show_cursors,
                          start_row, start_col);
-    draw_buffer_decoration(cells, total_cols, window, buffer, start_row, start_col);
+    draw_buffer_decoration(cells, total_cols, editor, window, buffer, start_row, start_col);
 }
 
 static void draw_window(Cell* cells,
