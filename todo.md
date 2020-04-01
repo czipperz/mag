@@ -31,6 +31,7 @@
 * Comment region
 * Uncomment line and region
 * Run compile
+* Syntax highlighting as a job, shared between buffers
 
 * Multiple modes
   - Merging key_maps is trivial
@@ -39,12 +40,6 @@
 * Multi cursors
   - When creating a cursor, try to fit it on the screen
   - Cycle selected cursor
-
-* Jobs (run in background)
-  - Syntax highlighting
-  - Process for clang format
-    + `fcntl(fileno, F_SETFL, O_NONBLOCK);`
-    + then `read()` will return `-1`, `errno == EAGAIN`
 
 * Eliminate copy leak bug
   - Deallocate other cursors' copies
