@@ -48,8 +48,7 @@ static void advance_through_inline_code_block(Contents_Iterator* iterator) {
     }
 }
 
-bool md_next_token(const Contents* contents,
-                   Contents_Iterator* iterator,
+bool md_next_token(Contents_Iterator* iterator,
                    Token* token,
                    uint64_t* state) {
     if (!advance_whitespace(iterator, state)) {

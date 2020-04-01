@@ -139,7 +139,7 @@ static void draw_buffer_contents(Cell* cells,
     for (Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
          !iterator.at_eob(); iterator.advance()) {
         while (has_token && iterator.position >= token.end) {
-            has_token = buffer->mode.next_token(&buffer->contents, &token_iterator, &token, &state);
+            has_token = buffer->mode.next_token(&token_iterator, &token, &state);
         }
 
         bool has_cursor = false;

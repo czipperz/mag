@@ -137,7 +137,7 @@ static bool skip_whitespace(Contents_Iterator* iterator,
     }
 }
 
-static bool matches_no_bounds_check(const Contents* contents, Contents_Iterator it, cz::Str query) {
+static bool matches_no_bounds_check(Contents_Iterator it, cz::Str query) {
     ZoneScoped;
 
     for (size_t i = 0; i < query.len; ++i) {
@@ -149,16 +149,16 @@ static bool matches_no_bounds_check(const Contents* contents, Contents_Iterator 
     return true;
 }
 
-static bool matches(const Contents* contents, Contents_Iterator it, uint64_t end, cz::Str query) {
+static bool matches(Contents_Iterator it, uint64_t end, cz::Str query) {
     ZoneScoped;
 
     if (end - it.position != query.len) {
         return false;
     }
-    if (it.position + query.len > contents->len) {
+    if (it.position + query.len > it.contents->len) {
         return false;
     }
-    return matches_no_bounds_check(contents, it, query);
+    return matches_no_bounds_check(it, query);
 }
 
 static bool is_identifier_continuation(char ch) {
@@ -211,9 +211,9 @@ static bool is_identifier_continuation(char ch) {
         MATCHES(STR);   \
         break
 
-#define MATCHES(STR)                                        \
-    if (matches_no_bounds_check(contents, iterator, STR)) { \
-        return true;                                        \
+#define MATCHES(STR)                              \
+    if (matches_no_bounds_check(iterator, STR)) { \
+        return true;                              \
     }
 
 #define ADVANCE(CHAR, BODY)     \
@@ -232,30 +232,27 @@ static bool is_identifier_continuation(char ch) {
         break;                           \
     }
 
-static bool look_for_type_definition_keyword(const Contents* contents,
-                                             Contents_Iterator iterator,
-                                             Token* token,
-                                             char ch) {
+static bool look_for_type_definition_keyword(Contents_Iterator iterator, Token* token, char ch) {
     ZoneScoped;
 
     switch (ch) {
     case 'c':
-        if (matches(contents, iterator, token->end, "class")) {
+        if (matches(iterator, token->end, "class")) {
             return true;
         }
         break;
     case 'e':
-        if (matches(contents, iterator, token->end, "enum")) {
+        if (matches(iterator, token->end, "enum")) {
             return true;
         }
         break;
     case 'u':
-        if (matches(contents, iterator, token->end, "union")) {
+        if (matches(iterator, token->end, "union")) {
             return true;
         }
         break;
     case 's':
-        if (matches(contents, iterator, token->end, "struct")) {
+        if (matches(iterator, token->end, "struct")) {
             return true;
         }
         break;
@@ -263,10 +260,7 @@ static bool look_for_type_definition_keyword(const Contents* contents,
     return false;
 }
 
-static bool look_for_normal_keyword(const Contents* contents,
-                                    Contents_Iterator iterator,
-                                    Token* token,
-                                    char ch) {
+static bool look_for_normal_keyword(Contents_Iterator iterator, Token* token, char ch) {
     ZoneScoped;
 
     switch (token->end - token->start) {
@@ -427,10 +421,7 @@ static bool look_for_normal_keyword(const Contents* contents,
     return false;
 }
 
-static bool look_for_type_keyword(const Contents* contents,
-                                  Contents_Iterator iterator,
-                                  Token* token,
-                                  char ch) {
+static bool look_for_type_keyword(Contents_Iterator iterator, Token* token, char ch) {
     ZoneScoped;
 
     switch (token->end - token->start) {
@@ -650,10 +641,7 @@ static void continue_inside_multiline_comment_title(Contents_Iterator* iterator,
     }
 }
 
-bool cpp_next_token(const Contents* contents,
-                    Contents_Iterator* iterator,
-                    Token* token,
-                    uint64_t* state_combined) {
+bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_combined) {
     ZoneScoped;
 
     bool in_preprocessor;
@@ -826,7 +814,7 @@ bool cpp_next_token(const Contents* contents,
                 break;
             }
             if (ch == '\\') {
-                if (iterator->position + 1 < contents->len) {
+                if (iterator->position + 1 < iterator->contents->len) {
                     // Only skip over the next character if we don't go out of bounds.
                     iterator->advance();
 
@@ -850,8 +838,8 @@ bool cpp_next_token(const Contents* contents,
     if (first_char == '\'') {
         ZoneScopedN("character");
         token->start = iterator->position;
-        if (iterator->position + 3 >= contents->len) {
-            iterator->advance(contents->len - iterator->position);
+        if (iterator->position + 3 >= iterator->contents->len) {
+            iterator->advance(iterator->contents->len - iterator->position);
         } else {
             iterator->advance();
             if (iterator->get() == '\\') {
@@ -889,10 +877,10 @@ bool cpp_next_token(const Contents* contents,
         if (in_preprocessor && preprocessor_state == PREPROCESSOR_START_STATEMENT) {
             ZoneScopedN("preprocessor keyword");
             token->type = Token_Type::KEYWORD;
-            if (matches(contents, start_iterator, token->end, "include")) {
+            if (matches(start_iterator, token->end, "include")) {
                 preprocessor_state = PREPROCESSOR_AFTER_INCLUDE;
                 goto done_no_skip;
-            } else if (matches(contents, start_iterator, token->end, "define")) {
+            } else if (matches(start_iterator, token->end, "define")) {
                 preprocessor_state = PREPROCESSOR_AFTER_DEFINE;
                 goto done_no_skip;
             } else {
@@ -909,24 +897,24 @@ bool cpp_next_token(const Contents* contents,
             goto done;
         }
 
-        if (look_for_type_definition_keyword(contents, start_iterator, token, first_char)) {
+        if (look_for_type_definition_keyword(start_iterator, token, first_char)) {
             token->type = Token_Type::KEYWORD;
             normal_state = IN_TYPE_DEFINITION;
             goto done;
         }
 
-        if (matches(contents, start_iterator, token->end, "for")) {
+        if (matches(start_iterator, token->end, "for")) {
             token->type = Token_Type::KEYWORD;
             normal_state = AFTER_FOR;
             goto done;
         }
 
-        if (look_for_normal_keyword(contents, start_iterator, token, first_char)) {
+        if (look_for_normal_keyword(start_iterator, token, first_char)) {
             token->type = Token_Type::KEYWORD;
             goto done;
         }
 
-        if (look_for_type_keyword(contents, start_iterator, token, first_char)) {
+        if (look_for_type_keyword(start_iterator, token, first_char)) {
             token->type = Token_Type::TYPE;
             if (normal_state == START_OF_PARAMETER) {
                 normal_state = IN_PARAMETER_TYPE;
@@ -955,7 +943,7 @@ bool cpp_next_token(const Contents* contents,
 
             Token next_token;
             Contents_Iterator next_token_iterator = *iterator;
-            if (!cpp_next_token(contents, &next_token_iterator, &next_token, &temp_state)) {
+            if (!cpp_next_token(&next_token_iterator, &next_token, &temp_state)) {
                 // couldn't get next token
             } else if (in_preprocessor && !(temp_state & IN_PREPROCESSOR_FLAG)) {
                 // next token is outside preprocessor invocation we are in
@@ -981,7 +969,7 @@ bool cpp_next_token(const Contents* contents,
                                 is_type = true;
                             } else {
                                 // See if the part after the namespace is a type declaration.
-                                if (!cpp_next_token(contents, &next_token_iterator, &next_token,
+                                if (!cpp_next_token(&next_token_iterator, &next_token,
                                                     &temp_state)) {
                                     // couldn't get next token
                                 } else if (in_preprocessor &&

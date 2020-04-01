@@ -10,9 +10,8 @@ struct Token;
 
 namespace syntax {
 
-bool cpp_next_token(const mag::Contents* contents,
-                    mag::Contents_Iterator* iterator,
-                    mag::Token* token,
+bool cpp_next_token(Contents_Iterator* iterator,
+                    Token* token,
                     uint64_t* state);
 
 }

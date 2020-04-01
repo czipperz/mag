@@ -159,7 +159,7 @@ void cache_window_unified_update(Window_Cache* window_cache,
             // the edit is screwing up future check points.
             while (i < check_points.len) {
                 while (token.end < end_position) {
-                    if (!buffer->mode.next_token(&buffer->contents, &iterator, &token, &state)) {
+                    if (!buffer->mode.next_token(&iterator, &token, &state)) {
                         break;
                     }
                 }

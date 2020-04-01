@@ -4,7 +4,6 @@
 
 namespace mag {
 
-struct Contents;
 struct Contents_Iterator;
 struct Token;
 struct Key_Map;
@@ -12,14 +11,12 @@ struct Key_Map;
 struct Mode {
     Key_Map* key_map;
 
-    bool (*next_token)(const Contents* contents /* in */,
-                       Contents_Iterator* iterator /* in/out */,
+    bool (*next_token)(Contents_Iterator* iterator /* in/out */,
                        Token* token /* out */,
                        uint64_t* state /* in/out */);
 };
 
-inline bool default_next_token(const Contents* contents,
-                               Contents_Iterator* iterator,
+inline bool default_next_token(Contents_Iterator* iterator,
                                Token* token,
                                uint64_t* state) {
     return false;

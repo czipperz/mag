@@ -4,16 +4,12 @@
 
 namespace mag {
 
-struct Contents;
 struct Contents_Iterator;
 struct Token;
 
 namespace syntax {
 
-bool patch_next_token(const mag::Contents* contents,
-                      mag::Contents_Iterator* iterator,
-                      mag::Token* token,
-                      uint64_t* state);
+bool patch_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state);
 
 }
 }

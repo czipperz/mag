@@ -7,10 +7,7 @@
 namespace mag {
 namespace syntax {
 
-bool patch_next_token(const Contents* contents,
-                      Contents_Iterator* iterator,
-                      Token* token,
-                      uint64_t* state) {
+bool patch_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     if (iterator->at_eob()) {
         return false;
     }

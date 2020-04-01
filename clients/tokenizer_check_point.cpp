@@ -25,7 +25,7 @@ bool next_check_point(Window_Cache* window_cache,
         }
 
         Token token;
-        if (!buffer->mode.next_token(&buffer->contents, iterator, &token, state)) {
+        if (!buffer->mode.next_token(iterator, &token, state)) {
             break;
         }
     }
