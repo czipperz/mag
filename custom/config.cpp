@@ -15,6 +15,7 @@
 #include "git/git.hpp"
 #include "git/tokenize_git_commit_edit_message.hpp"
 #include "git/tokenize_patch.hpp"
+#include "git/tokenize_rebase_todo.hpp"
 #include "prose/alternate.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_md.hpp"
@@ -123,7 +124,7 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
-    theme.faces.reserve(cz::heap_allocator(), 20);
+    theme.faces.reserve(cz::heap_allocator(), 23);
     theme.faces.push({7, 0, Face::REVERSE});  // saved buffer
     theme.faces.push({1, 0, Face::REVERSE});  // unsaved buffer
 
@@ -148,6 +149,10 @@ Theme create_theme() {
     theme.faces.push({46, 0, 0});   // Token_Type::PATCH_ADD
     theme.faces.push({246, 0, 0});  // Token_Type::PATCH_NEUTRAL
     theme.faces.push({7, 0, 0});    // Token_Type::PATCH_ANNOTATION
+
+    theme.faces.push({1, 0, 0});                // Token_Type::GIT_REBASE_TODO_COMMAND
+    theme.faces.push({3, 0, 0});                // Token_Type::GIT_REBASE_TODO_SHA
+    theme.faces.push({SIZE_MAX, SIZE_MAX, 0});  // Token_Type::GIT_REBASE_TODO_COMMIT_MESSAGE
     return theme;
 }
 
@@ -234,6 +239,9 @@ Mode get_mode(cz::Str file_name) {
         mode.key_map = path_key_map();
     } else if (file_name.starts_with("*git grep ")) {
         mode.key_map = search_key_map();
+    } else if (file_name.ends_with("/git-rebase-todo")) {
+        mode.next_token = syntax::git_rebase_todo_next_token;
+        mode.key_map = git_edit_key_map();
     } else if (file_name.ends_with("/COMMIT_EDITMSG")) {
         mode.next_token = syntax::git_commit_edit_message_next_token;
         mode.key_map = git_edit_key_map();

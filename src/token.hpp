@@ -24,6 +24,10 @@ enum Token_Type {
     PATCH_ADD,
     PATCH_NEUTRAL,
     PATCH_ANNOTATION,
+
+    GIT_REBASE_TODO_COMMAND,
+    GIT_REBASE_TODO_SHA,
+    GIT_REBASE_TODO_COMMIT_MESSAGE,
 };
 }
 using Token_Type_::Token_Type;
