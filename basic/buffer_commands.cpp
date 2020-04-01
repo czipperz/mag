@@ -105,6 +105,7 @@ static int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** se
             Window::drop_(window->first);
 
             *w = window->second;
+            window->second->parent = window->parent;
             Window_Split::drop_non_recursive(window);
 
             if (left_matches == 2) {
@@ -116,6 +117,7 @@ static int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** se
             Window::drop_(window->second);
 
             *w = window->first;
+            window->first->parent = window->parent;
             Window_Split::drop_non_recursive(window);
 
             if (right_matches == 2) {
