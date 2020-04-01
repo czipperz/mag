@@ -242,14 +242,9 @@ static void draw_buffer_decoration(Cell* cells,
     size_t x = 0;
 
     int attrs = A_NORMAL;
-    if (buffer->is_unchanged()) {
-        if (apply_face(&attrs, &editor->theme.faces[0])) {
-            attrs |= COLOR_PAIR(1);
-        }
-    } else {
-        if (apply_face(&attrs, &editor->theme.faces[1])) {
-            attrs |= COLOR_PAIR(2);
-        }
+    int face = buffer->is_unchanged() ? 0 : 1;
+    if (apply_face(&attrs, &editor->theme.faces[face])) {
+        attrs |= COLOR_PAIR(face + 1);
     }
 
     SET(attrs, '-');
