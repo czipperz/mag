@@ -203,6 +203,18 @@ static Key_Map* path_key_map() {
     return &key_map;
 }
 
+static Key_Map create_git_edit_key_map() {
+    Key_Map key_map = {};
+    BIND(key_map, "C-c C-c", git::command_save_and_quit);
+    BIND(key_map, "C-c C-k", git::command_abort_and_quit);
+    return key_map;
+}
+
+static Key_Map* git_edit_key_map() {
+    static Key_Map key_map = create_git_edit_key_map();
+    return &key_map;
+}
+
 Mode get_mode(cz::Str file_name) {
     Mode mode = {};
     mode.next_token = default_next_token;
@@ -224,6 +236,7 @@ Mode get_mode(cz::Str file_name) {
         mode.key_map = search_key_map();
     } else if (file_name.ends_with("/COMMIT_EDITMSG")) {
         mode.next_token = syntax::git_commit_edit_message_next_token;
+        mode.key_map = git_edit_key_map();
     }
     return mode;
 }

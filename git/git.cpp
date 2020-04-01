@@ -4,8 +4,13 @@
 #include <cz/heap.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
+#include "file.hpp"
 #include "message.hpp"
 #include "process.hpp"
+
+namespace mag {
+cz::Str clear_buffer(Editor* editor, Buffer* buffer);
+}
 
 namespace mag {
 namespace git {
@@ -178,6 +183,40 @@ void command_git_grep(Editor* editor, Command_Source source) {
     *selected_buffer_id = source.client->selected_window()->id;
     source.client->show_dialog(editor, "git grep: ", no_completion_engine,
                                command_git_grep_callback, selected_buffer_id);
+}
+
+void command_save_and_quit(Editor* editor, Command_Source source) {
+    {
+        WITH_SELECTED_BUFFER(source.client);
+        buffer->path.reserve(cz::heap_allocator(), 1);
+        buffer->path.null_terminate();
+        if (!save_contents(&buffer->contents, buffer->path.buffer())) {
+            source.client->show_message("Error saving file");
+            return;
+        }
+
+        buffer->mark_saved();
+    }
+
+    source.client->queue_quit = true;
+}
+
+void command_abort_and_quit(Editor* editor, Command_Source source) {
+    {
+        WITH_SELECTED_BUFFER(source.client);
+        clear_buffer(editor, buffer);
+
+        buffer->path.reserve(cz::heap_allocator(), 1);
+        buffer->path.null_terminate();
+        if (!save_contents(&buffer->contents, buffer->path.buffer())) {
+            source.client->show_message("Error saving file");
+            return;
+        }
+
+        buffer->mark_saved();
+    }
+
+    source.client->queue_quit = true;
 }
 
 }
