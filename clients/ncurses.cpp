@@ -202,7 +202,15 @@ void run(Server* server, Client* client) {
     start_color();
     for (size_t i = 0; i < server->editor.theme.faces.len(); ++i) {
         Face* face = &server->editor.theme.faces[i];
-        init_pair(i + 1, face->foreground, face->background);
+        size_t fg = face->foreground;
+        if (fg == SIZE_MAX) {
+            fg = 7;
+        }
+        size_t bg = face->background;
+        if (bg == SIZE_MAX) {
+            bg = 0;
+        }
+        init_pair(i + 1, fg, bg);
     }
 
     Cell* cellss[2] = {nullptr, nullptr};
