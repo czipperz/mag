@@ -33,7 +33,11 @@ struct Window_Cache {
 
 void destroy_window_cache_children(Window_Cache* window_cache);
 void destroy_window_cache(Window_Cache* window_cache);
-int cache_windows_check_points(Window_Cache* window_cache, Window* w, Editor* editor);
+bool cache_windows_check_points(Window_Cache* window_cache,
+                                Window* w,
+                                Editor* editor,
+                                bool (*callback)(void*),
+                                void* callback_data);
 void cache_window_unified_position(Window_Unified* window,
                                    Window_Cache* window_cache,
                                    uint64_t start_position,

@@ -1,6 +1,5 @@
 #include "window_cache.hpp"
 
-#include <ncurses.h>
 #include <cz/bit_array.hpp>
 #include "command_macros.hpp"
 #include "token.hpp"
@@ -32,7 +31,11 @@ void destroy_window_cache(Window_Cache* window_cache) {
     free(window_cache);
 }
 
-int cache_windows_check_points(Window_Cache* window_cache, Window* w, Editor* editor) {
+bool cache_windows_check_points(Window_Cache* window_cache,
+                                Window* w,
+                                Editor* editor,
+                                bool (*callback)(void*),
+                                void* callback_data) {
     ZoneScoped;
 
     CZ_DEBUG_ASSERT(window_cache->tag == w->tag);
@@ -42,7 +45,7 @@ int cache_windows_check_points(Window_Cache* window_cache, Window* w, Editor* ed
         Window_Unified* window = (Window_Unified*)w;
 
         if (window_cache->v.unified.tokenizer_ran_to_end) {
-            return ERR;
+            return false;
         }
 
         // TODO: Make this non blocking!
@@ -62,14 +65,13 @@ int cache_windows_check_points(Window_Cache* window_cache, Window* w, Editor* ed
             }
 
             while (1) {
-                int getch_result = getch();
-                if (getch_result != ERR) {
-                    return getch_result;
+                if (callback(callback_data)) {
+                    return true;
                 }
 
                 if (!next_check_point(window_cache, buffer, &iterator, &state, check_points)) {
                     window_cache->v.unified.tokenizer_ran_to_end = true;
-                    return ERR;
+                    return false;
                 }
             }
         }
@@ -78,12 +80,10 @@ int cache_windows_check_points(Window_Cache* window_cache, Window* w, Editor* ed
     case Window::VERTICAL_SPLIT:
     case Window::HORIZONTAL_SPLIT: {
         Window_Split* window = (Window_Split*)w;
-        int first_result =
-            cache_windows_check_points(window_cache->v.split.first, window->first, editor);
-        if (first_result != ERR) {
-            return first_result;
-        }
-        return cache_windows_check_points(window_cache->v.split.second, window->second, editor);
+        return cache_windows_check_points(window_cache->v.split.first, window->first, editor,
+                                          callback, callback_data) ||
+               cache_windows_check_points(window_cache->v.split.second, window->second, editor,
+                                          callback, callback_data);
     }
     }
 

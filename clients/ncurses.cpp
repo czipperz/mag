@@ -61,6 +61,12 @@ static int mock_getch() {
 #undef getch
 #define getch() (mock_getch())
 
+static bool getch_callback(void* data) {
+    int* out = (int*)data;
+    *out = getch();
+    return *out != ERR;
+}
+
 static void render(int* total_rows,
                    int* total_cols,
                    Cell** cellss,
@@ -254,7 +260,8 @@ void run(Server* server, Client* client) {
         server->editor.tick_jobs();
 
         if (ch == ERR) {
-            ch = cache_windows_check_points(window_cache, client->window, &server->editor);
+            cache_windows_check_points(window_cache, client->window, &server->editor,
+                                       getch_callback, &ch);
         }
 
         if (ch == ERR) {
