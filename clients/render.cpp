@@ -1,6 +1,5 @@
 #include "render.hpp"
 
-#include <ncurses.h>
 #include <Tracy.hpp>
 #include "command_macros.hpp"
 #include "movement.hpp"
@@ -20,7 +19,7 @@ namespace client {
 #define ADD_NEWLINE()                   \
     do {                                \
         for (; x < window->cols; ++x) { \
-            SET(A_NORMAL, ' ');         \
+            SET({}, ' ');               \
         }                               \
         ++y;                            \
         x = 0;                          \
@@ -38,17 +37,14 @@ namespace client {
         }                        \
     } while (0)
 
-static bool apply_face(int* attrs, Face* face) {
-    if (face->flags & Face::BOLD) {
-        *attrs |= A_BOLD;
+static void apply_face(Cell::Attrs* attrs, cz::Slice<const Face> faces, size_t face) {
+    attrs->flags |= faces[face].flags;
+    if ((faces[face].foreground < SIZE_MAX || faces[face].background < SIZE_MAX) &&
+        // 0 is a special case since it is only used for saved buffer status, which is drawn
+        // specially.
+        attrs->color == 0) {
+        attrs->color = face;
     }
-    if (face->flags & Face::UNDERSCORE) {
-        *attrs |= A_UNDERLINE;
-    }
-    if (face->flags & Face::REVERSE) {
-        *attrs |= A_REVERSE;
-    }
-    return face->foreground < SIZE_MAX || face->background < SIZE_MAX;
 }
 
 static void draw_buffer_contents(Cell* cells,
@@ -165,36 +161,22 @@ static void draw_buffer_contents(Cell* cells,
         }
 #endif
 
-        int attrs = A_NORMAL;
-        int color_face = 0;
+        Cell::Attrs attrs = {};
         if (has_cursor) {
-            int cursor_face = 2;
-            if (apply_face(&attrs, &editor->theme.faces[cursor_face]) && color_face == 0) {
-                color_face = cursor_face;
-            }
+            apply_face(&attrs, editor->theme.faces, 2);
         }
 
         if (show_mark) {
-            int mark_face = 3;
-            if (apply_face(&attrs, &editor->theme.faces[mark_face]) && color_face == 0) {
-                color_face = mark_face;
-            }
+            apply_face(&attrs, editor->theme.faces, 3);
         }
 
-        int type_face = 5;
+        size_t type_face = 6;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
             type_face += token.type;
         } else {
             type_face += Token_Type::DEFAULT;
         }
-
-        if (apply_face(&attrs, &editor->theme.faces[type_face]) && color_face == 0) {
-            color_face = type_face;
-        }
-
-        if (color_face != 0) {
-            attrs |= COLOR_PAIR(color_face + 1);
-        }
+        apply_face(&attrs, editor->theme.faces, type_face);
 
         char ch = iterator.get();
         if (ch == '\n') {
@@ -212,9 +194,11 @@ static void draw_buffer_contents(Cell* cells,
     }
 
     if (show_cursors) {
+        Cell::Attrs attrs = {};
+        apply_face(&attrs, editor->theme.faces, 2);
         for (size_t c = 0; c < cursors.len; ++c) {
             if (cursors[c].point == buffer->contents.len) {
-                SET(A_REVERSE, ' ');
+                SET(attrs, ' ');
                 ++x;
                 break;
             }
@@ -223,7 +207,7 @@ static void draw_buffer_contents(Cell* cells,
 
     for (; y < window->rows; ++y) {
         for (; x < window->cols; ++x) {
-            SET(A_NORMAL, ' ');
+            SET({}, ' ');
         }
         x = 0;
     }
@@ -241,11 +225,8 @@ static void draw_buffer_decoration(Cell* cells,
     size_t y = window->rows;
     size_t x = 0;
 
-    int attrs = A_NORMAL;
-    int face = buffer->is_unchanged() ? 0 : 1;
-    if (apply_face(&attrs, &editor->theme.faces[face])) {
-        attrs |= COLOR_PAIR(face + 1);
-    }
+    Cell::Attrs attrs = {};
+    apply_face(&attrs, editor->theme.faces, buffer->is_unchanged() ? 0 : 1);
 
     SET(attrs, '-');
     ++x;
@@ -351,7 +332,7 @@ static void draw_window(Cell* cells,
             {
                 size_t x = left_cols;
                 for (size_t y = 0; y < count_rows; ++y) {
-                    SET(A_NORMAL, '|');
+                    SET({}, '|');
                 }
             }
 
@@ -368,7 +349,7 @@ static void draw_window(Cell* cells,
             {
                 size_t y = top_rows;
                 for (size_t x = 0; x < count_cols; ++x) {
-                    SET(A_NORMAL, '-');
+                    SET({}, '-');
                 }
             }
 
@@ -437,10 +418,11 @@ void render_to_cells(Cell* cells,
         size_t x = 0;
         size_t start_row = total_rows - mini_buffer_height - results_height;
         size_t start_col = 0;
-        int attrs = A_NORMAL;
 
+        Cell::Attrs attrs_minibuffer_prompt = {};
+        apply_face(&attrs_minibuffer_prompt, editor->theme.faces, 4);
         for (size_t i = 0; i < client->_message.text.len && i < total_cols; ++i) {
-            SET(attrs, client->_message.text[i]);
+            SET(attrs_minibuffer_prompt, client->_message.text[i]);
             ++x;
         }
 
@@ -454,7 +436,7 @@ void render_to_cells(Cell* cells,
                                  client->_select_mini_buffer, start_row, start_col);
         } else {
             for (; x < total_cols; ++x) {
-                SET(attrs, ' ');
+                SET({}, ' ');
             }
 
             if (std::chrono::system_clock::now() - client->_message_time >
@@ -478,13 +460,11 @@ void render_to_cells(Cell* cells,
             }
             for (size_t r = offset; r < results_height + offset; ++r) {
                 {
-                    int attrs = A_NORMAL;
+                    Cell::Attrs attrs = {};
                     if (r == completion_results->selected) {
-                        int completion_face = 4;
-                        if (!apply_face(&attrs, &editor->theme.faces[completion_face])) {
-                            attrs |= COLOR_PAIR(completion_face + 1);
-                        }
+                        apply_face(&attrs, editor->theme.faces, 5);
                     }
+
                     cz::Str result = completion_results->results[r];
                     for (size_t i = 0; i < total_cols && i < result.len; ++i) {
                         SET(attrs, result[i]);
@@ -493,7 +473,7 @@ void render_to_cells(Cell* cells,
                 }
 
                 for (; x < total_cols; ++x) {
-                    SET(attrs, ' ');
+                    SET({}, ' ');
                 }
 
                 x = 0;
