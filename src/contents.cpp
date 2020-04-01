@@ -246,21 +246,15 @@ void Contents_Iterator::retreat(uint64_t offset) {
     position -= offset;
     if (offset > index) {
         offset -= index;
-        CZ_DEBUG_ASSERT(bucket > 0);
-        --bucket;
-        if (offset <= contents->buckets[bucket].len) {
-            index = contents->buckets[bucket].len - offset;
-            return;
-        } else {
-            offset -= contents->buckets[bucket].len;
+        while (1) {
             CZ_DEBUG_ASSERT(bucket > 0);
-            while (offset > contents->buckets[bucket].len) {
-                offset -= contents->buckets[bucket].len;
-                CZ_DEBUG_ASSERT(bucket > 0);
-                --bucket;
+            --bucket;
+            if (offset <= contents->buckets[bucket].len) {
+                break;
             }
-            index = contents->buckets[bucket].len - offset;
+            offset -= contents->buckets[bucket].len;
         }
+        index = contents->buckets[bucket].len - offset;
     } else {
         index -= offset;
     }
