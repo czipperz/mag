@@ -247,19 +247,19 @@ void run(Server* server, Client* client) {
     }
 
     int16_t used_colors = 0;
-    for (size_t i = 0; i < COLORS; ++i) {
+    for (size_t i = 0; i < (size_t)COLORS; ++i) {
         if (colors[i] != 0) {
             colors[i] = ++used_colors;
         }
     }
 
     int32_t color_pair = 0;
-    for (size_t bg = 0; bg < COLORS; ++bg) {
+    for (size_t bg = 0; bg < (size_t)COLORS; ++bg) {
         if (colors[bg] == 0) {
             continue;
         }
 
-        for (size_t fg = 0; fg < COLORS; ++fg) {
+        for (size_t fg = 0; fg < (size_t)COLORS; ++fg) {
             if (colors[fg] == 0) {
                 continue;
             }
