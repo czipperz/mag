@@ -50,7 +50,7 @@ Key_Map create_key_map() {
     BIND(key_map, "A-p", command_shift_line_backward);
     BIND(key_map, "C-A-n", command_create_cursor_forward);
     BIND(key_map, "C-A-p", command_create_cursor_backward);
-    BIND(key_map, "C-c C-A-c", command_create_cursors_all_search);
+    BIND(key_map, "C-c c", command_create_cursors_all_search);
     BIND(key_map, "C-c C-A-n", command_create_cursors_to_end_search);
     BIND(key_map, "C-c C-A-p", command_create_cursors_to_start_search);
 
