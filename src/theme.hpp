@@ -4,6 +4,7 @@
 #include <cz/vector.hpp>
 
 namespace mag {
+struct Overlay;
 
 struct Color {
     uint8_t r, g, b;
@@ -43,6 +44,8 @@ struct Theme {
     /// The way different token types should be displayed.  These should
     /// directly correspond to the token types.
     cz::Vector<Face> faces;
+
+    cz::Slice<Overlay> overlays;
 
     void drop(cz::Allocator allocator) {
         colors.drop(allocator);

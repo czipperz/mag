@@ -161,6 +161,10 @@ Theme create_theme() {
     theme.faces.push({1, -1, 0});   // Token_Type::GIT_REBASE_TODO_COMMAND
     theme.faces.push({3, -1, 0});   // Token_Type::GIT_REBASE_TODO_SHA
     theme.faces.push({-1, -1, 0});  // Token_Type::GIT_REBASE_TODO_COMMIT_MESSAGE
+
+    static Overlay overlays[] = {syntax::overlay_matching_region()};
+    theme.overlays = cz::slice(overlays);
+
     return theme;
 }
 
@@ -239,7 +243,6 @@ Mode get_mode(cz::Str file_name) {
         mode.next_token = syntax::cpp_next_token;
         mode.key_map = cpp_key_map();
         static Overlay overlays[] = {syntax::overlay_matching_pairs(),
-                                     syntax::overlay_matching_region(),
                                      syntax::overlay_matching_tokens()};
         mode.overlays = cz::slice(overlays);
     } else if (file_name.ends_with(".md")) {

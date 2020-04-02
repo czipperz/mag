@@ -121,13 +121,22 @@ static void draw_buffer_contents(Cell* cells,
     }
 
     cz::Vector<void*> overlay_datas = {};
-    overlay_datas.reserve(cz::heap_allocator(), buffer->mode.overlays.len);
+    overlay_datas.reserve(cz::heap_allocator(),
+                          editor->theme.overlays.len + buffer->mode.overlays.len);
     CZ_DEFER({
-        for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
-            buffer->mode.overlays[i].cleanup_frame(overlay_datas[i]);
+        size_t j = 0;
+        for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
+            editor->theme.overlays[i].cleanup_frame(overlay_datas[j]);
+        }
+        for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
+            buffer->mode.overlays[i].cleanup_frame(overlay_datas[j]);
         }
         overlay_datas.drop(cz::heap_allocator());
     });
+    for (size_t i = 0; i < editor->theme.overlays.len; ++i) {
+        void* data = editor->theme.overlays[i].start_frame(buffer, window);
+        overlay_datas.push(data);
+    }
     for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
         void* data = buffer->mode.overlays[i].start_frame(buffer, window);
         overlay_datas.push(data);
@@ -171,10 +180,18 @@ static void draw_buffer_contents(Cell* cells,
             apply_face(&attrs, editor->theme.faces[3]);
         }
 
-        for (size_t i = 0; i < overlay_datas.len(); ++i) {
-            Face face =
-                buffer->mode.overlays[i].get_face_and_advance(buffer, window, overlay_datas[i]);
-            apply_face(&attrs, face);
+        {
+            size_t j = 0;
+            for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
+                Face face =
+                    editor->theme.overlays[i].get_face_and_advance(buffer, window, overlay_datas[j]);
+                apply_face(&attrs, face);
+            }
+            for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
+                Face face =
+                    buffer->mode.overlays[i].get_face_and_advance(buffer, window, overlay_datas[j]);
+                apply_face(&attrs, face);
+            }
         }
 
         size_t type_face = 6;
