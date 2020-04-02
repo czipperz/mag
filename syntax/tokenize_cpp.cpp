@@ -1133,7 +1133,9 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             normal_state = START_OF_PARAMETER;
         } else if (normal_state == AFTER_VARIABLE_DECLARATION && first_char == '=') {
             normal_state = IN_EXPR;
-        } else if (normal_state == AFTER_PARAMETER_DECLARATION && first_char == ',') {
+        } else if ((normal_state == AFTER_PARAMETER_DECLARATION ||
+                    normal_state == IN_PARAMETER_TYPE) &&
+                   first_char == ',') {
             normal_state = START_OF_PARAMETER;
         }
 
