@@ -98,25 +98,12 @@ static void draw_buffer_contents(Cell* cells,
     Token token = {};
     uint64_t state = 0;
     bool has_token = true;
-    if (window_cache) {
-        // Find the last check point before the start position
-        cz::Slice<Tokenizer_Check_Point> check_points =
-            window_cache->v.unified.tokenizer_check_points;
-        size_t start = 0;
-        size_t end = check_points.len;
-        while (start < end) {
-            size_t mid = (start + end) / 2;
-            if (check_points[mid].position == iterator.position) {
-                token.end = check_points[mid].position;
-                state = check_points[mid].state;
-                break;
-            } else if (check_points[mid].position < iterator.position) {
-                token.end = check_points[mid].position;
-                state = check_points[mid].state;
-                start = mid + 1;
-            } else {
-                end = mid;
-            }
+    buffer->token_cache.update(buffer);
+    {
+        Tokenizer_Check_Point check_point;
+        if (buffer->token_cache.find_check_point(iterator.position, &check_point)) {
+            token.end = check_point.position;
+            state = check_point.state;
         }
     }
 
@@ -375,15 +362,7 @@ static void draw_window(Cell* cells,
             destroy_window_cache_children(*window_cache);
             cache_window_unified_create(editor, *window_cache, window);
         } else if ((*window_cache)->v.unified.id != window->id) {
-            (*window_cache)->v.unified.tokenizer_check_points.drop(cz::heap_allocator());
             cache_window_unified_create(editor, *window_cache, window);
-        } else {
-            {
-                WITH_WINDOW_BUFFER(window);
-                if ((*window_cache)->v.unified.change_index != buffer->changes.len()) {
-                    cache_window_unified_update(*window_cache, window, buffer);
-                }
-            }
         }
 
         draw_buffer(cells, *window_cache, total_cols, editor, window, window == selected_window,

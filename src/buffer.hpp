@@ -8,6 +8,7 @@
 #include "commit.hpp"
 #include "contents.hpp"
 #include "mode.hpp"
+#include "token_cache.hpp"
 
 namespace mag {
 
@@ -28,6 +29,8 @@ struct Buffer {
     Contents contents;
 
     Mode mode;
+
+    Token_Cache token_cache;
 
     void init(cz::Str path);
 

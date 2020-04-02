@@ -1,5 +1,6 @@
 #include "buffer.hpp"
 
+#include <Tracy.hpp>
 #include <cz/bit_array.hpp>
 #include <cz/heap.hpp>
 #include "config.hpp"
@@ -28,6 +29,8 @@ void Buffer::drop() {
     changes.drop(cz::heap_allocator());
 
     contents.drop();
+
+    token_cache.drop();
 }
 
 static void insert(Contents* contents, uint64_t position, cz::Str str) {
