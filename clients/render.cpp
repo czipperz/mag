@@ -132,10 +132,89 @@ static void draw_buffer_contents(Cell* cells,
         }
     }
 
-    for (Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
-         !iterator.at_eob(); iterator.advance()) {
+    Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
+
+    // Find the token the cursor is on
+    bool has_cursor_token;
+    bool has_cursor_region;
+    Token cursor_token;
+    Contents_Iterator cursor_token_iterator = token_iterator;
+    bool token_matches_cursor_token = false;
+    if (window->show_marks) {
+        has_cursor_token = false;
+        has_cursor_region = true;
+        cursor_token.start = cursors[0].start();
+        cursor_token.end = cursors[0].end();
+        cursor_token_iterator.advance(cursor_token.start - cursor_token_iterator.position);
+    } else if (cursors.len == 1) {
+        has_cursor_token = has_token;
+        has_cursor_region = false;
+        cursor_token = token;
+        uint64_t cursor_state = state;
+        while (has_cursor_token && cursors[0].point >= cursor_token.end) {
+            has_cursor_token =
+                buffer->mode.next_token(&cursor_token_iterator, &cursor_token, &cursor_state);
+        }
+
+        if (has_cursor_token) {
+            if (cursors[0].point >= cursor_token.start && cursors[0].point < cursor_token.end) {
+                cursor_token_iterator.retreat(cursor_token_iterator.position - cursor_token.start);
+            } else {
+                has_cursor_token = true;
+            }
+        }
+    } else {
+        has_cursor_token = false;
+        has_cursor_region = false;
+    }
+
+    size_t countdown_cursor_region = 0;
+    for (; !iterator.at_eob(); iterator.advance()) {
+        if (countdown_cursor_region > 0) {
+            --countdown_cursor_region;
+        } else if (has_cursor_region) {
+            Contents_Iterator cti = cursor_token_iterator;
+            Contents_Iterator it = iterator;
+            while (cti.position < cursor_token.end && !it.at_eob()) {
+                if (cti.get() != it.get()) {
+                    break;
+                }
+                cti.advance();
+                it.advance();
+            }
+
+            if (cti.position == cursor_token.end) {
+                countdown_cursor_region = cursor_token.end - cursor_token.start;
+            }
+        }
+
         while (has_token && iterator.position >= token.end) {
             has_token = buffer->mode.next_token(&token_iterator, &token, &state);
+
+            // Recalculate if the current token (`token`) matches the token at the cursor
+            // (`cursor_token`)
+            token_matches_cursor_token = false;
+            if (has_token && has_cursor_token) {
+                if (token.type == cursor_token.type &&
+                    token.end - token.start == cursor_token.end - cursor_token.start) {
+                    Contents_Iterator cti = cursor_token_iterator;
+                    Contents_Iterator it = token_iterator;
+                    it.retreat(it.position - token.start);
+
+                    size_t i = 0;
+                    for (; i < token.end - token.start; ++i) {
+                        if (cti.get() != it.get()) {
+                            break;
+                        }
+                        cti.advance();
+                        it.advance();
+                    }
+
+                    if (i == token.end - token.start) {
+                        token_matches_cursor_token = true;
+                    }
+                }
+            }
         }
 
         bool has_cursor = false;
@@ -170,9 +249,13 @@ static void draw_buffer_contents(Cell* cells,
             apply_face(&attrs, editor->theme.faces, 3);
         }
 
-        size_t type_face = 6;
+        size_t type_face = 7;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
             type_face += token.type;
+
+            if (token_matches_cursor_token || countdown_cursor_region > 0) {
+                apply_face(&attrs, editor->theme.faces, 6);
+            }
         } else {
             type_face += Token_Type::DEFAULT;
         }

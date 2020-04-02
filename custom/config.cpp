@@ -134,6 +134,8 @@ Theme create_theme() {
     theme.faces.push({-1, -1, 0});              // minibuffer prompt
     theme.faces.push({-1, -1, Face::REVERSE});  // completion selected item
 
+    theme.faces.push({-1, 237, 0});  // token matches cursor
+
     theme.faces.push({-1, -1, 0});  // Token_Type::DEFAULT
 
     theme.faces.push({1, -1, 0});    // Token_Type::KEYWORD
