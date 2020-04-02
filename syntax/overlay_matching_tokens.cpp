@@ -114,6 +114,9 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
     if (data->has_token && data->has_cursor_token && data->iterator.position >= data->token.start) {
         uint64_t len = data->token.end - data->token.start;
         if (data->token.type == data->cursor_token.type &&
+            (data->token.type == Token_Type::KEYWORD || data->token.type == Token_Type::TYPE ||
+             data->token.type == Token_Type::PUNCTUATION ||
+             data->token.type == Token_Type::IDENTIFIER) &&
             len == data->cursor_token.end - data->cursor_token.start) {
             Contents_Iterator cti = data->cursor_token_iterator;
             Contents_Iterator it = data->token_iterator;
