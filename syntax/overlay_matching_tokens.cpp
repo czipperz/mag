@@ -51,6 +51,9 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer, Window_Unified*
     data->cursor_token_iterator = buffer->contents.iterator_at(check_point.position);
     data->cursor_token.end = data->cursor_token_iterator.position;
     data->iterator = data->cursor_token_iterator;
+    if (data->iterator.at_eob()) {
+        return data;
+    }
     data->iterator.advance(window->start_position - data->iterator.position);
 
     cz::Slice<Cursor> cursors = window->cursors;
