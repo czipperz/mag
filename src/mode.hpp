@@ -16,9 +16,7 @@ struct Mode {
                        uint64_t* state /* in/out */);
 };
 
-inline bool default_next_token(Contents_Iterator* iterator,
-                               Token* token,
-                               uint64_t* state) {
+inline bool default_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     return false;
 }
 
