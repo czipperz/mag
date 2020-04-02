@@ -11,6 +11,11 @@
 namespace mag {
 namespace syntax {
 
+static bool is_matching_token(Token_Type type) {
+    return type == Token_Type::KEYWORD || type == Token_Type::TYPE ||
+           type == Token_Type::PUNCTUATION || type == Token_Type::IDENTIFIER;
+}
+
 struct Data {
     Face face;
 
@@ -59,19 +64,44 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer, Window_Unified*
         data->has_cursor_token = true;
         data->cursor_state = check_point.state;
         while (data->has_cursor_token && cursors[0].point >= data->cursor_token.end) {
+            bool cache = false;
+            bool cache_has_token;
+            Contents_Iterator cache_token_iterator;
+            Token cache_token;
+            uint64_t cache_state;
+            // Don't actually advance if iterator is pointing directly after a matching token
+            // and isn't at the start of a matching token.
+            if (cursors[0].point == data->cursor_token.end &&
+                is_matching_token(data->cursor_token.type)) {
+                cache = true;
+                cache_has_token = data->has_cursor_token;
+                cache_token_iterator = data->cursor_token_iterator;
+                cache_token = data->cursor_token;
+                cache_state = data->cursor_state;
+            }
+
             data->has_cursor_token = buffer->mode.next_token(
                 &data->cursor_token_iterator, &data->cursor_token, &data->cursor_state);
+
             if (data->iterator.position >= data->cursor_token.start) {
                 data->has_token = true;
                 data->token = data->cursor_token;
                 data->state = data->cursor_state;
                 data->token_iterator = data->cursor_token_iterator;
             }
+
+            if (cache && !(data->has_cursor_token && is_matching_token(data->cursor_token.type) &&
+                           data->cursor_token.start <= cursors[0].point)) {
+                data->has_cursor_token = cache_has_token;
+                data->cursor_token_iterator = cache_token_iterator;
+                data->cursor_token = cache_token;
+                data->cursor_state = cache_state;
+                break;
+            }
         }
 
         if (data->has_cursor_token) {
-            if (cursors[0].point >= data->cursor_token.start &&
-                cursors[0].point < data->cursor_token.end) {
+            if (cursors[0].point >= data->cursor_token.start) {
                 data->cursor_token_iterator.retreat(data->cursor_token_iterator.position -
                                                     data->cursor_token.start);
             } else {
@@ -113,10 +143,7 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
     // over and over.
     if (data->has_token && data->has_cursor_token && data->iterator.position >= data->token.start) {
         uint64_t len = data->token.end - data->token.start;
-        if (data->token.type == data->cursor_token.type &&
-            (data->token.type == Token_Type::KEYWORD || data->token.type == Token_Type::TYPE ||
-             data->token.type == Token_Type::PUNCTUATION ||
-             data->token.type == Token_Type::IDENTIFIER) &&
+        if (data->token.type == data->cursor_token.type && is_matching_token(data->token.type) &&
             len == data->cursor_token.end - data->cursor_token.start) {
             Contents_Iterator cti = data->cursor_token_iterator;
             Contents_Iterator it = data->token_iterator;
