@@ -3,6 +3,7 @@
 #include <Tracy.hpp>
 #include "command_macros.hpp"
 #include "movement.hpp"
+#include "overlay.hpp"
 #include "token.hpp"
 #include "visible_region.hpp"
 
@@ -37,13 +38,13 @@ namespace client {
         }                        \
     } while (0)
 
-static void apply_face(Cell::Attrs* attrs, cz::Slice<const Face> faces, size_t face) {
-    attrs->flags |= faces[face].flags;
-    if (faces[face].foreground != -1 && attrs->foreground == -1) {
-        attrs->foreground = faces[face].foreground;
+static void apply_face(Cell::Attrs* attrs, Face face) {
+    attrs->flags |= face.flags;
+    if (face.foreground != -1 && attrs->foreground == -1) {
+        attrs->foreground = face.foreground;
     }
-    if (faces[face].background != -1 && attrs->background == -1) {
-        attrs->background = faces[face].background;
+    if (face.background != -1 && attrs->background == -1) {
+        attrs->background = face.background;
     }
 }
 
@@ -119,89 +120,23 @@ static void draw_buffer_contents(Cell* cells,
         }
     }
 
-    Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
-
-    // Find the token the cursor is on
-    bool has_cursor_token;
-    bool has_cursor_region;
-    Token cursor_token;
-    Contents_Iterator cursor_token_iterator = token_iterator;
-    bool token_matches_cursor_token = false;
-    if (window->show_marks) {
-        has_cursor_token = false;
-        has_cursor_region = true;
-        cursor_token.start = cursors[0].start();
-        cursor_token.end = cursors[0].end();
-        cursor_token_iterator.advance(cursor_token.start - cursor_token_iterator.position);
-    } else if (cursors.len == 1) {
-        has_cursor_token = has_token;
-        has_cursor_region = false;
-        cursor_token = token;
-        uint64_t cursor_state = state;
-        while (has_cursor_token && cursors[0].point >= cursor_token.end) {
-            has_cursor_token =
-                buffer->mode.next_token(&cursor_token_iterator, &cursor_token, &cursor_state);
+    cz::Vector<void*> overlay_datas = {};
+    overlay_datas.reserve(cz::heap_allocator(), buffer->mode.overlays.len);
+    CZ_DEFER({
+        for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
+            buffer->mode.overlays[i].cleanup_frame(overlay_datas[i]);
         }
-
-        if (has_cursor_token) {
-            if (cursors[0].point >= cursor_token.start && cursors[0].point < cursor_token.end) {
-                cursor_token_iterator.retreat(cursor_token_iterator.position - cursor_token.start);
-            } else {
-                has_cursor_token = false;
-            }
-        }
-    } else {
-        has_cursor_token = false;
-        has_cursor_region = false;
+        overlay_datas.drop(cz::heap_allocator());
+    });
+    for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
+        void* data = buffer->mode.overlays[i].start_frame(buffer, window);
+        overlay_datas.push(data);
     }
 
-    size_t countdown_cursor_region = 0;
+    Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
     for (; !iterator.at_eob(); iterator.advance()) {
-        if (countdown_cursor_region > 0) {
-            --countdown_cursor_region;
-        } else if (has_cursor_region) {
-            Contents_Iterator cti = cursor_token_iterator;
-            Contents_Iterator it = iterator;
-            while (cti.position < cursor_token.end && !it.at_eob()) {
-                if (cti.get() != it.get()) {
-                    break;
-                }
-                cti.advance();
-                it.advance();
-            }
-
-            if (cti.position == cursor_token.end) {
-                countdown_cursor_region = cursor_token.end - cursor_token.start;
-            }
-        }
-
         while (has_token && iterator.position >= token.end) {
             has_token = buffer->mode.next_token(&token_iterator, &token, &state);
-
-            // Recalculate if the current token (`token`) matches the token at the cursor
-            // (`cursor_token`)
-            token_matches_cursor_token = false;
-            if (has_token && has_cursor_token) {
-                if (token.type == cursor_token.type &&
-                    token.end - token.start == cursor_token.end - cursor_token.start) {
-                    Contents_Iterator cti = cursor_token_iterator;
-                    Contents_Iterator it = token_iterator;
-                    it.retreat(it.position - token.start);
-
-                    size_t i = 0;
-                    for (; i < token.end - token.start; ++i) {
-                        if (cti.get() != it.get()) {
-                            break;
-                        }
-                        cti.advance();
-                        it.advance();
-                    }
-
-                    if (i == token.end - token.start) {
-                        token_matches_cursor_token = true;
-                    }
-                }
-            }
         }
 
         bool has_cursor = false;
@@ -229,24 +164,26 @@ static void draw_buffer_contents(Cell* cells,
 
         Cell::Attrs attrs = {};
         if (has_cursor) {
-            apply_face(&attrs, editor->theme.faces, 2);
+            apply_face(&attrs, editor->theme.faces[2]);
         }
 
         if (show_mark) {
-            apply_face(&attrs, editor->theme.faces, 3);
+            apply_face(&attrs, editor->theme.faces[3]);
         }
 
-        size_t type_face = 7;
+        for (size_t i = 0; i < overlay_datas.len(); ++i) {
+            Face face =
+                buffer->mode.overlays[i].get_face_and_advance(buffer, window, overlay_datas[i]);
+            apply_face(&attrs, face);
+        }
+
+        size_t type_face = 6;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
             type_face += token.type;
-
-            if (token_matches_cursor_token || countdown_cursor_region > 0) {
-                apply_face(&attrs, editor->theme.faces, 6);
-            }
         } else {
             type_face += Token_Type::DEFAULT;
         }
-        apply_face(&attrs, editor->theme.faces, type_face);
+        apply_face(&attrs, editor->theme.faces[type_face]);
 
         char ch = iterator.get();
         if (ch == '\n') {
@@ -265,7 +202,7 @@ static void draw_buffer_contents(Cell* cells,
 
     if (show_cursors) {
         Cell::Attrs attrs = {};
-        apply_face(&attrs, editor->theme.faces, 2);
+        apply_face(&attrs, editor->theme.faces[2]);
         for (size_t c = 0; c < cursors.len; ++c) {
             if (cursors[c].point == buffer->contents.len) {
                 SET(attrs, ' ');
@@ -296,7 +233,7 @@ static void draw_buffer_decoration(Cell* cells,
     size_t x = 0;
 
     Cell::Attrs attrs = {};
-    apply_face(&attrs, editor->theme.faces, buffer->is_unchanged() ? 0 : 1);
+    apply_face(&attrs, editor->theme.faces[buffer->is_unchanged() ? 0 : 1]);
 
     SET(attrs, '-');
     ++x;
@@ -482,7 +419,7 @@ void render_to_cells(Cell* cells,
         size_t start_col = 0;
 
         Cell::Attrs attrs_minibuffer_prompt = {};
-        apply_face(&attrs_minibuffer_prompt, editor->theme.faces, 4);
+        apply_face(&attrs_minibuffer_prompt, editor->theme.faces[4]);
         for (size_t i = 0; i < client->_message.text.len && i < total_cols; ++i) {
             SET(attrs_minibuffer_prompt, client->_message.text[i]);
             ++x;
@@ -524,7 +461,7 @@ void render_to_cells(Cell* cells,
                 {
                     Cell::Attrs attrs = {};
                     if (r == completion_results->selected) {
-                        apply_face(&attrs, editor->theme.faces, 5);
+                        apply_face(&attrs, editor->theme.faces[5]);
                     }
 
                     cz::Str result = completion_results->results[r];

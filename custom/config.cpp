@@ -16,7 +16,9 @@
 #include "git/tokenize_git_commit_edit_message.hpp"
 #include "git/tokenize_patch.hpp"
 #include "git/tokenize_rebase_todo.hpp"
+#include "overlay.hpp"
 #include "prose/alternate.hpp"
+#include "syntax/overlay_matching_tokens.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_md.hpp"
 #include "syntax/tokenize_path.hpp"
@@ -134,8 +136,6 @@ Theme create_theme() {
     theme.faces.push({-1, -1, 0});              // minibuffer prompt
     theme.faces.push({-1, -1, Face::REVERSE});  // completion selected item
 
-    theme.faces.push({-1, 237, 0});  // token matches cursor
-
     theme.faces.push({-1, -1, 0});  // Token_Type::DEFAULT
 
     theme.faces.push({1, -1, 0});    // Token_Type::KEYWORD
@@ -236,6 +236,8 @@ Mode get_mode(cz::Str file_name) {
                file_name.ends_with(".cpp") || file_name.ends_with(".hpp")) {
         mode.next_token = syntax::cpp_next_token;
         mode.key_map = cpp_key_map();
+        static Overlay overlays[] = {syntax::overlay_matching_tokens()};
+        mode.overlays = cz::slice(overlays);
     } else if (file_name.ends_with(".md")) {
         mode.next_token = syntax::md_next_token;
     } else if (file_name.ends_with(".patch") || file_name.ends_with(".diff")) {

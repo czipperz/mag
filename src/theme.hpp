@@ -10,15 +10,15 @@ struct Color {
 };
 
 struct Face {
-    int16_t foreground;
-    int16_t background;
+    int16_t foreground = -1;
+    int16_t background = -1;
 
     enum Flags {
         BOLD = 1,
         UNDERSCORE = 2,
         REVERSE = 4,
     };
-    uint32_t flags;
+    uint32_t flags = 0;
 };
 
 struct Theme {
