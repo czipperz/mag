@@ -72,7 +72,9 @@ static void render(int* total_rows,
                    Cell** cellss,
                    Window_Cache** window_cache,
                    Editor* editor,
-                   Client* client) {
+                   Client* client,
+                   int16_t* colors,
+                   int16_t used_colors) {
     ZoneScoped;
     FrameMarkStart("ncurses");
 
@@ -94,11 +96,13 @@ static void render(int* total_rows,
             *total_cols = cols;
 
             size_t grid_size = rows * cols;
-            cellss[0] = (Cell*)calloc(grid_size, sizeof(Cell));
-            cellss[1] = (Cell*)calloc(grid_size, sizeof(Cell));
+            cellss[0] = (Cell*)malloc(grid_size * sizeof(Cell));
+            cellss[1] = (Cell*)malloc(grid_size * sizeof(Cell));
 
             for (size_t i = 0; i < grid_size; ++i) {
+                cellss[0][i].attrs = {};
                 cellss[0][i].code = ' ';
+                cellss[1][i].attrs = {};
                 cellss[1][i].code = ' ';
             }
         }
@@ -123,9 +127,17 @@ static void render(int* total_rows,
                     if (new_cell->attrs.flags & Face::REVERSE) {
                         attrs |= A_REVERSE;
                     }
-                    if (new_cell->attrs.color) {
-                        attrs |= COLOR_PAIR(new_cell->attrs.color + 1);
+
+                    int16_t bg = new_cell->attrs.background;
+                    if (bg < 0 || bg >= COLORS) {
+                        bg = 0;
                     }
+                    int16_t fg = new_cell->attrs.foreground;
+                    if (fg < 0 || fg >= COLORS) {
+                        fg = 7;
+                    }
+                    int32_t color_pair = (colors[bg] - 1) * used_colors + (colors[fg] - 1) + 1;
+                    attrs |= COLOR_PAIR(color_pair);
 
                     attrset(attrs);
                     mvaddch(y, x, new_cell->code);
@@ -218,17 +230,43 @@ void run(Server* server, Client* client) {
     CZ_DEFER(endwin());
 
     start_color();
+
+    int16_t colors[COLORS] = {};
+    colors[0] = 1;
+    colors[7] = 1;
     for (size_t i = 0; i < server->editor.theme.faces.len(); ++i) {
         Face* face = &server->editor.theme.faces[i];
-        size_t fg = face->foreground;
-        if (fg == SIZE_MAX) {
-            fg = 7;
+        int16_t fg = face->foreground;
+        if (fg >= 0 && fg < COLORS) {
+            colors[fg] = 1;
         }
-        size_t bg = face->background;
-        if (bg == SIZE_MAX) {
-            bg = 0;
+        int16_t bg = face->background;
+        if (bg >= 0 && bg < COLORS) {
+            colors[bg] = 1;
         }
-        init_pair(i + 1, fg, bg);
+    }
+
+    int16_t used_colors = 0;
+    for (size_t i = 0; i < COLORS; ++i) {
+        if (colors[i] != 0) {
+            colors[i] = ++used_colors;
+        }
+    }
+
+    int32_t color_pair = 0;
+    for (size_t bg = 0; bg < COLORS; ++bg) {
+        if (colors[bg] == 0) {
+            continue;
+        }
+
+        for (size_t fg = 0; fg < COLORS; ++fg) {
+            if (colors[fg] == 0) {
+                continue;
+            }
+
+            // int32_t color_pair = (colors[bg] - 1) * used_colors + (colors[fg] - 1) + 1;
+            init_pair(++color_pair, fg, bg);
+        }
     }
 
     Cell* cellss[2] = {nullptr, nullptr};
@@ -248,7 +286,8 @@ void run(Server* server, Client* client) {
     while (1) {
         ZoneScopedN("ncurses main loop");
 
-        render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client);
+        render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client, colors,
+               used_colors);
 
         int ch = ERR;
         if (client->mini_buffer_completion_results.state == Completion_Results::LOADING) {

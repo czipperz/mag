@@ -10,8 +10,8 @@ struct Color {
 };
 
 struct Face {
-    size_t foreground;
-    size_t background;
+    int16_t foreground;
+    int16_t background;
 
     enum Flags {
         BOLD = 1,

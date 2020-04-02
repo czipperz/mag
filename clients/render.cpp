@@ -39,11 +39,11 @@ namespace client {
 
 static void apply_face(Cell::Attrs* attrs, cz::Slice<const Face> faces, size_t face) {
     attrs->flags |= faces[face].flags;
-    if ((faces[face].foreground < SIZE_MAX || faces[face].background < SIZE_MAX) &&
-        // 0 is a special case since it is only used for saved buffer status, which is drawn
-        // specially.
-        attrs->color == 0) {
-        attrs->color = face;
+    if (faces[face].foreground != -1 && attrs->foreground == -1) {
+        attrs->foreground = faces[face].foreground;
+    }
+    if (faces[face].background != -1 && attrs->background == -1) {
+        attrs->background = faces[face].background;
     }
 }
 

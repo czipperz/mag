@@ -124,39 +124,39 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
-    theme.faces.reserve(cz::heap_allocator(), 25);
-    theme.faces.push({249, 0, Face::REVERSE});  // saved buffer
-    theme.faces.push({1, 0, Face::REVERSE});    // unsaved buffer
+    theme.faces.reserve(cz::heap_allocator(), 26);
+    theme.faces.push({0, 7, 0});  // saved buffer
+    theme.faces.push({0, 1, 0});  // unsaved buffer
 
-    theme.faces.push({7, 0, Face::REVERSE});   // cursor
-    theme.faces.push({12, 0, Face::REVERSE});  // marked region
+    theme.faces.push({0, 7, 0});   // cursor
+    theme.faces.push({0, 12, 0});  // marked region
 
-    theme.faces.push({7, 0, 0});  // minibuffer prompt
-    theme.faces.push({SIZE_MAX, SIZE_MAX, Face::REVERSE});  // completion selected item
+    theme.faces.push({-1, -1, 0});              // minibuffer prompt
+    theme.faces.push({-1, -1, Face::REVERSE});  // completion selected item
 
-    theme.faces.push({7, 0, 0});  // Token_Type::DEFAULT
+    theme.faces.push({-1, -1, 0});  // Token_Type::DEFAULT
 
-    theme.faces.push({1, 0, 0});    // Token_Type::KEYWORD
-    theme.faces.push({4, 0, 0});    // Token_Type::TYPE
-    theme.faces.push({6, 0, 0});    // Token_Type::PUNCTUATION
-    theme.faces.push({3, 0, 0});    // Token_Type::OPEN_PAIR
-    theme.faces.push({3, 0, 0});    // Token_Type::CLOSE_PAIR
-    theme.faces.push({12, 0, 0});   // Token_Type::COMMENT
-    theme.faces.push({142, 0, 0});  // Token_Type::DOC_COMMENT
-    theme.faces.push({2, 0, 0});    // Token_Type::STRING
-    theme.faces.push({7, 0, 0});  // Token_Type::IDENTIFIER
+    theme.faces.push({1, -1, 0});    // Token_Type::KEYWORD
+    theme.faces.push({4, -1, 0});    // Token_Type::TYPE
+    theme.faces.push({6, -1, 0});    // Token_Type::PUNCTUATION
+    theme.faces.push({3, -1, 0});    // Token_Type::OPEN_PAIR
+    theme.faces.push({3, -1, 0});    // Token_Type::CLOSE_PAIR
+    theme.faces.push({12, -1, 0});   // Token_Type::COMMENT
+    theme.faces.push({142, -1, 0});  // Token_Type::DOC_COMMENT
+    theme.faces.push({2, -1, 0});    // Token_Type::STRING
+    theme.faces.push({-1, -1, 0});   // Token_Type::IDENTIFIER
 
-    theme.faces.push({3, 0, 0});  // Token_Type::TITLE
-    theme.faces.push({2, 0, 0});  // Token_Type::CODE
+    theme.faces.push({3, -1, 0});  // Token_Type::TITLE
+    theme.faces.push({2, -1, 0});  // Token_Type::CODE
 
-    theme.faces.push({1, 0, 0});    // Token_Type::PATCH_REMOVE
-    theme.faces.push({76, 0, 0});   // Token_Type::PATCH_ADD
-    theme.faces.push({246, 0, 0});  // Token_Type::PATCH_NEUTRAL
-    theme.faces.push({7, 0, 0});  // Token_Type::PATCH_ANNOTATION
+    theme.faces.push({1, -1, 0});    // Token_Type::PATCH_REMOVE
+    theme.faces.push({76, -1, 0});   // Token_Type::PATCH_ADD
+    theme.faces.push({246, -1, 0});  // Token_Type::PATCH_NEUTRAL
+    theme.faces.push({-1, -1, 0});   // Token_Type::PATCH_ANNOTATION
 
-    theme.faces.push({1, 0, 0});    // Token_Type::GIT_REBASE_TODO_COMMAND
-    theme.faces.push({3, 0, 0});    // Token_Type::GIT_REBASE_TODO_SHA
-    theme.faces.push({7, 0, 0});  // Token_Type::GIT_REBASE_TODO_COMMIT_MESSAGE
+    theme.faces.push({1, -1, 0});   // Token_Type::GIT_REBASE_TODO_COMMAND
+    theme.faces.push({3, -1, 0});   // Token_Type::GIT_REBASE_TODO_SHA
+    theme.faces.push({-1, -1, 0});  // Token_Type::GIT_REBASE_TODO_COMMIT_MESSAGE
     return theme;
 }
 
