@@ -19,6 +19,7 @@
 #include "overlay.hpp"
 #include "prose/alternate.hpp"
 #include "syntax/overlay_matching_pairs.hpp"
+#include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_md.hpp"
@@ -238,6 +239,7 @@ Mode get_mode(cz::Str file_name) {
         mode.next_token = syntax::cpp_next_token;
         mode.key_map = cpp_key_map();
         static Overlay overlays[] = {syntax::overlay_matching_pairs(),
+                                     syntax::overlay_matching_region(),
                                      syntax::overlay_matching_tokens()};
         mode.overlays = cz::slice(overlays);
     } else if (file_name.ends_with(".md")) {

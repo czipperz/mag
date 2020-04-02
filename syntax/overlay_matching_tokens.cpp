@@ -21,7 +21,6 @@ struct Data {
 
     bool has_token;
     bool has_cursor_token;
-    bool has_cursor_region;
 
     Token cursor_token;
     uint64_t cursor_state;
@@ -31,9 +30,6 @@ struct Data {
     uint64_t state;
     Contents_Iterator token_iterator;
     Contents_Iterator iterator;
-
-    bool token_matches_cursor_token;
-    size_t countdown_cursor_region;
 };
 
 static void* overlay_matching_tokens_start_frame(Buffer* buffer, Window_Unified* window) {
@@ -41,9 +37,6 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer, Window_Unified*
     data->face = {-1, 237, 0};
     data->has_token = false;
     data->has_cursor_token = false;
-    data->has_cursor_region = false;
-    data->countdown_cursor_region = 0;
-    data->token_matches_cursor_token = false;
 
     buffer->token_cache.update(buffer);
     Tokenizer_Check_Point check_point = {};
@@ -58,11 +51,6 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer, Window_Unified*
 
     cz::Slice<Cursor> cursors = window->cursors;
     if (window->show_marks) {
-        data->has_cursor_region = true;
-        data->cursor_token.start = cursors[0].start();
-        data->cursor_token.end = cursors[0].end();
-        data->cursor_token_iterator.advance(data->cursor_token.start -
-                                            data->cursor_token_iterator.position);
     } else if (cursors.len == 1) {
         data->has_cursor_token = true;
         data->cursor_state = check_point.state;
@@ -121,24 +109,6 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
                                                          void* _data) {
     Data* data = (Data*)_data;
 
-    if (data->countdown_cursor_region > 0) {
-        --data->countdown_cursor_region;
-    } else if (data->has_cursor_region) {
-        Contents_Iterator cti = data->cursor_token_iterator;
-        Contents_Iterator it = data->iterator;
-        while (cti.position < data->cursor_token.end && !it.at_eob()) {
-            if (cti.get() != it.get()) {
-                break;
-            }
-            cti.advance();
-            it.advance();
-        }
-
-        if (cti.position == data->cursor_token.end) {
-            data->countdown_cursor_region = data->cursor_token.end - data->cursor_token.start;
-        }
-    }
-
     // Recalculate if the current token (`token`) matches the token at the cursor
     // (`cursor_token`)
     bool token_matches_cursor_token = false;
@@ -173,7 +143,7 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
             buffer->mode.next_token(&data->token_iterator, &data->token, &data->state);
     }
 
-    if (token_matches_cursor_token || data->countdown_cursor_region > 0) {
+    if (token_matches_cursor_token) {
         return data->face;
     } else {
         return {};
