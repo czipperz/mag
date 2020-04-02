@@ -147,7 +147,7 @@ static void draw_buffer_contents(Cell* cells,
             if (cursors[0].point >= cursor_token.start && cursors[0].point < cursor_token.end) {
                 cursor_token_iterator.retreat(cursor_token_iterator.position - cursor_token.start);
             } else {
-                has_cursor_token = true;
+                has_cursor_token = false;
             }
         }
     } else {
