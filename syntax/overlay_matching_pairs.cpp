@@ -1,6 +1,7 @@
 #include "overlay_matching_pairs.hpp"
 
 #include <stdlib.h>
+#include <Tracy.hpp>
 #include <algorithm>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
@@ -39,6 +40,8 @@ static bool binary_search(cz::Slice<Token> tokens, uint64_t position, size_t* to
 }
 
 static void* overlay_matching_pairs_start_frame(Buffer* buffer, Window_Unified* window) {
+    ZoneScoped;
+
     Data* data = (Data*)malloc(sizeof(Data));
     data->iterator = buffer->contents.iterator_at(window->start_position);
     data->index = 0;
@@ -117,6 +120,8 @@ static void* overlay_matching_pairs_start_frame(Buffer* buffer, Window_Unified* 
 static Face overlay_matching_pairs_get_face_and_advance(Buffer* buffer,
                                                         Window_Unified* window,
                                                         void* _data) {
+    ZoneScoped;
+
     Data* data = (Data*)_data;
 
     Face face = {};

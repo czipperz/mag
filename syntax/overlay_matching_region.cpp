@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <Tracy.hpp>
 #include "buffer.hpp"
 #include "overlay.hpp"
 #include "theme.hpp"
@@ -23,6 +24,8 @@ struct Data {
 };
 
 static void* overlay_matching_region_start_frame(Buffer* buffer, Window_Unified* window) {
+    ZoneScoped;
+
     Data* data = (Data*)malloc(sizeof(Data));
 
     data->enabled = window->show_marks;
@@ -50,6 +53,8 @@ static void* overlay_matching_region_start_frame(Buffer* buffer, Window_Unified*
 static Face overlay_matching_region_get_face_and_advance(Buffer* buffer,
                                                          Window_Unified* window,
                                                          void* _data) {
+    ZoneScoped;
+
     Data* data = (Data*)_data;
 
     if (!data->enabled) {
