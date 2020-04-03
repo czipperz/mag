@@ -114,7 +114,8 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
     bool token_matches_cursor_token = false;
     // Todo: optimize this.  This should use a countdown similar to the loop above to not rerun this
     // over and over.
-    if (data->has_token && data->has_cursor_token && data->iterator.position >= data->token.start) {
+    if (data->has_token && data->has_cursor_token && data->iterator.position >= data->token.start &&
+        data->iterator.position < data->token.end) {
         uint64_t len = data->token.end - data->token.start;
         if (data->token.type == data->cursor_token.type && is_matching_token(data->token.type) &&
             len == data->cursor_token.end - data->cursor_token.start) {
