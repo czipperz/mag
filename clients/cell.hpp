@@ -2,21 +2,18 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "theme.hpp"
 
 namespace mag {
 namespace client {
 
 struct Cell {
-    struct Attrs {
-        int16_t foreground = -1;
-        int16_t background = -1;
-        uint32_t flags;
-    } attrs;
+    Face face;
     char code;
 
     bool operator==(const Cell& other) const {
-        return attrs.foreground == other.attrs.foreground &&
-               attrs.background == other.attrs.background && attrs.flags == other.attrs.flags &&
+        return face.foreground == other.face.foreground &&
+               face.background == other.face.background && face.flags == other.face.flags &&
                code == other.code;
     }
     bool operator!=(const Cell& other) const { return !(*this == other); }

@@ -10,10 +10,10 @@
 namespace mag {
 namespace client {
 
-#define SET(ATTRS, CH)                                                       \
+#define SET(FACE, CH)                                                        \
     do {                                                                     \
         Cell* cell = &cells[(y + start_row) * total_cols + (x + start_col)]; \
-        cell->attrs = ATTRS;                                                 \
+        cell->face = FACE;                                                   \
         cell->code = CH;                                                     \
     } while (0)
 
@@ -29,22 +29,22 @@ namespace client {
         }                               \
     } while (0)
 
-#define ADDCH(ATTRS, CH)         \
+#define ADDCH(FACE, CH)          \
     do {                         \
-        SET(ATTRS, CH);          \
+        SET(FACE, CH);           \
         ++x;                     \
         if (x == window->cols) { \
             ADD_NEWLINE();       \
         }                        \
     } while (0)
 
-static void apply_face(Cell::Attrs* attrs, Face face) {
-    attrs->flags |= face.flags;
-    if (face.foreground != -1 && attrs->foreground == -1) {
-        attrs->foreground = face.foreground;
+static void apply_face(Face* face, Face layer) {
+    face->flags |= layer.flags;
+    if (layer.foreground != -1 && face->foreground == -1) {
+        face->foreground = layer.foreground;
     }
-    if (face.background != -1 && attrs->background == -1) {
-        attrs->background = face.background;
+    if (layer.background != -1 && face->background == -1) {
+        face->background = layer.background;
     }
 }
 
@@ -171,26 +171,26 @@ static void draw_buffer_contents(Cell* cells,
         }
 #endif
 
-        Cell::Attrs attrs = {};
+        Face face = {};
         if (has_cursor) {
-            apply_face(&attrs, editor->theme.faces[2]);
+            apply_face(&face, editor->theme.faces[2]);
         }
 
         if (show_mark) {
-            apply_face(&attrs, editor->theme.faces[3]);
+            apply_face(&face, editor->theme.faces[3]);
         }
 
         {
             size_t j = 0;
             for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
-                Face face =
-                    editor->theme.overlays[i].get_face_and_advance(buffer, window, overlay_datas[j]);
-                apply_face(&attrs, face);
+                Face overlay_face = editor->theme.overlays[i].get_face_and_advance(
+                    buffer, window, overlay_datas[j]);
+                apply_face(&face, overlay_face);
             }
             for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
-                Face face =
+                Face overlay_face =
                     buffer->mode.overlays[i].get_face_and_advance(buffer, window, overlay_datas[j]);
-                apply_face(&attrs, face);
+                apply_face(&face, overlay_face);
             }
         }
 
@@ -200,29 +200,29 @@ static void draw_buffer_contents(Cell* cells,
         } else {
             type_face += Token_Type::DEFAULT;
         }
-        apply_face(&attrs, editor->theme.faces[type_face]);
+        apply_face(&face, editor->theme.faces[type_face]);
 
         char ch = iterator.get();
         if (ch == '\n') {
-            SET(attrs, ' ');
+            SET(face, ' ');
             ++x;
             ADD_NEWLINE();
         } else if (ch == '\t') {
             size_t end_x = (x + 4) & ~3;
             while (x < end_x) {
-                ADDCH(attrs, ' ');
+                ADDCH(face, ' ');
             }
         } else {
-            ADDCH(attrs, ch);
+            ADDCH(face, ch);
         }
     }
 
     if (show_cursors) {
-        Cell::Attrs attrs = {};
-        apply_face(&attrs, editor->theme.faces[2]);
+        Face face = {};
+        apply_face(&face, editor->theme.faces[2]);
         for (size_t c = 0; c < cursors.len; ++c) {
             if (cursors[c].point == buffer->contents.len) {
-                SET(attrs, ' ');
+                SET(face, ' ');
                 ++x;
                 break;
             }
@@ -249,28 +249,28 @@ static void draw_buffer_decoration(Cell* cells,
     size_t y = window->rows;
     size_t x = 0;
 
-    Cell::Attrs attrs = {};
-    apply_face(&attrs, editor->theme.faces[buffer->is_unchanged() ? 0 : 1]);
+    Face face = {};
+    apply_face(&face, editor->theme.faces[buffer->is_unchanged() ? 0 : 1]);
 
-    SET(attrs, '-');
+    SET(face, '-');
     ++x;
     if (buffer->is_unchanged()) {
-        SET(attrs, '-');
+        SET(face, '-');
     } else {
-        SET(attrs, '*');
+        SET(face, '*');
     }
     ++x;
-    SET(attrs, '-');
+    SET(face, '-');
     ++x;
-    SET(attrs, ' ');
+    SET(face, ' ');
     ++x;
     size_t max = cz::min<size_t>(buffer->path.len(), window->cols - x);
     for (size_t i = 0; i < max; ++i) {
-        SET(attrs, buffer->path[i]);
+        SET(face, buffer->path[i]);
         ++x;
     }
     for (; x < window->cols; ++x) {
-        SET(attrs, ' ');
+        SET(face, ' ');
     }
 }
 
@@ -435,10 +435,10 @@ void render_to_cells(Cell* cells,
         size_t start_row = total_rows - mini_buffer_height - results_height;
         size_t start_col = 0;
 
-        Cell::Attrs attrs_minibuffer_prompt = {};
-        apply_face(&attrs_minibuffer_prompt, editor->theme.faces[4]);
+        Face minibuffer_prompt_face = {};
+        apply_face(&minibuffer_prompt_face, editor->theme.faces[4]);
         for (size_t i = 0; i < client->_message.text.len && i < total_cols; ++i) {
-            SET(attrs_minibuffer_prompt, client->_message.text[i]);
+            SET(minibuffer_prompt_face, client->_message.text[i]);
             ++x;
         }
 
@@ -476,14 +476,14 @@ void render_to_cells(Cell* cells,
             }
             for (size_t r = offset; r < results_height + offset; ++r) {
                 {
-                    Cell::Attrs attrs = {};
+                    Face face = {};
                     if (r == completion_results->selected) {
-                        apply_face(&attrs, editor->theme.faces[5]);
+                        apply_face(&face, editor->theme.faces[5]);
                     }
 
                     cz::Str result = completion_results->results[r];
                     for (size_t i = 0; i < total_cols && i < result.len; ++i) {
-                        SET(attrs, result[i]);
+                        SET(face, result[i]);
                         ++x;
                     }
                 }

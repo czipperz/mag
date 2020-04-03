@@ -100,9 +100,9 @@ static void render(int* total_rows,
             cellss[1] = (Cell*)malloc(grid_size * sizeof(Cell));
 
             for (size_t i = 0; i < grid_size; ++i) {
-                cellss[0][i].attrs = {};
+                cellss[0][i].face = {};
                 cellss[0][i].code = ' ';
-                cellss[1][i].attrs = {};
+                cellss[1][i].face = {};
                 cellss[1][i].code = ' ';
             }
         }
@@ -118,21 +118,21 @@ static void render(int* total_rows,
                 Cell* new_cell = &cellss[1][index];
                 if (cellss[0][index] != *new_cell) {
                     int attrs = A_NORMAL;
-                    if (new_cell->attrs.flags & Face::UNDERSCORE) {
+                    if (new_cell->face.flags & Face::UNDERSCORE) {
                         attrs |= A_UNDERLINE;
                     }
-                    if (new_cell->attrs.flags & Face::BOLD) {
+                    if (new_cell->face.flags & Face::BOLD) {
                         attrs |= A_BOLD;
                     }
-                    if (new_cell->attrs.flags & Face::REVERSE) {
+                    if (new_cell->face.flags & Face::REVERSE) {
                         attrs |= A_REVERSE;
                     }
 
-                    int16_t bg = new_cell->attrs.background;
+                    int16_t bg = new_cell->face.background;
                     if (bg < 0 || bg >= COLORS) {
                         bg = 0;
                     }
-                    int16_t fg = new_cell->attrs.foreground;
+                    int16_t fg = new_cell->face.foreground;
                     if (fg < 0 || fg >= COLORS) {
                         fg = 7;
                     }
