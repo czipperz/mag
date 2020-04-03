@@ -801,7 +801,7 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
     start.retreat();
     while (1) {
         if (start.at_bob()) {
-            return;
+            break;
         }
         start.retreat();
         if (start.get() == '/') {
