@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <Tracy.hpp>
 #include "contents.hpp"
+#include "movement.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -660,6 +661,39 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                          &normal_state, &preprocessor_state, preprocessor_saved_state,
                          &comment_state)) {
         return false;
+    }
+
+    if (first_char == '<' || first_char == '=' || first_char == '>') {
+        Contents_Iterator mc = *iterator;
+        mc.advance();
+        size_t i = 0;
+        for (; i < 6; ++i) {
+            if (mc.at_eob()) {
+                break;
+            }
+            if (mc.get() != first_char) {
+                break;
+            }
+            mc.advance();
+        }
+        if (i == 6) {
+            token->start = iterator->position;
+            switch (first_char) {
+            case '<':
+                token->type = Token_Type::MERGE_START;
+                break;
+            case '=':
+                token->type = Token_Type::MERGE_MIDDLE;
+                break;
+            case '>':
+                token->type = Token_Type::MERGE_END;
+                break;
+            }
+            *iterator = mc;
+            end_of_line(iterator);
+            token->end = mc.position;
+            goto done;
+        }
     }
 
     if (in_oneline_comment || in_multiline_comment) {

@@ -18,6 +18,10 @@ enum Token_Type {
     IDENTIFIER,
     NUMBER,
 
+    MERGE_START,
+    MERGE_MIDDLE,
+    MERGE_END,
+
     TITLE,
     CODE,
 
