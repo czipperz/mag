@@ -149,6 +149,7 @@ Theme create_theme() {
     theme.faces.push({142, -1, 0});  // Token_Type::DOC_COMMENT
     theme.faces.push({2, -1, 0});    // Token_Type::STRING
     theme.faces.push({-1, -1, 0});   // Token_Type::IDENTIFIER
+    theme.faces.push({-1, -1, 0});   // Token_Type::NUMBER
 
     theme.faces.push({3, -1, 0});  // Token_Type::TITLE
     theme.faces.push({2, -1, 0});  // Token_Type::CODE

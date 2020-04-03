@@ -16,6 +16,7 @@ enum Token_Type {
     DOC_COMMENT,
     STRING,
     IDENTIFIER,
+    NUMBER,
 
     TITLE,
     CODE,
