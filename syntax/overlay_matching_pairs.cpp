@@ -13,8 +13,6 @@
 #include "window.hpp"
 
 namespace mag {
-struct Overlay;
-
 namespace syntax {
 
 struct Data {
