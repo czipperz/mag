@@ -110,6 +110,7 @@ static void render(int* total_rows,
 
     render_to_cells(cellss[1], window_cache, rows, cols, editor, client);
 
+    bool any = false;
     {
         ZoneScopedN("blit cells");
         int index = 0;
@@ -141,6 +142,7 @@ static void render(int* total_rows,
 
                     attrset(attrs);
                     mvaddch(y, x, new_cell->code);
+                    any = true;
                 }
                 ++index;
             }
@@ -151,7 +153,9 @@ static void render(int* total_rows,
 
     {
         ZoneScopedN("refresh");
-        refresh();
+        if (any) {
+            refresh();
+        }
     }
 
     FrameMarkEnd("ncurses");
