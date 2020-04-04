@@ -38,25 +38,25 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer,
     ZoneScoped;
 
     Data* data = (Data*)malloc(sizeof(Data));
+    data->has_token = false;
     if (start_position_iterator.position == buffer->contents.len) {
         return data;
     }
 
-    data->face = {-1, 237, 0};
-    data->has_token = false;
-    data->has_cursor_token = false;
-
-    buffer->token_cache.update(buffer);
-    Tokenizer_Check_Point check_point = {};
-    buffer->token_cache.find_check_point(window->start_position, &check_point);
-    data->cursor_token.end = check_point.position;
-    data->cursor_token_iterator = start_position_iterator;
-    data->cursor_token_iterator.advance(check_point.position -
-                                        data->cursor_token_iterator.position);
-
     cz::Slice<Cursor> cursors = window->cursors;
     if (window->show_marks) {
     } else if (cursors.len == 1) {
+        data->face = {-1, 237, 0};
+        data->has_cursor_token = false;
+
+        buffer->token_cache.update(buffer);
+        Tokenizer_Check_Point check_point = {};
+        buffer->token_cache.find_check_point(window->start_position, &check_point);
+        data->cursor_token.end = check_point.position;
+        data->cursor_token_iterator = start_position_iterator;
+        data->cursor_token_iterator.retreat(data->cursor_token_iterator.position -
+                                            check_point.position);
+
         data->has_cursor_token = true;
         data->cursor_state = check_point.state;
         while (data->has_cursor_token && cursors[0].point >= data->cursor_token.end) {
