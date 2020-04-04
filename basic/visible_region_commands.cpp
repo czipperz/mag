@@ -75,7 +75,7 @@ bool is_visible(Window_Unified* window, Contents_Iterator iterator) {
 
     Contents_Iterator end = iterator;
     // Go to start position
-    end.retreat(end.position - window->start_position);
+    end.retreat_to(window->start_position);
     // Then advance to end of visible region
     compute_visible_end(window, &end);
     if (iterator.position > end.position) {

@@ -61,7 +61,7 @@ static void* overlay_matching_pairs_start_frame(Buffer* buffer,
         Token token;
         token.end = check_point.position;
         Contents_Iterator token_iterator = start_position_iterator;
-        token_iterator.retreat(token_iterator.position - token.end);
+        token_iterator.retreat_to(token.end);
         uint64_t state = check_point.state;
         while (end_iterator.position >= token.end) {
             bool has_token = buffer->mode.next_token(&token_iterator, &token, &state);

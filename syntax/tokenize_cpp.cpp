@@ -873,7 +873,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         ZoneScopedN("character");
         token->start = iterator->position;
         if (iterator->position + 3 >= iterator->contents->len) {
-            iterator->advance(iterator->contents->len - iterator->position);
+            iterator->advance_to(iterator->contents->len);
         } else {
             iterator->advance();
             if (iterator->get() == '\\') {
@@ -984,7 +984,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             } else {
                 Contents_Iterator it = next_token_iterator;
                 CZ_DEBUG_ASSERT(it.position > next_token.start);
-                it.retreat(next_token_iterator.position - next_token.start);
+                it.retreat_to(next_token.start);
                 char start_ch = it.get();
 
                 bool is_type = false;

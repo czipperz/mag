@@ -566,7 +566,7 @@ static cz::Option<uint64_t> search_backward(Contents_Iterator start_it, cz::Str 
     }
 
     if (start_it.contents->len - query.len < start_it.position) {
-        start_it.retreat(start_it.position - (start_it.contents->len - query.len));
+        start_it.retreat_to(start_it.contents->len - query.len);
     }
 
     while (!start_it.at_bob()) {

@@ -54,8 +54,7 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer,
         buffer->token_cache.find_check_point(window->start_position, &check_point);
         data->cursor_token.end = check_point.position;
         data->cursor_token_iterator = start_position_iterator;
-        data->cursor_token_iterator.retreat(data->cursor_token_iterator.position -
-                                            check_point.position);
+        data->cursor_token_iterator.retreat_to(check_point.position);
 
         data->has_cursor_token = true;
         data->cursor_state = check_point.state;
@@ -98,8 +97,7 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer,
 
         if (data->has_cursor_token) {
             if (cursors[0].point >= data->cursor_token.start) {
-                data->cursor_token_iterator.retreat(data->cursor_token_iterator.position -
-                                                    data->cursor_token.start);
+                data->cursor_token_iterator.retreat_to(data->cursor_token.start);
             } else {
                 data->has_cursor_token = false;
             }
@@ -129,7 +127,7 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
             len == data->cursor_token.end - data->cursor_token.start) {
             Contents_Iterator cti = data->cursor_token_iterator;
             Contents_Iterator it = data->token_iterator;
-            it.retreat(it.position - data->token.start);
+            it.retreat_to(data->token.start);
 
             size_t i = 0;
             for (; i < len; ++i) {

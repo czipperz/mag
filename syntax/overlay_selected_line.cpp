@@ -25,7 +25,7 @@ static void* overlay_selected_line_start_frame(Buffer* buffer,
         uint64_t point = window->cursors[0].point;
         if (point >= start_position_iterator.position) {
             Contents_Iterator start = start_position_iterator;
-            start.advance(point - start.position);
+            start.advance_to(point);
             Contents_Iterator end = start;
             start_of_line(&start);
             end_of_line(&end);
