@@ -6,6 +6,7 @@
 #include "cursor.hpp"
 
 namespace mag {
+struct Buffer;
 
 struct Change;
 struct Window_Split;
@@ -36,7 +37,7 @@ struct Window_Unified : Window {
     static Window_Unified* create(Buffer_Id buffer_id);
     Window_Unified* clone();
 
-    void update_cursors(cz::Slice<Change> changes);
+    void update_cursors(Buffer* buffer);
 };
 
 struct Window_Split : Window {

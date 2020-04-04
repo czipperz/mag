@@ -13,7 +13,7 @@
 
 #define WITH_WINDOW_BUFFER(WINDOW) \
     WITH_BUFFER((WINDOW)->id);     \
-    (WINDOW)->update_cursors(buffer->changes)
+    (WINDOW)->update_cursors(buffer)
 
 #define WITH_BUFFER(BUFFER_ID)                         \
     Buffer_Handle* handle = editor->lookup(BUFFER_ID); \

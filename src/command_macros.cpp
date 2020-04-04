@@ -5,7 +5,7 @@
 namespace mag {
 
 void insert(Buffer* buffer, Window_Unified* window, SSOStr value) {
-    window->update_cursors(buffer->changes);
+    window->update_cursors(buffer);
 
     cz::Slice<Cursor> cursors = window->cursors;
 

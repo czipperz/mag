@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <Tracy.hpp>
 #include <cz/heap.hpp>
+#include "buffer.hpp"
 #include "change.hpp"
 #include "client.hpp"
+#include "visible_region.hpp"
 
 namespace mag {
 
@@ -33,19 +35,28 @@ Window_Unified* Window_Unified::clone() {
     return window;
 }
 
-void Window_Unified::update_cursors(cz::Slice<Change> changes) {
+void Window_Unified::update_cursors(Buffer* buffer) {
     ZoneScoped;
 
     cz::Slice<Cursor> cursors = this->cursors;
-    cz::Slice<Change> new_changes = {changes.elems + change_index, changes.len - change_index};
+    cz::Slice<Change> new_changes = {buffer->changes.elems() + change_index,
+                                     buffer->changes.len() - change_index};
     for (size_t c = 0; c < cursors.len; ++c) {
         position_after_changes(new_changes, &cursors[c].point);
         position_after_changes(new_changes, &cursors[c].mark);
     }
 
+    bool was_0 = start_position == 0;
     position_after_changes(new_changes, &start_position);
+    if (was_0) {
+        Contents_Iterator iterator = buffer->contents.start();
+        compute_visible_end(this, &iterator);
+        if (iterator.position >= cursors[0].point) {
+            start_position = 0;
+        }
+    }
 
-    this->change_index = changes.len;
+    this->change_index = buffer->changes.len();
 }
 
 void Window::drop_(Window* window) {

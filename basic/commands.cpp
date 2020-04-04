@@ -103,7 +103,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
 
             CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
             buffer->undo();
-            window->update_cursors(buffer->changes);
+            window->update_cursors(buffer);
 
             Transaction transaction;
             transaction.init(commit.edits.len, 0);
@@ -149,7 +149,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
 
             CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
             buffer->undo();
-            window->update_cursors(buffer->changes);
+            window->update_cursors(buffer);
 
             Transaction transaction;
             transaction.init(commit.edits.len, 0);
@@ -216,7 +216,7 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
 void command_open_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     insert_char(buffer, window, '\n');
-    window->update_cursors(buffer->changes);
+    window->update_cursors(buffer);
     TRANSFORM_POINTS(backward_char);
 }
 

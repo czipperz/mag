@@ -166,7 +166,7 @@ void command_paste_previous(Editor* editor, Command_Source source) {
         {
             WITH_WINDOW_BUFFER(window);
             buffer->undo();
-            window->update_cursors(buffer->changes);
+            window->update_cursors(buffer);
             run_paste(cursors, editor, buffer);
         }
     } else {
