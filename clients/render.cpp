@@ -134,11 +134,11 @@ static void draw_buffer_contents(Cell* cells,
         overlay_datas.drop(cz::heap_allocator());
     });
     for (size_t i = 0; i < editor->theme.overlays.len; ++i) {
-        void* data = editor->theme.overlays[i].start_frame(buffer, window);
+        void* data = editor->theme.overlays[i].start_frame(buffer, window, iterator);
         overlay_datas.push(data);
     }
     for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
-        void* data = buffer->mode.overlays[i].start_frame(buffer, window);
+        void* data = buffer->mode.overlays[i].start_frame(buffer, window, iterator);
         overlay_datas.push(data);
     }
 
@@ -184,12 +184,12 @@ static void draw_buffer_contents(Cell* cells,
             size_t j = 0;
             for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
                 Face overlay_face = editor->theme.overlays[i].get_face_and_advance(
-                    buffer, window, overlay_datas[j]);
+                    buffer, window, iterator, overlay_datas[j]);
                 apply_face(&face, overlay_face);
             }
             for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
-                Face overlay_face =
-                    buffer->mode.overlays[i].get_face_and_advance(buffer, window, overlay_datas[j]);
+                Face overlay_face = buffer->mode.overlays[i].get_face_and_advance(
+                    buffer, window, iterator, overlay_datas[j]);
                 apply_face(&face, overlay_face);
             }
         }

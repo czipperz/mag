@@ -15,15 +15,16 @@ struct Data {
     uint64_t end;
 };
 
-static void* overlay_selected_line_start_frame(Buffer* buffer, Window_Unified* window) {
+static void* overlay_selected_line_start_frame(Buffer* buffer,
+                                               Window_Unified* window,
+                                               Contents_Iterator start_position_iterator) {
     Data* data = (Data*)malloc(sizeof(Data));
-    data->iterator = buffer->contents.iterator_at(window->start_position);
     data->start = 0;
     data->end = 0;
     if (window->cursors.len() == 1) {
         uint64_t point = window->cursors[0].point;
-        if (point >= data->iterator.position) {
-            Contents_Iterator start = data->iterator;
+        if (point >= start_position_iterator.position) {
+            Contents_Iterator start = start_position_iterator;
             start.advance(point - start.position);
             Contents_Iterator end = start;
             start_of_line(&start);
@@ -37,13 +38,14 @@ static void* overlay_selected_line_start_frame(Buffer* buffer, Window_Unified* w
 
 static Face overlay_selected_line_get_face_and_advance(Buffer* buffer,
                                                        Window_Unified* window,
+                                                       Contents_Iterator iterator,
                                                        void* _data) {
     Data* data = (Data*)_data;
     Face face = {};
-    if (data->iterator.position >= data->start && data->iterator.position < data->end) {
+    if (iterator.position >= data->start && iterator.position < data->end) {
         face = {-1, 21, 0};
     }
-    data->iterator.advance();
+    iterator.advance();
     return face;
 }
 

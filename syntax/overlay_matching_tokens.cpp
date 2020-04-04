@@ -30,13 +30,18 @@ struct Data {
     Token token;
     uint64_t state;
     Contents_Iterator token_iterator;
-    Contents_Iterator iterator;
 };
 
-static void* overlay_matching_tokens_start_frame(Buffer* buffer, Window_Unified* window) {
+static void* overlay_matching_tokens_start_frame(Buffer* buffer,
+                                                 Window_Unified* window,
+                                                 Contents_Iterator start_position_iterator) {
     ZoneScoped;
 
     Data* data = (Data*)malloc(sizeof(Data));
+    if (start_position_iterator.position == buffer->contents.len) {
+        return data;
+    }
+
     data->face = {-1, 237, 0};
     data->has_token = false;
     data->has_cursor_token = false;
@@ -44,13 +49,10 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer, Window_Unified*
     buffer->token_cache.update(buffer);
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.find_check_point(window->start_position, &check_point);
-    data->cursor_token_iterator = buffer->contents.iterator_at(check_point.position);
-    data->cursor_token.end = data->cursor_token_iterator.position;
-    data->iterator = data->cursor_token_iterator;
-    if (data->iterator.at_eob()) {
-        return data;
-    }
-    data->iterator.advance(window->start_position - data->iterator.position);
+    data->cursor_token.end = check_point.position;
+    data->cursor_token_iterator = start_position_iterator;
+    data->cursor_token_iterator.advance(check_point.position -
+                                        data->cursor_token_iterator.position);
 
     cz::Slice<Cursor> cursors = window->cursors;
     if (window->show_marks) {
@@ -77,7 +79,7 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer, Window_Unified*
             data->has_cursor_token = buffer->mode.next_token(
                 &data->cursor_token_iterator, &data->cursor_token, &data->cursor_state);
 
-            if (data->iterator.position >= data->cursor_token.start) {
+            if (start_position_iterator.position >= data->cursor_token.start) {
                 data->has_token = true;
                 data->token = data->cursor_token;
                 data->state = data->cursor_state;
@@ -109,6 +111,7 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer, Window_Unified*
 
 static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
                                                          Window_Unified* window,
+                                                         Contents_Iterator iterator,
                                                          void* _data) {
     ZoneScoped;
 
@@ -119,8 +122,8 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
     bool token_matches_cursor_token = false;
     // Todo: optimize this.  This should use a countdown similar to the loop above to not rerun this
     // over and over.
-    if (data->has_token && data->has_cursor_token && data->iterator.position >= data->token.start &&
-        data->iterator.position < data->token.end) {
+    if (data->has_token && data->has_cursor_token && iterator.position >= data->token.start &&
+        iterator.position < data->token.end) {
         uint64_t len = data->token.end - data->token.start;
         if (data->token.type == data->cursor_token.type && is_matching_token(data->token.type) &&
             len == data->cursor_token.end - data->cursor_token.start) {
@@ -143,8 +146,7 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
         }
     }
 
-    data->iterator.advance();
-    while (data->has_token && data->iterator.position >= data->token.end) {
+    while (data->has_token && iterator.position + 1 >= data->token.end) {
         data->has_token =
             buffer->mode.next_token(&data->token_iterator, &data->token, &data->state);
     }

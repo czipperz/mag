@@ -17,7 +17,6 @@ namespace mag {
 namespace syntax {
 
 struct Data {
-    Contents_Iterator iterator;
     size_t index;
     cz::Vector<uint64_t> points;
 };
@@ -39,20 +38,21 @@ static bool binary_search(cz::Slice<Token> tokens, uint64_t position, size_t* to
     return false;
 }
 
-static void* overlay_matching_pairs_start_frame(Buffer* buffer, Window_Unified* window) {
+static void* overlay_matching_pairs_start_frame(Buffer* buffer,
+                                                Window_Unified* window,
+                                                Contents_Iterator start_position_iterator) {
     ZoneScoped;
 
     Data* data = (Data*)malloc(sizeof(Data));
-    data->iterator = buffer->contents.iterator_at(window->start_position);
     data->index = 0;
     data->points = {};
 
-    Contents_Iterator end_iterator = data->iterator;
+    Contents_Iterator end_iterator = start_position_iterator;
     compute_visible_end(window, &end_iterator);
 
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.update(buffer);
-    buffer->token_cache.find_check_point(data->iterator.position, &check_point);
+    buffer->token_cache.find_check_point(start_position_iterator.position, &check_point);
 
     cz::Vector<Token> tokens = {};
     tokens.reserve(cz::heap_allocator(), 8);
@@ -60,7 +60,7 @@ static void* overlay_matching_pairs_start_frame(Buffer* buffer, Window_Unified* 
     {
         Token token;
         token.end = check_point.position;
-        Contents_Iterator token_iterator = data->iterator;
+        Contents_Iterator token_iterator = start_position_iterator;
         token_iterator.retreat(token_iterator.position - token.end);
         uint64_t state = check_point.state;
         while (end_iterator.position >= token.end) {
@@ -119,6 +119,7 @@ static void* overlay_matching_pairs_start_frame(Buffer* buffer, Window_Unified* 
 
 static Face overlay_matching_pairs_get_face_and_advance(Buffer* buffer,
                                                         Window_Unified* window,
+                                                        Contents_Iterator iterator,
                                                         void* _data) {
     ZoneScoped;
 
@@ -126,11 +127,10 @@ static Face overlay_matching_pairs_get_face_and_advance(Buffer* buffer,
 
     Face face = {};
     if (data->index < data->points.len()) {
-        if (data->points[data->index] == data->iterator.position) {
+        if (data->points[data->index] == iterator.position) {
             face = {-1, 237, 0};
             ++data->index;
         }
-        data->iterator.advance();
     }
     return face;
 }

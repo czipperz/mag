@@ -17,13 +17,14 @@ struct Data {
 
     bool enabled;
 
-    Contents_Iterator iterator;
     Contents_Iterator start_marked_region;
 
     size_t countdown_cursor_region;
 };
 
-static void* overlay_matching_region_start_frame(Buffer* buffer, Window_Unified* window) {
+static void* overlay_matching_region_start_frame(Buffer* buffer,
+                                                 Window_Unified* window,
+                                                 Contents_Iterator start_position_iterator) {
     ZoneScoped;
 
     Data* data = (Data*)malloc(sizeof(Data));
@@ -34,8 +35,7 @@ static void* overlay_matching_region_start_frame(Buffer* buffer, Window_Unified*
     }
 
     data->face = {-1, 237, 0};
-    data->iterator = buffer->contents.iterator_at(window->start_position);
-    data->start_marked_region = data->iterator;
+    data->start_marked_region = start_position_iterator;
     if (data->start_marked_region.at_eob()) {
         data->enabled = false;
     } else {
@@ -52,6 +52,7 @@ static void* overlay_matching_region_start_frame(Buffer* buffer, Window_Unified*
 
 static Face overlay_matching_region_get_face_and_advance(Buffer* buffer,
                                                          Window_Unified* window,
+                                                         Contents_Iterator iterator,
                                                          void* _data) {
     ZoneScoped;
 
@@ -65,22 +66,19 @@ static Face overlay_matching_region_get_face_and_advance(Buffer* buffer,
         --data->countdown_cursor_region;
     } else {
         Contents_Iterator marked_region_iterator = data->start_marked_region;
-        Contents_Iterator it = data->iterator;
         uint64_t end_marked_region = window->cursors[0].end();
-        while (marked_region_iterator.position < end_marked_region && !it.at_eob()) {
-            if (marked_region_iterator.get() != it.get()) {
+        while (marked_region_iterator.position < end_marked_region && !iterator.at_eob()) {
+            if (marked_region_iterator.get() != iterator.get()) {
                 break;
             }
             marked_region_iterator.advance();
-            it.advance();
+            iterator.advance();
         }
 
         if (marked_region_iterator.position == end_marked_region) {
             data->countdown_cursor_region = end_marked_region - data->start_marked_region.position;
         }
     }
-
-    data->iterator.advance();
 
     if (data->countdown_cursor_region > 0) {
         return data->face;
