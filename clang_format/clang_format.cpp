@@ -168,34 +168,34 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
     transaction.commit(buffer);
 }
 
-struct Job_Clang_Format {
+struct Clang_Format_Job_Data {
     Buffer_Id buffer_id;
     Process process;
     size_t change_index;
     cz::String output_xml;
 };
 
-static bool tick_job_process_append(Editor* editor, void* data) {
-    Job_Clang_Format* job = (Job_Clang_Format*)data;
+static bool clang_format_job_tick(Editor* editor, void* _data) {
+    Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
     while (1) {
         char buf[1024];
-        ssize_t read_result = job->process.read(buf, sizeof(buf));
+        ssize_t read_result = data->process.read(buf, sizeof(buf));
         if (read_result > 0) {
-            job->output_xml.reserve(cz::heap_allocator(), read_result);
-            job->output_xml.append({buf, (size_t)read_result});
+            data->output_xml.reserve(cz::heap_allocator(), read_result);
+            data->output_xml.append({buf, (size_t)read_result});
             continue;
         } else if (read_result == 0) {
             // End of file
-            job->process.join();
-            job->process.destroy();
+            data->process.join();
+            data->process.destroy();
 
-            Buffer_Handle* handle = editor->lookup(job->buffer_id);
+            Buffer_Handle* handle = editor->lookup(data->buffer_id);
             if (handle) {
                 parse_and_apply_replacements(
-                    handle, {job->output_xml.buffer(), job->output_xml.len()}, job->change_index);
+                    handle, {data->output_xml.buffer(), data->output_xml.len()}, data->change_index);
             }
 
-            job->output_xml.drop(cz::heap_allocator());
+            data->output_xml.drop(cz::heap_allocator());
             free(data);
             return true;
         } else {
@@ -205,15 +205,24 @@ static bool tick_job_process_append(Editor* editor, void* data) {
     }
 }
 
+static void clang_format_job_kill(Editor* editor, void* _data) {
+    Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
+    data->process.kill();
+    data->process.destroy();
+    data->output_xml.drop(cz::heap_allocator());
+    free(data);
+}
+
 static Job job_clang_format(size_t change_index, Buffer_Id buffer_id, Process process) {
-    Job_Clang_Format* data = (Job_Clang_Format*)malloc(sizeof(Job_Clang_Format));
+    Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)malloc(sizeof(Clang_Format_Job_Data));
     data->buffer_id = buffer_id;
     data->process = process;
     data->change_index = change_index;
     data->output_xml = {};
 
     Job job;
-    job.tick = tick_job_process_append;
+    job.tick = clang_format_job_tick;
+    job.kill = clang_format_job_kill;
     job.data = data;
     return job;
 }

@@ -15,30 +15,37 @@ cz::Str clear_buffer(Editor* editor, Buffer* buffer);
 namespace mag {
 namespace git {
 
-struct Job_Process_Append {
+struct Process_Append_Job_Data {
     Buffer_Id buffer_id;
     Process process;
 };
 
-static bool tick_job_process_append(Editor* editor, void* data) {
-    Job_Process_Append* job = (Job_Process_Append*)data;
+static void process_append_job_kill(Editor* editor, void* _data) {
+    Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
+    data->process.kill();
+    data->process.destroy();
+    free(data);
+}
+
+static bool process_append_job_tick(Editor* editor, void* _data) {
+    Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
     char buf[1024];
-    ssize_t read_result = job->process.read(buf, sizeof(buf));
+    ssize_t read_result = data->process.read(buf, sizeof(buf));
     if (read_result > 0) {
-        Buffer_Handle* handle = editor->lookup(job->buffer_id);
+        Buffer_Handle* handle = editor->lookup(data->buffer_id);
         if (!handle) {
-            job->process.kill();
-            goto cleanup;
+            process_append_job_kill(editor, data);
+            return true;
         }
+
         Buffer* buffer = handle->lock();
         CZ_DEFER(handle->unlock());
         buffer->contents.insert(buffer->contents.len, {buf, (size_t)read_result});
         return false;
     } else if (read_result == 0) {
         // End of file
-        job->process.join();
-    cleanup:
-        job->process.destroy();
+        data->process.join();
+        data->process.destroy();
         free(data);
         return true;
     } else {
@@ -48,13 +55,15 @@ static bool tick_job_process_append(Editor* editor, void* data) {
 }
 
 static Job job_process_append(Buffer_Id buffer_id, Process process) {
-    Job_Process_Append* data = (Job_Process_Append*)malloc(sizeof(Job_Process_Append));
+    Process_Append_Job_Data* data =
+        (Process_Append_Job_Data*)malloc(sizeof(Process_Append_Job_Data));
     CZ_ASSERT(data);
     data->buffer_id = buffer_id;
     data->process = process;
 
     Job job;
-    job.tick = tick_job_process_append;
+    job.tick = process_append_job_tick;
+    job.kill = process_append_job_kill;
     job.data = data;
     return job;
 }

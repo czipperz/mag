@@ -32,9 +32,14 @@ struct Editor {
             cz::heap_allocator().dealloc({buffers[i], sizeof(Buffer_Handle)});
         }
         buffers.drop(cz::heap_allocator());
+
         key_map.drop();
         theme.drop(cz::heap_allocator());
         copy_buffer.drop();
+
+        for (size_t i = 0; i < jobs.len(); ++i) {
+            jobs[i].kill(this, jobs[i].data);
+        }
         jobs.drop(cz::heap_allocator());
     }
 
