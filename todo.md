@@ -31,6 +31,7 @@
 * Comment region
 * Uncomment line and region
 * Run compile
+* Format man pages
 
 * Colors
   - Have some way to make faces for overlays and have the colors registered
