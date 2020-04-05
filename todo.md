@@ -32,6 +32,8 @@
 * Uncomment line and region
 * Run compile
 * Format man pages
+* Edit server
+* Xorg copy paste
 
 * Colors
   - Have some way to make faces for overlays and have the colors registered
