@@ -24,16 +24,27 @@ struct Data {
 static bool binary_search(cz::Slice<Token> tokens, uint64_t position, size_t* token_index) {
     size_t start = 0;
     size_t end = tokens.len;
+    size_t backup;
+    bool has_backup = false;
     while (start < end) {
         size_t mid = (start + end) / 2;
         if (position < tokens[mid].start) {
             end = mid;
-        } else if (position >= tokens[mid].end) {
+        } else if (position > tokens[mid].end) {
+            start = mid + 1;
+        } else if (position == tokens[mid].end) {
+            backup = mid;
+            has_backup = true;
             start = mid + 1;
         } else {
             *token_index = mid;
             return true;
         }
+    }
+
+    if (has_backup) {
+        *token_index = backup;
+        return true;
     }
     return false;
 }
