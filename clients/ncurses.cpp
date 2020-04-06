@@ -10,7 +10,7 @@
 #include <thread>
 #include "cell.hpp"
 #include "client.hpp"
-#include "completion_results.hpp"
+#include "completion.hpp"
 #include "movement.hpp"
 #include "render.hpp"
 #include "server.hpp"

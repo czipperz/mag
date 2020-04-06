@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cz/str.hpp>
-#include "completion_results.hpp"
+#include "completion.hpp"
 
 namespace mag {
 

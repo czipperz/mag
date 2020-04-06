@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include "cell.hpp"
 #include "client.hpp"
-#include "completion_results.hpp"
+#include "completion.hpp"
 #include "editor.hpp"
 #include "window.hpp"
 #include "window_cache.hpp"
