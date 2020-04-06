@@ -2,9 +2,12 @@
 
 #include <Tracy.hpp>
 #include <algorithm>
+#include <cz/defer.hpp>
 #include <cz/fs/directory.hpp>
 #include <cz/heap.hpp>
 #include <cz/util.hpp>
+#include "buffer.hpp"
+#include "editor.hpp"
 
 namespace mag {
 
@@ -17,9 +20,7 @@ void Completion_Results::drop() {
     results.drop(cz::heap_allocator());
 }
 
-bool binary_search_string_prefix_start(cz::Slice<cz::Str> results,
-                                              cz::Str prefix,
-                                              size_t* out) {
+bool binary_search_string_prefix_start(cz::Slice<cz::Str> results, cz::Str prefix, size_t* out) {
     size_t start = 0;
     size_t end = results.len;
     while (start < end) {
@@ -56,9 +57,7 @@ bool binary_search_string_prefix_start(cz::Slice<cz::Str> results,
     return false;
 }
 
-size_t binary_search_string_prefix_end(cz::Slice<cz::Str> results,
-                                              size_t start,
-                                              cz::Str prefix) {
+size_t binary_search_string_prefix_end(cz::Slice<cz::Str> results, size_t start, cz::Str prefix) {
     size_t end = results.len;
     while (start < end) {
         size_t mid = (start + end) / 2;
@@ -78,7 +77,7 @@ size_t binary_search_string_prefix_end(cz::Slice<cz::Str> results,
     return end;
 }
 
-void file_completion_engine(Completion_Results* completion_results) {
+void file_completion_engine(Editor* _editor, Completion_Results* completion_results) {
     ZoneScoped;
 
     completion_results->results_buffer_array.clear();
@@ -125,11 +124,52 @@ void file_completion_engine(Completion_Results* completion_results) {
     completion_results->state = Completion_Results::LOADED;
 }
 
-void buffer_completion_engine(Completion_Results* completion_results) {
+struct Buffer_Completion_Engine_Data {
+    cz::Vector<cz::Str> all_results;
+};
+
+static void buffer_completion_engine_data_cleanup(void* _data) {
+    Buffer_Completion_Engine_Data* data = (Buffer_Completion_Engine_Data*)_data;
+    data->all_results.drop(cz::heap_allocator());
+    free(data);
+}
+
+void buffer_completion_engine(Editor* editor, Completion_Results* completion_results) {
+    ZoneScoped;
+
+    if (!completion_results->data) {
+        completion_results->data = calloc(1, sizeof(Buffer_Completion_Engine_Data));
+        CZ_ASSERT(completion_results->data);
+        completion_results->cleanup = buffer_completion_engine_data_cleanup;
+
+        Buffer_Completion_Engine_Data* data =
+            (Buffer_Completion_Engine_Data*)completion_results->data;
+
+        data->all_results.reserve(cz::heap_allocator(), editor->buffers.len());
+        for (size_t i = 0; i < editor->buffers.len(); ++i) {
+            Buffer_Handle* handle = editor->buffers[i];
+            Buffer* buffer = handle->lock();
+            CZ_DEFER(handle->unlock());
+            data->all_results.push(
+                buffer->path.clone(completion_results->results_buffer_array.allocator()));
+        }
+    }
+
+    Buffer_Completion_Engine_Data* data = (Buffer_Completion_Engine_Data*)completion_results->data;
+
+    completion_results->results.set_len(0);
+    size_t start;
+    if (binary_search_string_prefix_start(data->all_results, completion_results->query, &start)) {
+        size_t end =
+            binary_search_string_prefix_end(data->all_results, start, completion_results->query);
+        completion_results->results.reserve(cz::heap_allocator(), end - start);
+        completion_results->results.append({data->all_results.elems() + start, end - start});
+    }
+
     completion_results->state = Completion_Results::LOADED;
 }
 
-void no_completion_engine(Completion_Results* completion_results) {
+void no_completion_engine(Editor* _editor, Completion_Results* completion_results) {
     completion_results->state = Completion_Results::LOADED;
 }
 

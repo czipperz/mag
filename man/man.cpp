@@ -25,7 +25,7 @@ static void man_completion_engine_data_cleanup(void* _data) {
     free(data);
 }
 
-static void man_completion_engine(Completion_Results* completion_results) {
+static void man_completion_engine(Editor* _editor, Completion_Results* completion_results) {
     if (!completion_results->data) {
         completion_results->data = calloc(1, sizeof(Man_Completion_Engine_Data));
         CZ_ASSERT(completion_results->data);

@@ -301,7 +301,8 @@ void run(Server* server, Client* client) {
         int ch = ERR;
         if (client->mini_buffer_completion_cache.results.state != Completion_Results::LOADED &&
             client->_message.completion_engine) {
-            client->_message.completion_engine(&client->mini_buffer_completion_cache.results);
+            client->_message.completion_engine(&server->editor,
+                                               &client->mini_buffer_completion_cache.results);
             continue;
         }
 

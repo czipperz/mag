@@ -5,6 +5,7 @@
 #include <cz/vector.hpp>
 
 namespace mag {
+struct Editor;
 
 struct Completion_Results {
     enum State {
@@ -32,10 +33,10 @@ struct Completion_Results {
 bool binary_search_string_prefix_start(cz::Slice<cz::Str> results, cz::Str prefix, size_t* out);
 size_t binary_search_string_prefix_end(cz::Slice<cz::Str> results, size_t start, cz::Str prefix);
 
-typedef void (*Completion_Engine)(Completion_Results*);
-void file_completion_engine(Completion_Results* completion_results);
-void buffer_completion_engine(Completion_Results* completion_results);
-void no_completion_engine(Completion_Results* completion_results);
+typedef void (*Completion_Engine)(Editor* editor, Completion_Results*);
+void file_completion_engine(Editor* _editor, Completion_Results* completion_results);
+void buffer_completion_engine(Editor* editor, Completion_Results* completion_results);
+void no_completion_engine(Editor* _editor, Completion_Results* completion_results);
 
 struct Completion_Cache {
     Completion_Results results;

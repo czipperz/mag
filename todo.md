@@ -12,7 +12,6 @@
 * Read only mode
 
 * Autocomplete
-  - Buffer responses
   - While typing in normal buffers
     + file names
     + identifiers
