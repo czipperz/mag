@@ -75,7 +75,9 @@ bool process_next_token(Contents_Iterator* iterator, Token* token, uint64_t* sta
                     *state |= BOLD_FLAG;
                 }
                 iterator->advance();
+                iterator->advance();
                 token->type = Token_Type::PROCESS_ESCAPE_SEQUENCE;
+                break;
             }
         }
 
