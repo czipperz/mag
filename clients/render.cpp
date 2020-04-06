@@ -200,6 +200,11 @@ static void draw_buffer_contents(Cell* cells,
         }
         apply_face(&face, editor->theme.faces[type_face]);
 
+        if (face.flags & Face::INVISIBLE) {
+            // Skip rendering this character as it is invisible
+            continue;
+        }
+
         char ch = iterator.get();
         if (ch == '\n') {
             SET(face, ' ');

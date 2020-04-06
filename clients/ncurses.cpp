@@ -128,6 +128,9 @@ static void render(int* total_rows,
                     if (new_cell->face.flags & Face::REVERSE) {
                         attrs |= A_REVERSE;
                     }
+                    if (new_cell->face.flags & Face::ITALICS) {
+                        attrs |= A_UNDERLINE;
+                    }
 
                     int16_t bg = new_cell->face.background;
                     if (bg < 0 || bg >= COLORS) {
