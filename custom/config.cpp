@@ -175,10 +175,10 @@ Theme create_theme() {
     theme.faces.push({3, -1, 0});   // Token_Type::GIT_REBASE_TODO_SHA
     theme.faces.push({-1, -1, 0});  // Token_Type::GIT_REBASE_TODO_COMMIT_MESSAGE
 
-    theme.faces.push({-1, -1, 0});                 // Token_Type::PROCESS_ESCAPE_SEQUENCE
-    theme.faces.push({-1, -1, Face::BOLD});        // Token_Type::PROCESS_BOLD
-    theme.faces.push({-1, -1, Face::UNDERSCORE});  // Token_Type::PROCESS_ITALICS
-    theme.faces.push({-1, -1, Face::BOLD | Face::UNDERSCORE});  // Token_Type::PROCESS_BOLD_ITALICS
+    theme.faces.push({-1, -1, Face::INVISIBLE});             // Token_Type::PROCESS_ESCAPE_SEQUENCE
+    theme.faces.push({-1, -1, Face::BOLD});                  // Token_Type::PROCESS_BOLD
+    theme.faces.push({-1, -1, Face::ITALICS});               // Token_Type::PROCESS_ITALICS
+    theme.faces.push({-1, -1, Face::BOLD | Face::ITALICS});  // Token_Type::PROCESS_BOLD_ITALICS
 
     static Overlay overlays[] = {syntax::overlay_matching_region(),
                                  syntax::overlay_preferred_column()};
