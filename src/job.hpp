@@ -1,7 +1,12 @@
 #pragma once
 
+#include <cz/str.hpp>
+
 namespace mag {
+struct Buffer_Id;
+struct Client;
 struct Editor;
+struct Process;
 
 /// A Job represents a task to be performed in the background.
 struct Job {
@@ -19,5 +24,13 @@ struct Job {
 
     void* data;
 };
+
+Job job_process_append(Buffer_Id buffer_id, Process process);
+bool run_console_command(Client* client,
+                         Editor* editor,
+                         const char* working_directory,
+                         const char* script,
+                         cz::Str buffer_name,
+                         cz::Str error);
 
 }
