@@ -32,15 +32,16 @@ struct Data {
     Contents_Iterator token_iterator;
 };
 
-static void* overlay_matching_tokens_start_frame(Buffer* buffer,
-                                                 Window_Unified* window,
-                                                 Contents_Iterator start_position_iterator) {
+static void overlay_matching_tokens_start_frame(Buffer* buffer,
+                                                Window_Unified* window,
+                                                Contents_Iterator start_position_iterator,
+                                                void* _data) {
     ZoneScoped;
 
-    Data* data = (Data*)malloc(sizeof(Data));
+    Data* data = (Data*)_data;
     data->has_token = false;
     if (start_position_iterator.position == buffer->contents.len) {
-        return data;
+        return;
     }
 
     cz::Slice<Cursor> cursors = window->cursors;
@@ -103,8 +104,6 @@ static void* overlay_matching_tokens_start_frame(Buffer* buffer,
             }
         }
     }
-
-    return data;
 }
 
 static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
@@ -156,15 +155,22 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
     }
 }
 
-static void overlay_matching_tokens_cleanup_frame(void* data) {
+static void overlay_matching_tokens_end_frame(void* _data) {}
+
+static void overlay_matching_tokens_cleanup(void* data) {
     free(data);
 }
 
 Overlay overlay_matching_tokens() {
-    return Overlay{
+    static const Overlay::VTable vtable = {
         overlay_matching_tokens_start_frame,
         overlay_matching_tokens_get_face_and_advance,
-        overlay_matching_tokens_cleanup_frame,
+        overlay_matching_tokens_end_frame,
+        overlay_matching_tokens_cleanup,
+    };
+    return Overlay{
+        &vtable,
+        malloc(sizeof(Data)),
     };
 }
 

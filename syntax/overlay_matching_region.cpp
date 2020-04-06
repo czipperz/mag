@@ -22,16 +22,17 @@ struct Data {
     size_t countdown_cursor_region;
 };
 
-static void* overlay_matching_region_start_frame(Buffer* buffer,
-                                                 Window_Unified* window,
-                                                 Contents_Iterator start_position_iterator) {
+static void overlay_matching_region_start_frame(Buffer* buffer,
+                                                Window_Unified* window,
+                                                Contents_Iterator start_position_iterator,
+                                                void* _data) {
     ZoneScoped;
 
-    Data* data = (Data*)malloc(sizeof(Data));
+    Data* data = (Data*)_data;
 
     data->enabled = window->show_marks;
     if (!data->enabled) {
-        return data;
+        return;
     }
 
     data->face = {-1, 237, 0};
@@ -47,7 +48,6 @@ static void* overlay_matching_region_start_frame(Buffer* buffer,
         }
     }
     data->countdown_cursor_region = 0;
-    return data;
 }
 
 static Face overlay_matching_region_get_face_and_advance(Buffer* buffer,
@@ -87,15 +87,22 @@ static Face overlay_matching_region_get_face_and_advance(Buffer* buffer,
     }
 }
 
-static void overlay_matching_region_cleanup_frame(void* data) {
+static void overlay_matching_region_end_frame(void* _data) {}
+
+static void overlay_matching_region_cleanup(void* data) {
     free(data);
 }
 
 Overlay overlay_matching_region() {
-    return Overlay{
+    static const Overlay::VTable vtable = {
         overlay_matching_region_start_frame,
         overlay_matching_region_get_face_and_advance,
-        overlay_matching_region_cleanup_frame,
+        overlay_matching_region_end_frame,
+        overlay_matching_region_cleanup,
+    };
+    return Overlay{
+        &vtable,
+        malloc(sizeof(Data)),
     };
 }
 

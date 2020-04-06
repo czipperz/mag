@@ -10,15 +10,15 @@ namespace mag {
 namespace syntax {
 
 struct Data {
-    Contents_Iterator iterator;
     uint64_t start;
     uint64_t end;
 };
 
-static void* overlay_selected_line_start_frame(Buffer* buffer,
-                                               Window_Unified* window,
-                                               Contents_Iterator start_position_iterator) {
-    Data* data = (Data*)malloc(sizeof(Data));
+static void overlay_selected_line_start_frame(Buffer* buffer,
+                                              Window_Unified* window,
+                                              Contents_Iterator start_position_iterator,
+                                              void* _data) {
+    Data* data = (Data*)_data;
     data->start = 0;
     data->end = 0;
     if (window->cursors.len() == 1) {
@@ -33,7 +33,6 @@ static void* overlay_selected_line_start_frame(Buffer* buffer,
             data->end = end.position;
         }
     }
-    return data;
 }
 
 static Face overlay_selected_line_get_face_and_advance(Buffer* buffer,
@@ -45,19 +44,25 @@ static Face overlay_selected_line_get_face_and_advance(Buffer* buffer,
     if (iterator.position >= data->start && iterator.position < data->end) {
         face = {-1, 21, 0};
     }
-    iterator.advance();
     return face;
 }
 
-static void overlay_selected_line_cleanup_frame(void* data) {
+static void overlay_selected_line_end_frame(void* data) {}
+
+static void overlay_selected_line_cleanup(void* data) {
     free(data);
 }
 
 Overlay overlay_selected_line() {
-    return Overlay{
+    static const Overlay::VTable vtable = {
         overlay_selected_line_start_frame,
         overlay_selected_line_get_face_and_advance,
-        overlay_selected_line_cleanup_frame,
+        overlay_selected_line_end_frame,
+        overlay_selected_line_cleanup,
+    };
+    return Overlay{
+        &vtable,
+        malloc(sizeof(Data)),
     };
 }
 

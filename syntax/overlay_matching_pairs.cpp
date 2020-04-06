@@ -38,14 +38,15 @@ static bool binary_search(cz::Slice<Token> tokens, uint64_t position, size_t* to
     return false;
 }
 
-static void* overlay_matching_pairs_start_frame(Buffer* buffer,
-                                                Window_Unified* window,
-                                                Contents_Iterator start_position_iterator) {
+static void overlay_matching_pairs_start_frame(Buffer* buffer,
+                                               Window_Unified* window,
+                                               Contents_Iterator start_position_iterator,
+                                               void* _data) {
     ZoneScoped;
 
-    Data* data = (Data*)malloc(sizeof(Data));
+    Data* data = (Data*)_data;
     data->index = 0;
-    data->points = {};
+    data->points.set_len(0);
 
     Contents_Iterator end_iterator = start_position_iterator;
     compute_visible_end(window, &end_iterator);
@@ -113,8 +114,6 @@ static void* overlay_matching_pairs_start_frame(Buffer* buffer,
     std::sort(data->points.start(), data->points.end());
     auto new_end = std::unique(data->points.start(), data->points.end());
     data->points.set_len(new_end - data->points.start());
-
-    return data;
 }
 
 static Face overlay_matching_pairs_get_face_and_advance(Buffer* buffer,
@@ -135,17 +134,24 @@ static Face overlay_matching_pairs_get_face_and_advance(Buffer* buffer,
     return face;
 }
 
-static void overlay_matching_pairs_cleanup_frame(void* _data) {
+static void overlay_matching_pairs_end_frame(void* _data) {}
+
+static void overlay_matching_pairs_cleanup(void* _data) {
     Data* data = (Data*)_data;
     data->points.drop(cz::heap_allocator());
     free(data);
 }
 
 Overlay overlay_matching_pairs() {
-    return Overlay{
+    static const Overlay::VTable vtable = {
         overlay_matching_pairs_start_frame,
         overlay_matching_pairs_get_face_and_advance,
-        overlay_matching_pairs_cleanup_frame,
+        overlay_matching_pairs_end_frame,
+        overlay_matching_pairs_cleanup,
+    };
+    return Overlay{
+        &vtable,
+        calloc(1, sizeof(Data)),
     };
 }
 
