@@ -25,6 +25,7 @@
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_md.hpp"
 #include "syntax/tokenize_path.hpp"
+#include "syntax/tokenize_process.hpp"
 
 namespace mag {
 namespace custom {
@@ -129,7 +130,7 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
-    theme.faces.reserve(cz::heap_allocator(), 29);
+    theme.faces.reserve(cz::heap_allocator(), 33);
     theme.faces.push({0, 7, 0});  // saved buffer
     theme.faces.push({0, 1, 0});  // unsaved buffer
 
@@ -167,6 +168,11 @@ Theme create_theme() {
     theme.faces.push({1, -1, 0});   // Token_Type::GIT_REBASE_TODO_COMMAND
     theme.faces.push({3, -1, 0});   // Token_Type::GIT_REBASE_TODO_SHA
     theme.faces.push({-1, -1, 0});  // Token_Type::GIT_REBASE_TODO_COMMIT_MESSAGE
+
+    theme.faces.push({-1, -1, 0});                 // Token_Type::PROCESS_ESCAPE_SEQUENCE
+    theme.faces.push({-1, -1, Face::BOLD});        // Token_Type::PROCESS_BOLD
+    theme.faces.push({-1, -1, Face::UNDERSCORE});  // Token_Type::PROCESS_ITALICS
+    theme.faces.push({-1, -1, Face::BOLD | Face::UNDERSCORE});  // Token_Type::PROCESS_BOLD_ITALICS
 
     static Overlay overlays[] = {syntax::overlay_matching_region(),
                                  syntax::overlay_preferred_column()};
@@ -260,6 +266,7 @@ Mode get_mode(cz::Str file_name) {
         mode.next_token = syntax::path_next_token;
         mode.key_map = path_key_map();
     } else if (file_name.starts_with("*git grep ")) {
+        mode.next_token = syntax::process_next_token;
         mode.key_map = search_key_map();
     } else if (file_name.ends_with("/git-rebase-todo")) {
         mode.next_token = syntax::git_rebase_todo_next_token;
