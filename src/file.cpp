@@ -5,6 +5,7 @@
 #include <cz/fs/directory.hpp>
 #include <cz/fs/read_to_string.hpp>
 #include <cz/path.hpp>
+#include <cz/try.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "config.hpp"
@@ -38,7 +39,7 @@ static cz::Result load_directory(Editor* editor,
     path[path_len++] = '/';
     path[path_len] = '\0';
 
-    cz::BufferArray buffer_array;
+    cz::Buffer_Array buffer_array;
     buffer_array.create();
     CZ_DEFER(buffer_array.drop());
 

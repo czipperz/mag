@@ -15,19 +15,19 @@ void Transaction::drop() {
     free(memory);
 }
 
-static cz::MemSlice transaction_alloc(void* data, cz::AllocInfo new_info) {
+static void* transaction_alloc(void* data, cz::AllocInfo new_info) {
     Transaction* transaction = (Transaction*)data;
     CZ_DEBUG_ASSERT(new_info.alignment == 1);
-    cz::MemSlice slice = {(char*)transaction->memory + transaction->value_offset, new_info.size};
+    void* result = (char*)transaction->memory + transaction->value_offset;
     transaction->value_offset += new_info.size;
-    return slice;
+    return result;
 }
 
 static void transaction_dealloc(void* data, cz::MemSlice old_mem) {
     CZ_PANIC("");
 }
 
-static cz::MemSlice transaction_realloc(void* data, cz::MemSlice old_mem, cz::AllocInfo new_info) {
+static void* transaction_realloc(void* data, cz::MemSlice old_mem, cz::AllocInfo new_info) {
     CZ_PANIC("");
 }
 

@@ -85,7 +85,7 @@ struct SSOStr {
         if (str.len <= impl::ShortStr::MAX) {
             short_.init(str);
         } else {
-            char* buffer = (char*)allocator.alloc({str.len, 1}).buffer;
+            char* buffer = (char*)allocator.alloc({str.len, 1});
             memcpy(buffer, str.buffer, str.len);
             allocated.init({buffer, str.len});
         }

@@ -19,7 +19,7 @@ void Contents::drop() {
 }
 
 static cz::Slice<char> bucket_alloc() {
-    char* buffer = (char*)cz::heap_allocator().alloc({CONTENTS_BUCKET_MAX_SIZE, 1}).buffer;
+    char* buffer = (char*)cz::heap_allocator().alloc({CONTENTS_BUCKET_MAX_SIZE, 1});
     return {buffer, 0};
 }
 
@@ -190,7 +190,7 @@ SSOStr Contents::slice(cz::Allocator allocator, Contents_Iterator start, uint64_
     SSOStr value;
     uint64_t len = end - start.position;
     if (len > SSOStr::MAX_SHORT_LEN) {
-        char* buffer = (char*)allocator.alloc({len, 1}).buffer;
+        char* buffer = (char*)allocator.alloc({len, 1});
         slice_impl(buffer, buckets, start, len);
         value.allocated.init({buffer, len});
     } else {

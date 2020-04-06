@@ -17,7 +17,7 @@ struct Editor {
     Key_Map key_map;
     Theme theme;
 
-    cz::BufferArray copy_buffer;
+    cz::Buffer_Array copy_buffer;
 
     uint64_t buffer_counter;
     uint64_t temp_counter;

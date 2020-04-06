@@ -100,9 +100,8 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         //     [    [  )
         // start    ^  ^
         // start_next  end_next
-        char* buf = (char*)transaction.value_allocator()
-                        .alloc({end_next.position - start_next.position + 2, 1})
-                        .buffer;
+        char* buf = (char*)transaction.value_allocator().alloc(
+            {end_next.position - start_next.position + 2, 1});
         buf[0] = '\n';
         buf[end_next.position - start_next.position + 1] = '\n';
         buffer->contents.slice_into(start_next, end_next.position, buf + 1);
@@ -218,9 +217,8 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         //          [  )    )
         //          ^  ^    end
         // start_prev  end_prev
-        char* buf = (char*)transaction.value_allocator()
-                        .alloc({end_prev.position - start_prev.position + 2, 1})
-                        .buffer;
+        char* buf = (char*)transaction.value_allocator().alloc(
+            {end_prev.position - start_prev.position + 2, 1});
         buf[0] = '\n';
         buf[end_prev.position - start_prev.position + 1] = '\n';
         buffer->contents.slice_into(start_prev, end_prev.position, buf + 1);

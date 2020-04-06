@@ -2,6 +2,7 @@
 
 #include <cz/buffer_array.hpp>
 #include <cz/option.hpp>
+#include <cz/string.hpp>
 #include <cz/vector.hpp>
 #include "buffer_id.hpp"
 #include "change.hpp"

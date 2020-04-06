@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cz/str.hpp>
 #include <cz/vector.hpp>
 #include "command.hpp"
 #include "key.hpp"

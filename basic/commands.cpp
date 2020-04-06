@@ -271,7 +271,7 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
         end_of_line(&end);
 
         size_t region_size = end.position - start.position + 1;
-        char* value = (char*)transaction.value_allocator().alloc({region_size, 1}).buffer;
+        char* value = (char*)transaction.value_allocator().alloc({region_size, 1});
         buffer->contents.slice_into(start, end.position, value);
         value[region_size - 1] = '\n';
 
