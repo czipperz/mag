@@ -14,7 +14,7 @@ namespace syntax {
 
 static bool is_matching_token(Token_Type type) {
     return type == Token_Type::KEYWORD || type == Token_Type::TYPE ||
-           type == Token_Type::PUNCTUATION || type == Token_Type::IDENTIFIER;
+           type == Token_Type::IDENTIFIER;
 }
 
 struct Data {
