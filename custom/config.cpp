@@ -21,6 +21,7 @@
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
+#include "syntax/overlay_preferred_column.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_md.hpp"
 #include "syntax/tokenize_path.hpp"
@@ -167,7 +168,8 @@ Theme create_theme() {
     theme.faces.push({3, -1, 0});   // Token_Type::GIT_REBASE_TODO_SHA
     theme.faces.push({-1, -1, 0});  // Token_Type::GIT_REBASE_TODO_COMMIT_MESSAGE
 
-    static Overlay overlays[] = {syntax::overlay_matching_region()};
+    static Overlay overlays[] = {syntax::overlay_matching_region(),
+                                 syntax::overlay_preferred_column()};
     theme.overlays = cz::slice(overlays);
 
     return theme;

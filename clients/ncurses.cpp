@@ -238,6 +238,7 @@ void run(Server* server, Client* client) {
     int16_t colors[COLORS] = {};
     colors[0] = 1;
     colors[7] = 1;
+    colors[21] = 1;
     colors[237] = 1;
     for (size_t i = 0; i < server->editor.theme.faces.len(); ++i) {
         Face* face = &server->editor.theme.faces[i];
