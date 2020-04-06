@@ -268,6 +268,9 @@ Mode get_mode(cz::Str file_name) {
         mode.next_token = syntax::md_next_token;
     } else if (file_name.ends_with(".patch") || file_name.ends_with(".diff")) {
         mode.next_token = syntax::patch_next_token;
+        if (file_name.ends_with("/addp-hunk-edit.diff")) {
+            mode.key_map = git_edit_key_map();
+        }
     } else if (file_name == "*client mini buffer*") {
         mode.next_token = syntax::path_next_token;
         mode.key_map = path_key_map();
