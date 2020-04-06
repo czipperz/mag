@@ -210,8 +210,21 @@ static void draw_buffer_contents(Cell* cells,
             while (x < end_x) {
                 ADDCH(face, ' ');
             }
-        } else {
+        } else if (isprint(ch)) {
             ADDCH(face, ch);
+        } else {
+            ADDCH(face, '\\');
+            ADDCH(face, '[');
+            bool already = false;
+            if ((ch / 100) % 10) {
+                ADDCH(face, (ch / 100) % 10 + '0');
+                already = true;
+            }
+            if ((ch / 10) % 10 || already) {
+                ADDCH(face, (ch / 10) % 10 + '0');
+            }
+            ADDCH(face, ch % 10 + '0');
+            ADDCH(face, ';');
         }
     }
 
