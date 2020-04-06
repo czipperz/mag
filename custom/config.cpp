@@ -16,6 +16,7 @@
 #include "git/tokenize_git_commit_edit_message.hpp"
 #include "git/tokenize_patch.hpp"
 #include "git/tokenize_rebase_todo.hpp"
+#include "man/man.hpp"
 #include "overlay.hpp"
 #include "prose/alternate.hpp"
 #include "syntax/overlay_matching_pairs.hpp"
@@ -113,6 +114,11 @@ Key_Map create_key_map() {
     BIND(key_map, "C-c l", command_lowercase_letter);
     BIND(key_map, "C-c C-u", command_uppercase_region);
     BIND(key_map, "C-c C-l", command_lowercase_region);
+
+    man::path_to_autocomplete_man_page =
+        "/home/czipperz/find-man-page/build/release/autocomplete-man-page";
+    man::path_to_load_man_page = "/home/czipperz/find-man-page/build/release/load-man-page";
+    BIND(key_map, "C-c m", man::command_man);
 
     BIND(key_map, "A-g A-g", command_goto_line);
     BIND(key_map, "A-g c", command_goto_position);
@@ -266,6 +272,9 @@ Mode get_mode(cz::Str file_name) {
         mode.next_token = syntax::path_next_token;
         mode.key_map = path_key_map();
     } else if (file_name.starts_with("*git grep ")) {
+        mode.next_token = syntax::process_next_token;
+        mode.key_map = search_key_map();
+    } else if (file_name.starts_with("*man ")) {
         mode.next_token = syntax::process_next_token;
         mode.key_map = search_key_map();
     } else if (file_name.ends_with("/git-rebase-todo")) {
