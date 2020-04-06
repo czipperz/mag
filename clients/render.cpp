@@ -410,32 +410,41 @@ void render_to_cells(Cell* cells,
         mini_buffer_height = 1;
         size_t results_height = 0;
 
-        Completion_Results* completion_results = &client->mini_buffer_completion_results;
+        Completion_Cache* completion_cache = &client->mini_buffer_completion_cache;
         if (client->_message.tag > Message::SHOW) {
             {
                 Window_Unified* window = client->mini_buffer_window();
                 WITH_WINDOW_BUFFER(window);
-                if (completion_results->change_index != buffer->changes.len()) {
-                    completion_results->change_index = buffer->changes.len();
-                    completion_results->state = Completion_Results::INITIAL;
-                    completion_results->query.set_len(0);
+                if (completion_cache->change_index != buffer->changes.len()) {
+                    // Restart completion as mini buffer changed.
+                    completion_cache->change_index = buffer->changes.len();
+                    completion_cache->results.state = Completion_Results::INITIAL;
+                    completion_cache->results.query.set_len(0);
                     buffer->contents.stringify_into(cz::heap_allocator(),
-                                                    &completion_results->query);
+                                                    &completion_cache->results.query);
                 }
             }
 
-            switch (completion_results->state) {
+            switch (completion_cache->results.state) {
             case Completion_Results::INITIAL:
-                completion_results->results.set_len(0);
-                completion_results->state = Completion_Results::LOADING;
-                completion_results->selected = 0;
+                if (completion_cache->engine != client->_message.completion_engine) {
+                    completion_cache->engine = client->_message.completion_engine;
+                    if (completion_cache->results.cleanup) {
+                        completion_cache->results.cleanup(completion_cache->results.data);
+                    }
+                    completion_cache->results.cleanup = nullptr;
+                    completion_cache->results.data = nullptr;
+                    completion_cache->results.results_buffer_array.clear();
+                    completion_cache->results.results.set_len(0);
+                    completion_cache->results.selected = 0;
+                }
                 break;
 
             case Completion_Results::LOADING:
                 break;
 
             case Completion_Results::LOADED:
-                results_height = completion_results->results.len();
+                results_height = completion_cache->results.results.len();
                 if (results_height > 5) {
                     results_height = 5;
                 }
@@ -482,9 +491,9 @@ void render_to_cells(Cell* cells,
             size_t x = 0;
             size_t start_row = total_rows - results_height;
             size_t start_col = 0;
-            size_t offset = completion_results->selected;
-            if (offset >= completion_results->results.len() - results_height / 2) {
-                offset = completion_results->results.len() - results_height;
+            size_t offset = completion_cache->results.selected;
+            if (offset >= completion_cache->results.results.len() - results_height / 2) {
+                offset = completion_cache->results.results.len() - results_height;
             } else if (offset < results_height / 2) {
                 offset = 0;
             } else {
@@ -493,11 +502,11 @@ void render_to_cells(Cell* cells,
             for (size_t r = offset; r < results_height + offset; ++r) {
                 {
                     Face face = {};
-                    if (r == completion_results->selected) {
+                    if (r == completion_cache->results.selected) {
                         apply_face(&face, editor->theme.faces[5]);
                     }
 
-                    cz::Str result = completion_results->results[r];
+                    cz::Str result = completion_cache->results.results[r];
                     for (size_t i = 0; i < total_cols && i < result.len; ++i) {
                         SET(face, result[i]);
                         ++x;

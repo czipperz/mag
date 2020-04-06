@@ -15,61 +15,80 @@ namespace man {
 const char* path_to_autocomplete_man_page;
 const char* path_to_load_man_page;
 
+struct Man_Completion_Engine_Data {
+    cz::Vector<cz::Str> all_results;
+};
+
+static void man_completion_engine_data_cleanup(void* _data) {
+    Man_Completion_Engine_Data* data = (Man_Completion_Engine_Data*)_data;
+    data->all_results.drop(cz::heap_allocator());
+    free(data);
+}
+
 static void man_completion_engine(Completion_Results* completion_results) {
-    completion_results->results.set_len(0);
-    completion_results->selected = 0;
+    if (!completion_results->data) {
+        completion_results->data = calloc(1, sizeof(Man_Completion_Engine_Data));
+        CZ_ASSERT(completion_results->data);
+        completion_results->cleanup = man_completion_engine_data_cleanup;
 
-    completion_results->query.reserve(cz::heap_allocator(), 1);
-    completion_results->query.null_terminate();
-    const char* args[] = {path_to_autocomplete_man_page, completion_results->query.buffer(),
-                          nullptr};
+        Man_Completion_Engine_Data* data = (Man_Completion_Engine_Data*)completion_results->data;
 
-    Process process;
-    if (!process.launch_program(path_to_autocomplete_man_page, args, nullptr)) {
-        completion_results->state = Completion_Results::LOADED;
-        return;
-    }
-    process.set_read_blocking();
-
-    cz::Buffer_Array buffer_array;
-    buffer_array.create();
-
-    char buffer[1024];
-    cz::String result = {};
-    while (1) {
-        int64_t len = process.read(buffer, sizeof(buffer));
-        if (len > 0) {
-            for (size_t offset = 0; offset < len; ++offset) {
-                const char* end = cz::Str{buffer + offset, len - offset}.find('\n');
-
-                size_t rlen;
-                if (end) {
-                    rlen = end - buffer - offset;
-                } else {
-                    rlen = len - offset;
-                }
-
-                result.reserve(buffer_array.allocator(), rlen);
-                result.append({buffer + offset, rlen});
-
-                if (!end) {
-                    break;
-                }
-
-                completion_results->results.reserve(cz::heap_allocator(), 1);
-                completion_results->results.push(result);
-                result = {};
-                offset += rlen;
-            }
-        } else {
-            break;
+        Process process;
+        const char* args[] = {path_to_autocomplete_man_page, "", nullptr};
+        if (!process.launch_program(path_to_autocomplete_man_page, args, nullptr)) {
+            completion_results->state = Completion_Results::LOADED;
+            return;
         }
+        process.set_read_blocking();
+
+        char buffer[1024];
+        cz::String result = {};
+        while (1) {
+            int64_t len = process.read(buffer, sizeof(buffer));
+            if (len > 0) {
+                for (size_t offset = 0; offset < (size_t)len; ++offset) {
+                    const char* end = cz::Str{buffer + offset, len - offset}.find('\n');
+
+                    size_t rlen;
+                    if (end) {
+                        rlen = end - buffer - offset;
+                    } else {
+                        rlen = len - offset;
+                    }
+
+                    result.reserve(completion_results->results_buffer_array.allocator(), rlen);
+                    result.append({buffer + offset, rlen});
+
+                    if (!end) {
+                        break;
+                    }
+
+                    data->all_results.reserve(cz::heap_allocator(), 1);
+                    data->all_results.push(result);
+                    result = {};
+                    offset += rlen;
+                }
+            } else {
+                break;
+            }
+        }
+
+        process.join();
+        process.destroy();
+
+        std::sort(data->all_results.start(), data->all_results.end());
     }
 
-    process.join();
-    process.destroy();
+    Man_Completion_Engine_Data* data = (Man_Completion_Engine_Data*)completion_results->data;
+    completion_results->results.set_len(0);
+    size_t start;
+    if (binary_search_string_prefix_start(data->all_results, completion_results->query, &start)) {
+        size_t end =
+            binary_search_string_prefix_end(data->all_results, start, completion_results->query);
+        completion_results->results.reserve(cz::heap_allocator(), end - start);
+        completion_results->results.append({data->all_results.elems() + start, end - start});
+    }
 
-    std::sort(completion_results->results.start(), completion_results->results.end());
     completion_results->state = Completion_Results::LOADED;
 }
 

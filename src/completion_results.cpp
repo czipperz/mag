@@ -8,7 +8,16 @@
 
 namespace mag {
 
-static bool binary_search_string_prefix_start(cz::Slice<cz::Str> results,
+void Completion_Results::drop() {
+    if (cleanup) {
+        cleanup(data);
+    }
+    query.drop(cz::heap_allocator());
+    results_buffer_array.drop();
+    results.drop(cz::heap_allocator());
+}
+
+bool binary_search_string_prefix_start(cz::Slice<cz::Str> results,
                                               cz::Str prefix,
                                               size_t* out) {
     size_t start = 0;
@@ -47,7 +56,7 @@ static bool binary_search_string_prefix_start(cz::Slice<cz::Str> results,
     return false;
 }
 
-static size_t binary_search_string_prefix_end(cz::Slice<cz::Str> results,
+size_t binary_search_string_prefix_end(cz::Slice<cz::Str> results,
                                               size_t start,
                                               cz::Str prefix) {
     size_t end = results.len;
@@ -72,19 +81,34 @@ static size_t binary_search_string_prefix_end(cz::Slice<cz::Str> results,
 void file_completion_engine(Completion_Results* completion_results) {
     ZoneScoped;
 
+    completion_results->results_buffer_array.clear();
+    completion_results->results.set_len(0);
+
     completion_results->query.reserve(cz::heap_allocator(), 1);
     completion_results->query.null_terminate();
     char* dir_sep = completion_results->query.rfind('/');
     cz::Str prefix;
     if (dir_sep) {
-        *dir_sep = '\0';
-        cz::fs::files(cz::heap_allocator(), cz::heap_allocator(),
-                      completion_results->query.buffer(), &completion_results->results);
-        *dir_sep = '/';
-        prefix = dir_sep + 1;
+        if (dir_sep != completion_results->query.buffer()) {
+            // Normal case: "./u" or "/a/b/c".
+            *dir_sep = '\0';
+            cz::fs::files(cz::heap_allocator(),
+                          completion_results->results_buffer_array.allocator(),
+                          completion_results->query.buffer(), &completion_results->results);
+            *dir_sep = '/';
+            prefix = dir_sep + 1;
+        } else {
+            // Root directory: "/u".
+            cz::fs::files(cz::heap_allocator(),
+                          completion_results->results_buffer_array.allocator(), "/",
+                          &completion_results->results);
+            prefix = dir_sep + 1;
+        }
     } else {
-        cz::fs::files(cz::heap_allocator(), cz::heap_allocator(), ".",
-                      &completion_results->results);
+        // Relative path without directories: "u".  Pretend they typed "./u" and load current
+        // working directory (".").
+        cz::fs::files(cz::heap_allocator(), completion_results->results_buffer_array.allocator(),
+                      ".", &completion_results->results);
         prefix = completion_results->query;
     }
     std::sort(completion_results->results.start(), completion_results->results.end());

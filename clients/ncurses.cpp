@@ -299,8 +299,9 @@ void run(Server* server, Client* client) {
                used_colors);
 
         int ch = ERR;
-        if (client->mini_buffer_completion_results.state == Completion_Results::LOADING) {
-            client->_message.completion_engine(&client->mini_buffer_completion_results);
+        if (client->mini_buffer_completion_cache.results.state != Completion_Results::LOADED &&
+            client->_message.completion_engine) {
+            client->_message.completion_engine(&client->mini_buffer_completion_cache.results);
             continue;
         }
 

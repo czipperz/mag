@@ -26,7 +26,7 @@ struct Client {
     Window_Unified* _mini_buffer;
     bool _select_mini_buffer;
 
-    Completion_Results mini_buffer_completion_results;
+    Completion_Cache mini_buffer_completion_cache;
 
     std::chrono::system_clock::time_point _message_time;
     Message _message;
@@ -36,6 +36,7 @@ struct Client {
         window = selected_normal_window;
 
         _mini_buffer = Window_Unified::create(mini_buffer_id);
+        mini_buffer_completion_cache.init();
     }
 
     void drop() {
@@ -47,6 +48,7 @@ struct Client {
             Window::drop_(_offscreen_windows[i]);
         }
         _offscreen_windows.drop(cz::heap_allocator());
+        mini_buffer_completion_cache.drop();
     }
 
     Window_Unified* mini_buffer_window() const { return _mini_buffer; }

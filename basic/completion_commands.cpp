@@ -8,7 +8,7 @@ namespace basic {
 void command_insert_completion(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->mini_buffer_window();
     WITH_WINDOW_BUFFER(window);
-    Completion_Results* results = &source.client->mini_buffer_completion_results;
+    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
     if (results->selected >= results->results.len()) {
         return;
     }
@@ -42,7 +42,7 @@ void command_insert_completion(Editor* editor, Command_Source source) {
 }
 
 void command_next_completion(Editor* editor, Command_Source source) {
-    Completion_Results* results = &source.client->mini_buffer_completion_results;
+    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
     if (results->selected + 1 >= results->results.len()) {
         return;
     }
@@ -50,7 +50,7 @@ void command_next_completion(Editor* editor, Command_Source source) {
 }
 
 void command_previous_completion(Editor* editor, Command_Source source) {
-    Completion_Results* results = &source.client->mini_buffer_completion_results;
+    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
     if (results->selected == 0) {
         return;
     }
@@ -58,12 +58,12 @@ void command_previous_completion(Editor* editor, Command_Source source) {
 }
 
 void command_first_completion(Editor* editor, Command_Source source) {
-    Completion_Results* results = &source.client->mini_buffer_completion_results;
+    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
     results->selected = 0;
 }
 
 void command_last_completion(Editor* editor, Command_Source source) {
-    Completion_Results* results = &source.client->mini_buffer_completion_results;
+    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
     results->selected = results->results.len();
     if (results->selected > 0) {
         --results->selected;
