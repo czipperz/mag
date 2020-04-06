@@ -33,8 +33,8 @@ static Face overlay_preferred_column_get_face_and_advance(Buffer* buffer,
         if (data->column == 100) {
             face = {-1, 21, 0};
         }
+        ++data->column;
     }
-    ++data->column;
     return face;
 }
 
