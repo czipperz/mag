@@ -27,12 +27,12 @@ static Face overlay_preferred_column_get_face_and_advance(Buffer* buffer,
                                                           void* _data) {
     Data* data = (Data*)_data;
     Face face = {};
-    if (data->column == 100) {
-        face = {-1, 21, 0};
-    }
-
     if (iterator.get() == '\n') {
         data->column = 0;
+    } else {
+        if (data->column == 100) {
+            face = {-1, 21, 0};
+        }
     }
     ++data->column;
     return face;
