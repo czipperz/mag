@@ -30,7 +30,6 @@
 * Comment region
 * Uncomment line and region
 * Run compile
-* Format man pages
 * Edit server
 * Xorg copy paste
 
