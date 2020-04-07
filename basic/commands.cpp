@@ -687,6 +687,61 @@ void command_create_cursors_to_start_search(Editor* editor, Command_Source sourc
     }
 }
 
+static void set_cursor_position_to_edit(Cursor* cursor, const Edit* edit, bool is_redo) {
+    cursor->mark = edit->position;
+    cursor->point = edit->position;
+    if (is_redo == (bool)(edit->flags & Edit::INSERT_MASK)) {
+        cursor->point += edit->value.len();
+    }
+}
+
+static void create_cursors_last_change(Window_Unified* window, Buffer* buffer, Client* client) {
+    if (buffer->changes.len() == 0) {
+        return;
+    }
+
+    kill_extra_cursors(window, client);
+
+    Change* change = &buffer->changes.last();
+    cz::Slice<const Edit> edits = change->commit.edits;
+    window->cursors.reserve(cz::heap_allocator(), edits.len - 1);
+
+    set_cursor_position_to_edit(&window->cursors[0], &edits[0], change->is_redo);
+
+    Copy_Chain* local_copy_chain = window->cursors[0].local_copy_chain;
+    for (size_t i = 1; i < edits.len; ++i) {
+        Cursor cursor = {};
+        set_cursor_position_to_edit(&cursor, &edits[i], change->is_redo);
+        cursor.local_copy_chain = local_copy_chain;
+        window->cursors.push(cursor);
+    }
+}
+
+void command_create_cursors_undo(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    if (!buffer->undo()) {
+        source.client->show_message("Nothing to undo");
+        return;
+    }
+
+    create_cursors_last_change(window, buffer, source.client);
+}
+
+void command_create_cursors_redo(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    if (!buffer->redo()) {
+        source.client->show_message("Nothing to redo");
+        return;
+    }
+
+    create_cursors_last_change(window, buffer, source.client);
+}
+
+void command_create_cursors_last_change(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    create_cursors_last_change(window, buffer, source.client);
+}
+
 static void command_search_forward_callback(Editor* editor,
                                             Client* client,
                                             cz::Str query,
