@@ -17,6 +17,7 @@ const char* path_to_load_man_page;
 
 struct Man_Completion_Engine_Data {
     cz::Vector<cz::Str> all_results;
+    size_t offset;
 };
 
 static void man_completion_engine_data_cleanup(void* _data) {
@@ -80,6 +81,8 @@ static void man_completion_engine(Editor* _editor, Completion_Results* completio
     }
 
     Man_Completion_Engine_Data* data = (Man_Completion_Engine_Data*)completion_results->data;
+    completion_results->selected += data->offset;
+
     completion_results->results.set_len(0);
     size_t start;
     if (binary_search_string_prefix_start(data->all_results, completion_results->query, &start)) {
@@ -87,6 +90,16 @@ static void man_completion_engine(Editor* _editor, Completion_Results* completio
             binary_search_string_prefix_end(data->all_results, start, completion_results->query);
         completion_results->results.reserve(cz::heap_allocator(), end - start);
         completion_results->results.append({data->all_results.elems() + start, end - start});
+
+        data->offset = start;
+        if (completion_results->selected >= start && completion_results->selected < end) {
+            completion_results->selected -= start;
+        } else {
+            completion_results->selected = 0;
+        }
+    } else {
+        data->offset = 0;
+        completion_results->selected = 0;
     }
 
     completion_results->state = Completion_Results::LOADED;

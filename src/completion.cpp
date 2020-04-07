@@ -169,6 +169,7 @@ void file_completion_engine(Editor* _editor, Completion_Results* completion_resu
 
 struct Buffer_Completion_Engine_Data {
     cz::Vector<cz::Str> all_results;
+    size_t offset;
 };
 
 static void buffer_completion_engine_data_cleanup(void* _data) {
@@ -199,6 +200,7 @@ void buffer_completion_engine(Editor* editor, Completion_Results* completion_res
     }
 
     Buffer_Completion_Engine_Data* data = (Buffer_Completion_Engine_Data*)completion_results->data;
+    completion_results->selected += data->offset;
 
     completion_results->results.set_len(0);
     size_t start;
@@ -207,6 +209,16 @@ void buffer_completion_engine(Editor* editor, Completion_Results* completion_res
             binary_search_string_prefix_end(data->all_results, start, completion_results->query);
         completion_results->results.reserve(cz::heap_allocator(), end - start);
         completion_results->results.append({data->all_results.elems() + start, end - start});
+
+        data->offset = start;
+        if (completion_results->selected >= start && completion_results->selected < end) {
+            completion_results->selected -= start;
+        } else {
+            completion_results->selected = 0;
+        }
+    } else {
+        data->offset = 0;
+        completion_results->selected = 0;
     }
 
     completion_results->state = Completion_Results::LOADED;
