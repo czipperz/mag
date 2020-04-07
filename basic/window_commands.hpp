@@ -2,18 +2,16 @@
 
 #include "command.hpp"
 #include "editor.hpp"
+#include "window.hpp"
 
 namespace mag {
-
-struct Window;
-struct Window_Unified;
-
 namespace basic {
 
 Window_Unified* window_first(Window* window);
 Window_Unified* window_last(Window* window);
 void cycle_window(Client* client);
 void reverse_cycle_window(Client* client);
+void split_window(Editor* editor, Client* client, Window::Tag tag);
 
 void command_one_window(Editor* editor, Command_Source source);
 void command_split_window_horizontal(Editor* editor, Command_Source source);

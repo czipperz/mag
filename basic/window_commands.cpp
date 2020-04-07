@@ -49,26 +49,26 @@ void command_close_window(Editor* editor, Command_Source source) {
     }
 }
 
-static void split_window(Editor* editor, Command_Source source, Window::Tag tag) {
-    Window_Unified* top = source.client->selected_normal_window;
+void split_window(Editor* editor, Client* client, Window::Tag tag) {
+    Window_Unified* top = client->selected_normal_window;
     Window_Unified* bottom = top->clone();
 
     Window_Split* parent = Window_Split::create(tag, top, bottom);
 
-    source.client->replace_window(top, parent);
+    client->replace_window(top, parent);
 
     top->parent = parent;
     bottom->parent = parent;
 
-    source.client->selected_normal_window = top;
+    client->selected_normal_window = top;
 }
 
 void command_split_window_horizontal(Editor* editor, Command_Source source) {
-    split_window(editor, source, Window::HORIZONTAL_SPLIT);
+    split_window(editor, source.client, Window::HORIZONTAL_SPLIT);
 }
 
 void command_split_window_vertical(Editor* editor, Command_Source source) {
-    split_window(editor, source, Window::VERTICAL_SPLIT);
+    split_window(editor, source.client, Window::VERTICAL_SPLIT);
 }
 
 Window_Unified* window_first(Window* window) {
