@@ -1,6 +1,8 @@
 # Mag
 
-Mag is a text editor.  It is designed to be fast and configurable.  Users of Mag are encouraged to edit the source code of the editor to customize it to fit their usages.  Mag is designed to be used primarily on C and C++ code, but coding in any language is supported.
+Mag is a text editor.  It is designed to be fast and configurable.  Users of Mag are encouraged to
+edit the source code of the editor to customize it to fit their usages.  Mag is designed to be used
+primarily on C and C++ code, but coding in any language is supported.
 
 ## Bultin features
 * Multi cursors
@@ -22,19 +24,23 @@ git submodule update
 Required packages: a C++ compiler and ncurses.
 
 ## Customizing
-The `custom` folder can be customized to fit your needs.  In particular `config.cpp`'s `create_key_map()` has all bindings for normal operation.
+The `custom` folder can be customized to fit your needs.  In particular `config.cpp`'s
+`create_key_map()` has all bindings for normal operation.
 
 ## Optimizing
-We use Tracy to optimize Mag.  See the [manual](https://bitbucket.com/wolfpld/tracy/downloads/tracy.pdf) for more information.
+We use Tracy to optimize Mag.  See the
+[manual](https://bitbucket.com/wolfpld/tracy/downloads/tracy.pdf) for more information.
 
-To prepare we have to build Mag with Tracy enabled and also build Tracy's profiler.  Once both are built, we then run the profiler and Mag at the same time.
+To prepare we have to build Mag with Tracy enabled and also build Tracy's profiler.  Once both are
+built, we then run the profiler and Mag at the same time.
 
 Build Mag with Tracy enabled:
 ```
 ./build-tracy.sh
 ```
 
-By cloning the `tracy` submodule you will already have the source downloaded.  Build the `profiler` sub project:
+By cloning the `tracy` submodule you will already have the source downloaded.  Build the `profiler`
+sub project:
 ```
 cd tracy/profiler/build/unix
 make release
