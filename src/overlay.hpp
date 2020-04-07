@@ -19,6 +19,10 @@ struct Overlay {
                                      Window_Unified*,
                                      Contents_Iterator current_position_iterator,
                                      void*);
+        Face (*get_face_newline_padding)(Buffer*,
+                                         Window_Unified*,
+                                         Contents_Iterator end_of_line_iterator,
+                                         void*);
         void (*end_frame)(void*);
         void (*cleanup)(void*);
     };
@@ -34,6 +38,12 @@ struct Overlay {
 
     Face get_face_and_advance(Buffer* buffer, Window_Unified* window, Contents_Iterator iterator) {
         return vtable->get_face_and_advance(buffer, window, iterator, data);
+    }
+
+    Face get_face_newline_padding(Buffer* buffer,
+                                  Window_Unified* window,
+                                  Contents_Iterator iterator) {
+        return vtable->get_face_newline_padding(buffer, window, iterator, data);
     }
 
     void end_frame() { vtable->end_frame(data); }

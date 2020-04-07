@@ -87,6 +87,13 @@ static Face overlay_matching_region_get_face_and_advance(Buffer* buffer,
     }
 }
 
+static Face overlay_matching_region_get_face_newline_padding(Buffer* buffer,
+                                                             Window_Unified* window,
+                                                             Contents_Iterator iterator,
+                                                             void* _data) {
+    return {};
+}
+
 static void overlay_matching_region_end_frame(void* _data) {}
 
 static void overlay_matching_region_cleanup(void* data) {
@@ -97,6 +104,7 @@ Overlay overlay_matching_region() {
     static const Overlay::VTable vtable = {
         overlay_matching_region_start_frame,
         overlay_matching_region_get_face_and_advance,
+        overlay_matching_region_get_face_newline_padding,
         overlay_matching_region_end_frame,
         overlay_matching_region_cleanup,
     };

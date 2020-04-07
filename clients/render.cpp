@@ -17,10 +17,10 @@ namespace client {
         cell->code = CH;                                                     \
     } while (0)
 
-#define ADD_NEWLINE()                   \
+#define ADD_NEWLINE(FACE)               \
     do {                                \
         for (; x < window->cols; ++x) { \
-            SET({}, ' ');               \
+            SET(FACE, ' ');             \
         }                               \
         ++y;                            \
         x = 0;                          \
@@ -34,7 +34,7 @@ namespace client {
         SET(FACE, CH);           \
         ++x;                     \
         if (x == window->cols) { \
-            ADD_NEWLINE();       \
+            ADD_NEWLINE({});     \
         }                        \
     } while (0)
 
@@ -209,7 +209,23 @@ static void draw_buffer_contents(Cell* cells,
         if (ch == '\n') {
             SET(face, ' ');
             ++x;
-            ADD_NEWLINE();
+
+            // Draw newline padding with faces from overlays
+            {
+                Face face;
+                size_t j = 0;
+                for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
+                    Overlay* overlay = &editor->theme.overlays[i];
+                    Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
+                    apply_face(&face, overlay_face);
+                }
+                for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
+                    Overlay* overlay = &buffer->mode.overlays[i];
+                    Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
+                    apply_face(&face, overlay_face);
+                }
+                ADD_NEWLINE(face);
+            }
         } else if (ch == '\t') {
             size_t end_x = (x + 4) & ~3;
             while (x < end_x) {

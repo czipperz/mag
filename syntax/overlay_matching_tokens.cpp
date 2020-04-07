@@ -155,6 +155,13 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
     }
 }
 
+static Face overlay_matching_tokens_get_face_newline_padding(Buffer* buffer,
+                                                             Window_Unified* window,
+                                                             Contents_Iterator iterator,
+                                                             void* _data) {
+    return {};
+}
+
 static void overlay_matching_tokens_end_frame(void* _data) {}
 
 static void overlay_matching_tokens_cleanup(void* data) {
@@ -165,6 +172,7 @@ Overlay overlay_matching_tokens() {
     static const Overlay::VTable vtable = {
         overlay_matching_tokens_start_frame,
         overlay_matching_tokens_get_face_and_advance,
+        overlay_matching_tokens_get_face_newline_padding,
         overlay_matching_tokens_end_frame,
         overlay_matching_tokens_cleanup,
     };

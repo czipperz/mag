@@ -57,6 +57,7 @@ Overlay overlay_selected_line() {
     static const Overlay::VTable vtable = {
         overlay_selected_line_start_frame,
         overlay_selected_line_get_face_and_advance,
+        overlay_selected_line_get_face_and_advance,  // newline padding = normal line text
         overlay_selected_line_end_frame,
         overlay_selected_line_cleanup,
     };

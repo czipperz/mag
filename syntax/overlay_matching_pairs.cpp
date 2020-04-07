@@ -145,6 +145,13 @@ static Face overlay_matching_pairs_get_face_and_advance(Buffer* buffer,
     return face;
 }
 
+static Face overlay_matching_pairs_get_face_newline_padding(Buffer* buffer,
+                                                            Window_Unified* window,
+                                                            Contents_Iterator iterator,
+                                                            void* _data) {
+    return {};
+}
+
 static void overlay_matching_pairs_end_frame(void* _data) {}
 
 static void overlay_matching_pairs_cleanup(void* _data) {
@@ -157,6 +164,7 @@ Overlay overlay_matching_pairs() {
     static const Overlay::VTable vtable = {
         overlay_matching_pairs_start_frame,
         overlay_matching_pairs_get_face_and_advance,
+        overlay_matching_pairs_get_face_newline_padding,
         overlay_matching_pairs_end_frame,
         overlay_matching_pairs_cleanup,
     };
