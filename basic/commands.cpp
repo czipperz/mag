@@ -724,6 +724,7 @@ void command_create_cursors_undo(Editor* editor, Command_Source source) {
         return;
     }
 
+    window->update_cursors(buffer);
     create_cursors_last_change(window, buffer, source.client);
 }
 
@@ -734,6 +735,7 @@ void command_create_cursors_redo(Editor* editor, Command_Source source) {
         return;
     }
 
+    window->update_cursors(buffer);
     create_cursors_last_change(window, buffer, source.client);
 }
 
