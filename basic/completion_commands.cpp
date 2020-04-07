@@ -57,6 +57,27 @@ void command_previous_completion(Editor* editor, Command_Source source) {
     --results->selected;
 }
 
+void command_completion_down_page(Editor* editor, Command_Source source) {
+    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
+    if (results->selected + editor->theme.max_completion_results >= results->results.len()) {
+        results->selected = results->results.len();
+        if (results->selected > 0) {
+            --results->selected;
+        }
+        return;
+    }
+    results->selected += editor->theme.max_completion_results;
+}
+
+void command_completion_up_page(Editor* editor, Command_Source source) {
+    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
+    if (results->selected < editor->theme.max_completion_results) {
+        results->selected = 0;
+        return;
+    }
+    results->selected -= editor->theme.max_completion_results;
+}
+
 void command_first_completion(Editor* editor, Command_Source source) {
     Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
     results->selected = 0;

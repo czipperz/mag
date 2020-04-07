@@ -184,6 +184,8 @@ Theme create_theme() {
                                  syntax::overlay_preferred_column()};
     theme.overlays = cz::slice(overlays);
 
+    theme.max_completion_results = 5;
+
     return theme;
 }
 
@@ -228,6 +230,8 @@ static Key_Map create_path_key_map() {
     BIND(key_map, "A-i", command_insert_completion);
     BIND(key_map, "C-n", command_next_completion);
     BIND(key_map, "C-p", command_previous_completion);
+    BIND(key_map, "C-v", command_completion_down_page);
+    BIND(key_map, "A-v", command_completion_up_page);
     BIND(key_map, "A-<", command_first_completion);
     BIND(key_map, "A->", command_last_completion);
     BIND(key_map, "C-l", command_path_up_directory);

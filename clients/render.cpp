@@ -462,8 +462,8 @@ void render_to_cells(Cell* cells,
 
             case Completion_Results::LOADED:
                 results_height = completion_cache->results.results.len();
-                if (results_height > 5) {
-                    results_height = 5;
+                if (results_height > editor->theme.max_completion_results) {
+                    results_height = editor->theme.max_completion_results;
                 }
                 if (results_height > total_rows / 2) {
                     results_height = total_rows / 2;

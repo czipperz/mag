@@ -49,6 +49,8 @@ struct Theme {
 
     cz::Slice<Overlay> overlays;
 
+    size_t max_completion_results;
+
     void drop(cz::Allocator allocator) {
         colors.drop(allocator);
         faces.drop(allocator);
