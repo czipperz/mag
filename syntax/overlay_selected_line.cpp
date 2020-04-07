@@ -25,7 +25,9 @@ static void overlay_selected_line_start_frame(Buffer* buffer,
         uint64_t point = window->cursors[0].point;
         if (point >= start_position_iterator.position) {
             Contents_Iterator start = start_position_iterator;
-            start.advance_to(point);
+            if (!start.at_eob()) {
+                start.advance_to(point);
+            }
             Contents_Iterator end = start;
             start_of_line(&start);
             end_of_line(&end);
@@ -41,7 +43,7 @@ static Face overlay_selected_line_get_face_and_advance(Buffer* buffer,
                                                        void* _data) {
     Data* data = (Data*)_data;
     Face face = {};
-    if (iterator.position >= data->start && iterator.position < data->end) {
+    if (iterator.position >= data->start && iterator.position <= data->end) {
         face = {-1, 21, 0};
     }
     return face;
