@@ -857,7 +857,9 @@ static void command_goto_line_callback(Editor* editor, Client* client, cz::Str s
     parse_number(str, &lines);
 
     WITH_SELECTED_BUFFER(client);
-    Contents_Iterator iterator = buffer->contents.iterator_at(0);
+    push_jump(window, client, handle->id, buffer);
+
+    Contents_Iterator iterator = buffer->contents.start();
     while (!iterator.at_eob() && lines > 1) {
         if (iterator.get() == '\n') {
             --lines;
@@ -875,7 +877,8 @@ static void command_goto_position_callback(Editor* editor,
     uint64_t position = 0;
     parse_number(str, &position);
 
-    Window_Unified* window = client->selected_window();
+    WITH_SELECTED_BUFFER(client);
+    push_jump(window, client, handle->id, buffer);
     window->cursors[0].point = position;
 }
 
