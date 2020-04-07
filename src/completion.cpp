@@ -94,7 +94,7 @@ static void file_completion_engine_data_cleanup(void* _data) {
 
 static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
     const char* dir_sep = query.rfind('/');
-    cz::Str prefix;
+    const char* prefix;
     if (dir_sep) {
         if (dir_sep != query.buffer) {
             // Normal case: "./u" or "/a/b/c".
@@ -113,9 +113,9 @@ static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
         // working directory (".").
         directory->reserve(cz::heap_allocator(), 2);
         directory->push('.');
-        prefix = query;
+        prefix = query.buffer;
     }
-    return prefix;
+    return {prefix, query.len - (prefix - query.buffer)};
 }
 
 void file_completion_engine(Editor* _editor, Completion_Results* completion_results) {
@@ -132,12 +132,13 @@ void file_completion_engine(Editor* _editor, Completion_Results* completion_resu
     data->temp_result.set_len(0);
     cz::Str prefix = get_directory_to_list(&data->temp_result, completion_results->query);
     if (data->temp_result == data->directory) {
-        // Track selected item
+        // Directory has not changed so track the selected item.
         completion_results->selected += data->offset;
-    } else if (data->temp_result != data->directory) {
+    } else {
         std::swap(data->temp_result, data->directory);
         data->directory.null_terminate();
 
+        // Directory has changed so load new results.
         completion_results->selected = 0;
         completion_results->results_buffer_array.clear();
         data->all_results.set_len(0);
