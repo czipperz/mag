@@ -98,7 +98,7 @@ void command_goto_center_of_window(Editor* editor, Command_Source source) {
 void command_up_page(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     kill_extra_cursors(window, source.client);
-    Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+    Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     compute_visible_start(window, &it);
     window->start_position = it.position;
     window->cursors[0].point = it.position;
@@ -107,8 +107,9 @@ void command_up_page(Editor* editor, Command_Source source) {
 void command_down_page(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     kill_extra_cursors(window, source.client);
-    Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+    Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     compute_visible_end(window, &it);
+    forward_char(&it);
     window->start_position = it.position;
     window->cursors[0].point = it.position;
 }
