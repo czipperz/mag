@@ -687,33 +687,57 @@ void command_create_cursors_to_start_search(Editor* editor, Command_Source sourc
     }
 }
 
-static void set_cursor_position_to_edit(Cursor* cursor, const Edit* edit, bool is_redo) {
+static void set_cursor_position_to_edit_redo(Cursor* cursor, const Edit* edit) {
     cursor->mark = edit->position;
     cursor->point = edit->position;
-    if (is_redo == (bool)(edit->flags & Edit::INSERT_MASK)) {
+    if (edit->flags & Edit::INSERT_MASK) {
         cursor->point += edit->value.len();
     }
 }
 
-static void create_cursors_last_change(Window_Unified* window, Buffer* buffer, Client* client) {
-    if (buffer->changes.len() == 0) {
-        return;
+static void set_cursor_position_to_edit_undo(Cursor* cursor,
+                                             const Edit* edit,
+                                             int64_t* offset) {
+    cursor->mark = edit->position + *offset;
+    cursor->point = edit->position + *offset;
+    if (edit->flags & Edit::INSERT_MASK) {
+        // Undo logical insert = physical remove.
+        *offset -= edit->value.len();
+    } else {
+        // Undo logical remove = physical insert.
+        cursor->point += edit->value.len();
+        *offset += edit->value.len();
     }
+}
 
+static void create_cursors_last_change(Window_Unified* window, Buffer* buffer, Client* client) {
     kill_extra_cursors(window, client);
 
     Change* change = &buffer->changes.last();
     cz::Slice<const Edit> edits = change->commit.edits;
     window->cursors.reserve(cz::heap_allocator(), edits.len - 1);
 
-    set_cursor_position_to_edit(&window->cursors[0], &edits[0], change->is_redo);
+    if (change->is_redo) {
+        set_cursor_position_to_edit_redo(&window->cursors[0], &edits[0]);
 
-    Copy_Chain* local_copy_chain = window->cursors[0].local_copy_chain;
-    for (size_t i = 1; i < edits.len; ++i) {
-        Cursor cursor = {};
-        set_cursor_position_to_edit(&cursor, &edits[i], change->is_redo);
-        cursor.local_copy_chain = local_copy_chain;
-        window->cursors.push(cursor);
+        Copy_Chain* local_copy_chain = window->cursors[0].local_copy_chain;
+        for (size_t i = 1; i < edits.len; ++i) {
+            Cursor cursor = {};
+            set_cursor_position_to_edit_redo(&cursor, &edits[i]);
+            cursor.local_copy_chain = local_copy_chain;
+            window->cursors.push(cursor);
+        }
+    } else {
+        int64_t offset = 0;
+        set_cursor_position_to_edit_undo(&window->cursors[0], &edits[0], &offset);
+
+        Copy_Chain* local_copy_chain = window->cursors[0].local_copy_chain;
+        for (size_t i = 1; i < edits.len; ++i) {
+            Cursor cursor = {};
+            set_cursor_position_to_edit_undo(&cursor, &edits[i], &offset);
+            cursor.local_copy_chain = local_copy_chain;
+            window->cursors.push(cursor);
+        }
     }
 }
 
@@ -741,6 +765,10 @@ void command_create_cursors_redo(Editor* editor, Command_Source source) {
 
 void command_create_cursors_last_change(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+    if (buffer->changes.len() == 0) {
+        return;
+    }
+
     create_cursors_last_change(window, buffer, source.client);
 }
 
