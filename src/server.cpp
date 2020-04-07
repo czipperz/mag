@@ -150,14 +150,27 @@ static bool get_key_press_command(Editor* editor,
     }
 }
 
+#ifndef NDEBUG
+struct File_Wrapper {
+    FILE* file;
+
+    File_Wrapper(const char* f, const char* m) { file = fopen(f, m); }
+
+    ~File_Wrapper() {
+        if (file) {
+            fclose(file);
+        }
+    }
+};
+#endif
+
 static void run_command(Command command, Editor* editor, Command_Source source) {
     command.function(editor, source);
 
 #ifndef NDEBUG
-    FILE* file = fopen("log.txt", "a");
-    if (file) {
-        fprintf(file, "%s\n", command.string);
-        fclose(file);
+    static File_Wrapper log("log.txt", "a");
+    if (log.file) {
+        fprintf(log.file, "%s\n", command.string);
     }
 #endif
 }
