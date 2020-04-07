@@ -77,48 +77,91 @@ size_t binary_search_string_prefix_end(cz::Slice<cz::Str> results, size_t start,
     return end;
 }
 
-void file_completion_engine(Editor* _editor, Completion_Results* completion_results) {
-    ZoneScoped;
+struct File_Completion_Engine_Data {
+    cz::String directory;
+    cz::String temp_result;
+    cz::Vector<cz::Str> all_results;
+    size_t offset;
+};
 
-    completion_results->results_buffer_array.clear();
-    completion_results->results.set_len(0);
+static void file_completion_engine_data_cleanup(void* _data) {
+    File_Completion_Engine_Data* data = (File_Completion_Engine_Data*)_data;
+    data->directory.drop(cz::heap_allocator());
+    data->temp_result.drop(cz::heap_allocator());
+    data->all_results.drop(cz::heap_allocator());
+    free(data);
+}
 
-    completion_results->query.reserve(cz::heap_allocator(), 1);
-    completion_results->query.null_terminate();
-    char* dir_sep = completion_results->query.rfind('/');
+static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
+    const char* dir_sep = query.rfind('/');
     cz::Str prefix;
     if (dir_sep) {
-        if (dir_sep != completion_results->query.buffer()) {
+        if (dir_sep != query.buffer) {
             // Normal case: "./u" or "/a/b/c".
-            *dir_sep = '\0';
-            cz::fs::files(cz::heap_allocator(),
-                          completion_results->results_buffer_array.allocator(),
-                          completion_results->query.buffer(), &completion_results->results);
-            *dir_sep = '/';
+            size_t len = dir_sep - query.buffer;
+            directory->reserve(cz::heap_allocator(), len + 1);
+            directory->append({query.buffer, len});
             prefix = dir_sep + 1;
         } else {
             // Root directory: "/u".
-            cz::fs::files(cz::heap_allocator(),
-                          completion_results->results_buffer_array.allocator(), "/",
-                          &completion_results->results);
+            directory->reserve(cz::heap_allocator(), 2);
+            directory->push('/');
             prefix = dir_sep + 1;
         }
     } else {
         // Relative path without directories: "u".  Pretend they typed "./u" and load current
         // working directory (".").
-        cz::fs::files(cz::heap_allocator(), completion_results->results_buffer_array.allocator(),
-                      ".", &completion_results->results);
-        prefix = completion_results->query;
+        directory->reserve(cz::heap_allocator(), 2);
+        directory->push('.');
+        prefix = query;
     }
-    std::sort(completion_results->results.start(), completion_results->results.end());
+    return prefix;
+}
+
+void file_completion_engine(Editor* _editor, Completion_Results* completion_results) {
+    ZoneScoped;
+
+    if (!completion_results->data) {
+        completion_results->data = calloc(1, sizeof(File_Completion_Engine_Data));
+        CZ_ASSERT(completion_results->data);
+        completion_results->cleanup = file_completion_engine_data_cleanup;
+    }
+
+    File_Completion_Engine_Data* data = (File_Completion_Engine_Data*)completion_results->data;
+
+    data->temp_result.set_len(0);
+    cz::Str prefix = get_directory_to_list(&data->temp_result, completion_results->query);
+    if (data->temp_result == data->directory) {
+        // Track selected item
+        completion_results->selected += data->offset;
+    } else if (data->temp_result != data->directory) {
+        std::swap(data->temp_result, data->directory);
+        data->directory.null_terminate();
+
+        completion_results->selected = 0;
+        completion_results->results_buffer_array.clear();
+        data->all_results.set_len(0);
+        cz::fs::files(cz::heap_allocator(), completion_results->results_buffer_array.allocator(),
+                      data->directory.buffer(), &data->all_results);
+        std::sort(data->all_results.start(), data->all_results.end());
+    }
 
     size_t start;
-    if (binary_search_string_prefix_start(completion_results->results, prefix, &start)) {
-        size_t end = binary_search_string_prefix_end(completion_results->results, start, prefix);
-        completion_results->results.set_len(end);
-        completion_results->results.remove_range(0, start);
+    completion_results->results.set_len(0);
+    if (binary_search_string_prefix_start(data->all_results, prefix, &start)) {
+        size_t end = binary_search_string_prefix_end(data->all_results, start, prefix);
+        completion_results->results.reserve(cz::heap_allocator(), end - start);
+        completion_results->results.append({data->all_results.elems() + start, end - start});
+
+        data->offset = start;
+        if (completion_results->selected >= start && completion_results->selected < end) {
+            completion_results->selected -= start;
+        } else {
+            completion_results->selected = 0;
+        }
     } else {
-        completion_results->results.set_len(0);
+        data->offset = 0;
+        completion_results->selected = 0;
     }
 
     completion_results->state = Completion_Results::LOADED;
