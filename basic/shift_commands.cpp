@@ -20,6 +20,23 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         Contents_Iterator start_next;
         if (window->show_marks) {
             start_next = buffer->contents.iterator_at(cursors[c].end());
+
+            // Special case: when selecting a region that ends at the start of a line, pretend
+            // we instead ended at the end of the previous line.  This allows the user to go to
+            // the beginning of a line, set the mark, walk down a few lines, and then shift the
+            // region.
+            if (!start_next.at_eob() && cursors[c].point != cursors[c].mark) {
+                Contents_Iterator it = start_next;
+                it.retreat();
+                if (it.get() == '\n') {
+                    start_next = it;
+                    if (cursors[c].point > cursors[c].mark) {
+                        --cursors[c].point;
+                    } else {
+                        --cursors[c].mark;
+                    }
+                }
+            }
         } else {
             start_next = buffer->contents.iterator_at(cursors[c].point);
         }
@@ -65,6 +82,23 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         Contents_Iterator start_next;
         if (window->show_marks) {
             start_next = buffer->contents.iterator_at(cursors[c].end());
+
+            // Special case: when selecting a region that ends at the start of a line, pretend
+            // we instead ended at the end of the previous line.  This allows the user to go to
+            // the beginning of a line, set the mark, walk down a few lines, and then shift the
+            // region.
+            if (!start_next.at_eob() && cursors[c].point != cursors[c].mark) {
+                Contents_Iterator it = start_next;
+                it.retreat();
+                if (it.get() == '\n') {
+                    start_next = it;
+                    if (cursors[c].point > cursors[c].mark) {
+                        --cursors[c].point;
+                    } else {
+                        --cursors[c].mark;
+                    }
+                }
+            }
         } else {
             start_next = buffer->contents.iterator_at(cursors[c].point);
         }
@@ -206,6 +240,25 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         } else {
             if (window->show_marks) {
                 end = buffer->contents.iterator_at(cursors[c].end());
+
+                // Special case: when selecting a region that ends at the start of a line, pretend
+                // we instead ended at the end of the previous line.  This allows the user to go to
+                // the beginning of a line, set the mark, walk down a few lines, and then shift the
+                // region.
+                if (!end.at_bob() && end.position > end_prev.position) {
+                    Contents_Iterator it = end;
+                    it.retreat();
+                    if (it.get() == '\n') {
+                        end = it;
+                        // In order for the cursor to move with the shift, we have to include it in
+                        // the region that is edited.
+                        if (cursors[c].point > cursors[c].mark) {
+                            --cursors[c].point;
+                        } else {
+                            --cursors[c].mark;
+                        }
+                    }
+                }
             } else {
                 end = end_prev;
             }
