@@ -61,18 +61,32 @@ void command_backward_line(Editor* editor, Command_Source source) {
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    cz::Slice<Cursor> cursors = window->cursors;
-    uint64_t len = buffer->contents.len;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        cursors[c].point = len;
-    }
+    push_jump(window, source.client, handle->id, buffer);
+    window->cursors[0].point = buffer->contents.len;
 }
 
 void command_start_of_buffer(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    cz::Slice<Cursor> cursors = window->cursors;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        cursors[c].point = 0;
+    push_jump(window, source.client, handle->id, buffer);
+    window->cursors[0].point = 0;
+}
+
+void command_push_jump(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    push_jump(window, source.client, handle->id, buffer);
+}
+
+void command_unpop_jump(Editor* editor, Command_Source source) {
+    Jump* jump = source.client->jump_chain.unpop();
+    if (jump) {
+        goto_jump(editor, source.client, jump);
+    }
+}
+
+void command_pop_jump(Editor* editor, Command_Source source) {
+    Jump* jump = source.client->jump_chain.pop();
+    if (jump) {
+        goto_jump(editor, source.client, jump);
     }
 }
 
@@ -695,9 +709,7 @@ static void set_cursor_position_to_edit_redo(Cursor* cursor, const Edit* edit) {
     }
 }
 
-static void set_cursor_position_to_edit_undo(Cursor* cursor,
-                                             const Edit* edit,
-                                             int64_t* offset) {
+static void set_cursor_position_to_edit_undo(Cursor* cursor, const Edit* edit, int64_t* offset) {
     cursor->mark = edit->position + *offset;
     cursor->point = edit->position + *offset;
     if (edit->flags & Edit::INSERT_MASK) {
@@ -908,11 +920,10 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
 }
 
 void command_mark_buffer(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_window();
-    kill_extra_cursors(window, source.client);
+    WITH_SELECTED_BUFFER(source.client);
+    push_jump(window, source.client, handle->id, buffer);
     window->show_marks = true;
     window->cursors[0].mark = 0;
-    WITH_WINDOW_BUFFER(window);
     window->cursors[0].point = buffer->contents.len;
 }
 

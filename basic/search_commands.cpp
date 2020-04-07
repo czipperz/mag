@@ -83,7 +83,7 @@ void command_search_open(Editor* editor, Command_Source source) {
 
     {
         WITH_SELECTED_BUFFER(source.client);
-        kill_extra_cursors(window, source.client);
+        push_jump(window, source.client, handle->id, buffer);
 
         Contents_Iterator iterator = buffer->contents.start();
         while (!iterator.at_eob() && line > 1) {

@@ -7,6 +7,7 @@
 #include "buffer_id.hpp"
 #include "completion.hpp"
 #include "copy_chain.hpp"
+#include "jump.hpp"
 #include "key.hpp"
 #include "message.hpp"
 #include "window.hpp"
@@ -18,6 +19,7 @@ struct Client {
     bool queue_quit;
 
     Copy_Chain* global_copy_chain;
+    Jump_Chain jump_chain;
 
     cz::Vector<Window_Unified*> _offscreen_windows;
     Window* window;
@@ -41,6 +43,7 @@ struct Client {
 
     void drop() {
         key_chain.drop(cz::heap_allocator());
+        jump_chain.drop();
         dealloc_message();
         Window::drop_(window);
         Window::drop_(_mini_buffer);

@@ -73,6 +73,11 @@ Key_Map create_key_map() {
     BIND(key_map, "A-<", command_start_of_buffer);
     BIND(key_map, "A->", command_end_of_buffer);
 
+    BIND(key_map, "C-x C-p", command_pop_jump);
+    BIND(key_map, "C-x C-n", command_unpop_jump);
+    BIND(key_map, "C-x C-\\ ", command_push_jump);
+    BIND(key_map, "C-x C-@", command_push_jump);
+
     BIND(key_map, "C-e", command_end_of_line);
     BIND(key_map, "C-a", command_start_of_line);
     BIND(key_map, "A-a", command_start_of_line_text);
