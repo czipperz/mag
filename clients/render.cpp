@@ -415,7 +415,8 @@ void render_to_cells(Cell* cells,
             {
                 Window_Unified* window = client->mini_buffer_window();
                 WITH_WINDOW_BUFFER(window);
-                if (completion_cache->change_index != buffer->changes.len()) {
+                if (completion_cache->change_index != buffer->changes.len() ||
+                    completion_cache->engine != client->_message.completion_engine) {
                     // Restart completion as mini buffer changed.
                     completion_cache->change_index = buffer->changes.len();
                     completion_cache->results.state = Completion_Results::INITIAL;
