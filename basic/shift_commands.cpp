@@ -7,12 +7,16 @@ namespace mag {
 namespace basic {
 
 void command_shift_line_forward(Editor* editor, Command_Source source) {
+    // Logically shift a line forwards.  This works by physically shifting the opposite line
+    // forward.
+
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 
     uint64_t sum_line_lengths = 0;
     size_t num_edits = cursors.len * 2;
     for (size_t c = 0; c < cursors.len; ++c) {
+        // `start_next` is the start of the line we are going to delete (next line).
         Contents_Iterator start_next;
         if (window->show_marks) {
             start_next = buffer->contents.iterator_at(cursors[c].end());
@@ -27,9 +31,11 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
             continue;
         }
 
+        // `end_next` is the end of the line we are going to delete (next line).
         Contents_Iterator end_next = start_next;
         end_of_line(&end_next);
 
+        // Check to see if we can merge with the next edit (at the next cursor).
         if (c + 1 < cursors.len) {
             uint64_t next_cursor_position;
             if (window->show_marks) {
@@ -39,6 +45,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
             }
 
             if (next_cursor_position <= end_next.position) {
+                // The edits overlap so we do merge.
                 num_edits -= 2;
                 continue;
             }
@@ -54,6 +61,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
     bool override_start = false;
     Contents_Iterator start;
     for (size_t c = 0; c < cursors.len; ++c) {
+        // `start_next` is the start of the line we are going to delete (next line).
         Contents_Iterator start_next;
         if (window->show_marks) {
             start_next = buffer->contents.iterator_at(cursors[c].end());
@@ -62,6 +70,8 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         }
 
         if (override_start) {
+            // We are merging with the previous edit, which works on a region directly before us in
+            // the file.  `start` is now the start of the total merged region.
             override_start = false;
         } else {
             if (window->show_marks) {
@@ -79,9 +89,11 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
 
         start_of_line(&start);
 
+        // `end_next` is the end of the line we are going to delete (next line).
         Contents_Iterator end_next = start_next;
         end_of_line(&end_next);
 
+        // Check to see if we can merge with the next edit (at the next cursor).
         if (c + 1 < cursors.len) {
             uint64_t next_cursor_position;
             if (window->show_marks) {
@@ -91,6 +103,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
             }
 
             if (next_cursor_position <= end_next.position) {
+                // The edits overlap so we do merge.
                 override_start = true;
                 continue;
             }
@@ -123,12 +136,16 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
 }
 
 void command_shift_line_backward(Editor* editor, Command_Source source) {
+    // Logically shift a line backwards.  This works by physically shifting the opposite line
+    // forward.
+
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 
     uint64_t sum_line_lengths = 0;
     size_t num_edits = cursors.len * 2;
     for (size_t c = cursors.len; c-- > 0;) {
+        // `end_prev` is the end of the line we are going to delete (previous line).
         Contents_Iterator end_prev;
         if (window->show_marks) {
             end_prev = buffer->contents.iterator_at(cursors[c].start());
@@ -143,9 +160,11 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
             continue;
         }
 
+        // `start_prev` is the start of the line we are going to delete (previous line).
         Contents_Iterator start_prev = end_prev;
         start_of_line(&start_prev);
 
+        // Check to see if we can merge with the next edit (at the previous cursor).
         if (c >= 1) {
             uint64_t next_cursor_position;
             if (window->show_marks) {
@@ -155,11 +174,13 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
             }
 
             if (next_cursor_position >= start_prev.position) {
+                // The edits overlap so we do merge.
                 num_edits -= 2;
                 continue;
             }
         }
 
+        // Add the length of the line to be deleted (previous line).
         sum_line_lengths += end_prev.position - start_prev.position;
     }
 
@@ -170,6 +191,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
     bool override_end = false;
     Contents_Iterator end;
     for (size_t c = cursors.len; c-- > 0;) {
+        // `end_prev` is the end of the line we are going to delete (previous line).
         Contents_Iterator end_prev;
         if (window->show_marks) {
             end_prev = buffer->contents.iterator_at(cursors[c].start());
@@ -178,6 +200,8 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         }
 
         if (override_end) {
+            // We are merging with the previous edit, which works on a region directly after us in
+            // the file.  `end` is now the end of the total merged region.
             override_end = false;
         } else {
             if (window->show_marks) {
@@ -199,6 +223,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         Contents_Iterator start_prev = end_prev;
         start_of_line(&start_prev);
 
+        // Check to see if we can merge with the next edit (at the previous cursor).
         if (c >= 1) {
             uint64_t next_cursor_position;
             if (window->show_marks) {
@@ -208,6 +233,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
             }
 
             if (next_cursor_position >= start_prev.position) {
+                // The edits overlap so we do merge.
                 override_end = true;
                 continue;
             }
