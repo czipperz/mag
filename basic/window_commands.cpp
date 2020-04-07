@@ -84,12 +84,25 @@ Window_Unified* window_first(Window* window) {
     CZ_PANIC("");
 }
 
-void command_cycle_window(Editor* editor, Command_Source source) {
-    Window* child = source.client->selected_normal_window;
+Window_Unified* window_last(Window* window) {
+    switch (window->tag) {
+    case Window::UNIFIED:
+        return (Window_Unified*)window;
+
+    case Window::VERTICAL_SPLIT:
+    case Window::HORIZONTAL_SPLIT:
+        return window_last(((Window_Split*)window)->second);
+    }
+
+    CZ_PANIC("");
+}
+
+void cycle_window(Client* client) {
+    Window* child = client->selected_normal_window;
     Window_Split* parent = child->parent;
     while (parent) {
         if (parent->first == child) {
-            source.client->selected_normal_window = window_first(parent->second);
+            client->selected_normal_window = window_first(parent->second);
             return;
         }
 
@@ -97,7 +110,31 @@ void command_cycle_window(Editor* editor, Command_Source source) {
         parent = child->parent;
     };
 
-    source.client->selected_normal_window = window_first(source.client->window);
+    client->selected_normal_window = window_first(client->window);
+}
+
+void command_cycle_window(Editor* editor, Command_Source source) {
+    cycle_window(source.client);
+}
+
+void reverse_cycle_window(Client* client) {
+    Window* child = client->selected_normal_window;
+    Window_Split* parent = child->parent;
+    while (parent) {
+        if (parent->second == child) {
+            client->selected_normal_window = window_last(parent->first);
+            return;
+        }
+
+        child = parent;
+        parent = child->parent;
+    };
+
+    client->selected_normal_window = window_last(client->window);
+}
+
+void command_reverse_cycle_window(Editor* editor, Command_Source source) {
+    reverse_cycle_window(source.client);
 }
 
 }
