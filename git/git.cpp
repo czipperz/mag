@@ -112,6 +112,31 @@ void command_git_grep(Editor* editor, Command_Source source) {
     *selected_buffer_id = source.client->selected_window()->id;
     source.client->show_dialog(editor, "git grep: ", no_completion_engine,
                                command_git_grep_callback, selected_buffer_id);
+
+    Transaction transaction;
+    {
+        Window_Unified* window = source.client->selected_normal_window;
+        WITH_WINDOW_BUFFER(window);
+        if (!window->show_marks) {
+            return;
+        }
+
+        uint64_t start = window->cursors[0].start();
+        uint64_t end = window->cursors[0].end();
+        transaction.init(1, end - start);
+
+        Edit edit;
+        edit.value = buffer->contents.slice(transaction.value_allocator(),
+                                            buffer->contents.iterator_at(start), end);
+        edit.position = 0;
+        edit.flags = Edit::INSERT;
+        transaction.push(edit);
+    }
+
+    {
+        WITH_WINDOW_BUFFER(source.client->mini_buffer_window());
+        transaction.commit(buffer);
+    }
 }
 
 void command_save_and_quit(Editor* editor, Command_Source source) {
