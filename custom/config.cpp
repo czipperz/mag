@@ -137,6 +137,9 @@ Key_Map create_key_map() {
     BIND(key_map, "A-g A-g", command_goto_line);
     BIND(key_map, "A-g c", command_goto_position);
 
+    BIND(key_map, "A-g n", command_search_open_next);
+    BIND(key_map, "A-g p", command_search_open_previous);
+
     BIND(key_map, "A-g s", git::command_git_grep);
 
     BIND(key_map, "A-l", command_goto_center_of_window);
