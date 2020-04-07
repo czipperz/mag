@@ -50,7 +50,7 @@ struct Contents_Iterator {
     void advance(uint64_t offset);
 
     void retreat_to(uint64_t new_position) { return retreat(position - new_position); }
-    void advance_to(uint64_t new_position) { return retreat(new_position - position); }
+    void advance_to(uint64_t new_position) { return advance(new_position - position); }
 
     void retreat() {
         ZoneScopedN("retreat 1");
