@@ -54,7 +54,6 @@ static void draw_buffer_contents(Cell* cells,
                                  Editor* editor,
                                  Buffer* buffer,
                                  Window_Unified* window,
-                                 bool show_cursors,
                                  size_t start_row,
                                  size_t start_col) {
     ZoneScoped;
@@ -112,7 +111,7 @@ static void draw_buffer_contents(Cell* cells,
 
     int show_mark = 0;
     // Initialize show_mark to number of regions at start of visible region.
-    if (show_cursors && window->show_marks) {
+    if (window->show_marks) {
         for (size_t c = 0; c < cursors.len; ++c) {
             if (iterator.position > cursors[c].start() && iterator.position < cursors[c].end()) {
                 ++show_mark;
@@ -147,19 +146,17 @@ static void draw_buffer_contents(Cell* cells,
         }
 
         bool has_cursor = false;
-        if (show_cursors) {
-            for (size_t c = 0; c < cursors.len; ++c) {
-                if (window->show_marks) {
-                    if (iterator.position == cursors[c].start()) {
-                        ++show_mark;
-                    }
-                    if (iterator.position == cursors[c].end()) {
-                        --show_mark;
-                    }
+        for (size_t c = 0; c < cursors.len; ++c) {
+            if (window->show_marks) {
+                if (iterator.position == cursors[c].start()) {
+                    ++show_mark;
                 }
-                if (iterator.position == cursors[c].point) {
-                    has_cursor = true;
+                if (iterator.position == cursors[c].end()) {
+                    --show_mark;
                 }
+            }
+            if (iterator.position == cursors[c].point) {
+                has_cursor = true;
             }
         }
 
@@ -171,11 +168,11 @@ static void draw_buffer_contents(Cell* cells,
 
         Face face = {};
         if (has_cursor) {
-            apply_face(&face, editor->theme.faces[2]);
+            apply_face(&face, editor->theme.faces[3]);
         }
 
         if (show_mark) {
-            apply_face(&face, editor->theme.faces[3]);
+            apply_face(&face, editor->theme.faces[4]);
         }
 
         {
@@ -192,7 +189,7 @@ static void draw_buffer_contents(Cell* cells,
             }
         }
 
-        size_t type_face = 6;
+        size_t type_face = 7;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
             type_face += token.type;
         } else {
@@ -249,9 +246,10 @@ static void draw_buffer_contents(Cell* cells,
         }
     }
 
-    if (show_cursors) {
+    {
+        // Draw cursor at end of file.
         Face face = {};
-        apply_face(&face, editor->theme.faces[2]);
+        apply_face(&face, editor->theme.faces[3]);
         for (size_t c = 0; c < cursors.len; ++c) {
             if (cursors[c].point == buffer->contents.len) {
                 SET(face, ' ');
@@ -274,6 +272,7 @@ static void draw_buffer_decoration(Cell* cells,
                                    Editor* editor,
                                    Window* window,
                                    Buffer* buffer,
+                                   bool is_selected_window,
                                    size_t start_row,
                                    size_t start_col) {
     ZoneScoped;
@@ -282,20 +281,14 @@ static void draw_buffer_decoration(Cell* cells,
     size_t x = 0;
 
     Face face = {};
-    apply_face(&face, editor->theme.faces[buffer->is_unchanged() ? 0 : 1]);
-
-    SET(face, '-');
-    ++x;
-    if (buffer->is_unchanged()) {
-        SET(face, '-');
-    } else {
-        SET(face, '*');
+    apply_face(&face, editor->theme.faces[0]);
+    if (!buffer->is_unchanged()) {
+        apply_face(&face, editor->theme.faces[1]);
     }
-    ++x;
-    SET(face, '-');
-    ++x;
-    SET(face, ' ');
-    ++x;
+    if (is_selected_window) {
+        apply_face(&face, editor->theme.faces[2]);
+    }
+
     size_t max = cz::min<size_t>(buffer->path.len(), window->cols - x);
     for (size_t i = 0; i < max; ++i) {
         SET(face, buffer->path[i]);
@@ -311,15 +304,16 @@ static void draw_buffer(Cell* cells,
                         size_t total_cols,
                         Editor* editor,
                         Window_Unified* window,
-                        bool show_cursors,
+                        bool is_selected_window,
                         size_t start_row,
                         size_t start_col) {
     ZoneScoped;
 
     WITH_WINDOW_BUFFER(window);
-    draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, show_cursors,
-                         start_row, start_col);
-    draw_buffer_decoration(cells, total_cols, editor, window, buffer, start_row, start_col);
+    draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, start_row,
+                         start_col);
+    draw_buffer_decoration(cells, total_cols, editor, window, buffer, is_selected_window, start_row,
+                           start_col);
 }
 
 static void draw_window(Cell* cells,
@@ -478,7 +472,7 @@ void render_to_cells(Cell* cells,
         size_t start_col = 0;
 
         Face minibuffer_prompt_face = {};
-        apply_face(&minibuffer_prompt_face, editor->theme.faces[4]);
+        apply_face(&minibuffer_prompt_face, editor->theme.faces[5]);
         for (size_t i = 0; i < client->_message.text.len && i < total_cols; ++i) {
             SET(minibuffer_prompt_face, client->_message.text[i]);
             ++x;
@@ -490,8 +484,8 @@ void render_to_cells(Cell* cells,
             WITH_WINDOW_BUFFER(window);
             window->rows = mini_buffer_height;
             window->cols = total_cols - start_col;
-            draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window,
-                                 client->_select_mini_buffer, start_row, start_col);
+            draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window, start_row,
+                                 start_col);
         } else {
             for (; x < total_cols; ++x) {
                 SET({}, ' ');
@@ -520,7 +514,7 @@ void render_to_cells(Cell* cells,
                 {
                     Face face = {};
                     if (r == completion_cache->results.selected) {
-                        apply_face(&face, editor->theme.faces[5]);
+                        apply_face(&face, editor->theme.faces[6]);
                     }
 
                     cz::Str result = completion_cache->results.results[r];

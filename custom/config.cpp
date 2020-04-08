@@ -153,9 +153,10 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
-    theme.faces.reserve(cz::heap_allocator(), 33);
-    theme.faces.push({0, 7, 0});  // saved buffer
-    theme.faces.push({0, 1, 0});  // unsaved buffer
+    theme.faces.reserve(cz::heap_allocator(), 34);
+    theme.faces.push({-1, -1, 0});              // default
+    theme.faces.push({1, -1, 0});               // unsaved buffer
+    theme.faces.push({-1, -1, Face::REVERSE});  // selected buffer
 
     theme.faces.push({0, 7, 0});   // cursor
     theme.faces.push({0, 12, 0});  // marked region
