@@ -98,6 +98,7 @@ void cache_window_unified_position(Window_Unified* window,
     compute_visible_end(window, &visible_end_iterator);
     window_cache->v.unified.visible_start = start_position;
     window_cache->v.unified.visible_end = visible_end_iterator.position;
+    window_cache->v.unified.change_index = buffer->changes.len();
 
     buffer->token_cache.update(buffer);
     buffer->token_cache.generate_check_points_until(buffer, start_position);

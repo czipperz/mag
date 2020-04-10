@@ -61,6 +61,10 @@ static void draw_buffer_contents(Cell* cells,
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     start_of_line(&iterator);
     if (window_cache) {
+        if (buffer->changes.len() != window_cache->v.unified.change_index) {
+            cache_window_unified_position(window, window_cache, iterator.position, buffer);
+        }
+
         if (window->start_position != window_cache->v.unified.visible_start) {
             // Start position updated in a command so recalculate end position.
             Contents_Iterator visible_end_iterator =
