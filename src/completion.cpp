@@ -198,6 +198,7 @@ void buffer_completion_engine(Editor* editor, Completion_Results* completion_res
             data->all_results.push(
                 buffer->path.clone(completion_results->results_buffer_array.allocator()));
         }
+        std::sort(data->all_results.start(), data->all_results.end());
     }
 
     Buffer_Completion_Engine_Data* data = (Buffer_Completion_Engine_Data*)completion_results->data;
