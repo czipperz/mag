@@ -1028,6 +1028,10 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                            next_token.end == next_token.start + 1 && start_ch == ',') {
                     normal_state = AFTER_PARAMETER_DECLARATION;
                     token->type = Token_Type::TYPE;
+                } else if (normal_state == START_OF_PARAMETER &&
+                           next_token.end == next_token.start + 1 && start_ch == ')') {
+                    normal_state = START_OF_STATEMENT;
+                    token->type = Token_Type::TYPE;
                 } else {
                     normal_state = IN_EXPR;
                 }
