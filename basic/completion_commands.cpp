@@ -8,33 +8,27 @@ namespace basic {
 void command_insert_completion(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->mini_buffer_window();
     WITH_WINDOW_BUFFER(window);
-    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
-    if (results->selected >= results->results.len()) {
+    Completion_Filter_Context* context =
+        &source.client->mini_buffer_completion_cache.filter_context;
+    cz::Str query = source.client->mini_buffer_completion_cache.engine_context.query;
+    if (context->selected >= context->results.len()) {
         return;
     }
 
-    size_t query_offset = 0;
-    const char* last_slash = results->query.rfind('/');
-    if (last_slash) {
-        query_offset = last_slash - results->query.start() + 1;
-    }
-
-    cz::Str value = results->results[results->selected];
+    cz::Str value = context->results[context->selected];
 
     Transaction transaction;
-    transaction.init(2, results->query.len() - query_offset + value.len);
+    transaction.init(2, query.len + value.len);
 
     Edit remove;
-    remove.value.init_duplicate(
-        transaction.value_allocator(),
-        {results->query.buffer() + query_offset, results->query.len() - query_offset});
-    remove.position = query_offset;
+    remove.value.init_duplicate(transaction.value_allocator(), query);
+    remove.position = 0;
     remove.flags = Edit::REMOVE;
     transaction.push(remove);
 
     Edit insert;
     insert.value.init_duplicate(transaction.value_allocator(), value);
-    insert.position = query_offset;
+    insert.position = 0;
     insert.flags = Edit::INSERT;
     transaction.push(insert);
 
@@ -42,52 +36,58 @@ void command_insert_completion(Editor* editor, Command_Source source) {
 }
 
 void command_next_completion(Editor* editor, Command_Source source) {
-    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
-    if (results->selected + 1 >= results->results.len()) {
+    Completion_Filter_Context* context =
+        &source.client->mini_buffer_completion_cache.filter_context;
+    if (context->selected + 1 >= context->results.len()) {
         return;
     }
-    ++results->selected;
+    ++context->selected;
 }
 
 void command_previous_completion(Editor* editor, Command_Source source) {
-    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
-    if (results->selected == 0) {
+    Completion_Filter_Context* context =
+        &source.client->mini_buffer_completion_cache.filter_context;
+    if (context->selected == 0) {
         return;
     }
-    --results->selected;
+    --context->selected;
 }
 
 void command_completion_down_page(Editor* editor, Command_Source source) {
-    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
-    if (results->selected + editor->theme.max_completion_results >= results->results.len()) {
-        results->selected = results->results.len();
-        if (results->selected > 0) {
-            --results->selected;
+    Completion_Filter_Context* context =
+        &source.client->mini_buffer_completion_cache.filter_context;
+    if (context->selected + editor->theme.max_completion_results >= context->results.len()) {
+        context->selected = context->results.len();
+        if (context->selected > 0) {
+            --context->selected;
         }
         return;
     }
-    results->selected += editor->theme.max_completion_results;
+    context->selected += editor->theme.max_completion_results;
 }
 
 void command_completion_up_page(Editor* editor, Command_Source source) {
-    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
-    if (results->selected < editor->theme.max_completion_results) {
-        results->selected = 0;
+    Completion_Filter_Context* context =
+        &source.client->mini_buffer_completion_cache.filter_context;
+    if (context->selected < editor->theme.max_completion_results) {
+        context->selected = 0;
         return;
     }
-    results->selected -= editor->theme.max_completion_results;
+    context->selected -= editor->theme.max_completion_results;
 }
 
 void command_first_completion(Editor* editor, Command_Source source) {
-    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
-    results->selected = 0;
+    Completion_Filter_Context* context =
+        &source.client->mini_buffer_completion_cache.filter_context;
+    context->selected = 0;
 }
 
 void command_last_completion(Editor* editor, Command_Source source) {
-    Completion_Results* results = &source.client->mini_buffer_completion_cache.results;
-    results->selected = results->results.len();
-    if (results->selected > 0) {
-        --results->selected;
+    Completion_Filter_Context* context =
+        &source.client->mini_buffer_completion_cache.filter_context;
+    context->selected = context->results.len();
+    if (context->selected > 0) {
+        --context->selected;
     }
 }
 

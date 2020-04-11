@@ -431,35 +431,39 @@ void render_to_cells(Cell* cells,
                 WITH_WINDOW_BUFFER(window);
                 if (completion_cache->change_index != buffer->changes.len() ||
                     completion_cache->engine != client->_message.completion_engine) {
-                    // Restart completion as mini buffer changed.
                     completion_cache->change_index = buffer->changes.len();
-                    completion_cache->results.state = Completion_Results::INITIAL;
-                    completion_cache->results.query.set_len(0);
+                    if (completion_cache->engine != client->_message.completion_engine) {
+                        completion_cache->state = Completion_Cache::INITIAL;
+                    } else {
+                        completion_cache->state = Completion_Cache::LOADING;
+                    }
+
+                    completion_cache->engine_context.query.set_len(0);
                     buffer->contents.stringify_into(cz::heap_allocator(),
-                                                    &completion_cache->results.query);
+                                                    &completion_cache->engine_context.query);
                 }
             }
 
-            switch (completion_cache->results.state) {
-            case Completion_Results::INITIAL:
+            switch (completion_cache->state) {
+            case Completion_Cache::INITIAL:
                 if (completion_cache->engine != client->_message.completion_engine) {
                     completion_cache->engine = client->_message.completion_engine;
-                    if (completion_cache->results.cleanup) {
-                        completion_cache->results.cleanup(completion_cache->results.data);
+                    if (completion_cache->engine_context.cleanup) {
+                        completion_cache->engine_context.cleanup(
+                            completion_cache->engine_context.data);
                     }
-                    completion_cache->results.cleanup = nullptr;
-                    completion_cache->results.data = nullptr;
-                    completion_cache->results.results_buffer_array.clear();
-                    completion_cache->results.results.set_len(0);
-                    completion_cache->results.selected = 0;
+                    completion_cache->engine_context.cleanup = nullptr;
+                    completion_cache->engine_context.data = nullptr;
+                    completion_cache->engine_context.results_buffer_array.clear();
+                    completion_cache->engine_context.results.set_len(0);
                 }
                 break;
 
-            case Completion_Results::LOADING:
+            case Completion_Cache::LOADING:
                 break;
 
-            case Completion_Results::LOADED:
-                results_height = completion_cache->results.results.len();
+            case Completion_Cache::LOADED:
+                results_height = completion_cache->filter_context.results.len();
                 if (results_height > editor->theme.max_completion_results) {
                     results_height = editor->theme.max_completion_results;
                 }
@@ -506,9 +510,9 @@ void render_to_cells(Cell* cells,
             size_t x = 0;
             size_t start_row = total_rows - results_height;
             size_t start_col = 0;
-            size_t offset = completion_cache->results.selected;
-            if (offset >= completion_cache->results.results.len() - results_height / 2) {
-                offset = completion_cache->results.results.len() - results_height;
+            size_t offset = completion_cache->filter_context.selected;
+            if (offset >= completion_cache->filter_context.results.len() - results_height / 2) {
+                offset = completion_cache->filter_context.results.len() - results_height;
             } else if (offset < results_height / 2) {
                 offset = 0;
             } else {
@@ -517,11 +521,11 @@ void render_to_cells(Cell* cells,
             for (size_t r = offset; r < results_height + offset; ++r) {
                 {
                     Face face = {};
-                    if (r == completion_cache->results.selected) {
+                    if (r == completion_cache->filter_context.selected) {
                         apply_face(&face, editor->theme.faces[6]);
                     }
 
-                    cz::Str result = completion_cache->results.results[r];
+                    cz::Str result = completion_cache->filter_context.results[r];
                     for (size_t i = 0; i < total_cols && i < result.len; ++i) {
                         SET(face, result[i]);
                         ++x;

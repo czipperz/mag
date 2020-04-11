@@ -299,10 +299,14 @@ void run(Server* server, Client* client) {
                used_colors);
 
         int ch = ERR;
-        if (client->mini_buffer_completion_cache.results.state != Completion_Results::LOADED &&
-            client->_message.completion_engine) {
-            client->_message.completion_engine(&server->editor,
-                                               &client->mini_buffer_completion_cache.results);
+        if (client->mini_buffer_completion_cache.state != Completion_Cache::LOADED &&
+            client->_message.tag > Message::SHOW) {
+            CZ_DEBUG_ASSERT(server->editor.theme.completion_filter != nullptr);
+            server->editor.theme.completion_filter(
+                &client->mini_buffer_completion_cache.filter_context,
+                client->mini_buffer_completion_cache.engine, &server->editor,
+                &client->mini_buffer_completion_cache.engine_context);
+            client->mini_buffer_completion_cache.state = Completion_Cache::LOADED;
             continue;
         }
 

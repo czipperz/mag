@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <cz/vector.hpp>
+#include "completion.hpp"
 
 namespace mag {
 struct Overlay;
@@ -50,6 +51,8 @@ struct Theme {
     cz::Slice<Overlay> overlays;
 
     size_t max_completion_results;
+
+    Completion_Filter completion_filter;
 
     void drop(cz::Allocator allocator) {
         colors.drop(allocator);
