@@ -71,16 +71,10 @@ static void file_completion_engine_data_cleanup(void* _data) {
 static void get_directory_to_list(cz::String* directory, cz::Str query) {
     const char* dir_sep = query.rfind('/');
     if (dir_sep) {
-        if (dir_sep != query.buffer) {
-            // Normal case: "./u" or "/a/b/c".
-            size_t len = dir_sep - query.buffer + 1;
-            directory->reserve(cz::heap_allocator(), len + 1);
-            directory->append({query.buffer, len});
-        } else {
-            // Root directory: "/u".
-            directory->reserve(cz::heap_allocator(), 2);
-            directory->push('/');
-        }
+        // Normal case: "./u" or "/a/b/c".
+        size_t len = dir_sep - query.buffer + 1;
+        directory->reserve(cz::heap_allocator(), len + 1);
+        directory->append({query.buffer, len});
     } else {
         // Relative path without directories: "u".  Pretend they typed "./u" and load current
         // working directory (".").
