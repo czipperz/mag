@@ -68,18 +68,20 @@ static void file_completion_engine_data_cleanup(void* _data) {
     free(data);
 }
 
-static void get_directory_to_list(cz::String* directory, cz::Str query) {
+static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
     const char* dir_sep = query.rfind('/');
     if (dir_sep) {
         // Normal case: "./u" or "/a/b/c".
         size_t len = dir_sep - query.buffer + 1;
         directory->reserve(cz::heap_allocator(), len + 1);
         directory->append({query.buffer, len});
+        return {query.buffer, len};
     } else {
         // Relative path without directories: "u".  Pretend they typed "./u" and load current
         // working directory (".").
         directory->reserve(cz::heap_allocator(), 3);
         directory->append("./");
+        return {};
     }
 }
 
@@ -95,7 +97,7 @@ void file_completion_engine(Editor*, Completion_Engine_Context* context) {
     File_Completion_Engine_Data* data = (File_Completion_Engine_Data*)context->data;
 
     data->temp_result.set_len(0);
-    get_directory_to_list(&data->temp_result, context->query);
+    cz::Str prefix = get_directory_to_list(&data->temp_result, context->query);
     if (data->temp_result == data->directory) {
         // Directory has not changed so track the selected item.
         return;
@@ -118,8 +120,8 @@ void file_completion_engine(Editor*, Completion_Engine_Context* context) {
             context->results.reserve(cz::heap_allocator(), 1);
             cz::String file = {};
             file.reserve(context->results_buffer_array.allocator(),
-                         data->directory.len() + iterator.file().len);
-            file.append(data->directory);
+                         prefix.len + iterator.file().len);
+            file.append(prefix);
             file.append(iterator.file());
             context->results.push(file);
 
