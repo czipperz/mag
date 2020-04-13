@@ -166,6 +166,10 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
     }
 
     transaction.commit(buffer);
+
+    if (save_contents(&buffer->contents, buffer->path.buffer())) {
+        buffer->mark_saved();
+    }
 }
 
 struct Clang_Format_Job_Data {
@@ -191,8 +195,9 @@ static bool clang_format_job_tick(Editor* editor, void* _data) {
 
             Buffer_Handle* handle = editor->lookup(data->buffer_id);
             if (handle) {
-                parse_and_apply_replacements(
-                    handle, {data->output_xml.buffer(), data->output_xml.len()}, data->change_index);
+                parse_and_apply_replacements(handle,
+                                             {data->output_xml.buffer(), data->output_xml.len()},
+                                             data->change_index);
             }
 
             data->output_xml.drop(cz::heap_allocator());
