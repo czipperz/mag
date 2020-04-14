@@ -80,11 +80,11 @@ void Token_Cache::update(Buffer* buffer) {
                 if (token.end > end_position || state != check_points[i].state) {
                     check_points[i].position = token.end;
                     check_points[i].state = state;
-                    end_position = check_points[i + 1].position;
                     ++i;
                     if (i == check_points.len()) {
                         return;
                     }
+                    end_position = check_points[i].position;
                 } else {
                     break;
                 }
