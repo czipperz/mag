@@ -48,7 +48,7 @@ struct Overlay {
 
     void end_frame() { vtable->end_frame(data); }
 
-    void cleanup() { vtable->end_frame(data); }
+    void cleanup() { vtable->cleanup(data); }
 };
 
 }
