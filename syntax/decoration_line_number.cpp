@@ -29,7 +29,7 @@ static void decoration_line_number_append(Buffer* buffer,
         iterator.advance();
     }
 
-    write(string_writer(string), 'L', line_number, " C", iterator.position - line_start);
+    write(string_writer(string), 'L', line_number + 1, " C", iterator.position - line_start + 1);
 }
 
 static void decoration_line_number_cleanup(void* _data) {}
