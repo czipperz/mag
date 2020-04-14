@@ -164,7 +164,7 @@ static void render(int* total_rows,
     FrameMarkEnd("ncurses");
 }
 
-static void process_key_press(Server* server, Client* client, char ch) {
+static void process_key_press(Server* server, Client* client, int ch) {
     ZoneScoped;
 
     Key key = {};
@@ -210,7 +210,7 @@ rerun:
     server->receive(client, key);
 }
 
-static void process_key_presses(Server* server, Client* client, char ch) {
+static void process_key_presses(Server* server, Client* client, int ch) {
     ZoneScoped;
 
     while (1) {
