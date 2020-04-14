@@ -12,6 +12,7 @@
 #include "basic/visible_region_commands.hpp"
 #include "basic/window_commands.hpp"
 #include "clang_format/clang_format.hpp"
+#include "decoration.hpp"
 #include "git/git.hpp"
 #include "git/tokenize_git_commit_edit_message.hpp"
 #include "git/tokenize_patch.hpp"
@@ -19,6 +20,7 @@
 #include "man/man.hpp"
 #include "overlay.hpp"
 #include "prose/alternate.hpp"
+#include "syntax/decoration_line_number.hpp"
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
@@ -197,6 +199,9 @@ Theme create_theme() {
     theme.faces.push({-1, -1, Face::BOLD});                  // Token_Type::PROCESS_BOLD
     theme.faces.push({-1, -1, Face::ITALICS});               // Token_Type::PROCESS_ITALICS
     theme.faces.push({-1, -1, Face::BOLD | Face::ITALICS});  // Token_Type::PROCESS_BOLD_ITALICS
+
+    static Decoration decorations[] = {syntax::decoration_line_number()};
+    theme.decorations = cz::slice(decorations);
 
     static Overlay overlays[] = {syntax::overlay_matching_region(),
                                  syntax::overlay_preferred_column()};

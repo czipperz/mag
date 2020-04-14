@@ -2,6 +2,7 @@
 
 #include <Tracy.hpp>
 #include "command_macros.hpp"
+#include "decoration.hpp"
 #include "movement.hpp"
 #include "overlay.hpp"
 #include "token.hpp"
@@ -274,7 +275,7 @@ static void draw_buffer_contents(Cell* cells,
 static void draw_buffer_decoration(Cell* cells,
                                    size_t total_cols,
                                    Editor* editor,
-                                   Window* window,
+                                   Window_Unified* window,
                                    Buffer* buffer,
                                    bool is_selected_window,
                                    size_t start_row,
@@ -293,9 +294,22 @@ static void draw_buffer_decoration(Cell* cells,
         apply_face(&face, editor->theme.faces[2]);
     }
 
-    size_t max = cz::min<size_t>(buffer->path.len(), window->cols - x);
+    cz::AllocatedString string = {};
+    string.allocator = cz::heap_allocator();
+    CZ_DEFER(string.drop());
+    string.reserve(1024);
+    string.reserve(buffer->path.len());
+    string.append(buffer->path);
+
+    for (size_t i = 0; i < editor->theme.decorations.len; ++i) {
+        string.reserve(5);
+        string.push(' ');
+        editor->theme.decorations[i].append(buffer, window, &string);
+    }
+
+    size_t max = cz::min<size_t>(string.len(), window->cols - x);
     for (size_t i = 0; i < max; ++i) {
-        SET(face, buffer->path[i]);
+        SET(face, string[i]);
         ++x;
     }
     for (; x < window->cols; ++x) {

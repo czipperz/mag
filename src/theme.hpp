@@ -5,6 +5,7 @@
 #include "completion.hpp"
 
 namespace mag {
+struct Decoration;
 struct Overlay;
 
 struct Color {
@@ -48,6 +49,7 @@ struct Theme {
     /// directly correspond to the token types.
     cz::Vector<Face> faces;
 
+    cz::Slice<Decoration> decorations;
     cz::Slice<Overlay> overlays;
 
     size_t max_completion_results;
