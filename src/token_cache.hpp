@@ -21,6 +21,7 @@ struct Token_Cache {
 
     /// Find the last check point before the start position
     bool find_check_point(uint64_t position, Tokenizer_Check_Point*);
+    bool find_check_point(uint64_t position, size_t* index);
 
     /// Update the cache based on recent changes
     void update(Buffer* buffer);

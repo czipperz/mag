@@ -15,6 +15,16 @@ void Token_Cache::drop() {
 }
 
 bool Token_Cache::find_check_point(uint64_t position, Tokenizer_Check_Point* cp) {
+    size_t result_index;
+    if (find_check_point(position, &result_index)) {
+        *cp = check_points[result_index];
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool Token_Cache::find_check_point(uint64_t position, size_t* index_out) {
     size_t start = 0;
     size_t end = check_points.len();
     size_t result_index = check_points.len();
@@ -32,7 +42,7 @@ bool Token_Cache::find_check_point(uint64_t position, Tokenizer_Check_Point* cp)
     }
 
     if (result_index < check_points.len()) {
-        *cp = check_points[result_index];
+        *index_out = result_index;
         return true;
     } else {
         return false;
