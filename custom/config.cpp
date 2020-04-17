@@ -9,6 +9,7 @@
 #include "basic/directory_commands.hpp"
 #include "basic/search_commands.hpp"
 #include "basic/shift_commands.hpp"
+#include "basic/token_movement_commands.hpp"
 #include "basic/visible_region_commands.hpp"
 #include "basic/window_commands.hpp"
 #include "clang_format/clang_format.hpp"
@@ -57,6 +58,11 @@ Key_Map create_key_map() {
     BIND(key_map, "C-p", command_backward_line);
     BIND(key_map, "A-n", command_shift_line_forward);
     BIND(key_map, "A-p", command_shift_line_backward);
+
+    BIND(key_map, "C-A-u", command_backward_up_pair);
+    BIND(key_map, "C-A-d", command_forward_up_pair);
+    BIND(key_map, "C-A-b", command_backward_token_pair);
+    BIND(key_map, "C-A-f", command_forward_token_pair);
 
     BIND(key_map, "C-A-n", command_create_cursor_forward);
     BIND(key_map, "C-A-p", command_create_cursor_backward);
