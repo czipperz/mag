@@ -879,7 +879,7 @@ static void command_goto_position_callback(Editor* editor,
 
     WITH_SELECTED_BUFFER(client);
     push_jump(window, client, handle->id, buffer);
-    window->cursors[0].point = position;
+    window->cursors[0].point = std::min(position, buffer->contents.len);
 }
 
 void command_goto_line(Editor* editor, Command_Source source) {
