@@ -96,7 +96,8 @@ static bool get_token_after_position(Buffer* buffer,
         if (!has_token) {
             return false;
         }
-        if (token->start >= end_position) {
+
+        if (token->end > end_position) {
             return true;
         }
     }
@@ -110,24 +111,40 @@ static bool get_token_before_position(Buffer* buffer,
 
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.update(buffer);
-    buffer->token_cache.find_check_point(token_iterator->position, &check_point);
-    token_iterator->retreat_to(check_point.position);
-    *state = check_point.state;
-
-    bool has_token = buffer->mode.next_token(token_iterator, token, state);
-    if (!has_token) {
-        return false;
+    size_t check_point_index;
+    if (buffer->token_cache.find_check_point(token_iterator->position, &check_point_index)) {
+        check_point = buffer->token_cache.check_points[check_point_index];
+    } else {
+        check_point_index = 0;
     }
 
     while (1) {
-        Token previous_token = *token;
+        token_iterator->retreat_to(check_point.position);
+        *state = check_point.state;
+
         bool has_token = buffer->mode.next_token(token_iterator, token, state);
         if (!has_token) {
             return false;
         }
+
         if (token->start >= end_position) {
-            *token = previous_token;
-            return true;
+            if (check_point_index == 0) {
+                return false;
+            }
+
+            --check_point_index;
+            end_position = check_point.position;
+            check_point = buffer->token_cache.check_points[check_point_index];
+            continue;
+        }
+
+        while (1) {
+            Token previous_token = *token;
+            bool has_token = buffer->mode.next_token(token_iterator, token, state);
+            if (!has_token || token->start >= end_position) {
+                *token = previous_token;
+                return true;
+            }
         }
     }
 }
@@ -181,44 +198,51 @@ void command_forward_up_pair(Editor* editor, Command_Source source) {
               [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
 }
 
+static void forward_token_pair(Buffer* buffer, uint64_t* point) {
+    Token token;
+    Contents_Iterator token_iterator = buffer->contents.iterator_at(*point);
+    uint64_t state;
+    if (!get_token_after_position(buffer, &token_iterator, &state, &token)) {
+        return;
+    }
+
+    *point = token.end;
+
+    if (token.type == Token_Type::OPEN_PAIR) {
+        forward_up_pair(buffer, point);
+    }
+}
+
 void command_forward_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
-        Token token;
-        Contents_Iterator token_iterator =
-            buffer->contents.iterator_at(window->cursors[cursor_index].point);
-        uint64_t state;
-        if (!get_token_after_position(buffer, &token_iterator, &state, &token)) {
-            continue;
-        }
-
-        window->cursors[cursor_index].point = token.end;
-
-        if (token.type == Token_Type::OPEN_PAIR) {
-            forward_up_pair(buffer, &window->cursors[cursor_index].point);
-        }
+        forward_token_pair(buffer, &window->cursors[cursor_index].point);
     }
     std::sort(window->cursors.start(), window->cursors.end(),
               [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
 }
 
+static void backward_token_pair(Buffer* buffer, uint64_t* point) {
+    Token token;
+    Contents_Iterator token_iterator = buffer->contents.iterator_at(*point);
+    uint64_t state;
+    if (!get_token_before_position(buffer, &token_iterator, &state, &token)) {
+        return;
+    }
+
+    *point = token.start;
+
+    if (token.type == Token_Type::CLOSE_PAIR) {
+        backward_up_pair(buffer, point);
+    }
+}
+
 void command_backward_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
-        Token token;
-        Contents_Iterator token_iterator =
-            buffer->contents.iterator_at(window->cursors[cursor_index].point);
-        uint64_t state;
-        if (!get_token_before_position(buffer, &token_iterator, &state, &token)) {
-            continue;
-        }
-
-        window->cursors[cursor_index].point = token.start;
-
-        if (token.type == Token_Type::CLOSE_PAIR) {
-            backward_up_pair(buffer, &window->cursors[cursor_index].point);
-        }
+        backward_token_pair(buffer, &window->cursors[cursor_index].point);
     }
+
     std::sort(window->cursors.start(), window->cursors.end(),
               [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
 }
