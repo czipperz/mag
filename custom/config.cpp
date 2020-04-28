@@ -292,7 +292,8 @@ Mode get_mode(cz::Str file_name) {
         mode.key_map = directory_key_map();
     } else if (file_name.ends_with(".c") || file_name.ends_with(".h") ||
                file_name.ends_with(".cc") || file_name.ends_with(".hh") ||
-               file_name.ends_with(".cpp") || file_name.ends_with(".hpp")) {
+               file_name.ends_with(".cpp") || file_name.ends_with(".hpp") ||
+               file_name.ends_with(".glsl")) {
         mode.next_token = syntax::cpp_next_token;
         mode.key_map = cpp_key_map();
         static Overlay overlays[] = {syntax::overlay_matching_pairs(),
