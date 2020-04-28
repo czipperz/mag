@@ -57,7 +57,7 @@ void Token_Cache::update(Buffer* buffer) {
         (unsigned char*)calloc(1, cz::bit_array::alloc_size(check_points.len()));
     CZ_DEFER(free(changed_check_points));
     // Detect check points that changed
-    for (size_t i = 0; i < check_points.len(); ++i) {
+    for (size_t i = 1; i < check_points.len(); ++i) {
         uint64_t pos = check_points[i].position;
 
         position_after_changes({changes.elems + change_index, changes.len - change_index}, &pos);
@@ -115,6 +115,12 @@ void Token_Cache::generate_check_points_until(Buffer* buffer, uint64_t position)
     } else {
         state = 0;
         iterator = buffer->contents.start();
+
+        Tokenizer_Check_Point check_point;
+        check_point.position = iterator.position;
+        check_point.state = state;
+        check_points.reserve(cz::heap_allocator(), 1);
+        check_points.push(check_point);
     }
 
     while (iterator.position <= position) {
