@@ -144,5 +144,48 @@ void command_insert_indent(Editor* editor, Command_Source source) {
     transaction.commit(buffer);
 }
 
+void command_delete_whitespace(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    uint64_t count = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
+        forward_through_whitespace(&it);
+        uint64_t end = it.position;
+        backward_through_whitespace(&it);
+        count += end - it.position;
+    }
+
+    Transaction transaction;
+    transaction.init(cursors.len, count);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
+        forward_through_whitespace(&it);
+        uint64_t end = it.position;
+        backward_through_whitespace(&it);
+        uint64_t count = end - it.position;
+
+        char* value = (char*)transaction.value_allocator().alloc({count, 1});
+        for (Contents_Iterator x = it; x.position < end; x.advance()) {
+            value[x.position - it.position] = x.get();
+        }
+
+        Edit edit;
+        edit.value.init_from_constant({value, count});
+        edit.position = it.position + offset;
+        edit.flags = Edit::REMOVE;
+        transaction.push(edit);
+
+        offset += count;
+    }
+
+    transaction.commit(buffer);
+}
+
 }
 }
