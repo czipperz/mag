@@ -6,17 +6,14 @@
 namespace mag {
 
 void start_of_line(Contents_Iterator* iterator) {
-    if (iterator->at_bob()) {
-        return;
-    }
-
-    iterator->retreat();
-    while (iterator->get() != '\n') {
+    do {
         if (iterator->at_bob()) {
             return;
         }
+
         iterator->retreat();
-    }
+    } while (iterator->get() != '\n');
+
     iterator->advance();
 }
 
@@ -104,22 +101,21 @@ void forward_word(Contents_Iterator* iterator) {
 }
 
 void backward_word(Contents_Iterator* iterator) {
-    if (iterator->at_bob()) {
-        return;
-    }
-    iterator->retreat();
-    while (!isalnum(iterator->get())) {
+    do {
         if (iterator->at_bob()) {
             return;
         }
         iterator->retreat();
-    }
+    } while (!isalnum(iterator->get()));
+
+    iterator->retreat();
     while (isalnum(iterator->get())) {
         if (iterator->at_bob()) {
             return;
         }
         iterator->retreat();
     }
+
     iterator->advance();
 }
 
