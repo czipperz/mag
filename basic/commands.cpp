@@ -234,7 +234,7 @@ void command_open_line(Editor* editor, Command_Source source) {
     TRANSFORM_POINTS(backward_char);
 }
 
-void command_insert_newline(Editor* editor, Command_Source source) {
+void command_insert_newline_no_indent(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     insert_char(buffer, window, '\n');
 }

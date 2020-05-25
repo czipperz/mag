@@ -7,6 +7,7 @@
 #include "basic/copy_commands.hpp"
 #include "basic/cpp_commands.hpp"
 #include "basic/directory_commands.hpp"
+#include "basic/indent_commands.hpp"
 #include "basic/search_commands.hpp"
 #include "basic/shift_commands.hpp"
 #include "basic/token_movement_commands.hpp"
@@ -105,7 +106,9 @@ Key_Map create_key_map() {
     BIND(key_map, "C-t", command_transpose_characters);
 
     BIND(key_map, "A-m", command_open_line);
-    BIND(key_map, "C-m", command_insert_newline);
+    BIND(key_map, "C-m", command_insert_newline_indent);
+    BIND(key_map, "\n", command_insert_newline_indent);
+    BIND(key_map, "\t", command_insert_indent);
 
     BIND(key_map, "C-/", command_undo);
     BIND(key_map, "C-_", command_undo);
