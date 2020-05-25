@@ -33,9 +33,9 @@ static void tokenize_recording_pairs(Tokenizer_Check_Point check_point,
     }
 }
 
-static void backward_up_pair(Buffer* buffer, uint64_t* cursor_point) {
-    uint64_t end_position = *cursor_point;
-    Contents_Iterator token_iterator = buffer->contents.iterator_at(end_position);
+void backward_up_pair(Buffer* buffer, Contents_Iterator* cursor) {
+    uint64_t end_position = cursor->position;
+    Contents_Iterator token_iterator = *cursor;
 
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.update(buffer);
@@ -58,7 +58,7 @@ static void backward_up_pair(Buffer* buffer, uint64_t* cursor_point) {
         for (size_t i = tokens.len(); i-- > 0;) {
             if (tokens[i].type == Token_Type::OPEN_PAIR) {
                 if (depth == 0) {
-                    *cursor_point = tokens[i].start;
+                    cursor->retreat_to(tokens[i].start);
                     return;
                 }
 
@@ -149,8 +149,8 @@ static bool get_token_before_position(Buffer* buffer,
     }
 }
 
-static void forward_up_pair(Buffer* buffer, uint64_t* cursor_point) {
-    Contents_Iterator token_iterator = buffer->contents.iterator_at(*cursor_point);
+void forward_up_pair(Buffer* buffer, Contents_Iterator* cursor) {
+    Contents_Iterator token_iterator = *cursor;
 
     Token token;
     uint64_t state;
@@ -162,7 +162,7 @@ static void forward_up_pair(Buffer* buffer, uint64_t* cursor_point) {
     while (1) {
         if (token.type == Token_Type::CLOSE_PAIR) {
             if (depth == 0) {
-                *cursor_point = token.end;
+                cursor->advance_to(token.end);
                 return;
             }
 
@@ -182,7 +182,9 @@ void command_backward_up_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     for (size_t cursor_index = window->cursors.len(); cursor_index-- > 0;) {
-        backward_up_pair(buffer, &window->cursors[cursor_index].point);
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
+        backward_up_pair(buffer, &it);
+        window->cursors[cursor_index].point = it.position;
     }
     std::sort(window->cursors.start(), window->cursors.end(),
               [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
@@ -192,55 +194,59 @@ void command_forward_up_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
-        forward_up_pair(buffer, &window->cursors[cursor_index].point);
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
+        backward_up_pair(buffer, &it);
+        window->cursors[cursor_index].point = it.position;
     }
     std::sort(window->cursors.start(), window->cursors.end(),
               [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
 }
 
-static void forward_token_pair(Buffer* buffer, uint64_t* point) {
+void forward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
     Token token;
-    Contents_Iterator token_iterator = buffer->contents.iterator_at(*point);
     uint64_t state;
-    if (!get_token_after_position(buffer, &token_iterator, &state, &token)) {
+    if (!get_token_after_position(buffer, iterator, &state, &token)) {
         return;
     }
 
-    *point = token.end;
+    CZ_DEBUG_ASSERT(token.end == iterator->position);
 
     if (token.type == Token_Type::OPEN_PAIR) {
-        forward_up_pair(buffer, point);
+        forward_up_pair(buffer, iterator);
     }
 }
 
 void command_forward_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
-        forward_token_pair(buffer, &window->cursors[cursor_index].point);
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
+        forward_token_pair(buffer, &it);
+        window->cursors[cursor_index].point = it.position;
     }
     std::sort(window->cursors.start(), window->cursors.end(),
               [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
 }
 
-static void backward_token_pair(Buffer* buffer, uint64_t* point) {
+void backward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
     Token token;
-    Contents_Iterator token_iterator = buffer->contents.iterator_at(*point);
     uint64_t state;
-    if (!get_token_before_position(buffer, &token_iterator, &state, &token)) {
+    if (!get_token_before_position(buffer, iterator, &state, &token)) {
         return;
     }
 
-    *point = token.start;
+    iterator->retreat_to(token.start);
 
     if (token.type == Token_Type::CLOSE_PAIR) {
-        backward_up_pair(buffer, point);
+        backward_up_pair(buffer, iterator);
     }
 }
 
 void command_backward_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
-        backward_token_pair(buffer, &window->cursors[cursor_index].point);
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
+        backward_token_pair(buffer, &it);
+        window->cursors[cursor_index].point = it.position;
     }
 
     std::sort(window->cursors.start(), window->cursors.end(),
