@@ -16,7 +16,7 @@ Client Server::make_client() {
     return client;
 }
 
-cz::Str clear_buffer(Editor* editor, Buffer* buffer) {
+cz::Str clear_buffer(Buffer* buffer) {
     if (buffer->contents.len == 0) {
         return {};
     }
@@ -44,7 +44,7 @@ static void send_message_result(Editor* editor, Client* client) {
     {
         Window_Unified* window = client->mini_buffer_window();
         WITH_WINDOW_BUFFER(window);
-        mini_buffer_contents = clear_buffer(editor, buffer);
+        mini_buffer_contents = clear_buffer(buffer);
     }
 
     client->restore_selected_buffer();

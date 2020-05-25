@@ -5,12 +5,12 @@
 
 namespace mag {
 
-cz::Str clear_buffer(Editor* editor, Buffer* buffer);
+cz::Str clear_buffer(Buffer* buffer);
 
 void Client::clear_mini_buffer(Editor* editor) {
     Window_Unified* window = mini_buffer_window();
     WITH_WINDOW_BUFFER(window);
-    clear_buffer(editor, buffer);
+    clear_buffer(buffer);
 }
 
 static bool binary_search_offscreen_windows(cz::Slice<Window_Unified*> offscreen_windows,

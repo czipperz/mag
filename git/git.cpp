@@ -9,7 +9,7 @@
 #include "process.hpp"
 
 namespace mag {
-cz::Str clear_buffer(Editor* editor, Buffer* buffer);
+cz::Str clear_buffer(Buffer* buffer);
 }
 
 namespace mag {
@@ -160,7 +160,7 @@ void command_save_and_quit(Editor* editor, Command_Source source) {
 void command_abort_and_quit(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
-        clear_buffer(editor, buffer);
+        clear_buffer(buffer);
 
         buffer->path.reserve(cz::heap_allocator(), 1);
         buffer->path.null_terminate();
