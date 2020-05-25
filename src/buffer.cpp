@@ -2,8 +2,10 @@
 
 #include <Tracy.hpp>
 #include <cz/bit_array.hpp>
+#include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include "config.hpp"
+#include "transaction.hpp"
 
 namespace mag {
 
@@ -129,6 +131,29 @@ void Buffer::mark_saved() {
     } else {
         saved_commit_id = {commits[commit_index - 1].id};
     }
+}
+
+cz::Str clear_buffer(Buffer* buffer) {
+    if (buffer->contents.len == 0) {
+        return {};
+    }
+
+    Transaction transaction;
+    transaction.init(1, (size_t)buffer->contents.len);
+    CZ_DEFER(transaction.drop());
+
+    Edit edit;
+    edit.value = buffer->contents.slice(transaction.value_allocator(),
+                                        buffer->contents.iterator_at(0), buffer->contents.len);
+    edit.position = 0;
+    edit.flags = Edit::REMOVE;
+    transaction.push(edit);
+
+    cz::Str buffer_contents = transaction.last_edit_value();
+
+    transaction.commit(buffer);
+
+    return buffer_contents;
 }
 
 }

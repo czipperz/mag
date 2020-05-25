@@ -5,8 +5,6 @@
 
 namespace mag {
 
-cz::Str clear_buffer(Buffer* buffer);
-
 void Client::clear_mini_buffer(Editor* editor) {
     Window_Unified* window = mini_buffer_window();
     WITH_WINDOW_BUFFER(window);

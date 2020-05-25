@@ -10,8 +10,6 @@
 #include "visible_region_commands.hpp"
 
 namespace mag {
-cz::Str clear_buffer(Buffer* buffer);
-
 namespace basic {
 
 void command_set_mark(Editor* editor, Command_Source source) {

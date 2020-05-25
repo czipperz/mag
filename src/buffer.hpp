@@ -51,4 +51,6 @@ struct Buffer {
     void mark_saved();
 };
 
+cz::Str clear_buffer(Buffer* buffer);
+
 }

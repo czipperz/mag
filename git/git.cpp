@@ -9,10 +9,6 @@
 #include "process.hpp"
 
 namespace mag {
-cz::Str clear_buffer(Buffer* buffer);
-}
-
-namespace mag {
 namespace git {
 
 static bool get_git_top_level(Client* client,

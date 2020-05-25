@@ -16,29 +16,6 @@ Client Server::make_client() {
     return client;
 }
 
-cz::Str clear_buffer(Buffer* buffer) {
-    if (buffer->contents.len == 0) {
-        return {};
-    }
-
-    Transaction transaction;
-    transaction.init(1, (size_t)buffer->contents.len);
-    CZ_DEFER(transaction.drop());
-
-    Edit edit;
-    edit.value = buffer->contents.slice(transaction.value_allocator(),
-                                        buffer->contents.iterator_at(0), buffer->contents.len);
-    edit.position = 0;
-    edit.flags = Edit::REMOVE;
-    transaction.push(edit);
-
-    cz::Str buffer_contents = transaction.last_edit_value();
-
-    transaction.commit(buffer);
-
-    return buffer_contents;
-}
-
 static bool is_word_char(char c) {
     return isalnum(c) || c == '_';
 }
