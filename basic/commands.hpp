@@ -77,5 +77,7 @@ void command_path_up_directory(Editor* editor, Command_Source source);
 
 void command_mark_buffer(Editor* editor, Command_Source source);
 
+void command_submit_mini_buffer(Editor* editor, Command_Source source);
+
 }
 }

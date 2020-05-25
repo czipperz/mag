@@ -269,6 +269,8 @@ static Key_Map create_path_key_map() {
     BIND(key_map, "A-<", command_first_completion);
     BIND(key_map, "A->", command_last_completion);
     BIND(key_map, "C-l", command_path_up_directory);
+    BIND(key_map, "C-m", command_submit_mini_buffer);
+    BIND(key_map, "\n", command_submit_mini_buffer);
     return key_map;
 }
 

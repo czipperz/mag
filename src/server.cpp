@@ -39,20 +39,6 @@ cz::Str clear_buffer(Buffer* buffer) {
     return buffer_contents;
 }
 
-static void send_message_result(Editor* editor, Client* client) {
-    cz::Str mini_buffer_contents;
-    {
-        Window_Unified* window = client->mini_buffer_window();
-        WITH_WINDOW_BUFFER(window);
-        mini_buffer_contents = clear_buffer(buffer);
-    }
-
-    client->restore_selected_buffer();
-    client->_message.response_callback(editor, client, mini_buffer_contents,
-                                       client->_message.response_callback_data);
-    client->dealloc_message();
-}
-
 static bool is_word_char(char c) {
     return isalnum(c) || c == '_';
 }
@@ -199,19 +185,14 @@ static void failed_key_press(Editor* editor,
                              size_t start) {
     Key key = client->key_chain[start];
     if (key.modifiers == 0 && (isprint(key.code) || key.code == '\t' || key.code == '\n')) {
-        if (key.code == '\n' && client->selected_window() == client->mini_buffer_window()) {
-            send_message_result(editor, client);
-            *previous_command = {};
-        } else {
-            Command_Source source;
-            source.client = client;
-            source.keys = {client->key_chain.start() + start, 1};
-            source.previous_command = previous_command->function;
+        Command_Source source;
+        source.client = client;
+        source.keys = {client->key_chain.start() + start, 1};
+        source.previous_command = previous_command->function;
 
-            Command command = {command_insert_char, "command_insert_char"};
-            run_command(command, editor, source);
-            *previous_command = command;
-        }
+        Command command = {command_insert_char, "command_insert_char"};
+        run_command(command, editor, source);
+        *previous_command = command;
     } else {
         client->show_message("Invalid key combo");
         *previous_command = {};

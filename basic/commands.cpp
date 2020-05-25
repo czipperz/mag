@@ -10,6 +10,8 @@
 #include "visible_region_commands.hpp"
 
 namespace mag {
+cz::Str clear_buffer(Buffer* buffer);
+
 namespace basic {
 
 void command_set_mark(Editor* editor, Command_Source source) {
@@ -928,6 +930,20 @@ void command_mark_buffer(Editor* editor, Command_Source source) {
     window->show_marks = true;
     window->cursors[0].mark = 0;
     window->cursors[0].point = buffer->contents.len;
+}
+
+void command_submit_mini_buffer(Editor* editor, Command_Source source) {
+    cz::Str mini_buffer_contents;
+    {
+        Window_Unified* window = source.client->mini_buffer_window();
+        WITH_WINDOW_BUFFER(window);
+        mini_buffer_contents = clear_buffer(buffer);
+    }
+
+    source.client->restore_selected_buffer();
+    source.client->_message.response_callback(editor, source.client, mini_buffer_contents,
+                                              source.client->_message.response_callback_data);
+    source.client->dealloc_message();
 }
 
 }
