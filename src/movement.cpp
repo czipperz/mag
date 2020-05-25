@@ -26,11 +26,27 @@ void end_of_line(Contents_Iterator* iterator) {
     }
 }
 
-void start_of_line_text(Contents_Iterator* iterator) {
-    start_of_line(iterator);
+void forward_through_whitespace(Contents_Iterator* iterator) {
     while (!iterator->at_eob() && isblank(iterator->get())) {
         iterator->advance();
     }
+}
+
+void backward_through_whitespace(Contents_Iterator* iterator) {
+    do {
+        if (iterator->at_bob()) {
+            return;
+        }
+
+        iterator->retreat();
+    } while (isblank(iterator->get()));
+
+    iterator->advance();
+}
+
+void start_of_line_text(Contents_Iterator* iterator) {
+    start_of_line(iterator);
+    forward_through_whitespace(iterator);
 }
 
 void forward_line(Contents_Iterator* iterator) {
