@@ -78,7 +78,9 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
     {
         WITH_BUFFER(*(Buffer_Id*)data);
-        get_git_top_level(client, buffer->path, cz::heap_allocator(), &top_level_path);
+        if (!get_git_top_level(client, buffer->path, cz::heap_allocator(), &top_level_path)) {
+            return;
+        }
     }
 
     size_t backslashes = 0;
