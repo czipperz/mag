@@ -339,7 +339,7 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
         break;
 
     case SDL_TEXTINPUT:
-        if (!SDL_GetModState()) {
+        if (!(SDL_GetModState() & ~KMOD_SHIFT)) {
             for (char* p = event.text.text; *p; ++p) {
                 Key key = {};
                 key.code = *p;
@@ -355,11 +355,6 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
         break;
 
     case SDL_KEYDOWN: {
-        if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_ALT)) == 0) {
-            // Ignore key presses
-            return;
-        }
-
         Key key = {};
         switch (event.key.keysym.sym) {
         case SDLK_LALT:
@@ -381,6 +376,7 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
             KEY_CASE(SPACE, ' ');
             KEY_CASE(BACKSPACE, 127);
             KEY_CASE(RETURN, '\n');
+            KEY_CASE(TAB, '\t');
 
 #undef KEY_CASE
 
@@ -393,6 +389,11 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
                 return;
             }
         } break;
+        }
+
+        if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_ALT)) == 0 && (isprint(key.code))) {
+            // Ignore key presses
+            return;
         }
 
         if (event.key.keysym.mod & KMOD_CTRL) {
