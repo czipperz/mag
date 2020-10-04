@@ -1,2 +1,4 @@
 build
 color_test
+log.txt
+valgrind.txt
