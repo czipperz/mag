@@ -699,6 +699,21 @@ static int sdl_copy(void* data, cz::Str text) {
     return SDL_SetClipboardText(clipboard->buffer());
 }
 
+static bool load_mini_buffer_completion_cache(Server* server, Client* client) {
+    if (client->mini_buffer_completion_cache.state != Completion_Cache::LOADED &&
+        client->_message.tag > Message::SHOW) {
+        CZ_DEBUG_ASSERT(server->editor.theme.completion_filter != nullptr);
+        server->editor.theme.completion_filter(
+            &client->mini_buffer_completion_cache.filter_context,
+            client->mini_buffer_completion_cache.engine, &server->editor,
+            &client->mini_buffer_completion_cache.engine_context);
+        client->mini_buffer_completion_cache.state = Completion_Cache::LOADED;
+        return true;
+    } else {
+        return false;
+    }
+}
+
 void run(Server* server, Client* client) {
     ZoneScoped;
 
@@ -786,14 +801,7 @@ void run(Server* server, Client* client) {
         render(window, renderer, font, &texture, &surface, &total_rows, &total_cols, cwidth,
                cheight, cellss, &window_cache, &server->editor, client);
 
-        if (client->mini_buffer_completion_cache.state != Completion_Cache::LOADED &&
-            client->_message.tag > Message::SHOW) {
-            CZ_DEBUG_ASSERT(server->editor.theme.completion_filter != nullptr);
-            server->editor.theme.completion_filter(
-                &client->mini_buffer_completion_cache.filter_context,
-                client->mini_buffer_completion_cache.engine, &server->editor,
-                &client->mini_buffer_completion_cache.engine_context);
-            client->mini_buffer_completion_cache.state = Completion_Cache::LOADED;
+        if (load_mini_buffer_completion_cache(server, client)) {
             continue;
         }
 
