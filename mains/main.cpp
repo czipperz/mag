@@ -16,11 +16,16 @@ static int usage(char* program_name) {
             "%s [options] [files]\n\
 \n\
 Mag is a text editor.\n\
+\n\
 Options:\n\
   --help             View the help page.\n\
-  --client=CLIENT    Launches a specified client.  If CLIENT=ncurses, a terminal session is launched\n\
-                     (Linux only).  If CLIENT=sdl, a window is launched.\n\
-",
+  --client=CLIENT    Launches a specified client.\n\
+\n\
+Available clients:\n"
+#ifdef HAS_NCURSES
+            "  ncurses   in terminal editing\n"
+#endif
+            "  sdl       grapical window (default)\n",
             program_name);
     return 1;
 }
@@ -43,22 +48,31 @@ int main(int argc, char** argv) {
             if (arg == "--help") {
                 return usage(argv[0]);
             } else if (arg.starts_with("--client=")) {
+#ifdef HAS_NCURSES
                 if (arg == "--client=ncurses") {
                     chosen_client = 0;
-                } else if (arg == "--client=sdl") {
-                    chosen_client = 1;
-                } else {
-                    return usage(argv[0]);
+                    continue;
                 }
+#endif
+
+                if (arg == "--client=sdl") {
+                    chosen_client = 1;
+                    continue;
+                }
+
+                return usage(argv[0]);
             } else {
                 open_file(&server.editor, &client, arg);
             }
         }
 
         switch (chosen_client) {
+#ifdef HAS_NCURSES
         case 0:
             client::ncurses::run(&server, &client);
             break;
+#endif
+
         case 1:
             client::sdl::run(&server, &client);
             break;

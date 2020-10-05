@@ -1,3 +1,5 @@
+#ifdef HAS_NCURSES
+
 #include "ncurses.hpp"
 
 #include <ctype.h>
@@ -349,3 +351,5 @@ void run(Server* server, Client* client) {
 }
 }
 }
+
+#endif
