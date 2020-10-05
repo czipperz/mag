@@ -8,11 +8,24 @@ include_directories(.)
 include_directories(src)
 include_directories(tracy)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
-find_package(SDL2 REQUIRED)
-find_package(SDL2_ttf REQUIRED)
+if (WIN32)
+  set(SDL2_LIBRARIES ${CMAKE_SOURCE_DIR}/SDL/lib/x64/SDL2.lib)
+  set(SDL2_DLLS ${CMAKE_SOURCE_DIR}/SDL/lib/x64/SDL2.dll)
+  set(SDL2_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/SDL/include)
+  set(SDL2_TTF_LIBRARIES ${CMAKE_SOURCE_DIR}/TTF/lib/x64/SDL2_ttf.lib)
+  set(SDL2_TTF_DLLS ${CMAKE_SOURCE_DIR}/TTF/lib/x64/SDL2_ttf.dll ${CMAKE_SOURCE_DIR}/TTF/lib/x64/libfreetype-6.dll ${CMAKE_SOURCE_DIR}/TTF/lib/x64/zlib1.dll)
+  set(SDL2_TTF_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/TTF/include)
 
-set(HAS_NCURSES 1)
+  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
+      ${CMAKE_COMMAND} -E copy ${SDL2_DLLS} ${CMAKE_BINARY_DIR})
+  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
+      ${CMAKE_COMMAND} -E copy ${SDL2_TTF_DLLS} ${CMAKE_BINARY_DIR})
+else()
+  set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+  find_package(SDL2 REQUIRED)
+  find_package(SDL2_ttf REQUIRED)
+  set(HAS_NCURSES 1)
+endif()
 
 set(LIBRARY_NAME ${PROJECT_NAME}l)
 file(GLOB_RECURSE SRCS src/*.cpp)
@@ -41,8 +54,11 @@ target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} tracy)
-target_link_libraries(${PROJECT_NAME} pthread)
-target_link_libraries(${PROJECT_NAME} dl)
+
+if (NOT WIN32)
+  target_link_libraries(${PROJECT_NAME} pthread)
+  target_link_libraries(${PROJECT_NAME} dl)
+endif()
 
 file(GLOB_RECURSE CUSTOM_SRCS custom/*.cpp)
 add_library(custom ${CUSTOM_SRCS})
