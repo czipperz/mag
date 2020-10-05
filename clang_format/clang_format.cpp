@@ -1,5 +1,6 @@
 #include "clang_format.hpp"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
