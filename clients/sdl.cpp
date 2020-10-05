@@ -1,8 +1,8 @@
 #include "sdl.hpp"
 
-#include <ctype.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <ctype.h>
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
@@ -467,6 +467,8 @@ static SDL_Texture* render_text_to_texture(SDL_Renderer* renderer,
                                            TTF_Font* font,
                                            const char* text,
                                            SDL_Color color) {
+    ZoneScoped;
+
     SDL_Surface* surface = TTF_RenderText_Blended(font, text, color);
     if (!surface) {
         fprintf(stderr, "Failed to render text '%s': %s\n", text, SDL_GetError());
@@ -482,6 +484,8 @@ static SDL_Texture* render_text_to_texture(SDL_Renderer* renderer,
 }
 
 static void render_texture(SDL_Renderer* renderer, SDL_Texture* texture, int x, int y) {
+    ZoneScoped;
+
     SDL_Rect dest;
     dest.x = x;
     dest.y = y;
@@ -548,48 +552,59 @@ static void render(SDL_Window* window,
         int index = 0;
         for (int y = 0; y < rows; ++y) {
             for (int x = 0; x < cols; ++x) {
+                ZoneScopedN("check cell");
+
                 Cell* new_cell = &cellss[1][index];
                 if (cellss[0][index] != *new_cell) {
                     SDL_Rect rect;
-                    rect.x = x * cwidth;
-                    rect.y = y * cheight;
-                    rect.w = cwidth;
-                    rect.h = cheight;
+                    SDL_Color bgc;
+                    SDL_Color fgc;
 
-                    int style = 0;
-                    if (new_cell->face.flags & Face::UNDERSCORE) {
-                        style |= TTF_STYLE_UNDERLINE;
-                    }
-                    if (new_cell->face.flags & Face::BOLD) {
-                        style |= TTF_STYLE_BOLD;
-                    }
-                    if (new_cell->face.flags & Face::ITALICS) {
-                        style |= TTF_STYLE_ITALIC;
-                    }
-                    if (style == 0) {
-                        style = TTF_STYLE_NORMAL;
-                    }
-                    TTF_SetFontStyle(font, style);
+                    {
+                        ZoneScopedN("prepare render cell");
+                        rect.x = x * cwidth;
+                        rect.y = y * cheight;
+                        rect.w = cwidth;
+                        rect.h = cheight;
 
-                    int16_t bg = new_cell->face.background;
-                    int16_t max_colors = sizeof(colors) / sizeof(colors[0]);
-                    if (bg < 0 || bg >= max_colors) {
-                        bg = 0;
-                    }
-                    int16_t fg = new_cell->face.foreground;
-                    if (fg < 0 || fg >= max_colors) {
-                        fg = 7;
+                        int style = 0;
+                        if (new_cell->face.flags & Face::UNDERSCORE) {
+                            style |= TTF_STYLE_UNDERLINE;
+                        }
+                        if (new_cell->face.flags & Face::BOLD) {
+                            style |= TTF_STYLE_BOLD;
+                        }
+                        if (new_cell->face.flags & Face::ITALICS) {
+                            style |= TTF_STYLE_ITALIC;
+                        }
+                        if (style == 0) {
+                            style = TTF_STYLE_NORMAL;
+                        }
+                        TTF_SetFontStyle(font, style);
+
+                        int16_t bg = new_cell->face.background;
+                        int16_t max_colors = sizeof(colors) / sizeof(colors[0]);
+                        if (bg < 0 || bg >= max_colors) {
+                            bg = 0;
+                        }
+                        int16_t fg = new_cell->face.foreground;
+                        if (fg < 0 || fg >= max_colors) {
+                            fg = 7;
+                        }
+
+                        if (new_cell->face.flags & Face::REVERSE) {
+                            cz::swap(fg, bg);
+                        }
+
+                        bgc = make_color(colors[bg]);
+                        fgc = make_color(colors[fg]);
                     }
 
-                    if (new_cell->face.flags & Face::REVERSE) {
-                        cz::swap(fg, bg);
+                    {
+                        ZoneScopedN("render cell background");
+                        SDL_SetRenderDrawColor(renderer, bgc.r, bgc.g, bgc.b, bgc.a);
+                        SDL_RenderFillRect(renderer, &rect);
                     }
-
-                    SDL_Color bgc = make_color(colors[bg]);
-                    SDL_Color fgc = make_color(colors[fg]);
-
-                    SDL_SetRenderDrawColor(renderer, bgc.r, bgc.g, bgc.b, bgc.a);
-                    SDL_RenderFillRect(renderer, &rect);
 
                     buffer[0] = new_cell->code;
 
