@@ -16,10 +16,10 @@ if (WIN32)
   set(SDL2_TTF_DLLS ${CMAKE_SOURCE_DIR}/TTF/lib/x64/SDL2_ttf.dll ${CMAKE_SOURCE_DIR}/TTF/lib/x64/libfreetype-6.dll ${CMAKE_SOURCE_DIR}/TTF/lib/x64/zlib1.dll)
   set(SDL2_TTF_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/TTF/include)
 
-  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
-      ${CMAKE_COMMAND} -E copy ${SDL2_DLLS} ${CMAKE_BINARY_DIR})
-  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
-      ${CMAKE_COMMAND} -E copy ${SDL2_TTF_DLLS} ${CMAKE_BINARY_DIR})
+  add_custom_target(sdl2_dlls ALL
+      ${CMAKE_COMMAND} -E copy_if_different ${SDL2_DLLS} ${CMAKE_BINARY_DIR})
+  add_custom_target(sdl2_ttf_dlls ALL
+      ${CMAKE_COMMAND} -E copy_if_different ${SDL2_TTF_DLLS} ${CMAKE_BINARY_DIR})
 else()
   set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
   find_package(SDL2 REQUIRED)
