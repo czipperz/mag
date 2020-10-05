@@ -628,21 +628,32 @@ static bool get_c_dims(TTF_Font* font, int* cwidth, int* cheight) {
     return true;
 }
 
-static void process_clipboard_updates(Server* server, Client* client, cz::String& clipboard) {
+static void set_clipboard_variable(cz::String* clipboard, cz::Str text) {
+    clipboard->set_len(0);
+    clipboard->reserve(cz::heap_allocator(), text.len + 1);
+    clipboard->append(text);
+    clipboard->null_terminate();
+}
+
+static void process_clipboard_updates(Server* server, Client* client, cz::String* clipboard) {
     const char* clipboard_currently_cstr = SDL_GetClipboardText();
     if (clipboard_currently_cstr) {
         cz::Str clipboard_currently = clipboard_currently_cstr;
-        if (clipboard != clipboard_currently) {
-            clipboard.set_len(0);
-            clipboard.reserve(cz::heap_allocator(), clipboard_currently.len);
-            clipboard.append(clipboard_currently);
+        if (*clipboard != clipboard_currently) {
+            set_clipboard_variable(clipboard, clipboard_currently);
 
             Copy_Chain* chain = server->editor.copy_buffer.allocator().alloc<Copy_Chain>();
-            chain->value.init_duplicate(server->editor.copy_buffer.allocator(), clipboard);
+            chain->value.init_duplicate(server->editor.copy_buffer.allocator(), *clipboard);
             chain->previous = client->global_copy_chain;
             client->global_copy_chain = chain;
         }
     }
+}
+
+static int sdl_copy(void* data, cz::Str text) {
+    cz::String* clipboard = (cz::String*)data;
+    set_clipboard_variable(clipboard, text);
+    return SDL_SetClipboardText(clipboard->buffer());
 }
 
 void run(Server* server, Client* client) {
@@ -710,6 +721,9 @@ void run(Server* server, Client* client) {
     cz::String clipboard = {};
     CZ_DEFER(clipboard.drop(cz::heap_allocator()));
 
+    client->system_copy_text_func = sdl_copy;
+    client->system_copy_text_data = &clipboard;
+
     while (1) {
         ZoneScopedN("sdl main loop");
 
@@ -739,7 +753,7 @@ void run(Server* server, Client* client) {
 
         process_events(server, client);
 
-        process_clipboard_updates(server, client, clipboard);
+        process_clipboard_updates(server, client, &clipboard);
 
         if (client->queue_quit) {
             break;

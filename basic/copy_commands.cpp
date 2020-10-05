@@ -5,11 +5,15 @@
 namespace mag {
 namespace basic {
 
-static void save_copy(Copy_Chain** cursor_chain, Editor* editor, SSOStr value) {
+static void save_copy(Copy_Chain** cursor_chain, Editor* editor, SSOStr value, Client* client) {
     Copy_Chain* chain = editor->copy_buffer.allocator().alloc<Copy_Chain>();
     chain->value = value;
     chain->previous = *cursor_chain;
     *cursor_chain = chain;
+
+    if (client) {
+        client->system_copy_text(value.as_str());
+    }
 }
 
 static void cut_cursor(Cursor* cursor,
@@ -17,7 +21,8 @@ static void cut_cursor(Cursor* cursor,
                        Copy_Chain** copy_chain,
                        Editor* editor,
                        Buffer* buffer,
-                       uint64_t* offset) {
+                       uint64_t* offset,
+                       Client* client) {
     uint64_t start = cursor->start();
     uint64_t end = cursor->end();
 
@@ -29,7 +34,7 @@ static void cut_cursor(Cursor* cursor,
     edit.flags = Edit::REMOVE;
     transaction->push(edit);
 
-    save_copy(copy_chain, editor, edit.value);
+    save_copy(copy_chain, editor, edit.value, client);
 }
 
 void command_cut(Editor* editor, Command_Source source) {
@@ -48,11 +53,11 @@ void command_cut(Editor* editor, Command_Source source) {
     size_t offset = 0;
     if (cursors.len == 1) {
         cut_cursor(&cursors[0], &transaction, &source.client->global_copy_chain, editor, buffer,
-                   &offset);
+                   &offset, source.client);
     } else {
         for (size_t c = 0; c < cursors.len; ++c) {
             cut_cursor(&cursors[c], &transaction, &cursors[c].local_copy_chain, editor, buffer,
-                       &offset);
+                       &offset, nullptr);
         }
     }
 
@@ -61,23 +66,28 @@ void command_cut(Editor* editor, Command_Source source) {
     window->show_marks = false;
 }
 
-static void copy_cursor(Cursor* cursor, Copy_Chain** copy_chain, Editor* editor, Buffer* buffer) {
+static void copy_cursor(Cursor* cursor,
+                        Copy_Chain** copy_chain,
+                        Editor* editor,
+                        Buffer* buffer,
+                        Client* client) {
     uint64_t start = cursor->start();
     uint64_t end = cursor->end();
     // :CopyLeak We allocate here.
     save_copy(copy_chain, editor,
               buffer->contents.slice(editor->copy_buffer.allocator(),
-                                     buffer->contents.iterator_at(start), end));
+                                     buffer->contents.iterator_at(start), end),
+              client);
 }
 
 void command_copy(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
     if (cursors.len == 1) {
-        copy_cursor(&cursors[0], &source.client->global_copy_chain, editor, buffer);
+        copy_cursor(&cursors[0], &source.client->global_copy_chain, editor, buffer, source.client);
     } else {
         for (size_t c = 0; c < cursors.len; ++c) {
-            copy_cursor(&cursors[c], &cursors[c].local_copy_chain, editor, buffer);
+            copy_cursor(&cursors[c], &cursors[c].local_copy_chain, editor, buffer, nullptr);
         }
     }
 

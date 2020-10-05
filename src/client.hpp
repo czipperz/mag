@@ -21,6 +21,12 @@ struct Client {
     Copy_Chain* global_copy_chain;
     Jump_Chain jump_chain;
 
+    int (*system_copy_text_func)(void* data, cz::Str text);
+    void* system_copy_text_data;
+    int system_copy_text(cz::Str text) {
+        return system_copy_text_func(system_copy_text_data, text);
+    }
+
     cz::Vector<Window_Unified*> _offscreen_windows;
     Window* window;
     Window_Unified* selected_normal_window;
