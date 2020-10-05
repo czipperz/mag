@@ -571,11 +571,12 @@ static void render(SDL_Window* window,
                     TTF_SetFontStyle(font, style);
 
                     int16_t bg = new_cell->face.background;
-                    if (bg < 0 || bg >= sizeof(colors) / sizeof(colors[0])) {
+                    int16_t max_colors = sizeof(colors) / sizeof(colors[0]);
+                    if (bg < 0 || bg >= max_colors) {
                         bg = 0;
                     }
                     int16_t fg = new_cell->face.foreground;
-                    if (fg < 0 || fg >= sizeof(colors) / sizeof(colors[0])) {
+                    if (fg < 0 || fg >= max_colors) {
                         fg = 7;
                     }
 
