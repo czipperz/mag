@@ -23,7 +23,7 @@ static void process_append_job_kill(Editor* editor, void* _data) {
 static bool process_append_job_tick(Editor* editor, void* _data) {
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
     char buf[1024];
-    ssize_t read_result = data->process.read(buf, sizeof(buf));
+    int64_t read_result = data->process.read(buf, sizeof(buf));
     if (read_result > 0) {
         Buffer_Handle* handle = editor->lookup(data->buffer_id);
         if (!handle) {

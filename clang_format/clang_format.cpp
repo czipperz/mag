@@ -183,7 +183,7 @@ static bool clang_format_job_tick(Editor* editor, void* _data) {
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
     while (1) {
         char buf[1024];
-        ssize_t read_result = data->process.read(buf, sizeof(buf));
+        int64_t read_result = data->process.read(buf, sizeof(buf));
         if (read_result > 0) {
             data->output_xml.reserve(cz::heap_allocator(), read_result);
             data->output_xml.append({buf, (size_t)read_result});
