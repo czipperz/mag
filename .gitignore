@@ -2,3 +2,8 @@ build
 color_test
 log.txt
 valgrind.txt
+.vs
+CMakeSettings.json
+SDL
+TTF
+
