@@ -423,6 +423,39 @@ static void draw_window(Cell* cells,
     }
 }
 
+void setup_completion_cache(Editor* editor, Client* client, Completion_Cache* completion_cache) {
+    {
+        Window_Unified* window = client->mini_buffer_window();
+        WITH_WINDOW_BUFFER(window);
+        if (completion_cache->change_index != buffer->changes.len() ||
+            completion_cache->engine != client->_message.completion_engine) {
+            completion_cache->change_index = buffer->changes.len();
+            if (completion_cache->engine != client->_message.completion_engine) {
+                completion_cache->state = Completion_Cache::INITIAL;
+            } else {
+                completion_cache->state = Completion_Cache::LOADING;
+            }
+
+            completion_cache->engine_context.query.set_len(0);
+            buffer->contents.stringify_into(cz::heap_allocator(),
+                                            &completion_cache->engine_context.query);
+        }
+    }
+
+    if (completion_cache->state == Completion_Cache::INITIAL) {
+        if (completion_cache->engine != client->_message.completion_engine) {
+            completion_cache->engine = client->_message.completion_engine;
+            if (completion_cache->engine_context.cleanup) {
+                completion_cache->engine_context.cleanup(completion_cache->engine_context.data);
+            }
+            completion_cache->engine_context.cleanup = nullptr;
+            completion_cache->engine_context.data = nullptr;
+            completion_cache->engine_context.results_buffer_array.clear();
+            completion_cache->engine_context.results.set_len(0);
+        }
+    }
+}
+
 void render_to_cells(Cell* cells,
                      Window_Cache** window_cache,
                      size_t total_rows,
@@ -441,43 +474,9 @@ void render_to_cells(Cell* cells,
 
         Completion_Cache* completion_cache = &client->mini_buffer_completion_cache;
         if (client->_message.tag > Message::SHOW) {
-            {
-                Window_Unified* window = client->mini_buffer_window();
-                WITH_WINDOW_BUFFER(window);
-                if (completion_cache->change_index != buffer->changes.len() ||
-                    completion_cache->engine != client->_message.completion_engine) {
-                    completion_cache->change_index = buffer->changes.len();
-                    if (completion_cache->engine != client->_message.completion_engine) {
-                        completion_cache->state = Completion_Cache::INITIAL;
-                    } else {
-                        completion_cache->state = Completion_Cache::LOADING;
-                    }
+            setup_completion_cache(editor, client, completion_cache);
 
-                    completion_cache->engine_context.query.set_len(0);
-                    buffer->contents.stringify_into(cz::heap_allocator(),
-                                                    &completion_cache->engine_context.query);
-                }
-            }
-
-            switch (completion_cache->state) {
-            case Completion_Cache::INITIAL:
-                if (completion_cache->engine != client->_message.completion_engine) {
-                    completion_cache->engine = client->_message.completion_engine;
-                    if (completion_cache->engine_context.cleanup) {
-                        completion_cache->engine_context.cleanup(
-                            completion_cache->engine_context.data);
-                    }
-                    completion_cache->engine_context.cleanup = nullptr;
-                    completion_cache->engine_context.data = nullptr;
-                    completion_cache->engine_context.results_buffer_array.clear();
-                    completion_cache->engine_context.results.set_len(0);
-                }
-                break;
-
-            case Completion_Cache::LOADING:
-                break;
-
-            case Completion_Cache::LOADED:
+            if (completion_cache->state == Completion_Cache::LOADED) {
                 results_height = completion_cache->filter_context.results.len();
                 if (results_height > editor->theme.max_completion_results) {
                     results_height = editor->theme.max_completion_results;
@@ -485,7 +484,6 @@ void render_to_cells(Cell* cells,
                 if (results_height > total_rows / 2) {
                     results_height = total_rows / 2;
                 }
-                break;
             }
         }
 
