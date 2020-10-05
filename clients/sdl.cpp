@@ -687,8 +687,14 @@ void run(Server* server, Client* client) {
         fprintf(stderr, "Failed to create a renderer: %s\n", SDL_GetError());
         return;
     }
+    CZ_DEFER(SDL_DestroyRenderer(renderer));
 
-    const char* font_file = "/usr/share/fonts/TTF/MesloLGMDZ-Regular.ttf";
+    const char* font_file;
+#ifdef _WIN32
+    font_file = "C:/Windows/Fonts/MesloLGM-Regular.ttf";
+#else
+    font_file = "/usr/share/fonts/TTF/MesloLGMDZ-Regular.ttf";
+#endif
     TTF_Font* font = TTF_OpenFont(font_file, 15);
     if (!font) {
         fprintf(stderr, "Failed to open the font file '%s': %s\n", font_file, SDL_GetError());
