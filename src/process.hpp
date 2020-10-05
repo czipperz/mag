@@ -1,15 +1,22 @@
 #pragma once
 
+#include <stdint.h>
 #include <cz/allocator.hpp>
 #include <cz/string.hpp>
 
+#ifdef _WIN32
+#else
 #include <sys/types.h>
+#endif
 
 namespace mag {
 
 class Process {
+#ifdef _WIN32
+#else
     int fd;
     pid_t pid;
+#endif
 
 public:
     bool launch_program(const char* path, const char** args, const char* working_directory);

@@ -1,3 +1,44 @@
+#ifdef _WIN32
+#include "process.hpp"
+
+namespace mag {
+
+int64_t Process::read(char* buffer, size_t buffer_size) {
+	abort();
+}
+
+void Process::destroy() {
+}
+
+bool Process::set_read_blocking() {
+	abort();
+}
+
+void Process::read_to_string(cz::Allocator allocator, cz::String* out) {
+	abort();
+}
+
+void Process::kill() {
+	abort();
+}
+
+int Process::join() {
+	abort();
+}
+
+bool Process::launch_script(const char* script, const char* working_directory) {
+	return false;
+}
+
+bool Process::launch_program(const char* path, const char** args, const char* working_directory) {
+	return false;
+}
+
+
+}
+
+#else
+
 // Expose pipe2(2).  See feature_test_macros(7).
 #define _GNU_SOURCE
 #include "process.hpp"
@@ -112,3 +153,4 @@ bool Process::launch_program(const char* path, const char** args, const char* wo
 }
 
 }
+#endif
