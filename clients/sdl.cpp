@@ -4,6 +4,7 @@
 #include <SDL_ttf.h>
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
+#include <cz/heap.hpp>
 #include <cz/str.hpp>
 #include "cell.hpp"
 #include "client.hpp"
@@ -627,6 +628,23 @@ static bool get_c_dims(TTF_Font* font, int* cwidth, int* cheight) {
     return true;
 }
 
+static void process_clipboard_updates(Server* server, Client* client, cz::String& clipboard) {
+    const char* clipboard_currently_cstr = SDL_GetClipboardText();
+    if (clipboard_currently_cstr) {
+        cz::Str clipboard_currently = clipboard_currently_cstr;
+        if (clipboard != clipboard_currently) {
+            clipboard.set_len(0);
+            clipboard.reserve(cz::heap_allocator(), clipboard_currently.len);
+            clipboard.append(clipboard_currently);
+
+            Copy_Chain* chain = server->editor.copy_buffer.allocator().alloc<Copy_Chain>();
+            chain->value.init_duplicate(server->editor.copy_buffer.allocator(), clipboard);
+            chain->previous = client->global_copy_chain;
+            client->global_copy_chain = chain;
+        }
+    }
+}
+
 void run(Server* server, Client* client) {
     ZoneScoped;
 
@@ -689,6 +707,9 @@ void run(Server* server, Client* client) {
     const float MAX_FRAMES = 60.0f;
     const float FRAME_LENGTH = 1000.0f / MAX_FRAMES;
 
+    cz::String clipboard = {};
+    CZ_DEFER(clipboard.drop(cz::heap_allocator()));
+
     while (1) {
         ZoneScopedN("sdl main loop");
 
@@ -717,6 +738,8 @@ void run(Server* server, Client* client) {
         }
 
         process_events(server, client);
+
+        process_clipboard_updates(server, client, clipboard);
 
         if (client->queue_quit) {
             break;
