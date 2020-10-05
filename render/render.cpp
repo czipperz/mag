@@ -1,5 +1,6 @@
 #include "render.hpp"
 
+#include <ctype.h>
 #include <Tracy.hpp>
 #include "command_macros.hpp"
 #include "decoration.hpp"

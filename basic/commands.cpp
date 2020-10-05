@@ -1,5 +1,6 @@
 #include "commands.hpp"
 
+#include <ctype.h>
 #include <cz/defer.hpp>
 #include <cz/option.hpp>
 #include <cz/util.hpp>

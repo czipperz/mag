@@ -1,5 +1,6 @@
 #include "sdl.hpp"
 
+#include <ctype.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include <Tracy.hpp>

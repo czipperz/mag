@@ -1,5 +1,6 @@
 #include "search_commands.hpp"
 
+#include <ctype.h>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/util.hpp>
