@@ -496,6 +496,8 @@ static void render_texture(SDL_Renderer* renderer, SDL_Texture* texture, int x, 
 static void render(SDL_Window* window,
                    SDL_Renderer* renderer,
                    TTF_Font* font,
+                   SDL_Texture** texture,
+                   SDL_Surface** surface,
                    int* total_rows,
                    int* total_cols,
                    int cwidth,
@@ -510,14 +512,25 @@ static void render(SDL_Window* window,
     int rows, cols;
     {
         ZoneScopedN("detect resize");
-        SDL_GetWindowSize(window, &cols, &rows);
-        cols /= cwidth;
-        rows /= cheight;
+        int width, height;
+        SDL_GetWindowSize(window, &width, &height);
+        cols = width / cwidth;
+        rows = height / cheight;
 
         if (rows != *total_rows || cols != *total_cols) {
+            if (*surface) {
+                SDL_FreeSurface(*surface);
+            }
+            *surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_RGBA32);
+            if (*texture) {
+                SDL_DestroyTexture(*texture);
+            }
+            *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
+                                         SDL_TEXTUREACCESS_STREAMING, width, height);
+
             SDL_Color bgc = make_color(colors[0]);
-            SDL_SetRenderDrawColor(renderer, bgc.r, bgc.g, bgc.b, bgc.a);
-            SDL_RenderClear(renderer);
+            SDL_FillRect(*surface, nullptr,
+                         SDL_MapRGBA((*surface)->format, bgc.r, bgc.g, bgc.b, bgc.a));
 
             destroy_window_cache(*window_cache);
             *window_cache = nullptr;
@@ -602,19 +615,20 @@ static void render(SDL_Window* window,
 
                     {
                         ZoneScopedN("render cell background");
-                        SDL_SetRenderDrawColor(renderer, bgc.r, bgc.g, bgc.b, bgc.a);
-                        SDL_RenderFillRect(renderer, &rect);
+                        SDL_FillRect(*surface, &rect,
+                                     SDL_MapRGBA((*surface)->format, bgc.r, bgc.g, bgc.b, bgc.a));
                     }
 
                     buffer[0] = new_cell->code;
 
-                    SDL_Texture* rendered_char =
-                        render_text_to_texture(renderer, font, buffer, fgc);
+                    SDL_Surface* rendered_char = TTF_RenderText_Blended(font, buffer, fgc);
                     if (!rendered_char) {
+                        fprintf(stderr, "Failed to render text '%s': %s\n", buffer, SDL_GetError());
                         continue;
                     }
-                    CZ_DEFER(SDL_DestroyTexture(rendered_char));
-                    render_texture(renderer, rendered_char, rect.x, rect.y);
+                    CZ_DEFER(SDL_FreeSurface(rendered_char));
+
+                    SDL_BlitSurface(rendered_char, nullptr, *surface, &rect);
                 }
                 ++index;
             }
@@ -625,6 +639,18 @@ static void render(SDL_Window* window,
 
     {
         ZoneScopedN("present");
+        void* pixels;
+        int pitch;
+
+        SDL_LockTexture(*texture, nullptr, &pixels, &pitch);
+        SDL_LockSurface(*surface);
+        CZ_DEBUG_ASSERT(pitch == (*surface)->pitch);
+        memcpy(pixels, (*surface)->pixels, (*surface)->h * (*surface)->pitch);
+        SDL_UnlockSurface(*surface);
+        SDL_UnlockTexture(*texture);
+
+        SDL_RenderCopy(renderer, *texture, nullptr, nullptr);
+
         SDL_RenderPresent(renderer);
     }
 
@@ -747,13 +773,16 @@ void run(Server* server, Client* client) {
     client->system_copy_text_func = sdl_copy;
     client->system_copy_text_data = &clipboard;
 
+    SDL_Surface* surface = nullptr;
+    SDL_Texture* texture = nullptr;
+
     while (1) {
         ZoneScopedN("sdl main loop");
 
         Uint32 frame_start_ticks = SDL_GetTicks();
 
-        render(window, renderer, font, &total_rows, &total_cols, cwidth, cheight, cellss,
-               &window_cache, &server->editor, client);
+        render(window, renderer, font, &texture, &surface, &total_rows, &total_cols, cwidth,
+               cheight, cellss, &window_cache, &server->editor, client);
 
         if (client->mini_buffer_completion_cache.state != Completion_Cache::LOADED &&
             client->_message.tag > Message::SHOW) {
