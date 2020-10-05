@@ -775,6 +775,8 @@ void run(Server* server, Client* client) {
 
     SDL_Surface* surface = nullptr;
     SDL_Texture* texture = nullptr;
+    CZ_DEFER(if (surface) SDL_FreeSurface(surface));
+    CZ_DEFER(if (texture) SDL_DestroyTexture(texture));
 
     while (1) {
         ZoneScopedN("sdl main loop");
