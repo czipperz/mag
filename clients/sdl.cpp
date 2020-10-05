@@ -15,7 +15,6 @@ namespace mag {
 namespace client {
 namespace sdl {
 
-static uint32_t background = 0x073642;
 static uint32_t colors[] = {
     0x073642,
     0xDC322F,
@@ -510,7 +509,7 @@ static void render(SDL_Window* window,
         rows /= cheight;
 
         if (rows != *total_rows || cols != *total_cols) {
-            SDL_Color bgc = make_color(background);
+            SDL_Color bgc = make_color(colors[0]);
             SDL_SetRenderDrawColor(renderer, bgc.r, bgc.g, bgc.b, bgc.a);
             SDL_RenderClear(renderer);
 
