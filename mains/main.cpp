@@ -4,6 +4,7 @@
 #include "client.hpp"
 #include "command.hpp"
 #include "command_macros.hpp"
+#include "custom/config.hpp"
 #include "file.hpp"
 #include "ncurses.hpp"
 #include "sdl.hpp"

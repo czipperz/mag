@@ -304,28 +304,18 @@ void run(Server* server, Client* client) {
     while (1) {
         ZoneScopedN("ncurses main loop");
 
+        setup_completion_cache(&server->editor, client, &client->mini_buffer_completion_cache);
+        load_mini_buffer_completion_cache(server, client);
+
         render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client, colors,
                used_colors);
-
-        int ch = ERR;
-        if (client->mini_buffer_completion_cache.state != Completion_Cache::LOADED &&
-            client->_message.tag > Message::SHOW) {
-            CZ_DEBUG_ASSERT(server->editor.theme.completion_filter != nullptr);
-            server->editor.theme.completion_filter(
-                &client->mini_buffer_completion_cache.filter_context,
-                client->mini_buffer_completion_cache.engine, &server->editor,
-                &client->mini_buffer_completion_cache.engine_context);
-            client->mini_buffer_completion_cache.state = Completion_Cache::LOADED;
-            continue;
-        }
 
         bool has_jobs = server->editor.jobs.len() > 0;
         server->editor.tick_jobs();
 
-        if (ch == ERR) {
-            cache_windows_check_points(window_cache, client->window, &server->editor,
-                                       getch_callback, &ch);
-        }
+        int ch = ERR;
+        cache_windows_check_points(window_cache, client->window, &server->editor, getch_callback,
+                                   &ch);
 
         if (ch == ERR) {
             if (has_jobs) {

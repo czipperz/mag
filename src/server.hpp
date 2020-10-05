@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cz/vector.hpp>
-#include "config.hpp"
 #include "editor.hpp"
 #include "key_map.hpp"
 

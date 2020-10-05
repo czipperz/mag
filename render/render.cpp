@@ -6,6 +6,7 @@
 #include "decoration.hpp"
 #include "movement.hpp"
 #include "overlay.hpp"
+#include "server.hpp"
 #include "token.hpp"
 #include "visible_region.hpp"
 
@@ -424,6 +425,10 @@ static void draw_window(Cell* cells,
 }
 
 void setup_completion_cache(Editor* editor, Client* client, Completion_Cache* completion_cache) {
+    if (client->_message.tag <= Message::SHOW) {
+        return;
+    }
+
     {
         Window_Unified* window = client->mini_buffer_window();
         WITH_WINDOW_BUFFER(window);
@@ -456,6 +461,21 @@ void setup_completion_cache(Editor* editor, Client* client, Completion_Cache* co
     }
 }
 
+bool load_mini_buffer_completion_cache(Server* server, Client* client) {
+    if (client->mini_buffer_completion_cache.state != Completion_Cache::LOADED &&
+        client->_message.tag > Message::SHOW) {
+        CZ_DEBUG_ASSERT(server->editor.theme.completion_filter != nullptr);
+        server->editor.theme.completion_filter(
+            &client->mini_buffer_completion_cache.filter_context,
+            client->mini_buffer_completion_cache.engine, &server->editor,
+            &client->mini_buffer_completion_cache.engine_context);
+        client->mini_buffer_completion_cache.state = Completion_Cache::LOADED;
+        return true;
+    } else {
+        return false;
+    }
+}
+
 void render_to_cells(Cell* cells,
                      Window_Cache** window_cache,
                      size_t total_rows,
@@ -474,8 +494,6 @@ void render_to_cells(Cell* cells,
 
         Completion_Cache* completion_cache = &client->mini_buffer_completion_cache;
         if (client->_message.tag > Message::SHOW) {
-            setup_completion_cache(editor, client, completion_cache);
-
             if (completion_cache->state == Completion_Cache::LOADED) {
                 results_height = completion_cache->filter_context.results.len();
                 if (results_height > editor->theme.max_completion_results) {
