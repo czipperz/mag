@@ -7,9 +7,11 @@
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include <cz/path.hpp>
 #include <cz/str.hpp>
 #include "cell.hpp"
 #include "client.hpp"
+#include "file.hpp"
 #include "render.hpp"
 #include "server.hpp"
 #include "window_cache.hpp"
@@ -360,6 +362,14 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
                event.edit.start, event.edit.length);
 
         break;
+
+    case SDL_DROPFILE: {
+        size_t len = strlen(event.drop.file);
+        cz::path::convert_to_forward_slashes(event.drop.file, len);
+        open_file(&server->editor, client, {event.drop.file, len});
+        SDL_free(event.drop.file);
+        break;
+    }
 
     case SDL_KEYDOWN: {
         Key key = {};
