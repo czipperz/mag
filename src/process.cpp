@@ -392,6 +392,12 @@ bool Process::launch_program(const char* const* args, Process_Options* options) 
         bind_pipe(options->stdout.fd, 1);
         bind_pipe(options->stderr.fd, 2);
 
+        close(options->stdin.fd);
+        close(options->stdout.fd);
+        if (options->stderr.fd != options->stdout.fd) {
+            close(options->stderr.fd);
+        }
+
         if (options->working_directory) {
             chdir(options->working_directory);
         }

@@ -20,18 +20,23 @@ static void man_completion_engine(Editor*, Completion_Engine_Context* context) {
         return;
     }
 
-    Process_Options options;
-    Input_File stdout_read;
-    if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
-        return;
-    }
-    CZ_DEFER(options.stdout.close(); stdout_read.close());
-
     Process process;
-    const char* args[] = {path_to_autocomplete_man_page, "", nullptr};
-    if (!process.launch_program(args, &options)) {
-        return;
+    Input_File stdout_read;
+
+    {
+        Process_Options options;
+        if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
+            return;
+        }
+        CZ_DEFER(options.stdout.close());
+
+        const char* args[] = {path_to_autocomplete_man_page, "", nullptr};
+        if (!process.launch_program(args, &options)) {
+            stdout_read.close();
+            return;
+        }
     }
+    CZ_DEFER(stdout_read.close());
 
     context->results_buffer_array.clear();
     context->results.set_len(0);
