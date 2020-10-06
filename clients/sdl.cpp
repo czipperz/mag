@@ -824,7 +824,7 @@ void run(Server* server, Client* client) {
         Uint32 frame_end_ticks = SDL_GetTicks();
         Uint32 elapsed_ticks = frame_end_ticks - frame_start_ticks;
         if (elapsed_ticks < FRAME_LENGTH) {
-            SDL_Delay((Uint32)floor(FRAME_LENGTH - elapsed_ticks));
+            SDL_Delay((Uint32)floorf(FRAME_LENGTH - elapsed_ticks));
         }
     }
 }
