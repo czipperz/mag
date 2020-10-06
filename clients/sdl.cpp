@@ -479,36 +479,6 @@ static void process_events(Server* server, Client* client) {
     }
 }
 
-static SDL_Texture* render_text_to_texture(SDL_Renderer* renderer,
-                                           TTF_Font* font,
-                                           const char* text,
-                                           SDL_Color color) {
-    ZoneScoped;
-
-    SDL_Surface* surface = TTF_RenderText_Blended(font, text, color);
-    if (!surface) {
-        fprintf(stderr, "Failed to render text '%s': %s\n", text, SDL_GetError());
-        return nullptr;
-    }
-    CZ_DEFER(SDL_FreeSurface(surface));
-
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    if (!texture) {
-        fprintf(stderr, "Failed to create a texture: %s\n", SDL_GetError());
-    }
-    return texture;
-}
-
-static void render_texture(SDL_Renderer* renderer, SDL_Texture* texture, int x, int y) {
-    ZoneScoped;
-
-    SDL_Rect dest;
-    dest.x = x;
-    dest.y = y;
-    SDL_QueryTexture(texture, nullptr, nullptr, &dest.w, &dest.h);
-    SDL_RenderCopy(renderer, texture, nullptr, &dest);
-}
-
 static void render(SDL_Window* window,
                    SDL_Renderer* renderer,
                    TTF_Font* font,
