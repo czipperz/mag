@@ -3,6 +3,7 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include <ctype.h>
+#include <inttypes.h>
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
@@ -350,9 +351,14 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
         break;
 
     case SDL_TEXTEDITING:
+        if (event.edit.length == 0) {
+            break;
+        }
+
         printf("Todo: handle SDL_TEXTEDITING\n");
-        // printf("Edit: text: %s, start: %" PRIi32 ", length: %" PRIi32 "\n", event.edit.text,
-        //       event.edit.start, event.edit.length);
+        printf("Edit: text: %s, start: %" PRIi32 ", length: %" PRIi32 "\n", event.edit.text,
+               event.edit.start, event.edit.length);
+
         break;
 
     case SDL_KEYDOWN: {
