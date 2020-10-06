@@ -639,7 +639,7 @@ static void render(SDL_Window* window,
 
                     SDL_Surface* rendered_char = TTF_RenderText_Blended(font, buffer, fgc);
                     if (!rendered_char) {
-                        fprintf(stderr, "Failed to render text '%s': %s\n", buffer, SDL_GetError());
+                        fprintf(stderr, "Failed to render text '%s': %s\n", buffer, TTF_GetError());
                         continue;
                     }
                     CZ_DEFER(SDL_FreeSurface(rendered_char));
@@ -725,7 +725,7 @@ void run(Server* server, Client* client) {
     CZ_DEFER(SDL_Quit());
 
     if (TTF_Init() != 0) {
-        fprintf(stderr, "Failed to initialize TTF: %s\n", SDL_GetError());
+        fprintf(stderr, "Failed to initialize TTF: %s\n", TTF_GetError());
         return;
     }
     CZ_DEFER(TTF_Quit());
