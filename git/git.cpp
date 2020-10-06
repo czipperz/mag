@@ -36,14 +36,26 @@ static bool get_git_top_level(Client* client,
         dir_cstr = nullptr;
     }
 
+    Process_Options options;
+    options.working_directory = dir_cstr;
+
+    Input_File stdout_read;
+    if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
+        client->show_message("Error: I/O operation failed");
+        return false;
+    }
+    CZ_DEFER(options.stdout.close(); stdout_read.close());
+
     Process process;
-    if (!process.launch_script("git rev-parse --show-toplevel", dir_cstr)) {
+    const char* rev_parse_args[] = {"git", "rev-parse", "--show-toplevel", nullptr};
+    if (!process.launch_program(rev_parse_args, &options)) {
         client->show_message("No git repository found");
         return false;
     }
-    process.read_to_string(allocator, top_level_path);
+
+    read_to_string(stdout_read, allocator, top_level_path);
+
     int return_value = process.join();
-    process.destroy();
     if (return_value != 0) {
         client->show_message("No git repository found");
         return false;

@@ -7,6 +7,7 @@ struct Buffer_Id;
 struct Client;
 struct Editor;
 struct Process;
+struct Input_File;
 
 /// A Job represents a task to be performed in the background.
 struct Job {
@@ -25,7 +26,7 @@ struct Job {
     void* data;
 };
 
-Job job_process_append(Buffer_Id buffer_id, Process process);
+Job job_process_append(Buffer_Id buffer_id, Process process, Input_File stdout);
 bool run_console_command(Client* client,
                          Editor* editor,
                          const char* working_directory,

@@ -11,19 +11,20 @@ namespace mag {
 struct Process_Append_Job_Data {
     Buffer_Id buffer_id;
     Process process;
+    Input_File stdout;
 };
 
 static void process_append_job_kill(Editor* editor, void* _data) {
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
+    data->stdout.close();
     data->process.kill();
-    data->process.destroy();
     free(data);
 }
 
 static bool process_append_job_tick(Editor* editor, void* _data) {
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
     char buf[1024];
-    int64_t read_result = data->process.read(buf, sizeof(buf));
+    int64_t read_result = data->stdout.read(buf, sizeof(buf));
     if (read_result > 0) {
         Buffer_Handle* handle = editor->lookup(data->buffer_id);
         if (!handle) {
@@ -37,8 +38,8 @@ static bool process_append_job_tick(Editor* editor, void* _data) {
         return false;
     } else if (read_result == 0) {
         // End of file
+        data->stdout.close();
         data->process.join();
-        data->process.destroy();
         free(data);
         return true;
     } else {
@@ -47,12 +48,13 @@ static bool process_append_job_tick(Editor* editor, void* _data) {
     }
 }
 
-Job job_process_append(Buffer_Id buffer_id, Process process) {
+Job job_process_append(Buffer_Id buffer_id, Process process, Input_File stdout) {
     Process_Append_Job_Data* data =
         (Process_Append_Job_Data*)malloc(sizeof(Process_Append_Job_Data));
     CZ_ASSERT(data);
     data->buffer_id = buffer_id;
     data->process = process;
+    data->stdout = stdout;
 
     Job job;
     job.tick = process_append_job_tick;
@@ -67,9 +69,19 @@ bool run_console_command(Client* client,
                          const char* script,
                          cz::Str buffer_name,
                          cz::Str error) {
+    Process_Options options;
+    options.working_directory = working_directory;
+
+    Input_File stdout_read;
+    if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
+        client->show_message("Error: I/O operation failed");
+        return false;
+    }
+
     Process process;
-    if (!process.launch_script(script, working_directory)) {
+    if (!process.launch_script(script, &options)) {
         client->show_message(error);
+        stdout_read.close();
         return false;
     }
 
@@ -84,7 +96,7 @@ bool run_console_command(Client* client,
 
     client->set_selected_buffer(buffer_id);
 
-    editor->add_job(job_process_append(buffer_id, process));
+    editor->add_job(job_process_append(buffer_id, process, stdout_read));
     return true;
 }
 

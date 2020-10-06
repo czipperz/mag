@@ -20,12 +20,18 @@ static void man_completion_engine(Editor*, Completion_Engine_Context* context) {
         return;
     }
 
-    Process process;
-    const char* args[] = {path_to_autocomplete_man_page, "", nullptr};
-    if (!process.launch_program(path_to_autocomplete_man_page, args, nullptr)) {
+    Process_Options options;
+    Input_File stdout_read;
+    if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
         return;
     }
-    process.set_read_blocking();
+    CZ_DEFER(options.stdout.close(); stdout_read.close());
+
+    Process process;
+    const char* args[] = {path_to_autocomplete_man_page, "", nullptr};
+    if (!process.launch_program(args, &options)) {
+        return;
+    }
 
     context->results_buffer_array.clear();
     context->results.set_len(0);
@@ -33,7 +39,7 @@ static void man_completion_engine(Editor*, Completion_Engine_Context* context) {
     char buffer[1024];
     cz::String result = {};
     while (1) {
-        int64_t len = process.read(buffer, sizeof(buffer));
+        int64_t len = stdout_read.read(buffer, sizeof(buffer));
         if (len > 0) {
             for (size_t offset = 0; offset < (size_t)len; ++offset) {
                 const char* end = cz::Str{buffer + offset, len - offset}.find('\n');
@@ -63,7 +69,6 @@ static void man_completion_engine(Editor*, Completion_Engine_Context* context) {
     }
 
     process.join();
-    process.destroy();
 
     std::sort(context->results.start(), context->results.end());
 }
@@ -82,15 +87,24 @@ static void command_man_response(Editor* editor, Client* client, cz::Str page, v
     script.append(pipe_to_groff);
     script.null_terminate();
 
+    Process_Options options;
+    Input_File stdout_read;
+    if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
+        client->show_message("Error: I/O operation failed");
+        return;
+    }
+    CZ_DEFER(options.stdout.close());
+
     Process process;
-    if (!process.launch_script(script.buffer(), nullptr)) {
+    if (!process.launch_script(script.buffer(), &options)) {
         client->show_message("Error: Couldn't show man page");
+        stdout_read.close();
         return;
     }
 
     Buffer_Id buffer_id = editor->create_temp_buffer("man");
     client->set_selected_buffer(buffer_id);
-    editor->add_job(job_process_append(buffer_id, process));
+    editor->add_job(job_process_append(buffer_id, process, stdout_read));
 }
 
 void command_man(Editor* editor, Command_Source source) {
