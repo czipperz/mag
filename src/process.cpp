@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
+#include <cz/heap.hpp>
 
 namespace mag {
 
@@ -121,7 +122,7 @@ int64_t Output_File::write(const char* buffer, size_t size) {
 void read_to_string(Input_File file, cz::Allocator allocator, cz::String* out) {
     char buffer[1024];
     while (1) {
-        ssize_t read_result = file.read(buffer, sizeof(buffer));
+        int64_t read_result = file.read(buffer, sizeof(buffer));
         if (read_result < 0) {
             // Todo: what do we do here?  I'm just ignoring the error for now
         } else if (read_result == 0) {
@@ -135,15 +136,15 @@ void read_to_string(Input_File file, cz::Allocator allocator, cz::String* out) {
 }
 
 void Process_Options::close_all() {
-    stdin.close();
-    stdout.close();
+    std_in.close();
+    std_out.close();
 #ifdef _WIN32
-    if (stdout.handle != stderr.handle)
+    if (std_out.handle != std_err.handle)
 #else
-    if (stdout.fd != stderr.fd)
+    if (std_out.fd != std_err.fd)
 #endif
     {
-        stderr.close();
+        std_err.close();
     }
 }
 
@@ -196,37 +197,37 @@ bool create_process_output_pipe(Output_File* output, Input_File* input) {
 }
 
 bool create_process_pipes(Process_IO* io, Process_Options* options) {
-    if (!create_process_input_pipe(&options->stdin, &io->stdin)) {
+    if (!create_process_input_pipe(&options->std_in, &io->std_in)) {
         return false;
     }
 
-    if (!create_process_output_pipe(&options->stdout, &io->stdout)) {
-        options->stdin.close();
-        io->stdin.close();
+    if (!create_process_output_pipe(&options->std_out, &io->std_out)) {
+        options->std_in.close();
+        io->std_in.close();
         return false;
     }
 
-    options->stderr = options->stdout;
+    options->std_err = options->std_out;
 
     return true;
 }
 
 bool create_process_pipes(Process_IOE* io, Process_Options* options) {
-    if (!create_process_input_pipe(&options->stdin, &io->stdin)) {
+    if (!create_process_input_pipe(&options->std_in, &io->std_in)) {
         return false;
     }
 
-    if (!create_process_output_pipe(&options->stdout, &io->stdout)) {
-        options->stdin.close();
-        io->stdin.close();
+    if (!create_process_output_pipe(&options->std_out, &io->std_out)) {
+        options->std_in.close();
+        io->std_in.close();
         return false;
     }
 
-    if (!create_process_output_pipe(&options->stderr, &io->stderr)) {
-        options->stdout.close();
-        io->stdout.close();
-        options->stdin.close();
-        io->stdin.close();
+    if (!create_process_output_pipe(&options->std_err, &io->std_err)) {
+        options->std_out.close();
+        io->std_out.close();
+        options->std_in.close();
+        io->std_in.close();
         return false;
     }
 
@@ -264,9 +265,9 @@ static bool launch_script_(char* script, Process_Options* options, HANDLE* hProc
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
     si.dwFlags = STARTF_USESTDHANDLES;
-    si.hStdError = options->stderr;
-    si.hStdOutput = options->stdout;
-    si.hStdInput = options->stdin;
+    si.hStdError = options->std_err.handle;
+    si.hStdOutput = options->std_out.handle;
+    si.hStdInput = options->std_in.handle;
 
     PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
@@ -388,14 +389,14 @@ bool Process::launch_program(const char* const* args, Process_Options* options) 
     if (pid < 0) {
         return false;
     } else if (pid == 0) {  // child process
-        bind_pipe(options->stdin.fd, 0);
-        bind_pipe(options->stdout.fd, 1);
-        bind_pipe(options->stderr.fd, 2);
+        bind_pipe(options->std_in.fd, 0);
+        bind_pipe(options->std_out.fd, 1);
+        bind_pipe(options->std_err.fd, 2);
 
-        close(options->stdin.fd);
-        close(options->stdout.fd);
-        if (options->stderr.fd != options->stdout.fd) {
-            close(options->stderr.fd);
+        close(options->std_in.fd);
+        close(options->std_out.fd);
+        if (options->std_err.fd != options->std_out.fd) {
+            close(options->std_err.fd);
         }
 
         if (options->working_directory) {

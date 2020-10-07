@@ -25,10 +25,10 @@ static void man_completion_engine(Editor*, Completion_Engine_Context* context) {
 
     {
         Process_Options options;
-        if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
+        if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
             return;
         }
-        CZ_DEFER(options.stdout.close());
+        CZ_DEFER(options.std_out.close());
 
         const char* args[] = {path_to_autocomplete_man_page, "", nullptr};
         if (!process.launch_program(args, &options)) {
@@ -94,11 +94,11 @@ static void command_man_response(Editor* editor, Client* client, cz::Str page, v
 
     Process_Options options;
     Input_File stdout_read;
-    if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
+    if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
         client->show_message("Error: I/O operation failed");
         return;
     }
-    CZ_DEFER(options.stdout.close());
+    CZ_DEFER(options.std_out.close());
 
     Process process;
     if (!process.launch_script(script.buffer(), &options)) {

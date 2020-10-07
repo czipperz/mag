@@ -176,7 +176,7 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
 struct Clang_Format_Job_Data {
     Buffer_Id buffer_id;
     Process process;
-    Input_File stdout;
+    Input_File std_out;
     size_t change_index;
     cz::String output_xml;
 };
@@ -185,14 +185,14 @@ static bool clang_format_job_tick(Editor* editor, void* _data) {
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
     while (1) {
         char buf[1024];
-        int64_t read_result = data->stdout.read(buf, sizeof(buf));
+        int64_t read_result = data->std_out.read(buf, sizeof(buf));
         if (read_result > 0) {
             data->output_xml.reserve(cz::heap_allocator(), read_result);
             data->output_xml.append({buf, (size_t)read_result});
             continue;
         } else if (read_result == 0) {
             // End of file
-            data->stdout.close();
+            data->std_out.close();
             data->process.join();
 
             Buffer_Handle* handle = editor->lookup(data->buffer_id);
@@ -214,7 +214,7 @@ static bool clang_format_job_tick(Editor* editor, void* _data) {
 
 static void clang_format_job_kill(Editor* editor, void* _data) {
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
-    data->stdout.close();
+    data->std_out.close();
     data->process.kill();
     data->output_xml.drop(cz::heap_allocator());
     free(data);
@@ -223,11 +223,12 @@ static void clang_format_job_kill(Editor* editor, void* _data) {
 static Job job_clang_format(size_t change_index,
                             Buffer_Id buffer_id,
                             Process process,
-                            Input_File stdout) {
+                            Input_File std_out) {
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)malloc(sizeof(Clang_Format_Job_Data));
+    CZ_ASSERT(data);
     data->buffer_id = buffer_id;
     data->process = process;
-    data->stdout = stdout;
+    data->std_out = std_out;
     data->change_index = change_index;
     data->output_xml = {};
 
@@ -260,11 +261,11 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
 
     Process_Options options;
     Input_File stdout_read;
-    if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
+    if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
         source.client->show_message("Error: I/O operation failed");
         return;
     }
-    CZ_DEFER(options.stdout.close());
+    CZ_DEFER(options.std_out.close());
 
     Process process;
     if (!process.launch_script(script.buffer(), &options)) {

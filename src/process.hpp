@@ -59,9 +59,9 @@ bool create_temp_file(Input_File* fd, const char* contents);
 void read_to_string(Input_File, cz::Allocator allocator, cz::String* string);
 
 struct Process_Options {
-    Input_File stdin = {};
-    Output_File stdout = {};
-    Output_File stderr = {};
+    Input_File std_in;
+    Output_File std_out;
+    Output_File std_err;
 
     /// The directory to run the process from.
     const char* working_directory = nullptr;
@@ -79,14 +79,14 @@ bool create_process_input_pipe(Input_File*, Output_File*);
 bool create_process_output_pipe(Output_File*, Input_File*);
 
 struct Process_IOE {
-    Output_File stdin;
-    Input_File stdout;
-    Input_File stderr;
+    Output_File std_in;
+    Input_File std_out;
+    Input_File std_err;
 };
 
 struct Process_IO {
-    Output_File stdin;
-    Input_File stdout;
+    Output_File std_in;
+    Input_File std_out;
 };
 
 bool create_process_pipes(Process_IO*, Process_Options*);

@@ -26,7 +26,7 @@ struct Job {
     void* data;
 };
 
-Job job_process_append(Buffer_Id buffer_id, Process process, Input_File stdout);
+Job job_process_append(Buffer_Id buffer_id, Process process, Input_File output);
 bool run_console_command(Client* client,
                          Editor* editor,
                          const char* working_directory,

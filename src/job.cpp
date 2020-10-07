@@ -11,12 +11,12 @@ namespace mag {
 struct Process_Append_Job_Data {
     Buffer_Id buffer_id;
     Process process;
-    Input_File stdout;
+    Input_File std_out;
 };
 
 static void process_append_job_kill(Editor* editor, void* _data) {
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
-    data->stdout.close();
+    data->std_out.close();
     data->process.kill();
     free(data);
 }
@@ -24,7 +24,7 @@ static void process_append_job_kill(Editor* editor, void* _data) {
 static bool process_append_job_tick(Editor* editor, void* _data) {
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
     char buf[1024];
-    int64_t read_result = data->stdout.read(buf, sizeof(buf));
+    int64_t read_result = data->std_out.read(buf, sizeof(buf));
     if (read_result > 0) {
         Buffer_Handle* handle = editor->lookup(data->buffer_id);
         if (!handle) {
@@ -38,7 +38,7 @@ static bool process_append_job_tick(Editor* editor, void* _data) {
         return false;
     } else if (read_result == 0) {
         // End of file
-        data->stdout.close();
+        data->std_out.close();
         data->process.join();
         free(data);
         return true;
@@ -48,13 +48,13 @@ static bool process_append_job_tick(Editor* editor, void* _data) {
     }
 }
 
-Job job_process_append(Buffer_Id buffer_id, Process process, Input_File stdout) {
+Job job_process_append(Buffer_Id buffer_id, Process process, Input_File std_out) {
     Process_Append_Job_Data* data =
         (Process_Append_Job_Data*)malloc(sizeof(Process_Append_Job_Data));
     CZ_ASSERT(data);
     data->buffer_id = buffer_id;
     data->process = process;
-    data->stdout = stdout;
+    data->std_out = std_out;
 
     Job job;
     job.tick = process_append_job_tick;
@@ -73,7 +73,7 @@ bool run_console_command(Client* client,
     options.working_directory = working_directory;
 
     Input_File stdout_read;
-    if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
+    if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
         client->show_message("Error: I/O operation failed");
         return false;
     }

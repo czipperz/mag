@@ -39,12 +39,12 @@ static bool get_git_top_level(Client* client,
     Process_Options options;
     options.working_directory = dir_cstr;
 
-    Input_File stdout_read;
-    if (!create_process_output_pipe(&options.stdout, &stdout_read)) {
+    Input_File std_out_read;
+    if (!create_process_output_pipe(&options.std_out, &std_out_read)) {
         client->show_message("Error: I/O operation failed");
         return false;
     }
-    CZ_DEFER(options.stdout.close(); stdout_read.close());
+    CZ_DEFER(options.std_out.close(); std_out_read.close());
 
     Process process;
     const char* rev_parse_args[] = {"git", "rev-parse", "--show-toplevel", nullptr};
@@ -53,7 +53,7 @@ static bool get_git_top_level(Client* client,
         return false;
     }
 
-    read_to_string(stdout_read, allocator, top_level_path);
+    read_to_string(std_out_read, allocator, top_level_path);
 
     int return_value = process.join();
     if (return_value != 0) {
