@@ -406,8 +406,12 @@ bool Process::launch_program(const char* const* args, Process_Options* options) 
         execv(new_args[0], new_args);
 
         // If exec returns there is an error launching.
-        const char* message = "Error executing /bin/sh";
+        const char* message = "Error executing ";
         write(2, message, strlen(message));
+        write(2, new_args[0], strlen(new_args[0]));
+        write(2, ": ", 2);
+        const char* err = strerror(errno);
+        write(2, err, strlen(err));
         exit(errno);
     } else {  // parent process
         return true;
