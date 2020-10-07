@@ -13,15 +13,37 @@ primarily on C and C++ code, but coding in any language is supported.
   - Built in support for `git grep`.
 
 ## Building
+
+### Linux and OSX
+
 Clone the repository and the submodules and run the build script:
+
 ```
 git clone https://github.com/czipperz/mag
+cd mag
 git submodule init
 git submodule update
 ./build-release.sh
 ```
 
-Required packages: a C++ compiler and ncurses.
+Required packages: a C++ compiler, ncurses, and sdl.
+
+### Windows
+
+First, clone the repository and the submodules:
+
+```
+git clone https://github.com/czipperz/mag
+cd mag
+git submodule init
+git submodule update
+```
+
+Before building you must download the SDL and SDL_ttf development files and place them in the `SDL`
+and `TTF` directories, respectively.  You will also need to install ImageMagick as it is used to
+generate Mag's icons.
+
+Next, open the project as a folder in Visual Studio and click Build -> Build All.
 
 ## Customizing
 The `custom` folder can be customized to fit your needs.  In particular `config.cpp`'s
