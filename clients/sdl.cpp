@@ -1,6 +1,7 @@
 #include "sdl.hpp"
 
 #include <SDL.h>
+#include <SDL_syswm.h>
 #include <SDL_ttf.h>
 #include <ctype.h>
 #include <inttypes.h>
@@ -15,6 +16,11 @@
 #include "render.hpp"
 #include "server.hpp"
 #include "window_cache.hpp"
+
+#ifdef _WIN32
+#include <windows.h>
+#include "res/resources.h"
+#endif
 
 namespace mag {
 namespace client {
@@ -685,6 +691,22 @@ static int sdl_copy(void* data, cz::Str text) {
     return SDL_SetClipboardText(clipboard->buffer());
 }
 
+void setIcon(SDL_Window* sdlWindow) {
+#if defined(_WIN32) && defined(GCLP_HICON)
+    SDL_SysWMinfo wminfo;
+    SDL_VERSION(&wminfo.version);
+    if (SDL_GetWindowWMInfo(sdlWindow, &wminfo) == 1) {
+        HWND hwnd = wminfo.info.win.window;
+
+        HINSTANCE handle = ::GetModuleHandle(nullptr);
+        HICON icon = ::LoadIcon(handle, "IDI_MAIN_ICON");
+        if (icon != nullptr) {
+            ::SetClassLongPtr(hwnd, GCLP_HICON, reinterpret_cast<LONG>(icon));
+        }
+    }
+#endif
+}
+
 void run(Server* server, Client* client) {
     ZoneScoped;
 
@@ -707,6 +729,8 @@ void run(Server* server, Client* client) {
         return;
     }
     CZ_DEFER(SDL_DestroyWindow(window));
+
+    setIcon(window);
 
     SDL_Renderer* renderer =
         SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);

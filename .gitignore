@@ -1,3 +1,4 @@
+*~
 build
 color_test
 log.txt
@@ -6,4 +7,5 @@ valgrind.txt
 CMakeSettings.json
 SDL
 TTF
+res/logo.ico
 

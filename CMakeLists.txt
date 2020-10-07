@@ -20,11 +20,15 @@ if (WIN32)
       ${CMAKE_COMMAND} -E copy_if_different ${SDL2_DLLS} ${CMAKE_BINARY_DIR})
   add_custom_target(sdl2_ttf_dlls ALL
       ${CMAKE_COMMAND} -E copy_if_different ${SDL2_TTF_DLLS} ${CMAKE_BINARY_DIR})
+
+  set(WINDOWS_RC_FILE "res/Windows_RC.rc")
 else()
   set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
   find_package(SDL2 REQUIRED)
   find_package(SDL2_ttf REQUIRED)
   set(HAS_NCURSES 1)
+
+  set(WINDOWS_RC_FILE)
 endif()
 
 set(LIBRARY_NAME ${PROJECT_NAME}l)
@@ -33,7 +37,7 @@ add_library(${LIBRARY_NAME} ${SRCS})
 target_include_directories(${LIBRARY_NAME} PUBLIC custom)
 
 file(GLOB_RECURSE CLIENT_SRCS clients/*.cpp)
-add_executable(${PROJECT_NAME} mains/main.cpp ${CLIENT_SRCS})
+add_executable(${PROJECT_NAME} mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
 target_link_libraries(${PROJECT_NAME} custom)
 target_link_libraries(${PROJECT_NAME} basic)
 target_link_libraries(${PROJECT_NAME} prose)
@@ -58,6 +62,13 @@ target_link_libraries(${PROJECT_NAME} tracy)
 if (NOT WIN32)
   target_link_libraries(${PROJECT_NAME} pthread)
   target_link_libraries(${PROJECT_NAME} dl)
+endif()
+
+if (WIN32)
+  add_custom_target(icon COMMAND magick convert res/logo.png -define icon:auto-resize=256,128,96,64,48,32,16 res/logo.ico
+                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                    DEPENDS res/logo.png)
+  add_dependencies(${PROJECT_NAME} icon)
 endif()
 
 file(GLOB_RECURSE CUSTOM_SRCS custom/*.cpp)
