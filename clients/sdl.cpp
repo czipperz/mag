@@ -1,6 +1,7 @@
 #include "sdl.hpp"
 
 #include <SDL.h>
+#include <SDL_image.h>
 #include <SDL_syswm.h>
 #include <SDL_ttf.h>
 #include <ctype.h>
@@ -23,6 +24,9 @@
 #endif
 
 namespace mag {
+
+extern char* program_name;
+
 namespace client {
 namespace sdl {
 
@@ -692,7 +696,7 @@ static int sdl_copy(void* data, cz::Str text) {
 }
 
 void setIcon(SDL_Window* sdlWindow) {
-#if defined(_WIN32) && defined(GCLP_HICON)
+#ifdef _WIN32
     SDL_SysWMinfo wminfo;
     SDL_VERSION(&wminfo.version);
     if (SDL_GetWindowWMInfo(sdlWindow, &wminfo) == 1) {
@@ -703,6 +707,23 @@ void setIcon(SDL_Window* sdlWindow) {
         if (icon != nullptr) {
             ::SetClassLongPtr(hwnd, GCLP_HICON, reinterpret_cast<LONG>(icon));
         }
+    }
+#else
+    auto prog_name = cz::path::directory_component(program_name);
+    if (!prog_name.is_present) {
+        prog_name.value = "";
+    }
+    cz::String logo = {};
+    logo.reserve(cz::heap_allocator(), prog_name.value.len + 8 + 1);
+    CZ_DEFER(logo.drop(cz::heap_allocator()));
+    logo.append(prog_name.value);
+    logo.append("logo.png");
+    logo.null_terminate();
+
+    SDL_Surface* icon = IMG_Load(logo.buffer());
+    if (icon) {
+        SDL_SetWindowIcon(sdlWindow, icon);
+        SDL_FreeSurface(icon);
     }
 #endif
 }
@@ -721,6 +742,13 @@ void run(Server* server, Client* client) {
         return;
     }
     CZ_DEFER(TTF_Quit());
+
+    int img_init_flags = IMG_INIT_PNG;
+    if (IMG_Init(img_init_flags) != img_init_flags) {
+        fprintf(stderr, "Failed to initialize IMG: %s\n", IMG_GetError());
+        return;
+    }
+    CZ_DEFER(IMG_Quit());
 
     SDL_Window* window = SDL_CreateWindow("Mag", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                           800, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);

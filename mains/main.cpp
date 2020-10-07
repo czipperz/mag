@@ -12,7 +12,11 @@
 
 using namespace mag;
 
-static int usage(char* program_name) {
+namespace mag {
+char* program_name;
+}
+
+static int usage() {
     fprintf(stderr,
             "%s [options] [files]\n\
 \n\
@@ -33,6 +37,8 @@ Available clients:\n"
 
 int main(int argc, char** argv) {
     try {
+        program_name = argv[0];
+
         Server server = {};
         server.editor.create();
         CZ_DEFER(server.drop());
@@ -47,7 +53,7 @@ int main(int argc, char** argv) {
         for (int i = 1; i < argc; ++i) {
             cz::Str arg = argv[i];
             if (arg == "--help") {
-                return usage(argv[0]);
+                return usage();
             } else if (arg.starts_with("--client=")) {
 #ifdef HAS_NCURSES
                 if (arg == "--client=ncurses") {
@@ -61,7 +67,7 @@ int main(int argc, char** argv) {
                     continue;
                 }
 
-                return usage(argv[0]);
+                return usage();
             } else {
                 open_file(&server.editor, &client, arg);
             }

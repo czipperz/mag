@@ -15,16 +15,22 @@ if (WIN32)
   set(SDL2_TTF_LIBRARIES ${CMAKE_SOURCE_DIR}/TTF/lib/x64/SDL2_ttf.lib)
   set(SDL2_TTF_DLLS ${CMAKE_SOURCE_DIR}/TTF/lib/x64/SDL2_ttf.dll ${CMAKE_SOURCE_DIR}/TTF/lib/x64/libfreetype-6.dll ${CMAKE_SOURCE_DIR}/TTF/lib/x64/zlib1.dll)
   set(SDL2_TTF_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/TTF/include)
+  set(SDL2_IMAGE_LIBRARIES ${CMAKE_SOURCE_DIR}/IMG/lib/x64/SDL2_image.lib)
+  set(SDL2_IMAGE_DLLS ${CMAKE_SOURCE_DIR}/IMG/lib/x64/SDL2_image.dll ${CMAKE_SOURCE_DIR}/IMG/lib/x64/libjpeg-9.dll ${CMAKE_SOURCE_DIR}/IMG/lib/x64/libpng16-16.dll ${CMAKE_SOURCE_DIR}/IMG/lib/x64/libtiff-5.dll ${CMAKE_SOURCE_DIR}/IMG/lib/x64/libwebp-7.dll)
+  set(SDL2_IMAGE_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/IMG/include)
 
   add_custom_target(sdl2_dlls ALL
       ${CMAKE_COMMAND} -E copy_if_different ${SDL2_DLLS} ${CMAKE_BINARY_DIR})
   add_custom_target(sdl2_ttf_dlls ALL
       ${CMAKE_COMMAND} -E copy_if_different ${SDL2_TTF_DLLS} ${CMAKE_BINARY_DIR})
+  add_custom_target(sdl2_image_dlls ALL
+      ${CMAKE_COMMAND} -E copy_if_different ${SDL2_IMAGE_DLLS} ${CMAKE_BINARY_DIR})
 
   set(WINDOWS_RC_FILE "res/Windows_RC.rc")
 else()
   set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
   find_package(SDL2 REQUIRED)
+  find_package(SDL2_image REQUIRED)
   find_package(SDL2_ttf REQUIRED)
   set(HAS_NCURSES 1)
 
@@ -54,8 +60,8 @@ if (${HAS_NCURSES})
   target_compile_definitions(${PROJECT_NAME} PUBLIC HAS_NCURSES=1)
   target_link_libraries(${PROJECT_NAME} ncurses)
 endif()
-target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES})
-target_include_directories(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
+target_include_directories(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} tracy)
 
@@ -65,11 +71,13 @@ if (NOT WIN32)
 endif()
 
 if (WIN32)
-  add_custom_target(icon COMMAND magick convert res/logo.png -define icon:auto-resize=256,128,96,64,48,32,16 res/logo.ico
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-                    DEPENDS res/logo.png)
-  add_dependencies(${PROJECT_NAME} icon)
+  add_custom_target(icon COMMAND magick convert ${CMAKE_SOURCE_DIR}/res/logo.png -define icon:auto-resize=256,128,96,64,48,32,16 ${CMAKE_SOURCE_DIR}/res/logo.ico
+                    DEPENDS ${CMAKE_SOURCE_DIR}/res/logo.png)
+else()
+  add_custom_target(icon COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/logo.png ${CMAKE_BINARY_DIR}
+                    DEPENDS ${CMAKE_SOURCE_DIR}/res/logo.png)
 endif()
+add_dependencies(${PROJECT_NAME} icon)
 
 file(GLOB_RECURSE CUSTOM_SRCS custom/*.cpp)
 add_library(custom ${CUSTOM_SRCS})
