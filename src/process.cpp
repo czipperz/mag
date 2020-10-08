@@ -404,7 +404,7 @@ bool Process::launch_program(const char* const* args, Process_Options* options) 
         }
 
         // Launch the script by running it through the shell.
-        execv(new_args[0], new_args);
+        execvp(new_args[0], new_args);
 
         // If exec returns there is an error launching.
         const char* message = "Error executing ";
