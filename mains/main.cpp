@@ -35,7 +35,7 @@ Available clients:\n"
     return 1;
 }
 
-int main(int argc, char** argv) {
+int mag_main(int argc, char** argv) {
     try {
         program_name = argv[0];
 
@@ -90,3 +90,14 @@ int main(int argc, char** argv) {
         return 1;
     }
 }
+
+#if _WIN32
+#include <windows.h>
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+    return mag_main(__argc, __argv);
+}
+#else
+int main(int argc, char** argv) {
+    return mag_main(argc, argv);
+}
+#endif

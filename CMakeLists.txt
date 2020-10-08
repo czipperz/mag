@@ -43,7 +43,7 @@ add_library(${LIBRARY_NAME} ${SRCS})
 target_include_directories(${LIBRARY_NAME} PUBLIC custom)
 
 file(GLOB_RECURSE CLIENT_SRCS clients/*.cpp)
-add_executable(${PROJECT_NAME} mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
+add_executable(${PROJECT_NAME} WIN32 mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
 target_link_libraries(${PROJECT_NAME} custom)
 target_link_libraries(${PROJECT_NAME} basic)
 target_link_libraries(${PROJECT_NAME} prose)
