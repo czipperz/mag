@@ -31,10 +31,8 @@
 * Uncomment line and region
 * Run compile
 * Edit server
-* Xorg copy paste
 
-* Colors
-  - Have some way to make faces for overlays and have the colors registered
+* Allow for editing theme
 
 * Multi cursors
   - When creating a cursor, try to fit it on the screen
