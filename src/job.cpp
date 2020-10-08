@@ -77,6 +77,7 @@ bool run_console_command(Client* client,
         client->show_message("Error: I/O operation failed");
         return false;
     }
+    CZ_DEFER(options.std_out.close());
 
     Process process;
     if (!process.launch_script(script, &options)) {
