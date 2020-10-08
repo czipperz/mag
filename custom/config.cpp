@@ -262,14 +262,16 @@ static Key_Map* search_key_map() {
 
 static Key_Map create_path_key_map() {
     Key_Map key_map = {};
-    BIND(key_map, "A-i", command_insert_completion);
     BIND(key_map, "C-n", command_next_completion);
     BIND(key_map, "C-p", command_previous_completion);
     BIND(key_map, "C-v", command_completion_down_page);
     BIND(key_map, "A-v", command_completion_up_page);
     BIND(key_map, "A-<", command_first_completion);
     BIND(key_map, "A->", command_last_completion);
+
     BIND(key_map, "C-l", command_path_up_directory);
+    BIND(key_map, "A-i", command_insert_completion);
+    BIND(key_map, "C-j", command_insert_completion_and_submit_mini_buffer);
     BIND(key_map, "C-m", command_submit_mini_buffer);
     BIND(key_map, "\n", command_submit_mini_buffer);
     return key_map;

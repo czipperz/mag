@@ -1,6 +1,7 @@
 #include "completion_commands.hpp"
 
 #include "command_macros.hpp"
+#include "commands.hpp"
 
 namespace mag {
 namespace basic {
@@ -33,6 +34,11 @@ void command_insert_completion(Editor* editor, Command_Source source) {
     transaction.push(insert);
 
     transaction.commit(buffer);
+}
+
+void command_insert_completion_and_submit_mini_buffer(Editor* editor, Command_Source source) {
+    command_insert_completion(editor, source);
+    command_submit_mini_buffer(editor, source);
 }
 
 void command_next_completion(Editor* editor, Command_Source source) {
