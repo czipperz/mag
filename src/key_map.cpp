@@ -41,6 +41,10 @@ static void parse_key(Key* key, size_t* i, cz::Str description) {
         key->modifiers |= ALT;
         *i += 2;
     }
+    if (*i + 1 < description.len && description[*i] == 'S' && description[*i + 1] == '-') {
+        key->modifiers |= SHIFT;
+        *i += 2;
+    }
 
     CZ_ASSERT(*i < description.len);
     if (*i + 1 < description.len && description[*i] == '\\') {

@@ -95,6 +95,7 @@ Key_Map create_key_map() {
     BIND(key_map, "C-r", command_search_backward);
 
     BIND(key_map, "\\-", command_delete_backward_char);
+    BIND(key_map, "S-\\-", command_delete_backward_char);
     BIND(key_map, "C-d", command_delete_forward_char);
     BIND(key_map, "A-\\-", command_delete_backward_word);
     BIND(key_map, "A-d", command_delete_forward_word);
