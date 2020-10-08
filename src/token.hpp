@@ -4,8 +4,10 @@
 
 namespace mag {
 
+struct Face;
+
 namespace Token_Type_ {
-enum Token_Type {
+enum Token_Type : uint64_t {
     DEFAULT,
     KEYWORD,
     TYPE,
@@ -38,7 +40,16 @@ enum Token_Type {
     PROCESS_BOLD,
     PROCESS_ITALICS,
     PROCESS_BOLD_ITALICS,
+
+    CUSTOM = 0x8000000000000000,
+    CUSTOM_FOREGROUND_IS_COLOR = 0x4000000000000000,
+    CUSTOM_BACKGROUND_IS_COLOR = 0x2000000000000000,
+    CUSTOM_FACE_INVISIBLE = 0x1000000000000000,
 };
+
+Token_Type encode(Face face);
+Face decode(Token_Type type);
+
 }
 using Token_Type_::Token_Type;
 

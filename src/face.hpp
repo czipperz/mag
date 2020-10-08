@@ -43,6 +43,9 @@ struct Face {
     Face_Color foreground;
     Face_Color background;
 
+    // @Fragile Note these are linked to `Token_Type_::encode` and `Token_Type_::decode`.  Adding
+    // more flags here will break that as it has exactly 5 slots available.  Changing the numbering
+    // will also break it but it will be easy to fix.
     enum Flags {
         BOLD = 1,
         UNDERSCORE = 2,

@@ -196,13 +196,18 @@ static void draw_buffer_contents(Cell* cells,
             }
         }
 
-        size_t type_face = 7;
+        Face token_face;
+        const size_t type_face_offset = 7;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
-            type_face += token.type;
+            if (token.type & Token_Type::CUSTOM) {
+                token_face = Token_Type_::decode(token.type);
+            } else {
+                token_face = editor->theme.faces[token.type + type_face_offset];
+            }
         } else {
-            type_face += Token_Type::DEFAULT;
+            token_face = editor->theme.faces[Token_Type::DEFAULT + type_face_offset];
         }
-        apply_face(&face, editor->theme.faces[type_face]);
+        apply_face(&face, token_face);
 
         if (face.flags & Face::INVISIBLE) {
             // Skip rendering this character as it is invisible
