@@ -260,6 +260,16 @@ static Key_Map* search_key_map() {
     return &key_map;
 }
 
+static Key_Map create_man_key_map() {
+    Key_Map key_map = {};
+    return key_map;
+}
+
+static Key_Map* man_key_map() {
+    static Key_Map key_map = create_man_key_map();
+    return &key_map;
+}
+
 static Key_Map create_path_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-n", command_next_completion);
@@ -323,7 +333,7 @@ Mode get_mode(cz::Str file_name) {
         mode.key_map = search_key_map();
     } else if (file_name.starts_with("*man ")) {
         mode.next_token = syntax::process_next_token;
-        mode.key_map = search_key_map();
+        mode.key_map = man_key_map();
     } else if (file_name.ends_with("/git-rebase-todo")) {
         mode.next_token = syntax::git_rebase_todo_next_token;
         mode.key_map = git_edit_key_map();
