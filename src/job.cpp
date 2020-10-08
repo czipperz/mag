@@ -89,10 +89,10 @@ bool run_console_command(Client* client,
     Buffer_Id buffer_id = editor->create_temp_buffer(buffer_name);
     {
         WITH_BUFFER(buffer_id);
-        buffer->contents.insert(0, working_directory);
-        buffer->contents.insert(buffer->contents.len, ": ");
-        buffer->contents.insert(buffer->contents.len, script);
-        buffer->contents.insert(buffer->contents.len, "\n");
+        buffer->contents.append(working_directory);
+        buffer->contents.append(": ");
+        buffer->contents.append(script);
+        buffer->contents.append("\n");
     }
 
     client->set_selected_buffer(buffer_id);

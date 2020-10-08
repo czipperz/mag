@@ -55,8 +55,8 @@ static cz::Result load_directory(Editor* editor,
     {
         WITH_BUFFER(*buffer_id);
         for (size_t i = 0; i < files.len(); ++i) {
-            buffer->contents.insert(buffer->contents.len, files[i]);
-            buffer->contents.insert(buffer->contents.len, "\n");
+            buffer->contents.append(files[i]);
+            buffer->contents.append("\n");
         }
     }
 
