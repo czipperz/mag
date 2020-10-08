@@ -433,6 +433,7 @@ void setup_completion_cache(Editor* editor, Client* client, Completion_Cache* co
     ZoneScoped;
 
     if (client->_message.tag <= Message::SHOW) {
+        completion_cache->engine = nullptr;
         return;
     }
 
