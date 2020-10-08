@@ -684,7 +684,7 @@ static void set_clipboard_variable(cz::String* clipboard, cz::Str text) {
 static void process_clipboard_updates(Server* server, Client* client, cz::String* clipboard) {
     ZoneScoped;
 
-    const char* clipboard_currently_cstr = SDL_GetClipboardText();
+    char* clipboard_currently_cstr = SDL_GetClipboardText();
     if (clipboard_currently_cstr) {
         cz::Str clipboard_currently = clipboard_currently_cstr;
         if (*clipboard != clipboard_currently) {
@@ -695,6 +695,7 @@ static void process_clipboard_updates(Server* server, Client* client, cz::String
             chain->previous = client->global_copy_chain;
             client->global_copy_chain = chain;
         }
+        SDL_free(clipboard_currently_cstr);
     }
 }
 
