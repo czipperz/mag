@@ -617,14 +617,21 @@ static void render(SDL_Window* window,
 
                     buffer[0] = new_cell->code;
 
-                    SDL_Surface* rendered_char = TTF_RenderText_Blended(font, buffer, fgc);
+                    SDL_Surface* rendered_char;
+                    {
+                        ZoneScopedN("TTF_RenderText_Blended");
+                        rendered_char = TTF_RenderText_Blended(font, buffer, fgc);
+                    }
                     if (!rendered_char) {
                         fprintf(stderr, "Failed to render text '%s': %s\n", buffer, TTF_GetError());
                         continue;
                     }
                     CZ_DEFER(SDL_FreeSurface(rendered_char));
 
-                    SDL_BlitSurface(rendered_char, nullptr, *surface, &rect);
+                    {
+                        ZoneScopedN("SDL_BlitSurface");
+                        SDL_BlitSurface(rendered_char, nullptr, *surface, &rect);
+                    }
                 }
                 ++index;
             }
