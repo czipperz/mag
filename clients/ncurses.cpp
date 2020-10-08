@@ -69,6 +69,22 @@ static bool getch_callback(void* data) {
     return *out != ERR;
 }
 
+static int16_t get_face_color(Face_Color fc) {
+    if (fc.is_themed) {
+        return fc.x.theme_index;
+    } else {
+        return -1;
+    }
+}
+
+static int16_t get_face_color_or(Face_Color fc, int16_t deflt) {
+    int16_t color = get_face_color(fc);
+    if (color < 0 || color >= COLORS) {
+        color = deflt;
+    }
+    return color;
+}
+
 static void render(int* total_rows,
                    int* total_cols,
                    Cell** cellss,
@@ -134,14 +150,9 @@ static void render(int* total_rows,
                         attrs |= A_UNDERLINE;
                     }
 
-                    int16_t bg = new_cell->face.background;
-                    if (bg < 0 || bg >= COLORS) {
-                        bg = 0;
-                    }
-                    int16_t fg = new_cell->face.foreground;
-                    if (fg < 0 || fg >= COLORS) {
-                        fg = 7;
-                    }
+                    int16_t bg = get_face_color_or(new_cell->face.background, 0);
+                    int16_t fg = get_face_color_or(new_cell->face.foreground, 7);
+
                     int32_t color_pair = (colors[bg] - 1) * used_colors + (colors[fg] - 1) + 1;
                     attrs |= COLOR_PAIR(color_pair);
 
@@ -251,11 +262,11 @@ void run(Server* server, Client* client) {
     colors[237] = 1;
     for (size_t i = 0; i < server->editor.theme.faces.len(); ++i) {
         Face* face = &server->editor.theme.faces[i];
-        int16_t fg = face->foreground;
+        int16_t fg = get_face_color(face->foreground);
         if (fg >= 0 && fg < COLORS) {
             colors[fg] = 1;
         }
-        int16_t bg = face->background;
+        int16_t bg = get_face_color(face->background);
         if (bg >= 0 && bg < COLORS) {
             colors[bg] = 1;
         }

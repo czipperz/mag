@@ -326,13 +326,31 @@ static uint32_t colors[] = {
     0xEEE8D5,
 };
 
-static SDL_Color make_color(uint32_t c) {
+static SDL_Color make_color(Face_Color fc) {
     SDL_Color color;
-    color.r = (c & 0xFF0000) >> 16;
-    color.g = (c & 0x00FF00) >> 8;
-    color.b = (c & 0x0000FF);
+    if (fc.is_themed) {
+        uint32_t c = colors[fc.x.theme_index];
+
+        color.r = (c & 0xFF0000) >> 16;
+        color.g = (c & 0x00FF00) >> 8;
+        color.b = (c & 0x0000FF);
+    } else {
+        color.r = fc.x.color.r;
+        color.g = fc.x.color.g;
+        color.b = fc.x.color.b;
+    }
     color.a = 0xFF;
     return color;
+}
+
+static Face_Color get_face_color_or(Face_Color fc, int16_t deflt) {
+    int16_t max_colors = sizeof(colors) / sizeof(colors[0]);
+    if (fc.is_themed) {
+        if (fc.x.theme_index < 0 || fc.x.theme_index >= max_colors) {
+            fc.x.theme_index = deflt;
+        }
+    }
+    return fc;
 }
 
 static bool poll_event(SDL_Event* data) {
@@ -524,7 +542,7 @@ static void render(SDL_Window* window,
             *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
                                          SDL_TEXTUREACCESS_STREAMING, width, height);
 
-            SDL_Color bgc = make_color(colors[0]);
+            SDL_Color bgc = make_color(0);
             SDL_FillRect(*surface, nullptr,
                          SDL_MapRGBA((*surface)->format, bgc.r, bgc.g, bgc.b, bgc.a));
 
@@ -591,22 +609,15 @@ static void render(SDL_Window* window,
                         }
                         TTF_SetFontStyle(font, style);
 
-                        int16_t bg = new_cell->face.background;
-                        int16_t max_colors = sizeof(colors) / sizeof(colors[0]);
-                        if (bg < 0 || bg >= max_colors) {
-                            bg = 0;
-                        }
-                        int16_t fg = new_cell->face.foreground;
-                        if (fg < 0 || fg >= max_colors) {
-                            fg = 7;
-                        }
+                        Face_Color bg = get_face_color_or(new_cell->face.background, 0);
+                        Face_Color fg = get_face_color_or(new_cell->face.foreground, 7);
 
                         if (new_cell->face.flags & Face::REVERSE) {
                             cz::swap(fg, bg);
                         }
 
-                        bgc = make_color(colors[bg]);
-                        fgc = make_color(colors[fg]);
+                        bgc = make_color(bg);
+                        fgc = make_color(fg);
                     }
 
                     {

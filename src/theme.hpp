@@ -10,11 +10,42 @@ struct Overlay;
 
 struct Color {
     uint8_t r, g, b;
+
+    constexpr bool operator==(const Color& other) const {
+        return r == other.r && g == other.g && b == other.b;
+    }
+    constexpr bool operator!=(const Color& other) const { return !(*this == other); }
+};
+
+struct Face_Color {
+    bool is_themed;
+    union X {
+        int16_t theme_index;
+        Color color;
+
+        constexpr X(int16_t theme_index) : theme_index(theme_index) {}
+        constexpr X(Color color) : color(color) {}
+    } x;
+
+    constexpr Face_Color() : Face_Color(-1) {}
+
+    constexpr Face_Color(int16_t theme_index) : is_themed(true), x(theme_index) {}
+
+    constexpr Face_Color(Color color) : is_themed(false), x(color) {}
+
+    constexpr bool operator==(const Face_Color& other) const {
+        if (is_themed) {
+            return other.is_themed && x.theme_index == other.x.theme_index;
+        } else {
+            return !other.is_themed && x.color == other.x.color;
+        }
+    }
+    constexpr bool operator!=(const Face_Color& other) const { return !(*this == other); }
 };
 
 struct Face {
-    int16_t foreground = -1;
-    int16_t background = -1;
+    Face_Color foreground;
+    Face_Color background;
 
     enum Flags {
         BOLD = 1,
