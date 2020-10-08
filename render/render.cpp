@@ -425,6 +425,8 @@ static void draw_window(Cell* cells,
 }
 
 void setup_completion_cache(Editor* editor, Client* client, Completion_Cache* completion_cache) {
+    ZoneScoped;
+
     if (client->_message.tag <= Message::SHOW) {
         return;
     }
@@ -462,6 +464,8 @@ void setup_completion_cache(Editor* editor, Client* client, Completion_Cache* co
 }
 
 bool load_mini_buffer_completion_cache(Server* server, Client* client) {
+    ZoneScoped;
+
     if (client->mini_buffer_completion_cache.state != Completion_Cache::LOADED &&
         client->_message.tag > Message::SHOW) {
         CZ_DEBUG_ASSERT(server->editor.theme.completion_filter != nullptr);

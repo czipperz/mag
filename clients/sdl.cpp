@@ -675,6 +675,8 @@ static void set_clipboard_variable(cz::String* clipboard, cz::Str text) {
 }
 
 static void process_clipboard_updates(Server* server, Client* client, cz::String* clipboard) {
+    ZoneScoped;
+
     const char* clipboard_currently_cstr = SDL_GetClipboardText();
     if (clipboard_currently_cstr) {
         cz::Str clipboard_currently = clipboard_currently_cstr;
@@ -846,6 +848,7 @@ void run(Server* server, Client* client) {
         Uint32 frame_end_ticks = SDL_GetTicks();
         Uint32 elapsed_ticks = frame_end_ticks - frame_start_ticks;
         if (elapsed_ticks < FRAME_LENGTH) {
+            ZoneScopedN("SDL_Delay");
             SDL_Delay((Uint32)floorf(FRAME_LENGTH - elapsed_ticks));
         }
     }
