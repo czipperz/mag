@@ -28,6 +28,7 @@
 #include "syntax/overlay_matching_tokens.hpp"
 #include "syntax/overlay_preferred_column.hpp"
 #include "syntax/tokenize_cpp.hpp"
+#include "syntax/tokenize_css.hpp"
 #include "syntax/tokenize_md.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "syntax/tokenize_process.hpp"
@@ -166,7 +167,7 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
-    theme.faces.reserve(cz::heap_allocator(), 34);
+    theme.faces.reserve(cz::heap_allocator(), 39);
     theme.faces.push({{}, {}, 0});              // default
     theme.faces.push({1, {}, 0});               // unsaved buffer
     theme.faces.push({{}, {}, Face::REVERSE});  // selected buffer
@@ -210,6 +211,12 @@ Theme create_theme() {
     theme.faces.push({{}, {}, Face::BOLD});                  // Token_Type::PROCESS_BOLD
     theme.faces.push({{}, {}, Face::ITALICS});               // Token_Type::PROCESS_ITALICS
     theme.faces.push({{}, {}, Face::BOLD | Face::ITALICS});  // Token_Type::PROCESS_BOLD_ITALICS
+
+    theme.faces.push({51, {}, 0});  // Token_Type::CSS_PROPERTY
+    theme.faces.push({{}, {}, 0});  // Token_Type::CSS_ELEMENT_SELECTOR
+    theme.faces.push({228, {}, 0});  // Token_Type::CSS_ID_SELECTOR
+    theme.faces.push({118, {}, 0});  // Token_Type::CSS_CLASS_SELECTOR
+    theme.faces.push({208, {}, 0});  // Token_Type::CSS_PSEUDO_SELECTOR
 
     static Decoration decorations[] = {syntax::decoration_line_number()};
     theme.decorations = cz::slice(decorations);
@@ -320,6 +327,8 @@ Mode get_mode(cz::Str file_name) {
         mode.overlays = cz::slice(overlays);
     } else if (file_name.ends_with(".md")) {
         mode.next_token = syntax::md_next_token;
+    } else if (file_name.ends_with(".css")) {
+        mode.next_token = syntax::css_next_token;
     } else if (file_name.ends_with(".patch") || file_name.ends_with(".diff")) {
         mode.next_token = syntax::patch_next_token;
         if (file_name.ends_with("/addp-hunk-edit.diff")) {
