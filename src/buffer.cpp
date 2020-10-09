@@ -112,7 +112,7 @@ static void reload_buffer_from_file(Buffer* buffer) {
     Edit edit;
     edit.value.init_from_constant({ncontents + offset, num});
     edit.position = 0;
-    edit.flags = Edit::INSERT;
+    edit.flags = Edit::INSERT_AFTER_POSITION;
     memcpy(contents, &edit, sizeof(Edit));
 
     Transaction transaction = {};
