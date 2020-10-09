@@ -337,7 +337,7 @@ Mode get_mode(cz::Str file_name) {
     } else if (file_name == "*client mini buffer*") {
         mode.next_token = syntax::path_next_token;
         mode.key_map = path_key_map();
-    } else if (file_name.starts_with("*git grep ")) {
+    } else if (file_name.contains("*git grep ")) {
         mode.next_token = syntax::process_next_token;
         mode.key_map = search_key_map();
     } else if (file_name.starts_with("*man ")) {
