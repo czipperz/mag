@@ -44,6 +44,10 @@ void prefix_completion_filter(Completion_Filter_Context*,
                               Completion_Engine,
                               Editor*,
                               Completion_Engine_Context*);
+void infix_completion_filter(Completion_Filter_Context*,
+                             Completion_Engine,
+                             Editor*,
+                             Completion_Engine_Context*);
 
 struct Completion_Cache {
     Completion_Engine engine;

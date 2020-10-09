@@ -56,6 +56,35 @@ void prefix_completion_filter(Completion_Filter_Context* context,
     }
 }
 
+void infix_completion_filter(Completion_Filter_Context* context,
+                             Completion_Engine engine,
+                             Editor* editor,
+                             Completion_Engine_Context* engine_context) {
+    cz::String selected_result = {};
+    CZ_DEFER(selected_result.drop(cz::heap_allocator()));
+    bool exists = false;
+    if (context->selected < context->results.len()) {
+        selected_result.reserve(cz::heap_allocator(), context->results[context->selected].len);
+        selected_result.append(context->results[context->selected]);
+        exists = true;
+    }
+
+    engine(editor, engine_context);
+
+    context->selected = 0;
+    context->results.set_len(0);
+    context->results.reserve(cz::heap_allocator(), engine_context->results.len());
+    for (size_t i = 0; i < engine_context->results.len(); ++i) {
+        cz::Str result = engine_context->results[i];
+        if (result.contains(engine_context->query)) {
+            if (exists && selected_result == result) {
+                context->selected = context->results.len();
+            }
+            context->results.push(result);
+        }
+    }
+}
+
 struct File_Completion_Engine_Data {
     cz::String directory;
     cz::String temp_result;

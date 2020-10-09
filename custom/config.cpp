@@ -226,7 +226,7 @@ Theme create_theme() {
     theme.overlays = cz::slice(overlays);
 
     theme.max_completion_results = 5;
-    theme.completion_filter = prefix_completion_filter;
+    theme.completion_filter = infix_completion_filter;
 
     return theme;
 }
