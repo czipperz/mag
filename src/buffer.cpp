@@ -1,5 +1,6 @@
 #include "buffer.hpp"
 
+#include <stdio.h>
 #include <Tracy.hpp>
 #include <cz/bit_array.hpp>
 #include <cz/defer.hpp>
@@ -7,12 +8,131 @@
 #include "config.hpp"
 #include "transaction.hpp"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/stat.h>
+#endif
+
 namespace mag {
+
+static bool get_file_time(const char* path, void* file_time) {
+#ifdef _WIN32
+    HANDLE* handle = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    if (handle) {
+        CZ_DEFER(CloseFile(handle));
+        if (GetFileTime(handle, NULL, NULL, (FILETIME*)file_time)) {
+            return true;
+        }
+    }
+    return false;
+#else
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        return false;
+    }
+    *(time_t*)file_time = st.st_mtime;
+    return true;
+#endif
+}
+
+static bool is_out_of_date(const char* path, void* file_time) {
+#ifdef _WIN32
+    FILETIME new_ft;
+#else
+    time_t new_ft;
+#endif
+
+    if (!get_file_time(path, &new_ft)) {
+        return false;
+    }
+
+#ifdef _WIN32
+    if (CompareFileTime((FILETIME*)file_time, new_ft) < 0) {
+        *(FILETIME*)file_time = new_ft;
+        return true;
+    }
+#else
+    if (*(time_t*)file_time < new_ft) {
+        *(time_t*)file_time = new_ft;
+        return true;
+    }
+#endif
+
+    return false;
+}
 
 void Buffer::init(cz::Str path) {
     this->path = path.duplicate_null_terminate(cz::heap_allocator());
 
     mode = custom::get_mode(path);
+
+#ifdef _WIN32
+    file_time = malloc(FILETIME);
+    CZ_ASSERT(file_time);
+#else
+    file_time = malloc(sizeof(time_t));
+    CZ_ASSERT(file_time);
+#endif
+    if (!get_file_time(this->path.buffer(), file_time)) {
+        free(file_time);
+        file_time = nullptr;
+    }
+}
+
+static void reload_buffer_from_file(Buffer* buffer) {
+    FILE* file = fopen(buffer->path.buffer(), "r");
+    if (!file) {
+        return;
+    }
+    CZ_DEFER(fclose(file));
+
+    size_t offset = sizeof(Edit);
+    size_t bx = 8;
+    char* contents = (char*)malloc(offset + 1024 * bx);
+    CZ_ASSERT(contents);
+    size_t num = fread(contents + offset, 1, 1024 * bx, file);
+    if (num == 1024 * bx) {
+        bx *= 2;
+        char* ncontents = (char*)realloc(contents, offset + 1024 * bx);
+        CZ_ASSERT(ncontents);
+        contents = ncontents;
+        while (1) {
+            num += fread(contents + offset + 1024 * bx / 2, 1, 1024 * bx / 2, file);
+            if (num < 1024 * bx) {
+                break;
+            }
+        }
+    }
+
+    char* ncontents = (char*)realloc(contents, offset + num);
+    CZ_ASSERT(ncontents);
+    contents = ncontents;
+
+    Edit edit;
+    edit.value.init_from_constant({ncontents + offset, num});
+    edit.position = 0;
+    edit.flags = Edit::INSERT;
+    memcpy(contents, &edit, sizeof(Edit));
+
+    Transaction transaction = {};
+    transaction.memory = contents;
+    transaction.edit_offset = offset;
+    transaction.value_offset = offset + num;
+    transaction.commit(buffer);
+
+    buffer->mark_saved();
+}
+
+void Buffer::check_for_external_update() {
+    if (!is_unchanged() || !file_time) {
+        return;
+    }
+
+    if (is_out_of_date(path.buffer(), file_time)) {
+        clear_buffer(this);
+        reload_buffer_from_file(this);
+    }
 }
 
 void Buffer::drop() {

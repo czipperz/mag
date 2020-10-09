@@ -16,6 +16,8 @@ namespace mag {
 struct Buffer {
     cz::String path;
 
+    void* file_time;
+
     cz::Vector<Commit> commits;
     size_t commit_index;
 
@@ -49,6 +51,8 @@ struct Buffer {
 
     bool is_unchanged() const;
     void mark_saved();
+
+    void check_for_external_update();
 };
 
 cz::Str clear_buffer(Buffer* buffer);
