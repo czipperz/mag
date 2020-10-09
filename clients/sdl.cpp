@@ -750,24 +750,6 @@ void setIcon(SDL_Window* sdlWindow) {
 #endif
 }
 
-static void process_buffer_external_updates(Editor* editor, Window* window) {
-    switch (window->tag) {
-    case Window::UNIFIED: {
-        auto w = (Window_Unified*)window;
-        WITH_BUFFER(w->id);
-        buffer->check_for_external_update();
-        break;
-    }
-
-    default: {
-        auto w = (Window_Split*)window;
-        process_buffer_external_updates(editor, w->first);
-        process_buffer_external_updates(editor, w->second);
-        break;
-    }
-    }
-}
-
 void run(Server* server, Client* client) {
     ZoneScoped;
 

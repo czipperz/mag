@@ -328,6 +328,8 @@ void run(Server* server, Client* client) {
         cache_windows_check_points(window_cache, client->window, &server->editor, getch_callback,
                                    &ch);
 
+        process_buffer_external_updates(&server->editor, client->window);
+
         if (ch == ERR) {
             if (has_jobs) {
                 ch = getch();
@@ -335,7 +337,7 @@ void run(Server* server, Client* client) {
                     continue;
                 }
             } else {
-                nodelay(stdscr, FALSE);
+                timeout(10);
                 ch = getch();
                 nodelay(stdscr, TRUE);
             }
