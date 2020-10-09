@@ -62,22 +62,28 @@ static bool is_out_of_date(const char* path, void* file_time) {
     return false;
 }
 
+static void initialize_file_time(Buffer* buffer) {
+#ifdef _WIN32
+    void* file_time = malloc(FILETIME);
+    CZ_ASSERT(file_time);
+#else
+    void* file_time = malloc(sizeof(time_t));
+    CZ_ASSERT(file_time);
+#endif
+    if (get_file_time(buffer->path.buffer(), file_time)) {
+        buffer->file_time = file_time;
+    } else {
+        free(file_time);
+        buffer->file_time = nullptr;
+    }
+}
+
 void Buffer::init(cz::Str path) {
     this->path = path.duplicate_null_terminate(cz::heap_allocator());
 
     mode = custom::get_mode(path);
 
-#ifdef _WIN32
-    file_time = malloc(FILETIME);
-    CZ_ASSERT(file_time);
-#else
-    file_time = malloc(sizeof(time_t));
-    CZ_ASSERT(file_time);
-#endif
-    if (!get_file_time(this->path.buffer(), file_time)) {
-        free(file_time);
-        file_time = nullptr;
-    }
+    initialize_file_time(this);
 }
 
 static void reload_buffer_from_file(Buffer* buffer) {
@@ -251,6 +257,8 @@ void Buffer::mark_saved() {
     } else {
         saved_commit_id = {commits[commit_index - 1].id};
     }
+
+    initialize_file_time(this);
 }
 
 cz::Str clear_buffer(Buffer* buffer) {
