@@ -177,7 +177,7 @@ void command_delete_whitespace(Editor* editor, Command_Source source) {
 
         Edit edit;
         edit.value.init_from_constant({value, count});
-        edit.position = it.position + offset;
+        edit.position = it.position - offset;
         edit.flags = Edit::REMOVE;
         transaction.push(edit);
 
