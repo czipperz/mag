@@ -86,7 +86,7 @@ bool run_console_command(Client* client,
         return false;
     }
 
-    Buffer_Id buffer_id = editor->create_temp_buffer(buffer_name);
+    Buffer_Id buffer_id = editor->create_temp_buffer(buffer_name, {working_directory});
     {
         WITH_BUFFER(buffer_id);
         buffer->contents.append(working_directory);

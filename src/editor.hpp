@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <cz/heap.hpp>
+#include <cz/option.hpp>
 #include <cz/vector.hpp>
 #include "buffer_handle.hpp"
 #include "buffer_id.hpp"
@@ -83,7 +84,7 @@ struct Editor {
         return buffer_handle->id;
     }
 
-    Buffer_Id create_temp_buffer(cz::Str temp_name);
+    Buffer_Id create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir = {});
 
 private:
     bool binary_search_buffer_id(Buffer_Id id, size_t* index) {
