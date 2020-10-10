@@ -12,6 +12,7 @@
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
 #include <cz/str.hpp>
+#include <cz/working_directory.hpp>
 #include "cell.hpp"
 #include "client.hpp"
 #include "file.hpp"
@@ -750,8 +751,43 @@ void setIcon(SDL_Window* sdlWindow) {
 #endif
 }
 
+static void switch_to_the_home_directory() {
+    // Go home only we are in the program directory or we can't identify ourselves.
+    cz::String wd = {};
+    CZ_DEFER(wd.drop(cz::heap_allocator()));
+    if (cz::get_working_directory(cz::heap_allocator(), &wd).is_ok()) {
+        cz::String prog = cz::Str(program_name).duplicate(cz::heap_allocator());
+        CZ_DEFER(prog.drop(cz::heap_allocator()));
+        cz::path::convert_to_forward_slashes(prog.buffer(), prog.len());
+
+        auto prog_dir = cz::path::directory_component(prog);
+        if (prog_dir.is_present) {
+            // Get rid of the trailing / as it isn't in the working directory.
+            prog_dir.value.len--;
+            if (prog_dir.value != wd) {
+                return;
+            }
+        }
+    }
+
+    const char* user_home_path;
+#ifdef _WIN32
+    user_home_path = getenv("USERPROFILE");
+#else
+    user_home_path = getenv("HOME");
+#endif
+
+    printf("Going home: %s\n", user_home_path);
+
+    if (user_home_path) {
+        cz::set_working_directory(user_home_path);
+    }
+}
+
 void run(Server* server, Client* client) {
     ZoneScoped;
+
+    switch_to_the_home_directory();
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());
