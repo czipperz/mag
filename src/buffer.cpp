@@ -18,9 +18,9 @@ namespace mag {
 
 static bool get_file_time(const char* path, void* file_time) {
 #ifdef _WIN32
-    HANDLE* handle = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-    if (handle) {
-        CZ_DEFER(CloseFile(handle));
+    HANDLE handle = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    if (handle != INVALID_HANDLE_VALUE) {
+        CZ_DEFER(CloseHandle(handle));
         if (GetFileTime(handle, NULL, NULL, (FILETIME*)file_time)) {
             return true;
         }
@@ -48,7 +48,7 @@ static bool is_out_of_date(const char* path, void* file_time) {
     }
 
 #ifdef _WIN32
-    if (CompareFileTime((FILETIME*)file_time, new_ft) < 0) {
+    if (CompareFileTime((FILETIME*)file_time, &new_ft) < 0) {
         *(FILETIME*)file_time = new_ft;
         return true;
     }
@@ -64,7 +64,7 @@ static bool is_out_of_date(const char* path, void* file_time) {
 
 static void initialize_file_time(Buffer* buffer) {
 #ifdef _WIN32
-    void* file_time = malloc(FILETIME);
+    void* file_time = malloc(sizeof(FILETIME));
     CZ_ASSERT(file_time);
 #else
     void* file_time = malloc(sizeof(time_t));
