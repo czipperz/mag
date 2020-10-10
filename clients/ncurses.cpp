@@ -149,14 +149,13 @@ static void render(int* total_rows,
                     if (new_cell->face.flags & Face::ITALICS) {
                         attrs |= A_UNDERLINE;
                     }
+                    attrset(attrs);
 
                     int16_t bg = get_face_color_or(new_cell->face.background, 0);
                     int16_t fg = get_face_color_or(new_cell->face.foreground, 7);
-
                     int32_t color_pair = (colors[bg] - 1) * used_colors + (colors[fg] - 1) + 1;
-                    attrs |= COLOR_PAIR(color_pair);
+                    color_set(color_pair, nullptr);
 
-                    attrset(attrs);
                     mvaddch(y, x, new_cell->code);
                     any = true;
                 }
