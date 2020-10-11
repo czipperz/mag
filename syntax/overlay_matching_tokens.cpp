@@ -57,9 +57,8 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
         data->cursor_token_iterator = start_position_iterator;
         data->cursor_token_iterator.retreat_to(check_point.position);
 
-        data->has_cursor_token = true;
         data->cursor_state = check_point.state;
-        while (data->has_cursor_token && cursors[0].point >= data->cursor_token.end) {
+        do {
             bool cache = false;
             bool cache_has_token;
             Contents_Iterator cache_token_iterator;
@@ -67,7 +66,7 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
             uint64_t cache_state;
             // Don't actually advance if iterator is pointing directly after a matching token
             // and isn't at the start of a matching token.
-            if (cursors[0].point == data->cursor_token.end &&
+            if (data->has_cursor_token && cursors[0].point == data->cursor_token.end &&
                 is_matching_token(data->cursor_token.type)) {
                 cache = true;
                 cache_has_token = data->has_cursor_token;
@@ -94,7 +93,7 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
                 data->cursor_state = cache_state;
                 break;
             }
-        }
+        } while (data->has_cursor_token && cursors[0].point >= data->cursor_token.end);
 
         if (data->has_cursor_token) {
             if (cursors[0].point >= data->cursor_token.start) {
