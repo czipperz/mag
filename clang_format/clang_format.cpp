@@ -244,22 +244,27 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
 
     WITH_SELECTED_BUFFER(source.client);
 
-    char temp_file_buffer[L_tmpnam];
-    tmpnam(temp_file_buffer);
-    save_contents(&buffer->contents, temp_file_buffer);
-    cz::Str temp_file_str = temp_file_buffer;
+    Input_File input_file;
+    if (!save_contents_to_temp_file(&buffer->contents, &input_file)) {
+        source.client->show_message("Error: I/O operation failed");
+        return;
+    }
+    CZ_DEFER(input_file.close());
 
-    cz::String script = {};
-    CZ_DEFER(script.drop(cz::heap_allocator()));
-    cz::Str base = "clang-format -output-replacements-xml -style=file -assume-filename=";
-    script.reserve(cz::heap_allocator(), base.len + buffer->path.len() + 3 + temp_file_str.len + 1);
-    script.append(base);
-    script.append(buffer->path);
-    script.append(" < ");
-    script.append(temp_file_str);
-    script.null_terminate();
+    cz::Str assume_filename_base = "-assume-filename=";
+    cz::String assume_filename = {};
+    CZ_DEFER(assume_filename.drop(cz::heap_allocator()));
+    assume_filename.reserve(cz::heap_allocator(),
+                            assume_filename_base.len + buffer->path.len() + 1);
+    assume_filename.append(assume_filename_base);
+    assume_filename.append(buffer->path);
+    assume_filename.null_terminate();
+
+    const char* args[] = {"clang-format", "-output-replacements-xml", "-style=file",
+                          assume_filename.buffer(), nullptr};
 
     Process_Options options;
+    options.std_in = input_file;
     Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
         source.client->show_message("Error: I/O operation failed");
@@ -268,7 +273,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     CZ_DEFER(options.std_out.close());
 
     Process process;
-    if (!process.launch_script(script.buffer(), &options)) {
+    if (!process.launch_program(args, &options)) {
         source.client->show_message("Error: Couldn't launch clang-format");
         stdout_read.close();
         return;
