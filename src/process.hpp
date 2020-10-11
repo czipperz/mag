@@ -52,10 +52,6 @@ struct Output_File : File_Descriptor {
     int64_t write(const char* buffer, size_t size);
 };
 
-struct Contents;
-bool create_temp_file(Input_File* fd, const Contents& contents);
-bool create_temp_file(Input_File* fd, const char* contents);
-
 void read_to_string(Input_File, cz::Allocator allocator, cz::String* string);
 
 struct Process_Options {
