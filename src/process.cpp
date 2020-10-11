@@ -101,7 +101,7 @@ bool Output_File::open(const char* file) {
     handle = h;
     return true;
 #else
-    fd = ::open(file, O_RDONLY);
+    fd = ::open(file, O_WRONLY | O_CREAT);
     return fd != -1;
 #endif
 }
