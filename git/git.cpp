@@ -28,8 +28,9 @@ static bool get_git_top_level(Client* client,
         if (dir_len == buffer_path.len) {
             dir_cstr = buffer_path.buffer;
         } else {
-            dir.reserve(cz::heap_allocator(), dir_len);
+            dir.reserve(cz::heap_allocator(), dir_len + 1);
             dir.append({buffer_path.buffer, dir_len});
+            dir.null_terminate();
             dir_cstr = dir.buffer();
         }
     } else {
