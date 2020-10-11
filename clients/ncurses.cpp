@@ -327,7 +327,7 @@ void run(Server* server, Client* client) {
         cache_windows_check_points(window_cache, client->window, &server->editor, getch_callback,
                                    &ch);
 
-        process_buffer_external_updates(&server->editor, client->window);
+        process_buffer_external_updates(&server->editor, client, client->window);
 
         if (ch == ERR) {
             if (has_jobs) {

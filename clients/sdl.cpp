@@ -897,7 +897,7 @@ void run(Server* server, Client* client) {
 
         process_clipboard_updates(server, client, &clipboard);
 
-        process_buffer_external_updates(&server->editor, client->window);
+        process_buffer_external_updates(&server->editor, client, client->window);
 
         if (client->queue_quit) {
             break;

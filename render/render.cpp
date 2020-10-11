@@ -486,19 +486,19 @@ bool load_mini_buffer_completion_cache(Server* server, Client* client) {
     }
 }
 
-void process_buffer_external_updates(Editor* editor, Window* window) {
+void process_buffer_external_updates(Editor* editor, Client* client, Window* window) {
     switch (window->tag) {
     case Window::UNIFIED: {
         auto w = (Window_Unified*)window;
         WITH_BUFFER(w->id);
-        buffer->check_for_external_update();
+        buffer->check_for_external_update(client);
         break;
     }
 
     default: {
         auto w = (Window_Split*)window;
-        process_buffer_external_updates(editor, w->first);
-        process_buffer_external_updates(editor, w->second);
+        process_buffer_external_updates(editor, client, w->first);
+        process_buffer_external_updates(editor, client, w->second);
         break;
     }
     }

@@ -6,6 +6,7 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include "config.hpp"
+#include "diff.hpp"
 #include "transaction.hpp"
 
 #ifdef _WIN32
@@ -86,58 +87,13 @@ void Buffer::init(cz::Str path) {
     initialize_file_time(this);
 }
 
-static void reload_buffer_from_file(Buffer* buffer) {
-    FILE* file = fopen(buffer->path.buffer(), "r");
-    if (!file) {
-        return;
-    }
-    CZ_DEFER(fclose(file));
-
-    size_t offset = sizeof(Edit);
-    size_t bx = 8;
-    char* contents = (char*)malloc(offset + 1024 * bx);
-    CZ_ASSERT(contents);
-    size_t num = fread(contents + offset, 1, 1024 * bx, file);
-    if (num == 1024 * bx) {
-        bx *= 2;
-        char* ncontents = (char*)realloc(contents, offset + 1024 * bx);
-        CZ_ASSERT(ncontents);
-        contents = ncontents;
-        while (1) {
-            num += fread(contents + offset + 1024 * bx / 2, 1, 1024 * bx / 2, file);
-            if (num < 1024 * bx) {
-                break;
-            }
-        }
-    }
-
-    char* ncontents = (char*)realloc(contents, offset + num);
-    CZ_ASSERT(ncontents);
-    contents = ncontents;
-
-    Edit edit;
-    edit.value.init_from_constant({ncontents + offset, num});
-    edit.position = 0;
-    edit.flags = Edit::INSERT_AFTER_POSITION;
-    memcpy(contents, &edit, sizeof(Edit));
-
-    Transaction transaction = {};
-    transaction.memory = contents;
-    transaction.edit_offset = offset;
-    transaction.value_offset = offset + num;
-    transaction.commit(buffer);
-
-    buffer->mark_saved();
-}
-
-void Buffer::check_for_external_update() {
+void Buffer::check_for_external_update(Client* client) {
     if (!is_unchanged() || !file_time) {
         return;
     }
 
     if (is_out_of_date(path.buffer(), file_time)) {
-        clear_buffer(this);
-        reload_buffer_from_file(this);
+        reload_file(client, this);
     }
 }
 

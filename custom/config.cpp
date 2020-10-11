@@ -6,6 +6,7 @@
 #include "basic/completion_commands.hpp"
 #include "basic/copy_commands.hpp"
 #include "basic/cpp_commands.hpp"
+#include "basic/diff_commands.hpp"
 #include "basic/directory_commands.hpp"
 #include "basic/indent_commands.hpp"
 #include "basic/search_commands.hpp"
@@ -135,6 +136,8 @@ Key_Map create_key_map() {
 
     BIND(key_map, "C-x b", command_switch_buffer);
     BIND(key_map, "C-x k", command_kill_buffer);
+
+    BIND(key_map, "C-x C-d", command_apply_diff);
 
     BIND(key_map, "C-c a", prose::command_alternate);
 

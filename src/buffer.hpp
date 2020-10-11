@@ -12,6 +12,7 @@
 #include "token_cache.hpp"
 
 namespace mag {
+struct Client;
 
 struct Buffer {
     cz::String path;
@@ -52,7 +53,7 @@ struct Buffer {
     bool is_unchanged() const;
     void mark_saved();
 
-    void check_for_external_update();
+    void check_for_external_update(Client* client);
 };
 
 cz::Str clear_buffer(Buffer* buffer);
