@@ -1,17 +1,17 @@
 #include "job.hpp"
 
 #include <cz/defer.hpp>
+#include <cz/process.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
-#include "process.hpp"
 
 namespace mag {
 
 struct Process_Append_Job_Data {
     Buffer_Id buffer_id;
-    Process process;
-    Input_File std_out;
+    cz::Process process;
+    cz::Input_File std_out;
 };
 
 static void process_append_job_kill(Editor* editor, void* _data) {
@@ -48,7 +48,7 @@ static bool process_append_job_tick(Editor* editor, void* _data) {
     }
 }
 
-Job job_process_append(Buffer_Id buffer_id, Process process, Input_File std_out) {
+Job job_process_append(Buffer_Id buffer_id, cz::Process process, cz::Input_File std_out) {
     Process_Append_Job_Data* data =
         (Process_Append_Job_Data*)malloc(sizeof(Process_Append_Job_Data));
     CZ_ASSERT(data);
@@ -69,17 +69,17 @@ bool run_console_command(Client* client,
                          const char* script,
                          cz::Str buffer_name,
                          cz::Str error) {
-    Process_Options options;
+    cz::Process_Options options;
     options.working_directory = working_directory;
 
-    Input_File stdout_read;
+    cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
         client->show_message("Error: I/O operation failed");
         return false;
     }
     CZ_DEFER(options.std_out.close());
 
-    Process process;
+    cz::Process process;
     if (!process.launch_script(script, &options)) {
         client->show_message(error);
         stdout_read.close();

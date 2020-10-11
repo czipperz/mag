@@ -4,10 +4,10 @@
 #include <cz/buffer_array.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include <cz/process.hpp>
 #include "client.hpp"
 #include "command.hpp"
 #include "editor.hpp"
-#include "process.hpp"
 
 namespace mag {
 namespace man {
@@ -20,11 +20,11 @@ static void man_completion_engine(Editor*, Completion_Engine_Context* context) {
         return;
     }
 
-    Process process;
-    Input_File stdout_read;
+    cz::Process process;
+    cz::Input_File stdout_read;
 
     {
-        Process_Options options;
+        cz::Process_Options options;
         if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
             return;
         }
@@ -92,15 +92,15 @@ static void command_man_response(Editor* editor, Client* client, cz::Str page, v
     script.append(pipe_to_groff);
     script.null_terminate();
 
-    Process_Options options;
-    Input_File stdout_read;
+    cz::Process_Options options;
+    cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
         client->show_message("Error: I/O operation failed");
         return;
     }
     CZ_DEFER(options.std_out.close());
 
-    Process process;
+    cz::Process process;
     if (!process.launch_script(script.buffer(), &options)) {
         client->show_message("Error: Couldn't show man page");
         stdout_read.close();

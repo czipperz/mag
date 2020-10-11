@@ -3,12 +3,12 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <cz/heap.hpp>
+#include <cz/process.hpp>
 #include <cz/vector.hpp>
 #include "command.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "file.hpp"
-#include "process.hpp"
 #include "rebase.hpp"
 
 namespace mag {
@@ -175,8 +175,8 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
 
 struct Clang_Format_Job_Data {
     Buffer_Id buffer_id;
-    Process process;
-    Input_File std_out;
+    cz::Process process;
+    cz::Input_File std_out;
     size_t change_index;
     cz::String output_xml;
 };
@@ -222,8 +222,8 @@ static void clang_format_job_kill(Editor* editor, void* _data) {
 
 static Job job_clang_format(size_t change_index,
                             Buffer_Id buffer_id,
-                            Process process,
-                            Input_File std_out) {
+                            cz::Process process,
+                            cz::Input_File std_out) {
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)malloc(sizeof(Clang_Format_Job_Data));
     CZ_ASSERT(data);
     data->buffer_id = buffer_id;
@@ -244,7 +244,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
 
     WITH_SELECTED_BUFFER(source.client);
 
-    Input_File input_file;
+    cz::Input_File input_file;
     if (!save_contents_to_temp_file(&buffer->contents, &input_file)) {
         source.client->show_message("Error: I/O operation failed");
         return;
@@ -263,16 +263,16 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     const char* args[] = {"clang-format", "-output-replacements-xml", "-style=file",
                           assume_filename.buffer(), nullptr};
 
-    Process_Options options;
+    cz::Process_Options options;
     options.std_in = input_file;
-    Input_File stdout_read;
+    cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
         source.client->show_message("Error: I/O operation failed");
         return;
     }
     CZ_DEFER(options.std_out.close());
 
-    Process process;
+    cz::Process process;
     if (!process.launch_program(args, &options)) {
         source.client->show_message("Error: Couldn't launch clang-format");
         stdout_read.close();

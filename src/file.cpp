@@ -5,12 +5,12 @@
 #include <cz/fs/directory.hpp>
 #include <cz/fs/read_to_string.hpp>
 #include <cz/path.hpp>
+#include <cz/process.hpp>
 #include <cz/try.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "config.hpp"
 #include "editor.hpp"
-#include "process.hpp"
 
 namespace mag {
 
@@ -129,14 +129,14 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     client->set_selected_buffer(buffer_id);
 }
 
-static void save_contents(const Contents* contents, Output_File file) {
+static void save_contents(const Contents* contents, cz::Output_File file) {
     for (size_t bucket = 0; bucket < contents->buckets.len(); ++bucket) {
         file.write(contents->buckets[bucket].elems, contents->buckets[bucket].len);
     }
 }
 
 bool save_contents(const Contents* contents, const char* path) {
-    Output_File file;
+    cz::Output_File file;
     if (!file.open(path)) {
         return false;
     }
@@ -146,7 +146,7 @@ bool save_contents(const Contents* contents, const char* path) {
     return true;
 }
 
-bool save_contents_to_temp_file(const Contents* contents, Input_File* fd) {
+bool save_contents_to_temp_file(const Contents* contents, cz::Input_File* fd) {
     char temp_file_buffer[L_tmpnam];
     tmpnam(temp_file_buffer);
     if (!save_contents(contents, temp_file_buffer)) {

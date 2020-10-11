@@ -2,11 +2,11 @@
 
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include <cz/process.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "message.hpp"
-#include "process.hpp"
 
 namespace mag {
 namespace git {
@@ -37,12 +37,12 @@ static bool get_git_top_level(Client* client,
         dir_cstr = nullptr;
     }
 
-    Input_File std_out_read;
+    cz::Input_File std_out_read;
     CZ_DEFER(std_out_read.close());
 
-    Process process;
+    cz::Process process;
     {
-        Process_Options options;
+        cz::Process_Options options;
         options.working_directory = dir_cstr;
 
         if (!create_process_output_pipe(&options.std_out, &std_out_read)) {
