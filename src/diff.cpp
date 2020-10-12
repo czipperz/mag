@@ -272,7 +272,8 @@ void reload_file(Client* client, Buffer* buffer) {
 
         cz::Process process;
         if (!process.launch_program(args, &options)) {
-            client->show_message("Error reading diff file");
+            client->show_message("Error launching diff");
+            return;
         }
         process.join();
     }
