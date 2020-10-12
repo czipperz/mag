@@ -16,6 +16,7 @@
 #include "cell.hpp"
 #include "client.hpp"
 #include "file.hpp"
+#include "program_info.hpp"
 #include "render.hpp"
 #include "server.hpp"
 #include "window_cache.hpp"
@@ -26,9 +27,6 @@
 #endif
 
 namespace mag {
-
-extern char* program_name;
-
 namespace client {
 namespace sdl {
 
@@ -756,17 +754,11 @@ static void switch_to_the_home_directory() {
     cz::String wd = {};
     CZ_DEFER(wd.drop(cz::heap_allocator()));
     if (cz::get_working_directory(cz::heap_allocator(), &wd).is_ok()) {
-        cz::String prog = cz::Str(program_name).duplicate(cz::heap_allocator());
-        CZ_DEFER(prog.drop(cz::heap_allocator()));
-        cz::path::convert_to_forward_slashes(prog.buffer(), prog.len());
-
-        auto prog_dir = cz::path::directory_component(prog);
-        if (prog_dir.is_present) {
-            // Get rid of the trailing / as it isn't in the working directory.
-            prog_dir.value.len--;
-            if (prog_dir.value != wd) {
-                return;
-            }
+        cz::Str prog_dir = program_dir;
+        // Get rid of the trailing / as it isn't in the working directory.
+        prog_dir.len--;
+        if (prog_dir != wd) {
+            return;
         }
     }
 

@@ -1,5 +1,6 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include <cz/path.hpp>
 #include <cz/str.hpp>
 #include "client.hpp"
 #include "command.hpp"
@@ -9,12 +10,9 @@
 #include "ncurses.hpp"
 #include "sdl.hpp"
 #include "server.hpp"
+#include "program_info.hpp"
 
 using namespace mag;
-
-namespace mag {
-char* program_name;
-}
 
 static int usage() {
     fprintf(stderr,
@@ -38,6 +36,17 @@ Available clients:\n"
 int mag_main(int argc, char** argv) {
     try {
         program_name = argv[0];
+        cz::String program_dir_ = cz::Str(program_name).duplicate(cz::heap_allocator());
+        CZ_DEFER(program_dir_.drop(cz::heap_allocator()));
+        cz::path::convert_to_forward_slashes(program_dir_.buffer(), program_dir_.len());
+        auto program_dir_2 = cz::path::directory_component(program_dir_);
+        if (program_dir_2.is_present) {
+            program_dir_.set_len(program_dir_2.value.len);
+            program_dir_.null_terminate();
+            program_dir = program_dir_.buffer();
+        } else {
+            program_dir = ".";
+        }
 
         Server server = {};
         server.editor.create();
