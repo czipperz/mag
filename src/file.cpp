@@ -131,7 +131,7 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
 
 static void save_contents(const Contents* contents, cz::Output_File file) {
     for (size_t bucket = 0; bucket < contents->buckets.len(); ++bucket) {
-        file.write(contents->buckets[bucket].elems, contents->buckets[bucket].len);
+        file.write_text(contents->buckets[bucket].elems, contents->buckets[bucket].len);
     }
 }
 

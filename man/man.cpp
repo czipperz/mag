@@ -43,8 +43,9 @@ static void man_completion_engine(Editor*, Completion_Engine_Context* context) {
 
     char buffer[1024];
     cz::String result = {};
+    cz::Carriage_Return_Carry carry;
     while (1) {
-        int64_t len = stdout_read.read(buffer, sizeof(buffer));
+        int64_t len = stdout_read.read_text(buffer, sizeof(buffer), &carry);
         if (len > 0) {
             for (size_t offset = 0; offset < (size_t)len; ++offset) {
                 const char* end = cz::Str{buffer + offset, len - offset}.find('\n');

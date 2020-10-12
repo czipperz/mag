@@ -16,6 +16,7 @@ namespace mag {
 
 struct File_Wrapper {
     cz::Input_File file;
+    cz::Carriage_Return_Carry carry;
     char buffer[1024];
     size_t index = 0;
     size_t len = 0;
@@ -25,7 +26,7 @@ struct File_Wrapper {
             return 0;
         }
 
-        int64_t l = file.read(buffer, sizeof(buffer));
+        int64_t l = file.read_text(buffer, sizeof(buffer), &carry);
         if (l < 0) {
             return -1;
         } else if (l == 0) {
@@ -74,13 +75,6 @@ static int parse_line(File_Wrapper& fw, cz::String& str, char start_char) {
 
             fw.load_more();
         }
-
-#ifdef _WIN32
-        if (str.ends_with("\r\n")) {
-            str.pop();
-            str[str.len() - 1] = '\n';
-        }
-#endif
     }
 }
 
@@ -174,12 +168,6 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
                 return -1;
             }
             CZ_TRY(fw.advance());
-#ifdef _WIN32
-            if ((x = fw.get()) != '\r') {
-                return -1;
-            }
-            CZ_TRY(fw.advance());
-#endif
             if ((x = fw.get()) != '\n') {
                 return -1;
             }

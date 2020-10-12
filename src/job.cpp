@@ -11,6 +11,7 @@ namespace mag {
 struct Process_Append_Job_Data {
     Buffer_Id buffer_id;
     cz::Process process;
+    cz::Carriage_Return_Carry carry;
     cz::Input_File std_out;
 };
 
@@ -24,7 +25,7 @@ static void process_append_job_kill(Editor* editor, void* _data) {
 static bool process_append_job_tick(Editor* editor, void* _data) {
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
     char buf[1024];
-    int64_t read_result = data->std_out.read(buf, sizeof(buf));
+    int64_t read_result = data->std_out.read_text(buf, sizeof(buf), &data->carry);
     if (read_result > 0) {
         Buffer_Handle* handle = editor->lookup(data->buffer_id);
         if (!handle) {
@@ -54,6 +55,7 @@ Job job_process_append(Buffer_Id buffer_id, cz::Process process, cz::Input_File 
     CZ_ASSERT(data);
     data->buffer_id = buffer_id;
     data->process = process;
+    data->carry = {};
     data->std_out = std_out;
 
     Job job;

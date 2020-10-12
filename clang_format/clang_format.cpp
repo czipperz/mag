@@ -176,6 +176,7 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
 struct Clang_Format_Job_Data {
     Buffer_Id buffer_id;
     cz::Process process;
+    cz::Carriage_Return_Carry carry;
     cz::Input_File std_out;
     size_t change_index;
     cz::String output_xml;
@@ -185,7 +186,7 @@ static bool clang_format_job_tick(Editor* editor, void* _data) {
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
     while (1) {
         char buf[1024];
-        int64_t read_result = data->std_out.read(buf, sizeof(buf));
+        int64_t read_result = data->std_out.read_text(buf, sizeof(buf), &data->carry);
         if (read_result > 0) {
             data->output_xml.reserve(cz::heap_allocator(), read_result);
             data->output_xml.append({buf, (size_t)read_result});
@@ -228,6 +229,7 @@ static Job job_clang_format(size_t change_index,
     CZ_ASSERT(data);
     data->buffer_id = buffer_id;
     data->process = process;
+    data->carry = {};
     data->std_out = std_out;
     data->change_index = change_index;
     data->output_xml = {};
