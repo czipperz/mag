@@ -253,17 +253,20 @@ void reload_file(Client* client, Buffer* buffer) {
     char diff_file[L_tmpnam];
     {
         cz::Process_Options options;
-        CZ_DEFER(options.close_all());
         if (!save_contents_to_temp_file(&buffer->contents, &options.std_in)) {
             client->show_message("Error saving buffer to temp file");
             return;
         }
+        CZ_DEFER(options.std_in.close());
 
         tmpnam(diff_file);
         if (!options.std_out.open(diff_file)) {
             client->show_message("Error creating temp file to store diff in");
             return;
         }
+        CZ_DEFER(options.std_out.close());
+
+        options.std_err = cz::std_err_file();
 
         const char* args[] = {"diff", "-" /* stdin */, buffer->path.buffer(), nullptr};
 
