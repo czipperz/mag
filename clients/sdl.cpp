@@ -699,12 +699,11 @@ static void process_clipboard_updates(Server* server, Client* client, cz::String
     char* clipboard_currently_cstr = SDL_GetClipboardText();
     if (clipboard_currently_cstr) {
         cz::Str clipboard_currently = clipboard_currently_cstr;
+#ifdef _WIN32
+        cz::strip_carriage_returns(clipboard_currently_cstr, &clipboard_currently.len);
+#endif
         if (*clipboard != clipboard_currently) {
             set_clipboard_variable(clipboard, clipboard_currently);
-
-#ifdef _WIN32
-            cz::strip_carriage_returns(clipboard_currently_cstr, &clipboard_currently.len);
-#endif
 
             Copy_Chain* chain = server->editor.copy_buffer.allocator().alloc<Copy_Chain>();
             chain->value.init_duplicate(server->editor.copy_buffer.allocator(), *clipboard);
