@@ -693,31 +693,45 @@ static void set_clipboard_variable(cz::String* clipboard, cz::Str text) {
     clipboard->null_terminate();
 }
 
-static void process_clipboard_updates(Server* server, Client* client, cz::String* clipboard) {
+struct Clipboard_Context {
+    cz::String value;
+    bool stall;
+};
+
+static void process_clipboard_updates(Server* server, Client* client, Clipboard_Context* clipboard) {
     ZoneScoped;
 
     char* clipboard_currently_cstr = SDL_GetClipboardText();
     if (clipboard_currently_cstr) {
         cz::Str clipboard_currently = clipboard_currently_cstr;
+
+        if (clipboard->stall && clipboard_currently == "") {
+            return;
+        }
+        clipboard->stall = false;
+
 #ifdef _WIN32
         cz::strip_carriage_returns(clipboard_currently_cstr, &clipboard_currently.len);
 #endif
-        if (*clipboard != clipboard_currently) {
-            set_clipboard_variable(clipboard, clipboard_currently);
+
+        if (clipboard->value != clipboard_currently) {
+            set_clipboard_variable(&clipboard->value, clipboard_currently);
 
             Copy_Chain* chain = server->editor.copy_buffer.allocator().alloc<Copy_Chain>();
-            chain->value.init_duplicate(server->editor.copy_buffer.allocator(), *clipboard);
+            chain->value.init_duplicate(server->editor.copy_buffer.allocator(), clipboard->value);
             chain->previous = client->global_copy_chain;
             client->global_copy_chain = chain;
         }
+
         SDL_free(clipboard_currently_cstr);
     }
 }
 
 static int sdl_copy(void* data, cz::Str text) {
-    cz::String* clipboard = (cz::String*)data;
-    set_clipboard_variable(clipboard, text);
-    return SDL_SetClipboardText(clipboard->buffer());
+    Clipboard_Context* clipboard = (Clipboard_Context*)data;
+    set_clipboard_variable(&clipboard->value, text);
+    clipboard->stall = true;
+    return SDL_SetClipboardText(clipboard->value.buffer());
 }
 
 void setIcon(SDL_Window* sdlWindow) {
@@ -859,8 +873,8 @@ void run(Server* server, Client* client) {
     const float MAX_FRAMES = 60.0f;
     const float FRAME_LENGTH = 1000.0f / MAX_FRAMES;
 
-    cz::String clipboard = {};
-    CZ_DEFER(clipboard.drop(cz::heap_allocator()));
+    Clipboard_Context clipboard = {};
+    CZ_DEFER(clipboard.value.drop(cz::heap_allocator()));
 
     client->system_copy_text_func = sdl_copy;
     client->system_copy_text_data = &clipboard;
