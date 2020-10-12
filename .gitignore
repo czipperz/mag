@@ -7,5 +7,6 @@ valgrind.txt
 CMakeSettings.json
 SDL
 TTF
+IMG
 res/logo.ico
 
