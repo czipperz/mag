@@ -74,6 +74,13 @@ static int parse_line(File_Wrapper& fw, cz::String& str, char start_char) {
 
             fw.load_more();
         }
+
+#ifdef _WIN32
+        if (str.ends_with("\r\n")) {
+            str.pop();
+            str[str.len() - 1] = '\n';
+        }
+#endif
     }
 }
 
@@ -167,6 +174,12 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
                 return -1;
             }
             CZ_TRY(fw.advance());
+#ifdef _WIN32
+            if ((x = fw.get()) != '\r') {
+                return -1;
+            }
+            CZ_TRY(fw.advance());
+#endif
             if ((x = fw.get()) != '\n') {
                 return -1;
             }
