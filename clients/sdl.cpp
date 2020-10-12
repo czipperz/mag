@@ -11,6 +11,7 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
+#include <cz/process.hpp>
 #include <cz/str.hpp>
 #include <cz/working_directory.hpp>
 #include "cell.hpp"
@@ -700,6 +701,10 @@ static void process_clipboard_updates(Server* server, Client* client, cz::String
         cz::Str clipboard_currently = clipboard_currently_cstr;
         if (*clipboard != clipboard_currently) {
             set_clipboard_variable(clipboard, clipboard_currently);
+
+#ifdef _WIN32
+            cz::strip_carriage_returns(clipboard_currently_cstr, &clipboard_currently.len);
+#endif
 
             Copy_Chain* chain = server->editor.copy_buffer.allocator().alloc<Copy_Chain>();
             chain->value.init_duplicate(server->editor.copy_buffer.allocator(), *clipboard);
