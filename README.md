@@ -39,9 +39,9 @@ git submodule init
 git submodule update
 ```
 
-Before building you must download the SDL and SDL_ttf development files and place them in the `SDL`
-and `TTF` directories, respectively.  You will also need to install ImageMagick as it is used to
-generate Mag's icons.
+Before building you must download the SDL, SDL_ttf, and SDL_image development files and place them
+in the `SDL`, `TTF`, and `IMG` directories, respectively.  You will also need to install ImageMagick
+as it is used to generate Mag's icons.
 
 Next, open the project as a folder in Visual Studio and click Build -> Build All.
 
