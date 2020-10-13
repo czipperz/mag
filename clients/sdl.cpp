@@ -698,7 +698,9 @@ struct Clipboard_Context {
     bool stall;
 };
 
-static void process_clipboard_updates(Server* server, Client* client, Clipboard_Context* clipboard) {
+static void process_clipboard_updates(Server* server,
+                                      Client* client,
+                                      Clipboard_Context* clipboard) {
     ZoneScoped;
 
     char* clipboard_currently_cstr = SDL_GetClipboardText();
