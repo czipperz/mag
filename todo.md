@@ -20,9 +20,6 @@
 * Git integration
   - Git ls files
 
-* File listeners
-  - Automatically update files when file system is updated
-
 * Screen based movement
   - Move cursor to top and bottom of screen
 
