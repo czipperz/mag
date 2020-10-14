@@ -1,6 +1,7 @@
 #include "buffer_commands.hpp"
 
 #include <stdlib.h>
+#include <cz/working_directory.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "window_commands.hpp"
@@ -18,31 +19,34 @@ void command_open_file(Editor* editor, Command_Source source) {
 
     cz::String default_value = {};
     CZ_DEFER(default_value.drop(cz::heap_allocator()));
-    bool has_default_value;
+
     {
         WITH_WINDOW_BUFFER(source.client->selected_normal_window);
-        has_default_value = buffer->path.find('/') != nullptr;
-        if (has_default_value) {
+        if (buffer->path.contains('/')) {
             default_value = buffer->path.clone(cz::heap_allocator());
+        } else {
+            if (cz::get_working_directory(cz::heap_allocator(), &default_value).is_err()) {
+                return;
+            }
+            default_value.reserve(cz::heap_allocator(), 1);
+            default_value.push('/');
         }
     }
 
-    if (has_default_value) {
-        Window_Unified* window = source.client->mini_buffer_window();
-        WITH_WINDOW_BUFFER(window);
+    Window_Unified* window = source.client->mini_buffer_window();
+    WITH_WINDOW_BUFFER(window);
 
-        Transaction transaction;
-        transaction.init(1, default_value.len());
-        CZ_DEFER(transaction.drop());
+    Transaction transaction;
+    transaction.init(1, default_value.len());
+    CZ_DEFER(transaction.drop());
 
-        Edit edit;
-        edit.value.init_duplicate(transaction.value_allocator(), default_value);
-        edit.position = 0;
-        edit.flags = Edit::INSERT;
-        transaction.push(edit);
+    Edit edit;
+    edit.value.init_duplicate(transaction.value_allocator(), default_value);
+    edit.position = 0;
+    edit.flags = Edit::INSERT;
+    transaction.push(edit);
 
-        transaction.commit(buffer);
-    }
+    transaction.commit(buffer);
 }
 
 void command_save_file(Editor* editor, Command_Source source) {
