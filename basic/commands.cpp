@@ -6,6 +6,7 @@
 #include <cz/util.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
+#include "insert.hpp"
 #include "movement.hpp"
 #include "transaction.hpp"
 #include "visible_region_commands.hpp"

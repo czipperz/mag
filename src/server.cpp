@@ -5,6 +5,7 @@
 #include <cz/heap.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
+#include "insert.hpp"
 
 namespace mag {
 
