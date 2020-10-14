@@ -150,7 +150,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
         }
     }
 
-    DELETE_BACKWARD(backward_char);
+    DELETE_BACKWARD(backward_char, command_delete_backward_char);
 }
 
 void command_delete_forward_char(Editor* editor, Command_Source source) {
@@ -187,17 +187,17 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
         }
     }
 
-    DELETE_FORWARD(forward_char);
+    DELETE_FORWARD(forward_char, command_delete_forward_char);
 }
 
 void command_delete_backward_word(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    DELETE_BACKWARD(backward_word);
+    DELETE_BACKWARD(backward_word, nullptr);
 }
 
 void command_delete_forward_word(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    DELETE_FORWARD(forward_word);
+    DELETE_FORWARD(forward_word, nullptr);
 }
 
 void command_transpose_characters(Editor* editor, Command_Source source) {

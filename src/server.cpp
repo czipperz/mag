@@ -61,7 +61,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
         }
     }
 
-    insert_char(buffer, window, code);
+    insert_char(buffer, window, code, command_insert_char);
 }
 
 static Command lookup_key_chain(Key_Map* map, size_t start, size_t* end, cz::Slice<Key> key_chain) {

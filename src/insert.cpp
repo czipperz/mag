@@ -8,7 +8,7 @@
 
 namespace mag {
 
-void insert(Buffer* buffer, Window_Unified* window, SSOStr value) {
+void insert(Buffer* buffer, Window_Unified* window, SSOStr value, Command_Function committer) {
     window->update_cursors(buffer);
 
     cz::Slice<Cursor> cursors = window->cursors;
@@ -25,13 +25,13 @@ void insert(Buffer* buffer, Window_Unified* window, SSOStr value) {
         transaction.push(edit);
     }
 
-    transaction.commit(buffer);
+    transaction.commit(buffer, committer);
 }
 
-void insert_char(Buffer* buffer, Window_Unified* window, char code) {
+void insert_char(Buffer* buffer, Window_Unified* window, char code, Command_Function committer) {
     SSOStr value;
     value.init_char(code);
-    insert(buffer, window, value);
+    insert(buffer, window, value, committer);
 }
 
 }

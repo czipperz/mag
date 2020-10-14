@@ -30,7 +30,7 @@
         }                                                                                \
     } while (0)
 
-#define DELETE_BACKWARD(FUNC)                                                                   \
+#define DELETE_BACKWARD(FUNC, COMMITTER)                                                        \
     do {                                                                                        \
         cz::Slice<Cursor> cursors = window->cursors;                                            \
         uint64_t sum_regions = 0;                                                               \
@@ -61,10 +61,10 @@
             }                                                                                   \
         }                                                                                       \
                                                                                                 \
-        transaction.commit(buffer);                                                             \
+        transaction.commit(buffer, COMMITTER);                                                  \
     } while (0)
 
-#define DELETE_FORWARD(FUNC)                                                                    \
+#define DELETE_FORWARD(FUNC, COMMITTER)                                                         \
     do {                                                                                        \
         cz::Slice<Cursor> cursors = window->cursors;                                            \
         uint64_t sum_regions = 0;                                                               \
@@ -95,5 +95,5 @@
             }                                                                                   \
         }                                                                                       \
                                                                                                 \
-        transaction.commit(buffer);                                                             \
+        transaction.commit(buffer, COMMITTER);                                                  \
     } while (0)
