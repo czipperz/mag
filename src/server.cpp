@@ -28,7 +28,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     char code = source.keys[0].code;
 
-    if (source.previous_command == command_insert_char) {
+    if (buffer->check_last_committer(command_insert_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
         Commit commit = buffer->commits[buffer->commit_index - 1];
         size_t len = commit.edits[0].value.len();
@@ -54,7 +54,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
                 transaction.push(edit);
             }
 
-            transaction.commit(buffer);
+            transaction.commit(buffer, command_insert_char);
 
             return;
         }

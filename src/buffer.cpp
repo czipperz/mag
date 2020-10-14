@@ -6,6 +6,7 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include "config.hpp"
+#include "cursor.hpp"
 #include "diff.hpp"
 #include "transaction.hpp"
 
@@ -164,6 +165,8 @@ bool Buffer::undo() {
 
     unapply_edits(this, change.commit.edits);
 
+    last_committer = nullptr;
+
     return true;
 }
 
@@ -182,10 +185,12 @@ bool Buffer::redo() {
 
     ++commit_index;
 
+    last_committer = nullptr;
+
     return true;
 }
 
-void Buffer::commit(Commit commit) {
+void Buffer::commit(Commit commit, Command_Function committer) {
     commits.set_len(commit_index);
 
     commit.id = generate_commit_id();
@@ -193,6 +198,34 @@ void Buffer::commit(Commit commit) {
     commits.push(commit);
 
     redo();
+
+    last_committer = committer;
+}
+
+bool Buffer::check_last_committer(Command_Function committer, cz::Slice<Cursor> cursors) const {
+    if (last_committer != committer) {
+        return false;
+    }
+
+    cz::Slice<const Edit> edits = commits[commit_index - 1].edits;
+
+    if (edits.len != cursors.len) {
+        return false;
+    }
+
+    for (size_t i = 0; i < edits.len; ++i) {
+        if (edits[i].flags == Edit::INSERT) {
+            if (edits[i].position + edits[i].value.len() != cursors[i].point) {
+                return false;
+            }
+        } else {
+            if (edits[i].position != cursors[i].point) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 cz::Option<Commit_Id> Buffer::current_commit_id() const {

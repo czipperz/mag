@@ -2,6 +2,7 @@
 
 #include <cz/allocator.hpp>
 #include <cz/str.hpp>
+#include "command.hpp"
 
 namespace mag {
 
@@ -22,7 +23,7 @@ struct Transaction {
     void push(Edit edit);
     cz::Str last_edit_value() const;
 
-    void commit(Buffer* buffer);
+    void commit(Buffer* buffer, Command_Function committer = nullptr);
 };
 
 }

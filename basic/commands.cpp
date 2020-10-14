@@ -109,7 +109,7 @@ void command_start_of_line_text(Editor* editor, Command_Source source) {
 void command_delete_backward_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    if (source.previous_command == command_delete_backward_char) {
+    if (buffer->check_last_committer(command_delete_backward_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
         Commit commit = buffer->commits[buffer->commit_index - 1];
         size_t len = commit.edits[0].value.len();
@@ -144,7 +144,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
                 transaction.push(edit);
             }
 
-            transaction.commit(buffer);
+            transaction.commit(buffer, command_delete_backward_char);
             return;
         }
     }
@@ -155,7 +155,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
 void command_delete_forward_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    if (source.previous_command == command_delete_forward_char) {
+    if (buffer->check_last_committer(command_delete_forward_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
         Commit commit = buffer->commits[buffer->commit_index - 1];
         size_t len = commit.edits[0].value.len();
@@ -181,7 +181,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
                 edit.flags = Edit::REMOVE_AFTER_POSITION;
                 transaction.push(edit);
             }
-            transaction.commit(buffer);
+            transaction.commit(buffer, command_delete_forward_char);
             return;
         }
     }

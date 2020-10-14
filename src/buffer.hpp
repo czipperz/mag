@@ -6,6 +6,7 @@
 #include <cz/vector.hpp>
 #include "buffer_id.hpp"
 #include "change.hpp"
+#include "command.hpp"
 #include "commit.hpp"
 #include "contents.hpp"
 #include "mode.hpp"
@@ -13,6 +14,7 @@
 
 namespace mag {
 struct Client;
+struct Cursor;
 
 struct Buffer {
     cz::String path;
@@ -21,6 +23,14 @@ struct Buffer {
 
     cz::Vector<Commit> commits;
     size_t commit_index;
+
+    /// The last command to commit.
+    ///
+    /// This is useful for commands that want to merge consecutive calls into a single edit.  For
+    /// example, see `command_insert_char` and `command_delete_backward_char`.
+    ///
+    /// When `undo` or `redo` are invoked, `last_committer` is reset to `null`.
+    Command_Function last_committer;
 
     cz::Vector<Change> changes;
 
@@ -43,8 +53,18 @@ struct Buffer {
     bool undo();
     bool redo();
 
-    /// Add this commit and apply it
-    void commit(Commit commit);
+    /// Add this commit and apply it.
+    ///
+    /// You can optionally specify the committer to set the `last_comitter` field.  See
+    /// `last_committer` for more details.
+    void commit(Commit commit, Command_Function committer = nullptr);
+
+    /// Checks if the last committer is the same as `committer` and if the last commit's edits were
+    /// at the same positions as the cursors.
+    ///
+    /// This is useful for commands that want to merge consecutive calls into a single edit.  For
+    /// example, see `command_insert_char` and `command_delete_backward_char`.
+    bool check_last_committer(Command_Function committer, cz::Slice<Cursor> cursors) const;
 
     Commit_Id generate_commit_id() { return {_commit_id_counter++}; }
 
