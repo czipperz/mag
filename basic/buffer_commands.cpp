@@ -17,11 +17,15 @@ void command_open_file(Editor* editor, Command_Source source) {
     source.client->show_dialog(editor, "Open file: ", file_completion_engine,
                                command_open_file_callback, nullptr);
 
+    fill_mini_buffer_with_selected_window_path(editor, source.client);
+}
+
+void fill_mini_buffer_with_selected_window_path(Editor* editor, Client* client) {
     cz::String default_value = {};
     CZ_DEFER(default_value.drop(cz::heap_allocator()));
 
     {
-        WITH_WINDOW_BUFFER(source.client->selected_normal_window);
+        WITH_WINDOW_BUFFER(client->selected_normal_window);
         if (buffer->path.contains('/')) {
             default_value = buffer->path.clone(cz::heap_allocator());
         } else {
@@ -33,7 +37,7 @@ void command_open_file(Editor* editor, Command_Source source) {
         }
     }
 
-    Window_Unified* window = source.client->mini_buffer_window();
+    Window_Unified* window = client->mini_buffer_window();
     WITH_WINDOW_BUFFER(window);
 
     Transaction transaction;
