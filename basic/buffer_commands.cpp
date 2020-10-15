@@ -56,17 +56,14 @@ void fill_mini_buffer_with_selected_window_path(Editor* editor, Client* client) 
 void command_save_file(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    if (!buffer->path.find('/')) {
-        source.client->show_message("File must have path");
+    if (buffer->type != Buffer::FILE) {
+        source.client->show_message("Buffer must be associated with a file");
         return;
     }
 
-    if (!save_contents(&buffer->contents, buffer->path.buffer())) {
+    if (!save_buffer(buffer)) {
         source.client->show_message("Error saving file");
-        return;
     }
-
-    buffer->mark_saved();
 }
 
 static void command_switch_buffer_callback(Editor* editor,

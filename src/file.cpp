@@ -49,7 +49,12 @@ static cz::Result load_directory(Editor* editor,
 
     CZ_TRY(cz::fs::files(cz::heap_allocator(), buffer_array.allocator(), path, &files));
 
-    *buffer_id = editor->create_buffer({path, path_len});
+    Buffer buffer = {};
+    buffer.type = Buffer::DIRECTORY;
+    buffer.directory = cz::Str(path, path_len).duplicate_null_terminate(cz::heap_allocator());
+    buffer.name = cz::Str(".").duplicate(cz::heap_allocator());
+
+    *buffer_id = editor->create_buffer(buffer);
 
     std::sort(files.start(), files.end());
 
@@ -72,14 +77,38 @@ static cz::Result load_path(Editor* editor, char* path, size_t path_len, Buffer_
         return cz::Result::ok();
     }
 
-    *buffer_id = editor->create_buffer({path, path_len});
+    Buffer buffer = {};
+    buffer.type = Buffer::FILE;
+    const char* end_dir = cz::Str(path, path_len).rfind('/');
+    if (end_dir) {
+        ++end_dir;
+        buffer.directory =
+            cz::Str(path, end_dir - path).duplicate_null_terminate(cz::heap_allocator());
+        buffer.name = cz::Str(end_dir, path + path_len - end_dir).duplicate(cz::heap_allocator());
+    } else {
+        buffer.name = cz::Str(path, path_len).duplicate(cz::heap_allocator());
+    }
+
+    *buffer_id = editor->create_buffer(buffer);
     path[path_len] = '\0';
     return load_file(editor, path, *buffer_id);
 }
 
 bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id) {
-    if (path.len > 0 && path[path.len - 1] == '/') {
-        --path.len;
+    if (path.len == 0) {
+        return false;
+    }
+
+    cz::Str directory;
+    cz::Str name;
+    const char* ptr = cz::Str(path.buffer, path.len).rfind('/');
+    if (ptr) {
+        ptr++;
+        directory = {path.buffer, ptr - path.buffer};
+        name = {ptr, path.end() - ptr};
+    } else {
+        directory = {};
+        name = path;
     }
 
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
@@ -88,16 +117,23 @@ bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id
         {
             Buffer* buffer = handle->lock();
             CZ_DEFER(handle->unlock());
-            cz::Str buffer_path = buffer->path;
 
-            if (buffer_path.len > 0 && buffer_path[buffer_path.len - 1] == '/') {
-                --buffer_path.len;
+            if (buffer->directory == directory && buffer->name == name) {
+                goto ret;
             }
-            if (buffer_path != path) {
-                continue;
+
+            if (buffer->type == Buffer::DIRECTORY) {
+                cz::Str d = buffer->directory;
+                d.len--;
+                if (d == path) {
+                    goto ret;
+                }
             }
+
+            continue;
         }
 
+    ret:
         *buffer_id = handle->id;
         return true;
     }
@@ -127,6 +163,20 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     }
 
     client->set_selected_buffer(buffer_id);
+}
+
+bool save_buffer(Buffer* buffer) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    if (!buffer->get_path(cz::heap_allocator(), &path)) {
+        return false;
+    }
+
+    if (save_contents(&buffer->contents, path.buffer())) {
+        buffer->mark_saved();
+        return true;
+    }
+    return false;
 }
 
 static void save_contents(const Contents* contents, cz::Output_File file) {

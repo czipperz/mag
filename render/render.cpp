@@ -305,8 +305,7 @@ static void draw_buffer_decoration(Cell* cells,
     string.allocator = cz::heap_allocator();
     CZ_DEFER(string.drop());
     string.reserve(1024);
-    string.reserve(buffer->path.len());
-    string.append(buffer->path);
+    buffer->render_name(string.allocator, &string);
 
     for (size_t i = 0; i < editor->theme.decorations.len; ++i) {
         string.reserve(5);

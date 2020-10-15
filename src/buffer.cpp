@@ -38,25 +38,31 @@ static bool get_file_time(const char* path, void* file_time) {
 #endif
 }
 
-static bool is_out_of_date(const char* path, void* file_time) {
+static bool is_out_of_date(Buffer* buffer) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    if (!buffer->get_path(cz::heap_allocator(), &path)) {
+        return false;
+    }
+
 #ifdef _WIN32
     FILETIME new_ft;
 #else
     time_t new_ft;
 #endif
 
-    if (!get_file_time(path, &new_ft)) {
+    if (!get_file_time(path.buffer(), &new_ft)) {
         return false;
     }
 
 #ifdef _WIN32
-    if (CompareFileTime((FILETIME*)file_time, &new_ft) < 0) {
-        *(FILETIME*)file_time = new_ft;
+    if (CompareFileTime((FILETIME*)buffer->file_time, &new_ft) < 0) {
+        *(FILETIME*)buffer->file_time = new_ft;
         return true;
     }
 #else
-    if (*(time_t*)file_time < new_ft) {
-        *(time_t*)file_time = new_ft;
+    if (*(time_t*)buffer->file_time < new_ft) {
+        *(time_t*)buffer->file_time = new_ft;
         return true;
     }
 #endif
@@ -65,6 +71,12 @@ static bool is_out_of_date(const char* path, void* file_time) {
 }
 
 static void initialize_file_time(Buffer* buffer) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    if (!buffer->get_path(cz::heap_allocator(), &path)) {
+        return;
+    }
+
 #ifdef _WIN32
     void* file_time = malloc(sizeof(FILETIME));
     CZ_ASSERT(file_time);
@@ -72,7 +84,7 @@ static void initialize_file_time(Buffer* buffer) {
     void* file_time = malloc(sizeof(time_t));
     CZ_ASSERT(file_time);
 #endif
-    if (get_file_time(buffer->path.buffer(), file_time)) {
+    if (get_file_time(path.buffer(), file_time)) {
         buffer->file_time = file_time;
     } else {
         free(file_time);
@@ -80,10 +92,8 @@ static void initialize_file_time(Buffer* buffer) {
     }
 }
 
-void Buffer::init(cz::Str path) {
-    this->path = path.duplicate_null_terminate(cz::heap_allocator());
-
-    mode = custom::get_mode(path);
+void Buffer::init() {
+    mode = custom::get_mode(*this);
 
     initialize_file_time(this);
 }
@@ -93,13 +103,15 @@ void Buffer::check_for_external_update(Client* client) {
         return;
     }
 
-    if (is_out_of_date(path.buffer(), file_time)) {
+    if (is_out_of_date(this)) {
         reload_file(client, this);
     }
 }
 
 void Buffer::drop() {
-    path.drop(cz::heap_allocator());
+    directory.drop(cz::heap_allocator());
+    name.drop(cz::heap_allocator());
+
     commits.drop(cz::heap_allocator());
 
     unsigned char* dropped =
@@ -271,6 +283,36 @@ cz::Str clear_buffer(Buffer* buffer) {
     transaction.commit(buffer);
 
     return buffer_contents;
+}
+
+bool Buffer::get_path(cz::Allocator allocator, cz::String* path) const {
+    if (type == TEMPORARY) {
+        return false;
+    }
+
+    path->reserve(allocator, directory.len() + name.len() + 1);
+    path->append(directory);
+    path->append(name);
+    path->null_terminate();
+
+    return true;
+}
+
+void Buffer::render_name(cz::Allocator allocator, cz::String* string) const {
+    if (type == Buffer::TEMPORARY) {
+        if (directory.len() == 0) {
+            string->reserve(allocator, name.len());
+            string->append(name);
+        } else {
+            string->reserve(allocator, name.len() + 3 + directory.len());
+            string->append(name);
+            string->append(" (");
+            string->append(directory);
+            string->push(')');
+        }
+    } else {
+        get_path(allocator, string);
+    }
 }
 
 }

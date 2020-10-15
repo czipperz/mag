@@ -215,8 +215,8 @@ Theme create_theme() {
     theme.faces.push({{}, {}, Face::ITALICS});               // Token_Type::PROCESS_ITALICS
     theme.faces.push({{}, {}, Face::BOLD | Face::ITALICS});  // Token_Type::PROCESS_BOLD_ITALICS
 
-    theme.faces.push({51, {}, 0});  // Token_Type::CSS_PROPERTY
-    theme.faces.push({{}, {}, 0});  // Token_Type::CSS_ELEMENT_SELECTOR
+    theme.faces.push({51, {}, 0});   // Token_Type::CSS_PROPERTY
+    theme.faces.push({{}, {}, 0});   // Token_Type::CSS_ELEMENT_SELECTOR
     theme.faces.push({228, {}, 0});  // Token_Type::CSS_ID_SELECTOR
     theme.faces.push({118, {}, 0});  // Token_Type::CSS_CLASS_SELECTOR
     theme.faces.push({208, {}, 0});  // Token_Type::CSS_PSEUDO_SELECTOR
@@ -314,44 +314,54 @@ static Key_Map* git_edit_key_map() {
     return &key_map;
 }
 
-Mode get_mode(cz::Str file_name) {
+Mode get_mode(const Buffer& buffer) {
     Mode mode = {};
     mode.next_token = default_next_token;
-    if (file_name.ends_with("/")) {
+    switch (buffer.type) {
+    case Buffer::DIRECTORY:
         mode.key_map = directory_key_map();
-    } else if (file_name.ends_with(".c") || file_name.ends_with(".h") ||
-               file_name.ends_with(".cc") || file_name.ends_with(".hh") ||
-               file_name.ends_with(".cpp") || file_name.ends_with(".hpp") ||
-               file_name.ends_with(".glsl")) {
-        mode.next_token = syntax::cpp_next_token;
-        mode.key_map = cpp_key_map();
-        static Overlay overlays[] = {syntax::overlay_matching_pairs(),
-                                     syntax::overlay_matching_tokens()};
-        mode.overlays = cz::slice(overlays);
-    } else if (file_name.ends_with(".md")) {
-        mode.next_token = syntax::md_next_token;
-    } else if (file_name.ends_with(".css")) {
-        mode.next_token = syntax::css_next_token;
-    } else if (file_name.ends_with(".patch") || file_name.ends_with(".diff")) {
-        mode.next_token = syntax::patch_next_token;
-        if (file_name.ends_with("/addp-hunk-edit.diff")) {
+        break;
+
+    case Buffer::TEMPORARY:
+        if (buffer.name == "*client mini buffer*") {
+            mode.next_token = syntax::path_next_token;
+            mode.key_map = path_key_map();
+        } else if (buffer.name.contains("*git grep ")) {
+            mode.next_token = syntax::process_next_token;
+            mode.key_map = search_key_map();
+        } else if (buffer.name.starts_with("*man ")) {
+            mode.next_token = syntax::process_next_token;
+            mode.key_map = man_key_map();
+        }
+        break;
+
+    case Buffer::FILE:
+        if (buffer.name.ends_with(".c") || buffer.name.ends_with(".h") ||
+            buffer.name.ends_with(".cc") || buffer.name.ends_with(".hh") ||
+            buffer.name.ends_with(".cpp") || buffer.name.ends_with(".hpp") ||
+            buffer.name.ends_with(".glsl")) {
+            mode.next_token = syntax::cpp_next_token;
+            mode.key_map = cpp_key_map();
+            static Overlay overlays[] = {syntax::overlay_matching_pairs(),
+                                         syntax::overlay_matching_tokens()};
+            mode.overlays = cz::slice(overlays);
+        } else if (buffer.name.ends_with(".md")) {
+            mode.next_token = syntax::md_next_token;
+        } else if (buffer.name.ends_with(".css")) {
+            mode.next_token = syntax::css_next_token;
+        } else if (buffer.name.ends_with(".patch") || buffer.name.ends_with(".diff")) {
+            mode.next_token = syntax::patch_next_token;
+            if (buffer.name == "addp-hunk-edit.diff") {
+                mode.key_map = git_edit_key_map();
+            }
+        } else if (buffer.name == "git-rebase-todo") {
+            mode.next_token = syntax::git_rebase_todo_next_token;
+            mode.key_map = git_edit_key_map();
+        } else if (buffer.name == "COMMIT_EDITMSG") {
+            mode.next_token = syntax::git_commit_edit_message_next_token;
             mode.key_map = git_edit_key_map();
         }
-    } else if (file_name == "*client mini buffer*") {
-        mode.next_token = syntax::path_next_token;
-        mode.key_map = path_key_map();
-    } else if (file_name.contains("*git grep ")) {
-        mode.next_token = syntax::process_next_token;
-        mode.key_map = search_key_map();
-    } else if (file_name.starts_with("*man ")) {
-        mode.next_token = syntax::process_next_token;
-        mode.key_map = man_key_map();
-    } else if (file_name.ends_with("/git-rebase-todo")) {
-        mode.next_token = syntax::git_rebase_todo_next_token;
-        mode.key_map = git_edit_key_map();
-    } else if (file_name.ends_with("/COMMIT_EDITMSG")) {
-        mode.next_token = syntax::git_commit_edit_message_next_token;
-        mode.key_map = git_edit_key_map();
+        break;
     }
     return mode;
 }

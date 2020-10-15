@@ -17,7 +17,25 @@ struct Client;
 struct Cursor;
 
 struct Buffer {
-    cz::String path;
+    /// The directory the buffer is located in.
+    ///
+    /// Should be delineated by forward slashes (`'/'`).  Should be terminated by a forward slash
+    /// and a null terminator (`'\0'`).
+    ///
+    /// If it doesn't make sense for this buffer to have an associated directory, leave this
+    /// completely empty.
+    cz::String directory;
+    /// The name of the buffer.
+    ///
+    /// If this is a file, it should be the final component only (no slashes).
+    /// If this is a directory, it is `"."`.
+    /// If this is a temporary buffer, it can be an arbitrary string.
+    cz::String name;
+    enum {
+        FILE,
+        DIRECTORY,
+        TEMPORARY,
+    } type = FILE;
 
     void* file_time;
 
@@ -46,7 +64,7 @@ struct Buffer {
 
     Token_Cache token_cache;
 
-    void init(cz::Str path);
+    void init();
 
     void drop();
 
@@ -74,6 +92,14 @@ struct Buffer {
     void mark_saved();
 
     void check_for_external_update(Client* client);
+
+    /// Composes the `directory` and `name` as well as adding a null terminator.
+    ///
+    /// If `type` is `TEMPORARY`, `get_path` returns `false` and not change the string.
+    /// Otherwise, `get_path` will append `directory` and `name` to the `path` and return `true`.
+    bool get_path(cz::Allocator allocator, cz::String* path) const;
+
+    void render_name(cz::Allocator allocator, cz::String* string) const;
 };
 
 cz::Str clear_buffer(Buffer* buffer);

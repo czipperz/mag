@@ -11,10 +11,13 @@ void command_alternate(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
         WITH_SELECTED_BUFFER(source.client);
-        if (!buffer->path.ends_with(".cpp") && !buffer->path.ends_with(".hpp")) {
+        if (!buffer->name.ends_with(".cpp") && !buffer->name.ends_with(".hpp")) {
             return;
         }
-        path = buffer->path.clone(cz::heap_allocator());
+
+        if (!buffer->get_path(cz::heap_allocator(), &path)) {
+            return;
+        }
     }
 
     if (path.ends_with(".cpp")) {

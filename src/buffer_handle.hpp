@@ -20,11 +20,12 @@ class Buffer_Handle {
 public:
     Buffer_Id id;
 
-    void init(Buffer_Id buffer_id, cz::Str path) {
+    /// Call this with `buffer.directory`, `buffer.file`, and `buffer.is_temp` set.
+    void init(Buffer_Id buffer_id, Buffer buffer) {
         id = buffer_id;
 
-        buffer = {};
-        buffer.init(path);
+        this->buffer = buffer;
+        this->buffer.init();
 
 #ifndef NDEBUG
         simultaneous_access_count = 0;

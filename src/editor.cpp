@@ -14,29 +14,29 @@ Buffer_Id Editor::create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir)
     uint64_t number = ++temp_counter;
     uint64_t digits = (uint64_t)log10(number) + 1;
 
-    cz::String path = {};
-    bool has_forward_slash = dir.is_present && dir.value.ends_with("/");
-    path.reserve(cz::heap_allocator(),
-                 (dir.is_present ? dir.value.len + !has_forward_slash + 2 : 0) + 1 + temp_name.len +
-                     1 + digits + 1);
-    CZ_DEFER(path.drop(cz::heap_allocator()));
+    Buffer buffer = {};
 
     if (dir.is_present) {
-        path.append(dir.value);
+        bool has_forward_slash = dir.value.ends_with("/");
+        buffer.directory.reserve(cz::heap_allocator(), dir.value.len + !has_forward_slash + 1);
+        buffer.directory.append(dir.value);
         if (!has_forward_slash) {
-            path.push('/');
+            buffer.directory.push('/');
         }
-        path.append(": ");
+        buffer.directory.null_terminate();
     }
 
-    path.push('*');
-    path.append(temp_name);
-    path.push(' ');
-    sprintf(path.end(), "%" PRIu64, number);
-    path.set_len(path.len() + digits);
-    path.push('*');
+    buffer.type = Buffer::TEMPORARY;
 
-    buffer_handle->init({buffer_counter++}, path);
+    buffer.name.reserve(cz::heap_allocator(), 3 + temp_name.len + digits);
+    buffer.name.push('*');
+    buffer.name.append(temp_name);
+    buffer.name.push(' ');
+    sprintf(buffer.name.end(), "%" PRIu64, number);
+    buffer.name.set_len(buffer.name.len() + digits);
+    buffer.name.push('*');
+
+    buffer_handle->init({buffer_counter++}, buffer);
     buffers.reserve(cz::heap_allocator(), 1);
     buffers.push(buffer_handle);
     return buffer_handle->id;

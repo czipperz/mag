@@ -76,9 +76,9 @@ struct Editor {
         }
     }
 
-    Buffer_Id create_buffer(cz::Str path) {
+    Buffer_Id create_buffer(Buffer buffer) {
         Buffer_Handle* buffer_handle = cz::heap_allocator().create<Buffer_Handle>();
-        buffer_handle->init({buffer_counter++}, path);
+        buffer_handle->init({buffer_counter++}, buffer);
         buffers.reserve(cz::heap_allocator(), 1);
         buffers.push(buffer_handle);
         return buffer_handle->id;

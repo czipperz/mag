@@ -178,7 +178,10 @@ void buffer_completion_engine(Editor* editor, Completion_Engine_Context* context
         Buffer_Handle* handle = editor->buffers[i];
         Buffer* buffer = handle->lock();
         CZ_DEFER(handle->unlock());
-        context->results.push(buffer->path.clone(context->results_buffer_array.allocator()));
+
+        cz::String result = {};
+        buffer->render_name(context->results_buffer_array.allocator(), &result);
+        context->results.push(result);
     }
 }
 

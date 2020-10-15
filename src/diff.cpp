@@ -256,7 +256,11 @@ void reload_file(Client* client, Buffer* buffer) {
 
         options.std_err = cz::std_err_file();
 
-        const char* args[] = {"diff", "-" /* stdin */, buffer->path.buffer(), nullptr};
+        cz::String buffer_path = {};
+        CZ_DEFER(buffer_path.drop(cz::heap_allocator()));
+        buffer->get_path(cz::heap_allocator(), &buffer_path);
+
+        const char* args[] = {"diff", "-" /* stdin */, buffer_path.buffer(), nullptr};
 
         cz::Process process;
         if (!process.launch_program(args, &options)) {

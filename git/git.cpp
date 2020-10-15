@@ -12,31 +12,9 @@ namespace mag {
 namespace git {
 
 static bool get_git_top_level(Client* client,
-                              cz::Str buffer_path,
+                              const char* dir_cstr,
                               cz::Allocator allocator,
                               cz::String* top_level_path) {
-    const char* buffer_path_end = buffer_path.rfind('/');
-
-    cz::String dir = {};
-    CZ_DEFER(dir.drop(cz::heap_allocator()));
-
-    const char* dir_cstr;
-    if (buffer_path_end) {
-        ++buffer_path_end;
-
-        size_t dir_len = buffer_path_end - buffer_path.buffer;
-        if (dir_len == buffer_path.len) {
-            dir_cstr = buffer_path.buffer;
-        } else {
-            dir.reserve(cz::heap_allocator(), dir_len + 1);
-            dir.append({buffer_path.buffer, dir_len});
-            dir.null_terminate();
-            dir_cstr = dir.buffer();
-        }
-    } else {
-        dir_cstr = nullptr;
-    }
-
     cz::Input_File std_out_read;
     CZ_DEFER(std_out_read.close());
 
@@ -92,7 +70,8 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
     {
         WITH_BUFFER(*(Buffer_Id*)data);
-        if (!get_git_top_level(client, buffer->path, cz::heap_allocator(), &top_level_path)) {
+        if (!get_git_top_level(client, buffer->directory.buffer(), cz::heap_allocator(),
+                               &top_level_path)) {
             return;
         }
     }
@@ -158,14 +137,10 @@ void command_git_grep(Editor* editor, Command_Source source) {
 void command_save_and_quit(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
-        buffer->path.reserve(cz::heap_allocator(), 1);
-        buffer->path.null_terminate();
-        if (!save_contents(&buffer->contents, buffer->path.buffer())) {
+        if (!save_buffer(buffer)) {
             source.client->show_message("Error saving file");
             return;
         }
-
-        buffer->mark_saved();
     }
 
     source.client->queue_quit = true;
@@ -176,14 +151,10 @@ void command_abort_and_quit(Editor* editor, Command_Source source) {
         WITH_SELECTED_BUFFER(source.client);
         clear_buffer(buffer);
 
-        buffer->path.reserve(cz::heap_allocator(), 1);
-        buffer->path.null_terminate();
-        if (!save_contents(&buffer->contents, buffer->path.buffer())) {
+        if (!save_buffer(buffer)) {
             source.client->show_message("Error saving file");
             return;
         }
-
-        buffer->mark_saved();
     }
 
     source.client->queue_quit = true;

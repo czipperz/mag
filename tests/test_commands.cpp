@@ -10,17 +10,20 @@ using namespace cz;
 using namespace mag;
 using namespace mag::basic;
 
-#define SETUP_TEST(CONTENTS)              \
-    Server server = {};                   \
-    server.editor.create();               \
-    CZ_DEFER(server.drop());              \
-    Editor* editor = &server.editor;      \
-    editor->create_buffer("*test*");      \
-                                          \
-    Client client = server.make_client(); \
-    Command_Source source;                \
-    source.client = &client;              \
-    source.keys = {0, 0};                 \
+#define SETUP_TEST(CONTENTS)                                              \
+    Server server = {};                                                   \
+    server.editor.create();                                               \
+    CZ_DEFER(server.drop());                                              \
+    Editor* editor = &server.editor;                                      \
+    Buffer test_buffer = {};                                              \
+    test_buffer.type = Buffer::TEMPORARY;                                 \
+    test_buffer.name = cz::Str("*test*").duplicate(cz::heap_allocator()); \
+    editor->create_buffer(test_buffer);                                   \
+                                                                          \
+    Client client = server.make_client();                                 \
+    Command_Source source;                                                \
+    source.client = &client;                                              \
+    source.keys = {0, 0};                                                 \
     insert_default_contents(editor, &client, CONTENTS);
 
 static void insert_default_contents(Editor* editor, Client* client, cz::Str contents) {

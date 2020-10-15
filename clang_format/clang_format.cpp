@@ -168,9 +168,7 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
 
     transaction.commit(buffer);
 
-    if (save_contents(&buffer->contents, buffer->path.buffer())) {
-        buffer->mark_saved();
-    }
+    save_buffer(buffer);
 }
 
 struct Clang_Format_Job_Data {
@@ -256,11 +254,9 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     cz::Str assume_filename_base = "-assume-filename=";
     cz::String assume_filename = {};
     CZ_DEFER(assume_filename.drop(cz::heap_allocator()));
-    assume_filename.reserve(cz::heap_allocator(),
-                            assume_filename_base.len + buffer->path.len() + 1);
+    assume_filename.reserve(cz::heap_allocator(), assume_filename_base.len);
     assume_filename.append(assume_filename_base);
-    assume_filename.append(buffer->path);
-    assume_filename.null_terminate();
+    buffer->get_path(cz::heap_allocator(), &assume_filename);
 
     const char* args[] = {"clang-format", "-output-replacements-xml", "-style=file",
                           assume_filename.buffer(), nullptr};

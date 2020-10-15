@@ -51,7 +51,11 @@ int mag_main(int argc, char** argv) {
         Server server = {};
         server.editor.create();
         CZ_DEFER(server.drop());
-        server.editor.create_buffer("*scratch*");
+
+        Buffer scratch = {};
+        scratch.type = Buffer::TEMPORARY;
+        scratch.name = cz::Str("*scratch*").duplicate(cz::heap_allocator());
+        server.editor.create_buffer(scratch);
         server.editor.key_map = custom::create_key_map();
         server.editor.theme = custom::create_theme();
 
