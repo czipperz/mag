@@ -10,7 +10,7 @@ namespace basic {
 void command_open_file(Editor* editor, Command_Source source);
 void command_save_file(Editor* editor, Command_Source source);
 
-void fill_mini_buffer_with_selected_window_path(Editor*, Client*);
+void fill_mini_buffer_with_selected_window_directory(Editor*, Client*);
 
 void remove_windows_for_buffer(Client* client, Buffer_Id buffer_id);
 
