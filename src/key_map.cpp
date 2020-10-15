@@ -60,6 +60,18 @@ static void parse_key(Key* key, size_t* i, cz::Str description) {
     } else if (d.starts_with("BACKSPACE")) {
         key->code = Key_Code::BACKSPACE;
         *i += 9;
+    } else if (d.starts_with("UP")) {
+        key->code = Key_Code::UP;
+        *i += 2;
+    } else if (d.starts_with("DOWN")) {
+        key->code = Key_Code::DOWN;
+        *i += 4;
+    } else if (d.starts_with("LEFT")) {
+        key->code = Key_Code::LEFT;
+        *i += 4;
+    } else if (d.starts_with("RIGHT")) {
+        key->code = Key_Code::RIGHT;
+        *i += 5;
     } else {
         key->code = description[*i];
         *i += 1;

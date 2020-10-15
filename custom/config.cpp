@@ -62,6 +62,11 @@ Key_Map create_key_map() {
     BIND(key_map, "A-n", command_shift_line_forward);
     BIND(key_map, "A-p", command_shift_line_backward);
 
+    BIND(key_map, "UP", command_backward_line);
+    BIND(key_map, "DOWN", command_forward_line);
+    BIND(key_map, "LEFT", command_backward_char);
+    BIND(key_map, "RIGHT", command_forward_char);
+
     BIND(key_map, "C-A-u", command_backward_up_pair);
     BIND(key_map, "C-A-d", command_forward_up_pair);
     BIND(key_map, "C-A-b", command_backward_token_pair);

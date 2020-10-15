@@ -423,6 +423,10 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
             KEY_CASE(BACKSPACE, Key_Code::BACKSPACE);
             KEY_CASE(RETURN, '\n');
             KEY_CASE(TAB, '\t');
+            KEY_CASE(UP, Key_Code::UP);
+            KEY_CASE(DOWN, Key_Code::DOWN);
+            KEY_CASE(LEFT, Key_Code::LEFT);
+            KEY_CASE(RIGHT, Key_Code::RIGHT);
 
 #undef KEY_CASE
 

@@ -215,6 +215,14 @@ rerun:
     } else if (ch >= 0 && ch < 128) {
         // normal keys
         key.code = ch;
+    } else if (ch == KEY_UP) {
+        key.code = Key_Code::UP;
+    } else if (ch == KEY_DOWN) {
+        key.code = Key_Code::DOWN;
+    } else if (ch == KEY_LEFT) {
+        key.code = Key_Code::LEFT;
+    } else if (ch == KEY_RIGHT) {
+        key.code = Key_Code::RIGHT;
     } else {
         return;
     }
