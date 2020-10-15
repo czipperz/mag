@@ -25,13 +25,15 @@ struct Key_Map {
 
     /// Bind a key description to a command.
     ///
-    /// The description describes a chain of Key objects separated by spaces.  If
-    /// the key code is a space or a backslash escape it with another backslash.
-    /// Prefix C- and/or A- to add control and alt modifiers.
+    /// The description describes a chain of Key objects separated by spaces.  If the key code is a
+    /// space write it as `SPACE` and if it is a non-printable character type it out (ex.
+    /// `BACKSPACE`). Prefix `C-`, `A-`, and/or `S-` to add control, alt, and/or shift modifiers.
     ///
     /// Examples:
-    /// "C-\\ " -- [Key { CONTROL, ' ' }]
-    /// "A-b c" -- [Key { ALT, 'b' }, Key { 0, 'c' }]
+    /// `A-b c` -- `[Key { ALT, 'b' }, Key { 0, 'c' }]`
+    /// `C-SPACE` -- `[Key { CONTROL, ' ' }]`
+    /// `S-BACKSPACE` -- `[Key { SHIFT, BACKSPACE }]`
+    /// `C-A-S-\` -- `[Key { CONTROL | ALT | SHIFT, '\\' }]`
     void bind(cz::Str description, Command command);
 
     /// Lookup the Key_Bind for a specific key.  This does a binary search of the

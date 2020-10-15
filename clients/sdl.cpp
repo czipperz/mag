@@ -420,7 +420,7 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
         break
 
             KEY_CASE(SPACE, ' ');
-            KEY_CASE(BACKSPACE, 127);
+            KEY_CASE(BACKSPACE, Key_Code::BACKSPACE);
             KEY_CASE(RETURN, '\n');
             KEY_CASE(TAB, '\t');
 

@@ -43,7 +43,7 @@ using namespace basic;
 
 Key_Map create_key_map() {
     Key_Map key_map = {};
-    BIND(key_map, "C-\\ ", command_set_mark);
+    BIND(key_map, "C-SPACE", command_set_mark);
     BIND(key_map, "C-@", command_set_mark);
     BIND(key_map, "C-x C-x", command_swap_mark_point);
 
@@ -86,7 +86,7 @@ Key_Map create_key_map() {
 
     BIND(key_map, "C-x C-p", command_pop_jump);
     BIND(key_map, "C-x C-n", command_unpop_jump);
-    BIND(key_map, "C-x C-\\ ", command_push_jump);
+    BIND(key_map, "C-x C-SPACE", command_push_jump);
     BIND(key_map, "C-x C-@", command_push_jump);
 
     BIND(key_map, "C-e", command_end_of_line);
@@ -96,10 +96,10 @@ Key_Map create_key_map() {
     BIND(key_map, "A-r", command_search_forward);
     BIND(key_map, "C-r", command_search_backward);
 
-    BIND(key_map, "\\-", command_delete_backward_char);
-    BIND(key_map, "S-\\-", command_delete_backward_char);
+    BIND(key_map, "BACKSPACE", command_delete_backward_char);
+    BIND(key_map, "S-BACKSPACE", command_delete_backward_char);
     BIND(key_map, "C-d", command_delete_forward_char);
-    BIND(key_map, "A-\\-", command_delete_backward_word);
+    BIND(key_map, "A-BACKSPACE", command_delete_backward_word);
     BIND(key_map, "A-d", command_delete_forward_word);
 
     BIND(key_map, "C-k", command_delete_line);
@@ -111,6 +111,7 @@ Key_Map create_key_map() {
     BIND(key_map, "A-m", command_open_line);
     BIND(key_map, "C-m", command_insert_newline_indent);
     BIND(key_map, "\n", command_insert_newline_indent);
+    BIND(key_map, "C-i", command_insert_indent);
     BIND(key_map, "\t", command_insert_indent);
     BIND(key_map, "A-=", command_delete_whitespace);
 

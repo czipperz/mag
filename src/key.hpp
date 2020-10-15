@@ -14,9 +14,16 @@ enum Modifiers : uint_fast8_t {
     CONTROL_ALT_SHIFT = 7,
 };
 
+namespace Key_Code_ {
+enum Key_Code : uint16_t {
+    BACKSPACE,
+};
+}
+using Key_Code_::Key_Code;
+
 struct Key {
     uint_fast8_t modifiers;
-    char code;
+    uint16_t code;
 
     bool operator==(const Key& other) const {
         return modifiers == other.modifiers && code == other.code;

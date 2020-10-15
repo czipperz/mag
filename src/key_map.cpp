@@ -1,6 +1,7 @@
 #include "key_map.hpp"
 
 #include <cz/heap.hpp>
+#include <stdio.h>
 
 namespace mag {
 
@@ -46,16 +47,19 @@ static void parse_key(Key* key, size_t* i, cz::Str description) {
         *i += 2;
     }
 
+    if (*i == description.len) {
+        fwrite(description.buffer, 1, description.len, stdout);
+        putchar('\n');
+    }
     CZ_ASSERT(*i < description.len);
-    if (*i + 1 < description.len && description[*i] == '\\') {
-        char escaped_char = description[*i + 1];
-        CZ_ASSERT(escaped_char == ' ' || escaped_char == '\\' || escaped_char == '-');
-        if (escaped_char == '-') {
-            key->code = 127;
-        } else {
-            key->code = escaped_char;
-        }
-        *i += 2;
+
+    cz::Str d = {description.buffer + *i, description.len - *i};
+    if (d.starts_with("SPACE")) {
+        key->code = ' ';
+        *i += 5;
+    } else if (d.starts_with("BACKSPACE")) {
+        key->code = Key_Code::BACKSPACE;
+        *i += 9;
     } else {
         key->code = description[*i];
         *i += 1;

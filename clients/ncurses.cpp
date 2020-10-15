@@ -211,7 +211,7 @@ rerun:
         key.code = '_';
     } else if (ch == 127) {
         // BACKSPACE (\\-), C-?
-        key.code = 127;
+        key.code = Key_Code::BACKSPACE;
     } else if (ch >= 0 && ch < 128) {
         // normal keys
         key.code = ch;
