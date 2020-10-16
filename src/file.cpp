@@ -104,8 +104,8 @@ bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id
     const char* ptr = cz::Str(path.buffer, path.len).rfind('/');
     if (ptr) {
         ptr++;
-        directory = {path.buffer, ptr - path.buffer};
-        name = {ptr, path.end() - ptr};
+        directory = {path.buffer, size_t(ptr - path.buffer)};
+        name = {ptr, size_t(path.end() - ptr)};
     } else {
         directory = {};
         name = path;
