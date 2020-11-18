@@ -73,10 +73,17 @@ static void command_switch_buffer_callback(Editor* editor,
                                            cz::Str path,
                                            void* data) {
     Buffer_Id buffer_id;
+    if (path.starts_with("*")) {
+        if (find_temp_buffer(editor, client, path, &buffer_id)) {
+            goto cont;
+        }
+    }
+
     if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
         return;
     }
 
+cont:
     client->set_selected_buffer(buffer_id);
 }
 

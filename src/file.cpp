@@ -140,6 +140,37 @@ bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id
     return false;
 }
 
+bool find_temp_buffer(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id) {
+    cz::Str name;
+    cz::Str directory = {};
+    const char* ptr = path.find("* (");
+    if (ptr) {
+        name = {path.buffer, size_t(ptr + 1 - path.buffer)};
+        directory = {ptr + 3, size_t(path.end() - (ptr + 3) - 1)};
+    } else {
+        name = path;
+        if (name.ends_with("* ")) {
+            name.len--;
+        }
+    }
+
+    for (size_t i = 0; i < editor->buffers.len(); ++i) {
+        Buffer_Handle* handle = editor->buffers[i];
+
+        Buffer* buffer = handle->lock();
+        CZ_DEFER(handle->unlock());
+
+        if (buffer->name == name) {
+            if (!directory.buffer || buffer->directory == directory) {
+                *buffer_id = handle->id;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void open_file(Editor* editor, Client* client, cz::Str user_path) {
     if (user_path.len == 0) {
         client->show_message("File path must not be empty");

@@ -23,4 +23,9 @@ bool save_contents_to_temp_file(const Contents* contents, cz::Input_File* fd);
 
 bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id);
 
+/// Find temporary buffer by parsing the path.
+///
+/// `path` should be of the style `NAME` or `NAME (DIRECTORY)`.
+bool find_temp_buffer(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id);
+
 }
