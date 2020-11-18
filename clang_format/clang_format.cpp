@@ -245,7 +245,9 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     cz::Input_File input_file;
-    if (!save_contents_to_temp_file(&buffer->contents, &input_file)) {
+    // Use binary because we want no carriage returns on Windows because they make it hard to
+    // process replacements.
+    if (!save_contents_to_temp_file_binary(&buffer->contents, &input_file)) {
         source.client->show_message("Error: I/O operation failed");
         return;
     }
