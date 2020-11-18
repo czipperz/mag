@@ -24,6 +24,25 @@ static bool eat_until_colon(Contents_Iterator* iterator) {
     }
 }
 
+static bool eat_until_colon_space(Contents_Iterator* iterator) {
+    while (1) {
+        if (iterator->at_eob()) {
+            return false;
+        }
+        if (iterator->get() == ':') {
+            Contents_Iterator it = *iterator;
+            it.advance();
+            if (it.at_eob()) {
+                return true;
+            }
+            if (it.get() == ' ') {
+                return true;
+            }
+        }
+        iterator->advance();
+    }
+}
+
 static bool parse_number(Contents_Iterator* iterator, uint64_t* num) {
     iterator->advance();
     while (1) {
@@ -63,7 +82,7 @@ static bool get_file_to_open(Buffer* buffer,
     }
 
     Contents_Iterator base_end = buffer->contents.start();
-    if (!eat_until_colon(&base_end)) {
+    if (!eat_until_colon_space(&base_end)) {
         return false;
     }
 
