@@ -182,7 +182,9 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
                 CZ_DEBUG_ASSERT(commit.edits[e].value.len() <= len);
 
                 if (buffer->contents.len <= cursors[e].point + len) {
-                    transaction.push(commit.edits[e]);
+                    Edit edit = commit.edits[e];
+                    edit.position -= e;
+                    transaction.push(edit);
                     continue;
                 }
 
