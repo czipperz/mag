@@ -113,7 +113,8 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
     if (buffer->check_last_committer(command_delete_backward_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
         Commit commit = buffer->commits[buffer->commit_index - 1];
-        size_t len = commit.edits[0].value.len();
+        CZ_DEBUG_ASSERT(commit.edits.len > 0);
+        size_t len = commit.edits[commit.edits.len - 1].value.len();
         if (len < SSOStr::MAX_SHORT_LEN) {
             cz::Slice<Cursor> cursors = window->cursors;
 
@@ -132,7 +133,12 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
                 }
 
                 CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
-                CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+                CZ_DEBUG_ASSERT(commit.edits[e].value.len() <= len);
+
+                if (cursors[e].point <= len) {
+                    transaction.push(commit.edits[e]);
+                    continue;
+                }
 
                 Edit edit;
                 memcpy(edit.value.short_._buffer + 1, commit.edits[e].value.short_._buffer, len);
@@ -159,6 +165,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
     if (buffer->check_last_committer(command_delete_forward_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
         Commit commit = buffer->commits[buffer->commit_index - 1];
+        CZ_DEBUG_ASSERT(commit.edits.len > 0);
         size_t len = commit.edits[0].value.len();
         if (len < SSOStr::MAX_SHORT_LEN) {
             cz::Slice<Cursor> cursors = window->cursors;
@@ -172,7 +179,12 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
             CZ_DEFER(transaction.drop());
             for (size_t e = 0; e < commit.edits.len; ++e) {
                 CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
-                CZ_DEBUG_ASSERT(commit.edits[e].value.len() == len);
+                CZ_DEBUG_ASSERT(commit.edits[e].value.len() <= len);
+
+                if (buffer->contents.len <= cursors[e].point + len) {
+                    transaction.push(commit.edits[e]);
+                    continue;
+                }
 
                 Edit edit;
                 memcpy(edit.value.short_._buffer, commit.edits[e].value.short_._buffer, len);
