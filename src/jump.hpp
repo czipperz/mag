@@ -37,8 +37,8 @@ struct Jump_Chain {
     }
 
     Jump* unpop() {
-        if (index < jumps.len()) {
-            return &jumps[index++];
+        if (index + 1 < jumps.len()) {
+            return &jumps[++index];
         } else {
             return nullptr;
         }

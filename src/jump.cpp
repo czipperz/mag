@@ -30,6 +30,7 @@ void goto_jump(Editor* editor, Client* client, Jump* jump) {
     client->set_selected_buffer(jump->buffer_id);
 
     Window_Unified* window = client->selected_window();
+    kill_extra_cursors(window, client);
     {
         WITH_WINDOW_BUFFER(window);
         jump->update(buffer);

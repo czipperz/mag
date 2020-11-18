@@ -86,6 +86,12 @@ void command_unpop_jump(Editor* editor, Command_Source source) {
 }
 
 void command_pop_jump(Editor* editor, Command_Source source) {
+    if (source.client->jump_chain.index == source.client->jump_chain.jumps.len()) {
+        WITH_SELECTED_BUFFER(source.client);
+        push_jump(window, source.client, handle->id, buffer);
+        source.client->jump_chain.pop();
+    }
+
     Jump* jump = source.client->jump_chain.pop();
     if (jump) {
         goto_jump(editor, source.client, jump);
