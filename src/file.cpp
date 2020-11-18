@@ -210,9 +210,15 @@ bool save_buffer(Buffer* buffer) {
     return false;
 }
 
-static void save_contents(const Contents* contents, cz::Output_File file) {
+void save_contents(const Contents* contents, cz::Output_File file) {
     for (size_t bucket = 0; bucket < contents->buckets.len(); ++bucket) {
         file.write_text(contents->buckets[bucket].elems, contents->buckets[bucket].len);
+    }
+}
+
+void save_contents_binary(const Contents* contents, cz::Output_File file) {
+    for (size_t bucket = 0; bucket < contents->buckets.len(); ++bucket) {
+        file.write_binary(contents->buckets[bucket].elems, contents->buckets[bucket].len);
     }
 }
 
@@ -227,10 +233,31 @@ bool save_contents(const Contents* contents, const char* path) {
     return true;
 }
 
+bool save_contents_binary(const Contents* contents, const char* path) {
+    cz::Output_File file;
+    if (!file.open(path)) {
+        return false;
+    }
+    CZ_DEFER(file.close());
+
+    save_contents_binary(contents, file);
+    return true;
+}
+
 bool save_contents_to_temp_file(const Contents* contents, cz::Input_File* fd) {
     char temp_file_buffer[L_tmpnam];
     tmpnam(temp_file_buffer);
     if (!save_contents(contents, temp_file_buffer)) {
+        return false;
+    }
+    // Todo: don't open the file twice, instead open it once in read/write mode and reset the head.
+    return fd->open(temp_file_buffer);
+}
+
+bool save_contents_to_temp_file_binary(const Contents* contents, cz::Input_File* fd) {
+    char temp_file_buffer[L_tmpnam];
+    tmpnam(temp_file_buffer);
+    if (!save_contents_binary(contents, temp_file_buffer)) {
         return false;
     }
     // Todo: don't open the file twice, instead open it once in read/write mode and reset the head.

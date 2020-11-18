@@ -3,6 +3,7 @@
 namespace cz {
 struct Str;
 struct Input_File;
+struct Output_File;
 }
 
 namespace mag {
@@ -17,9 +18,13 @@ void open_file(Editor* editor, Client* client, cz::Str user_path);
 
 bool save_buffer(Buffer* buffer);
 
+void save_contents(const Contents* contents, cz::Output_File file);
 bool save_contents(const Contents* contents, const char* path);
-
 bool save_contents_to_temp_file(const Contents* contents, cz::Input_File* fd);
+
+void save_contents_binary(const Contents* contents, cz::Output_File file);
+bool save_contents_binary(const Contents* contents, const char* path);
+bool save_contents_to_temp_file_binary(const Contents* contents, cz::Input_File* fd);
 
 bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id);
 
