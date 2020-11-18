@@ -81,7 +81,9 @@ add_dependencies(${PROJECT_NAME} icon)
 
 if (WIN32)
   add_custom_target(copy_resources ALL
-      ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/diff.exe ${CMAKE_SOURCE_DIR}/res/diff_COPYING ${CMAKE_SOURCE_DIR}/res/libiconv2.dll ${CMAKE_SOURCE_DIR}/res/libintl3.dll ${CMAKE_BINARY_DIR})
+      ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/diff.exe ${CMAKE_SOURCE_DIR}/res/diff_COPYING ${CMAKE_SOURCE_DIR}/res/libiconv2.dll ${CMAKE_SOURCE_DIR}/res/libintl3.dll
+      ${CMAKE_SOURCE_DIR}/res/clang-format.exe
+      ${CMAKE_BINARY_DIR})
 else()
   # diff is assumed to be installed on linux
 endif()
