@@ -5,12 +5,14 @@ edit the source code of the editor to customize it to fit their usages.  Mag is 
 primarily on C and C++ code, but coding in any language is supported.
 
 ## Bultin features
-* Multi cursors
-  - Type in multiple places at the same time
-* Syntax highlighting
-* Auto completion
-* Running external programs
-  - Built in support for `git grep`.
+* Multiple cursors
+  - Intuitively integrated with search functionality.
+  - Edit multiple points at the same time.
+* Syntax highlighting for C/C++, Markdown, CSS, diff files, and more.
+* File name completion
+* Built in support for `git grep`, `clang-format`, `man`, and other external programs.
+* Automatically updates files when edited externally.
+* Easy to add new commands and visual enhancements.
 
 ## Building
 
