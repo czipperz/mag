@@ -565,14 +565,17 @@ static void process_events(Server* server, Client* client, Scroll_State* scroll)
 
 static void process_scroll(Server* server, Client* client, Scroll_State* scroll) {
     if (scroll->scrolling) {
-        if (scroll->acceleration > 0)
+        if (scroll->acceleration > 0) {
             scroll->acceleration -= scroll->friction;
-        if (scroll->acceleration < 0)
+        }
+        if (scroll->acceleration < 0) {
             scroll->acceleration += scroll->friction;
-        if (abs(scroll->acceleration) < 0.0005)
+        }
+        if (abs(scroll->acceleration) < 0.0005) {
             scroll->acceleration = 0;
+        }
+
         scroll->y += scroll->sensitivity * scroll->acceleration;
-        // Here you have to set your scrolling bounds i.e. if(scroll_Y < 0) scroll_Y = 0;
 
         Key key = {};
         while (scroll->y <= -1) {
