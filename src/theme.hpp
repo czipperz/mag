@@ -26,7 +26,9 @@ struct Theme {
     /// MAGENTA 5
     /// CYAN    6
     /// WHITE   7
-    cz::Vector<Color> colors;
+    ///
+    /// `colors` should be `256` elements long.
+    uint32_t* colors;
 
     /// The way different token types should be displayed.  These should
     /// directly correspond to the token types.
@@ -40,7 +42,6 @@ struct Theme {
     Completion_Filter completion_filter;
 
     void drop(cz::Allocator allocator) {
-        colors.drop(allocator);
         faces.drop(allocator);
     }
 };

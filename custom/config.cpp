@@ -23,6 +23,7 @@
 #include "man/man.hpp"
 #include "overlay.hpp"
 #include "prose/alternate.hpp"
+#include "solarized_dark.hpp"
 #include "syntax/decoration_line_number.hpp"
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
@@ -181,6 +182,8 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
+    theme.colors = mag::theme::solarized_dark;
+
     theme.faces.reserve(cz::heap_allocator(), 39);
     theme.faces.push({{}, {}, 0});              // default
     theme.faces.push({1, {}, 0});               // unsaved buffer
