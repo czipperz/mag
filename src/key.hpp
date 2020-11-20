@@ -21,6 +21,10 @@ enum Key_Code : uint16_t {
     DOWN,
     LEFT,
     RIGHT,
+    SCROLL_UP,
+    SCROLL_DOWN,
+    SCROLL_LEFT,
+    SCROLL_RIGHT,
 };
 }
 using Key_Code_::Key_Code;

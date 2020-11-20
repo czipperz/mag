@@ -171,6 +171,9 @@ Key_Map create_key_map() {
     BIND(key_map, "A-v", command_up_page);
     BIND(key_map, "C-v", command_down_page);
 
+    BIND(key_map, "SCROLL_DOWN", command_scroll_down);
+    BIND(key_map, "SCROLL_UP", command_scroll_up);
+
     return key_map;
 }
 

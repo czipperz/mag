@@ -400,6 +400,27 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
         break;
     }
 
+    case SDL_MOUSEWHEEL: {
+        Key key = {};
+        for (int y = 0; y < event.wheel.y; ++y) {
+            key.code = Key_Code::SCROLL_UP;
+            server->receive(client, key);
+        }
+        for (int y = 0; y > event.wheel.y; --y) {
+            key.code = Key_Code::SCROLL_DOWN;
+            server->receive(client, key);
+        }
+        for (int x = 0; x < event.wheel.x; ++x) {
+            key.code = Key_Code::SCROLL_RIGHT;
+            server->receive(client, key);
+        }
+        for (int x = 0; x > event.wheel.x; --x) {
+            key.code = Key_Code::SCROLL_LEFT;
+            server->receive(client, key);
+        }
+        break;
+    }
+
     case SDL_KEYDOWN: {
         Key key = {};
         switch (event.key.keysym.sym) {
