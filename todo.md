@@ -29,8 +29,6 @@
 * Run compile
 * Edit server
 
-* Allow for editing theme
-
 * Multi cursors
   - When creating a cursor, try to fit it on the screen
   - Cycle selected cursor
