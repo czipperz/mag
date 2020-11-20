@@ -433,15 +433,14 @@ static void process_event(Server* server, Client* client, SDL_Event event, Scrol
     case SDL_MULTIGESTURE: {
         if (event.mgesture.numFingers == 2) {
             if (scroll->scrolling == 0) {
-                scroll->scrolling = 1;
-                scroll->prev_pos = event.mgesture.y;
                 scroll->y = 0;
             } else {
                 double dy = event.mgesture.y - scroll->prev_pos;
                 scroll->acceleration = dy * 40;
-                scroll->prev_pos = event.mgesture.y;
-                scroll->scrolling = 1;
             }
+
+            scroll->prev_pos = event.mgesture.y;
+            scroll->scrolling = 1;
         }
         break;
     }
