@@ -173,6 +173,8 @@ Key_Map create_key_map() {
 
     BIND(key_map, "SCROLL_DOWN", command_scroll_down);
     BIND(key_map, "SCROLL_UP", command_scroll_up);
+    BIND(key_map, "SCROLL_DOWN_ONE", command_scroll_down_one);
+    BIND(key_map, "SCROLL_UP_ONE", command_scroll_up_one);
 
     return key_map;
 }

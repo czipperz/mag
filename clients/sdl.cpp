@@ -363,7 +363,16 @@ static bool poll_event_callback(void* data) {
     return poll_event((SDL_Event*)data);
 }
 
-static void process_event(Server* server, Client* client, SDL_Event event) {
+struct Scroll_State {
+    int scrolling;            // flag (scrolling or not)
+    int sensitivity = 40;     // how fast we want to scroll
+    double y = 0;             // current scrolling amount (on Y-Axis)
+    double acceleration;      // scrolling speed
+    double friction = 0.001;  // how fast we decelerate
+    double prev_pos;          // previous event's position
+};
+
+static void process_event(Server* server, Client* client, SDL_Event event, Scroll_State* scroll) {
     ZoneScoped;
 
     switch (event.type) {
@@ -418,6 +427,27 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
             key.code = Key_Code::SCROLL_LEFT;
             server->receive(client, key);
         }
+        break;
+    }
+
+    case SDL_MULTIGESTURE: {
+        if (event.mgesture.numFingers == 2) {
+            if (scroll->scrolling == 0) {
+                scroll->scrolling = 1;
+                scroll->prev_pos = event.mgesture.y;
+                scroll->y = 0;
+            } else {
+                double dy = event.mgesture.y - scroll->prev_pos;
+                scroll->acceleration = dy * 40;
+                scroll->prev_pos = event.mgesture.y;
+                scroll->scrolling = 1;
+            }
+        }
+        break;
+    }
+
+    case SDL_FINGERDOWN: {
+        scroll->scrolling = 0;
         break;
     }
 
@@ -521,14 +551,39 @@ static void process_event(Server* server, Client* client, SDL_Event event) {
     }
 }
 
-static void process_events(Server* server, Client* client) {
+static void process_events(Server* server, Client* client, Scroll_State* scroll) {
     ZoneScoped;
 
     SDL_Event event;
     while (poll_event(&event)) {
-        process_event(server, client, event);
+        process_event(server, client, event, scroll);
         if (client->queue_quit) {
             return;
+        }
+    }
+}
+
+static void process_scroll(Server* server, Client* client, Scroll_State* scroll) {
+    if (scroll->scrolling) {
+        if (scroll->acceleration > 0)
+            scroll->acceleration -= scroll->friction;
+        if (scroll->acceleration < 0)
+            scroll->acceleration += scroll->friction;
+        if (abs(scroll->acceleration) < 0.0005)
+            scroll->acceleration = 0;
+        scroll->y += scroll->sensitivity * scroll->acceleration;
+        // Here you have to set your scrolling bounds i.e. if(scroll_Y < 0) scroll_Y = 0;
+
+        Key key = {};
+        while (scroll->y <= -1) {
+            scroll->y += 1;
+            key.code = Key_Code::SCROLL_DOWN_ONE;
+            server->receive(client, key);
+        }
+        while (scroll->y >= 1) {
+            scroll->y -= 1;
+            key.code = Key_Code::SCROLL_UP_ONE;
+            server->receive(client, key);
         }
     }
 }
@@ -894,6 +949,8 @@ void run(Server* server, Client* client) {
         return;
     }
 
+    Scroll_State scroll = {};
+
     SDL_StartTextInput();
     CZ_DEFER(SDL_StopTextInput());
 
@@ -927,10 +984,12 @@ void run(Server* server, Client* client) {
         SDL_Event event;
         if (cache_windows_check_points(window_cache, client->window, &server->editor,
                                        poll_event_callback, &event)) {
-            process_event(server, client, event);
+            process_event(server, client, event, &scroll);
         }
 
-        process_events(server, client);
+        process_events(server, client, &scroll);
+
+        process_scroll(server, client, &scroll);
 
         process_clipboard_updates(server, client, &clipboard);
 

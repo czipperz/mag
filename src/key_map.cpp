@@ -72,6 +72,12 @@ static void parse_key(Key* key, size_t* i, cz::Str description) {
     } else if (d.starts_with("RIGHT")) {
         key->code = Key_Code::RIGHT;
         *i += 5;
+    } else if (d.starts_with("SCROLL_UP_ONE")) {
+        key->code = Key_Code::SCROLL_UP_ONE;
+        *i += 13;
+    } else if (d.starts_with("SCROLL_DOWN_ONE")) {
+        key->code = Key_Code::SCROLL_DOWN_ONE;
+        *i += 15;
     } else if (d.starts_with("SCROLL_UP")) {
         key->code = Key_Code::SCROLL_UP;
         *i += 9;

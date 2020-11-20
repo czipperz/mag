@@ -114,11 +114,11 @@ void command_down_page(Editor* editor, Command_Source source) {
     window->cursors[0].point = it.position;
 }
 
-void command_scroll_down(Editor* editor, Command_Source source) {
+static void scroll_down(Editor* editor, Command_Source source, size_t num) {
     WITH_SELECTED_BUFFER(source.client);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
-    for (int i = 0; i < 4; ++i) {
+    for (size_t i = 0; i < num; ++i) {
         forward_line(&it);
     }
 
@@ -131,11 +131,11 @@ void command_scroll_down(Editor* editor, Command_Source source) {
     }
 }
 
-void command_scroll_up(Editor* editor, Command_Source source) {
+static void scroll_up(Editor* editor, Command_Source source, size_t num) {
     WITH_SELECTED_BUFFER(source.client);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
-    for (int i = 0; i < 4; ++i) {
+    for (size_t i = 0; i < num; ++i) {
         backward_line(&it);
     }
 
@@ -146,6 +146,20 @@ void command_scroll_up(Editor* editor, Command_Source source) {
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = it.position;
     }
+}
+
+void command_scroll_down(Editor* editor, Command_Source source) {
+    scroll_down(editor, source, 4);
+}
+void command_scroll_up(Editor* editor, Command_Source source) {
+    scroll_up(editor, source, 4);
+}
+
+void command_scroll_down_one(Editor* editor, Command_Source source) {
+    scroll_down(editor, source, 1);
+}
+void command_scroll_up_one(Editor* editor, Command_Source source) {
+    scroll_up(editor, source, 1);
 }
 
 }
