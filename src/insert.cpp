@@ -29,9 +29,7 @@ void insert(Buffer* buffer, Window_Unified* window, SSOStr value, Command_Functi
 }
 
 void insert_char(Buffer* buffer, Window_Unified* window, char code, Command_Function committer) {
-    SSOStr value;
-    value.init_char(code);
-    insert(buffer, window, value, committer);
+    insert(buffer, window, SSOStr::from_char(code), committer);
 }
 
 }

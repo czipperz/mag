@@ -234,7 +234,7 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
         }
 
         Edit delete_forward;
-        delete_forward.value.init_char(buffer->contents.get_once(point));
+        delete_forward.value = SSOStr::from_char(buffer->contents.get_once(point));
         delete_forward.position = point;
         delete_forward.flags = Edit::REMOVE_AFTER_POSITION;
         transaction.push(delete_forward);
@@ -312,7 +312,7 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
         value[region_size - 1] = '\n';
 
         Edit edit;
-        edit.value.init_from_constant({value, region_size});
+        edit.value = SSOStr::from_constant({value, region_size});
         edit.position = start.position + offset;
         offset += edit.value.len();
         edit.flags = Edit::INSERT;

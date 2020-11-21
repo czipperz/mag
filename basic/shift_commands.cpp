@@ -154,13 +154,14 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         buffer->contents.slice_into(start_next, end_next.position, buf + 1);
 
         Edit remove;
-        remove.value.init_from_constant({buf, end_next.position - start_next.position + 1});
+        remove.value = SSOStr::from_constant({buf, end_next.position - start_next.position + 1});
         remove.position = start_next.position - 1;
         remove.flags = Edit::REMOVE_AFTER_POSITION;
         transaction.push(remove);
 
         Edit insert;
-        insert.value.init_from_constant({buf + 1, end_next.position - start_next.position + 1});
+        insert.value =
+            SSOStr::from_constant({buf + 1, end_next.position - start_next.position + 1});
         insert.position = start.position;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
@@ -303,13 +304,14 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         buffer->contents.slice_into(start_prev, end_prev.position, buf + 1);
 
         Edit insert;
-        insert.value.init_from_constant({buf, end_prev.position - start_prev.position + 1});
+        insert.value = SSOStr::from_constant({buf, end_prev.position - start_prev.position + 1});
         insert.position = end.position;
         insert.flags = Edit::INSERT_AFTER_POSITION;
         transaction.push(insert);
 
         Edit remove;
-        remove.value.init_from_constant({buf + 1, end_prev.position - start_prev.position + 1});
+        remove.value =
+            SSOStr::from_constant({buf + 1, end_prev.position - start_prev.position + 1});
         remove.position = start_prev.position;
         remove.flags = Edit::REMOVE;
         transaction.push(remove);

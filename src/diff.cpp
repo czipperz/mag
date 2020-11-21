@@ -148,7 +148,7 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
                 return -1;
             }
 
-            remove.value.init_from_constant(remove_str);
+            remove.value = SSOStr::from_constant(remove_str);
             if (remove_str.len() <= SSOStr::MAX_SHORT_LEN) {
                 remove_str.drop(cz::heap_allocator());
             }
@@ -179,7 +179,7 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
             }
 
             Edit insert;
-            insert.value.init_from_constant(insert_str);
+            insert.value = SSOStr::from_constant(insert_str);
             if (insert_str.len() <= SSOStr::MAX_SHORT_LEN) {
                 insert_str.drop(cz::heap_allocator());
             }

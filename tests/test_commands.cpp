@@ -32,7 +32,7 @@ static void insert_default_contents(Editor* editor, Client* client, cz::Str cont
     transaction.init(window->cursors.len(), 0);
 
     SSOStr value;
-    value.init_from_constant(contents);
+    value = SSOStr::from_constant(contents);
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t i = 0; i < cursors.len; ++i) {
         Edit edit;

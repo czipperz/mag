@@ -146,7 +146,7 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
         removal.flags = Edit::REMOVE;
 
         Edit insertion;
-        insertion.value.init_duplicate(transaction.value_allocator(), repl->text);
+        insertion.value = SSOStr::as_duplicate(transaction.value_allocator(), repl->text);
         insertion.position = position;
         insertion.flags = Edit::INSERT;
 

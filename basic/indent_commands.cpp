@@ -72,7 +72,7 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
         memset(value + 1, ' ', count);
 
         Edit edit;
-        edit.value.init_from_constant({value, count + 1});
+        edit.value = SSOStr::from_constant({value, count + 1});
         edit.position = it.position + offset;
         edit.flags = Edit::INSERT;
         transaction.push(edit);
@@ -124,7 +124,7 @@ void command_insert_indent(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     SSOStr value;
-    value.init_from_constant("    ");
+    value = SSOStr::from_constant("    ");
 
     Transaction transaction;
     transaction.init(cursors.len, 0);
@@ -176,7 +176,7 @@ void command_delete_whitespace(Editor* editor, Command_Source source) {
         }
 
         Edit edit;
-        edit.value.init_from_constant({value, count});
+        edit.value = SSOStr::from_constant({value, count});
         edit.position = it.position - offset;
         edit.flags = Edit::REMOVE;
         transaction.push(edit);

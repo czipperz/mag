@@ -20,13 +20,13 @@ void command_uppercase_letter(Editor* editor, Command_Source source) {
         char ch = buffer->contents.get_once(point);
 
         Edit remove;
-        remove.value.init_char(ch);
+        remove.value = SSOStr::from_char(ch);
         remove.position = point;
         remove.flags = Edit::REMOVE;
         transaction.push(remove);
 
         Edit insert;
-        insert.value.init_char(toupper(ch));
+        insert.value = SSOStr::from_char(toupper(ch));
         insert.position = point;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
@@ -47,13 +47,13 @@ void command_lowercase_letter(Editor* editor, Command_Source source) {
         char ch = buffer->contents.get_once(point);
 
         Edit remove;
-        remove.value.init_char(ch);
+        remove.value = SSOStr::from_char(ch);
         remove.position = point;
         remove.flags = Edit::REMOVE;
         transaction.push(remove);
 
         Edit insert;
-        insert.value.init_char(tolower(ch));
+        insert.value = SSOStr::from_char(tolower(ch));
         insert.position = point;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
@@ -90,7 +90,7 @@ void command_uppercase_region(Editor* editor, Command_Source source) {
         transaction.push(remove);
 
         Edit insert;
-        insert.value.init_duplicate(transaction.value_allocator(), remove.value.as_str());
+        insert.value = remove.value.duplicate(transaction.value_allocator());
         cz::Str str = insert.value.as_str();
         for (size_t i = 0; i < str.len; ++i) {
             ((char*)str.buffer)[i] = toupper(str.buffer[i]);
@@ -134,7 +134,7 @@ void command_lowercase_region(Editor* editor, Command_Source source) {
         transaction.push(remove);
 
         Edit insert;
-        insert.value.init_duplicate(transaction.value_allocator(), remove.value.as_str());
+        insert.value = remove.value.duplicate(transaction.value_allocator());
         cz::Str str = insert.value.as_str();
         for (size_t i = 0; i < str.len; ++i) {
             ((char*)str.buffer)[i] = tolower(str.buffer[i]);

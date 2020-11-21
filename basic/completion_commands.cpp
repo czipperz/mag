@@ -22,13 +22,13 @@ void command_insert_completion(Editor* editor, Command_Source source) {
     transaction.init(2, query.len + value.len);
 
     Edit remove;
-    remove.value.init_duplicate(transaction.value_allocator(), query);
+    remove.value = SSOStr::as_duplicate(transaction.value_allocator(), query);
     remove.position = 0;
     remove.flags = Edit::REMOVE;
     transaction.push(remove);
 
     Edit insert;
-    insert.value.init_duplicate(transaction.value_allocator(), value);
+    insert.value = SSOStr::as_duplicate(transaction.value_allocator(), value);
     insert.position = 0;
     insert.flags = Edit::INSERT;
     transaction.push(insert);

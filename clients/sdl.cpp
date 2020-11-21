@@ -509,7 +509,8 @@ static void process_clipboard_updates(Server* server,
             set_clipboard_variable(&clipboard->value, clipboard_currently);
 
             Copy_Chain* chain = server->editor.copy_buffer.allocator().alloc<Copy_Chain>();
-            chain->value.init_duplicate(server->editor.copy_buffer.allocator(), clipboard->value);
+            chain->value =
+                SSOStr::as_duplicate(server->editor.copy_buffer.allocator(), clipboard->value);
             chain->previous = client->global_copy_chain;
             client->global_copy_chain = chain;
         }

@@ -47,7 +47,7 @@ void fill_mini_buffer_with_selected_window_directory(Editor* editor, Client* cli
     CZ_DEFER(transaction.drop());
 
     Edit edit;
-    edit.value.init_duplicate(transaction.value_allocator(), default_value_str);
+    edit.value = SSOStr::as_duplicate(transaction.value_allocator(), default_value_str);
     edit.position = 0;
     edit.flags = Edit::INSERT;
     transaction.push(edit);

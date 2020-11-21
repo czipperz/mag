@@ -71,24 +71,32 @@ struct SSOStr {
         impl::ShortStr short_;
     };
 
-    void init_from_constant(cz::Str str) {
+    static SSOStr from_constant(cz::Str str) {
+        SSOStr self;
         if (str.len <= impl::ShortStr::MAX) {
-            short_.init(str);
+            self.short_.init(str);
         } else {
-            allocated.init(str);
+            self.allocated.init(str);
         }
+        return self;
     }
 
-    void init_char(char c) { short_.init({&c, 1}); }
+    static SSOStr from_char(char c) {
+        SSOStr self;
+        self.short_.init({&c, 1});
+        return self;
+    }
 
-    void init_duplicate(cz::Allocator allocator, cz::Str str) {
+    static SSOStr as_duplicate(cz::Allocator allocator, cz::Str str) {
+        SSOStr self;
         if (str.len <= impl::ShortStr::MAX) {
-            short_.init(str);
+            self.short_.init(str);
         } else {
             char* buffer = (char*)allocator.alloc({str.len, 1});
             memcpy(buffer, str.buffer, str.len);
-            allocated.init({buffer, str.len});
+            self.allocated.init({buffer, str.len});
         }
+        return self;
     }
 
     void drop(cz::Allocator allocator) {
@@ -124,9 +132,7 @@ struct SSOStr {
     }
 
     SSOStr duplicate(cz::Allocator allocator) const {
-        SSOStr dup;
-        dup.init_duplicate(allocator, as_str());
-        return dup;
+        return SSOStr::as_duplicate(allocator, as_str());
     }
 };
 

@@ -20,7 +20,7 @@ void command_comment(Editor* editor, Command_Source source) {
         transaction.init(cursors.len, 0);
 
         SSOStr value;
-        value.init_from_constant("// ");
+        value = SSOStr::from_constant("// ");
 
         uint64_t offset = 0;
         for (size_t c = 0; c < cursors.len; ++c) {
