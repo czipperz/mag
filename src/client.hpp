@@ -39,26 +39,8 @@ struct Client {
     std::chrono::system_clock::time_point _message_time;
     Message _message;
 
-    void init(Buffer_Id selected_buffer_id, Buffer_Id mini_buffer_id) {
-        selected_normal_window = Window_Unified::create(selected_buffer_id);
-        window = selected_normal_window;
-
-        _mini_buffer = Window_Unified::create(mini_buffer_id);
-        mini_buffer_completion_cache.init();
-    }
-
-    void drop() {
-        key_chain.drop(cz::heap_allocator());
-        jump_chain.drop();
-        dealloc_message();
-        Window::drop_(window);
-        Window::drop_(_mini_buffer);
-        for (size_t i = 0; i < _offscreen_windows.len(); ++i) {
-            Window::drop_(_offscreen_windows[i]);
-        }
-        _offscreen_windows.drop(cz::heap_allocator());
-        mini_buffer_completion_cache.drop();
-    }
+    void init(Buffer_Id selected_buffer_id, Buffer_Id mini_buffer_id);
+    void drop();
 
     Window_Unified* mini_buffer_window() const { return _mini_buffer; }
 
@@ -82,49 +64,20 @@ struct Client {
 
     void replace_window(Window* o, Window* n);
 
-    void show_message(cz::Str text) {
-        _message_time = std::chrono::system_clock::now();
-        _message = {};
-        _message.text = text;
-        _message.tag = Message::SHOW;
-        _select_mini_buffer = false;
-    }
-
+    void show_message(cz::Str text);
     void show_dialog(Editor* editor,
                      cz::Str prompt,
                      Completion_Engine completion_engine,
                      Message::Response_Callback response_callback,
-                     void* response_callback_data) {
-        dealloc_message();
-        clear_mini_buffer(editor);
+                     void* response_callback_data);
 
-        _message_time = std::chrono::system_clock::now();
-        _message = {};
-        _message.text = prompt;
-        _message.tag = Message::RESPOND;
-        _message.completion_engine = completion_engine;
-        _message.response_callback = response_callback;
-        _message.response_callback_data = response_callback_data;
-        _select_mini_buffer = true;
-    }
-
-    void hide_mini_buffer(Editor* editor) {
-        restore_selected_buffer();
-        dealloc_message();
-        clear_mini_buffer(editor);
-    }
+    void hide_mini_buffer(Editor* editor);
 
     void clear_mini_buffer(Editor* editor);
 
-    void dealloc_message() {
-        free(_message.response_callback_data);
-        _message.response_callback_data = nullptr;
-    }
+    void dealloc_message();
 
-    void restore_selected_buffer() {
-        _select_mini_buffer = false;
-        _message.tag = Message::NONE;
-    }
+    void restore_selected_buffer();
 };
 
 }
