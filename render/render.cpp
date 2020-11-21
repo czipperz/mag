@@ -428,46 +428,6 @@ static void draw_window(Cell* cells,
     }
 }
 
-void setup_completion_cache(Editor* editor, Client* client, Completion_Cache* completion_cache) {
-    ZoneScoped;
-
-    if (client->_message.tag <= Message::SHOW) {
-        completion_cache->engine = nullptr;
-        return;
-    }
-
-    {
-        Window_Unified* window = client->mini_buffer_window();
-        WITH_WINDOW_BUFFER(window);
-        if (completion_cache->change_index != buffer->changes.len() ||
-            completion_cache->engine != client->_message.completion_engine) {
-            completion_cache->change_index = buffer->changes.len();
-            if (completion_cache->engine != client->_message.completion_engine) {
-                completion_cache->state = Completion_Cache::INITIAL;
-            } else {
-                completion_cache->state = Completion_Cache::LOADING;
-            }
-
-            completion_cache->engine_context.query.set_len(0);
-            buffer->contents.stringify_into(cz::heap_allocator(),
-                                            &completion_cache->engine_context.query);
-        }
-    }
-
-    if (completion_cache->state == Completion_Cache::INITIAL) {
-        if (completion_cache->engine != client->_message.completion_engine) {
-            completion_cache->engine = client->_message.completion_engine;
-            if (completion_cache->engine_context.cleanup) {
-                completion_cache->engine_context.cleanup(completion_cache->engine_context.data);
-            }
-            completion_cache->engine_context.cleanup = nullptr;
-            completion_cache->engine_context.data = nullptr;
-            completion_cache->engine_context.results_buffer_array.clear();
-            completion_cache->engine_context.results.set_len(0);
-        }
-    }
-}
-
 bool load_mini_buffer_completion_cache(Server* server, Client* client) {
     ZoneScoped;
 

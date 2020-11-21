@@ -13,7 +13,6 @@ struct Server;
 
 namespace client {
 
-void setup_completion_cache(Editor* editor, Client* client, Completion_Cache* completion_cache);
 bool load_mini_buffer_completion_cache(Server* server, Client* client);
 
 void process_buffer_external_updates(Editor* editor, Client* client, Window* window);
