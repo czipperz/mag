@@ -11,6 +11,10 @@ namespace mag {
 namespace cpp {
 
 static bool is_block(Contents_Iterator start, Contents_Iterator end) {
+    // If the start is at the start of the line and the end is at the start of a different
+    // line then the lines inbetween are commented using //. In every other case we want to
+    // insert /* at the start and */ at the end.
+
     bool block = false;
 
     Contents_Iterator sol = start;
@@ -59,10 +63,6 @@ void command_comment(Editor* editor, Command_Source source) {
 
         uint64_t offset = 0;
         for (size_t c = 0; c < cursors.len; ++c) {
-            // If the start is at the start of the line and the end is at the start of a different
-            // line then the lines inbetween are commented using //. In every other case we want to
-            // insert /* at the start and */ at the end.
-
             Contents_Iterator start = buffer->contents.iterator_at(cursors[c].start());
             Contents_Iterator end = start;
             end.advance_to(cursors[c].end());
@@ -70,6 +70,7 @@ void command_comment(Editor* editor, Command_Source source) {
             if (is_block(start, end)) {
                 bool space_start, space_end;
 
+                // Don't add an extra space outside the comment if there is already one there.
                 if (start.at_bob()) {
                     space_start = true;
                 } else {
@@ -105,6 +106,9 @@ void command_comment(Editor* editor, Command_Source source) {
                 edit_end.flags = Edit::INSERT;
                 transaction.push(edit_end);
             } else {
+                // We want the line comments to line up even if the lines being commented have
+                // different amounts of indentation.  So we first find the minimum amount of
+                // indentation on the lines (start_offset).
                 Contents_Iterator s2 = start;
                 uint64_t start_offset = 0;
                 bool set_offset = false;
