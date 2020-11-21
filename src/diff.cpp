@@ -227,9 +227,8 @@ int apply_diff_file(Client* client, Buffer* buffer, cz::Input_File file) {
 
     for (size_t i = edits.len(); i-- > 0;) {
         Edit edit = edits[i];
-        SSOStr v = edit.value;
-        edit.value = v.duplicate(transaction.value_allocator());
-        v.drop(cz::heap_allocator());
+        // The original is cleaned up in the deferred loop at the top.
+        edit.value = edit.value.duplicate(transaction.value_allocator());
         transaction.push(edit);
     }
 
