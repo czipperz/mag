@@ -17,9 +17,6 @@
     + identifiers
     + tags
 
-* Git integration
-  - Git ls files
-
 * Screen based movement
   - Move cursor to top and bottom of screen
 
