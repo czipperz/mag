@@ -24,7 +24,6 @@
   - Move cursor to top and bottom of screen
 
 * Write file to path
-* Comment region
 * Uncomment line and region
 * Run compile
 * Edit server
