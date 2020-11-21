@@ -177,9 +177,13 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
         return;
     }
 
+    cz::String fs_user_path = user_path.duplicate(cz::heap_allocator());
+    CZ_DEFER(fs_user_path.drop(cz::heap_allocator()));
+    cz::path::convert_to_forward_slashes(fs_user_path.buffer(), fs_user_path.len());
+
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
-    cz::path::make_absolute(user_path, cz::heap_allocator(), &path);
+    cz::path::make_absolute(fs_user_path, cz::heap_allocator(), &path);
     if (path[path.len() - 1] == '/') {
         path.pop();
     }
