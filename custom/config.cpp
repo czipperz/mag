@@ -16,6 +16,7 @@
 #include "basic/window_commands.hpp"
 #include "clang_format/clang_format.hpp"
 #include "decoration.hpp"
+#include "git/find_file.hpp"
 #include "git/git.hpp"
 #include "git/tokenize_git_commit_edit_message.hpp"
 #include "git/tokenize_patch.hpp"
@@ -165,6 +166,7 @@ Key_Map create_key_map() {
     BIND(key_map, "A-g p", command_search_open_previous);
 
     BIND(key_map, "A-g s", git::command_git_grep);
+    BIND(key_map, "A-g f", git::command_git_find_file);
 
     BIND(key_map, "A-l", command_goto_center_of_window);
     BIND(key_map, "C-l", command_center_in_window);

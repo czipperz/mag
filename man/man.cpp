@@ -16,67 +16,9 @@ const char* path_to_autocomplete_man_page;
 const char* path_to_load_man_page;
 
 static void man_completion_engine(Editor*, Completion_Engine_Context* context) {
-    if (context->results.len() > 0) {
-        return;
-    }
-
-    cz::Process process;
-    cz::Input_File stdout_read;
-
-    {
-        cz::Process_Options options;
-        if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
-            return;
-        }
-        CZ_DEFER(options.std_out.close());
-
-        const char* args[] = {path_to_autocomplete_man_page, "", nullptr};
-        if (!process.launch_program(args, &options)) {
-            stdout_read.close();
-            return;
-        }
-    }
-    CZ_DEFER(stdout_read.close());
-
-    context->results_buffer_array.clear();
-    context->results.set_len(0);
-
-    char buffer[1024];
-    cz::String result = {};
-    cz::Carriage_Return_Carry carry;
-    while (1) {
-        int64_t len = stdout_read.read_text(buffer, sizeof(buffer), &carry);
-        if (len > 0) {
-            for (size_t offset = 0; offset < (size_t)len; ++offset) {
-                const char* end = cz::Str{buffer + offset, len - offset}.find('\n');
-
-                size_t rlen;
-                if (end) {
-                    rlen = end - buffer - offset;
-                } else {
-                    rlen = len - offset;
-                }
-
-                result.reserve(context->results_buffer_array.allocator(), rlen);
-                result.append({buffer + offset, rlen});
-
-                if (!end) {
-                    break;
-                }
-
-                context->results.reserve(cz::heap_allocator(), 1);
-                context->results.push(result);
-                result = {};
-                offset += rlen;
-            }
-        } else {
-            break;
-        }
-    }
-
-    process.join();
-
-    std::sort(context->results.start(), context->results.end());
+    const char* args[] = {path_to_autocomplete_man_page, "", nullptr};
+    cz::Process_Options options;
+    run_command_for_completion_results(context, args, options);
 }
 
 static void command_man_response(Editor* editor, Client* client, cz::Str page, void* data) {

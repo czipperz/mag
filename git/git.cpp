@@ -11,10 +11,10 @@
 namespace mag {
 namespace git {
 
-static bool get_git_top_level(Client* client,
-                              const char* dir_cstr,
-                              cz::Allocator allocator,
-                              cz::String* top_level_path) {
+bool get_git_top_level(Client* client,
+                       const char* dir_cstr,
+                       cz::Allocator allocator,
+                       cz::String* top_level_path) {
     cz::Input_File std_out_read;
     CZ_DEFER(std_out_read.close());
 

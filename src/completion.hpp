@@ -4,6 +4,10 @@
 #include <cz/string.hpp>
 #include <cz/vector.hpp>
 
+namespace cz {
+struct Process_Options;
+}
+
 namespace mag {
 struct Editor;
 
@@ -49,6 +53,9 @@ void infix_completion_filter(Completion_Filter_Context*,
                              Editor*,
                              Completion_Engine_Context*);
 
+void run_command_for_completion_results(Completion_Engine_Context* context,
+                                        const char* const* args,
+                                        cz::Process_Options options);
 struct Completion_Cache {
     Completion_Engine engine;
     Completion_Engine_Context engine_context;
