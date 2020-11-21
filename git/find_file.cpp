@@ -46,6 +46,7 @@ void command_git_find_file(Editor* editor, Command_Source source) {
     }
 
     char* directory = (char*)malloc(top_level_path.len() + 1);
+    CZ_ASSERT(directory);
     memcpy(directory, top_level_path.buffer(), top_level_path.len());
     directory[top_level_path.len()] = '\0';
 

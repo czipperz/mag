@@ -8,9 +8,9 @@
 #include "custom/config.hpp"
 #include "file.hpp"
 #include "ncurses.hpp"
+#include "program_info.hpp"
 #include "sdl.hpp"
 #include "server.hpp"
-#include "program_info.hpp"
 
 using namespace mag;
 
@@ -106,7 +106,10 @@ int mag_main(int argc, char** argv) {
 
 #if _WIN32
 #include <windows.h>
-int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+int WINAPI WinMain(_In_ HINSTANCE hInstance,
+                   _In_opt_ HINSTANCE hPrevInstance,
+                   _In_ LPSTR lpCmdLine,
+                   _In_ int nShowCmd) {
     return mag_main(__argc, __argv);
 }
 #else
