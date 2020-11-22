@@ -139,6 +139,16 @@ static void process_event(Server* server,
     }
 
     case SDL_MOUSEWHEEL: {
+        Window_Unified* window = client->selected_normal_window;
+        CZ_DEFER(client->selected_normal_window = window);
+        if (mouse->mouse_pos.found_window) {
+            client->selected_normal_window = mouse->mouse_pos.window;
+        }
+
+        bool mini = client->_select_mini_buffer;
+        CZ_DEFER(client->_select_mini_buffer = mini);
+        client->_select_mini_buffer = false;
+
         Key key = {};
         for (int y = 0; y < event.wheel.y; ++y) {
             key.code = Key_Code::SCROLL_UP;
