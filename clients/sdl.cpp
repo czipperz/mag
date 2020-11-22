@@ -14,6 +14,7 @@
 #include <cz/process.hpp>
 #include <cz/str.hpp>
 #include <cz/working_directory.hpp>
+#include "basic/copy_commands.hpp"
 #include "cell.hpp"
 #include "client.hpp"
 #include "file.hpp"
@@ -81,6 +82,7 @@ enum {
     MOUSE_MOVE,
     MOUSE_DOWN,
     MOUSE_UP,
+    MOUSE_RIGHT,
 };
 
 struct Mouse_State {
@@ -193,6 +195,13 @@ static void process_event(Server* server,
             spq.in_x = event.button.x / character_width;
             spq.in_y = event.button.y / character_height;
             spq.data = MOUSE_DOWN;
+            mouse->sp_queries.reserve(cz::heap_allocator(), 1);
+            mouse->sp_queries.push(spq);
+        } else if (event.button.button == SDL_BUTTON_RIGHT) {
+            Screen_Position_Query spq;
+            spq.in_x = event.button.x / character_width;
+            spq.in_y = event.button.y / character_height;
+            spq.data = MOUSE_RIGHT;
             mouse->sp_queries.reserve(cz::heap_allocator(), 1);
             mouse->sp_queries.push(spq);
         }
@@ -389,6 +398,24 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
             }
         } else if (spq.data == MOUSE_UP) {
             mouse->mouse_down = false;
+        } else if (spq.data == MOUSE_RIGHT) {
+            if (spq.sp.found_window) {
+                Window_Unified* window = spq.sp.window;
+                client->selected_normal_window = window;
+
+                bool mini = client->_select_mini_buffer;
+                CZ_DEFER(client->_select_mini_buffer = mini);
+                client->_select_mini_buffer = false;
+
+                Command_Source source = {};
+                source.client = client;
+                if (window->show_marks) {
+                    basic::command_copy(editor, source);
+                    window->show_marks = false;
+                } else {
+                    basic::command_paste(editor, source);
+                }
+            }
         }
     }
 }
