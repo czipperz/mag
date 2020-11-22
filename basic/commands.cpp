@@ -513,7 +513,7 @@ void command_create_cursor_backward_line(Editor* editor, Command_Source source) 
 }
 
 static cz::Option<uint64_t> search_forward(Contents_Iterator start_it, cz::Str query) {
-    for (; start_it.position + query.len < start_it.contents->len; start_it.advance()) {
+    for (; start_it.position + query.len <= start_it.contents->len; start_it.advance()) {
         Contents_Iterator it = start_it;
         size_t q;
         for (q = 0; q < query.len; ++q) {
@@ -534,7 +534,8 @@ static cz::Option<uint64_t> search_forward(Contents_Iterator start_it, cz::Str q
 static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
                                                  Contents_Iterator start,
                                                  uint64_t end) {
-    if (start.at_eob()) {
+    CZ_DEBUG_ASSERT(end >= start.position);
+    if (end + (end - start.position) > start.contents->len) {
         return {};
     }
 
@@ -542,7 +543,7 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
     SSOStr slice = buffer->contents.slice(cz::heap_allocator(), start, end);
     CZ_DEFER(slice.drop(cz::heap_allocator()));
 
-    start.advance();
+    start.advance_to(end);
     return search_forward(start, slice.as_str());
 }
 
@@ -605,8 +606,7 @@ static cz::Option<uint64_t> search_backward(Contents_Iterator start_it, cz::Str 
         start_it.retreat_to(start_it.contents->len - query.len);
     }
 
-    while (!start_it.at_bob()) {
-        start_it.retreat();
+    do {
         Contents_Iterator it = start_it;
         size_t q;
         for (q = 0; q < query.len; ++q) {
@@ -619,7 +619,9 @@ static cz::Option<uint64_t> search_backward(Contents_Iterator start_it, cz::Str 
         if (q == query.len) {
             return start_it.position;
         }
-    }
+
+        start_it.retreat();
+    } while (!start_it.at_bob());
 
     return {};
 }
@@ -627,7 +629,8 @@ static cz::Option<uint64_t> search_backward(Contents_Iterator start_it, cz::Str 
 static cz::Option<uint64_t> search_backward_slice(Buffer* buffer,
                                                   Contents_Iterator start,
                                                   uint64_t end) {
-    if (start.at_bob()) {
+    CZ_DEBUG_ASSERT(end >= start.position);
+    if (start.position < end - start.position) {
         return {};
     }
 
@@ -635,7 +638,7 @@ static cz::Option<uint64_t> search_backward_slice(Buffer* buffer,
     SSOStr slice = buffer->contents.slice(cz::heap_allocator(), start, end);
     CZ_DEFER(slice.drop(cz::heap_allocator()));
 
-    start.retreat();
+    start.retreat(end - start.position);
     return search_backward(start, slice.as_str());
 }
 
