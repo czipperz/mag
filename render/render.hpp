@@ -24,7 +24,7 @@ void render_to_cells(Cell* cells,
                      size_t total_cols,
                      Editor* editor,
                      Client* client,
-                     cz::Slice<Screen_Position> sps);
+                     cz::Slice<Screen_Position_Query> spqs);
 
 }
 }

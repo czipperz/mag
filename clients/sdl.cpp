@@ -77,11 +77,27 @@ struct Scroll_State {
     double prev_pos;          // previous event's position
 };
 
+enum {
+    MOUSE_MOVE,
+    MOUSE_DOWN,
+    MOUSE_UP,
+};
+
+struct Mouse_State {
+    Scroll_State scroll;
+
+    cz::Vector<Screen_Position_Query> sp_queries;
+
+    Screen_Position mouse_pos;
+
+    bool mouse_down;
+    Screen_Position mouse_down_pos;
+};
+
 static void process_event(Server* server,
                           Client* client,
                           SDL_Event event,
-                          Scroll_State* scroll,
-                          cz::Vector<Screen_Position>* sps,
+                          Mouse_State* mouse,
                           int character_width,
                           int character_height) {
     ZoneScoped;
@@ -143,31 +159,54 @@ static void process_event(Server* server,
 
     case SDL_MULTIGESTURE: {
         if (event.mgesture.numFingers == 2) {
-            if (scroll->scrolling == 0) {
-                scroll->y = 0;
+            if (mouse->scroll.scrolling == 0) {
+                mouse->scroll.y = 0;
             } else {
-                double dy = event.mgesture.y - scroll->prev_pos;
-                scroll->acceleration = dy * 40;
+                double dy = event.mgesture.y - mouse->scroll.prev_pos;
+                mouse->scroll.acceleration = dy * 40;
             }
 
-            scroll->prev_pos = event.mgesture.y;
-            scroll->scrolling = 1;
+            mouse->scroll.prev_pos = event.mgesture.y;
+            mouse->scroll.scrolling = 1;
         }
         break;
     }
 
     case SDL_FINGERDOWN: {
-        scroll->scrolling = 0;
+        mouse->scroll.scrolling = 0;
+        break;
+    }
+
+    case SDL_MOUSEMOTION: {
+        Screen_Position_Query spq;
+        spq.in_x = event.motion.x / character_width;
+        spq.in_y = event.motion.y / character_height;
+        spq.data = MOUSE_MOVE;
+        mouse->sp_queries.reserve(cz::heap_allocator(), 1);
+        mouse->sp_queries.push(spq);
         break;
     }
 
     case SDL_MOUSEBUTTONDOWN: {
         if (event.button.button == SDL_BUTTON_LEFT) {
-            Screen_Position sp;
-            sp.in_x = event.button.x / character_width;
-            sp.in_y = event.button.y / character_height;
-            sps->reserve(cz::heap_allocator(), 1);
-            sps->push(sp);
+            Screen_Position_Query spq;
+            spq.in_x = event.button.x / character_width;
+            spq.in_y = event.button.y / character_height;
+            spq.data = MOUSE_DOWN;
+            mouse->sp_queries.reserve(cz::heap_allocator(), 1);
+            mouse->sp_queries.push(spq);
+        }
+        break;
+    }
+
+    case SDL_MOUSEBUTTONUP: {
+        if (event.button.button == SDL_BUTTON_LEFT) {
+            Screen_Position_Query spq;
+            spq.in_x = event.button.x / character_width;
+            spq.in_y = event.button.y / character_height;
+            spq.data = MOUSE_UP;
+            mouse->sp_queries.reserve(cz::heap_allocator(), 1);
+            mouse->sp_queries.push(spq);
         }
         break;
     }
@@ -274,15 +313,14 @@ static void process_event(Server* server,
 
 static void process_events(Server* server,
                            Client* client,
-                           Scroll_State* scroll,
-                           cz::Vector<Screen_Position>* sps,
+                           Mouse_State* mouse,
                            int character_width,
                            int character_height) {
     ZoneScoped;
 
     SDL_Event event;
     while (poll_event(&event)) {
-        process_event(server, client, event, scroll, sps, character_width, character_height);
+        process_event(server, client, event, mouse, character_width, character_height);
         if (client->queue_quit) {
             return;
         }
@@ -317,18 +355,40 @@ static void process_scroll(Server* server, Client* client, Scroll_State* scroll)
     }
 }
 
-void resolve_screen_positions(Editor* editor, Client* client, cz::Vector<Screen_Position>* spsv) {
-    cz::Slice<Screen_Position> sps = *spsv;
-    spsv->set_len(0);
+void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
+    cz::Slice<Screen_Position_Query> spqs = mouse->sp_queries;
+    mouse->sp_queries.set_len(0);
 
-    for (size_t spsi = 0; spsi < sps.len; ++spsi) {
-        if (sps[spsi].found_window) {
-            Window_Unified* window = sps[spsi].out_window;
-            client->selected_normal_window = window;
-            if (sps[spsi].found_position) {
-                kill_extra_cursors(window, client);
-                window->cursors[0].point = sps[spsi].out_position;
+    for (size_t spqi = 0; spqi < spqs.len; ++spqi) {
+        Screen_Position_Query spq = spqs[spqi];
+        if (spq.data == MOUSE_MOVE) {
+            mouse->mouse_pos = spq.sp;
+            if (mouse->mouse_down && spq.sp.found_window && spq.sp.found_position &&
+                mouse->mouse_down_pos.found_window && mouse->mouse_down_pos.found_position &&
+                spq.sp.window == mouse->mouse_down_pos.window) {
+                if (spq.sp.window->show_marks ||
+                    spq.sp.position != mouse->mouse_down_pos.position) {
+                    spq.sp.window->show_marks = true;
+                    spq.sp.window->cursors[0].mark = mouse->mouse_down_pos.position;
+                    spq.sp.window->cursors[0].point = spq.sp.position;
+                }
             }
+        } else if (spq.data == MOUSE_DOWN) {
+            mouse->mouse_down = true;
+            mouse->mouse_down_pos = spq.sp;
+
+            if (spq.sp.found_window) {
+                Window_Unified* window = spq.sp.window;
+                client->selected_normal_window = window;
+
+                if (spq.sp.found_position) {
+                    kill_extra_cursors(window, client);
+                    window->show_marks = false;
+                    window->cursors[0].point = spq.sp.position;
+                }
+            }
+        } else if (spq.data == MOUSE_UP) {
+            mouse->mouse_down = false;
         }
     }
 }
@@ -346,7 +406,7 @@ static void render(SDL_Window* window,
                    Window_Cache** window_cache,
                    Editor* editor,
                    Client* client,
-                   cz::Slice<Screen_Position> sps) {
+                   cz::Slice<Screen_Position_Query> spqs) {
     ZoneScoped;
     FrameMarkStart("sdl");
 
@@ -395,7 +455,7 @@ static void render(SDL_Window* window,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, rows, cols, editor, client, sps);
+    render_to_cells(cellss[1], window_cache, rows, cols, editor, client, spqs);
 
     {
         ZoneScopedN("blit cells");
@@ -712,8 +772,8 @@ void run(Server* server, Client* client) {
     client->system_copy_text_func = sdl_copy;
     client->system_copy_text_data = &clipboard;
 
-    cz::Vector<Screen_Position> sps = {};
-    CZ_DEFER(sps.drop(cz::heap_allocator()));
+    Mouse_State mouse = {};
+    CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
 
     SDL_Surface* surface = nullptr;
     SDL_Texture* texture = nullptr;
@@ -730,21 +790,21 @@ void run(Server* server, Client* client) {
 
         render(window, renderer, font, &texture, &surface, &total_rows, &total_cols,
                character_width, character_height, cellss, &window_cache, &server->editor, client,
-               sps);
+               mouse.sp_queries);
 
-        resolve_screen_positions(&server->editor, client, &sps);
+        process_mouse_events(&server->editor, client, &mouse);
 
         server->editor.tick_jobs();
 
         SDL_Event event;
         if (cache_windows_check_points(window_cache, client->window, &server->editor,
                                        poll_event_callback, &event)) {
-            process_event(server, client, event, &scroll, &sps, character_width, character_height);
+            process_event(server, client, event, &mouse, character_width, character_height);
         }
 
-        process_events(server, client, &scroll, &sps, character_width, character_height);
+        process_events(server, client, &mouse, character_width, character_height);
 
-        process_scroll(server, client, &scroll);
+        process_scroll(server, client, &mouse.scroll);
 
         process_clipboard_updates(server, client, &clipboard);
 

@@ -20,16 +20,16 @@ namespace client {
         cell->code = CH;                                                     \
     } while (0)
 
-#define SET_BODY(FACE, CH)                                                            \
-    do {                                                                              \
-        SET_IND(FACE, CH);                                                            \
-                                                                                      \
-        for (size_t spsi = 0; spsi < sps.len; ++spsi) {                               \
-            if (sps[spsi].in_y == y + start_row && sps[spsi].in_x == x + start_col) { \
-                sps[spsi].found_position = true;                                      \
-                sps[spsi].out_position = iterator.position;                           \
-            }                                                                         \
-        }                                                                             \
+#define SET_BODY(FACE, CH)                                                                \
+    do {                                                                                  \
+        SET_IND(FACE, CH);                                                                \
+                                                                                          \
+        for (size_t spqsi = 0; spqsi < spqs.len; ++spqsi) {                               \
+            if (spqs[spqsi].in_y == y + start_row && spqs[spqsi].in_x == x + start_col) { \
+                spqs[spqsi].sp.found_position = true;                                     \
+                spqs[spqsi].sp.position = iterator.position;                              \
+            }                                                                             \
+        }                                                                                 \
     } while (0)
 
 #define ADD_NEWLINE(FACE)               \
@@ -71,7 +71,7 @@ static void draw_buffer_contents(Cell* cells,
                                  Window_Unified* window,
                                  size_t start_row,
                                  size_t start_col,
-                                 cz::Slice<Screen_Position> sps) {
+                                 cz::Slice<Screen_Position_Query> spqs) {
     ZoneScoped;
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
@@ -344,20 +344,20 @@ static void draw_buffer(Cell* cells,
                         bool is_selected_window,
                         size_t start_row,
                         size_t start_col,
-                        cz::Slice<Screen_Position> sps) {
+                        cz::Slice<Screen_Position_Query> spqs) {
     ZoneScoped;
 
-    for (size_t spsi = 0; spsi < sps.len; ++spsi) {
-        if (start_col <= sps[spsi].in_x && sps[spsi].in_x < start_col + window->cols &&
-            start_row <= sps[spsi].in_y && sps[spsi].in_y < start_row + window->rows) {
-            sps[spsi].found_window = true;
-            sps[spsi].out_window = window;
+    for (size_t spqsi = 0; spqsi < spqs.len; ++spqsi) {
+        if (start_col <= spqs[spqsi].in_x && spqs[spqsi].in_x < start_col + window->cols &&
+            start_row <= spqs[spqsi].in_y && spqs[spqsi].in_y < start_row + window->rows) {
+            spqs[spqsi].sp.found_window = true;
+            spqs[spqsi].sp.window = window;
         }
     }
 
     WITH_WINDOW_BUFFER(window);
     draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, start_row,
-                         start_col, sps);
+                         start_col, spqs);
     draw_buffer_decoration(cells, total_cols, editor, window, buffer, is_selected_window, start_row,
                            start_col);
 }
@@ -372,7 +372,7 @@ static void draw_window(Cell* cells,
                         size_t start_col,
                         size_t count_rows,
                         size_t count_cols,
-                        cz::Slice<Screen_Position> sps) {
+                        cz::Slice<Screen_Position_Query> spqs) {
     ZoneScoped;
 
     w->rows = count_rows - 1;
@@ -393,7 +393,7 @@ static void draw_window(Cell* cells,
         }
 
         draw_buffer(cells, *window_cache, total_cols, editor, window, window == selected_window,
-                    start_row, start_col, sps);
+                    start_row, start_col, spqs);
         break;
     }
 
@@ -416,7 +416,7 @@ static void draw_window(Cell* cells,
             size_t right_cols = count_cols - left_cols - 1;
 
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, window->first,
-                        selected_window, start_row, start_col, count_rows, left_cols, sps);
+                        selected_window, start_row, start_col, count_rows, left_cols, spqs);
 
             {
                 size_t x = left_cols;
@@ -427,13 +427,13 @@ static void draw_window(Cell* cells,
 
             draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, window->second,
                         selected_window, start_row, start_col + count_cols - right_cols, count_rows,
-                        right_cols, sps);
+                        right_cols, spqs);
         } else {
             size_t top_rows = (count_rows - 1) / 2;
             size_t bottom_rows = count_rows - top_rows - 1;
 
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, window->first,
-                        selected_window, start_row, start_col, top_rows, count_cols, sps);
+                        selected_window, start_row, start_col, top_rows, count_cols, spqs);
 
             {
                 size_t y = top_rows;
@@ -444,7 +444,7 @@ static void draw_window(Cell* cells,
 
             draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, window->second,
                         selected_window, start_row + count_rows - bottom_rows, start_col,
-                        bottom_rows, count_cols, sps);
+                        bottom_rows, count_cols, spqs);
         }
         break;
     }
@@ -492,7 +492,7 @@ void render_to_cells(Cell* cells,
                      size_t total_cols,
                      Editor* editor,
                      Client* client,
-                     cz::Slice<Screen_Position> sps) {
+                     cz::Slice<Screen_Position_Query> spqs) {
     ZoneScoped;
 
     size_t mini_buffer_height = 0;
@@ -587,7 +587,7 @@ void render_to_cells(Cell* cells,
     }
 
     draw_window(cells, window_cache, total_cols, editor, client->window,
-                client->selected_normal_window, 0, 0, total_rows, total_cols, sps);
+                client->selected_normal_window, 0, 0, total_rows, total_cols, spqs);
 }
 
 }
