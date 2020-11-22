@@ -17,10 +17,12 @@ enum Modifiers : uint_fast8_t {
 namespace Key_Code_ {
 enum Key_Code : uint16_t {
     BACKSPACE,
+
     UP,
     DOWN,
     LEFT,
     RIGHT,
+
     SCROLL_UP,
     SCROLL_DOWN,
     SCROLL_LEFT,
