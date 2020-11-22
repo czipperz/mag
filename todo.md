@@ -32,6 +32,12 @@
 * Eliminate copy leak bug
   - Deallocate other cursors' copies
 
+* Programmable mouse events
+  - left click
+  - drag
+  - right click
+  - scroll
+
 # Bugs
 * Remove all keys when sequence doesn't match instead of just the first
 * Adjust window cache position by changes
