@@ -30,7 +30,7 @@ static void overlay_matching_region_start_frame(Buffer* buffer,
 
     Data* data = (Data*)_data;
 
-    data->enabled = window->show_marks;
+    data->enabled = window->show_marks && window->cursors[0].point != window->cursors[0].mark;
     if (!data->enabled) {
         return;
     }
@@ -41,8 +41,7 @@ static void overlay_matching_region_start_frame(Buffer* buffer,
         data->enabled = false;
     } else {
         if (window->cursors[0].start() >= data->start_marked_region.position) {
-            data->start_marked_region.advance(window->cursors[0].start() -
-                                              data->start_marked_region.position);
+            data->start_marked_region.advance_to(window->cursors[0].start());
         } else {
             data->enabled = false;
         }
@@ -64,7 +63,9 @@ static Face overlay_matching_region_get_face_and_advance(Buffer* buffer,
 
     if (data->countdown_cursor_region > 0) {
         --data->countdown_cursor_region;
-    } else {
+    }
+
+    if (data->countdown_cursor_region == 0) {
         Contents_Iterator marked_region_iterator = data->start_marked_region;
         uint64_t end_marked_region = window->cursors[0].end();
         while (marked_region_iterator.position < end_marked_region && !iterator.at_eob()) {
