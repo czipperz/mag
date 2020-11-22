@@ -302,8 +302,8 @@ static void render(SDL_Window* window,
                    SDL_Surface** surface,
                    int* total_rows,
                    int* total_cols,
-                   int cwidth,
-                   int cheight,
+                   int character_width,
+                   int character_height,
                    Cell** cellss,
                    Window_Cache** window_cache,
                    Editor* editor,
@@ -316,8 +316,8 @@ static void render(SDL_Window* window,
         ZoneScopedN("detect resize");
         int width, height;
         SDL_GetWindowSize(window, &width, &height);
-        cols = width / cwidth;
-        rows = height / cheight;
+        cols = width / character_width;
+        rows = height / character_height;
 
         if (rows != *total_rows || cols != *total_cols) {
             if (*surface) {
@@ -377,10 +377,10 @@ static void render(SDL_Window* window,
 
                     {
                         ZoneScopedN("prepare render cell");
-                        rect.x = x * cwidth;
-                        rect.y = y * cheight;
-                        rect.w = cwidth;
-                        rect.h = cheight;
+                        rect.x = x * character_width;
+                        rect.y = y * character_height;
+                        rect.w = character_width;
+                        rect.h = character_height;
 
                         int style = 0;
                         if (new_cell->face.flags & Face::UNDERSCORE) {
@@ -461,7 +461,7 @@ static void render(SDL_Window* window,
     FrameMarkEnd("sdl");
 }
 
-static bool get_c_dims(TTF_Font* font, int* cwidth, int* cheight) {
+static bool get_character_dims(TTF_Font* font, int* character_width, int* character_height) {
     SDL_Surface* surface = TTF_RenderText_Blended(font, "c", {0x00, 0x00, 0x00, 0xff});
     if (!surface) {
         fprintf(stderr, "Failed to render any text: %s\n", SDL_GetError());
@@ -469,8 +469,8 @@ static bool get_c_dims(TTF_Font* font, int* cwidth, int* cheight) {
     }
     CZ_DEFER(SDL_FreeSurface(surface));
 
-    *cwidth = surface->w;
-    *cheight = surface->h;
+    *character_width = surface->w;
+    *character_height = surface->h;
 
     return true;
 }
@@ -653,9 +653,9 @@ void run(Server* server, Client* client) {
     int total_rows = 0;
     int total_cols = 0;
 
-    int cwidth;
-    int cheight;
-    if (!get_c_dims(font, &cwidth, &cheight)) {
+    int character_width;
+    int character_height;
+    if (!get_character_dims(font, &character_width, &character_height)) {
         return;
     }
 
@@ -686,8 +686,8 @@ void run(Server* server, Client* client) {
         client->setup_completion_cache(&server->editor);
         load_mini_buffer_completion_cache(server, client);
 
-        render(window, renderer, font, &texture, &surface, &total_rows, &total_cols, cwidth,
-               cheight, cellss, &window_cache, &server->editor, client);
+        render(window, renderer, font, &texture, &surface, &total_rows, &total_cols,
+               character_width, character_height, cellss, &window_cache, &server->editor, client);
 
         server->editor.tick_jobs();
 
