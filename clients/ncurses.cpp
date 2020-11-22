@@ -126,7 +126,7 @@ static void render(int* total_rows,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, rows, cols, editor, client);
+    render_to_cells(cellss[1], window_cache, rows, cols, editor, client, {});
 
     bool any = false;
     {

@@ -356,7 +356,7 @@ static void render(SDL_Window* window,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, rows, cols, editor, client);
+    render_to_cells(cellss[1], window_cache, rows, cols, editor, client, {});
 
     {
         ZoneScopedN("blit cells");

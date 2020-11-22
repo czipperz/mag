@@ -13,17 +13,29 @@
 namespace mag {
 namespace client {
 
-#define SET(FACE, CH)                                                        \
+#define SET_IND(FACE, CH)                                                    \
     do {                                                                     \
         Cell* cell = &cells[(y + start_row) * total_cols + (x + start_col)]; \
         cell->face = FACE;                                                   \
         cell->code = CH;                                                     \
     } while (0)
 
+#define SET_BODY(FACE, CH)                                                            \
+    do {                                                                              \
+        SET_IND(FACE, CH);                                                            \
+                                                                                      \
+        for (size_t spsi = 0; spsi < sps.len; ++spsi) {                               \
+            if (sps[spsi].in_y == y + start_row && sps[spsi].in_x == x + start_col) { \
+                sps[spsi].found_position = true;                                      \
+                sps[spsi].out_position = iterator.position;                           \
+            }                                                                         \
+        }                                                                             \
+    } while (0)
+
 #define ADD_NEWLINE(FACE)               \
     do {                                \
         for (; x < window->cols; ++x) { \
-            SET(FACE, ' ');             \
+            SET_BODY(FACE, ' ');        \
         }                               \
         ++y;                            \
         x = 0;                          \
@@ -34,7 +46,7 @@ namespace client {
 
 #define ADDCH(FACE, CH)          \
     do {                         \
-        SET(FACE, CH);           \
+        SET_BODY(FACE, CH);      \
         ++x;                     \
         if (x == window->cols) { \
             ADD_NEWLINE({});     \
@@ -58,7 +70,8 @@ static void draw_buffer_contents(Cell* cells,
                                  Buffer* buffer,
                                  Window_Unified* window,
                                  size_t start_row,
-                                 size_t start_col) {
+                                 size_t start_col,
+                                 cz::Slice<Screen_Position> sps) {
     ZoneScoped;
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
@@ -216,7 +229,7 @@ static void draw_buffer_contents(Cell* cells,
 
         char ch = iterator.get();
         if (ch == '\n') {
-            SET(face, ' ');
+            SET_BODY(face, ' ');
             ++x;
 
             // Draw newline padding with faces from overlays
@@ -264,7 +277,7 @@ static void draw_buffer_contents(Cell* cells,
         apply_face(&face, editor->theme.faces[3]);
         for (size_t c = 0; c < cursors.len; ++c) {
             if (cursors[c].point == buffer->contents.len) {
-                SET(face, ' ');
+                SET_BODY(face, ' ');
                 ++x;
                 break;
             }
@@ -273,7 +286,7 @@ static void draw_buffer_contents(Cell* cells,
 
     for (; y < window->rows; ++y) {
         for (; x < window->cols; ++x) {
-            SET({}, ' ');
+            SET_BODY({}, ' ');
         }
         x = 0;
     }
@@ -315,11 +328,11 @@ static void draw_buffer_decoration(Cell* cells,
 
     size_t max = cz::min<size_t>(string.len(), window->cols - x);
     for (size_t i = 0; i < max; ++i) {
-        SET(face, string[i]);
+        SET_IND(face, string[i]);
         ++x;
     }
     for (; x < window->cols; ++x) {
-        SET(face, ' ');
+        SET_IND(face, ' ');
     }
 }
 
@@ -330,12 +343,21 @@ static void draw_buffer(Cell* cells,
                         Window_Unified* window,
                         bool is_selected_window,
                         size_t start_row,
-                        size_t start_col) {
+                        size_t start_col,
+                        cz::Slice<Screen_Position> sps) {
     ZoneScoped;
+
+    for (size_t spsi = 0; spsi < sps.len; ++spsi) {
+        if (start_col <= sps[spsi].in_x && sps[spsi].in_x < start_col + window->cols &&
+            start_row <= sps[spsi].in_y && sps[spsi].in_y < start_row + window->rows) {
+            sps[spsi].found_window = true;
+            sps[spsi].out_window = window;
+        }
+    }
 
     WITH_WINDOW_BUFFER(window);
     draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, start_row,
-                         start_col);
+                         start_col, sps);
     draw_buffer_decoration(cells, total_cols, editor, window, buffer, is_selected_window, start_row,
                            start_col);
 }
@@ -349,7 +371,8 @@ static void draw_window(Cell* cells,
                         size_t start_row,
                         size_t start_col,
                         size_t count_rows,
-                        size_t count_cols) {
+                        size_t count_cols,
+                        cz::Slice<Screen_Position> sps) {
     ZoneScoped;
 
     w->rows = count_rows - 1;
@@ -370,7 +393,7 @@ static void draw_window(Cell* cells,
         }
 
         draw_buffer(cells, *window_cache, total_cols, editor, window, window == selected_window,
-                    start_row, start_col);
+                    start_row, start_col, sps);
         break;
     }
 
@@ -393,35 +416,35 @@ static void draw_window(Cell* cells,
             size_t right_cols = count_cols - left_cols - 1;
 
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, window->first,
-                        selected_window, start_row, start_col, count_rows, left_cols);
+                        selected_window, start_row, start_col, count_rows, left_cols, sps);
 
             {
                 size_t x = left_cols;
                 for (size_t y = 0; y < count_rows; ++y) {
-                    SET({}, '|');
+                    SET_IND({}, '|');
                 }
             }
 
             draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, window->second,
                         selected_window, start_row, start_col + count_cols - right_cols, count_rows,
-                        right_cols);
+                        right_cols, sps);
         } else {
             size_t top_rows = (count_rows - 1) / 2;
             size_t bottom_rows = count_rows - top_rows - 1;
 
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, window->first,
-                        selected_window, start_row, start_col, top_rows, count_cols);
+                        selected_window, start_row, start_col, top_rows, count_cols, sps);
 
             {
                 size_t y = top_rows;
                 for (size_t x = 0; x < count_cols; ++x) {
-                    SET({}, '-');
+                    SET_IND({}, '-');
                 }
             }
 
             draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, window->second,
                         selected_window, start_row + count_rows - bottom_rows, start_col,
-                        bottom_rows, count_cols);
+                        bottom_rows, count_cols, sps);
         }
         break;
     }
@@ -468,7 +491,8 @@ void render_to_cells(Cell* cells,
                      size_t total_rows,
                      size_t total_cols,
                      Editor* editor,
-                     Client* client) {
+                     Client* client,
+                     cz::Slice<Screen_Position> sps) {
     ZoneScoped;
 
     size_t mini_buffer_height = 0;
@@ -500,7 +524,7 @@ void render_to_cells(Cell* cells,
         Face minibuffer_prompt_face = {};
         apply_face(&minibuffer_prompt_face, editor->theme.faces[5]);
         for (size_t i = 0; i < client->_message.text.len && i < total_cols; ++i) {
-            SET(minibuffer_prompt_face, client->_message.text[i]);
+            SET_IND(minibuffer_prompt_face, client->_message.text[i]);
             ++x;
         }
 
@@ -511,10 +535,10 @@ void render_to_cells(Cell* cells,
             window->rows = mini_buffer_height;
             window->cols = total_cols - start_col;
             draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window, start_row,
-                                 start_col);
+                                 start_col, {});
         } else {
             for (; x < total_cols; ++x) {
-                SET({}, ' ');
+                SET_IND({}, ' ');
             }
 
             if (std::chrono::system_clock::now() - client->_message_time >
@@ -545,13 +569,13 @@ void render_to_cells(Cell* cells,
 
                     cz::Str result = completion_cache->filter_context.results[r];
                     for (size_t i = 0; i < total_cols && i < result.len; ++i) {
-                        SET(face, result[i]);
+                        SET_IND(face, result[i]);
                         ++x;
                     }
                 }
 
                 for (; x < total_cols; ++x) {
-                    SET({}, ' ');
+                    SET_IND({}, ' ');
                 }
 
                 x = 0;
@@ -563,7 +587,7 @@ void render_to_cells(Cell* cells,
     }
 
     draw_window(cells, window_cache, total_cols, editor, client->window,
-                client->selected_normal_window, 0, 0, total_rows, total_cols);
+                client->selected_normal_window, 0, 0, total_rows, total_cols, sps);
 }
 
 }
