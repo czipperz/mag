@@ -77,7 +77,13 @@ struct Scroll_State {
     double prev_pos;          // previous event's position
 };
 
-static void process_event(Server* server, Client* client, SDL_Event event, Scroll_State* scroll) {
+static void process_event(Server* server,
+                          Client* client,
+                          SDL_Event event,
+                          Scroll_State* scroll,
+                          cz::Vector<Screen_Position>* sps,
+                          int character_width,
+                          int character_height) {
     ZoneScoped;
 
     switch (event.type) {
@@ -152,6 +158,17 @@ static void process_event(Server* server, Client* client, SDL_Event event, Scrol
 
     case SDL_FINGERDOWN: {
         scroll->scrolling = 0;
+        break;
+    }
+
+    case SDL_MOUSEBUTTONDOWN: {
+        if (event.button.button == SDL_BUTTON_LEFT) {
+            Screen_Position sp;
+            sp.in_x = event.button.x / character_width;
+            sp.in_y = event.button.y / character_height;
+            sps->reserve(cz::heap_allocator(), 1);
+            sps->push(sp);
+        }
         break;
     }
 
@@ -255,12 +272,17 @@ static void process_event(Server* server, Client* client, SDL_Event event, Scrol
     }
 }
 
-static void process_events(Server* server, Client* client, Scroll_State* scroll) {
+static void process_events(Server* server,
+                           Client* client,
+                           Scroll_State* scroll,
+                           cz::Vector<Screen_Position>* sps,
+                           int character_width,
+                           int character_height) {
     ZoneScoped;
 
     SDL_Event event;
     while (poll_event(&event)) {
-        process_event(server, client, event, scroll);
+        process_event(server, client, event, scroll, sps, character_width, character_height);
         if (client->queue_quit) {
             return;
         }
@@ -295,6 +317,22 @@ static void process_scroll(Server* server, Client* client, Scroll_State* scroll)
     }
 }
 
+void resolve_screen_positions(Editor* editor, Client* client, cz::Vector<Screen_Position>* spsv) {
+    cz::Slice<Screen_Position> sps = *spsv;
+    spsv->set_len(0);
+
+    for (size_t spsi = 0; spsi < sps.len; ++spsi) {
+        if (sps[spsi].found_window) {
+            Window_Unified* window = sps[spsi].out_window;
+            client->selected_normal_window = window;
+            if (sps[spsi].found_position) {
+                kill_extra_cursors(window, client);
+                window->cursors[0].point = sps[spsi].out_position;
+            }
+        }
+    }
+}
+
 static void render(SDL_Window* window,
                    SDL_Renderer* renderer,
                    TTF_Font* font,
@@ -307,7 +345,8 @@ static void render(SDL_Window* window,
                    Cell** cellss,
                    Window_Cache** window_cache,
                    Editor* editor,
-                   Client* client) {
+                   Client* client,
+                   cz::Slice<Screen_Position> sps) {
     ZoneScoped;
     FrameMarkStart("sdl");
 
@@ -356,7 +395,7 @@ static void render(SDL_Window* window,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, rows, cols, editor, client, {});
+    render_to_cells(cellss[1], window_cache, rows, cols, editor, client, sps);
 
     {
         ZoneScopedN("blit cells");
@@ -673,6 +712,9 @@ void run(Server* server, Client* client) {
     client->system_copy_text_func = sdl_copy;
     client->system_copy_text_data = &clipboard;
 
+    cz::Vector<Screen_Position> sps = {};
+    CZ_DEFER(sps.drop(cz::heap_allocator()));
+
     SDL_Surface* surface = nullptr;
     SDL_Texture* texture = nullptr;
     CZ_DEFER(if (surface) SDL_FreeSurface(surface));
@@ -687,17 +729,20 @@ void run(Server* server, Client* client) {
         load_mini_buffer_completion_cache(server, client);
 
         render(window, renderer, font, &texture, &surface, &total_rows, &total_cols,
-               character_width, character_height, cellss, &window_cache, &server->editor, client);
+               character_width, character_height, cellss, &window_cache, &server->editor, client,
+               sps);
+
+        resolve_screen_positions(&server->editor, client, &sps);
 
         server->editor.tick_jobs();
 
         SDL_Event event;
         if (cache_windows_check_points(window_cache, client->window, &server->editor,
                                        poll_event_callback, &event)) {
-            process_event(server, client, event, &scroll);
+            process_event(server, client, event, &scroll, &sps, character_width, character_height);
         }
 
-        process_events(server, client, &scroll);
+        process_events(server, client, &scroll, &sps, character_width, character_height);
 
         process_scroll(server, client, &scroll);
 
