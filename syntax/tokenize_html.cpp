@@ -37,8 +37,34 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
     iterator->advance();
 
     if (first_ch == '<') {
-        if (!iterator->at_eob() && (iterator->get() == '/' || iterator->get() == '!')) {
+        if (!iterator->at_eob() && iterator->get() == '/') {
             iterator->advance();
+        } else if (!iterator->at_eob() && iterator->get() == '!') {
+            iterator->advance();
+
+            Contents_Iterator it = *iterator;
+            if (!it.at_eob() && it.get() == '-') {
+                it.advance();
+                if (!it.at_eob() && it.get() == '-') {
+                    *iterator = it;
+
+                    char prev[2] = {0, 0};
+                    while (!iterator->at_eob()) {
+                        char ch = iterator->get();
+                        if (prev[0] == '-' && prev[1] == '-' && ch == '>') {
+                            iterator->advance();
+                            break;
+                        }
+
+                        prev[0] = prev[1];
+                        prev[1] = ch;
+                        iterator->advance();
+                    }
+
+                    token->type = Token_Type::COMMENT;
+                    goto ret;
+                }
+            }
         }
         token->type = Token_Type::OPEN_PAIR;
         *state = 1;

@@ -66,6 +66,24 @@ bool css_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) 
     char first_ch = iterator->get();
     iterator->advance();
 
+    if (first_ch == '/' && !iterator->at_eob() && iterator->get() == '*') {
+        iterator->advance();
+        char prev = 0;
+        while (!iterator->at_eob()) {
+            char ch = iterator->get();
+            if (prev == '*' && ch == '/') {
+                iterator->advance();
+                break;
+            }
+
+            prev = ch;
+            iterator->advance();
+        }
+
+        token->type = Token_Type::COMMENT;
+        goto ret;
+    }
+
     if (*state == BEFORE_COLOR_HEX && isxdigit(first_ch)) {
         Contents_Iterator end = *iterator;
         while (!end.at_eob() && isxdigit(end.get())) {
