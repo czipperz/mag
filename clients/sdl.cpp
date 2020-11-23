@@ -295,7 +295,7 @@ static void process_event(Server* server,
         } break;
         }
 
-        if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_ALT)) == 0 && (isprint(key.code))) {
+        if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_ALT)) == 0 && (key.code <= UCHAR_MAX && isprint(key.code))) {
             // Ignore key presses
             return;
         }
