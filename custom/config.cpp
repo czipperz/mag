@@ -30,6 +30,7 @@
 #include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
 #include "syntax/overlay_preferred_column.hpp"
+#include "syntax/overlay_trailing_spaces.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_css.hpp"
 #include "syntax/tokenize_md.hpp"
@@ -241,7 +242,8 @@ Theme create_theme() {
     theme.decorations = cz::slice(decorations);
 
     static Overlay overlays[] = {syntax::overlay_matching_region(),
-                                 syntax::overlay_preferred_column()};
+                                 syntax::overlay_preferred_column(),
+                                 syntax::overlay_trailing_spaces()};
     theme.overlays = cz::slice(overlays);
 
     theme.max_completion_results = 5;
