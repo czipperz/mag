@@ -375,6 +375,14 @@ Mode get_mode(const Buffer& buffer) {
             mode.next_token = syntax::md_next_token;
         } else if (buffer.name.ends_with(".css")) {
             mode.next_token = syntax::css_next_token;
+            static const Token_Type types[] = {
+                Token_Type::CSS_PROPERTY, Token_Type::CSS_ELEMENT_SELECTOR,
+                Token_Type::CSS_ID_SELECTOR, Token_Type::CSS_CLASS_SELECTOR,
+                Token_Type::CSS_PSEUDO_SELECTOR};
+            static Overlay overlays[] = {
+                syntax::overlay_matching_pairs({-1, 237, 0}),
+                syntax::overlay_matching_tokens({-1, 237, 0}, cz::slice(types))};
+            mode.overlays = cz::slice(overlays);
         } else if (buffer.name.ends_with(".html")) {
             mode.next_token = syntax::html_next_token;
             static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
