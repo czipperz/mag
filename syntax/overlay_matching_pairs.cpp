@@ -102,7 +102,11 @@ static void overlay_matching_pairs_start_frame(Buffer* buffer,
                     } else {
                         --depth;
                         if (depth == 0) {
-                            data->points.push(tokens[i].start);
+                            data->points.reserve(cz::heap_allocator(),
+                                                 tokens[i].end - tokens[i].start);
+                            for (uint64_t pos = tokens[i].start; pos < tokens[i].end; ++pos) {
+                                data->points.push(pos);
+                            }
                             break;
                         }
                     }
@@ -114,7 +118,11 @@ static void overlay_matching_pairs_start_frame(Buffer* buffer,
                     } else {
                         --depth;
                         if (depth == 0) {
-                            data->points.push(tokens[i].start);
+                            data->points.reserve(cz::heap_allocator(),
+                                                 tokens[i].end - tokens[i].start);
+                            for (uint64_t pos = tokens[i].start; pos < tokens[i].end; ++pos) {
+                                data->points.push(pos);
+                            }
                             break;
                         }
                     }
