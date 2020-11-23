@@ -239,9 +239,9 @@ Theme create_theme() {
     theme.faces.push({118, {}, 0});  // Token_Type::CSS_CLASS_SELECTOR
     theme.faces.push({208, {}, 0});  // Token_Type::CSS_PSEUDO_SELECTOR
 
-    theme.faces.push({33, {}, 0});  // Token_Type::HTML_TAG_NAME
+    theme.faces.push({33, {}, 0});   // Token_Type::HTML_TAG_NAME
     theme.faces.push({140, {}, 0});  // Token_Type::HTML_ATTRIBUTE_NAME
-    theme.faces.push({4, {}, 0});  // Token_Type::HTML_AMPERSAND_CODE
+    theme.faces.push({4, {}, 0});    // Token_Type::HTML_AMPERSAND_CODE
 
     static Decoration decorations[] = {syntax::decoration_line_number()};
     theme.decorations = cz::slice(decorations);
@@ -365,8 +365,11 @@ Mode get_mode(const Buffer& buffer) {
             buffer.name.ends_with(".glsl")) {
             mode.next_token = syntax::cpp_next_token;
             mode.key_map = cpp_key_map();
-            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
-                                         syntax::overlay_matching_tokens({-1, 237, 0})};
+            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
+                                               Token_Type::IDENTIFIER};
+            static Overlay overlays[] = {
+                syntax::overlay_matching_pairs({-1, 237, 0}),
+                syntax::overlay_matching_tokens({-1, 237, 0}, cz::slice(types))};
             mode.overlays = cz::slice(overlays);
         } else if (buffer.name.ends_with(".md")) {
             mode.next_token = syntax::md_next_token;

@@ -12,13 +12,18 @@
 namespace mag {
 namespace syntax {
 
-static bool is_matching_token(Token_Type type) {
-    return type == Token_Type::KEYWORD || type == Token_Type::TYPE ||
-           type == Token_Type::IDENTIFIER;
+static bool is_matching_token(cz::Slice<const Token_Type> types, Token_Type type) {
+    for (size_t i = 0; i < types.len; ++i) {
+        if (type == types[i]) {
+            return true;
+        }
+    }
+    return false;
 }
 
 struct Data {
     Face face;
+    cz::Slice<const Token_Type> token_types;
 
     bool has_token;
     bool has_cursor_token;
@@ -66,7 +71,7 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
             // Don't actually advance if iterator is pointing directly after a matching token
             // and isn't at the start of a matching token.
             if (data->has_cursor_token && cursors[0].point == data->cursor_token.end &&
-                is_matching_token(data->cursor_token.type)) {
+                is_matching_token(data->token_types, data->cursor_token.type)) {
                 cache = true;
                 cache_has_token = data->has_cursor_token;
                 cache_token_iterator = data->cursor_token_iterator;
@@ -84,7 +89,8 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
                 data->token_iterator = data->cursor_token_iterator;
             }
 
-            if (cache && !(data->has_cursor_token && is_matching_token(data->cursor_token.type) &&
+            if (cache && !(data->has_cursor_token &&
+                           is_matching_token(data->token_types, data->cursor_token.type) &&
                            data->cursor_token.start <= cursors[0].point)) {
                 data->has_cursor_token = cache_has_token;
                 data->cursor_token_iterator = cache_token_iterator;
@@ -120,7 +126,8 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
     if (data->has_token && data->has_cursor_token && iterator.position >= data->token.start &&
         iterator.position < data->token.end) {
         uint64_t len = data->token.end - data->token.start;
-        if (data->token.type == data->cursor_token.type && is_matching_token(data->token.type) &&
+        if (data->token.type == data->cursor_token.type &&
+            is_matching_token(data->token_types, data->token.type) &&
             len == data->cursor_token.end - data->cursor_token.start) {
             Contents_Iterator cti = data->cursor_token_iterator;
             Contents_Iterator it = data->token_iterator;
@@ -166,7 +173,7 @@ static void overlay_matching_tokens_cleanup(void* data) {
     free(data);
 }
 
-Overlay overlay_matching_tokens(Face face) {
+Overlay overlay_matching_tokens(Face face, cz::Slice<const Token_Type> types) {
     static const Overlay::VTable vtable = {
         overlay_matching_tokens_start_frame,
         overlay_matching_tokens_get_face_and_advance,
@@ -178,6 +185,7 @@ Overlay overlay_matching_tokens(Face face) {
     Data* data = (Data*)malloc(sizeof(Data));
     CZ_ASSERT(data);
     data->face = face;
+    data->token_types = types;
     return {&vtable, data};
 }
 
