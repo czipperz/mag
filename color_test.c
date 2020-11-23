@@ -5,7 +5,7 @@ int main() {
 
     start_color();
     for (size_t i = 0; i < COLORS && i + 1 < COLOR_PAIRS; ++i) {
-        init_pair(i + 1, i, 0);
+        init_pair(i + 1, 0, i);
     }
 
     printw("color_test: Press any key to quit.\n");
@@ -15,14 +15,14 @@ int main() {
     printw(" %.3d: ", 0);
 
     for (size_t i = 0; i < COLORS && i + 1 < COLOR_PAIRS; ++i) {
-        if ((i + 2) % 6 == 0) {
+        if ((i > 40 && (i + 20) % 36 == 0) || i == 16) {
             addch('\n');
             attrset(A_NORMAL);
             printw(" %.3d: ", i);
         }
 
         attrset(COLOR_PAIR(i + 1));
-        addch('X');
+        addch(' ');
     }
 
     curs_set(0);
