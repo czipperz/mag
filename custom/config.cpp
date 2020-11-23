@@ -377,6 +377,12 @@ Mode get_mode(const Buffer& buffer) {
             mode.next_token = syntax::css_next_token;
         } else if (buffer.name.ends_with(".html")) {
             mode.next_token = syntax::html_next_token;
+            static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
+                                               Token_Type::HTML_ATTRIBUTE_NAME};
+            static Overlay overlays[] = {
+                syntax::overlay_matching_pairs({-1, 237, 0}),
+                syntax::overlay_matching_tokens({-1, 237, 0}, cz::slice(types))};
+            mode.overlays = cz::slice(overlays);
         } else if (buffer.name.ends_with(".patch") || buffer.name.ends_with(".diff")) {
             mode.next_token = syntax::patch_next_token;
             if (buffer.name == "addp-hunk-edit.diff") {
