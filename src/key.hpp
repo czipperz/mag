@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits.h>
 #include <stdint.h>
 
 namespace mag {
@@ -16,7 +17,7 @@ enum Modifiers : uint_fast8_t {
 
 namespace Key_Code_ {
 enum Key_Code : uint16_t {
-    BACKSPACE,
+    BACKSPACE = (uint16_t)UCHAR_MAX + 1,
 
     UP,
     DOWN,
