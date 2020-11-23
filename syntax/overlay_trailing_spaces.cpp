@@ -2,6 +2,7 @@
 
 #include <ctype.h>
 #include "overlay.hpp"
+#include "window.hpp"
 
 namespace mag {
 namespace syntax {
@@ -27,6 +28,17 @@ static Face overlay_trailing_spaces_get_face_and_advance(
     }
 
     while (1) {
+        for (size_t i = 0; i < window->cursors.len(); ++i) {
+            if (current_position_iterator.position == window->cursors[i].point) {
+                return {};
+            }
+            if (window->show_marks &&
+                current_position_iterator.position >= window->cursors[i].start() &&
+                current_position_iterator.position < window->cursors[i].end()) {
+                return {};
+            }
+        }
+
         if (current_position_iterator.at_eob() || current_position_iterator.get() == '\n') {
             return data->face;
         }
