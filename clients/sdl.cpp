@@ -17,7 +17,9 @@
 #include "basic/copy_commands.hpp"
 #include "cell.hpp"
 #include "client.hpp"
+#include "command_macros.hpp"
 #include "file.hpp"
+#include "movement.hpp"
 #include "program_info.hpp"
 #include "render.hpp"
 #include "server.hpp"
@@ -81,6 +83,8 @@ struct Scroll_State {
 enum {
     MOUSE_MOVE,
     MOUSE_DOWN,
+    MOUSE_SELECT_WORD,
+    MOUSE_SELECT_LINE,
     MOUSE_UP,
     MOUSE_RIGHT,
 };
@@ -90,6 +94,8 @@ struct Mouse_State {
 
     cz::Vector<Screen_Position_Query> sp_queries;
 
+    uint8_t multi_click_counter = 0;
+    uint8_t multi_click_offset = 0;
     Screen_Position mouse_pos;
 
     bool mouse_down;
@@ -196,6 +202,8 @@ static void process_event(Server* server,
         spq.data = MOUSE_MOVE;
         mouse->sp_queries.reserve(cz::heap_allocator(), 1);
         mouse->sp_queries.push(spq);
+
+        mouse->multi_click_offset = mouse->multi_click_counter;
         break;
     }
 
@@ -204,7 +212,23 @@ static void process_event(Server* server,
             Screen_Position_Query spq;
             spq.in_x = event.button.x / character_width;
             spq.in_y = event.button.y / character_height;
-            spq.data = MOUSE_DOWN;
+
+            uint8_t clicks = event.button.clicks;
+            if (clicks == 1) {
+                mouse->multi_click_counter = 0;
+                mouse->multi_click_offset = 0;
+            }
+            clicks -= mouse->multi_click_offset;
+
+            if (clicks % 3 == 1) {
+                spq.data = MOUSE_DOWN;
+            } else if (clicks % 3 == 2) {
+                spq.data = MOUSE_SELECT_WORD;
+            } else {
+                spq.data = MOUSE_SELECT_LINE;
+            }
+            ++mouse->multi_click_counter;
+
             mouse->sp_queries.reserve(cz::heap_allocator(), 1);
             mouse->sp_queries.push(spq);
         } else if (event.button.button == SDL_BUTTON_RIGHT) {
@@ -404,6 +428,48 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
                     kill_extra_cursors(window, client);
                     window->show_marks = false;
                     window->cursors[0].point = spq.sp.position;
+                }
+            }
+        } else if (spq.data == MOUSE_SELECT_WORD) {
+            mouse->mouse_down = false;
+
+            if (spq.sp.found_window) {
+                Window_Unified* window = spq.sp.window;
+                client->selected_normal_window = window;
+
+                if (spq.sp.found_position) {
+                    WITH_WINDOW_BUFFER(window);
+                    Contents_Iterator start = buffer->contents.iterator_at(spq.sp.position);
+                    Contents_Iterator end = start;
+                    forward_char(&start);
+                    backward_word(&start);
+                    forward_word(&end);
+
+                    kill_extra_cursors(window, client);
+                    window->show_marks = true;
+                    window->cursors[0].mark = start.position;
+                    window->cursors[0].point = end.position;
+                }
+            }
+        } else if (spq.data == MOUSE_SELECT_LINE) {
+            mouse->mouse_down = false;
+
+            if (spq.sp.found_window) {
+                Window_Unified* window = spq.sp.window;
+                client->selected_normal_window = window;
+
+                if (spq.sp.found_position) {
+                    WITH_WINDOW_BUFFER(window);
+                    Contents_Iterator start = buffer->contents.iterator_at(spq.sp.position);
+                    Contents_Iterator end = start;
+                    start_of_line(&start);
+                    end_of_line(&end);
+                    forward_char(&end);
+
+                    kill_extra_cursors(window, client);
+                    window->show_marks = true;
+                    window->cursors[0].mark = start.position;
+                    window->cursors[0].point = end.position;
                 }
             }
         } else if (spq.data == MOUSE_UP) {
