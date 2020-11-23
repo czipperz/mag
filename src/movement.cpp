@@ -108,13 +108,12 @@ void backward_word(Contents_Iterator* iterator) {
         iterator->retreat();
     } while (!isalnum(iterator->get()));
 
-    iterator->retreat();
-    while (isalnum(iterator->get())) {
+    do {
         if (iterator->at_bob()) {
             return;
         }
         iterator->retreat();
-    }
+    } while (isalnum(iterator->get()));
 
     iterator->advance();
 }
