@@ -17,6 +17,7 @@ namespace mag {
 namespace syntax {
 
 struct Data {
+    Face face;
     size_t index;
     cz::Vector<uint64_t> points;
 };
@@ -138,7 +139,7 @@ static Face overlay_matching_pairs_get_face_and_advance(Buffer* buffer,
     Face face = {};
     if (data->index < data->points.len()) {
         if (data->points[data->index] == iterator.position) {
-            face = {-1, 237, 0};
+            face = data->face;
             ++data->index;
         }
     }
@@ -160,7 +161,7 @@ static void overlay_matching_pairs_cleanup(void* _data) {
     free(data);
 }
 
-Overlay overlay_matching_pairs() {
+Overlay overlay_matching_pairs(Face face) {
     static const Overlay::VTable vtable = {
         overlay_matching_pairs_start_frame,
         overlay_matching_pairs_get_face_and_advance,
@@ -168,10 +169,11 @@ Overlay overlay_matching_pairs() {
         overlay_matching_pairs_end_frame,
         overlay_matching_pairs_cleanup,
     };
-    return Overlay{
-        &vtable,
-        calloc(1, sizeof(Data)),
-    };
+
+    Data* data = (Data*)calloc(1, sizeof(Data));
+    CZ_ASSERT(data);
+    data->face = face;
+    return {&vtable, data};
 }
 
 }

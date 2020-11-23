@@ -47,7 +47,6 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
     cz::Slice<Cursor> cursors = window->cursors;
     if (window->show_marks) {
     } else if (cursors.len == 1) {
-        data->face = {-1, 237, 0};
         data->has_cursor_token = false;
 
         buffer->token_cache.update(buffer);
@@ -167,7 +166,7 @@ static void overlay_matching_tokens_cleanup(void* data) {
     free(data);
 }
 
-Overlay overlay_matching_tokens() {
+Overlay overlay_matching_tokens(Face face) {
     static const Overlay::VTable vtable = {
         overlay_matching_tokens_start_frame,
         overlay_matching_tokens_get_face_and_advance,
@@ -175,10 +174,11 @@ Overlay overlay_matching_tokens() {
         overlay_matching_tokens_end_frame,
         overlay_matching_tokens_cleanup,
     };
-    return Overlay{
-        &vtable,
-        malloc(sizeof(Data)),
-    };
+
+    Data* data = (Data*)malloc(sizeof(Data));
+    CZ_ASSERT(data);
+    data->face = face;
+    return {&vtable, data};
 }
 
 }

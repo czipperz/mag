@@ -10,6 +10,7 @@ namespace mag {
 namespace syntax {
 
 struct Data {
+    Face face;
     uint64_t column;
 };
 
@@ -31,7 +32,7 @@ static Face overlay_preferred_column_get_face_and_advance(Buffer* buffer,
         data->column = 0;
     } else {
         if (data->column == 100) {
-            face = {-1, 21, 0};
+            face = data->face;
         }
         ++data->column;
     }
@@ -51,7 +52,7 @@ static void overlay_preferred_column_cleanup(void* data) {
     free(data);
 }
 
-Overlay overlay_preferred_column() {
+Overlay overlay_preferred_column(Face face) {
     static const Overlay::VTable vtable = {
         overlay_preferred_column_start_frame,
         overlay_preferred_column_get_face_and_advance,
@@ -59,10 +60,11 @@ Overlay overlay_preferred_column() {
         overlay_preferred_column_end_frame,
         overlay_preferred_column_cleanup,
     };
-    return Overlay{
-        &vtable,
-        malloc(sizeof(Data)),
-    };
+
+    Data* data = (Data*)malloc(sizeof(Data));
+    CZ_ASSERT(data);
+    data->face = face;
+    return {&vtable, data};
 }
 
 }

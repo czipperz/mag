@@ -62,7 +62,7 @@ static void overlay_trailing_spaces_cleanup(void* data) {
     free(data);
 }
 
-Overlay overlay_trailing_spaces() {
+Overlay overlay_trailing_spaces(Face face) {
     static const Overlay::VTable vtable = {
         overlay_trailing_spaces_start_frame,
         overlay_trailing_spaces_get_face_and_advance,
@@ -73,7 +73,7 @@ Overlay overlay_trailing_spaces() {
 
     Data* data = (Data*)calloc(1, sizeof(Data));
     CZ_ASSERT(data);
-    data->face = {-1, 208, 0};
+    data->face = face;
     return {&vtable, data};
 }
 

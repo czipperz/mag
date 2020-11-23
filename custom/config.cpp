@@ -241,9 +241,9 @@ Theme create_theme() {
     static Decoration decorations[] = {syntax::decoration_line_number()};
     theme.decorations = cz::slice(decorations);
 
-    static Overlay overlays[] = {syntax::overlay_matching_region(),
-                                 syntax::overlay_preferred_column(),
-                                 syntax::overlay_trailing_spaces()};
+    static Overlay overlays[] = {syntax::overlay_matching_region({-1, 237, 0}),
+                                 syntax::overlay_preferred_column({-1, 21, 0}),
+                                 syntax::overlay_trailing_spaces({-1, 208, 0})};
     theme.overlays = cz::slice(overlays);
 
     theme.max_completion_results = 5;
@@ -360,8 +360,8 @@ Mode get_mode(const Buffer& buffer) {
             buffer.name.ends_with(".glsl")) {
             mode.next_token = syntax::cpp_next_token;
             mode.key_map = cpp_key_map();
-            static Overlay overlays[] = {syntax::overlay_matching_pairs(),
-                                         syntax::overlay_matching_tokens()};
+            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
+                                         syntax::overlay_matching_tokens({-1, 237, 0})};
             mode.overlays = cz::slice(overlays);
         } else if (buffer.name.ends_with(".md")) {
             mode.next_token = syntax::md_next_token;

@@ -35,7 +35,6 @@ static void overlay_matching_region_start_frame(Buffer* buffer,
         return;
     }
 
-    data->face = {-1, 237, 0};
     data->start_marked_region = start_position_iterator;
     if (data->start_marked_region.at_eob()) {
         data->enabled = false;
@@ -101,7 +100,7 @@ static void overlay_matching_region_cleanup(void* data) {
     free(data);
 }
 
-Overlay overlay_matching_region() {
+Overlay overlay_matching_region(Face face) {
     static const Overlay::VTable vtable = {
         overlay_matching_region_start_frame,
         overlay_matching_region_get_face_and_advance,
@@ -109,10 +108,11 @@ Overlay overlay_matching_region() {
         overlay_matching_region_end_frame,
         overlay_matching_region_cleanup,
     };
-    return Overlay{
-        &vtable,
-        malloc(sizeof(Data)),
-    };
+
+    Data* data = (Data*)malloc(sizeof(Data));
+    CZ_ASSERT(data);
+    data->face = face;
+    return {&vtable, data};
 }
 
 }

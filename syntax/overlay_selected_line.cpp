@@ -10,6 +10,7 @@ namespace mag {
 namespace syntax {
 
 struct Data {
+    Face face;
     uint64_t start;
     uint64_t end;
 };
@@ -44,7 +45,7 @@ static Face overlay_selected_line_get_face_and_advance(Buffer* buffer,
     Data* data = (Data*)_data;
     Face face = {};
     if (iterator.position >= data->start && iterator.position <= data->end) {
-        face = {-1, 21, 0};
+        face = data->face;
     }
     return face;
 }
@@ -55,7 +56,7 @@ static void overlay_selected_line_cleanup(void* data) {
     free(data);
 }
 
-Overlay overlay_selected_line() {
+Overlay overlay_selected_line(Face face) {
     static const Overlay::VTable vtable = {
         overlay_selected_line_start_frame,
         overlay_selected_line_get_face_and_advance,
@@ -63,10 +64,11 @@ Overlay overlay_selected_line() {
         overlay_selected_line_end_frame,
         overlay_selected_line_cleanup,
     };
-    return Overlay{
-        &vtable,
-        malloc(sizeof(Data)),
-    };
+
+    Data* data = (Data*)malloc(sizeof(Data));
+    CZ_ASSERT(data);
+    data->face = face;
+    return {&vtable, data};
 }
 
 }
