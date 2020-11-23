@@ -33,6 +33,7 @@
 #include "syntax/overlay_trailing_spaces.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_css.hpp"
+#include "syntax/tokenize_html.hpp"
 #include "syntax/tokenize_md.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "syntax/tokenize_process.hpp"
@@ -187,7 +188,7 @@ Theme create_theme() {
     Theme theme = {};
     theme.colors = mag::theme::solarized_dark;
 
-    theme.faces.reserve(cz::heap_allocator(), 39);
+    theme.faces.reserve(cz::heap_allocator(), 42);
     theme.faces.push({{}, {}, 0});              // default
     theme.faces.push({1, {}, 0});               // unsaved buffer
     theme.faces.push({{}, {}, Face::REVERSE});  // selected buffer
@@ -237,6 +238,10 @@ Theme create_theme() {
     theme.faces.push({228, {}, 0});  // Token_Type::CSS_ID_SELECTOR
     theme.faces.push({118, {}, 0});  // Token_Type::CSS_CLASS_SELECTOR
     theme.faces.push({208, {}, 0});  // Token_Type::CSS_PSEUDO_SELECTOR
+
+    theme.faces.push({33, {}, 0});  // Token_Type::HTML_TAG_NAME
+    theme.faces.push({140, {}, 0});  // Token_Type::HTML_ATTRIBUTE_NAME
+    theme.faces.push({4, {}, 0});  // Token_Type::HTML_AMPERSAND_CODE
 
     static Decoration decorations[] = {syntax::decoration_line_number()};
     theme.decorations = cz::slice(decorations);
@@ -367,6 +372,8 @@ Mode get_mode(const Buffer& buffer) {
             mode.next_token = syntax::md_next_token;
         } else if (buffer.name.ends_with(".css")) {
             mode.next_token = syntax::css_next_token;
+        } else if (buffer.name.ends_with(".html")) {
+            mode.next_token = syntax::html_next_token;
         } else if (buffer.name.ends_with(".patch") || buffer.name.ends_with(".diff")) {
             mode.next_token = syntax::patch_next_token;
             if (buffer.name == "addp-hunk-edit.diff") {
