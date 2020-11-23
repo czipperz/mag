@@ -204,7 +204,6 @@ not_a_color:
 
     if (first_ch == '(' || first_ch == '{' || first_ch == '[') {
         token->type = Token_Type::OPEN_PAIR;
-        iterator->advance();
         if (first_ch == '{') {
             *state = BEFORE_PROPERTY;
         }
@@ -213,15 +212,13 @@ not_a_color:
 
     if (first_ch == ')' || first_ch == '}' || first_ch == ']') {
         token->type = Token_Type::CLOSE_PAIR;
-        iterator->advance();
         if (first_ch == '}') {
             *state = TOP_LEVEL;
         }
         goto ret;
     }
 
-    iterator->advance();
-    return false;
+    token->type = Token_Type::DEFAULT;
 
 ret:
     token->end = iterator->position;
