@@ -22,6 +22,10 @@ static bool advance_whitespace(Contents_Iterator* iterator) {
     }
 }
 
+static bool islabelch(char ch) {
+    return isalnum(ch) || ch == '-' || ch == '_';
+}
+
 bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     if (!advance_whitespace(iterator)) {
         return false;
@@ -70,7 +74,7 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
 
     if (*state == 1) {
         while (!iterator->at_eob()) {
-            if (!isalnum(iterator->get())) {
+            if (!islabelch(iterator->get())) {
                 break;
             }
             iterator->advance();
@@ -82,9 +86,9 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
     }
 
     if (*state == 2) {
-        if (isalnum(first_ch)) {
+        if (islabelch(first_ch)) {
             while (!iterator->at_eob()) {
-                if (!isalnum(iterator->get())) {
+                if (!islabelch(iterator->get())) {
                     break;
                 }
                 iterator->advance();
