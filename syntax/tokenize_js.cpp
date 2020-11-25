@@ -54,17 +54,44 @@ static bool is_id_cont(char ch) {
 }
 
 enum {
-    DEFAULT_STATE,
-    EXPECT_TYPE,
-
-    BACKTICK_STRING_OPEN_VAR,
-    INSIDE_BACKTICK_STRING,
-    BACKTICK_STRING_CLOSE_VAR,
+    BS_OPEN = 0,
+    BS_INSIDE = 1,
+    BS_CONTINUE = 2,
+    BS_CURLY = 3,
 };
+
+static int32_t log2_u64(uint64_t v) {
+    int32_t count = -1;
+    while (v > 0) {
+        v >>= 1;
+        ++count;
+    }
+    return count;
+}
+
+static uint64_t fill_lower_bits(uint64_t v) {
+    v |= (v >> 1);
+    v |= (v >> 2);
+    v |= (v >> 4);
+    v |= (v >> 8);
+    v |= (v >> 16);
+    v |= (v >> 32);
+    return v;
+}
 
 bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     if (!advance_whitespace(iterator)) {
         return false;
+    }
+
+    // *state = aabbccdd1000...000e (little endian)
+    // bs_depth = 4, bs_top = dd, expect_type = e
+
+    bool expect_type = (*state & (1 << 63)) >> 63;
+    uint32_t bs_depth = (log2_u64(*state & 0xEFFFFFFFFFFFFFFF) + 1) / 2;
+    int bs_top = -1;
+    if (bs_depth > 0) {
+        bs_top = ((*state & (3 << ((bs_depth - 1) * 2))) >> ((bs_depth - 1) * 2));
     }
 
     token->start = iterator->position;
@@ -74,8 +101,8 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     char first_ch = iterator->get();
     iterator->advance();
 
-    if (*state == BACKTICK_STRING_OPEN_VAR) {
-        *state = INSIDE_BACKTICK_STRING;
+    if (bs_top == BS_OPEN) {
+        bs_top = BS_INSIDE;
         if (first_ch == '$' && !iterator->at_eob() && iterator->get() == '{') {
             iterator->advance();
             token->type = Token_Type::OPEN_PAIR;
@@ -83,8 +110,9 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         }
     }
 
-    if (*state == BACKTICK_STRING_CLOSE_VAR) {
-        *state = DEFAULT_STATE;
+    if (bs_top == BS_CONTINUE) {
+        bs_depth--;
+        bs_top = -1;
         first_ch = '`';
         iterator->retreat();
         goto inside_string;
@@ -112,7 +140,8 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             if (first_ch == '`' && ch == '$' && !iterator->at_eob() && iterator->get() == '{') {
                 iterator->retreat();
                 token->type = Token_Type::STRING;
-                *state = BACKTICK_STRING_OPEN_VAR;
+                bs_depth++;
+                bs_top = BS_OPEN;
                 goto ret;
             }
         }
@@ -205,6 +234,10 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     if (first_ch == '{') {
         token->type = Token_Type::OPEN_PAIR;
+        if (bs_depth > 0) {
+            bs_depth++;
+            bs_top = BS_CURLY;
+        }
         goto ret;
     }
 
@@ -215,8 +248,13 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     if (first_ch == '}') {
         token->type = Token_Type::CLOSE_PAIR;
-        if (*state == INSIDE_BACKTICK_STRING) {
-            *state = BACKTICK_STRING_CLOSE_VAR;
+        if (bs_depth > 0) {
+            if (bs_top == BS_INSIDE) {
+                bs_top = BS_CONTINUE;
+            } else if (bs_top == BS_CURLY) {
+                bs_depth--;
+                bs_top = -1;
+            }
         }
         goto ret;
     }
@@ -229,7 +267,7 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             iterator->advance();
         }
 
-        if (*state == EXPECT_TYPE) {
+        if (expect_type) {
             token->type = Token_Type::TYPE;
         } else if (matches(start, iterator->position, "const") ||
                    matches(start, iterator->position, "let") ||
@@ -251,7 +289,7 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         } else if (matches(start, iterator->position, "class") ||
                    matches(start, iterator->position, "new")) {
             token->type = Token_Type::KEYWORD;
-            *state = EXPECT_TYPE;
+            expect_type = true;
             goto ret2;
         } else {
             token->type = Token_Type::IDENTIFIER;
@@ -262,12 +300,24 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     token->type = Token_Type::DEFAULT;
 
 ret:
-    if (*state == EXPECT_TYPE) {
-        *state = DEFAULT_STATE;
-    }
+    expect_type = false;
 
 ret2:
     token->end = iterator->position;
+
+    uint64_t old_state = *state;
+    *state = 0;
+    if (expect_type) {
+        *state |= (1 << 63);
+    }
+    if (bs_depth > 0) {
+        *state |= (1 << (bs_depth * 2));
+        *state |= (old_state & fill_lower_bits(1 << (bs_depth * 2 - 1)));
+        if (bs_top != -1) {
+            *state &= ~(3 << ((bs_depth - 1) * 2));
+            *state |= ((uint64_t)bs_top << ((bs_depth - 1) * 2));
+        }
+    }
     return true;
 }
 
