@@ -87,11 +87,11 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     // *state = aabbccdd1000...000e (little endian)
     // bs_depth = 4, bs_top = dd, expect_type = e
 
-    bool expect_type = (*state & (1 << 63)) >> 63;
+    bool expect_type = (*state & ((uint64_t)1 << 63)) >> 63;
     uint32_t bs_depth = (log2_u64(*state & 0xEFFFFFFFFFFFFFFF) + 1) / 2;
     int bs_top = -1;
     if (bs_depth > 0) {
-        bs_top = ((*state & (3 << ((bs_depth - 1) * 2))) >> ((bs_depth - 1) * 2));
+        bs_top = ((*state & ((uint64_t)3 << ((bs_depth - 1) * 2))) >> ((bs_depth - 1) * 2));
     }
 
     token->start = iterator->position;
@@ -308,13 +308,13 @@ ret2:
     uint64_t old_state = *state;
     *state = 0;
     if (expect_type) {
-        *state |= (1 << 63);
+        *state |= ((uint64_t)1 << 63);
     }
     if (bs_depth > 0) {
-        *state |= (1 << (bs_depth * 2));
-        *state |= (old_state & fill_lower_bits(1 << (bs_depth * 2 - 1)));
+        *state |= ((uint64_t)1 << (bs_depth * 2));
+        *state |= (old_state & fill_lower_bits((uint64_t)1 << (bs_depth * 2 - 1)));
         if (bs_top != -1) {
-            *state &= ~(3 << ((bs_depth - 1) * 2));
+            *state &= ~((uint64_t)3 << ((bs_depth - 1) * 2));
             *state |= ((uint64_t)bs_top << ((bs_depth - 1) * 2));
         }
     }
