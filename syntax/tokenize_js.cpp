@@ -56,6 +56,10 @@ static bool is_id_cont(char ch) {
 enum {
     DEFAULT_STATE,
     EXPECT_TYPE,
+
+    BACKTICK_STRING_OPEN_VAR,
+    INSIDE_BACKTICK_STRING,
+    BACKTICK_STRING_CLOSE_VAR,
 };
 
 bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
@@ -69,6 +73,53 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     char first_ch = iterator->get();
     iterator->advance();
+
+    if (*state == BACKTICK_STRING_OPEN_VAR) {
+        *state = INSIDE_BACKTICK_STRING;
+        if (first_ch == '$' && !iterator->at_eob() && iterator->get() == '{') {
+            iterator->advance();
+            token->type = Token_Type::OPEN_PAIR;
+            goto ret;
+        }
+    }
+
+    if (*state == BACKTICK_STRING_CLOSE_VAR) {
+        *state = DEFAULT_STATE;
+        first_ch = '`';
+        iterator->retreat();
+        goto inside_string;
+    }
+
+    if (first_ch == '\'' || first_ch == '"' || first_ch == '`') {
+    inside_string:
+        // strings
+        while (!iterator->at_eob()) {
+            char ch = iterator->get();
+            if (ch == first_ch) {
+                iterator->advance();
+                break;
+            }
+
+            if (ch == '\\') {
+                iterator->advance();
+                if (iterator->at_eob()) {
+                    break;
+                }
+            }
+
+            iterator->advance();
+
+            if (first_ch == '`' && ch == '$' && !iterator->at_eob() && iterator->get() == '{') {
+                iterator->retreat();
+                token->type = Token_Type::STRING;
+                *state = BACKTICK_STRING_OPEN_VAR;
+                goto ret;
+            }
+        }
+
+        token->type = Token_Type::STRING;
+        goto ret;
+    }
 
     if (first_ch == '/' && !iterator->at_eob() && iterator->get() == '*') {
         // block comment
@@ -100,29 +151,6 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         }
 
         token->type = Token_Type::COMMENT;
-        goto ret;
-    }
-
-    if (first_ch == '\'' || first_ch == '"' || first_ch == '`') {
-        // strings
-        // @TODO: Handle variables inside `` strings
-        while (!iterator->at_eob()) {
-            if (iterator->get() == first_ch) {
-                iterator->advance();
-                break;
-            }
-
-            if (iterator->get() == '\\') {
-                iterator->advance();
-                if (iterator->at_eob()) {
-                    break;
-                }
-            }
-
-            iterator->advance();
-        }
-
-        token->type = Token_Type::STRING;
         goto ret;
     }
 
@@ -170,13 +198,26 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
-    if (first_ch == '(' || first_ch == '[' || first_ch == '{') {
+    if (first_ch == '(' || first_ch == '[') {
         token->type = Token_Type::OPEN_PAIR;
         goto ret;
     }
 
-    if (first_ch == ')' || first_ch == ']' || first_ch == '}') {
+    if (first_ch == '{') {
+        token->type = Token_Type::OPEN_PAIR;
+        goto ret;
+    }
+
+    if (first_ch == ')' || first_ch == ']') {
         token->type = Token_Type::CLOSE_PAIR;
+        goto ret;
+    }
+
+    if (first_ch == '}') {
+        token->type = Token_Type::CLOSE_PAIR;
+        if (*state == INSIDE_BACKTICK_STRING) {
+            *state = BACKTICK_STRING_CLOSE_VAR;
+        }
         goto ret;
     }
 
