@@ -106,7 +106,7 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
         // Find the token the cursor is at.
         if (token.start <= cursor_point && cursor_point <= token.end) {
             if (!is_matching_token(data->token_types, token.type)) {
-                break;
+                continue;
             }
 
             // If the cursor is right after the token, see if another valid matching token is right
