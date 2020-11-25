@@ -88,7 +88,7 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     // bs_depth = 4, bs_top = dd, expect_type = e
 
     bool expect_type = (*state & ((uint64_t)1 << 63)) >> 63;
-    uint32_t bs_depth = (log2_u64(*state & 0xEFFFFFFFFFFFFFFF) + 1) / 2;
+    uint32_t bs_depth = (log2_u64(*state & 0x7FFFFFFFFFFFFFFF) + 1) / 2;
     int bs_top = -1;
     if (bs_depth > 0) {
         bs_top = ((*state & ((uint64_t)3 << ((bs_depth - 1) * 2))) >> ((bs_depth - 1) * 2));
