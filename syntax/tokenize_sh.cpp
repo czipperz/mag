@@ -135,13 +135,21 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         if (top == AFTER_DOLLAR) {
             token->type = Token_Type::IDENTIFIER;
         } else if (at_start_of_statement && (matches(start, iterator->position, "if") ||
+                                             matches(start, iterator->position, "then") ||
                                              matches(start, iterator->position, "elif") ||
                                              matches(start, iterator->position, "else") ||
                                              matches(start, iterator->position, "fi") ||
                                              matches(start, iterator->position, "do") ||
                                              matches(start, iterator->position, "while") ||
                                              matches(start, iterator->position, "for") ||
-                                             matches(start, iterator->position, "alias"))) {
+                                             matches(start, iterator->position, "alias") ||
+                                             matches(start, iterator->position, "set") ||
+                                             matches(start, iterator->position, ".") ||
+                                             matches(start, iterator->position, "cd") ||
+                                             matches(start, iterator->position, "test") ||
+                                             matches(start, iterator->position, "unset") ||
+                                             matches(start, iterator->position, "export") ||
+                                             matches(start, iterator->position, "shift"))) {
             token->type = Token_Type::KEYWORD;
         } else {
             token->type = Token_Type::DEFAULT;
