@@ -338,7 +338,7 @@ static void process_event(Server* server,
 #undef UPPER
 
             default:
-                if (isalpha(key.code)) {
+                if (key.code <= UCHAR_MAX && isalpha(key.code)) {
                     // It's already upper case
                 } else {
                     key.modifiers |= SHIFT;
@@ -346,7 +346,9 @@ static void process_event(Server* server,
                 break;
             }
         } else {
-            key.code = tolower(key.code);
+            if (key.code <= UCHAR_MAX) {
+                key.code = tolower(key.code);
+            }
         }
 
         server->receive(client, key);
