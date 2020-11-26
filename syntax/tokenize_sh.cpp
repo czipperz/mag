@@ -17,7 +17,6 @@ static bool advance_whitespace(Contents_Iterator* iterator, bool* at_start_of_st
         char ch = iterator->get();
         if (ch == '\n') {
             *at_start_of_statement = true;
-            return true;
         }
         if (!isspace(ch)) {
             return true;
