@@ -284,7 +284,11 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                    matches(start, iterator->position, "async") ||
                    matches(start, iterator->position, "await") ||
                    matches(start, iterator->position, "null") ||
-                   matches(start, iterator->position, "undefined")) {
+                   matches(start, iterator->position, "undefined") ||
+                   matches(start, iterator->position, "break") ||
+                   matches(start, iterator->position, "continue") ||
+                   matches(start, iterator->position, "false") ||
+                   matches(start, iterator->position, "true")) {
             token->type = Token_Type::KEYWORD;
         } else if (matches(start, iterator->position, "class") ||
                    matches(start, iterator->position, "new")) {
