@@ -288,7 +288,10 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                    matches(start, iterator->position, "break") ||
                    matches(start, iterator->position, "continue") ||
                    matches(start, iterator->position, "false") ||
-                   matches(start, iterator->position, "true")) {
+                   matches(start, iterator->position, "true") ||
+                   matches(start, iterator->position, "of") ||
+                   matches(start, iterator->position, "in") ||
+                   matches(start, iterator->position, "static")) {
             token->type = Token_Type::KEYWORD;
         } else if (matches(start, iterator->position, "class") ||
                    matches(start, iterator->position, "new")) {
