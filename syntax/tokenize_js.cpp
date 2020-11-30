@@ -219,7 +219,7 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
     if (first_ch == '+' || first_ch == '-' || first_ch == '*' || first_ch == '/' ||
-        first_ch == '<' || first_ch == '>') {
+        first_ch == '%' || first_ch == '<' || first_ch == '>') {
         if (!iterator->at_eob() && iterator->get() == '=') {
             iterator->advance();
         }
