@@ -123,22 +123,94 @@ void command_insert_indent(Editor* editor, Command_Source source) {
 
     cz::Slice<Cursor> cursors = window->cursors;
 
-    SSOStr value;
-    value = SSOStr::from_constant("    ");
+    SSOStr value = SSOStr::from_constant("    ");
 
     Transaction transaction;
     transaction.init(cursors.len, 0);
     CZ_DEFER(transaction.drop());
 
+    Contents_Iterator iterator = buffer->contents.start();
+
     uint64_t offset = 0;
     for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+
         Edit edit;
-        edit.value = value;
+        if (!iterator.at_eob() && iterator.get() == '\t') {
+            edit.value = SSOStr::from_char('\t');
+        } else if (cursors.len > 1 && (iterator.at_eob() || iterator.get() == '\n') &&
+                   (iterator.at_bob() || (iterator.retreat(), iterator.get() == '\n'))) {
+            continue;
+        } else {
+            edit.value = value;
+        }
+
         edit.position = cursors[i].point + offset;
         edit.flags = Edit::INSERT;
         transaction.push(edit);
 
-        offset += value.len();
+        offset += edit.value.short_.len();
+    }
+
+    transaction.commit(buffer);
+}
+
+void command_delete_indent(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    SSOStr value = SSOStr::from_constant("    ");
+
+    Transaction transaction;
+    transaction.init(cursors.len, 0);
+    CZ_DEFER(transaction.drop());
+
+    Contents_Iterator iterator = buffer->contents.start();
+
+    uint64_t offset = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+
+        Edit edit;
+        if (!iterator.at_eob() && iterator.get() == '\t') {
+            edit.value = SSOStr::from_char('\t');
+        } else {
+            uint64_t num;
+            for (num = 0; num < 4; ++num) {
+                if (iterator.at_bob()) {
+                    break;
+                }
+                iterator.retreat();
+                if (iterator.get() != ' ') {
+                    iterator.advance();
+                    break;
+                }
+            }
+
+            if (num != 4) {
+                for (num = 0; num < 4; ++num) {
+                    if (iterator.at_eob() || iterator.get() != ' ') {
+                        break;
+                    }
+                    iterator.advance();
+                }
+                iterator.retreat(num);
+            }
+
+            if (num == 0) {
+                continue;
+            } else {
+                edit.value = value;
+                edit.value.short_.set_len(num);
+            }
+        }
+
+        edit.position = iterator.position - offset;
+        edit.flags = Edit::REMOVE;
+        transaction.push(edit);
+
+        offset += edit.value.short_.len();
     }
 
     transaction.commit(buffer);
