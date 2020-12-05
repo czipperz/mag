@@ -285,6 +285,17 @@ static Key_Map* cpp_key_map() {
     return &key_map;
 }
 
+static Key_Map create_js_key_map() {
+    Key_Map key_map = {};
+    BIND(key_map, "A-;", cpp::command_comment);
+    return key_map;
+}
+
+static Key_Map* js_key_map() {
+    static Key_Map key_map = create_js_key_map();
+    return &key_map;
+}
+
 static Key_Map create_search_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-m", command_search_open);
@@ -397,6 +408,7 @@ Mode get_mode(const Buffer& buffer) {
             mode.overlays = cz::slice(overlays);
         } else if (buffer.name.ends_with(".js")) {
             mode.next_token = syntax::js_next_token;
+            mode.key_map = js_key_map();
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
             static Overlay overlays[] = {
