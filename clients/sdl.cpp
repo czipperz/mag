@@ -295,7 +295,8 @@ static void process_event(Server* server,
         } break;
         }
 
-        if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_ALT)) == 0 && (key.code <= UCHAR_MAX && isprint(key.code))) {
+        if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_ALT)) == 0 &&
+            (key.code <= UCHAR_MAX && isprint(key.code))) {
             // Ignore key presses
             return;
         }
@@ -688,7 +689,6 @@ static void set_clipboard_variable(cz::String* clipboard, cz::Str text) {
 
 struct Clipboard_Context {
     cz::String value;
-    bool stall;
 };
 
 static void process_clipboard_updates(Server* server,
@@ -700,10 +700,11 @@ static void process_clipboard_updates(Server* server,
     if (clipboard_currently_cstr) {
         cz::Str clipboard_currently = clipboard_currently_cstr;
 
-        if (clipboard->stall && clipboard_currently == "") {
+#ifdef _WIN32
+        if (clipboard_currently == "") {
             return;
         }
-        clipboard->stall = false;
+#endif
 
 #ifdef _WIN32
         cz::strip_carriage_returns(clipboard_currently_cstr, &clipboard_currently.len);
@@ -726,7 +727,6 @@ static void process_clipboard_updates(Server* server,
 static int sdl_copy(void* data, cz::Str text) {
     Clipboard_Context* clipboard = (Clipboard_Context*)data;
     set_clipboard_variable(&clipboard->value, text);
-    clipboard->stall = true;
     return SDL_SetClipboardText(clipboard->value.buffer());
 }
 
