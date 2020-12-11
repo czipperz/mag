@@ -102,13 +102,13 @@ bool go_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
-    if (first_ch == '"') {
+    if (first_ch == '"' || first_ch == '\'' || first_ch == '`') {
         while (!iterator->at_eob()) {
             if (iterator->get() == first_ch) {
                 iterator->advance();
                 break;
             }
-            if (iterator->get() == '\\') {
+            if (first_ch != '`' && iterator->get() == '\\') {
                 iterator->advance();
                 if (iterator->at_eob()) {
                     break;
