@@ -130,6 +130,39 @@ bool go_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
+    if (first_ch == '/' && !iterator->at_eob() && iterator->get() == '*') {
+        // block comment
+        char prev = 0;
+        while (!iterator->at_eob()) {
+            char ch = iterator->get();
+            if (prev == '*' && ch == '/') {
+                iterator->advance();
+                break;
+            }
+
+            prev = ch;
+            iterator->advance();
+        }
+
+        token->type = Token_Type::COMMENT;
+        goto ret;
+    }
+
+    if (first_ch == '/' && !iterator->at_eob() && iterator->get() == '/') {
+        // line comment
+        while (!iterator->at_eob()) {
+            if (iterator->get() == '\n') {
+                iterator->advance();
+                break;
+            }
+
+            iterator->advance();
+        }
+
+        token->type = Token_Type::COMMENT;
+        goto ret;
+    }
+
     if (first_ch == '<' || first_ch == '>') {
         if (first_ch == '<' && !iterator->at_eob() && iterator->get() == '-') {
             iterator->advance();
