@@ -33,6 +33,7 @@
 #include "syntax/overlay_trailing_spaces.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_css.hpp"
+#include "syntax/tokenize_go.hpp"
 #include "syntax/tokenize_html.hpp"
 #include "syntax/tokenize_js.hpp"
 #include "syntax/tokenize_md.hpp"
@@ -296,6 +297,17 @@ static Key_Map* js_key_map() {
     return &key_map;
 }
 
+static Key_Map create_go_key_map() {
+    Key_Map key_map = {};
+    BIND(key_map, "A-;", cpp::command_comment);
+    return key_map;
+}
+
+static Key_Map* go_key_map() {
+    static Key_Map key_map = create_go_key_map();
+    return &key_map;
+}
+
 static Key_Map create_search_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-m", command_search_open);
@@ -409,6 +421,15 @@ Mode get_mode(const Buffer& buffer) {
         } else if (buffer.name.ends_with(".js")) {
             mode.next_token = syntax::js_next_token;
             mode.key_map = js_key_map();
+            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
+                                               Token_Type::IDENTIFIER};
+            static Overlay overlays[] = {
+                syntax::overlay_matching_pairs({-1, 237, 0}),
+                syntax::overlay_matching_tokens({-1, 237, 0}, cz::slice(types))};
+            mode.overlays = cz::slice(overlays);
+        } else if (buffer.name.ends_with(".go")) {
+            mode.next_token = syntax::go_next_token;
+            mode.key_map = go_key_map();
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
             static Overlay overlays[] = {
