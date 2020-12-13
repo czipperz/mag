@@ -195,7 +195,7 @@ void command_forward_up_pair(Editor* editor, Command_Source source) {
 
     for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
-        backward_up_pair(buffer, &it);
+        forward_up_pair(buffer, &it);
         window->cursors[cursor_index].point = it.position;
     }
     std::sort(window->cursors.start(), window->cursors.end(),
