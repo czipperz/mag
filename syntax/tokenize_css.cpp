@@ -1,26 +1,13 @@
 #include "tokenize_cpp.hpp"
 
 #include <ctype.h>
+#include "common.hpp"
 #include "contents.hpp"
 #include "face.hpp"
 #include "token.hpp"
 
 namespace mag {
 namespace syntax {
-
-static bool advance_whitespace(Contents_Iterator* iterator) {
-    while (1) {
-        if (iterator->at_eob()) {
-            return false;
-        }
-
-        char ch = iterator->get();
-        if (!isspace(ch)) {
-            return true;
-        }
-        iterator->advance();
-    }
-}
 
 static bool is_id_start(char ch) {
     return ch == '-' || ch == '_' || isalpha(ch);
