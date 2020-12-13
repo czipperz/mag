@@ -40,6 +40,7 @@
 #include "syntax/tokenize_md.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "syntax/tokenize_process.hpp"
+#include "syntax/tokenize_python.hpp"
 #include "syntax/tokenize_sh.hpp"
 
 namespace mag {
@@ -446,6 +447,13 @@ Mode get_mode(const Buffer& buffer) {
                    buffer.name.ends_with(".zsh") || buffer.name == ".bashrc" ||
                    buffer.name == ".zshrc") {
             mode.next_token = syntax::sh_next_token;
+            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
+            static Overlay overlays[] = {
+                syntax::overlay_matching_pairs({-1, 237, 0}),
+                syntax::overlay_matching_tokens({-1, 237, 0}, cz::slice(types))};
+            mode.overlays = cz::slice(overlays);
+        } else if (buffer.name.ends_with(".py")) {
+            mode.next_token = syntax::python_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             static Overlay overlays[] = {
                 syntax::overlay_matching_pairs({-1, 237, 0}),
