@@ -33,6 +33,7 @@
 #include "syntax/overlay_trailing_spaces.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_css.hpp"
+#include "syntax/tokenize_general.hpp"
 #include "syntax/tokenize_go.hpp"
 #include "syntax/tokenize_html.hpp"
 #include "syntax/tokenize_js.hpp"
@@ -456,6 +457,14 @@ Mode get_mode(const Buffer& buffer) {
         } else if (buffer.name == "COMMIT_EDITMSG") {
             mode.next_token = syntax::git_commit_edit_message_next_token;
             mode.key_map = git_edit_key_map();
+        } else {
+            mode.next_token = syntax::general_next_token;
+            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
+                                               Token_Type::IDENTIFIER};
+            static Overlay overlays[] = {
+                syntax::overlay_matching_pairs({-1, 237, 0}),
+                syntax::overlay_matching_tokens({-1, 237, 0}, cz::slice(types))};
+            mode.overlays = cz::slice(overlays);
         }
         break;
     }
