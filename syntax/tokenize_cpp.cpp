@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <Tracy.hpp>
 #include "contents.hpp"
+#include "match.hpp"
 #include "movement.hpp"
 #include "token.hpp"
 
@@ -138,30 +139,6 @@ static bool skip_whitespace(Contents_Iterator* iterator,
     }
 }
 
-static bool matches_no_bounds_check(Contents_Iterator it, cz::Str query) {
-    ZoneScoped;
-
-    for (size_t i = 0; i < query.len; ++i) {
-        if (it.get() != query[i]) {
-            return false;
-        }
-        it.advance();
-    }
-    return true;
-}
-
-static bool matches(Contents_Iterator it, uint64_t end, cz::Str query) {
-    ZoneScoped;
-
-    if (end - it.position != query.len) {
-        return false;
-    }
-    if (it.position + query.len > it.contents->len) {
-        return false;
-    }
-    return matches_no_bounds_check(it, query);
-}
-
 static bool is_identifier_continuation(char ch) {
     return isalnum(ch) || ch == '_';
 }
@@ -212,9 +189,9 @@ static bool is_identifier_continuation(char ch) {
         MATCHES(STR);   \
         break
 
-#define MATCHES(STR)                              \
-    if (matches_no_bounds_check(iterator, STR)) { \
-        return true;                              \
+#define MATCHES(STR)                                 \
+    if (looking_at_no_bounds_check(iterator, STR)) { \
+        return true;                                 \
     }
 
 #define ADVANCE(CHAR, BODY)     \

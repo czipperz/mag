@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include "contents.hpp"
 #include "face.hpp"
+#include "match.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -23,30 +24,6 @@ static bool advance_whitespace(Contents_Iterator* iterator, bool* at_start_of_st
         }
         iterator->advance();
     }
-}
-
-static bool matches_no_bounds_check(Contents_Iterator it, cz::Str query) {
-    ZoneScoped;
-
-    for (size_t i = 0; i < query.len; ++i) {
-        if (it.get() != query[i]) {
-            return false;
-        }
-        it.advance();
-    }
-    return true;
-}
-
-static bool matches(Contents_Iterator it, uint64_t end, cz::Str query) {
-    ZoneScoped;
-
-    if (end - it.position != query.len) {
-        return false;
-    }
-    if (it.position + query.len > it.contents->len) {
-        return false;
-    }
-    return matches_no_bounds_check(it, query);
 }
 
 static bool is_separator(char ch) {
