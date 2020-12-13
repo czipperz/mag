@@ -39,4 +39,31 @@ bool matches(Contents_Iterator it, uint64_t end, cz::Str query) {
     return looking_at(it, query);
 }
 
+bool matches(Contents_Iterator it, uint64_t end, Contents_Iterator query) {
+    ZoneScoped;
+
+    CZ_DEBUG_ASSERT(end >= it.position);
+    if (query.position + (end - it.position) > query.contents->len) {
+        return false;
+    }
+
+    while (it.position < end) {
+        if (it.get() != query.get()) {
+            return false;
+        }
+
+        it.advance();
+        query.advance();
+    }
+
+    return true;
+}
+
+bool matches(Contents_Iterator it, uint64_t end, Contents_Iterator query, uint64_t query_end) {
+    if (end - it.position != query_end - query.position) {
+        return false;
+    }
+    return matches(it, end, query);
+}
+
 }

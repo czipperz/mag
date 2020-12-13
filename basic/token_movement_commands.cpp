@@ -4,6 +4,7 @@
 #include "command.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
+#include "match.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -251,6 +252,203 @@ void command_backward_token_pair(Editor* editor, Command_Source source) {
 
     std::sort(window->cursors.start(), window->cursors.end(),
               [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
+}
+
+bool find_backward_matching_token(Buffer* buffer,
+                                  Contents_Iterator iterator,
+                                  Token* this_token,
+                                  Token* matching_token) {
+    Contents_Iterator token_to_match_iterator = iterator;
+    Token token_to_match;
+    uint64_t state;
+    if (!get_token_before_position(buffer, &token_to_match_iterator, &state, &token_to_match)) {
+        return false;
+    }
+    *this_token = token_to_match;
+    token_to_match_iterator.retreat_to(token_to_match.start);
+
+    uint64_t end_position = token_to_match.start;
+    Contents_Iterator token_iterator = iterator;
+    Token token;
+    Tokenizer_Check_Point check_point = {};
+    buffer->token_cache.update(buffer);
+    size_t check_point_index;
+    if (buffer->token_cache.find_check_point(token_iterator.position, &check_point_index)) {
+        check_point = buffer->token_cache.check_points[check_point_index];
+    } else {
+        check_point_index = 0;
+    }
+
+    token_iterator.retreat_to(check_point.position);
+    state = check_point.state;
+
+    bool found_token_this_loop = false;
+
+    while (1) {
+        bool has_token = buffer->mode.next_token(&token_iterator, &token, &state);
+        if (!has_token) {
+            return false;
+        }
+
+        if (token.start >= end_position) {
+            if (found_token_this_loop) {
+                return true;
+            }
+            if (check_point_index == 0) {
+                return false;
+            }
+
+            --check_point_index;
+            end_position = check_point.position;
+            check_point = buffer->token_cache.check_points[check_point_index];
+
+            token_iterator.retreat_to(check_point.position);
+            state = check_point.state;
+            continue;
+        }
+
+        Contents_Iterator test_it = token_iterator;
+        test_it.retreat_to(token.start);
+        if (token_to_match.type == token.type &&
+            matches(token_to_match_iterator, token_to_match.end, test_it, token.end)) {
+            found_token_this_loop = true;
+            *matching_token = token;
+        }
+    }
+}
+
+bool backward_matching_token(Buffer* buffer, Contents_Iterator* iterator) {
+    Token this_token;
+    Token matching_token;
+    if (!find_backward_matching_token(buffer, *iterator, &this_token, &matching_token)) {
+        return false;
+    }
+
+    iterator->retreat_to(matching_token.start + (iterator->position - this_token.start));
+    return true;
+}
+
+void command_backward_matching_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
+        backward_matching_token(buffer, &it);
+        window->cursors[cursor_index].point = it.position;
+    }
+
+    std::sort(window->cursors.start(), window->cursors.end(),
+              [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
+}
+
+bool find_forward_matching_token(Buffer* buffer,
+                                 Contents_Iterator iterator,
+                                 Token* this_token,
+                                 Token* matching_token) {
+    Contents_Iterator token_to_match_iterator = iterator;
+    Token token_to_match;
+    uint64_t state;
+    if (!get_token_before_position(buffer, &token_to_match_iterator, &state, &token_to_match)) {
+        return false;
+    }
+    *this_token = token_to_match;
+    token_to_match_iterator.retreat_to(token_to_match.start);
+
+    uint64_t end_position = token_to_match.end;
+
+    Contents_Iterator token_iterator = iterator;
+    Tokenizer_Check_Point check_point = {};
+    buffer->token_cache.update(buffer);
+    buffer->token_cache.find_check_point(token_iterator.position, &check_point);
+    token_iterator.retreat_to(check_point.position);
+    state = check_point.state;
+
+    while (1) {
+        Token token;
+        bool has_token = buffer->mode.next_token(&token_iterator, &token, &state);
+        if (!has_token) {
+            return false;
+        }
+
+        if (token.end > end_position) {
+            Contents_Iterator test_it = token_iterator;
+            test_it.retreat_to(token.start);
+            if (token_to_match.type == token.type &&
+                matches(token_to_match_iterator, token_to_match.end, test_it, token.end)) {
+                *matching_token = token;
+                return true;
+            }
+        }
+    }
+}
+
+bool forward_matching_token(Buffer* buffer, Contents_Iterator* iterator) {
+    Token this_token;
+    Token matching_token;
+    if (!find_forward_matching_token(buffer, *iterator, &this_token, &matching_token)) {
+        return false;
+    }
+
+    iterator->advance_to(matching_token.start + (iterator->position - this_token.start));
+    return true;
+}
+
+void command_forward_matching_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
+        forward_matching_token(buffer, &it);
+        window->cursors[cursor_index].point = it.position;
+    }
+
+    std::sort(window->cursors.start(), window->cursors.end(),
+              [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
+}
+
+static void create_cursor_with_offsets(cz::Vector<Cursor>* cursors,
+                                       Cursor cursor,
+                                       Contents_Iterator it) {
+    Cursor new_cursor;
+    new_cursor.point = it.position;
+    if (cursor.mark < cursor.point) {
+        if (it.position < cursor.point - cursor.mark) {
+            new_cursor.mark = 0;
+        } else {
+            new_cursor.mark = new_cursor.point - (cursor.point - cursor.mark);
+        }
+    } else {
+        if (it.position + (cursor.mark - cursor.point) > it.contents->len) {
+            new_cursor.mark = it.contents->len;
+        } else {
+            new_cursor.mark = new_cursor.point + (cursor.mark - cursor.point);
+        }
+    }
+
+    cursors->reserve(cz::heap_allocator(), 1);
+    cursors->push(new_cursor);
+}
+
+void command_create_cursor_forward_matching_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Cursor cursor = window->cursors[window->cursors.len() - 1];
+    Contents_Iterator it = buffer->contents.iterator_at(cursor.point);
+    if (!forward_matching_token(buffer, &it)) {
+        return;
+    }
+
+    create_cursor_with_offsets(&window->cursors, cursor, it);
+}
+
+void command_create_cursor_backward_matching_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Cursor cursor = window->cursors[window->cursors.len() - 1];
+    Contents_Iterator it = buffer->contents.iterator_at(cursor.point);
+    if (!backward_matching_token(buffer, &it)) {
+        return;
+    }
+
+    create_cursor_with_offsets(&window->cursors, cursor, it);
 }
 
 }

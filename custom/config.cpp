@@ -80,6 +80,11 @@ Key_Map create_key_map() {
     BIND(key_map, "C-A-b", command_backward_token_pair);
     BIND(key_map, "C-A-f", command_forward_token_pair);
 
+    BIND(key_map, "C-c b", command_backward_matching_token);
+    BIND(key_map, "C-c f", command_forward_matching_token);
+    BIND(key_map, "C-c C-b", command_create_cursor_backward_matching_token);
+    BIND(key_map, "C-c C-f", command_create_cursor_forward_matching_token);
+
     BIND(key_map, "C-A-n", command_create_cursor_forward);
     BIND(key_map, "C-A-p", command_create_cursor_backward);
 
@@ -277,7 +282,7 @@ static Key_Map* directory_key_map() {
 
 static Key_Map create_cpp_key_map() {
     Key_Map key_map = {};
-    BIND(key_map, "C-c C-f", clang_format::command_clang_format_buffer);
+    BIND(key_map, "A-c A-f", clang_format::command_clang_format_buffer);
     BIND(key_map, "A-;", cpp::command_comment);
     return key_map;
 }
