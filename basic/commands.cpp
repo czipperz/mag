@@ -582,6 +582,9 @@ static bool create_cursor_forward_search(Buffer* buffer, Window_Unified* window)
     cz::Slice<Cursor> cursors = window->cursors;
     CZ_DEBUG_ASSERT(cursors.len >= 1);
     size_t c = cursors.len - 1;
+    if (!window->show_marks || cursors[c].mark == cursors[c].point) {
+        return false;
+    }
     bool created;
     SEARCH_SLICE_THEN(search_forward_slice, created, {
         window->cursors.reserve(cz::heap_allocator(), 1);
@@ -649,6 +652,9 @@ static bool create_cursor_backward_search(Buffer* buffer, Window_Unified* window
     cz::Slice<Cursor> cursors = window->cursors;
     CZ_DEBUG_ASSERT(cursors.len >= 1);
     size_t c = 0;
+    if (!window->show_marks || cursors[c].mark == cursors[c].point) {
+        return false;
+    }
     bool created;
     SEARCH_SLICE_THEN(search_backward_slice, created, {
         window->cursors.reserve(cz::heap_allocator(), 1);
