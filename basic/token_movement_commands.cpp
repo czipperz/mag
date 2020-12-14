@@ -487,7 +487,7 @@ void command_create_cursor_forward_matching_token(Editor* editor, Command_Source
 void command_create_cursor_backward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    Cursor cursor = window->cursors[window->cursors.len() - 1];
+    Cursor cursor = window->cursors[0];
     Contents_Iterator it = buffer->contents.iterator_at(cursor.point);
     if (!backward_matching_token(buffer, &it)) {
         return;
