@@ -100,6 +100,9 @@ Key_Map create_key_map() {
     BIND(key_map, "C-c A-/", command_create_cursors_redo);
     BIND(key_map, "C-c A-_", command_create_cursors_redo);
 
+    BIND(key_map, "C-c a", command_cursors_align);
+    BIND(key_map, "C-c i", command_create_cursors_lines_in_region);
+
     BIND(key_map, "A-<", command_start_of_buffer);
     BIND(key_map, "A->", command_end_of_buffer);
 

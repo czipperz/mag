@@ -67,6 +67,10 @@ void command_create_cursors_undo(Editor* editor, Command_Source source);
 void command_create_cursors_redo(Editor* editor, Command_Source source);
 void command_create_cursors_last_change(Editor* editor, Command_Source source);
 
+void command_create_cursors_lines_in_region(Editor* editor, Command_Source source);
+
+void command_cursors_align(Editor* editor, Command_Source source);
+
 void command_search_forward(Editor* editor, Command_Source source);
 void command_search_backward(Editor* editor, Command_Source source);
 

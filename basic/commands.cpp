@@ -812,6 +812,95 @@ void command_create_cursors_last_change(Editor* editor, Command_Source source) {
     create_cursors_last_change(window, buffer, source.client);
 }
 
+void command_create_cursors_lines_in_region(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    if (window->cursors.len() > 1) {
+        return;
+    }
+
+    uint64_t start = window->cursors[0].start();
+    uint64_t end = window->cursors[0].end();
+
+    Contents_Iterator iterator = buffer->contents.iterator_at(start);
+    while (true) {
+        forward_line(&iterator);
+        if (iterator.position >= end) {
+            break;
+        }
+
+        Cursor cursor;
+        cursor.point = cursor.mark = iterator.position;
+        window->cursors.reserve(cz::heap_allocator(), 1);
+        window->cursors.push(cursor);
+    }
+
+    window->cursors[0] = {start, start};
+
+    window->show_marks = false;
+}
+
+void command_cursors_align(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+    if (cursors.len == 1) {
+        return;
+    }
+
+    Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);
+    uint64_t min_column = 0;
+    uint64_t max_column = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+
+        Contents_Iterator it2 = iterator;
+        start_of_line(&it2);
+        uint64_t col = iterator.position - it2.position;
+
+        if (i == 0 || col > max_column) {
+            max_column = col;
+        }
+        if (i == 0 || col < min_column) {
+            min_column = col;
+        }
+    }
+
+    if (max_column == min_column) {
+        return;
+    }
+
+    Transaction transaction;
+    transaction.init(cursors.len - 1, max_column - min_column);
+    CZ_DEFER(transaction.drop());
+
+    char* buf = (char*)transaction.value_allocator().alloc({max_column - min_column, 1});
+    CZ_DEBUG_ASSERT(buf);
+    memset(buf, ' ', max_column - min_column);
+
+    iterator.retreat_to(cursors[0].point);
+    uint64_t offset = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+
+        Contents_Iterator it2 = iterator;
+        start_of_line(&it2);
+        uint64_t col = iterator.position - it2.position;
+        if (col == max_column) {
+            continue;
+        }
+
+        Edit edit;
+        edit.value = SSOStr::from_constant(cz::Str{buf, max_column - col});
+        edit.position = cursors[i].point + offset;
+        offset += max_column - col;
+        edit.flags = Edit::INSERT;
+        transaction.push(edit);
+    }
+
+    transaction.commit(buffer, command_cursors_align);
+}
+
 static void command_search_forward_callback(Editor* editor,
                                             Client* client,
                                             cz::Str query,
