@@ -448,10 +448,10 @@ void command_forward_matching_token(Editor* editor, Command_Source source) {
               [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
 }
 
-static void create_cursor_with_offsets(cz::Vector<Cursor>* cursors,
-                                       Cursor cursor,
-                                       Contents_Iterator it) {
-    Cursor new_cursor;
+static Cursor create_cursor_with_offsets(cz::Vector<Cursor>* cursors,
+                                         Cursor cursor,
+                                         Contents_Iterator it) {
+    Cursor new_cursor = {};
     new_cursor.point = it.position;
     if (cursor.mark < cursor.point) {
         if (it.position < cursor.point - cursor.mark) {
@@ -466,9 +466,7 @@ static void create_cursor_with_offsets(cz::Vector<Cursor>* cursors,
             new_cursor.mark = new_cursor.point + (cursor.mark - cursor.point);
         }
     }
-
-    cursors->reserve(cz::heap_allocator(), 1);
-    cursors->push(new_cursor);
+    return new_cursor;
 }
 
 void command_create_cursor_forward_matching_token(Editor* editor, Command_Source source) {
@@ -480,7 +478,10 @@ void command_create_cursor_forward_matching_token(Editor* editor, Command_Source
         return;
     }
 
-    create_cursor_with_offsets(&window->cursors, cursor, it);
+    Cursor new_cursor = create_cursor_with_offsets(&window->cursors, cursor, it);
+
+    window->cursors.reserve(cz::heap_allocator(), 1);
+    window->cursors.push(new_cursor);
 }
 
 void command_create_cursor_backward_matching_token(Editor* editor, Command_Source source) {
@@ -492,7 +493,10 @@ void command_create_cursor_backward_matching_token(Editor* editor, Command_Sourc
         return;
     }
 
-    create_cursor_with_offsets(&window->cursors, cursor, it);
+    Cursor new_cursor = create_cursor_with_offsets(&window->cursors, cursor, it);
+
+    window->cursors.reserve(cz::heap_allocator(), 1);
+    window->cursors.insert(0, new_cursor);
 }
 
 }
