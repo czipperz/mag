@@ -49,11 +49,13 @@ void Window_Unified::update_cursors(Buffer* buffer) {
     bool was_0 = start_position == 0;
     position_after_changes(new_changes, &start_position);
     if (was_0) {
-        Contents_Iterator iterator = buffer->contents.start();
-        compute_visible_end(this, &iterator);
-        if (iterator.position >= cursors[0].point) {
-            start_position = 0;
-        }
+        // The only case where we can insert before the start position is if we are at the start of
+        // the file.  This hack will cause the algorithm in `render/render.cpp:draw_buffer_contents`
+        // (commit 5374379) to refit the start position to the cursor if the changes are larger than
+        // one screen height.  This fixes the bug where opening a new file and pasting will make it
+        // appear that the file is empty because `start_position` is updated to the cursor's
+        // position instead of being at the top of the file.
+        start_position = 0;
     }
 
     this->change_index = buffer->changes.len();
