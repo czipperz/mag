@@ -85,6 +85,9 @@ Key_Map create_key_map() {
     BIND(key_map, "C-c f", command_forward_matching_token);
     BIND(key_map, "C-c C-b", command_create_cursor_backward_matching_token);
     BIND(key_map, "C-c C-f", command_create_cursor_forward_matching_token);
+    BIND(key_map, "C-c C-A-b", command_create_cursors_to_start_matching_token);
+    BIND(key_map, "C-c C-A-f", command_create_cursors_to_end_matching_token);
+    BIND(key_map, "C-c C-c", command_create_all_cursors_matching_token);
 
     BIND(key_map, "C-A-n", command_create_cursor_forward);
     BIND(key_map, "C-A-p", command_create_cursor_backward);

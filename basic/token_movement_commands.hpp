@@ -21,6 +21,10 @@ void command_backward_matching_token(Editor* editor, Command_Source source);
 void command_create_cursor_forward_matching_token(Editor* editor, Command_Source source);
 void command_create_cursor_backward_matching_token(Editor* editor, Command_Source source);
 
+void command_create_cursors_to_end_matching_token(Editor* editor, Command_Source source);
+void command_create_cursors_to_start_matching_token(Editor* editor, Command_Source source);
+void command_create_all_cursors_matching_token(Editor* editor, Command_Source source);
+
 void backward_up_pair(Buffer* buffer, Contents_Iterator* cursor);
 void forward_up_pair(Buffer* buffer, Contents_Iterator* cursor);
 

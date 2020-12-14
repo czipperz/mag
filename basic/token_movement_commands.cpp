@@ -469,34 +469,86 @@ static Cursor create_cursor_with_offsets(cz::Vector<Cursor>* cursors,
     return new_cursor;
 }
 
-void command_create_cursor_forward_matching_token(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-
+static bool create_cursor_forward_matching_token(Buffer* buffer, Window_Unified* window) {
     Cursor cursor = window->cursors[window->cursors.len() - 1];
     Contents_Iterator it = buffer->contents.iterator_at(cursor.point);
     if (!forward_matching_token(buffer, &it)) {
-        return;
+        return false;
     }
 
     Cursor new_cursor = create_cursor_with_offsets(&window->cursors, cursor, it);
 
     window->cursors.reserve(cz::heap_allocator(), 1);
     window->cursors.push(new_cursor);
+    return true;
 }
 
-void command_create_cursor_backward_matching_token(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-
+static bool create_cursor_backward_matching_token(Buffer* buffer, Window_Unified* window) {
     Cursor cursor = window->cursors[0];
     Contents_Iterator it = buffer->contents.iterator_at(cursor.point);
     if (!backward_matching_token(buffer, &it)) {
-        return;
+        return false;
     }
 
     Cursor new_cursor = create_cursor_with_offsets(&window->cursors, cursor, it);
 
     window->cursors.reserve(cz::heap_allocator(), 1);
     window->cursors.insert(0, new_cursor);
+    return true;
+}
+
+static void show_no_create_cursor_message(Client* client) {
+    client->show_message("No more cursors to create");
+}
+
+void command_create_cursor_forward_matching_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    if (!create_cursor_forward_matching_token(buffer, window)) {
+        show_no_create_cursor_message(source.client);
+    }
+}
+
+void command_create_cursor_backward_matching_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    if (!create_cursor_backward_matching_token(buffer, window)) {
+        show_no_create_cursor_message(source.client);
+    }
+}
+
+void command_create_cursors_to_end_matching_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    bool any = false;
+    while (create_cursor_forward_matching_token(buffer, window)) {
+        any = true;
+    }
+    if (!any) {
+        show_no_create_cursor_message(source.client);
+    }
+}
+
+void command_create_cursors_to_start_matching_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    bool any = false;
+    while (create_cursor_backward_matching_token(buffer, window)) {
+        any = true;
+    }
+    if (!any) {
+        show_no_create_cursor_message(source.client);
+    }
+}
+
+void command_create_all_cursors_matching_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    bool any = false;
+    while (create_cursor_backward_matching_token(buffer, window)) {
+        any = true;
+    }
+    while (create_cursor_forward_matching_token(buffer, window)) {
+        any = true;
+    }
+    if (!any) {
+        show_no_create_cursor_message(source.client);
+    }
 }
 
 }
