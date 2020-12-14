@@ -458,6 +458,19 @@ static void show_no_create_cursor_message(Client* client) {
     client->show_message("No more cursors to create");
 }
 
+static void show_no_region_message(Client* client) {
+    client->show_message("Must select a non-empty region first");
+}
+
+static void show_created_messages(Client* client, int created) {
+    if (created == -1) {
+        show_no_region_message(client);
+    }
+    if (created == 0) {
+        show_no_create_cursor_message(client);
+    }
+}
+
 static bool create_cursor_forward_line(Buffer* buffer, Window_Unified* window) {
     CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
     Contents_Iterator last_cursor_iterator =
@@ -578,12 +591,12 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
         }                                                                                  \
     } while (0)
 
-static bool create_cursor_forward_search(Buffer* buffer, Window_Unified* window) {
+static int create_cursor_forward_search(Buffer* buffer, Window_Unified* window) {
     cz::Slice<Cursor> cursors = window->cursors;
     CZ_DEBUG_ASSERT(cursors.len >= 1);
     size_t c = cursors.len - 1;
     if (!window->show_marks || cursors[c].mark == cursors[c].point) {
-        return false;
+        return -1;
     }
     bool created;
     SEARCH_SLICE_THEN(search_forward_slice, created, {
@@ -595,9 +608,8 @@ static bool create_cursor_forward_search(Buffer* buffer, Window_Unified* window)
 
 void command_create_cursor_forward_search(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    if (!create_cursor_forward_search(buffer, window)) {
-        show_no_create_cursor_message(source.client);
-    }
+    int created = create_cursor_forward_search(buffer, window);
+    show_created_messages(source.client, created);
 }
 
 static cz::Option<uint64_t> search_backward(Contents_Iterator start_it, cz::Str query) {
@@ -648,12 +660,12 @@ static cz::Option<uint64_t> search_backward_slice(Buffer* buffer,
     return search_backward(start, slice.as_str());
 }
 
-static bool create_cursor_backward_search(Buffer* buffer, Window_Unified* window) {
+static int create_cursor_backward_search(Buffer* buffer, Window_Unified* window) {
     cz::Slice<Cursor> cursors = window->cursors;
     CZ_DEBUG_ASSERT(cursors.len >= 1);
     size_t c = 0;
     if (!window->show_marks || cursors[c].mark == cursors[c].point) {
-        return false;
+        return -1;
     }
     bool created;
     SEARCH_SLICE_THEN(search_backward_slice, created, {
@@ -665,74 +677,68 @@ static bool create_cursor_backward_search(Buffer* buffer, Window_Unified* window
 
 void command_create_cursor_backward_search(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    if (!create_cursor_backward_search(buffer, window)) {
-        show_no_create_cursor_message(source.client);
-    }
+    int created = create_cursor_backward_search(buffer, window);
+    show_created_messages(source.client, created);
 }
 
 void command_create_cursor_forward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    bool created;
+    int created;
     if (window->show_marks) {
         created = create_cursor_forward_search(buffer, window);
     } else {
         created = create_cursor_forward_line(buffer, window);
     }
-    if (!created) {
-        show_no_create_cursor_message(source.client);
-    }
+    show_created_messages(source.client, created);
 }
 
 void command_create_cursor_backward(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    bool created;
+    int created;
     if (window->show_marks) {
         created = create_cursor_backward_search(buffer, window);
     } else {
         created = create_cursor_backward_line(buffer, window);
     }
-    if (!created) {
-        show_no_create_cursor_message(source.client);
-    }
+    show_created_messages(source.client, created);
 }
 
 void command_create_cursors_all_search(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    bool any = false;
-    if (create_cursor_backward_search(buffer, window)) {
-        any = true;
-        while (create_cursor_backward_search(buffer, window)) {
+    int created = create_cursor_backward_search(buffer, window);
+    if (created >= 0) {
+        if (created > 0) {
+            while (create_cursor_backward_search(buffer, window) == true) {
+            }
         }
-    }
-    if (create_cursor_forward_search(buffer, window)) {
-        any = true;
-        while (create_cursor_forward_search(buffer, window)) {
+        if (create_cursor_forward_search(buffer, window) == true) {
+            created = true;
+            while (create_cursor_forward_search(buffer, window) == true) {
+            }
         }
     }
 
-    if (!any) {
-        show_no_create_cursor_message(source.client);
-    }
+    show_created_messages(source.client, created);
 }
 
 void command_create_cursors_to_end_search(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    if (create_cursor_forward_search(buffer, window)) {
-        while (create_cursor_forward_search(buffer, window)) {
+    int created = create_cursor_forward_search(buffer, window);
+    if (created == true) {
+        while (create_cursor_forward_search(buffer, window) == true) {
         }
-    } else {
-        show_no_create_cursor_message(source.client);
     }
+    show_created_messages(source.client, created);
 }
 
 void command_create_cursors_to_start_search(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    if (create_cursor_backward_search(buffer, window)) {
-        while (create_cursor_backward_search(buffer, window)) {
+    int created = create_cursor_backward_search(buffer, window);
+    if (created == true) {
+        while (create_cursor_backward_search(buffer, window) == true) {
         }
-    } else {
-        show_no_create_cursor_message(source.client);
     }
+    show_created_messages(source.client, created);
 }
 
 static void set_cursor_position_to_edit_redo(Cursor* cursor, const Edit* edit) {

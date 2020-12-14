@@ -31,17 +31,17 @@ void forward_up_pair(Buffer* buffer, Contents_Iterator* cursor);
 void forward_token_pair(Buffer* buffer, Contents_Iterator* iterator);
 void backward_token_pair(Buffer* buffer, Contents_Iterator* iterator);
 
-bool forward_matching_token(Buffer* buffer, Contents_Iterator* iterator);
-bool backward_matching_token(Buffer* buffer, Contents_Iterator* iterator);
+int forward_matching_token(Buffer* buffer, Contents_Iterator* iterator);
+int backward_matching_token(Buffer* buffer, Contents_Iterator* iterator);
 
-bool find_forward_matching_token(Buffer* buffer,
+int find_forward_matching_token(Buffer* buffer,
+                                Contents_Iterator iterator,
+                                Token* this_token,
+                                Token* matching_token);
+int find_backward_matching_token(Buffer* buffer,
                                  Contents_Iterator iterator,
                                  Token* this_token,
                                  Token* matching_token);
-bool find_backward_matching_token(Buffer* buffer,
-                                  Contents_Iterator iterator,
-                                  Token* this_token,
-                                  Token* matching_token);
 
 }
 }
