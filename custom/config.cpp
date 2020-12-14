@@ -161,23 +161,25 @@ Key_Map create_key_map() {
 
     BIND(key_map, "C-x C-d", command_apply_diff);
 
-    BIND(key_map, "C-c a", prose::command_alternate);
-
-    BIND(key_map, "C-c u", command_uppercase_letter);
-    BIND(key_map, "C-c l", command_lowercase_letter);
-    BIND(key_map, "C-c C-u", command_uppercase_region);
-    BIND(key_map, "C-c C-l", command_lowercase_region);
+    BIND(key_map, "A-g u", command_uppercase_letter);
+    BIND(key_map, "A-g l", command_lowercase_letter);
+    BIND(key_map, "A-g C-u", command_uppercase_region);
+    BIND(key_map, "A-g C-l", command_lowercase_region);
 
     man::path_to_autocomplete_man_page =
         "/home/czipperz/find-man-page/build/release/autocomplete-man-page";
     man::path_to_load_man_page = "/home/czipperz/find-man-page/build/release/load-man-page";
-    BIND(key_map, "C-c m", man::command_man);
+    BIND(key_map, "A-g m", man::command_man);
 
     BIND(key_map, "A-g A-g", command_goto_line);
     BIND(key_map, "A-g c", command_goto_position);
 
     BIND(key_map, "A-g n", command_search_open_next);
     BIND(key_map, "A-g p", command_search_open_previous);
+    BIND(key_map, "A-g A-n", command_search_open_next);
+    BIND(key_map, "A-g A-p", command_search_open_previous);
+
+    BIND(key_map, "A-g a", prose::command_alternate);
 
     BIND(key_map, "A-g s", git::command_git_grep);
     BIND(key_map, "A-g f", git::command_git_find_file);
