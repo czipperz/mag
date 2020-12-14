@@ -708,12 +708,12 @@ void command_create_cursors_all_search(Editor* editor, Command_Source source) {
     int created = create_cursor_backward_search(buffer, window);
     if (created >= 0) {
         if (created > 0) {
-            while (create_cursor_backward_search(buffer, window) == true) {
+            while (create_cursor_backward_search(buffer, window) == 1) {
             }
         }
-        if (create_cursor_forward_search(buffer, window) == true) {
-            created = true;
-            while (create_cursor_forward_search(buffer, window) == true) {
+        if (create_cursor_forward_search(buffer, window) == 1) {
+            created = 1;
+            while (create_cursor_forward_search(buffer, window) == 1) {
             }
         }
     }
@@ -724,8 +724,8 @@ void command_create_cursors_all_search(Editor* editor, Command_Source source) {
 void command_create_cursors_to_end_search(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_search(buffer, window);
-    if (created == true) {
-        while (create_cursor_forward_search(buffer, window) == true) {
+    if (created == 1) {
+        while (create_cursor_forward_search(buffer, window) == 1) {
         }
     }
     show_created_messages(source.client, created);
@@ -734,8 +734,8 @@ void command_create_cursors_to_end_search(Editor* editor, Command_Source source)
 void command_create_cursors_to_start_search(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
-    if (created == true) {
-        while (create_cursor_backward_search(buffer, window) == true) {
+    if (created == 1) {
+        while (create_cursor_backward_search(buffer, window) == 1) {
         }
     }
     show_created_messages(source.client, created);

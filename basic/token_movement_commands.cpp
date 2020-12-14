@@ -331,15 +331,15 @@ int find_backward_matching_token(Buffer* buffer,
     while (1) {
         bool has_token = buffer->mode.next_token(&token_iterator, &token, &state);
         if (!has_token) {
-            return false;
+            return 0;
         }
 
         if (token.start >= end_position) {
             if (found_token_this_loop) {
-                return true;
+                return 1;
             }
             if (check_point_index == 0) {
-                return false;
+                return 0;
             }
 
             --check_point_index;
@@ -365,12 +365,12 @@ int backward_matching_token(Buffer* buffer, Contents_Iterator* iterator) {
     Token this_token;
     Token matching_token;
     int created = find_backward_matching_token(buffer, *iterator, &this_token, &matching_token);
-    if (created != true) {
+    if (created != 1) {
         return created;
     }
 
     iterator->retreat_to(matching_token.start + (iterator->position - this_token.start));
-    return true;
+    return 1;
 }
 
 void command_backward_matching_token(Editor* editor, Command_Source source) {
@@ -411,7 +411,7 @@ int find_forward_matching_token(Buffer* buffer,
         Token token;
         bool has_token = buffer->mode.next_token(&token_iterator, &token, &state);
         if (!has_token) {
-            return false;
+            return 0;
         }
 
         if (token.end > end_position) {
@@ -420,7 +420,7 @@ int find_forward_matching_token(Buffer* buffer,
             if (token_to_match.type == token.type &&
                 matches(token_to_match_iterator, token_to_match.end, test_it, token.end)) {
                 *matching_token = token;
-                return true;
+                return 1;
             }
         }
     }
@@ -430,12 +430,12 @@ int forward_matching_token(Buffer* buffer, Contents_Iterator* iterator) {
     Token this_token;
     Token matching_token;
     int created = find_forward_matching_token(buffer, *iterator, &this_token, &matching_token);
-    if (created != true) {
+    if (created != 1) {
         return created;
     }
 
     iterator->advance_to(matching_token.start + (iterator->position - this_token.start));
-    return true;
+    return 1;
 }
 
 void command_forward_matching_token(Editor* editor, Command_Source source) {
@@ -475,7 +475,7 @@ static int create_cursor_forward_matching_token(Buffer* buffer, Window_Unified* 
     Cursor cursor = window->cursors[window->cursors.len() - 1];
     Contents_Iterator it = buffer->contents.iterator_at(cursor.point);
     int created = forward_matching_token(buffer, &it);
-    if (created != true) {
+    if (created != 1) {
         return created;
     }
 
@@ -483,14 +483,14 @@ static int create_cursor_forward_matching_token(Buffer* buffer, Window_Unified* 
 
     window->cursors.reserve(cz::heap_allocator(), 1);
     window->cursors.push(new_cursor);
-    return true;
+    return 1;
 }
 
 static int create_cursor_backward_matching_token(Buffer* buffer, Window_Unified* window) {
     Cursor cursor = window->cursors[0];
     Contents_Iterator it = buffer->contents.iterator_at(cursor.point);
     int created = backward_matching_token(buffer, &it);
-    if (created != true) {
+    if (created != 1) {
         return created;
     }
 
@@ -498,7 +498,7 @@ static int create_cursor_backward_matching_token(Buffer* buffer, Window_Unified*
 
     window->cursors.reserve(cz::heap_allocator(), 1);
     window->cursors.insert(0, new_cursor);
-    return true;
+    return 1;
 }
 
 static void show_no_create_cursor_message(Client* client) {
@@ -513,7 +513,7 @@ static void show_created_messages(Client* client, int created) {
     if (created == -1) {
         show_no_matching_token_message(client);
     }
-    if (created == false) {
+    if (created == 0) {
         show_no_create_cursor_message(client);
     }
 }
@@ -533,8 +533,8 @@ void command_create_cursor_backward_matching_token(Editor* editor, Command_Sourc
 void command_create_cursors_to_end_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_matching_token(buffer, window);
-    if (created == true) {
-        while (create_cursor_forward_matching_token(buffer, window) == true) {
+    if (created == 1) {
+        while (create_cursor_forward_matching_token(buffer, window) == 1) {
         }
     }
     show_created_messages(source.client, created);
@@ -543,8 +543,8 @@ void command_create_cursors_to_end_matching_token(Editor* editor, Command_Source
 void command_create_cursors_to_start_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_matching_token(buffer, window);
-    if (created == true) {
-        while (create_cursor_backward_matching_token(buffer, window) == true) {
+    if (created == 1) {
+        while (create_cursor_backward_matching_token(buffer, window) == 1) {
         }
     }
     show_created_messages(source.client, created);
@@ -555,12 +555,12 @@ void command_create_all_cursors_matching_token(Editor* editor, Command_Source so
     int created = create_cursor_backward_matching_token(buffer, window);
     if (created >= 0) {
         if (created > 0) {
-            while (create_cursor_backward_matching_token(buffer, window) == true) {
+            while (create_cursor_backward_matching_token(buffer, window) == 1) {
             }
         }
-        if (create_cursor_forward_matching_token(buffer, window) == true) {
-            created = true;
-            while (create_cursor_forward_matching_token(buffer, window) == true) {
+        if (create_cursor_forward_matching_token(buffer, window) == 1) {
+            created = 1;
+            while (create_cursor_forward_matching_token(buffer, window) == 1) {
             }
         }
     }
