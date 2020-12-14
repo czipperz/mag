@@ -7,6 +7,15 @@
 namespace mag {
 namespace syntax {
 
+enum {
+    START_OF_LINE,
+    MIDDLE_OF_LINE,
+    TITLE,
+    INSIDE_ITALICS,
+    INSIDE_BOLD,
+    INSIDE_BOLD_ITALICS,
+};
+
 static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* state) {
     while (1) {
         if (iterator->at_eob()) {
@@ -18,7 +27,7 @@ static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* state) {
             return true;
         }
         if (ch == '\n') {
-            *state = 0;
+            *state = START_OF_LINE;
         }
         iterator->advance();
     }
@@ -48,9 +57,11 @@ static void advance_through_inline_code_block(Contents_Iterator* iterator) {
     }
 }
 
-bool md_next_token(Contents_Iterator* iterator,
-                   Token* token,
-                   uint64_t* state) {
+static bool is_special(char ch) {
+    return ch == '`' || ch == '*' || ch == '_';
+}
+
+bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     if (!advance_whitespace(iterator, state)) {
         return false;
     }
@@ -58,20 +69,20 @@ bool md_next_token(Contents_Iterator* iterator,
     token->start = iterator->position;
     char first_ch = iterator->get();
 
-    if (*state == 0 && (first_ch == '*' || first_ch == '+' || first_ch == '-')) {
+    if (*state == START_OF_LINE && (first_ch == '*' || first_ch == '+' || first_ch == '-')) {
         iterator->advance();
         token->type = Token_Type::PUNCTUATION;
-        *state = 1;
+        *state = MIDDLE_OF_LINE;
         goto ret;
     }
 
-    if (*state == 0 && first_ch == '#') {
+    if (*state == START_OF_LINE && first_ch == '#') {
         iterator->advance();
         while (!iterator->at_eob() && iterator->get() == '#') {
             iterator->advance();
         }
         token->type = Token_Type::PUNCTUATION;
-        *state = 2;
+        *state = TITLE;
         goto ret;
     }
 
@@ -100,13 +111,95 @@ bool md_next_token(Contents_Iterator* iterator,
         goto ret;
     }
 
-    while (!iterator->at_eob() && iterator->get() != '\n' && iterator->get() != '`') {
-        iterator->advance();
+    if (*state == INSIDE_ITALICS || *state == INSIDE_BOLD || *state == INSIDE_BOLD_ITALICS ||
+        first_ch == '*' || first_ch == '_') {
+        bool italic = false;
+        bool bold = false;
+
+        auto assign_bold_and_italic = [&]() {
+            iterator->advance();
+            if (!iterator->at_eob() && (iterator->get() == '*' || iterator->get() == '_')) {
+                iterator->advance();
+                if (!iterator->at_eob() && (iterator->get() == '*' || iterator->get() == '_')) {
+                    iterator->advance();
+                    italic = !italic;
+                }
+                bold = !bold;
+            } else {
+                italic = !italic;
+            }
+        };
+
+        if (*state == INSIDE_ITALICS) {
+            italic = true;
+        } else if (*state == INSIDE_BOLD) {
+            bold = true;
+        } else if (*state == INSIDE_BOLD_ITALICS) {
+            bold = true;
+            italic = true;
+        } else {
+            assign_bold_and_italic();
+        }
+
+        while (!iterator->at_eob()) {
+            if (is_special(iterator->get())) {
+                break;
+            }
+            iterator->advance();
+        }
+
+        if (bold) {
+            if (italic) {
+                token->type = Token_Type::PROCESS_BOLD_ITALICS;
+            } else {
+                token->type = Token_Type::PROCESS_BOLD;
+            }
+        } else {
+            if (italic) {
+                token->type = Token_Type::PROCESS_ITALICS;
+            } else {
+                CZ_PANIC("unreachable");
+            }
+        }
+
+        if (!iterator->at_eob() && (iterator->get() == '*' || iterator->get() == '_')) {
+            assign_bold_and_italic();
+        }
+
+        if (bold) {
+            if (italic) {
+                *state = INSIDE_BOLD_ITALICS;
+            } else {
+                *state = INSIDE_BOLD;
+            }
+        } else {
+            if (italic) {
+                *state = INSIDE_ITALICS;
+            } else {
+                *state = MIDDLE_OF_LINE;
+            }
+        }
+
+        goto ret;
     }
-    if (*state == 2) {
+
+    if (*state == TITLE) {
         token->type = Token_Type::TITLE;
     } else {
         token->type = Token_Type::DEFAULT;
+    }
+
+    while (!iterator->at_eob()) {
+        char ch = iterator->get();
+        if (ch == '\n') {
+            *state = START_OF_LINE;
+            break;
+        }
+        if (is_special(ch)) {
+            *state = MIDDLE_OF_LINE;
+            break;
+        }
+        iterator->advance();
     }
 
 ret:
