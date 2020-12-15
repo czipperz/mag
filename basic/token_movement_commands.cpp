@@ -150,10 +150,10 @@ static bool get_token_before_position(Buffer* buffer,
     }
 }
 
-static bool get_token_at_position(Buffer* buffer,
-                                  Contents_Iterator* token_iterator,
-                                  uint64_t* state,
-                                  Token* token) {
+bool get_token_at_position(Buffer* buffer,
+                           Contents_Iterator* token_iterator,
+                           uint64_t* state,
+                           Token* token) {
     uint64_t position = token_iterator->position;
 
     buffer->token_cache.update(buffer);
