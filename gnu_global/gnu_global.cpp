@@ -13,7 +13,7 @@
 namespace mag {
 namespace gnu_global {
 
-const char* lookup(const char* directory, cz::Str tag, Reference* reference) {
+const char* lookup(const char* directory, cz::Str query, Tag* tag) {
     cz::Input_File std_out_read;
     CZ_DEFER(std_out_read.close());
 
@@ -28,7 +28,7 @@ const char* lookup(const char* directory, cz::Str tag, Reference* reference) {
         options.std_err = options.std_out;
         CZ_DEFER(options.std_out.close());
 
-        cz::Str rev_parse_args[] = {"global", "-at", tag};
+        cz::Str rev_parse_args[] = {"global", "-at", query};
         if (!process.launch_program(cz::slice(rev_parse_args), &options)) {
             return "Couldn't launch `global`";
         }
@@ -62,30 +62,30 @@ const char* lookup(const char* directory, cz::Str tag, Reference* reference) {
     *(char*)line_number_start = '\0';
     *(char*)line_number_end = '\0';
 
-    int scan_ret = sscanf(line_number_start + 1, "%" PRIu64, &reference->line);
+    int scan_ret = sscanf(line_number_start + 1, "%" PRIu64, &tag->line);
     if (scan_ret == EOF || scan_ret < 1) {
         return "Invalid `global` output";
     }
 
-    reference->file_name = file_name_start;
-    reference->buffer = buffer;
+    tag->file_name = file_name_start;
+    tag->buffer = buffer;
     buffer = {};
 
     return nullptr;
 }
 
-static void open_tag(Editor* editor, Client* client, const Reference& reference) {
-    open_file(editor, client, reference.file_name);
+static void open_tag(Editor* editor, Client* client, const Tag& tag) {
+    open_file(editor, client, tag.file_name);
 
     WITH_SELECTED_BUFFER(client);
     kill_extra_cursors(window, client);
 
-    Contents_Iterator iterator = start_of_line_position(buffer->contents, reference.line);
+    Contents_Iterator iterator = start_of_line_position(buffer->contents, tag.line);
     window->cursors[0].point = iterator.position;
 }
 
 void command_lookup_at_point(Editor* editor, Command_Source source) {
-    Reference reference;
+    Tag tag;
     {
         WITH_SELECTED_BUFFER(source.client);
 
@@ -98,13 +98,13 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
         }
 
         iterator.retreat_to(token.start);
-        char* tag = (char*)malloc(token.end - token.start + 1);
-        CZ_ASSERT(tag);
-        CZ_DEFER(free(tag));
-        buffer->contents.slice_into(iterator, token.end, tag);
-        tag[token.end - token.start] = '\0';
+        char* query = (char*)malloc(token.end - token.start + 1);
+        CZ_ASSERT(query);
+        CZ_DEFER(free(query));
+        buffer->contents.slice_into(iterator, token.end, query);
+        query[token.end - token.start] = '\0';
 
-        const char* lookup_error = lookup(buffer->directory.buffer(), tag, &reference);
+        const char* lookup_error = lookup(buffer->directory.buffer(), query, &tag);
         if (lookup_error) {
             source.client->show_message(lookup_error);
             return;
@@ -113,20 +113,19 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
         push_jump(window, source.client, handle->id, buffer);
     }
 
-    CZ_DEFER(reference.buffer.drop(cz::heap_allocator()));
+    CZ_DEFER(tag.buffer.drop(cz::heap_allocator()));
 
-    open_tag(editor, source.client, reference);
+    open_tag(editor, source.client, tag);
 }
 
 static void command_lookup_prompt_callback(Editor* editor,
                                            Client* client,
                                            cz::Str query,
                                            void* data) {
-    Reference reference;
+    Tag tag;
     {
         WITH_SELECTED_BUFFER(client);
-        const char* lookup_error =
-            lookup(buffer->directory.buffer(), query, &reference);
+        const char* lookup_error = lookup(buffer->directory.buffer(), query, &tag);
         if (lookup_error) {
             client->show_message(lookup_error);
             return;
@@ -134,9 +133,9 @@ static void command_lookup_prompt_callback(Editor* editor,
 
         push_jump(window, client, handle->id, buffer);
     }
-    CZ_DEFER(reference.buffer.drop(cz::heap_allocator()));
+    CZ_DEFER(tag.buffer.drop(cz::heap_allocator()));
 
-    open_tag(editor, client, reference);
+    open_tag(editor, client, tag);
 }
 
 void command_lookup_prompt(Editor* editor, Command_Source source) {

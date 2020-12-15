@@ -6,7 +6,7 @@
 namespace mag {
 namespace gnu_global {
 
-struct Reference {
+struct Tag {
     /// Should be deallocated via `cz::heap_allocator()`.
     cz::String buffer;
     /// Null terminated and a slice of `buffer`.
@@ -14,10 +14,10 @@ struct Reference {
     uint64_t line;
 };
 
-/// Lookup a `tag` to get a `Reference`.
+/// Lookup a `query` to get a `Tag`.
 ///
 /// If there is an error, returns a string describing the error.  On success, returns `nullptr`.
-const char* lookup(const char* directory, cz::Str tag, Reference* reference);
+const char* lookup(const char* directory, cz::Str query, Tag* tag);
 
 void command_lookup_at_point(Editor* editor, Command_Source source);
 
