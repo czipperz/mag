@@ -21,6 +21,7 @@
 #include "git/tokenize_git_commit_edit_message.hpp"
 #include "git/tokenize_patch.hpp"
 #include "git/tokenize_rebase_todo.hpp"
+#include "gnu_global/gnu_global.hpp"
 #include "man/man.hpp"
 #include "overlay.hpp"
 #include "prose/alternate.hpp"
@@ -189,6 +190,8 @@ Key_Map create_key_map() {
 
     BIND(key_map, "A-g s", git::command_git_grep);
     BIND(key_map, "A-g f", git::command_git_find_file);
+
+    BIND(key_map, "A-g A-g", gnu_global::command_lookup);
 
     BIND(key_map, "A-l", command_goto_center_of_window);
     BIND(key_map, "C-l", command_center_in_window);

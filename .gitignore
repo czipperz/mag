@@ -9,4 +9,6 @@ SDL
 TTF
 IMG
 res/logo.ico
-
+GPATH
+GRTAGS
+GTAGS
