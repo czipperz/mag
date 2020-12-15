@@ -167,10 +167,10 @@ Key_Map create_key_map() {
 
     BIND(key_map, "C-x C-d", command_apply_diff);
 
-    BIND(key_map, "A-g u", command_uppercase_letter);
-    BIND(key_map, "A-g l", command_lowercase_letter);
-    BIND(key_map, "A-g C-u", command_uppercase_region);
-    BIND(key_map, "A-g C-l", command_lowercase_region);
+    BIND(key_map, "C-x u", command_uppercase_letter);
+    BIND(key_map, "C-x l", command_lowercase_letter);
+    BIND(key_map, "C-x C-u", command_uppercase_region);
+    BIND(key_map, "C-x C-l", command_lowercase_region);
 
     man::path_to_autocomplete_man_page =
         "/home/czipperz/find-man-page/build/release/autocomplete-man-page";
