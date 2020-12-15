@@ -981,6 +981,17 @@ static void parse_number(cz::Str str, uint64_t* number) {
     }
 }
 
+Contents_Iterator start_of_line_position(const Contents& contents, uint64_t lines) {
+    Contents_Iterator iterator = contents.start();
+    while (!iterator.at_eob() && lines > 1) {
+        if (iterator.get() == '\n') {
+            --lines;
+        }
+        iterator.advance();
+    }
+    return iterator;
+}
+
 static void command_goto_line_callback(Editor* editor, Client* client, cz::Str str, void* data) {
     uint64_t lines = 0;
     parse_number(str, &lines);
@@ -988,14 +999,7 @@ static void command_goto_line_callback(Editor* editor, Client* client, cz::Str s
     WITH_SELECTED_BUFFER(client);
     push_jump(window, client, handle->id, buffer);
 
-    Contents_Iterator iterator = buffer->contents.start();
-    while (!iterator.at_eob() && lines > 1) {
-        if (iterator.get() == '\n') {
-            --lines;
-        }
-        iterator.advance();
-    }
-
+    Contents_Iterator iterator = start_of_line_position(buffer->contents, lines);
     window->cursors[0].point = iterator.position;
 }
 

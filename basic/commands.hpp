@@ -6,6 +6,8 @@
 namespace mag {
 namespace basic {
 
+Contents_Iterator start_of_line_position(const Contents& contents, uint64_t lines);
+
 void command_set_mark(Editor* editor, Command_Source source);
 void command_swap_mark_point(Editor* editor, Command_Source source);
 
