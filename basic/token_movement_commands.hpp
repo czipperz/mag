@@ -11,11 +11,6 @@ struct Token;
 
 namespace basic {
 
-bool get_token_at_position(Buffer* buffer,
-                           Contents_Iterator* iterator,
-                           uint64_t* state,
-                           Token* token);
-
 void command_backward_up_pair(Editor* editor, Command_Source source);
 void command_forward_up_pair(Editor* editor, Command_Source source);
 

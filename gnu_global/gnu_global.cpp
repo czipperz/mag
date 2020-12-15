@@ -7,10 +7,8 @@
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
 #include <file.hpp>
+#include <movement.hpp>
 #include <token.hpp>
-
-#include <basic/commands.hpp>
-#include <basic/token_movement_commands.hpp>
 
 namespace mag {
 namespace gnu_global {
@@ -84,7 +82,7 @@ void command_lookup(Editor* editor, Command_Source source) {
         Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
         uint64_t state;
         Token token;
-        if (!basic::get_token_at_position(buffer, &iterator, &state, &token)) {
+        if (!get_token_at_position(buffer, &iterator, &state, &token)) {
             source.client->show_message("Cursor is not positioned at a token");
             return;
         }
@@ -113,8 +111,7 @@ void command_lookup(Editor* editor, Command_Source source) {
         WITH_SELECTED_BUFFER(source.client);
         kill_extra_cursors(window, source.client);
 
-        Contents_Iterator iterator =
-            basic::start_of_line_position(buffer->contents, reference.line);
+        Contents_Iterator iterator = start_of_line_position(buffer->contents, reference.line);
         window->cursors[0].point = iterator.position;
     }
 }
