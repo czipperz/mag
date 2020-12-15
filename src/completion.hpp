@@ -54,7 +54,7 @@ void infix_completion_filter(Completion_Filter_Context*,
                              Completion_Engine_Context*);
 
 void run_command_for_completion_results(Completion_Engine_Context* context,
-                                        const char* const* args,
+                                        cz::Slice<cz::Str> args,
                                         cz::Process_Options options);
 struct Completion_Cache {
     Completion_Engine engine;

@@ -17,7 +17,7 @@ struct Reference {
 /// Lookup a `tag` to get a `Reference`.
 ///
 /// If there is an error, returns a string describing the error.  On success, returns `nullptr`.
-const char* lookup(const char* directory, const char* tag, Reference* reference);
+const char* lookup(const char* directory, cz::Str tag, Reference* reference);
 
 void command_lookup_at_point(Editor* editor, Command_Source source);
 

@@ -30,8 +30,8 @@ bool get_git_top_level(Client* client,
         options.std_err = options.std_out;
         CZ_DEFER(options.std_out.close());
 
-        const char* rev_parse_args[] = {"git", "rev-parse", "--show-toplevel", nullptr};
-        if (!process.launch_program(rev_parse_args, &options)) {
+        cz::Str rev_parse_args[] = {"git", "rev-parse", "--show-toplevel"};
+        if (!process.launch_program(cz::slice(rev_parse_args), &options)) {
             client->show_message("No git repository found");
             return false;
         }
@@ -62,13 +62,9 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
         }
     }
 
-    auto query_copy = query.duplicate_null_terminate(cz::heap_allocator());
-    CZ_DEFER(query_copy.drop(cz::heap_allocator()));
-    const char* args[] = {
-        "git", "grep", "-n", "--column", "-e", query_copy.buffer(), "--", ":/", nullptr,
-    };
+    cz::Str args[] = {"git", "grep", "-n", "--column", "-e", query, "--", ":/"};
 
-    run_console_command(client, editor, top_level_path.buffer(), args, "git grep",
+    run_console_command(client, editor, top_level_path.buffer(), cz::slice(args), "git grep",
                         "Git grep error");
 }
 

@@ -11,10 +11,10 @@ namespace mag {
 namespace git {
 
 static void git_find_file_completion_engine(Editor*, Completion_Engine_Context* context) {
-    const char* args[] = {"git", "ls-files", nullptr};
+    cz::Str args[] = {"git", "ls-files"};
     cz::Process_Options options;
     options.working_directory = (char*)context->data;
-    run_command_for_completion_results(context, args, options);
+    run_command_for_completion_results(context, cz::slice(args), options);
 }
 
 static void command_git_find_file_response(Editor* editor,

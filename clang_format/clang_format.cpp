@@ -260,8 +260,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     assume_filename.append(assume_filename_base);
     buffer->get_path(cz::heap_allocator(), &assume_filename);
 
-    const char* args[] = {"clang-format", "-output-replacements-xml", "-style=file",
-                          assume_filename.buffer(), nullptr};
+    cz::Str args[] = {"clang-format", "-output-replacements-xml", "-style=file", assume_filename};
 
     cz::Process_Options options;
     options.std_in = input_file;
@@ -273,7 +272,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     CZ_DEFER(options.std_out.close());
 
     cz::Process process;
-    if (!process.launch_program(args, &options)) {
+    if (!process.launch_program(cz::slice(args), &options)) {
         source.client->show_message("Error: Couldn't launch clang-format");
         stdout_read.close();
         return;

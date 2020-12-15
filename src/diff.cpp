@@ -259,10 +259,10 @@ void reload_file(Client* client, Buffer* buffer) {
         CZ_DEFER(buffer_path.drop(cz::heap_allocator()));
         buffer->get_path(cz::heap_allocator(), &buffer_path);
 
-        const char* args[] = {"diff", "-" /* stdin */, buffer_path.buffer(), nullptr};
+        cz::Str args[] = {"diff", "-" /* stdin */, buffer_path};
 
         cz::Process process;
-        if (!process.launch_program(args, &options)) {
+        if (!process.launch_program(cz::slice(args), &options)) {
             client->show_message("Error launching diff");
             return;
         }

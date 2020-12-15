@@ -189,7 +189,7 @@ void buffer_completion_engine(Editor* editor, Completion_Engine_Context* context
 void no_completion_engine(Editor*, Completion_Engine_Context*) {}
 
 void run_command_for_completion_results(Completion_Engine_Context* context,
-                                        const char* const* args,
+                                        cz::Slice<cz::Str> args,
                                         cz::Process_Options options) {
     if (context->results.len() > 0) {
         return;

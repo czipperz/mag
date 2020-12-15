@@ -13,7 +13,7 @@
 namespace mag {
 namespace gnu_global {
 
-const char* lookup(const char* directory, const char* tag, Reference* reference) {
+const char* lookup(const char* directory, cz::Str tag, Reference* reference) {
     cz::Input_File std_out_read;
     CZ_DEFER(std_out_read.close());
 
@@ -28,8 +28,8 @@ const char* lookup(const char* directory, const char* tag, Reference* reference)
         options.std_err = options.std_out;
         CZ_DEFER(options.std_out.close());
 
-        const char* rev_parse_args[] = {"global", "-at", tag, nullptr};
-        if (!process.launch_program(rev_parse_args, &options)) {
+        cz::Str rev_parse_args[] = {"global", "-at", tag};
+        if (!process.launch_program(cz::slice(rev_parse_args), &options)) {
             return "Couldn't launch `global`";
         }
     }
@@ -122,14 +122,11 @@ static void command_lookup_prompt_callback(Editor* editor,
                                            Client* client,
                                            cz::Str query,
                                            void* data) {
-    cz::String query_cstr = query.duplicate_null_terminate(cz::heap_allocator());
-    CZ_DEFER(query_cstr.drop(cz::heap_allocator()));
-
     Reference reference;
     {
         WITH_SELECTED_BUFFER(client);
         const char* lookup_error =
-            lookup(buffer->directory.buffer(), query_cstr.buffer(), &reference);
+            lookup(buffer->directory.buffer(), query, &reference);
         if (lookup_error) {
             client->show_message(lookup_error);
             return;

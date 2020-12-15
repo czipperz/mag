@@ -68,7 +68,7 @@ Job job_process_append(Buffer_Id buffer_id, cz::Process process, cz::Input_File 
 bool run_console_command(Client* client,
                          Editor* editor,
                          const char* working_directory,
-                         const char* script,
+                         cz::Str script,
                          cz::Str buffer_name,
                          cz::Str error) {
     cz::Process_Options options;
@@ -106,7 +106,7 @@ bool run_console_command(Client* client,
 bool run_console_command(Client* client,
                          Editor* editor,
                          const char* working_directory,
-                         const char* const* args,
+                         cz::Slice<cz::Str> args,
                          cz::Str buffer_name,
                          cz::Str error) {
     cz::String script = {};
