@@ -51,20 +51,6 @@ bool get_git_top_level(Client* client,
     return true;
 }
 
-static bool add_backslash(char c) {
-    switch (c) {
-    case '!':
-    case '"':
-    case '$':
-    case '\\':
-    case '`':
-        return true;
-
-    default:
-        return false;
-    }
-}
-
 static void command_git_grep_callback(Editor* editor, Client* client, cz::Str query, void* data) {
     cz::String top_level_path = {};
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
@@ -76,29 +62,13 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
         }
     }
 
-    size_t backslashes = 0;
-    for (size_t i = 0; i < query.len; ++i) {
-        if (add_backslash(query[i])) {
-            ++backslashes;
-        }
-    }
+    auto query_copy = query.duplicate_null_terminate(cz::heap_allocator());
+    CZ_DEFER(query_copy.drop(cz::heap_allocator()));
+    const char* args[] = {
+        "git", "grep", "-n", "--column", "-e", query_copy.buffer(), "--", ":/", nullptr,
+    };
 
-    cz::String script = {};
-    CZ_DEFER(script.drop(cz::heap_allocator()));
-    cz::Str prefix = "git grep -n --column -e \"";
-    cz::Str postfix = "\" -- :/";
-    script.reserve(cz::heap_allocator(), prefix.len + query.len + backslashes + postfix.len + 1);
-    script.append(prefix);
-    for (size_t i = 0; i < query.len; ++i) {
-        if (add_backslash(query[i])) {
-            script.push('\\');
-        }
-        script.push(query[i]);
-    }
-    script.append(postfix);
-    script.null_terminate();
-
-    run_console_command(client, editor, top_level_path.buffer(), script.buffer(), "git grep",
+    run_console_command(client, editor, top_level_path.buffer(), args, "git grep",
                         "Git grep error");
 }
 
