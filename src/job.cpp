@@ -103,4 +103,17 @@ bool run_console_command(Client* client,
     return true;
 }
 
+bool run_console_command(Client* client,
+                         Editor* editor,
+                         const char* working_directory,
+                         const char* const* args,
+                         cz::Str buffer_name,
+                         cz::Str error) {
+    cz::String script = {};
+    CZ_DEFER(script.drop(cz::heap_allocator()));
+    cz::Process::escape_args(args, &script, cz::heap_allocator());
+    return run_console_command(client, editor, working_directory, script.buffer(), buffer_name,
+                               error);
+}
+
 }
