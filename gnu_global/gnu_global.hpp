@@ -19,7 +19,9 @@ struct Reference {
 /// If there is an error, returns a string describing the error.  On success, returns `nullptr`.
 const char* lookup(const char* directory, const char* tag, Reference* reference);
 
-void command_lookup(Editor* editor, Command_Source source);
+void command_lookup_at_point(Editor* editor, Command_Source source);
+
+void command_lookup_prompt(Editor* editor, Command_Source source);
 
 }
 }

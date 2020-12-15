@@ -74,7 +74,17 @@ const char* lookup(const char* directory, const char* tag, Reference* reference)
     return nullptr;
 }
 
-void command_lookup(Editor* editor, Command_Source source) {
+static void open_tag(Editor* editor, Client* client, const Reference& reference) {
+    open_file(editor, client, reference.file_name);
+
+    WITH_SELECTED_BUFFER(client);
+    kill_extra_cursors(window, client);
+
+    Contents_Iterator iterator = start_of_line_position(buffer->contents, reference.line);
+    window->cursors[0].point = iterator.position;
+}
+
+void command_lookup_at_point(Editor* editor, Command_Source source) {
     Reference reference;
     {
         WITH_SELECTED_BUFFER(source.client);
@@ -105,15 +115,36 @@ void command_lookup(Editor* editor, Command_Source source) {
 
     CZ_DEFER(reference.buffer.drop(cz::heap_allocator()));
 
-    open_file(editor, source.client, reference.file_name);
+    open_tag(editor, source.client, reference);
+}
 
+static void command_lookup_prompt_callback(Editor* editor,
+                                           Client* client,
+                                           cz::Str query,
+                                           void* data) {
+    cz::String query_cstr = query.duplicate_null_terminate(cz::heap_allocator());
+    CZ_DEFER(query_cstr.drop(cz::heap_allocator()));
+
+    Reference reference;
     {
-        WITH_SELECTED_BUFFER(source.client);
-        kill_extra_cursors(window, source.client);
+        WITH_SELECTED_BUFFER(client);
+        const char* lookup_error =
+            lookup(buffer->directory.buffer(), query_cstr.buffer(), &reference);
+        if (lookup_error) {
+            client->show_message(lookup_error);
+            return;
+        }
 
-        Contents_Iterator iterator = start_of_line_position(buffer->contents, reference.line);
-        window->cursors[0].point = iterator.position;
+        push_jump(window, client, handle->id, buffer);
     }
+    CZ_DEFER(reference.buffer.drop(cz::heap_allocator()));
+
+    open_tag(editor, client, reference);
+}
+
+void command_lookup_prompt(Editor* editor, Command_Source source) {
+    source.client->show_dialog(editor, "Lookup: ", no_completion_engine,
+                               command_lookup_prompt_callback, nullptr);
 }
 
 }
