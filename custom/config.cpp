@@ -33,6 +33,7 @@
 #include "syntax/overlay_matching_tokens.hpp"
 #include "syntax/overlay_preferred_column.hpp"
 #include "syntax/overlay_trailing_spaces.hpp"
+#include "syntax/tokenize_cmake.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_css.hpp"
 #include "syntax/tokenize_general.hpp"
@@ -495,6 +496,13 @@ Mode get_mode(const Buffer& buffer) {
             mode.overlays = cz::slice(overlays);
         } else if (buffer.name.ends_with(".py")) {
             mode.next_token = syntax::python_next_token;
+            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
+            static Overlay overlays[] = {
+                syntax::overlay_matching_pairs({-1, 237, 0}),
+                syntax::overlay_matching_tokens({-1, 237, 0}, cz::slice(types))};
+            mode.overlays = cz::slice(overlays);
+        } else if (buffer.name == "CMakeLists.txt") {
+            mode.next_token = syntax::cmake_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             static Overlay overlays[] = {
                 syntax::overlay_matching_pairs({-1, 237, 0}),
