@@ -82,13 +82,11 @@ void Window_Unified::update_completion_cache(Buffer* buffer) {
 
     if (completion_cache.update(buffer->changes.len())) {
         Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);
-        uint64_t state;
         Token token;
-        if (!get_token_at_position(buffer, &iterator, &state, &token)) {
+        if (!get_token_at_position(buffer, &iterator, &token)) {
             abort_completion();
             return;
         }
-        iterator.retreat_to(token.start);
 
         completion_cache.engine_context.query.reserve(cz::heap_allocator(),
                                                       token.end - token.start);
@@ -109,9 +107,8 @@ void Window_Unified::finish_completion(Buffer* buffer) {
 
     // Todo: multi cursors?
     Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);
-    uint64_t state;
     Token token;
-    bool do_remove = get_token_at_position(buffer, &iterator, &state, &token);
+    bool do_remove = get_token_at_position(buffer, &iterator, &token);
 
     cz::Str value = context->results[context->selected];
 
@@ -119,7 +116,6 @@ void Window_Unified::finish_completion(Buffer* buffer) {
     transaction.init(do_remove + 1, (do_remove ? token.end - token.start : 0) + value.len);
 
     if (do_remove) {
-        iterator.retreat_to(token.start);
         Edit remove;
         remove.value = buffer->contents.slice(transaction.value_allocator(), iterator, token.end);
         remove.position = token.start;

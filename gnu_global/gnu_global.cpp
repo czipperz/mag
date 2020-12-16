@@ -90,14 +90,12 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
         WITH_SELECTED_BUFFER(source.client);
 
         Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
-        uint64_t state;
         Token token;
-        if (!get_token_at_position(buffer, &iterator, &state, &token)) {
+        if (!get_token_at_position(buffer, &iterator, &token)) {
             source.client->show_message("Cursor is not positioned at a token");
             return;
         }
 
-        iterator.retreat_to(token.start);
         char* query = (char*)malloc(token.end - token.start + 1);
         CZ_ASSERT(query);
         CZ_DEFER(free(query));
@@ -154,9 +152,8 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
-    uint64_t state;
     Token token;
-    if (!get_token_at_position(buffer, &iterator, &state, &token)) {
+    if (!get_token_at_position(buffer, &iterator, &token)) {
         source.client->show_message("Cursor is not positioned at a token");
         return;
     }

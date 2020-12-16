@@ -28,9 +28,8 @@ void backward_char(Contents_Iterator* iterator);
 
 Contents_Iterator start_of_line_position(const Contents& contents, uint64_t lines);
 
-bool get_token_at_position(Buffer* buffer,
-                           Contents_Iterator* iterator,
-                           uint64_t* state,
-                           Token* token);
+/// Get the `token` at the `iterator`'s position, if there is one.  Positions the `iterator` at the
+/// start of the `token`.
+bool get_token_at_position(Buffer* buffer, Contents_Iterator* iterator, Token* token);
 
 }

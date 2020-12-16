@@ -143,10 +143,7 @@ Contents_Iterator start_of_line_position(const Contents& contents, uint64_t line
     return iterator;
 }
 
-bool get_token_at_position(Buffer* buffer,
-                           Contents_Iterator* token_iterator,
-                           uint64_t* state,
-                           Token* token) {
+bool get_token_at_position(Buffer* buffer, Contents_Iterator* token_iterator, Token* token) {
     uint64_t position = token_iterator->position;
 
     buffer->token_cache.update(buffer);
@@ -154,12 +151,12 @@ bool get_token_at_position(Buffer* buffer,
     buffer->token_cache.find_check_point(token_iterator->position, &check_point);
 
     token_iterator->retreat_to(check_point.position);
-    *state = check_point.state;
+    uint64_t state = check_point.state;
 
     bool has_previous = false;
     Token previous_token;
     while (1) {
-        bool has_token = buffer->mode.next_token(token_iterator, token, state);
+        bool has_token = buffer->mode.next_token(token_iterator, token, &state);
         if (has_previous) {
             auto low_priority = [](Token_Type type) {
                 return type == Token_Type::OPEN_PAIR || type == Token_Type::CLOSE_PAIR ||
@@ -168,6 +165,7 @@ bool get_token_at_position(Buffer* buffer,
             if (!has_token || token->start > position ||
                 (low_priority(token->type) && !low_priority(previous_token.type))) {
                 *token = previous_token;
+                token_iterator->retreat_to(token->start);
                 return true;
             }
         }
@@ -182,6 +180,7 @@ bool get_token_at_position(Buffer* buffer,
         }
 
         if (token->end > position) {
+            token_iterator->retreat_to(token->start);
             return true;
         }
     }

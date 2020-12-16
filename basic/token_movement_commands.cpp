@@ -261,12 +261,10 @@ int find_backward_matching_token(Buffer* buffer,
                                  Token* matching_token) {
     Contents_Iterator token_to_match_iterator = iterator;
     Token token_to_match;
-    uint64_t state;
-    if (!get_token_at_position(buffer, &token_to_match_iterator, &state, &token_to_match)) {
+    if (!get_token_at_position(buffer, &token_to_match_iterator, &token_to_match)) {
         return -1;
     }
     *this_token = token_to_match;
-    token_to_match_iterator.retreat_to(token_to_match.start);
 
     uint64_t end_position = token_to_match.start;
     Contents_Iterator token_iterator = iterator;
@@ -281,7 +279,7 @@ int find_backward_matching_token(Buffer* buffer,
     }
 
     token_iterator.retreat_to(check_point.position);
-    state = check_point.state;
+    uint64_t state = check_point.state;
 
     bool found_token_this_loop = false;
 
@@ -348,12 +346,10 @@ int find_forward_matching_token(Buffer* buffer,
                                 Token* matching_token) {
     Contents_Iterator token_to_match_iterator = iterator;
     Token token_to_match;
-    uint64_t state;
-    if (!get_token_at_position(buffer, &token_to_match_iterator, &state, &token_to_match)) {
+    if (!get_token_at_position(buffer, &token_to_match_iterator, &token_to_match)) {
         return -1;
     }
     *this_token = token_to_match;
-    token_to_match_iterator.retreat_to(token_to_match.start);
 
     uint64_t end_position = token_to_match.end;
 
@@ -362,7 +358,7 @@ int find_forward_matching_token(Buffer* buffer,
     buffer->token_cache.update(buffer);
     buffer->token_cache.find_check_point(token_iterator.position, &check_point);
     token_iterator.retreat_to(check_point.position);
-    state = check_point.state;
+    uint64_t state = check_point.state;
 
     while (1) {
         Token token;

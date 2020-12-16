@@ -114,13 +114,11 @@ void command_git_grep_token_at_position(Editor* editor, Command_Source source) {
     }
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
-    uint64_t state;
     Token token;
-    if (!get_token_at_position(buffer, &iterator, &state, &token)) {
+    if (!get_token_at_position(buffer, &iterator, &token)) {
         source.client->show_message("Cursor is not positioned at a token");
         return;
     }
-    iterator.retreat_to(token.start);
 
     cz::String query = {};
     CZ_DEFER(query.drop(cz::heap_allocator()));
