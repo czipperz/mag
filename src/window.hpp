@@ -4,6 +4,7 @@
 #include <cz/vector.hpp>
 #include "buffer_id.hpp"
 #include "cursor.hpp"
+#include "completion.hpp"
 
 namespace mag {
 struct Buffer;
@@ -34,10 +35,18 @@ struct Window_Unified : Window {
     cz::Vector<Cursor> cursors;
     bool show_marks;
 
+    Completion_Cache completion_cache;
+    bool completing;
+
     static Window_Unified* create(Buffer_Id buffer_id);
     Window_Unified* clone();
 
     void update_cursors(Buffer* buffer);
+
+    void start_completion(Completion_Engine completion_engine);
+    void update_completion_cache(Editor*);
+    void finish_completion(Editor*);
+    void abort_completion();
 };
 
 struct Window_Split : Window {

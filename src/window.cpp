@@ -6,6 +6,10 @@
 #include "buffer.hpp"
 #include "change.hpp"
 #include "client.hpp"
+#include "command_macros.hpp"
+#include "editor.hpp"
+#include "movement.hpp"
+#include "token.hpp"
 #include "visible_region.hpp"
 
 namespace mag {
@@ -25,6 +29,10 @@ Window_Unified* Window_Unified::create(Buffer_Id buffer_id) {
     window->cursors.reserve(cz::heap_allocator(), 1);
     window->cursors.push({});
     window->show_marks = false;
+
+    window->completion_cache = {};  // not sure if this is really necessary
+    window->completion_cache.init();
+    window->completing = false;
     return window;
 }
 
@@ -32,6 +40,9 @@ Window_Unified* Window_Unified::clone() {
     Window_Unified* window = (Window_Unified*)malloc(sizeof(Window_Unified));
     *window = *this;
     window->cursors = this->cursors.clone(cz::heap_allocator());
+    window->completion_cache = {};
+    window->completion_cache.init();
+    window->completing = false;
     return window;
 }
 
@@ -61,11 +72,80 @@ void Window_Unified::update_cursors(Buffer* buffer) {
     this->change_index = buffer->changes.len();
 }
 
+void Window_Unified::start_completion(Completion_Engine completion_engine) {
+    completion_cache.set_engine(completion_engine);
+    completing = true;
+}
+
+void Window_Unified::update_completion_cache(Editor* editor) {
+    if (!completing) {
+        return;
+    }
+
+    WITH_WINDOW_BUFFER(this);
+    if (completion_cache.update(buffer->changes.len())) {
+        Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);
+        uint64_t state;
+        Token token;
+        bool do_remove = get_token_at_position(buffer, &iterator, &state, &token);
+
+        completion_cache.engine_context.query.reserve(cz::heap_allocator(),
+                                                      token.end - token.start);
+        buffer->contents.slice_into(iterator, token.end,
+                                    completion_cache.engine_context.query.buffer());
+    }
+}
+
+void Window_Unified::finish_completion(Editor* editor) {
+    CZ_DEBUG_ASSERT(completing);
+    completing = false;
+
+    Completion_Filter_Context* context = &completion_cache.filter_context;
+    if (context->selected >= context->results.len()) {
+        return;
+    }
+
+    WITH_WINDOW_BUFFER(this);
+
+    // Todo: multi cursors?
+    Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);
+    uint64_t state;
+    Token token;
+    bool do_remove = get_token_at_position(buffer, &iterator, &state, &token);
+
+    cz::Str value = context->results[context->selected];
+
+    Transaction transaction;
+    transaction.init(do_remove + 1, (do_remove ? token.end - token.start : 0) + value.len);
+
+    if (do_remove) {
+        iterator.retreat_to(token.start);
+        Edit remove;
+        remove.value = buffer->contents.slice(transaction.value_allocator(), iterator, token.end);
+        remove.position = token.start;
+        remove.flags = Edit::REMOVE;
+        transaction.push(remove);
+    }
+
+    Edit insert;
+    insert.value = SSOStr::as_duplicate(transaction.value_allocator(), value);
+    insert.position = token.start;
+    insert.flags = Edit::INSERT;
+    transaction.push(insert);
+
+    transaction.commit(buffer);
+}
+
+void Window_Unified::abort_completion() {
+    completing = false;
+}
+
 void Window::drop_(Window* window) {
     switch (window->tag) {
     case UNIFIED: {
         Window_Unified* w = (Window_Unified*)window;
         w->cursors.drop(cz::heap_allocator());
+        w->completion_cache.drop();
         break;
     }
 
