@@ -8,7 +8,7 @@ namespace basic {
 namespace window_completion {
 
 void command_finish_completion(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_normal_window;
+    Window_Unified* window = source.client->selected_window();
     if (!window->completing) {
         return;
     }
@@ -18,7 +18,7 @@ void command_finish_completion(Editor* editor, Command_Source source) {
 }
 
 void command_next_completion(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_normal_window;
+    Window_Unified* window = source.client->selected_window();
     if (!window->completing) {
         return;
     }
@@ -31,7 +31,7 @@ void command_next_completion(Editor* editor, Command_Source source) {
 }
 
 void command_previous_completion(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_normal_window;
+    Window_Unified* window = source.client->selected_window();
     if (!window->completing) {
         return;
     }
@@ -44,7 +44,7 @@ void command_previous_completion(Editor* editor, Command_Source source) {
 }
 
 void command_completion_down_page(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_normal_window;
+    Window_Unified* window = source.client->selected_window();
     if (!window->completing) {
         return;
     }
@@ -61,7 +61,7 @@ void command_completion_down_page(Editor* editor, Command_Source source) {
 }
 
 void command_completion_up_page(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_normal_window;
+    Window_Unified* window = source.client->selected_window();
     if (!window->completing) {
         return;
     }
@@ -75,7 +75,7 @@ void command_completion_up_page(Editor* editor, Command_Source source) {
 }
 
 void command_first_completion(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_normal_window;
+    Window_Unified* window = source.client->selected_window();
     if (!window->completing) {
         return;
     }
@@ -85,7 +85,7 @@ void command_first_completion(Editor* editor, Command_Source source) {
 }
 
 void command_last_completion(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_normal_window;
+    Window_Unified* window = source.client->selected_window();
     if (!window->completing) {
         return;
     }
