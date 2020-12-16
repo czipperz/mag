@@ -11,9 +11,10 @@ struct Buffer;
 
 namespace custom {
 
-mag::Key_Map create_key_map();
-mag::Theme create_theme();
-mag::Mode get_mode(const Buffer& buffer);
+Key_Map create_key_map();
+Theme create_theme();
+Mode get_mode(const Buffer& buffer);
+Key_Map* window_completion_key_map();
 
 }
 }

@@ -5,6 +5,7 @@
 #include <cz/heap.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
+#include "custom/config.hpp"
 #include "insert.hpp"
 
 namespace mag {
@@ -209,6 +210,28 @@ static bool handle_key_press_buffer(Editor* editor,
     }
 }
 
+static bool handle_key_press_completion(Editor* editor,
+                                        Client* client,
+                                        size_t* start,
+                                        cz::Slice<Key> key_chain,
+                                        Command* previous_command,
+                                        bool* waiting_for_more_keys) {
+    Window_Unified* window = client->selected_window();
+    if (!window->completing) {
+        return false;
+    }
+
+    Command command;
+    Command_Source source;
+    if (get_key_press_command(editor, client, custom::window_completion_key_map(), start, key_chain,
+                              previous_command, waiting_for_more_keys, &source, &command)) {
+        run_command(command, editor, source);
+        return true;
+    } else {
+        return false;
+    }
+}
+
 void Server::receive(Client* client, Key key) {
     ZoneScoped;
 
@@ -219,6 +242,11 @@ void Server::receive(Client* client, Key key) {
     size_t start = 0;
     while (start < key_chain.len) {
         bool waiting_for_more_keys = false;
+
+        if (handle_key_press_completion(&editor, client, &start, key_chain, &previous_command,
+                                        &waiting_for_more_keys)) {
+            continue;
+        }
 
         if (handle_key_press_buffer(&editor, client, &start, key_chain, &previous_command,
                                     &waiting_for_more_keys)) {

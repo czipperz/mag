@@ -44,7 +44,7 @@ struct Window_Unified : Window {
     void update_cursors(Buffer* buffer);
 
     void start_completion(Completion_Engine completion_engine);
-    void update_completion_cache(Editor*);
+    void update_completion_cache(Buffer*);
     void finish_completion(Editor*);
     void abort_completion();
 };

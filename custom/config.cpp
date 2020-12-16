@@ -14,6 +14,7 @@
 #include "basic/token_movement_commands.hpp"
 #include "basic/visible_region_commands.hpp"
 #include "basic/window_commands.hpp"
+#include "basic/window_completion_commands.hpp"
 #include "clang_format/clang_format.hpp"
 #include "decoration.hpp"
 #include "git/find_file.hpp"
@@ -214,7 +215,7 @@ Theme create_theme() {
     Theme theme = {};
     theme.colors = mag::theme::solarized_dark;
 
-    theme.faces.reserve(cz::heap_allocator(), 42);
+    theme.faces.reserve(cz::heap_allocator(), 44);
     theme.faces.push({{}, {}, 0});              // default
     theme.faces.push({1, {}, 0});               // unsaved buffer
     theme.faces.push({{}, {}, Face::REVERSE});  // selected buffer
@@ -222,8 +223,11 @@ Theme create_theme() {
     theme.faces.push({0, 7, 0});   // cursor
     theme.faces.push({0, 12, 0});  // marked region
 
-    theme.faces.push({{}, {}, 0});              // minibuffer prompt
-    theme.faces.push({{}, {}, Face::REVERSE});  // completion selected item
+    theme.faces.push({{}, {}, 0});              // mini buffer prompt
+    theme.faces.push({{}, {}, Face::REVERSE});  // mini buffer completion selected item
+
+    theme.faces.push({0, 12, 0});  // window completion normal
+    theme.faces.push({0, 7, 0});   // window completion selected item
 
     theme.faces.push({{}, {}, 0});  // Token_Type::DEFAULT
 
@@ -278,7 +282,8 @@ Theme create_theme() {
     theme.overlays = cz::slice(overlays);
 
     theme.max_completion_results = 5;
-    theme.completion_filter = infix_completion_filter;
+    theme.mini_buffer_completion_filter = infix_completion_filter;
+    theme.window_completion_filter = prefix_completion_filter;
 
     return theme;
 }
@@ -370,6 +375,27 @@ static Key_Map create_path_key_map() {
 
 static Key_Map* path_key_map() {
     static Key_Map key_map = create_path_key_map();
+    return &key_map;
+}
+
+static Key_Map create_window_completion_key_map() {
+    Key_Map key_map = {};
+    BIND(key_map, "C-n", window_completion::command_next_completion);
+    BIND(key_map, "C-p", window_completion::command_previous_completion);
+    BIND(key_map, "C-v", window_completion::command_completion_down_page);
+    BIND(key_map, "A-v", window_completion::command_completion_up_page);
+    BIND(key_map, "A-<", window_completion::command_first_completion);
+    BIND(key_map, "A->", window_completion::command_last_completion);
+
+    BIND(key_map, "C-j", window_completion::command_finish_completion);
+    BIND(key_map, "C-m", window_completion::command_finish_completion);
+    BIND(key_map, "\n", window_completion::command_finish_completion);
+    BIND(key_map, "A-c", window_completion::command_finish_completion);
+    return key_map;
+}
+
+Key_Map* window_completion_key_map() {
+    static Key_Map key_map = create_window_completion_key_map();
     return &key_map;
 }
 

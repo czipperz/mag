@@ -13,6 +13,10 @@
 namespace mag {
 namespace client {
 
+static bool load_completion_cache(Editor* editor,
+                                  Completion_Cache* completion_cache,
+                                  Completion_Filter completion_filter);
+
 #define SET_IND(FACE, CH)                                                    \
     do {                                                                     \
         Cell* cell = &cells[(y + start_row) * total_cols + (x + start_col)]; \
@@ -71,7 +75,9 @@ static void draw_buffer_contents(Cell* cells,
                                  Window_Unified* window,
                                  size_t start_row,
                                  size_t start_col,
-                                 cz::Slice<Screen_Position_Query> spqs) {
+                                 cz::Slice<Screen_Position_Query> spqs,
+                                 size_t* cursor_pos_y,
+                                 size_t* cursor_pos_x) {
     ZoneScoped;
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
@@ -177,6 +183,10 @@ static void draw_buffer_contents(Cell* cells,
             }
             if (iterator.position == cursors[c].point) {
                 has_cursor = true;
+                if (c == 0) {
+                    *cursor_pos_y = y;
+                    *cursor_pos_x = x;
+                }
             }
         }
 
@@ -210,7 +220,7 @@ static void draw_buffer_contents(Cell* cells,
         }
 
         Face token_face;
-        const size_t type_face_offset = 7;
+        const size_t type_face_offset = 9;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
             if (token.type & Token_Type::CUSTOM) {
                 token_face = Token_Type_::decode(token.type);
@@ -336,10 +346,114 @@ static void draw_buffer_decoration(Cell* cells,
     }
 }
 
+static void draw_window_completion(Cell* cells,
+                                   Editor* editor,
+                                   Client* client,
+                                   Window_Unified* window,
+                                   Buffer* buffer,
+                                   size_t total_cols,
+                                   size_t start_row,
+                                   size_t start_col,
+                                   size_t cursor_pos_y,
+                                   size_t cursor_pos_x) {
+    if (!window->completing) {
+        return;
+    }
+    window->update_completion_cache(buffer);
+    if (!window->completing) {
+        return;
+    }
+    load_completion_cache(editor, &window->completion_cache,
+                          editor->theme.window_completion_filter);
+    if (window->completion_cache.filter_context.results.len() == 0) {
+        client->show_message("No completion results");
+        window->abort_completion();
+        return;
+    }
+
+    if (window->completion_cache.state == Completion_Cache::LOADED) {
+        // todo: deduplicate with the code to draw mini buffer completion cache
+        size_t height = window->completion_cache.filter_context.results.len();
+        if (height > editor->theme.max_completion_results) {
+            height = editor->theme.max_completion_results;
+        }
+        if (height > window->rows / 2) {
+            height = window->rows / 2;
+        }
+
+        size_t offset = window->completion_cache.filter_context.selected;
+        if (offset >= window->completion_cache.filter_context.results.len() - height / 2) {
+            offset = window->completion_cache.filter_context.results.len() - height;
+        } else if (offset < height / 2) {
+            offset = 0;
+        } else {
+            offset -= height / 2;
+        }
+
+        size_t width = 0;
+        for (size_t r = offset; r < height + offset; ++r) {
+            if (window->completion_cache.filter_context.results[r].len > width) {
+                width = window->completion_cache.filter_context.results[r].len;
+            }
+        }
+
+        size_t y = cursor_pos_y;
+        size_t x = cursor_pos_x;
+
+        bool narrow_line = false;
+        if (x + width > window->cols) {
+            if (window->cols >= width) {
+                x = window->cols - width;
+            } else {
+                x = 0;
+                width = window->cols;
+            }
+            narrow_line = true;
+        }
+
+        size_t start_x = x;
+
+        size_t lines_above = cursor_pos_y + !narrow_line;
+        size_t lines_below = window->rows - cursor_pos_y - narrow_line;
+        if (narrow_line + height > lines_below) {
+            if (lines_above > lines_below) {
+                y = cursor_pos_y - height + !narrow_line;
+            } else {
+                height = lines_below;
+            }
+        } else {
+            y += narrow_line;
+        }
+
+        for (size_t r = offset; r < height + offset; ++r) {
+            Face face = {};
+            if (r == window->completion_cache.filter_context.selected) {
+                apply_face(&face, editor->theme.faces[8]);
+            } else {
+                apply_face(&face, editor->theme.faces[7]);
+            }
+
+            cz::Str result = window->completion_cache.filter_context.results[r];
+            for (size_t i = 0; i < width && i < result.len; ++i) {
+                SET_IND(face, result[i]);
+                ++x;
+            }
+
+            for (; x < start_x + width; ++x) {
+                SET_IND(face, ' ');
+            }
+
+            x = start_x;
+            ++y;
+        }
+    }
+}
+
 static void draw_buffer(Cell* cells,
                         Window_Cache* window_cache,
                         size_t total_cols,
                         Editor* editor,
+                        Client* client,
                         Window_Unified* window,
                         bool is_selected_window,
                         size_t start_row,
@@ -356,16 +470,20 @@ static void draw_buffer(Cell* cells,
     }
 
     WITH_WINDOW_BUFFER(window);
+    size_t cursor_pos_y, cursor_pos_x;
     draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, start_row,
-                         start_col, spqs);
+                         start_col, spqs, &cursor_pos_y, &cursor_pos_x);
     draw_buffer_decoration(cells, total_cols, editor, window, buffer, is_selected_window, start_row,
                            start_col);
+    draw_window_completion(cells, editor, client, window, buffer, total_cols, start_row, start_col,
+                           cursor_pos_y, cursor_pos_x);
 }
 
 static void draw_window(Cell* cells,
                         Window_Cache** window_cache,
                         size_t total_cols,
                         Editor* editor,
+                        Client* client,
                         Window* w,
                         Window* selected_window,
                         size_t start_row,
@@ -392,8 +510,8 @@ static void draw_window(Cell* cells,
             cache_window_unified_create(editor, *window_cache, window);
         }
 
-        draw_buffer(cells, *window_cache, total_cols, editor, window, window == selected_window,
-                    start_row, start_col, spqs);
+        draw_buffer(cells, *window_cache, total_cols, editor, client, window,
+                    window == selected_window, start_row, start_col, spqs);
         break;
     }
 
@@ -415,8 +533,9 @@ static void draw_window(Cell* cells,
             size_t left_cols = (count_cols - 1) / 2;
             size_t right_cols = count_cols - left_cols - 1;
 
-            draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, window->first,
-                        selected_window, start_row, start_col, count_rows, left_cols, spqs);
+            draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, client,
+                        window->first, selected_window, start_row, start_col, count_rows, left_cols,
+                        spqs);
 
             {
                 size_t x = left_cols;
@@ -425,15 +544,16 @@ static void draw_window(Cell* cells,
                 }
             }
 
-            draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, window->second,
-                        selected_window, start_row, start_col + count_cols - right_cols, count_rows,
-                        right_cols, spqs);
+            draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, client,
+                        window->second, selected_window, start_row,
+                        start_col + count_cols - right_cols, count_rows, right_cols, spqs);
         } else {
             size_t top_rows = (count_rows - 1) / 2;
             size_t bottom_rows = count_rows - top_rows - 1;
 
-            draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, window->first,
-                        selected_window, start_row, start_col, top_rows, count_cols, spqs);
+            draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, client,
+                        window->first, selected_window, start_row, start_col, top_rows, count_cols,
+                        spqs);
 
             {
                 size_t y = top_rows;
@@ -442,9 +562,9 @@ static void draw_window(Cell* cells,
                 }
             }
 
-            draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, window->second,
-                        selected_window, start_row + count_rows - bottom_rows, start_col,
-                        bottom_rows, count_cols, spqs);
+            draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, client,
+                        window->second, selected_window, start_row + count_rows - bottom_rows,
+                        start_col, bottom_rows, count_cols, spqs);
         }
         break;
     }
@@ -454,18 +574,27 @@ static void draw_window(Cell* cells,
 bool load_mini_buffer_completion_cache(Server* server, Client* client) {
     ZoneScoped;
 
-    if (client->mini_buffer_completion_cache.state != Completion_Cache::LOADED &&
-        client->_message.tag > Message::SHOW) {
-        CZ_DEBUG_ASSERT(server->editor.theme.completion_filter != nullptr);
-        server->editor.theme.completion_filter(
-            &client->mini_buffer_completion_cache.filter_context,
-            client->mini_buffer_completion_cache.engine, &server->editor,
-            &client->mini_buffer_completion_cache.engine_context);
-        client->mini_buffer_completion_cache.state = Completion_Cache::LOADED;
-        return true;
-    } else {
+    if (client->_message.tag <= Message::SHOW) {
         return false;
     }
+
+    load_completion_cache(&server->editor, &client->mini_buffer_completion_cache,
+                          server->editor.theme.mini_buffer_completion_filter);
+}
+
+static bool load_completion_cache(Editor* editor,
+                                  Completion_Cache* completion_cache,
+                                  Completion_Filter completion_filter) {
+    CZ_DEBUG_ASSERT(completion_filter != nullptr);
+
+    if (completion_cache->state == Completion_Cache::LOADED) {
+        return false;
+    }
+
+    completion_filter(&completion_cache->filter_context, completion_cache->engine, editor,
+                      &completion_cache->engine_context);
+    completion_cache->state = Completion_Cache::LOADED;
+    return true;
 }
 
 void process_buffer_external_updates(Editor* editor, Client* client, Window* window) {
@@ -534,8 +663,9 @@ void render_to_cells(Cell* cells,
             WITH_WINDOW_BUFFER(window);
             window->rows = mini_buffer_height;
             window->cols = total_cols - start_col;
+            size_t cursor_pos_y, cursor_pos_x;
             draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window, start_row,
-                                 start_col, {});
+                                 start_col, {}, &cursor_pos_y, &cursor_pos_x);
         } else {
             for (; x < total_cols; ++x) {
                 SET_IND({}, ' ');
@@ -586,7 +716,7 @@ void render_to_cells(Cell* cells,
         total_rows = start_row;
     }
 
-    draw_window(cells, window_cache, total_cols, editor, client->window,
+    draw_window(cells, window_cache, total_cols, editor, client, client->window,
                 client->selected_normal_window, 0, 0, total_rows, total_cols, spqs);
 }
 

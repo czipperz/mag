@@ -5,9 +5,9 @@
 
 namespace mag {
 namespace basic {
+namespace window_completion {
 
-void command_insert_completion(Editor* editor, Command_Source source);
-void command_insert_completion_and_submit_mini_buffer(Editor* editor, Command_Source source);
+void command_finish_completion(Editor* editor, Command_Source source);
 
 void command_next_completion(Editor* editor, Command_Source source);
 void command_previous_completion(Editor* editor, Command_Source source);
@@ -18,5 +18,6 @@ void command_completion_up_page(Editor* editor, Command_Source source);
 void command_first_completion(Editor* editor, Command_Source source);
 void command_last_completion(Editor* editor, Command_Source source);
 
+}
 }
 }

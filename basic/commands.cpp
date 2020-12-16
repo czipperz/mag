@@ -432,6 +432,11 @@ void command_stop_action(Editor* editor, Command_Source source) {
     bool done = false;
 
     Window_Unified* window = source.client->selected_window();
+    if (!done && window->completing) {
+        window->abort_completion();
+        done = true;
+    }
+
     if (!done && window->show_marks) {
         window->show_marks = false;
         done = true;

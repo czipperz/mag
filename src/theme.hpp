@@ -39,7 +39,8 @@ struct Theme {
 
     size_t max_completion_results;
 
-    Completion_Filter completion_filter;
+    Completion_Filter mini_buffer_completion_filter;
+    Completion_Filter window_completion_filter;
 
     void drop(cz::Allocator allocator) {
         faces.drop(allocator);

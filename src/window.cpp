@@ -77,22 +77,24 @@ void Window_Unified::start_completion(Completion_Engine completion_engine) {
     completing = true;
 }
 
-void Window_Unified::update_completion_cache(Editor* editor) {
-    if (!completing) {
-        return;
-    }
+void Window_Unified::update_completion_cache(Buffer* buffer) {
+    CZ_DEBUG_ASSERT(completing);
 
-    WITH_WINDOW_BUFFER(this);
     if (completion_cache.update(buffer->changes.len())) {
         Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);
         uint64_t state;
         Token token;
-        bool do_remove = get_token_at_position(buffer, &iterator, &state, &token);
+        if (!get_token_at_position(buffer, &iterator, &state, &token)) {
+            abort_completion();
+            return;
+        }
+        iterator.retreat_to(token.start);
 
         completion_cache.engine_context.query.reserve(cz::heap_allocator(),
                                                       token.end - token.start);
         buffer->contents.slice_into(iterator, token.end,
                                     completion_cache.engine_context.query.buffer());
+        completion_cache.engine_context.query.set_len(token.end - token.start);
     }
 }
 

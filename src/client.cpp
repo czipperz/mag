@@ -180,7 +180,10 @@ static void setup_completion_cache(Client* client, Editor* editor) {
         return;
     }
 
-    completion_cache->set_engine(client->_message.completion_engine);
+    Completion_Engine engine = client->_message.completion_engine;
+    if (engine != completion_cache->engine) {
+        completion_cache->set_engine(engine);
+    }
 
     client->update_mini_buffer_completion_cache(editor);
 }

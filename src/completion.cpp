@@ -39,17 +39,15 @@ bool Completion_Cache::update(size_t changes_len) {
 }
 
 void Completion_Cache::set_engine(Completion_Engine new_engine) {
-    if (engine != new_engine) {
-        engine = new_engine;
-        state = Completion_Cache::INITIAL;
-        if (engine_context.cleanup) {
-            engine_context.cleanup(engine_context.data);
-        }
-        engine_context.cleanup = nullptr;
-        engine_context.data = nullptr;
-        engine_context.results_buffer_array.clear();
-        engine_context.results.set_len(0);
+    engine = new_engine;
+    state = Completion_Cache::INITIAL;
+    if (engine_context.cleanup) {
+        engine_context.cleanup(engine_context.data);
     }
+    engine_context.cleanup = nullptr;
+    engine_context.data = nullptr;
+    engine_context.results_buffer_array.clear();
+    engine_context.results.set_len(0);
 }
 
 void prefix_completion_filter(Completion_Filter_Context* context,
