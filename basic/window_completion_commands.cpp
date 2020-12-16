@@ -13,7 +13,8 @@ void command_finish_completion(Editor* editor, Command_Source source) {
         return;
     }
 
-    window->finish_completion(editor);
+    WITH_WINDOW_BUFFER(window);
+    window->finish_completion(buffer);
 }
 
 void command_next_completion(Editor* editor, Command_Source source) {

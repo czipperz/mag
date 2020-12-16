@@ -98,7 +98,7 @@ void Window_Unified::update_completion_cache(Buffer* buffer) {
     }
 }
 
-void Window_Unified::finish_completion(Editor* editor) {
+void Window_Unified::finish_completion(Buffer* buffer) {
     CZ_DEBUG_ASSERT(completing);
     completing = false;
 
@@ -106,8 +106,6 @@ void Window_Unified::finish_completion(Editor* editor) {
     if (context->selected >= context->results.len()) {
         return;
     }
-
-    WITH_WINDOW_BUFFER(this);
 
     // Todo: multi cursors?
     Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);

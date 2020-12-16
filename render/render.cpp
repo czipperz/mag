@@ -363,11 +363,17 @@ static void draw_window_completion(Cell* cells,
     if (!window->completing) {
         return;
     }
+
+    bool first_frame_of_completion = window->completion_cache.state == Completion_Cache::INITIAL;
     load_completion_cache(editor, &window->completion_cache,
                           editor->theme.window_completion_filter);
     if (window->completion_cache.filter_context.results.len() == 0) {
         client->show_message("No completion results");
         window->abort_completion();
+        return;
+    }
+    if (first_frame_of_completion && window->completion_cache.filter_context.results.len() == 1) {
+        window->finish_completion(buffer);
         return;
     }
 
