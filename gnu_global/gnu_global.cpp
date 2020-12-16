@@ -143,5 +143,90 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
                                command_lookup_prompt_callback, nullptr);
 }
 
+static void gnu_global_completion_engine(Editor* editor, Completion_Engine_Context* context) {
+    cz::Str args[] = {"global", "-c", context->query};
+    cz::Process_Options options;
+    options.working_directory = (const char*)context->data;
+    run_command_for_completion_results(context, cz::slice(args), options);
+}
+
+static void command_complete_at_point_response(Editor* editor,
+                                               Client* client,
+                                               cz::Str query,
+                                               void* data) {
+    WITH_SELECTED_BUFFER(client);
+
+    Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+    uint64_t state;
+    Token token;
+    if (!get_token_at_position(buffer, &iterator, &state, &token)) {
+        client->show_message("Cursor is not positioned at a token");
+        return;
+    }
+
+    iterator.retreat_to(token.start);
+
+    Transaction transaction;
+    CZ_DEFER(transaction.drop());
+    transaction.init(2, token.end - token.start + query.len);
+
+    Edit remove_edit;
+    remove_edit.value = buffer->contents.slice(transaction.value_allocator(), iterator, token.end);
+    remove_edit.position = token.start;
+    remove_edit.flags = Edit::REMOVE;
+    transaction.push(remove_edit);
+
+    Edit insert_edit;
+    insert_edit.value = SSOStr::as_duplicate(transaction.value_allocator(), query);
+    insert_edit.position = token.start;
+    insert_edit.flags = Edit::INSERT;
+    transaction.push(insert_edit);
+
+    transaction.commit(buffer);
+}
+
+void command_complete_at_point(Editor* editor, Command_Source source) {
+    Transaction transaction;
+    char* directory;
+
+    {
+        WITH_SELECTED_BUFFER(source.client);
+
+        Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+        uint64_t state;
+        Token token;
+        if (!get_token_at_position(buffer, &iterator, &state, &token)) {
+            source.client->show_message("Cursor is not positioned at a token");
+            return;
+        }
+
+        iterator.retreat_to(token.start);
+
+        transaction.init(1, token.end - token.start);
+        Edit edit;
+        edit.value = buffer->contents.slice(transaction.value_allocator(), iterator, token.end);
+        edit.position = 0;
+        edit.flags = Edit::INSERT;
+        transaction.push(edit);
+
+        directory = (char*)malloc(buffer->directory.len() + 1);
+        CZ_ASSERT(directory);
+        memcpy(directory, buffer->directory.buffer(), buffer->directory.len());
+        directory[buffer->directory.len()] = '\0';
+    }
+
+    source.client->show_dialog(editor, "Complete: ", gnu_global_completion_engine,
+                               command_complete_at_point_response, nullptr);
+    source.client->mini_buffer_completion_cache.engine_context.data = directory;
+    source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* directory) {
+        free(directory);
+    };
+
+    {
+        WITH_WINDOW_BUFFER(source.client->mini_buffer_window());
+        transaction.commit(buffer);
+    }
+}
+
 }
 }

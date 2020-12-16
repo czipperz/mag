@@ -193,6 +193,7 @@ Key_Map create_key_map() {
 
     BIND(key_map, "A-g A-t", gnu_global::command_lookup_at_point);
     BIND(key_map, "A-g t", gnu_global::command_lookup_prompt);
+    BIND(key_map, "A-c", gnu_global::command_complete_at_point);
 
     BIND(key_map, "A-l", command_goto_center_of_window);
     BIND(key_map, "C-l", command_center_in_window);
@@ -295,7 +296,7 @@ static Key_Map* directory_key_map() {
 
 static Key_Map create_cpp_key_map() {
     Key_Map key_map = {};
-    BIND(key_map, "A-c A-f", clang_format::command_clang_format_buffer);
+    BIND(key_map, "C-x C-f", clang_format::command_clang_format_buffer);
     BIND(key_map, "A-;", cpp::command_comment);
     return key_map;
 }

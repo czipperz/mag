@@ -23,5 +23,7 @@ void command_lookup_at_point(Editor* editor, Command_Source source);
 
 void command_lookup_prompt(Editor* editor, Command_Source source);
 
+void command_complete_at_point(Editor* editor, Command_Source source);
+
 }
 }
