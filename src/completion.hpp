@@ -52,6 +52,10 @@ void infix_completion_filter(Completion_Filter_Context*,
                              Completion_Engine,
                              Editor*,
                              Completion_Engine_Context*);
+void spaces_are_wildcards_completion_filter(Completion_Filter_Context*,
+                                            Completion_Engine,
+                                            Editor*,
+                                            Completion_Engine_Context*);
 
 void run_command_for_completion_results(Completion_Engine_Context* context,
                                         cz::Slice<cz::Str> args,

@@ -108,6 +108,117 @@ void infix_completion_filter(Completion_Filter_Context* context,
     }
 }
 
+struct Wildcard_Pattern {
+    bool wild_start;
+    bool wild_end = true;
+    cz::Vector<cz::Str> pieces;
+
+    bool matches(cz::Str string) {
+        size_t index = 0;
+        for (size_t j = 0; j < pieces.len(); ++j) {
+            cz::Str piece = pieces[j];
+            if (j == 0 && !wild_start) {
+                if (string.starts_with(piece)) {
+                    index += piece.len;
+                } else {
+                    return false;
+                }
+            } else {
+                const char* find = string.slice_start(index).find(piece);
+                if (!find) {
+                    return false;
+                } else {
+                    index = find - string.buffer + piece.len;
+                }
+            }
+        }
+        if (!wild_end && index < string.len) {
+            return false;
+        }
+        return true;
+    }
+};
+
+static Wildcard_Pattern parse_spaces_are_wildcards(cz::Str query) {
+    Wildcard_Pattern pattern = {};
+
+    if (query.len > 0) {
+        size_t start = 0;
+        if (query[start] == ' ') {
+            pattern.wild_start = true;
+            while (start < query.len && query[start] == ' ') {
+                ++start;
+            }
+        }
+
+        size_t end = query.len;
+        if (query[end - 1] == '$') {
+            pattern.wild_end = false;
+            --end;
+        }
+        while (end > 0 && query[end - 1] == ' ') {
+            --end;
+        }
+
+        if (end < start) {
+            query = "";
+        } else {
+            query = query.slice(start, end);
+        }
+    }
+
+    while (true) {
+        pattern.pieces.reserve(cz::heap_allocator(), 1);
+
+        const char* space = query.find(' ');
+        if (!space) {
+            pattern.pieces.push(query);
+            break;
+        }
+
+        pattern.pieces.push(query.slice_end(space));
+        while (space < query.end() && *space == ' ') {
+            ++space;
+        }
+
+        query = query.slice_start(space);
+    }
+
+    return pattern;
+}
+
+void spaces_are_wildcards_completion_filter(Completion_Filter_Context* context,
+                                            Completion_Engine engine,
+                                            Editor* editor,
+                                            Completion_Engine_Context* engine_context) {
+    cz::String selected_result = {};
+    CZ_DEFER(selected_result.drop(cz::heap_allocator()));
+    bool exists = false;
+    if (context->selected < context->results.len()) {
+        selected_result.reserve(cz::heap_allocator(), context->results[context->selected].len);
+        selected_result.append(context->results[context->selected]);
+        exists = true;
+    }
+
+    engine(editor, engine_context);
+
+    Wildcard_Pattern pattern = parse_spaces_are_wildcards(engine_context->query);
+    CZ_DEFER(pattern.pieces.drop(cz::heap_allocator()));
+
+    context->selected = 0;
+    context->results.set_len(0);
+    context->results.reserve(cz::heap_allocator(), engine_context->results.len());
+    for (size_t i = 0; i < engine_context->results.len(); ++i) {
+        cz::Str result = engine_context->results[i];
+        if (pattern.matches(result)) {
+            if (exists && selected_result == result) {
+                context->selected = context->results.len();
+            }
+            context->results.push(result);
+        }
+    }
+}
+
 struct File_Completion_Engine_Data {
     cz::String directory;
     cz::String temp_result;
