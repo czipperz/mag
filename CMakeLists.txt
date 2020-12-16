@@ -1,3 +1,8 @@
+# Mag build script
+#
+# To add a new package go the line starting with `file(GLOB_RECURSE SRCS` and add your sources to
+# the list of globs.
+
 project(mag)
 cmake_minimum_required(VERSION 3.3)
 
@@ -9,6 +14,7 @@ include_directories(src)
 include_directories(tracy)
 
 if (WIN32)
+  # Fake find_package results
   set(SDL2_LIBRARIES ${CMAKE_SOURCE_DIR}/SDL/lib/x64/SDL2.lib)
   set(SDL2_DLLS ${CMAKE_SOURCE_DIR}/SDL/lib/x64/SDL2.dll)
   set(SDL2_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/SDL/include)
@@ -19,13 +25,11 @@ if (WIN32)
   set(SDL2_IMAGE_DLLS ${CMAKE_SOURCE_DIR}/IMG/lib/x64/SDL2_image.dll ${CMAKE_SOURCE_DIR}/IMG/lib/x64/libjpeg-9.dll ${CMAKE_SOURCE_DIR}/IMG/lib/x64/libpng16-16.dll ${CMAKE_SOURCE_DIR}/IMG/lib/x64/libtiff-5.dll ${CMAKE_SOURCE_DIR}/IMG/lib/x64/libwebp-7.dll)
   set(SDL2_IMAGE_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/IMG/include)
 
+  # Copy in the dlls
   add_custom_target(sdl2_dlls ALL
-      ${CMAKE_COMMAND} -E copy_if_different ${SDL2_DLLS} ${CMAKE_BINARY_DIR})
-  add_custom_target(sdl2_ttf_dlls ALL
-      ${CMAKE_COMMAND} -E copy_if_different ${SDL2_TTF_DLLS} ${CMAKE_BINARY_DIR})
-  add_custom_target(sdl2_image_dlls ALL
-      ${CMAKE_COMMAND} -E copy_if_different ${SDL2_IMAGE_DLLS} ${CMAKE_BINARY_DIR})
+      ${CMAKE_COMMAND} -E copy_if_different ${SDL2_DLLS} ${SDL2_TTF_DLLS} ${SDL2_IMAGE_DLLS} ${CMAKE_BINARY_DIR})
 
+  # RC file sets the app icon, needs to be included as a source file.
   set(WINDOWS_RC_FILE "res/Windows_RC.rc")
 else()
   set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -37,26 +41,21 @@ else()
   set(WINDOWS_RC_FILE)
 endif()
 
+# Build all sources as library magl (so we dont double build to make testing program)
 set(LIBRARY_NAME ${PROJECT_NAME}l)
-file(GLOB_RECURSE SRCS src/*.cpp)
+file(GLOB_RECURSE SRCS src/*.cpp custom/*.cpp basic/*.cpp prose/*.cpp clang_format/*.cpp git/*.cpp
+                       gnu_global/*.cpp syntax/*.cpp man/*.cpp render/*.cpp)
 add_library(${LIBRARY_NAME} ${SRCS})
 target_include_directories(${LIBRARY_NAME} PUBLIC custom)
 
+# Build mag (mag.exe)
 file(GLOB_RECURSE CLIENT_SRCS clients/*.cpp)
 add_executable(${PROJECT_NAME} WIN32 mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
-target_link_libraries(${PROJECT_NAME} custom)
-target_link_libraries(${PROJECT_NAME} basic)
-target_link_libraries(${PROJECT_NAME} prose)
-target_link_libraries(${PROJECT_NAME} clang_format)
-target_link_libraries(${PROJECT_NAME} git)
-target_link_libraries(${PROJECT_NAME} gnu_global)
-target_link_libraries(${PROJECT_NAME} syntax)
-target_link_libraries(${PROJECT_NAME} man)
-target_link_libraries(${PROJECT_NAME} render)
 target_link_libraries(${PROJECT_NAME} ${LIBRARY_NAME})
 target_link_libraries(${PROJECT_NAME} cz)
 target_include_directories(${PROJECT_NAME} PUBLIC clients render)
 
+# Include client libraries to mag
 if (${HAS_NCURSES})
   target_compile_definitions(${PROJECT_NAME} PUBLIC HAS_NCURSES=1)
   target_link_libraries(${PROJECT_NAME} ncurses)
@@ -71,7 +70,9 @@ if (NOT WIN32)
   target_link_libraries(${PROJECT_NAME} dl)
 endif()
 
+# Include icon / logo
 if (WIN32)
+  # Build logo.png into logo.ico
   add_custom_target(icon COMMAND magick convert ${CMAKE_SOURCE_DIR}/res/logo.png -define icon:auto-resize=256,128,96,64,48,32,16 ${CMAKE_SOURCE_DIR}/res/logo.ico
                     DEPENDS ${CMAKE_SOURCE_DIR}/res/logo.png)
 else()
@@ -81,6 +82,7 @@ endif()
 add_dependencies(${PROJECT_NAME} icon)
 
 if (WIN32)
+  # Copy diff and clang_format binaries and dependencies
   add_custom_target(copy_resources ALL
       ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/diff.exe ${CMAKE_SOURCE_DIR}/res/diff_COPYING ${CMAKE_SOURCE_DIR}/res/libiconv2.dll ${CMAKE_SOURCE_DIR}/res/libintl3.dll
       ${CMAKE_SOURCE_DIR}/res/clang-format.exe
@@ -89,33 +91,7 @@ else()
   # diff is assumed to be installed on linux
 endif()
 
-file(GLOB_RECURSE CUSTOM_SRCS custom/*.cpp)
-add_library(custom ${CUSTOM_SRCS})
-
-file(GLOB_RECURSE BASIC_SRCS basic/*.cpp)
-add_library(basic ${BASIC_SRCS})
-
-file(GLOB_RECURSE PROSE_SRCS prose/*.cpp)
-add_library(prose ${PROSE_SRCS})
-
-file(GLOB_RECURSE CLANG_FORMAT_SRCS clang_format/*.cpp)
-add_library(clang_format ${CLANG_FORMAT_SRCS})
-
-file(GLOB_RECURSE GIT_SRCS git/*.cpp)
-add_library(git ${GIT_SRCS})
-
-file(GLOB_RECURSE GNU_GLOBAL_SRCS gnu_global/*.cpp)
-add_library(gnu_global ${GNU_GLOBAL_SRCS})
-
-file(GLOB_RECURSE SYNTAX_SRCS syntax/*.cpp)
-add_library(syntax ${SYNTAX_SRCS})
-
-file(GLOB_RECURSE MAN_SRCS man/*.cpp)
-add_library(man ${MAN_SRCS})
-
-file(GLOB_RECURSE RENDER_SRCS render/*.cpp)
-add_library(render ${RENDER_SRCS})
-
+# If tracy is enabled, disable building tests.
 if (TRACY_ENABLE)
   add_compile_definitions(TRACY_ENABLE)
 else()
@@ -125,16 +101,6 @@ else()
   target_include_directories(${TEST_EXECUTABLE} PUBLIC src)
   target_include_directories(${TEST_EXECUTABLE} PUBLIC cz/include)
   target_include_directories(${TEST_EXECUTABLE} PUBLIC cz/test_base)
-  target_link_libraries(${TEST_EXECUTABLE} basic)
-  target_link_libraries(${TEST_EXECUTABLE} ${LIBRARY_NAME})
-  target_link_libraries(${TEST_EXECUTABLE} custom)
-  target_link_libraries(${TEST_EXECUTABLE} basic)
-  target_link_libraries(${TEST_EXECUTABLE} prose)
-  target_link_libraries(${TEST_EXECUTABLE} clang_format)
-  target_link_libraries(${TEST_EXECUTABLE} git)
-  target_link_libraries(${TEST_EXECUTABLE} gnu_global)
-  target_link_libraries(${TEST_EXECUTABLE} syntax)
-  target_link_libraries(${TEST_EXECUTABLE} man)
   target_link_libraries(${TEST_EXECUTABLE} ${LIBRARY_NAME})
   target_link_libraries(${TEST_EXECUTABLE} cz)
   target_link_libraries(${TEST_EXECUTABLE} czt)
