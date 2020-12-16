@@ -68,7 +68,7 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
     Data* data = (Data*)_data;
     data->enabled = false;
 
-    if (window->show_marks || window->cursors.len() != 1) {
+    if (window->show_marks) {
         return;
     }
 
