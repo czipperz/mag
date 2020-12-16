@@ -150,45 +150,9 @@ static void gnu_global_completion_engine(Editor* editor, Completion_Engine_Conte
     run_command_for_completion_results(context, cz::slice(args), options);
 }
 
-static void command_complete_at_point_response(Editor* editor,
-                                               Client* client,
-                                               cz::Str query,
-                                               void* data) {
-    WITH_SELECTED_BUFFER(client);
-
-    Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
-    uint64_t state;
-    Token token;
-    if (!get_token_at_position(buffer, &iterator, &state, &token)) {
-        client->show_message("Cursor is not positioned at a token");
-        return;
-    }
-
-    iterator.retreat_to(token.start);
-
-    Transaction transaction;
-    CZ_DEFER(transaction.drop());
-    transaction.init(2, token.end - token.start + query.len);
-
-    Edit remove_edit;
-    remove_edit.value = buffer->contents.slice(transaction.value_allocator(), iterator, token.end);
-    remove_edit.position = token.start;
-    remove_edit.flags = Edit::REMOVE;
-    transaction.push(remove_edit);
-
-    Edit insert_edit;
-    insert_edit.value = SSOStr::as_duplicate(transaction.value_allocator(), query);
-    insert_edit.position = token.start;
-    insert_edit.flags = Edit::INSERT;
-    transaction.push(insert_edit);
-
-    transaction.commit(buffer);
-}
-
 void command_complete_at_point(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    // todo: should this really be disabled?
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
     uint64_t state;
     Token token;
