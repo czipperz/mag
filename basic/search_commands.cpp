@@ -66,8 +66,7 @@ static bool get_file_to_open(Buffer* buffer,
                   buffer->directory.len() + 1 + relative_end.position - relative_start.position);
     path->append(buffer->directory);
     path->push('/');
-    buffer->contents.slice_into(relative_start, relative_end.position, path->end());
-    path->set_len(path->len() + relative_end.position - relative_start.position);
+    buffer->contents.slice_into(relative_start, relative_end.position, path);
     return true;
 }
 

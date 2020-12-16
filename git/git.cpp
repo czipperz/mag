@@ -125,8 +125,7 @@ void command_git_grep_token_at_position(Editor* editor, Command_Source source) {
     query.reserve(cz::heap_allocator(), token.end - token.start + 4);
     query.push('\\');
     query.push('<');
-    buffer->contents.slice_into(iterator, token.end, query.end());
-    query.set_len(query.len() + token.end - token.start);
+    buffer->contents.slice_into(iterator, token.end, &query);
     query.push('\\');
     query.push('>');
 

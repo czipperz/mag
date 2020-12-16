@@ -205,6 +205,20 @@ void Contents::slice_into(Contents_Iterator start, uint64_t end, char* string) c
     slice_impl(string, buckets, start, end - start.position);
 }
 
+void Contents::slice_into(Contents_Iterator start, uint64_t end, cz::String* string) const {
+    CZ_DEBUG_ASSERT(string->cap() - string->len() >= end - start.position);
+    slice_impl(string->end(), buckets, start, end - start.position);
+    string->set_len(string->len() + end - start.position);
+}
+
+void Contents::slice_into(cz::Allocator allocator,
+                          Contents_Iterator start,
+                          uint64_t end,
+                          cz::String* string) const {
+    string->reserve(allocator, end - start.position);
+    slice_into(start, end, string);
+}
+
 char Contents::get_once(uint64_t pos) const {
     ZoneScoped;
 

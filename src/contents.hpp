@@ -28,6 +28,8 @@ struct Contents {
     void stringify_into(cz::Allocator allocator, cz::String* string) const;
     SSOStr slice(cz::Allocator allocator, Contents_Iterator start, uint64_t end) const;
     void slice_into(Contents_Iterator start, uint64_t end, char* string) const;
+    void slice_into(Contents_Iterator start, uint64_t end, cz::String* string) const;
+    void slice_into(cz::Allocator allocator, Contents_Iterator start, uint64_t end, cz::String* string) const;
 
     char get_once(uint64_t position) const;
     Contents_Iterator iterator_at(uint64_t position) const;

@@ -91,8 +91,7 @@ void Window_Unified::update_completion_cache(Buffer* buffer) {
         completion_cache.engine_context.query.reserve(cz::heap_allocator(),
                                                       token.end - token.start);
         buffer->contents.slice_into(iterator, token.end,
-                                    completion_cache.engine_context.query.buffer());
-        completion_cache.engine_context.query.set_len(token.end - token.start);
+                                    &completion_cache.engine_context.query);
     }
 }
 
