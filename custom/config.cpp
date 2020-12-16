@@ -189,6 +189,7 @@ Key_Map create_key_map() {
     BIND(key_map, "A-g a", prose::command_alternate);
 
     BIND(key_map, "A-g s", git::command_git_grep);
+    BIND(key_map, "A-g A-s", git::command_git_grep_token_at_position);
     BIND(key_map, "A-g f", git::command_git_find_file);
 
     BIND(key_map, "A-g A-t", gnu_global::command_lookup_at_point);

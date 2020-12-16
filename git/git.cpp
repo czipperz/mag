@@ -7,6 +7,8 @@
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "message.hpp"
+#include "movement.hpp"
+#include "token.hpp"
 
 namespace mag {
 namespace git {
@@ -98,6 +100,42 @@ void command_git_grep(Editor* editor, Command_Source source) {
         WITH_WINDOW_BUFFER(source.client->mini_buffer_window());
         transaction.commit(buffer);
     }
+}
+
+void command_git_grep_token_at_position(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::String top_level_path = {};
+    CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
+    if (!get_git_top_level(source.client, buffer->directory.buffer(), cz::heap_allocator(),
+                           &top_level_path)) {
+        source.client->show_message("No git directory");
+        return;
+    }
+
+    Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+    uint64_t state;
+    Token token;
+    if (!get_token_at_position(buffer, &iterator, &state, &token)) {
+        source.client->show_message("Cursor is not positioned at a token");
+        return;
+    }
+    iterator.retreat_to(token.start);
+
+    cz::String query = {};
+    CZ_DEFER(query.drop(cz::heap_allocator()));
+    query.reserve(cz::heap_allocator(), token.end - token.start + 4);
+    query.push('\\');
+    query.push('<');
+    buffer->contents.slice_into(iterator, token.end, query.end());
+    query.set_len(query.len() + token.end - token.start);
+    query.push('\\');
+    query.push('>');
+
+    cz::Str args[] = {"git", "grep", "-n", "--column", "-e", query, "--", ":/"};
+
+    run_console_command(source.client, editor, top_level_path.buffer(), cz::slice(args), "git grep",
+                        "Git grep error");
 }
 
 void command_save_and_quit(Editor* editor, Command_Source source) {
