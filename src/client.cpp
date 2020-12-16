@@ -170,46 +170,27 @@ void Client::show_message(cz::Str text) {
     _select_mini_buffer = false;
 }
 
-void Client::setup_completion_cache(Editor* editor) {
+static void setup_completion_cache(Client* client, Editor* editor) {
     ZoneScoped;
 
-    Client* client = this;
-    Completion_Cache* completion_cache = &mini_buffer_completion_cache;
+    Completion_Cache* completion_cache = &client->mini_buffer_completion_cache;
 
     if (client->_message.tag <= Message::SHOW) {
         completion_cache->engine = nullptr;
         return;
     }
 
-    {
-        Window_Unified* window = client->mini_buffer_window();
-        WITH_WINDOW_BUFFER(window);
-        if (completion_cache->change_index != buffer->changes.len() ||
-            completion_cache->engine != client->_message.completion_engine) {
-            completion_cache->change_index = buffer->changes.len();
-            if (completion_cache->engine != client->_message.completion_engine) {
-                completion_cache->state = Completion_Cache::INITIAL;
-            } else {
-                completion_cache->state = Completion_Cache::LOADING;
-            }
+    completion_cache->set_engine(client->_message.completion_engine);
 
-            completion_cache->engine_context.query.set_len(0);
-            buffer->contents.stringify_into(cz::heap_allocator(),
-                                            &completion_cache->engine_context.query);
-        }
-    }
+    client->update_mini_buffer_completion_cache(editor);
+}
 
-    if (completion_cache->state == Completion_Cache::INITIAL) {
-        if (completion_cache->engine != client->_message.completion_engine) {
-            completion_cache->engine = client->_message.completion_engine;
-            if (completion_cache->engine_context.cleanup) {
-                completion_cache->engine_context.cleanup(completion_cache->engine_context.data);
-            }
-            completion_cache->engine_context.cleanup = nullptr;
-            completion_cache->engine_context.data = nullptr;
-            completion_cache->engine_context.results_buffer_array.clear();
-            completion_cache->engine_context.results.set_len(0);
-        }
+void Client::update_mini_buffer_completion_cache(Editor* editor) {
+    WITH_WINDOW_BUFFER(mini_buffer_window());
+
+    if (mini_buffer_completion_cache.update(buffer->changes.len())) {
+        buffer->contents.stringify_into(cz::heap_allocator(),
+                                        &mini_buffer_completion_cache.engine_context.query);
     }
 }
 
@@ -230,7 +211,7 @@ void Client::show_dialog(Editor* editor,
     _message.response_callback_data = response_callback_data;
     _select_mini_buffer = true;
 
-    setup_completion_cache(editor);
+    setup_completion_cache(this, editor);
 }
 
 }

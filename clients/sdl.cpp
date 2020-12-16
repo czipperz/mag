@@ -890,7 +890,7 @@ void run(Server* server, Client* client) {
 
         Uint32 frame_start_ticks = SDL_GetTicks();
 
-        client->setup_completion_cache(&server->editor);
+        client->update_mini_buffer_completion_cache(&server->editor);
         load_mini_buffer_completion_cache(server, client);
 
         render(window, renderer, font, &texture, &surface, &total_rows, &total_cols,

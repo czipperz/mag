@@ -75,6 +75,9 @@ struct Completion_Cache {
         filter_context.drop();
         engine_context.drop();
     }
+
+    bool update(size_t changes_len);
+    void set_engine(Completion_Engine new_engine);
 };
 
 }

@@ -28,6 +28,30 @@ void Completion_Engine_Context::drop() {
     query.drop(cz::heap_allocator());
 }
 
+bool Completion_Cache::update(size_t changes_len) {
+    if (change_index != changes_len) {
+        change_index = changes_len;
+        state = Completion_Cache::LOADING;
+        engine_context.query.set_len(0);
+        return true;
+    }
+    return false;
+}
+
+void Completion_Cache::set_engine(Completion_Engine new_engine) {
+    if (engine != new_engine) {
+        engine = new_engine;
+        state = Completion_Cache::INITIAL;
+        if (engine_context.cleanup) {
+            engine_context.cleanup(engine_context.data);
+        }
+        engine_context.cleanup = nullptr;
+        engine_context.data = nullptr;
+        engine_context.results_buffer_array.clear();
+        engine_context.results.set_len(0);
+    }
+}
+
 void prefix_completion_filter(Completion_Filter_Context* context,
                               Completion_Engine engine,
                               Editor* editor,

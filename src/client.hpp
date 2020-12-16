@@ -71,7 +71,7 @@ struct Client {
                      Message::Response_Callback response_callback,
                      void* response_callback_data);
 
-    void setup_completion_cache(Editor* editor);
+    void update_mini_buffer_completion_cache(Editor* editor);
 
     void hide_mini_buffer(Editor* editor);
 
