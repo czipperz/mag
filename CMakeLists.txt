@@ -3,8 +3,9 @@
 # To add a new package go the line starting with `file(GLOB_RECURSE SRCS` and add your sources to
 # the list of globs.
 
-project(mag)
 cmake_minimum_required(VERSION 3.3)
+
+project(mag)
 
 add_subdirectory(cz)
 
@@ -41,7 +42,7 @@ else()
   set(WINDOWS_RC_FILE)
 endif()
 
-# Build all sources as library magl (so we dont double build to make testing program)
+# Build all sources as library magl (so we don't double build to make testing program)
 set(LIBRARY_NAME ${PROJECT_NAME}l)
 file(GLOB_RECURSE SRCS src/*.cpp custom/*.cpp basic/*.cpp prose/*.cpp clang_format/*.cpp git/*.cpp
                        gnu_global/*.cpp syntax/*.cpp man/*.cpp render/*.cpp)
