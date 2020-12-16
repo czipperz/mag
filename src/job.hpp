@@ -43,4 +43,11 @@ bool run_console_command(Client* client,
                          cz::Str buffer_name,
                          cz::Str error);
 
+bool run_console_command_in(Client* client,
+                            Editor* editor,
+                            Buffer_Id buffer_id,
+                            const char* working_directory,
+                            cz::Str script,
+                            cz::Str error);
+
 }

@@ -6,6 +6,8 @@
 namespace mag {
 namespace basic {
 
+void command_search_reload(Editor* editor, Command_Source source);
+
 void command_search_open(Editor* editor, Command_Source source);
 
 void command_search_open_next(Editor* editor, Command_Source source);

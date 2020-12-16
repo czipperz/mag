@@ -71,6 +71,23 @@ bool run_console_command(Client* client,
                          cz::Str script,
                          cz::Str buffer_name,
                          cz::Str error) {
+    Buffer_Id buffer_id = editor->create_temp_buffer(buffer_name, {working_directory});
+    {
+        WITH_BUFFER(buffer_id);
+        buffer->contents.append(script);
+        buffer->contents.append("\n");
+    }
+    client->set_selected_buffer(buffer_id);
+
+    return run_console_command_in(client, editor, buffer_id, working_directory, script, error);
+}
+
+bool run_console_command_in(Client* client,
+                            Editor* editor,
+                            Buffer_Id buffer_id,
+                            const char* working_directory,
+                            cz::Str script,
+                            cz::Str error) {
     cz::Process_Options options;
     options.working_directory = working_directory;
 
@@ -87,17 +104,6 @@ bool run_console_command(Client* client,
         stdout_read.close();
         return false;
     }
-
-    Buffer_Id buffer_id = editor->create_temp_buffer(buffer_name, {working_directory});
-    {
-        WITH_BUFFER(buffer_id);
-        buffer->contents.append(working_directory);
-        buffer->contents.append(": ");
-        buffer->contents.append(script);
-        buffer->contents.append("\n");
-    }
-
-    client->set_selected_buffer(buffer_id);
 
     editor->add_job(job_process_append(buffer_id, process, stdout_read));
     return true;

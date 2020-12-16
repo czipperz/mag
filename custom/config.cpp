@@ -338,6 +338,7 @@ static Key_Map create_search_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-m", command_search_open);
     BIND(key_map, "\n", command_search_open);
+    BIND(key_map, "g", command_search_reload);
     return key_map;
 }
 

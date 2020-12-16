@@ -24,25 +24,6 @@ static bool eat_until_colon(Contents_Iterator* iterator) {
     }
 }
 
-static bool eat_until_colon_space(Contents_Iterator* iterator) {
-    while (1) {
-        if (iterator->at_eob()) {
-            return false;
-        }
-        if (iterator->get() == ':') {
-            Contents_Iterator it = *iterator;
-            it.advance();
-            if (it.at_eob()) {
-                return true;
-            }
-            if (it.get() == ' ') {
-                return true;
-            }
-        }
-        iterator->advance();
-    }
-}
-
 static bool parse_number(Contents_Iterator* iterator, uint64_t* num) {
     iterator->advance();
     while (1) {
@@ -81,15 +62,9 @@ static bool get_file_to_open(Buffer* buffer,
         return false;
     }
 
-    Contents_Iterator base_end = buffer->contents.start();
-    if (!eat_until_colon_space(&base_end)) {
-        return false;
-    }
-
     path->reserve(cz::heap_allocator(),
-                  base_end.position + 1 + relative_end.position - relative_start.position);
-    buffer->contents.slice_into(buffer->contents.start(), base_end.position, path->end());
-    path->set_len(path->len() + base_end.position);
+                  buffer->directory.len() + 1 + relative_end.position - relative_start.position);
+    path->append(buffer->directory);
     path->push('/');
     buffer->contents.slice_into(relative_start, relative_end.position, path->end());
     path->set_len(path->len() + relative_end.position - relative_start.position);
@@ -126,6 +101,28 @@ static void open_file_and_goto_position(Editor* editor,
     }
 
     window->cursors[0].point = cz::min(buffer->contents.len, iterator.position + column - 1);
+}
+
+void command_search_reload(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    Contents_Iterator start = buffer->contents.start();
+    Contents_Iterator end = start;
+    end_of_line(&end);
+
+    SSOStr script = buffer->contents.slice(cz::heap_allocator(), start, end.position);
+    CZ_DEFER(script.drop(cz::heap_allocator()));
+
+    if (end.at_eob()) {
+        // There is no newline so insert one.
+        buffer->contents.append("\n");
+    } else {
+        // Skip over the newline and delete to the end of the file.
+        end.advance();
+        buffer->contents.remove(end.position, buffer->contents.len - end.position);
+    }
+
+    run_console_command_in(source.client, editor, window->id, buffer->directory.buffer(),
+                           script.as_str(), "Failed to rerun script");
 }
 
 void command_search_open(Editor* editor, Command_Source source) {
