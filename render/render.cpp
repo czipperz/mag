@@ -584,8 +584,8 @@ bool load_mini_buffer_completion_cache(Server* server, Client* client) {
         return false;
     }
 
-    load_completion_cache(&server->editor, &client->mini_buffer_completion_cache,
-                          server->editor.theme.mini_buffer_completion_filter);
+    return load_completion_cache(&server->editor, &client->mini_buffer_completion_cache,
+                                 server->editor.theme.mini_buffer_completion_filter);
 }
 
 static bool load_completion_cache(Editor* editor,
