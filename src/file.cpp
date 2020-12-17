@@ -62,8 +62,25 @@ static cz::Result load_directory(Editor* editor,
                                  size_t path_len,
                                  Buffer_Id* buffer_id) {
     path[path_len++] = '/';
-    path[path_len] = '\0';
 
+    Buffer buffer = {};
+    buffer.type = Buffer::DIRECTORY;
+    buffer.directory = cz::Str(path, path_len).duplicate_null_terminate(cz::heap_allocator());
+    buffer.name = cz::Str(".").duplicate(cz::heap_allocator());
+
+    cz::Result result = reload_directory_buffer(&buffer);
+    if (result.is_err()) {
+        buffer.contents.drop();
+        buffer.name.drop(cz::heap_allocator());
+        buffer.directory.drop(cz::heap_allocator());
+        return result;
+    }
+
+    *buffer_id = editor->create_buffer(buffer);
+    return result;
+}
+
+cz::Result reload_directory_buffer(Buffer* buffer) {
     cz::Buffer_Array buffer_array;
     buffer_array.create();
     CZ_DEFER(buffer_array.drop());
@@ -71,38 +88,31 @@ static cz::Result load_directory(Editor* editor,
     cz::Vector<cz::String> files = {};
     CZ_DEFER(files.drop(cz::heap_allocator()));
 
-    CZ_TRY(cz::fs::files(cz::heap_allocator(), buffer_array.allocator(), path, &files));
-
-    Buffer buffer = {};
-    buffer.type = Buffer::DIRECTORY;
-    buffer.directory = cz::Str(path, path_len).duplicate_null_terminate(cz::heap_allocator());
-    buffer.name = cz::Str(".").duplicate(cz::heap_allocator());
-
-    *buffer_id = editor->create_buffer(buffer);
+    CZ_TRY(cz::fs::files(cz::heap_allocator(), buffer_array.allocator(), buffer->directory.buffer(),
+                         &files));
 
     std::sort(files.start(), files.end());
 
-    {
-        cz::String file = {};
-        CZ_DEFER(file.drop(cz::heap_allocator()));
-        file.reserve(cz::heap_allocator(), path_len);
-        file.append({path, path_len});
+    cz::String file = {};
+    CZ_DEFER(file.drop(cz::heap_allocator()));
+    file.reserve(cz::heap_allocator(), buffer->directory.len());
+    file.append(buffer->directory);
 
-        WITH_BUFFER(*buffer_id);
-        for (size_t i = 0; i < files.len(); ++i) {
-            file.set_len(path_len);
-            file.reserve(cz::heap_allocator(), files[i].len() + 1);
-            file.append(files[i]);
-            file.null_terminate();
-            if (is_directory(file.buffer())) {
-                buffer->contents.append("/ ");
-            } else {
-                buffer->contents.append("  ");
-            }
+    for (size_t i = 0; i < files.len(); ++i) {
+        file.set_len(buffer->directory.len());
 
-            buffer->contents.append(files[i]);
-            buffer->contents.append("\n");
+        file.reserve(cz::heap_allocator(), files[i].len() + 1);
+        file.append(files[i]);
+        file.null_terminate();
+
+        if (is_directory(file.buffer())) {
+            buffer->contents.append("/ ");
+        } else {
+            buffer->contents.append("  ");
         }
+
+        buffer->contents.append(files[i]);
+        buffer->contents.append("\n");
     }
 
     return cz::Result::ok();

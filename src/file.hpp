@@ -4,6 +4,7 @@ namespace cz {
 struct Str;
 struct Input_File;
 struct Output_File;
+struct Result;
 }
 
 namespace mag {
@@ -13,6 +14,8 @@ struct Editor;
 struct Client;
 struct Contents;
 struct Buffer_Id;
+
+cz::Result reload_directory_buffer(Buffer* buffer);
 
 void open_file(Editor* editor, Client* client, cz::Str user_path);
 
