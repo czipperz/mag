@@ -293,6 +293,7 @@ static Key_Map create_directory_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-m", command_directory_open_path);
     BIND(key_map, "\n", command_directory_open_path);
+    BIND(key_map, "g", command_directory_reload);
     return key_map;
 }
 

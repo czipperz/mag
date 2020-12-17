@@ -11,6 +11,14 @@
 namespace mag {
 namespace basic {
 
+void command_directory_reload(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    buffer->contents.remove(0, buffer->contents.len);
+    if (reload_directory_buffer(buffer).is_err()) {
+        source.client->show_message("Couldn't reload directory");
+    }
+}
+
 void command_directory_open_path(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
