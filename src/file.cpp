@@ -12,6 +12,14 @@
 #include "config.hpp"
 #include "editor.hpp"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
 namespace mag {
 
 static cz::Result load_file(Editor* editor, const char* path, Buffer_Id buffer_id) {
@@ -31,6 +39,22 @@ static cz::Result load_file(Editor* editor, const char* path, Buffer_Id buffer_i
     }
 
     return cz::Result::ok();
+}
+
+static bool is_directory(const char* path) {
+#ifdef _WIN32
+    DWORD result = GetFileAttributes(path);
+    if (result == INVALID_FILE_ATTRIBUTES) {
+        return false;
+    }
+    return result & FILE_ATTRIBUTE_DIRECTORY;
+#else
+    struct stat buf;
+    if (stat(path, &buf) < 0) {
+        return false;
+    }
+    return S_ISDIR(buf.st_mode);
+#endif
 }
 
 static cz::Result load_directory(Editor* editor,
@@ -59,8 +83,23 @@ static cz::Result load_directory(Editor* editor,
     std::sort(files.start(), files.end());
 
     {
+        cz::String file = {};
+        CZ_DEFER(file.drop(cz::heap_allocator()));
+        file.reserve(cz::heap_allocator(), path_len);
+        file.append({path, path_len});
+
         WITH_BUFFER(*buffer_id);
         for (size_t i = 0; i < files.len(); ++i) {
+            file.set_len(path_len);
+            file.reserve(cz::heap_allocator(), files[i].len() + 1);
+            file.append(files[i]);
+            file.null_terminate();
+            if (is_directory(file.buffer())) {
+                buffer->contents.append("/ ");
+            } else {
+                buffer->contents.append("  ");
+            }
+
             buffer->contents.append(files[i]);
             buffer->contents.append("\n");
         }

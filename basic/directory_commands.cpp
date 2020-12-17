@@ -20,6 +20,8 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
         Contents_Iterator start = buffer->contents.iterator_at(window->cursors[0].point);
         Contents_Iterator end = start;
         start_of_line(&start);
+        forward_char(&start);
+        forward_char(&start);
         end_of_line(&end);
 
         if (start.position < end.position) {
