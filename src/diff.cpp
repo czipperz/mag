@@ -81,15 +81,24 @@ static int parse_line(File_Wrapper& fw, cz::String& str, char start_char) {
 static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vector<Edit>* edits) {
     File_Wrapper fw;
     fw.file = file;
-    CZ_TRY(fw.load_more());
+
+    int result = fw.load_more();
+    if (result < 0) {
+        return result;
+    } else if (result == 1) {
+        return 0;
+    }
 
     uint64_t iterator_line = 1;
 
     char x;
     while (1) {
         uint64_t line = 0;
-        if (fw.load_more() == 1) {
+        int result = fw.load_more();
+        if (result == 1) {
             return 0;
+        } else if (result < 0) {
+            return result;
         }
 
         while (isdigit(x = fw.get())) {
