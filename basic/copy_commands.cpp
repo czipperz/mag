@@ -50,7 +50,7 @@ void command_cut(Editor* editor, Command_Source source) {
     transaction.init(cursors.len, sum_region_sizes);
     CZ_DEFER(transaction.drop());
 
-    size_t offset = 0;
+    uint64_t offset = 0;
     if (cursors.len == 1) {
         cut_cursor(&cursors[0], &transaction, &source.client->global_copy_chain, editor, buffer,
                    &offset, source.client);
