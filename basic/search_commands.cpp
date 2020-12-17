@@ -63,9 +63,8 @@ static bool get_file_to_open(Buffer* buffer,
     }
 
     path->reserve(cz::heap_allocator(),
-                  buffer->directory.len() + 1 + relative_end.position - relative_start.position);
+                  buffer->directory.len() + relative_end.position - relative_start.position);
     path->append(buffer->directory);
-    path->push('/');
     buffer->contents.slice_into(relative_start, relative_end.position, path);
     return true;
 }
