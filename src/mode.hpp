@@ -20,7 +20,7 @@ struct Mode {
     cz::Slice<Overlay> overlays;
 };
 
-inline bool default_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+inline bool default_next_token(Contents_Iterator*, Token*, uint64_t*) {
     return false;
 }
 
