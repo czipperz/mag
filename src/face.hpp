@@ -30,11 +30,8 @@ struct Face_Color {
     constexpr Face_Color(Color color) : is_themed(false), x(color) {}
 
     constexpr bool operator==(const Face_Color& other) const {
-        if (is_themed) {
-            return other.is_themed && x.theme_index == other.x.theme_index;
-        } else {
-            return !other.is_themed && x.color == other.x.color;
-        }
+        return is_themed ? (other.is_themed && x.theme_index == other.x.theme_index)
+                         : (!other.is_themed && x.color == other.x.color);
     }
     constexpr bool operator!=(const Face_Color& other) const { return !(*this == other); }
 };
@@ -54,6 +51,10 @@ struct Face {
         INVISIBLE = 16,
     };
     uint32_t flags = 0;
+
+    Face() = default;
+    Face(Face_Color foreground, Face_Color background, uint32_t flags)
+        : foreground(foreground), background(background), flags(flags) {}
 };
 
 }
