@@ -63,7 +63,10 @@ void command_directory_delete_path(Editor* editor, Command_Source source) {
     }
 }
 
-void command_directory_rename_path_callback(Editor* editor, Client* client, cz::Str query, void*) {
+static void command_directory_rename_path_callback(Editor* editor,
+                                                   Client* client,
+                                                   cz::Str query,
+                                                   void*) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
