@@ -184,7 +184,7 @@ static void command_directory_delete_path_callback(Editor* editor, Client* clien
 }
 
 void command_directory_delete_path(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Confirm delete directory: ", no_completion_engine,
+    source.client->show_dialog(editor, "Confirm delete path: ", no_completion_engine,
                                command_directory_delete_path_callback, nullptr);
 }
 
@@ -281,7 +281,7 @@ static void command_directory_copy_path_callback(Editor* editor,
     CZ_DEFER(new_path.drop(cz::heap_allocator()));
 
     if (copy_path(&path, &new_path).is_err()) {
-        client->show_message("Couldn't copy file");
+        client->show_message("Couldn't copy path");
         return;
     }
 }
@@ -318,7 +318,7 @@ static void command_directory_rename_path_callback(Editor* editor,
     CZ_DEFER(new_path.drop(cz::heap_allocator()));
 
     if (rename(path.buffer(), new_path.buffer()) != 0) {
-        client->show_message("Couldn't rename file");
+        client->show_message("Couldn't rename path");
         return;
     }
 }
