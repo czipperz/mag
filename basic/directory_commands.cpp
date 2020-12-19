@@ -78,11 +78,14 @@ static bool get_path(Buffer* buffer, cz::String* path, uint64_t point) {
     return true;
 }
 
-template <class File_Callback, class Directory_Callback>
+template <class File_Callback, class Directory_Start_Callback, class Directory_End_Callback>
 static cz::Result for_each_file(cz::String* path,
                                 File_Callback file_callback,
-                                Directory_Callback directory_callback) {
+                                Directory_Start_Callback directory_start_callback,
+                                Directory_End_Callback directory_end_callback) {
     if (is_directory(path->buffer())) {
+        CZ_TRY(directory_start_callback(path->buffer()));
+
         cz::fs::DirectoryIterator iterator(cz::heap_allocator());
         CZ_TRY(iterator.create(path->buffer()));
 
@@ -95,7 +98,8 @@ static cz::Result for_each_file(cz::String* path,
             path->append(file);
             path->null_terminate();
 
-            cz::Result result = for_each_file(path, file_callback, directory_callback);
+            cz::Result result = for_each_file(path, file_callback, directory_start_callback,
+                                              directory_end_callback);
 
             path->set_len(len);
 
@@ -116,7 +120,7 @@ static cz::Result for_each_file(cz::String* path,
         CZ_TRY(iterator.destroy());
 
         path->null_terminate();
-        return directory_callback(path->buffer());
+        return directory_end_callback(path->buffer());
     } else {
         return file_callback(path->buffer());
     }
@@ -155,7 +159,8 @@ static cz::Result remove_file(const char* path) {
 }
 
 static cz::Result remove_path(cz::String* path) {
-    return for_each_file(path, remove_file, remove_empty_directory);
+    return for_each_file(
+        path, remove_file, [](const char*) { return cz::Result::ok(); }, remove_empty_directory);
 }
 
 static void command_directory_delete_path_callback(Editor* editor, Client* client, cz::Str, void*) {
@@ -200,11 +205,19 @@ static cz::Result copy_path(cz::String* path, cz::String* new_path) {
 
             cz::Input_File input;
             CZ_DEFER(input.close());
-            input.open(src);
+            if (!input.open(src)) {
+                cz::Result result;
+                result.code = 1;
+                return result;
+            }
 
             cz::Output_File output;
             CZ_DEFER(output.close());
-            output.open(new_path->buffer());
+            if (!output.open(new_path->buffer())) {
+                cz::Result result;
+                result.code = 1;
+                return result;
+            }
 
             char buffer[1024];
             while (1) {
@@ -235,7 +248,8 @@ static cz::Result copy_path(cz::String* path, cz::String* new_path) {
                 return result;
             }
             return cz::Result::ok();
-        });
+        },
+        [](const char*) { return cz::Result::ok(); });
 }
 
 static void command_directory_copy_path_callback(Editor* editor,
@@ -263,7 +277,7 @@ static void command_directory_copy_path_callback(Editor* editor,
     CZ_DEFER(new_path.drop(cz::heap_allocator()));
 
     if (copy_path(&path, &new_path).is_err()) {
-        client->show_message("Couldn't rename file");
+        client->show_message("Couldn't copy file");
         return;
     }
 }
