@@ -22,6 +22,22 @@
 
 namespace mag {
 
+bool is_directory(const char* path) {
+#ifdef _WIN32
+    DWORD result = GetFileAttributes(path);
+    if (result == INVALID_FILE_ATTRIBUTES) {
+        return false;
+    }
+    return result & FILE_ATTRIBUTE_DIRECTORY;
+#else
+    struct stat buf;
+    if (stat(path, &buf) < 0) {
+        return false;
+    }
+    return S_ISDIR(buf.st_mode);
+#endif
+}
+
 static cz::Result load_file(Editor* editor, const char* path, Buffer_Id buffer_id) {
     FILE* file = fopen(path, "r");
     if (!file) {
@@ -39,22 +55,6 @@ static cz::Result load_file(Editor* editor, const char* path, Buffer_Id buffer_i
     }
 
     return cz::Result::ok();
-}
-
-static bool is_directory(const char* path) {
-#ifdef _WIN32
-    DWORD result = GetFileAttributes(path);
-    if (result == INVALID_FILE_ATTRIBUTES) {
-        return false;
-    }
-    return result & FILE_ATTRIBUTE_DIRECTORY;
-#else
-    struct stat buf;
-    if (stat(path, &buf) < 0) {
-        return false;
-    }
-    return S_ISDIR(buf.st_mode);
-#endif
 }
 
 static cz::Result load_directory(Editor* editor,

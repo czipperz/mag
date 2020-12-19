@@ -15,6 +15,8 @@ struct Client;
 struct Contents;
 struct Buffer_Id;
 
+bool is_directory(const char* path);
+
 cz::Result reload_directory_buffer(Buffer* buffer);
 
 void open_file(Editor* editor, Client* client, cz::Str user_path);
