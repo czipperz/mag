@@ -1,7 +1,9 @@
 #include "directory_commands.hpp"
 
+#include <cz/fs/directory.hpp>
 #include <cz/path.hpp>
 #include <cz/result.hpp>
+#include <cz/try.hpp>
 #include "buffer_commands.hpp"
 #include "client.hpp"
 #include "command.hpp"
@@ -49,6 +51,79 @@ static bool get_path(Buffer* buffer, cz::String* path, uint64_t point) {
     return true;
 }
 
+static cz::Result remove_empty_directory(const char* path) {
+#ifdef _WIN32
+    if (!RemoveDirectoryA(path)) {
+        cz::Result result;
+        result.code = GetLastError();
+        return result;
+    }
+    return cz::Result::ok();
+#else
+    if (rmdir(path) != 0) {
+        return cz::Result::last_error();
+    }
+    return cz::Result::ok();
+#endif
+}
+
+static cz::Result remove_file(const char* path) {
+#ifdef _WIN32
+    if (!DeleteFileA(path)) {
+        cz::Result result;
+        result.code = GetLastError();
+        return result;
+    }
+    return cz::Result::ok();
+#else
+    if (unlink(path) != 0) {
+        return cz::Result::last_error();
+    }
+    return cz::Result::ok();
+#endif
+}
+
+static cz::Result remove_path(cz::String* path) {
+    if (is_directory(path->buffer())) {
+        cz::fs::DirectoryIterator iterator(cz::heap_allocator());
+        CZ_TRY(iterator.create(path->buffer()));
+
+        while (!iterator.done()) {
+            cz::Str file = iterator.file();
+
+            size_t len = path->len();
+            path->reserve(cz::heap_allocator(), file.len + 2);
+            path->push('/');
+            path->append(file);
+            path->null_terminate();
+
+            cz::Result result = remove_path(path);
+
+            path->set_len(len);
+
+            if (result.is_err()) {
+                // ignore errors in destruction
+                iterator.destroy();
+                return result;
+            }
+
+            result = iterator.advance();
+            if (result.is_err()) {
+                // ignore errors in destruction
+                iterator.destroy();
+                return result;
+            }
+        }
+
+        CZ_TRY(iterator.destroy());
+
+        path->null_terminate();
+        return remove_empty_directory(path->buffer());
+    } else {
+        return remove_file(path->buffer());
+    }
+}
+
 void command_directory_delete_path(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -59,8 +134,8 @@ void command_directory_delete_path(Editor* editor, Command_Source source) {
         return;
     }
 
-    if (remove(path.buffer()) != 0) {
-        source.client->show_message("Couldn't delete file");
+    if (remove_path(&path).is_err()) {
+        source.client->show_message("Couldn't delete path");
         return;
     }
 }
