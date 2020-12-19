@@ -593,8 +593,29 @@ static bool load_completion_cache(Editor* editor,
                                   Completion_Filter completion_filter) {
     CZ_DEBUG_ASSERT(completion_filter != nullptr);
 
-    completion_filter(&completion_cache->filter_context, completion_cache->engine, editor,
-                      &completion_cache->engine_context);
+    cz::String selected_result = {};
+    CZ_DEFER(selected_result.drop(cz::heap_allocator()));
+    bool has_selected_result = false;
+    if (completion_cache->filter_context.selected <
+        completion_cache->filter_context.results.len()) {
+        cz::Str selected_result_str =
+            completion_cache->filter_context.results[completion_cache->filter_context.selected];
+        selected_result.reserve(cz::heap_allocator(), selected_result_str.len);
+        selected_result.append(selected_result_str);
+        has_selected_result = true;
+    }
+
+    bool engine_change = completion_cache->engine(editor, &completion_cache->engine_context);
+
+    if (completion_cache->state != Completion_Cache::LOADED || engine_change) {
+        completion_cache->filter_context.selected = 0;
+        completion_cache->filter_context.results.set_len(0);
+        completion_cache->filter_context.results.reserve(
+            cz::heap_allocator(), completion_cache->engine_context.results.len());
+        completion_filter(editor, &completion_cache->filter_context,
+                          &completion_cache->engine_context, selected_result, has_selected_result);
+    }
+
     completion_cache->state = Completion_Cache::LOADED;
     return true;
 }

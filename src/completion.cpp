@@ -51,30 +51,15 @@ void Completion_Cache::set_engine(Completion_Engine new_engine) {
     engine_context.results.set_len(0);
 }
 
-void prefix_completion_filter(Completion_Filter_Context* context,
-                              Completion_Engine engine,
-                              Editor* editor,
-                              Completion_Engine_Context* engine_context) {
-    cz::String selected_result = {};
-    CZ_DEFER(selected_result.drop(cz::heap_allocator()));
-    bool exists = false;
-    if (context->selected < context->results.len()) {
-        selected_result.reserve(cz::heap_allocator(), context->results[context->selected].len);
-        selected_result.append(context->results[context->selected]);
-        exists = true;
-    }
-
-    if (!engine(editor, engine_context)) {
-        return;
-    }
-
-    context->selected = 0;
-    context->results.set_len(0);
-    context->results.reserve(cz::heap_allocator(), engine_context->results.len());
+void prefix_completion_filter(Editor* editor,
+                             Completion_Filter_Context* context,
+                             Completion_Engine_Context* engine_context,
+                             cz::Str selected_result,
+                             bool has_selected_result) {
     for (size_t i = 0; i < engine_context->results.len(); ++i) {
         cz::Str result = engine_context->results[i];
         if (result.starts_with(engine_context->query)) {
-            if (exists && selected_result == result) {
+            if (has_selected_result && selected_result == result) {
                 context->selected = context->results.len();
             }
             context->results.push(result);
@@ -82,30 +67,15 @@ void prefix_completion_filter(Completion_Filter_Context* context,
     }
 }
 
-void infix_completion_filter(Completion_Filter_Context* context,
-                             Completion_Engine engine,
-                             Editor* editor,
-                             Completion_Engine_Context* engine_context) {
-    cz::String selected_result = {};
-    CZ_DEFER(selected_result.drop(cz::heap_allocator()));
-    bool exists = false;
-    if (context->selected < context->results.len()) {
-        selected_result.reserve(cz::heap_allocator(), context->results[context->selected].len);
-        selected_result.append(context->results[context->selected]);
-        exists = true;
-    }
-
-    if (!engine(editor, engine_context)) {
-        return;
-    }
-
-    context->selected = 0;
-    context->results.set_len(0);
-    context->results.reserve(cz::heap_allocator(), engine_context->results.len());
+void infix_completion_filter(Editor* editor,
+                             Completion_Filter_Context* context,
+                             Completion_Engine_Context* engine_context,
+                             cz::Str selected_result,
+                             bool has_selected_result) {
     for (size_t i = 0; i < engine_context->results.len(); ++i) {
         cz::Str result = engine_context->results[i];
         if (result.contains(engine_context->query)) {
-            if (exists && selected_result == result) {
+            if (has_selected_result && selected_result == result) {
                 context->selected = context->results.len();
             }
             context->results.push(result);
@@ -193,23 +163,11 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::Str query) {
     return pattern;
 }
 
-void spaces_are_wildcards_completion_filter(Completion_Filter_Context* context,
-                                            Completion_Engine engine,
-                                            Editor* editor,
-                                            Completion_Engine_Context* engine_context) {
-    cz::String selected_result = {};
-    CZ_DEFER(selected_result.drop(cz::heap_allocator()));
-    bool exists = false;
-    if (context->selected < context->results.len()) {
-        selected_result.reserve(cz::heap_allocator(), context->results[context->selected].len);
-        selected_result.append(context->results[context->selected]);
-        exists = true;
-    }
-
-    if (!engine(editor, engine_context)) {
-        return;
-    }
-
+void spaces_are_wildcards_completion_filter(Editor* editor,
+                                            Completion_Filter_Context* context,
+                                            Completion_Engine_Context* engine_context,
+                                            cz::Str selected_result,
+                                            bool has_selected_result) {
     Wildcard_Pattern pattern = parse_spaces_are_wildcards(engine_context->query);
     CZ_DEFER(pattern.pieces.drop(cz::heap_allocator()));
 
@@ -219,7 +177,7 @@ void spaces_are_wildcards_completion_filter(Completion_Filter_Context* context,
     for (size_t i = 0; i < engine_context->results.len(); ++i) {
         cz::Str result = engine_context->results[i];
         if (pattern.matches(result)) {
-            if (exists && selected_result == result) {
+            if (has_selected_result && selected_result == result) {
                 context->selected = context->results.len();
             }
             context->results.push(result);

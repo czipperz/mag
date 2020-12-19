@@ -40,22 +40,26 @@ bool file_completion_engine(Editor*, Completion_Engine_Context*);
 bool buffer_completion_engine(Editor*, Completion_Engine_Context*);
 bool no_completion_engine(Editor*, Completion_Engine_Context*);
 
-typedef void (*Completion_Filter)(Completion_Filter_Context*,
-                                  Completion_Engine,
-                                  Editor*,
-                                  Completion_Engine_Context*);
-void prefix_completion_filter(Completion_Filter_Context*,
-                              Completion_Engine,
-                              Editor*,
-                              Completion_Engine_Context*);
-void infix_completion_filter(Completion_Filter_Context*,
-                             Completion_Engine,
-                             Editor*,
-                             Completion_Engine_Context*);
-void spaces_are_wildcards_completion_filter(Completion_Filter_Context*,
-                                            Completion_Engine,
-                                            Editor*,
-                                            Completion_Engine_Context*);
+typedef void (*Completion_Filter)(Editor* editor,
+                                  Completion_Filter_Context* context,
+                                  Completion_Engine_Context* engine_context,
+                                  cz::Str selected_result,
+                                  bool has_selected_result);
+void prefix_completion_filter(Editor* editor,
+                              Completion_Filter_Context* context,
+                              Completion_Engine_Context* engine_context,
+                              cz::Str selected_result,
+                              bool has_selected_result);
+void infix_completion_filter(Editor* editor,
+                             Completion_Filter_Context* context,
+                             Completion_Engine_Context* engine_context,
+                             cz::Str selected_result,
+                             bool has_selected_result);
+void spaces_are_wildcards_completion_filter(Editor* editor,
+                                            Completion_Filter_Context* context,
+                                            Completion_Engine_Context* engine_context,
+                                            cz::Str selected_result,
+                                            bool has_selected_result);
 
 bool run_command_for_completion_results(Completion_Engine_Context* context,
                                         cz::Slice<cz::Str> args,
