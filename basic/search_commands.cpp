@@ -77,7 +77,7 @@ static void open_file_and_goto_position(Editor* editor,
     if (client->window == client->selected_normal_window) {
         Window_Unified* window = client->selected_normal_window;
         Window::Tag tag = Window::VERTICAL_SPLIT;
-        if (window->rows < 160) {
+        if (window->cols < 160) {
             tag = Window::HORIZONTAL_SPLIT;
         }
         split_window(editor, client, tag);
