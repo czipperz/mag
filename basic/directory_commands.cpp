@@ -2,6 +2,7 @@
 
 #include <cz/fs/directory.hpp>
 #include <cz/path.hpp>
+#include <cz/process.hpp>
 #include <cz/result.hpp>
 #include <cz/try.hpp>
 #include "buffer_commands.hpp"
@@ -77,6 +78,50 @@ static bool get_path(Buffer* buffer, cz::String* path, uint64_t point) {
     return true;
 }
 
+template <class File_Callback, class Directory_Callback>
+static cz::Result for_each_file(cz::String* path,
+                                File_Callback file_callback,
+                                Directory_Callback directory_callback) {
+    if (is_directory(path->buffer())) {
+        cz::fs::DirectoryIterator iterator(cz::heap_allocator());
+        CZ_TRY(iterator.create(path->buffer()));
+
+        while (!iterator.done()) {
+            cz::Str file = iterator.file();
+
+            size_t len = path->len();
+            path->reserve(cz::heap_allocator(), file.len + 2);
+            path->push('/');
+            path->append(file);
+            path->null_terminate();
+
+            cz::Result result = for_each_file(path, file_callback, directory_callback);
+
+            path->set_len(len);
+
+            if (result.is_err()) {
+                // ignore errors in destruction
+                iterator.destroy();
+                return result;
+            }
+
+            result = iterator.advance();
+            if (result.is_err()) {
+                // ignore errors in destruction
+                iterator.destroy();
+                return result;
+            }
+        }
+
+        CZ_TRY(iterator.destroy());
+
+        path->null_terminate();
+        return directory_callback(path->buffer());
+    } else {
+        return file_callback(path->buffer());
+    }
+}
+
 static cz::Result remove_empty_directory(const char* path) {
 #ifdef _WIN32
     if (!RemoveDirectoryA(path)) {
@@ -110,44 +155,7 @@ static cz::Result remove_file(const char* path) {
 }
 
 static cz::Result remove_path(cz::String* path) {
-    if (is_directory(path->buffer())) {
-        cz::fs::DirectoryIterator iterator(cz::heap_allocator());
-        CZ_TRY(iterator.create(path->buffer()));
-
-        while (!iterator.done()) {
-            cz::Str file = iterator.file();
-
-            size_t len = path->len();
-            path->reserve(cz::heap_allocator(), file.len + 2);
-            path->push('/');
-            path->append(file);
-            path->null_terminate();
-
-            cz::Result result = remove_path(path);
-
-            path->set_len(len);
-
-            if (result.is_err()) {
-                // ignore errors in destruction
-                iterator.destroy();
-                return result;
-            }
-
-            result = iterator.advance();
-            if (result.is_err()) {
-                // ignore errors in destruction
-                iterator.destroy();
-                return result;
-            }
-        }
-
-        CZ_TRY(iterator.destroy());
-
-        path->null_terminate();
-        return remove_empty_directory(path->buffer());
-    } else {
-        return remove_file(path->buffer());
-    }
+    return for_each_file(path, remove_file, remove_empty_directory);
 }
 
 static void command_directory_delete_path_callback(Editor* editor, Client* client, cz::Str, void*) {
