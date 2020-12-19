@@ -19,6 +19,7 @@ bool is_directory(const char* path);
 
 void* get_file_time(const char* path);
 bool is_out_of_date(const char* path, void* file_time);
+bool is_file_time_before(const void* file_time, const void* other_file_time);
 
 struct Date {
     /// Printable year (2020 = year 2020).

@@ -58,6 +58,26 @@ void command_directory_reload(Editor* editor, Command_Source source) {
     }
 }
 
+void command_directory_toggle_sort(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    // :DirectorySortFormat
+    bool sort_names = buffer->contents.iterator_at(19).get() != 'V';
+    sort_names = !sort_names;
+    if (sort_names) {
+        buffer->contents.remove(18, 3);
+        buffer->contents.insert(18, "   ");
+        buffer->contents.insert(26, " (V)");
+    } else {
+        buffer->contents.remove(18, 3);
+        buffer->contents.insert(18, "(V)");
+        buffer->contents.remove(26, 4);
+    }
+
+    if (reload_directory_buffer(buffer).is_err()) {
+        source.client->show_message("Couldn't reload directory");
+    }
+}
+
 static bool get_path(Buffer* buffer, cz::String* path, uint64_t point) {
     Contents_Iterator start = buffer->contents.iterator_at(point);
     Contents_Iterator end = start;

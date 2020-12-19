@@ -298,6 +298,8 @@ static Key_Map create_directory_key_map() {
     BIND(key_map, "c", command_directory_copy_path);
     BIND(key_map, "r", command_directory_rename_path);
     BIND(key_map, "g", command_directory_reload);
+    BIND(key_map, "C-i", command_directory_toggle_sort);
+    BIND(key_map, "\t", command_directory_toggle_sort);
     BIND(key_map, "m", command_create_directory);
     return key_map;
 }

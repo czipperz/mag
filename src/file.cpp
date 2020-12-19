@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <algorithm>
+#include <cz/bit_array.hpp>
 #include <cz/defer.hpp>
 #include <cz/fs/directory.hpp>
 #include <cz/fs/read_to_string.hpp>
@@ -72,19 +73,24 @@ bool is_out_of_date(const char* path, void* file_time) {
         return false;
     }
 
+    if (is_file_time_before(file_time, &new_ft)) {
 #ifdef _WIN32
-    if (CompareFileTime((FILETIME*)file_time, &new_ft) < 0) {
         *(FILETIME*)file_time = new_ft;
-        return true;
-    }
 #else
-    if (*(time_t*)file_time < new_ft) {
         *(time_t*)file_time = new_ft;
+#endif
         return true;
     }
-#endif
 
     return false;
+}
+
+bool is_file_time_before(const void* file_time, const void* other_file_time) {
+#ifdef _WIN32
+    return CompareFileTime((const FILETIME*)file_time, (const FILETIME*)other_file_time) < 0;
+#else
+    return *(const time_t*)file_time < *(const time_t*)other_file_time;
+#endif
 }
 
 void* get_file_time(const char* path) {
@@ -214,38 +220,165 @@ static cz::Result load_directory(Editor* editor,
     return result;
 }
 
+template <class Compare>
+static void sort(size_t start,
+                 size_t end,
+                 cz::Str* files,
+                 void** file_times,
+                 unsigned char* file_directories,
+                 Compare is_less) {
+    // For better or worse the amount of code needed to use std::sort here is absolutely absurd.
+    // I wrote out most of it and it was over 150 lines of crap to make the iterators work
+    // correctly.  Anyway, here's a crappy version of quicksort to hold us over.
+
+    auto swap = [&](size_t i, size_t j) {
+        if (i == j) {
+            return;
+        }
+
+        cz::Str tfile = files[i];
+        void* tfile_time = file_times[i];
+        bool tfile_directory = cz::bit_array::get(file_directories, i);
+
+        files[i] = files[j];
+        file_times[i] = file_times[j];
+        if (cz::bit_array::get(file_directories, j)) {
+            cz::bit_array::set(file_directories, i);
+        } else {
+            cz::bit_array::unset(file_directories, i);
+        }
+
+        files[j] = tfile;
+        file_times[j] = tfile_time;
+        if (tfile_directory) {
+            cz::bit_array::set(file_directories, j);
+        } else {
+            cz::bit_array::unset(file_directories, j);
+        }
+    };
+
+    if (start + 1 >= end) {
+        return;
+    }
+
+    // Find pivot
+    size_t pivot;
+    {
+        size_t middle = (start + end) / 2;
+        if (is_less(start, middle)) {
+            // S M
+            if (is_less(middle, end - 1)) {
+                // S M E
+                pivot = middle;
+            } else if (is_less(start, end - 1)) {
+                // S E M
+                pivot = end - 1;
+            } else {
+                // E S M
+                pivot = start;
+            }
+        } else {
+            // M S
+            if (is_less(start, end - 1)) {
+                // M S E
+                pivot = start;
+            } else if (is_less(middle, end - 1)) {
+                // M E S
+                pivot = end - 1;
+            } else {
+                // E M S
+                pivot = middle;
+            }
+        }
+    }
+
+    // Partition using pivot
+    {
+        swap(pivot, end - 1);
+        pivot = end - 1;
+
+        size_t i = start;
+        for (size_t j = start; j < end - 1; ++j) {
+            if (is_less(j, pivot)) {
+                swap(i, j);
+                ++i;
+            }
+        }
+
+        pivot = i;
+        swap(pivot, end - 1);
+    }
+
+    // Recurse left and right
+    sort(start, pivot, files, file_times, file_directories, is_less);
+    sort(pivot + 1, end, files, file_times, file_directories, is_less);
+}
+
 cz::Result reload_directory_buffer(Buffer* buffer) {
     cz::Buffer_Array buffer_array;
     buffer_array.create();
     CZ_DEFER(buffer_array.drop());
 
-    cz::Vector<cz::String> files = {};
+    cz::Vector<cz::Str> files = {};
     CZ_DEFER(files.drop(cz::heap_allocator()));
 
     CZ_TRY(cz::fs::files(cz::heap_allocator(), buffer_array.allocator(), buffer->directory.buffer(),
                          &files));
 
-    std::sort(files.start(), files.end());
+    void** file_times = (void**)malloc(sizeof(void*) * files.len());
+    CZ_DEFER({
+        for (size_t i = 0; i < files.len(); ++i) {
+            free(file_times[i]);
+        }
+        free(file_times);
+    });
 
-    buffer->contents.remove(0, buffer->contents.len);
+    unsigned char* file_directories =
+        (unsigned char*)calloc(1, cz::bit_array::alloc_size(files.len()));
+    CZ_DEFER(free(file_directories));
 
     cz::String file = {};
     CZ_DEFER(file.drop(cz::heap_allocator()));
     file.reserve(cz::heap_allocator(), buffer->directory.len());
     file.append(buffer->directory);
 
-    buffer->contents.append("Modification Date     File\n");
     for (size_t i = 0; i < files.len(); ++i) {
         file.set_len(buffer->directory.len());
-
-        file.reserve(cz::heap_allocator(), files[i].len() + 1);
+        file.reserve(cz::heap_allocator(), files[i].len + 1);
         file.append(files[i]);
         file.null_terminate();
 
-        void* file_time = get_file_time(file.buffer());
-        CZ_DEFER(free(file_time));
+        file_times[i] = get_file_time(file.buffer());
+
+        if (is_directory(file.buffer())) {
+            cz::bit_array::set(file_directories, i);
+        }
+    }
+
+    // :DirectorySortFormat
+    bool sort_names = buffer->contents.len == 0 || buffer->contents.iterator_at(19).get() != 'V';
+    if (sort_names) {
+        sort(0, files.len(), files.elems(), file_times, file_directories,
+             [&](size_t left, size_t right) { return files[left] < files[right]; });
+    } else {
+        sort(0, files.len(), files.elems(), file_times, file_directories,
+             [&](size_t left, size_t right) {
+                 return is_file_time_before(file_times[right], file_times[left]);
+             });
+    }
+
+    buffer->contents.remove(0, buffer->contents.len);
+
+    // :DirectorySortFormat The format of (V) is relied upon by other uses of this tag.
+    if (sort_names) {
+        buffer->contents.append("Modification Date     File (V)\n");
+    } else {
+        buffer->contents.append("Modification Date (V) File\n");
+    }
+
+    for (size_t i = 0; i < files.len(); ++i) {
         Date date;
-        if (file_time_to_date_local(file_time, &date)) {
+        if (file_times[i] && file_time_to_date_local(file_times[i], &date)) {
             char date_string[32];
             snprintf(date_string, sizeof(date_string), "%04d/%02d/%02d %02d:%02d:%02d ", date.year,
                      date.month, date.day_of_month, date.hour, date.minute, date.second);
@@ -254,7 +387,7 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
             buffer->contents.append("                    ");
         }
 
-        if (is_directory(file.buffer())) {
+        if (cz::bit_array::get(file_directories, i)) {
             buffer->contents.append("/ ");
         } else {
             buffer->contents.append("  ");
