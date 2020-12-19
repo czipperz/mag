@@ -109,7 +109,7 @@ void infix_completion_filter(Completion_Filter_Context* context,
 }
 
 struct Wildcard_Pattern {
-    bool wild_start;
+    bool wild_start = true;
     bool wild_end = true;
     cz::Vector<cz::Str> pieces;
 
@@ -144,11 +144,12 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::Str query) {
 
     if (query.len > 0) {
         size_t start = 0;
-        if (query[start] == ' ') {
-            pattern.wild_start = true;
-            while (start < query.len && query[start] == ' ') {
-                ++start;
-            }
+        if (query[start] == '^') {
+            pattern.wild_start = false;
+            ++start;
+        }
+        while (start < query.len && query[start] == ' ') {
+            ++start;
         }
 
         size_t end = query.len;
