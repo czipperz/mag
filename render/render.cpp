@@ -593,10 +593,6 @@ static bool load_completion_cache(Editor* editor,
                                   Completion_Filter completion_filter) {
     CZ_DEBUG_ASSERT(completion_filter != nullptr);
 
-    if (completion_cache->state == Completion_Cache::LOADED) {
-        return false;
-    }
-
     completion_filter(&completion_cache->filter_context, completion_cache->engine, editor,
                       &completion_cache->engine_context);
     completion_cache->state = Completion_Cache::LOADED;
