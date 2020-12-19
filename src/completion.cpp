@@ -9,6 +9,7 @@
 #include <cz/util.hpp>
 #include "buffer.hpp"
 #include "editor.hpp"
+#include "file.hpp"
 
 namespace mag {
 
@@ -229,12 +230,14 @@ void spaces_are_wildcards_completion_filter(Completion_Filter_Context* context,
 struct File_Completion_Engine_Data {
     cz::String directory;
     cz::String temp_result;
+    void* file_time;
 };
 
 static void file_completion_engine_data_cleanup(void* _data) {
     File_Completion_Engine_Data* data = (File_Completion_Engine_Data*)_data;
     data->directory.drop(cz::heap_allocator());
     data->temp_result.drop(cz::heap_allocator());
+    free(data->file_time);
     free(data);
 }
 
@@ -269,8 +272,10 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context) {
     data->temp_result.set_len(0);
     cz::Str prefix = get_directory_to_list(&data->temp_result, context->query);
     if (data->temp_result == data->directory) {
-        // Directory has not changed so track the selected item.
-        return false;
+        if (!data->file_time || !is_out_of_date(data->directory.buffer(), data->file_time)) {
+            // Directory has not changed so track the selected item.
+            return false;
+        }
     }
 
     std::swap(data->temp_result, data->directory);
@@ -279,6 +284,8 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context) {
     // Directory has changed so load new results.
     context->results_buffer_array.clear();
     context->results.set_len(0);
+
+    data->file_time = get_file_time(data->directory.buffer());
 
     do {
         cz::fs::DirectoryIterator iterator(cz::heap_allocator());
