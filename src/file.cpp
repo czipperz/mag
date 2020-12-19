@@ -1,5 +1,7 @@
+#define __STDC_WANT_LIB_EXT1__ 1
 #include "file.hpp"
 
+#include <time.h>
 #include <algorithm>
 #include <cz/defer.hpp>
 #include <cz/fs/directory.hpp>
@@ -100,6 +102,73 @@ void* get_file_time(const char* path) {
         free(file_time);
         return nullptr;
     }
+}
+
+#ifndef _WIN32
+static void to_date(const struct tm* tm, Date* date) {
+    date->year = tm->tm_year;
+    date->month = tm->tm_mon;
+    date->day_of_month = tm->tm_mday;
+    date->day_of_week = tm->tm_wday;
+    date->hour = tm->tm_hour;
+    date->minute = tm->tm_min;
+    date->second = tm->tm_sec;
+}
+#endif
+
+bool file_time_to_date_utc(const void* file_time, Date* date) {
+#ifdef _WIN32
+    SYSTEMTIME system_time;
+    if (!FileTimeToSystemTime((const FILETIME*)file_time, &system_time)) {
+        return false;
+    }
+    date->year = system_time.wYear;
+    date->month = system_time.wMonth;
+    date->day_of_month = system_time.wDay;
+    date->day_of_week = system_time.wDayOfWeek;
+    date->hour = system_time.wHour;
+    date->minute = system_time.wMinute;
+    date->second = system_time.wSecond;
+    return true;
+#else
+    // Try to use thread safe versions of gmtime when possible.
+#if _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _BSD_SOURCE || _SVID_SOURCE || _POSIX_SOURCE
+    struct tm storage;
+    struct tm* tm = gmtime_r((const time_t*)file_time, &storage);
+#elif defined(__STDC_LIB_EXT1__)
+    struct tm storage;
+    struct tm* tm = gmtime_s((const time_t*)file_time, &storage);
+#else
+    struct tm* tm = gmtime((const time_t*)file_time);
+#endif
+
+    to_date(tm, date);
+    return true;
+#endif
+}
+
+bool file_time_to_date_local(const void* file_time, Date* date) {
+#ifdef _WIN32
+    FILETIME local_time;
+    if (!FileTimeToLocalFileTime((const FILETIME*)file_time, &local_time)) {
+        return false;
+    }
+    return file_time_to_date_utc(&local_time, date);
+#else
+    // Try to use thread safe versions of localtime when possible.
+#if _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _BSD_SOURCE || _SVID_SOURCE || _POSIX_SOURCE
+    struct tm storage;
+    struct tm* tm = localtime_r((const time_t*)file_time, &storage);
+#elif defined(__STDC_LIB_EXT1__)
+    struct tm storage;
+    struct tm* tm = localtime_s((const time_t*)file_time, &storage);
+#else
+    struct tm* tm = localtime((const time_t*)file_time);
+#endif
+
+    to_date(tm, date);
+    return true;
+#endif
 }
 
 static cz::Result load_file(Editor* editor, const char* path, Buffer_Id buffer_id) {

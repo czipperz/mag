@@ -20,6 +20,28 @@ bool is_directory(const char* path);
 void* get_file_time(const char* path);
 bool is_out_of_date(const char* path, void* file_time);
 
+struct Date {
+    /// Printable year (2020 = year 2020).
+    int year;
+    /// Printable month (1 = January).
+    int month;
+    /// Printable day of month (1 = 1st).
+    int day_of_month;
+    /// Index day of week (0 = Sunday).
+    int day_of_week;
+    /// Index hour (0 = 01:00:00 AM).
+    int hour;
+    /// Index minute (0 = 00:01:00).
+    int minute;
+    /// Index second (0 = 00:00:01);
+    int second;
+};
+
+/// Convert a `file_time` to a `Date` in UTC.
+bool file_time_to_date_utc(const void* file_time, Date* date);
+/// Convert a `file_time` to a `Date` in the local time zone.
+bool file_time_to_date_local(const void* file_time, Date* date);
+
 cz::Result reload_directory_buffer(Buffer* buffer);
 
 void open_file(Editor* editor, Client* client, cz::Str user_path);
