@@ -15,10 +15,10 @@ namespace man {
 const char* path_to_autocomplete_man_page;
 const char* path_to_load_man_page;
 
-static void man_completion_engine(Editor*, Completion_Engine_Context* context) {
+static bool man_completion_engine(Editor*, Completion_Engine_Context* context) {
     cz::Str args[] = {path_to_autocomplete_man_page, ""};
     cz::Process_Options options;
-    run_command_for_completion_results(context, cz::slice(args), options);
+    return run_command_for_completion_results(context, cz::slice(args), options);
 }
 
 static void command_man_response(Editor* editor, Client* client, cz::Str page, void* data) {

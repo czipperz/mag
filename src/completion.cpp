@@ -63,7 +63,9 @@ void prefix_completion_filter(Completion_Filter_Context* context,
         exists = true;
     }
 
-    engine(editor, engine_context);
+    if (!engine(editor, engine_context)) {
+        return;
+    }
 
     context->selected = 0;
     context->results.set_len(0);
@@ -92,7 +94,9 @@ void infix_completion_filter(Completion_Filter_Context* context,
         exists = true;
     }
 
-    engine(editor, engine_context);
+    if (!engine(editor, engine_context)) {
+        return;
+    }
 
     context->selected = 0;
     context->results.set_len(0);
@@ -201,7 +205,9 @@ void spaces_are_wildcards_completion_filter(Completion_Filter_Context* context,
         exists = true;
     }
 
-    engine(editor, engine_context);
+    if (!engine(editor, engine_context)) {
+        return;
+    }
 
     Wildcard_Pattern pattern = parse_spaces_are_wildcards(engine_context->query);
     CZ_DEFER(pattern.pieces.drop(cz::heap_allocator()));
@@ -249,7 +255,7 @@ static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
     }
 }
 
-void file_completion_engine(Editor*, Completion_Engine_Context* context) {
+bool file_completion_engine(Editor*, Completion_Engine_Context* context) {
     ZoneScoped;
 
     if (!context->data) {
@@ -264,7 +270,7 @@ void file_completion_engine(Editor*, Completion_Engine_Context* context) {
     cz::Str prefix = get_directory_to_list(&data->temp_result, context->query);
     if (data->temp_result == data->directory) {
         // Directory has not changed so track the selected item.
-        return;
+        return false;
     }
 
     std::swap(data->temp_result, data->directory);
@@ -297,13 +303,14 @@ void file_completion_engine(Editor*, Completion_Engine_Context* context) {
     } while (0);
 
     std::sort(context->results.start(), context->results.end());
+    return true;
 }
 
-void buffer_completion_engine(Editor* editor, Completion_Engine_Context* context) {
+bool buffer_completion_engine(Editor* editor, Completion_Engine_Context* context) {
     ZoneScoped;
 
     if (context->results.len() > 0) {
-        return;
+        return false;
     }
 
     context->results_buffer_array.clear();
@@ -318,15 +325,18 @@ void buffer_completion_engine(Editor* editor, Completion_Engine_Context* context
         buffer->render_name(context->results_buffer_array.allocator(), &result);
         context->results.push(result);
     }
+    return true;
 }
 
-void no_completion_engine(Editor*, Completion_Engine_Context*) {}
+bool no_completion_engine(Editor*, Completion_Engine_Context*) {
+    return false;
+}
 
-void run_command_for_completion_results(Completion_Engine_Context* context,
+bool run_command_for_completion_results(Completion_Engine_Context* context,
                                         cz::Slice<cz::Str> args,
                                         cz::Process_Options options) {
     if (context->results.len() > 0) {
-        return;
+        return false;
     }
 
     cz::Process process;
@@ -334,13 +344,13 @@ void run_command_for_completion_results(Completion_Engine_Context* context,
 
     {
         if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
-            return;
+            return false;
         }
         CZ_DEFER(options.std_out.close());
 
         if (!process.launch_program(args, &options)) {
             stdout_read.close();
-            return;
+            return false;
         }
     }
     CZ_DEFER(stdout_read.close());
@@ -384,6 +394,8 @@ void run_command_for_completion_results(Completion_Engine_Context* context,
     process.join();
 
     std::sort(context->results.start(), context->results.end());
+
+    return true;
 }
 
 }
