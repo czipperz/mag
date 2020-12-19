@@ -104,7 +104,7 @@ int mag_main(int argc, char** argv) {
     }
 }
 
-#if _WIN32
+#ifdef _WIN32
 #include <windows.h>
 int WINAPI WinMain(_In_ HINSTANCE hInstance,
                    _In_opt_ HINSTANCE hPrevInstance,

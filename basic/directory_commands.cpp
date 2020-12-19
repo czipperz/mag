@@ -12,7 +12,7 @@
 #include "file.hpp"
 #include "movement.hpp"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #else
 #include <sys/stat.h>
@@ -119,7 +119,7 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
 }
 
 static int create_directory(const char* path) {
-#ifdef WIN32
+#ifdef _WIN32
     if (CreateDirectoryA(path, NULL)) {
         return 0;
     }
