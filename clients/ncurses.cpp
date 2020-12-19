@@ -262,7 +262,9 @@ void run(Server* server, Client* client) {
 
     start_color();
 
-    int16_t colors[COLORS] = {};
+    int16_t* colors = (int16_t*)calloc(sizeof(int16_t), COLORS);
+    CZ_ASSERT(colors);
+    CZ_DEFER(free(colors));
     colors[0] = 1;
     colors[7] = 1;
     colors[21] = 1;
