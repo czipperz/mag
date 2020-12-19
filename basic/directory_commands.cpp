@@ -124,20 +124,25 @@ static cz::Result remove_path(cz::String* path) {
     }
 }
 
-void command_directory_delete_path(Editor* editor, Command_Source source) {
+static void command_directory_delete_path_callback(Editor* editor, Client* client, cz::Str, void*) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_SELECTED_BUFFER(client);
     if (!get_path(buffer, &path, window->cursors[0].point)) {
-        source.client->show_message("Cursor not on a valid path");
+        client->show_message("Cursor not on a valid path");
         return;
     }
 
     if (remove_path(&path).is_err()) {
-        source.client->show_message("Couldn't delete path");
+        client->show_message("Couldn't delete path");
         return;
     }
+}
+
+void command_directory_delete_path(Editor* editor, Command_Source source) {
+    source.client->show_dialog(editor, "Confirm delete directory: ", no_completion_engine,
+                               command_directory_delete_path_callback, nullptr);
 }
 
 static void command_directory_rename_path_callback(Editor* editor,
