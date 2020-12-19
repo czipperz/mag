@@ -24,6 +24,32 @@
 namespace mag {
 namespace basic {
 
+static int create_directory(const char* path) {
+#ifdef _WIN32
+    if (CreateDirectoryA(path, NULL)) {
+        return 0;
+    }
+
+    int error = GetLastError();
+    if (error == ERROR_ALREADY_EXISTS) {
+        return 2;
+    } else {
+        return 1;
+    }
+#else
+    if (mkdir(path, 0644) == 0) {
+        return 0;
+    }
+
+    int error = errno;
+    if (error == EEXIST) {
+        return 2;
+    } else {
+        return 1;
+    }
+#endif
+}
+
 void command_directory_reload(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (reload_directory_buffer(buffer).is_err()) {
@@ -196,32 +222,6 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
     if (path.len() > 0) {
         open_file(editor, source.client, path);
     }
-}
-
-static int create_directory(const char* path) {
-#ifdef _WIN32
-    if (CreateDirectoryA(path, NULL)) {
-        return 0;
-    }
-
-    int error = GetLastError();
-    if (error == ERROR_ALREADY_EXISTS) {
-        return 2;
-    } else {
-        return 1;
-    }
-#else
-    if (mkdir(path, 0644) == 0) {
-        return 0;
-    }
-
-    int error = errno;
-    if (error == EEXIST) {
-        return 2;
-    } else {
-        return 1;
-    }
-#endif
 }
 
 static void command_create_directory_callback(Editor* editor,
