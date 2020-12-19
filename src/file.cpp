@@ -234,12 +234,25 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
     file.reserve(cz::heap_allocator(), buffer->directory.len());
     file.append(buffer->directory);
 
+    buffer->contents.append("Modification Date     File\n");
     for (size_t i = 0; i < files.len(); ++i) {
         file.set_len(buffer->directory.len());
 
         file.reserve(cz::heap_allocator(), files[i].len() + 1);
         file.append(files[i]);
         file.null_terminate();
+
+        void* file_time = get_file_time(file.buffer());
+        CZ_DEFER(free(file_time));
+        Date date;
+        if (file_time_to_date_local(file_time, &date)) {
+            char date_string[32];
+            snprintf(date_string, sizeof(date_string), "%04d/%02d/%02d %02d:%02d:%02d ", date.year,
+                     date.month, date.day_of_month, date.hour, date.minute, date.second);
+            buffer->contents.append(date_string);
+        } else {
+            buffer->contents.append("                    ");
+        }
 
         if (is_directory(file.buffer())) {
             buffer->contents.append("/ ");

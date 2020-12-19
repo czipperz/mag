@@ -62,8 +62,12 @@ static bool get_path(Buffer* buffer, cz::String* path, uint64_t point) {
     Contents_Iterator start = buffer->contents.iterator_at(point);
     Contents_Iterator end = start;
     start_of_line(&start);
-    forward_char(&start);
-    forward_char(&start);
+    if (start.at_bob()) {
+        return false;
+    }
+    for (int i = 0; i < 22; ++i) {
+        forward_char(&start);
+    }
     end_of_line(&end);
 
     if (start.position >= end.position) {
