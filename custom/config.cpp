@@ -297,6 +297,7 @@ static Key_Map create_directory_key_map() {
     BIND(key_map, "d", command_directory_delete_path);
     BIND(key_map, "r", command_directory_rename_path);
     BIND(key_map, "g", command_directory_reload);
+    BIND(key_map, "m", command_create_directory);
     return key_map;
 }
 

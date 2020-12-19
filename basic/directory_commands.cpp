@@ -12,6 +12,13 @@
 #include "file.hpp"
 #include "movement.hpp"
 
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
+
 namespace mag {
 namespace basic {
 
@@ -118,6 +125,64 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
     if (path.len() > 0) {
         open_file(editor, source.client, path);
     }
+}
+
+static int create_directory(const char* path) {
+#ifdef WIN32
+    if (CreateDirectoryA(path, NULL)) {
+        return 0;
+    }
+
+    int error = GetLastError();
+    if (error == ERROR_ALREADY_EXISTS) {
+        return 2;
+    } else {
+        return 1;
+    }
+#else
+    if (mkdir(path, 0644) == 0) {
+        return 0;
+    }
+
+    int error = errno;
+    if (error == EEXIST) {
+        return 2;
+    } else {
+        return 1;
+    }
+#endif
+}
+
+static void command_create_directory_callback(Editor* editor,
+                                              Client* client,
+                                              cz::Str query,
+                                              void*) {
+    cz::String new_path;
+    if (cz::path::is_absolute(query)) {
+        new_path = query.duplicate_null_terminate(cz::heap_allocator());
+    } else {
+        WITH_SELECTED_BUFFER(client);
+
+        new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
+        new_path.append(buffer->directory);
+        new_path.append(query);
+        new_path.null_terminate();
+    }
+    CZ_DEFER(new_path.drop(cz::heap_allocator()));
+
+    int res = create_directory(new_path.buffer());
+    if (res == 1) {
+        client->show_message("Couldn't create directory");
+    } else if (res == 2) {
+        client->show_message("Directory already exists");
+    }
+}
+
+void command_create_directory(Editor* editor, Command_Source source) {
+    source.client->show_dialog(editor, "Create directory: ", file_completion_engine,
+                               command_create_directory_callback, nullptr);
+
+    fill_mini_buffer_with_selected_window_directory(editor, source.client);
 }
 
 }
