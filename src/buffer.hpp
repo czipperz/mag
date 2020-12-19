@@ -39,6 +39,7 @@ struct Buffer {
 
     void* file_time;
 
+    bool read_only;
     cz::Vector<Commit> commits;
     size_t commit_index;
 
@@ -75,7 +76,10 @@ struct Buffer {
     ///
     /// You can optionally specify the committer to set the `last_comitter` field.  See
     /// `last_committer` for more details.
-    void commit(Commit commit, Command_Function committer = nullptr);
+    ///
+    /// If the file is in read only mode, does nothing and returns `false`.
+    /// Otherwise returns `true`.
+    bool commit(Commit commit, Command_Function committer = nullptr);
 
     /// Checks if the last committer is the same as `committer` and if the last commit's edits were
     /// at the same positions as the cursors.

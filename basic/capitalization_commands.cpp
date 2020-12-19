@@ -14,6 +14,7 @@ void command_uppercase_letter(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
     Transaction transaction;
     transaction.init(cursors.len * 2, 0);
+    CZ_DEFER(transaction.drop());
 
     for (size_t c = 0; c < cursors.len; ++c) {
         uint64_t point = cursors[c].point;
@@ -41,6 +42,7 @@ void command_lowercase_letter(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
     Transaction transaction;
     transaction.init(cursors.len * 2, 0);
+    CZ_DEFER(transaction.drop());
 
     for (size_t c = 0; c < cursors.len; ++c) {
         uint64_t point = cursors[c].point;
@@ -78,6 +80,7 @@ void command_uppercase_region(Editor* editor, Command_Source source) {
 
     Transaction transaction;
     transaction.init(window->cursors.len() * 2, sum_region_sizes * 2);
+    CZ_DEFER(transaction.drop());
 
     for (size_t c = 0; c < cursors.len; ++c) {
         Contents_Iterator start = buffer->contents.iterator_at(cursors[c].start());
@@ -122,6 +125,7 @@ void command_lowercase_region(Editor* editor, Command_Source source) {
 
     Transaction transaction;
     transaction.init(window->cursors.len() * 2, sum_region_sizes * 2);
+    CZ_DEFER(transaction.drop());
 
     for (size_t c = 0; c < cursors.len; ++c) {
         Contents_Iterator start = buffer->contents.iterator_at(cursors[c].start());

@@ -163,7 +163,7 @@ static void unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
 }
 
 bool Buffer::undo() {
-    if (commit_index == 0) {
+    if (read_only || commit_index == 0) {
         return false;
     }
 
@@ -183,7 +183,7 @@ bool Buffer::undo() {
 }
 
 bool Buffer::redo() {
-    if (commit_index == commits.len()) {
+    if (read_only || commit_index == commits.len()) {
         return false;
     }
 
@@ -202,7 +202,11 @@ bool Buffer::redo() {
     return true;
 }
 
-void Buffer::commit(Commit commit, Command_Function committer) {
+bool Buffer::commit(Commit commit, Command_Function committer) {
+    if (read_only) {
+        return false;
+    }
+
     commits.set_len(commit_index);
 
     commit.id = generate_commit_id();

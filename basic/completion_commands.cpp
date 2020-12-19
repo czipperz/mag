@@ -20,6 +20,7 @@ void command_insert_completion(Editor* editor, Command_Source source) {
 
     Transaction transaction;
     transaction.init(2, query.len + value.len);
+    CZ_DEFER(transaction.drop());
 
     Edit remove;
     remove.value = SSOStr::as_duplicate(transaction.value_allocator(), query);

@@ -77,6 +77,7 @@ void command_git_grep(Editor* editor, Command_Source source) {
                                command_git_grep_callback, selected_buffer_id);
 
     Transaction transaction;
+    CZ_DEFER(transaction.drop());
     {
         Window_Unified* window = source.client->selected_normal_window;
         WITH_WINDOW_BUFFER(window);

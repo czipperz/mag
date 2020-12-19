@@ -54,8 +54,9 @@ void Transaction::commit(Buffer* buffer, Command_Function committer) {
     if (edit_offset > 0) {
         Commit commit;
         commit.edits = {(Edit*)memory, edit_offset / sizeof(Edit)};
-        buffer->commit(commit, committer);
-        memory = nullptr;
+        if (buffer->commit(commit, committer)) {
+            memory = nullptr;
+        }
     }
 }
 

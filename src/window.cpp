@@ -113,6 +113,7 @@ void Window_Unified::finish_completion(Buffer* buffer) {
 
     Transaction transaction;
     transaction.init(do_remove + 1, (do_remove ? token.end - token.start : 0) + value.len);
+    CZ_DEFER(transaction.drop());
 
     if (do_remove) {
         Edit remove;

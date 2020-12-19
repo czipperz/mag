@@ -233,6 +233,7 @@ int apply_diff_file(Client* client, Buffer* buffer, cz::Input_File file) {
 
     Transaction transaction;
     transaction.init(edits.len(), edit_total_len);
+    CZ_DEFER(transaction.drop());
 
     for (size_t i = edits.len(); i-- > 0;) {
         Edit edit = edits[i];

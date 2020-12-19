@@ -1039,6 +1039,7 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
 
     Transaction transaction;
     transaction.init(1, buffer->contents.len - start.position);
+    CZ_DEFER(transaction.drop());
 
     Edit edit;
     edit.value = buffer->contents.slice(transaction.value_allocator(), start, buffer->contents.len);

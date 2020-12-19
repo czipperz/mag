@@ -37,6 +37,7 @@ void command_comment(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
+    CZ_DEFER(transaction.drop());
     if (window->show_marks) {
         size_t edits = 0;
         for (size_t c = 0; c < cursors.len; ++c) {

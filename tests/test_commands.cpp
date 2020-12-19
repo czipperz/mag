@@ -30,6 +30,7 @@ static void insert_default_contents(Editor* editor, Client* client, cz::Str cont
     WITH_SELECTED_BUFFER(client);
     Transaction transaction;
     transaction.init(window->cursors.len(), 0);
+    CZ_DEFER(transaction.drop());
 
     SSOStr value;
     value = SSOStr::from_constant(contents);
