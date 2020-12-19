@@ -27,6 +27,7 @@ Buffer_Id Editor::create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir)
     }
 
     buffer.type = Buffer::TEMPORARY;
+    buffer.read_only = true;
 
     buffer.name.reserve(cz::heap_allocator(), 3 + temp_name.len + digits);
     buffer.name.push('*');
