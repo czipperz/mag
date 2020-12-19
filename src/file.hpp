@@ -17,6 +17,9 @@ struct Buffer_Id;
 
 bool is_directory(const char* path);
 
+void* get_file_time(const char* path);
+bool is_out_of_date(const char* path, void* file_time);
+
 cz::Result reload_directory_buffer(Buffer* buffer);
 
 void open_file(Editor* editor, Client* client, cz::Str user_path);

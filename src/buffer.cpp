@@ -8,6 +8,7 @@
 #include "config.hpp"
 #include "cursor.hpp"
 #include "diff.hpp"
+#include "file.hpp"
 #include "transaction.hpp"
 
 #ifdef _WIN32
@@ -18,27 +19,6 @@
 
 namespace mag {
 
-static bool get_file_time(const char* path, void* file_time) {
-#ifdef _WIN32
-    HANDLE handle = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                               FILE_FLAG_BACKUP_SEMANTICS, NULL);
-    if (handle != INVALID_HANDLE_VALUE) {
-        CZ_DEFER(CloseHandle(handle));
-        if (GetFileTime(handle, NULL, NULL, (FILETIME*)file_time)) {
-            return true;
-        }
-    }
-    return false;
-#else
-    struct stat st;
-    if (stat(path, &st) != 0) {
-        return false;
-    }
-    *(time_t*)file_time = st.st_mtime;
-    return true;
-#endif
-}
-
 static bool is_out_of_date(Buffer* buffer) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -46,29 +26,7 @@ static bool is_out_of_date(Buffer* buffer) {
         return false;
     }
 
-#ifdef _WIN32
-    FILETIME new_ft;
-#else
-    time_t new_ft;
-#endif
-
-    if (!get_file_time(path.buffer(), &new_ft)) {
-        return false;
-    }
-
-#ifdef _WIN32
-    if (CompareFileTime((FILETIME*)buffer->file_time, &new_ft) < 0) {
-        *(FILETIME*)buffer->file_time = new_ft;
-        return true;
-    }
-#else
-    if (*(time_t*)buffer->file_time < new_ft) {
-        *(time_t*)buffer->file_time = new_ft;
-        return true;
-    }
-#endif
-
-    return false;
+    return is_out_of_date(path.buffer(), buffer->file_time);
 }
 
 static void initialize_file_time(Buffer* buffer) {
@@ -78,19 +36,7 @@ static void initialize_file_time(Buffer* buffer) {
         return;
     }
 
-#ifdef _WIN32
-    void* file_time = malloc(sizeof(FILETIME));
-    CZ_ASSERT(file_time);
-#else
-    void* file_time = malloc(sizeof(time_t));
-    CZ_ASSERT(file_time);
-#endif
-    if (get_file_time(path.buffer(), file_time)) {
-        buffer->file_time = file_time;
-    } else {
-        free(file_time);
-        buffer->file_time = nullptr;
-    }
+    buffer->file_time = get_file_time(path.buffer());
 }
 
 void Buffer::init() {
