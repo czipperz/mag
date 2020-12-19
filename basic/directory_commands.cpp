@@ -179,6 +179,102 @@ void command_directory_delete_path(Editor* editor, Command_Source source) {
                                command_directory_delete_path_callback, nullptr);
 }
 
+static cz::Result copy_path(cz::String* path, cz::String* new_path) {
+    size_t base = path->len();
+
+    size_t new_path_len = new_path->len();
+    auto set_new_path = [&]() {
+        new_path->set_len(new_path_len);
+
+        cz::Str extra = path->as_str().slice_start(base);
+        new_path->reserve(cz::heap_allocator(), extra.len + 1);
+        new_path->append(extra);
+        new_path->null_terminate();
+    };
+
+    return for_each_file(
+        path,
+        [&](const char* src) {
+            // file
+            set_new_path();
+
+            cz::Input_File input;
+            CZ_DEFER(input.close());
+            input.open(src);
+
+            cz::Output_File output;
+            CZ_DEFER(output.close());
+            output.open(new_path->buffer());
+
+            char buffer[1024];
+            while (1) {
+                int64_t read = input.read_binary(buffer, sizeof(buffer));
+                if (read > 0) {
+                    int64_t wrote = output.write_binary(buffer, read);
+                    if (wrote < 0) {
+                        cz::Result result;
+                        result.code = 1;
+                        return result;
+                    }
+                } else if (read == 0) {
+                    return cz::Result::ok();
+                } else {
+                    cz::Result result;
+                    result.code = 1;
+                    return result;
+                }
+            }
+        },
+        [&](const char* src) {
+            // directory
+            set_new_path();
+            int res = create_directory(new_path->buffer());
+            if (res != 0) {
+                cz::Result result;
+                result.code = res;
+                return result;
+            }
+            return cz::Result::ok();
+        });
+}
+
+static void command_directory_copy_path_callback(Editor* editor,
+                                                 Client* client,
+                                                 cz::Str query,
+                                                 void*) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+
+    WITH_SELECTED_BUFFER(client);
+    if (!get_path(buffer, &path, window->cursors[0].point)) {
+        client->show_message("Cursor not on a valid path");
+        return;
+    }
+
+    cz::String new_path;
+    if (cz::path::is_absolute(query)) {
+        new_path = query.duplicate_null_terminate(cz::heap_allocator());
+    } else {
+        new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
+        new_path.append(buffer->directory);
+        new_path.append(query);
+        new_path.null_terminate();
+    }
+    CZ_DEFER(new_path.drop(cz::heap_allocator()));
+
+    if (copy_path(&path, &new_path).is_err()) {
+        client->show_message("Couldn't rename file");
+        return;
+    }
+}
+
+void command_directory_copy_path(Editor* editor, Command_Source source) {
+    source.client->show_dialog(editor, "Copy file to: ", file_completion_engine,
+                               command_directory_copy_path_callback, nullptr);
+
+    fill_mini_buffer_with_selected_window_directory(editor, source.client);
+}
+
 static void command_directory_rename_path_callback(Editor* editor,
                                                    Client* client,
                                                    cz::Str query,
