@@ -94,6 +94,8 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
 
     std::sort(files.start(), files.end());
 
+    buffer->contents.remove(0, buffer->contents.len);
+
     cz::String file = {};
     CZ_DEFER(file.drop(cz::heap_allocator()));
     file.reserve(cz::heap_allocator(), buffer->directory.len());

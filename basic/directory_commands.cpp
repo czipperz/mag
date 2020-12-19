@@ -24,7 +24,6 @@ namespace basic {
 
 void command_directory_reload(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    buffer->contents.remove(0, buffer->contents.len);
     if (reload_directory_buffer(buffer).is_err()) {
         source.client->show_message("Couldn't reload directory");
     }
@@ -64,10 +63,6 @@ void command_directory_delete_path(Editor* editor, Command_Source source) {
         source.client->show_message("Couldn't delete file");
         return;
     }
-
-    if (reload_directory_buffer(buffer).is_err()) {
-        source.client->show_message("Couldn't reload directory");
-    }
 }
 
 static void command_directory_rename_path_callback(Editor* editor,
@@ -97,10 +92,6 @@ static void command_directory_rename_path_callback(Editor* editor,
     if (rename(path.buffer(), new_path.buffer()) != 0) {
         client->show_message("Couldn't rename file");
         return;
-    }
-
-    if (reload_directory_buffer(buffer).is_err()) {
-        client->show_message("Couldn't reload directory");
     }
 }
 

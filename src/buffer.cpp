@@ -20,7 +20,8 @@ namespace mag {
 
 static bool get_file_time(const char* path, void* file_time) {
 #ifdef _WIN32
-    HANDLE handle = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    HANDLE handle = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                               FILE_FLAG_BACKUP_SEMANTICS, NULL);
     if (handle != INVALID_HANDLE_VALUE) {
         CZ_DEFER(CloseHandle(handle));
         if (GetFileTime(handle, NULL, NULL, (FILETIME*)file_time)) {

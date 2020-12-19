@@ -5,6 +5,7 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
+#include <cz/result.hpp>
 #include <cz/try.hpp>
 #include "buffer.hpp"
 #include "client.hpp"
@@ -247,6 +248,13 @@ int apply_diff_file(Client* client, Buffer* buffer, cz::Input_File file) {
 }
 
 void reload_file(Client* client, Buffer* buffer) {
+    if (buffer->type == Buffer::DIRECTORY) {
+        if (reload_directory_buffer(buffer).is_err()) {
+            client->show_message("Couldn't reload directory");
+        }
+        return;
+    }
+
     char diff_file[L_tmpnam];
     {
         cz::Process_Options options;
