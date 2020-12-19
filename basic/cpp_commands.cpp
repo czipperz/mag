@@ -36,7 +36,7 @@ void command_comment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 
-    Transaction transaction;
+    Transaction transaction = {};
     CZ_DEFER(transaction.drop());
     if (window->show_marks) {
         size_t edits = 0;

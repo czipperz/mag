@@ -76,7 +76,7 @@ void command_git_grep(Editor* editor, Command_Source source) {
     source.client->show_dialog(editor, "git grep: ", no_completion_engine,
                                command_git_grep_callback, selected_buffer_id);
 
-    Transaction transaction;
+    Transaction transaction = {};
     CZ_DEFER(transaction.drop());
     {
         Window_Unified* window = source.client->selected_normal_window;
