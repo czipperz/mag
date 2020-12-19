@@ -53,6 +53,12 @@ static int create_directory(const char* path) {
 
 void command_directory_reload(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator second_line_iterator = buffer->contents.start();
+    forward_line(&second_line_iterator);
+    kill_extra_cursors(window, source.client);
+    window->cursors[0].point = window->cursors[0].mark = second_line_iterator.position;
+
     if (reload_directory_buffer(buffer).is_err()) {
         source.client->show_message("Couldn't reload directory");
     }
@@ -60,6 +66,7 @@ void command_directory_reload(Editor* editor, Command_Source source) {
 
 void command_directory_toggle_sort(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+
     // :DirectorySortFormat
     bool sort_names = buffer->contents.iterator_at(19).get() != 'V';
     sort_names = !sort_names;
@@ -72,6 +79,11 @@ void command_directory_toggle_sort(Editor* editor, Command_Source source) {
         buffer->contents.insert(18, "(V)");
         buffer->contents.remove(26, 4);
     }
+
+    Contents_Iterator second_line_iterator = buffer->contents.start();
+    forward_line(&second_line_iterator);
+    kill_extra_cursors(window, source.client);
+    window->cursors[0].point = window->cursors[0].mark = second_line_iterator.position;
 
     if (reload_directory_buffer(buffer).is_err()) {
         source.client->show_message("Couldn't reload directory");

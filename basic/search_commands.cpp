@@ -119,6 +119,9 @@ void command_search_reload(Editor* editor, Command_Source source) {
         buffer->contents.remove(end.position, buffer->contents.len - end.position);
     }
 
+    kill_extra_cursors(window, source.client);
+    window->cursors[0].point = window->cursors[0].mark = buffer->contents.len;
+
     run_console_command_in(source.client, editor, window->id, buffer->directory.buffer(),
                            script.as_str(), "Failed to rerun script");
 }
