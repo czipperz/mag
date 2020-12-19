@@ -4,18 +4,10 @@
   - search
   - finish alternate
 
-* Directories
-  - Move/rename files
-  - Make directory
-  - Make it not look like shit
-
-* Read only mode
-
 * Autocomplete
   - While typing in normal buffers
     + file names
     + identifiers
-    + tags
 
 * Screen based movement
   - Move cursor to top and bottom of screen
