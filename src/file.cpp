@@ -67,6 +67,7 @@ static cz::Result load_directory(Editor* editor,
     buffer.type = Buffer::DIRECTORY;
     buffer.directory = cz::Str(path, path_len).duplicate_null_terminate(cz::heap_allocator());
     buffer.name = cz::Str(".").duplicate(cz::heap_allocator());
+    buffer.read_only = true;
 
     cz::Result result = reload_directory_buffer(&buffer);
     if (result.is_err()) {
