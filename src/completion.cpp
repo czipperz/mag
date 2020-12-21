@@ -6,6 +6,7 @@
 #include <cz/fs/directory.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
+#include <cz/sort.hpp>
 #include <cz/util.hpp>
 #include "buffer.hpp"
 #include "editor.hpp"
@@ -267,7 +268,7 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context) {
         }
     } while (0);
 
-    std::sort(context->results.start(), context->results.end());
+    cz::sort(context->results);
     return true;
 }
 
@@ -358,8 +359,7 @@ bool run_command_for_completion_results(Completion_Engine_Context* context,
 
     process.join();
 
-    std::sort(context->results.start(), context->results.end());
-
+    cz::sort(context->results);
     return true;
 }
 

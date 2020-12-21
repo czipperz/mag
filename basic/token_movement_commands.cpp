@@ -1,6 +1,7 @@
 #include "token_movement_commands.hpp"
 
 #include <algorithm>
+#include <cz/sort.hpp>
 #include "command.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
@@ -180,6 +181,11 @@ void forward_up_pair(Buffer* buffer, Contents_Iterator* cursor) {
     }
 }
 
+static void sort_cursors(cz::Slice<Cursor> cursors) {
+    cz::sort(cursors,
+             [](const Cursor* left, const Cursor* right) { return left->point < right->point; });
+}
+
 void command_backward_up_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -188,8 +194,8 @@ void command_backward_up_pair(Editor* editor, Command_Source source) {
         backward_up_pair(buffer, &it);
         window->cursors[cursor_index].point = it.position;
     }
-    std::sort(window->cursors.start(), window->cursors.end(),
-              [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
+
+    sort_cursors(window->cursors);
 }
 
 void command_forward_up_pair(Editor* editor, Command_Source source) {
@@ -200,8 +206,8 @@ void command_forward_up_pair(Editor* editor, Command_Source source) {
         forward_up_pair(buffer, &it);
         window->cursors[cursor_index].point = it.position;
     }
-    std::sort(window->cursors.start(), window->cursors.end(),
-              [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
+
+    sort_cursors(window->cursors);
 }
 
 void forward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
@@ -225,8 +231,8 @@ void command_forward_token_pair(Editor* editor, Command_Source source) {
         forward_token_pair(buffer, &it);
         window->cursors[cursor_index].point = it.position;
     }
-    std::sort(window->cursors.start(), window->cursors.end(),
-              [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
+
+    sort_cursors(window->cursors);
 }
 
 void backward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
@@ -251,8 +257,7 @@ void command_backward_token_pair(Editor* editor, Command_Source source) {
         window->cursors[cursor_index].point = it.position;
     }
 
-    std::sort(window->cursors.start(), window->cursors.end(),
-              [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
+    sort_cursors(window->cursors);
 }
 
 int find_backward_matching_token(Buffer* buffer,
@@ -336,8 +341,7 @@ void command_backward_matching_token(Editor* editor, Command_Source source) {
         window->cursors[cursor_index].point = it.position;
     }
 
-    std::sort(window->cursors.start(), window->cursors.end(),
-              [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
+    sort_cursors(window->cursors);
 }
 
 int find_forward_matching_token(Buffer* buffer,
@@ -399,8 +403,7 @@ void command_forward_matching_token(Editor* editor, Command_Source source) {
         window->cursors[cursor_index].point = it.position;
     }
 
-    std::sort(window->cursors.start(), window->cursors.end(),
-              [](const Cursor& left, const Cursor& right) { return left.point < right.point; });
+    sort_cursors(window->cursors);
 }
 
 static Cursor create_cursor_with_offsets(cz::Vector<Cursor>* cursors,

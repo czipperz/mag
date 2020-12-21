@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include <cz/sort.hpp>
 #include <cz/vector.hpp>
 #include "buffer.hpp"
 #include "overlay.hpp"
@@ -131,7 +132,7 @@ static void overlay_matching_pairs_start_frame(Buffer* buffer,
         }
     }
 
-    std::sort(data->points.start(), data->points.end());
+    cz::sort(data->points);
     auto new_end = std::unique(data->points.start(), data->points.end());
     data->points.set_len(new_end - data->points.start());
 }

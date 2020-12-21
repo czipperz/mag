@@ -9,6 +9,7 @@
 #include <cz/fs/read_to_string.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
+#include <cz/sort.hpp>
 #include <cz/try.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -220,17 +221,10 @@ static cz::Result load_directory(Editor* editor,
     return result;
 }
 
-template <class Compare>
-static void sort(size_t start,
-                 size_t end,
-                 cz::Str* files,
-                 void** file_times,
-                 unsigned char* file_directories,
-                 Compare is_less) {
-    // For better or worse the amount of code needed to use std::sort here is absolutely absurd.
-    // I wrote out most of it and it was over 150 lines of crap to make the iterators work
-    // correctly.  Anyway, here's a crappy version of quicksort to hold us over.
-
+static void sort_files(cz::Slice<cz::Str> files,
+                       void** file_times,
+                       unsigned char* file_directories,
+                       bool sort_names) {
     auto swap = [&](size_t i, size_t j) {
         if (i == j) {
             return;
@@ -257,61 +251,17 @@ static void sort(size_t start,
         }
     };
 
-    if (start + 1 >= end) {
-        return;
+    if (sort_names) {
+        cz::generic_sort((size_t)0, files.len,
+                         [&](size_t left, size_t right) { return files[left] < files[right]; },
+                         swap);
+    } else {
+        cz::generic_sort((size_t)0, files.len,
+                         [&](size_t left, size_t right) {
+                             return is_file_time_before(file_times[right], file_times[left]);
+                         },
+                         swap);
     }
-
-    // Find pivot
-    size_t pivot;
-    {
-        size_t middle = (start + end) / 2;
-        if (is_less(start, middle)) {
-            // S M
-            if (is_less(middle, end - 1)) {
-                // S M E
-                pivot = middle;
-            } else if (is_less(start, end - 1)) {
-                // S E M
-                pivot = end - 1;
-            } else {
-                // E S M
-                pivot = start;
-            }
-        } else {
-            // M S
-            if (is_less(start, end - 1)) {
-                // M S E
-                pivot = start;
-            } else if (is_less(middle, end - 1)) {
-                // M E S
-                pivot = end - 1;
-            } else {
-                // E M S
-                pivot = middle;
-            }
-        }
-    }
-
-    // Partition using pivot
-    {
-        swap(pivot, end - 1);
-        pivot = end - 1;
-
-        size_t i = start;
-        for (size_t j = start; j < end - 1; ++j) {
-            if (is_less(j, pivot)) {
-                swap(i, j);
-                ++i;
-            }
-        }
-
-        pivot = i;
-        swap(pivot, end - 1);
-    }
-
-    // Recurse left and right
-    sort(start, pivot, files, file_times, file_directories, is_less);
-    sort(pivot + 1, end, files, file_times, file_directories, is_less);
 }
 
 cz::Result reload_directory_buffer(Buffer* buffer) {
@@ -357,15 +307,8 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
 
     // :DirectorySortFormat
     bool sort_names = buffer->contents.len == 0 || buffer->contents.iterator_at(19).get() != 'V';
-    if (sort_names) {
-        sort(0, files.len(), files.elems(), file_times, file_directories,
-             [&](size_t left, size_t right) { return files[left] < files[right]; });
-    } else {
-        sort(0, files.len(), files.elems(), file_times, file_directories,
-             [&](size_t left, size_t right) {
-                 return is_file_time_before(file_times[right], file_times[left]);
-             });
-    }
+
+    sort_files(files, file_times, file_directories, sort_names);
 
     buffer->contents.remove(0, buffer->contents.len);
 
