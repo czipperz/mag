@@ -39,8 +39,20 @@ struct Buffer {
 
     void* file_time;
 
+    /// If `true`, then `Commit`s will fail to be applied to this buffer.
+    ///
+    /// This is useful for buffers that do not represent files (ex. directories).
+    /// Note that just because a `Buffer` is `TEMPORARY` doesn't mean it is `read_only`.
+    /// For example the scratch and mini buffer are `TEMPORARY` buffers but not `read_only`.
     bool read_only;
+
+    /// All commits being tracked right now.  Note that those after `commit_index` have been undone.
     cz::Vector<Commit> commits;
+
+    /// The index at which the next commit would be inserted into the `commits` list.
+    ///
+    /// Commits after `commit_index` but less than `commits.len()` have been undone.  When a new
+    /// commit is added (via `Transaction::commit`), these commits will be erased.
     size_t commit_index;
 
     /// The last command to commit.
@@ -51,6 +63,10 @@ struct Buffer {
     /// When `undo` or `redo` are invoked, `last_committer` is reset to `null`.
     Command_Function last_committer;
 
+    /// The list of all changes that have been applied to the `Buffer`.
+    ///
+    /// This is useful for tracking when the buffer changes: undos, redos, and commitss are all
+    /// counted as `changes` but are difficult to track directly through the `commits` list.
     cz::Vector<Change> changes;
 
     uint64_t _commit_id_counter;
