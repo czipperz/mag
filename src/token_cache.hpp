@@ -19,6 +19,12 @@ struct Token_Cache {
 
     void drop();
 
+    /// Reset to the initial state.
+    ///
+    /// Use this when you are editing the buffer's contents directly.
+    /// This isn't needed if you use `Contents::append` though.
+    void reset();
+
     /// Find the last check point before the start position
     bool find_check_point(uint64_t position, Tokenizer_Check_Point*);
     bool find_check_point(uint64_t position, size_t* index);

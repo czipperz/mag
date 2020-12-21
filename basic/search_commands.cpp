@@ -116,6 +116,7 @@ void command_search_reload(Editor* editor, Command_Source source) {
     } else {
         // Skip over the newline and delete to the end of the file.
         end.advance();
+        buffer->token_cache.reset();
         buffer->contents.remove(end.position, buffer->contents.len - end.position);
     }
 

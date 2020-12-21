@@ -14,6 +14,12 @@ void Token_Cache::drop() {
     check_points.drop(cz::heap_allocator());
 }
 
+void Token_Cache::reset() {
+    change_index = 0;
+    check_points.set_len(0);
+    ran_to_end = false;
+}
+
 bool Token_Cache::find_check_point(uint64_t position, Tokenizer_Check_Point* cp) {
     size_t result_index;
     if (find_check_point(position, &result_index)) {

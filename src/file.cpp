@@ -310,6 +310,7 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
 
     sort_files(files, file_times, file_directories, sort_names);
 
+    buffer->token_cache.reset();
     buffer->contents.remove(0, buffer->contents.len);
 
     // :DirectorySortFormat The format of (V) is relied upon by other uses of this tag.
