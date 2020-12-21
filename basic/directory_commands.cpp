@@ -13,6 +13,7 @@
 #include "contents.hpp"
 #include "editor.hpp"
 #include "file.hpp"
+#include "match.hpp"
 #include "movement.hpp"
 
 #ifdef _WIN32
@@ -51,21 +52,81 @@ static int create_directory(const char* path) {
 #endif
 }
 
-void command_directory_reload(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+static void get_selected_entry(Client* client,
+                               Window_Unified* window,
+                               Buffer* buffer,
+                               bool* has_entry,
+                               SSOStr* selected) {
+    // :DirectorySortFormat
+    const size_t offset = 22;
+
+    Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+    start_of_line(&it);
+
+    *has_entry = it.position + offset < buffer->contents.len;
+    if (*has_entry) {
+        it.advance(offset);
+        Contents_Iterator end = it;
+        end_of_line(&end);
+        *selected = buffer->contents.slice(cz::heap_allocator(), it, end.position);
+    }
+}
+
+static void reload_directory_window(Client* client,
+                                      Window_Unified* window,
+                                      Buffer* buffer,
+                                      bool has_entry,
+                                      cz::Str selected) {
+    // :DirectorySortFormat
+    const size_t offset = 22;
+
+    if (reload_directory_buffer(buffer).is_err()) {
+        client->show_message("Couldn't reload directory");
+        return;
+    }
+
+    kill_extra_cursors(window, client);
 
     Contents_Iterator second_line_iterator = buffer->contents.start();
     forward_line(&second_line_iterator);
-    kill_extra_cursors(window, source.client);
-    window->cursors[0].point = window->cursors[0].mark = second_line_iterator.position;
 
-    if (reload_directory_buffer(buffer).is_err()) {
-        source.client->show_message("Couldn't reload directory");
+    if (has_entry) {
+        Contents_Iterator it = second_line_iterator;
+        while (it.position + offset < buffer->contents.len) {
+            it.advance(offset);
+            Contents_Iterator eol = it;
+            end_of_line(&eol);
+            if (matches(it, eol.position, selected)) {
+                second_line_iterator = it;
+                break;
+            }
+
+            end_of_line(&it);
+            forward_char(&it);
+        }
     }
+
+    window->cursors[0].point = window->cursors[0].mark = second_line_iterator.position;
+}
+
+void command_directory_reload(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    bool has_entry;
+    SSOStr selected;
+    get_selected_entry(source.client, window, buffer, &has_entry, &selected);
+    CZ_DEFER(if (has_entry) { selected.drop(cz::heap_allocator()); });
+
+    reload_directory_window(source.client, window, buffer, has_entry, selected.as_str());
 }
 
 void command_directory_toggle_sort(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+
+    bool has_entry;
+    SSOStr selected;
+    get_selected_entry(source.client, window, buffer, &has_entry, &selected);
+    CZ_DEFER(if (has_entry) { selected.drop(cz::heap_allocator()); });
 
     // :DirectorySortFormat
     bool sort_names = buffer->contents.iterator_at(19).get() != 'V';
@@ -80,14 +141,7 @@ void command_directory_toggle_sort(Editor* editor, Command_Source source) {
         buffer->contents.remove(26, 4);
     }
 
-    Contents_Iterator second_line_iterator = buffer->contents.start();
-    forward_line(&second_line_iterator);
-    kill_extra_cursors(window, source.client);
-    window->cursors[0].point = window->cursors[0].mark = second_line_iterator.position;
-
-    if (reload_directory_buffer(buffer).is_err()) {
-        source.client->show_message("Couldn't reload directory");
-    }
+    reload_directory_window(source.client, window, buffer, has_entry, selected.as_str());
 }
 
 static bool get_path(Buffer* buffer, cz::String* path, uint64_t point) {
