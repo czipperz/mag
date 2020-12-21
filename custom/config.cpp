@@ -36,6 +36,7 @@
 #include "syntax/tokenize_cmake.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_css.hpp"
+#include "syntax/tokenize_directory.hpp"
 #include "syntax/tokenize_general.hpp"
 #include "syntax/tokenize_go.hpp"
 #include "syntax/tokenize_html.hpp"
@@ -216,7 +217,7 @@ Theme create_theme() {
     Theme theme = {};
     theme.colors = mag::theme::solarized_dark;
 
-    theme.faces.reserve(cz::heap_allocator(), 44);
+    theme.faces.reserve(cz::heap_allocator(), 49);
     theme.faces.push({{}, {}, 0});              // default
     theme.faces.push({1, {}, 0});               // unsaved buffer
     theme.faces.push({{}, {}, Face::REVERSE});  // selected buffer
@@ -273,6 +274,12 @@ Theme create_theme() {
     theme.faces.push({33, {}, 0});   // Token_Type::HTML_TAG_NAME
     theme.faces.push({140, {}, 0});  // Token_Type::HTML_ATTRIBUTE_NAME
     theme.faces.push({4, {}, 0});    // Token_Type::HTML_AMPERSAND_CODE
+
+    theme.faces.push({34, {}, 0});  // Token_Type::DIRECTORY_COLUMN
+    theme.faces.push({46, {}, 0});  // Token_Type::DIRECTORY_SELECTED_COLUMN
+    theme.faces.push({{}, {}, 0});  // Token_Type::DIRECTORY_FILE_TIME
+    theme.faces.push({51, {}, 0});  // Token_Type::DIRECTORY_FILE_DIRECTORY
+    theme.faces.push({{}, {}, 0});  // Token_Type::DIRECTORY_FILE_NAME
 
     static Decoration decorations[] = {syntax::decoration_line_number()};
     theme.decorations = cz::slice(decorations);
@@ -426,6 +433,7 @@ Mode get_mode(const Buffer& buffer) {
     mode.next_token = default_next_token;
     switch (buffer.type) {
     case Buffer::DIRECTORY:
+        mode.next_token = syntax::directory_next_token;
         mode.key_map = directory_key_map();
         break;
 
