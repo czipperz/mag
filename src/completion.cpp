@@ -53,10 +53,10 @@ void Completion_Cache::set_engine(Completion_Engine new_engine) {
 }
 
 void prefix_completion_filter(Editor* editor,
-                             Completion_Filter_Context* context,
-                             Completion_Engine_Context* engine_context,
-                             cz::Str selected_result,
-                             bool has_selected_result) {
+                              Completion_Filter_Context* context,
+                              Completion_Engine_Context* engine_context,
+                              cz::Str selected_result,
+                              bool has_selected_result) {
     for (size_t i = 0; i < engine_context->results.len(); ++i) {
         cz::Str result = engine_context->results[i];
         if (result.starts_with(engine_context->query)) {
