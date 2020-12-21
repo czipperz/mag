@@ -308,6 +308,9 @@ static Key_Map create_directory_key_map() {
     BIND(key_map, "C-i", command_directory_toggle_sort);
     BIND(key_map, "\t", command_directory_toggle_sort);
     BIND(key_map, "m", command_create_directory);
+
+    BIND(key_map, "n", command_forward_line);
+    BIND(key_map, "p", command_backward_line);
     return key_map;
 }
 
@@ -355,6 +358,9 @@ static Key_Map create_search_key_map() {
     BIND(key_map, "C-m", command_search_open);
     BIND(key_map, "\n", command_search_open);
     BIND(key_map, "g", command_search_reload);
+
+    BIND(key_map, "n", command_forward_line);
+    BIND(key_map, "p", command_backward_line);
     return key_map;
 }
 
