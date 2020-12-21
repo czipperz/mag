@@ -34,6 +34,7 @@
 #include "syntax/overlay_preferred_column.hpp"
 #include "syntax/overlay_trailing_spaces.hpp"
 #include "syntax/tokenize_cmake.hpp"
+#include "syntax/tokenize_color_test.hpp"
 #include "syntax/tokenize_cpp.hpp"
 #include "syntax/tokenize_css.hpp"
 #include "syntax/tokenize_directory.hpp"
@@ -541,6 +542,8 @@ Mode get_mode(const Buffer& buffer) {
         } else if (buffer.name == "COMMIT_EDITMSG") {
             mode.next_token = syntax::git_commit_edit_message_next_token;
             mode.key_map = git_edit_key_map();
+        } else if (buffer.name == "color test") {
+            mode.next_token = syntax::color_test_next_token;
         } else {
             mode.next_token = syntax::general_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
