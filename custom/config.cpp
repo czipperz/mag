@@ -466,9 +466,8 @@ Mode get_mode(const Buffer& buffer) {
             mode.key_map = cpp_key_map();
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {
-                syntax::overlay_matching_pairs({-1, 237, 0}),
-                syntax::overlay_matching_tokens({-1, 237, 0}, types)};
+            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
+                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             mode.overlays = overlays;
         } else if (buffer.name.ends_with(".md")) {
             mode.next_token = syntax::md_next_token;
@@ -478,58 +477,51 @@ Mode get_mode(const Buffer& buffer) {
                 Token_Type::CSS_PROPERTY, Token_Type::CSS_ELEMENT_SELECTOR,
                 Token_Type::CSS_ID_SELECTOR, Token_Type::CSS_CLASS_SELECTOR,
                 Token_Type::CSS_PSEUDO_SELECTOR};
-            static Overlay overlays[] = {
-                syntax::overlay_matching_pairs({-1, 237, 0}),
-                syntax::overlay_matching_tokens({-1, 237, 0}, types)};
+            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
+                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             mode.overlays = overlays;
         } else if (buffer.name.ends_with(".html")) {
             mode.next_token = syntax::html_next_token;
             static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
                                                Token_Type::HTML_ATTRIBUTE_NAME};
-            static Overlay overlays[] = {
-                syntax::overlay_matching_pairs({-1, 237, 0}),
-                syntax::overlay_matching_tokens({-1, 237, 0}, types)};
+            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
+                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             mode.overlays = overlays;
         } else if (buffer.name.ends_with(".js")) {
             mode.next_token = syntax::js_next_token;
             mode.key_map = js_key_map();
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {
-                syntax::overlay_matching_pairs({-1, 237, 0}),
-                syntax::overlay_matching_tokens({-1, 237, 0}, types)};
+            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
+                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             mode.overlays = overlays;
         } else if (buffer.name.ends_with(".go")) {
             mode.next_token = syntax::go_next_token;
             mode.key_map = go_key_map();
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {
-                syntax::overlay_matching_pairs({-1, 237, 0}),
-                syntax::overlay_matching_tokens({-1, 237, 0}, types)};
+            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
+                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             mode.overlays = overlays;
         } else if (buffer.name.ends_with(".sh") || buffer.name.ends_with(".bash") ||
                    buffer.name.ends_with(".zsh") || buffer.name == ".bashrc" ||
                    buffer.name == ".zshrc") {
             mode.next_token = syntax::sh_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {
-                syntax::overlay_matching_pairs({-1, 237, 0}),
-                syntax::overlay_matching_tokens({-1, 237, 0}, types)};
+            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
+                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             mode.overlays = overlays;
         } else if (buffer.name.ends_with(".py")) {
             mode.next_token = syntax::python_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {
-                syntax::overlay_matching_pairs({-1, 237, 0}),
-                syntax::overlay_matching_tokens({-1, 237, 0}, types)};
+            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
+                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             mode.overlays = overlays;
         } else if (buffer.name == "CMakeLists.txt") {
             mode.next_token = syntax::cmake_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {
-                syntax::overlay_matching_pairs({-1, 237, 0}),
-                syntax::overlay_matching_tokens({-1, 237, 0}, types)};
+            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
+                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             mode.overlays = overlays;
         } else if (buffer.name.ends_with(".patch") || buffer.name.ends_with(".diff")) {
             mode.next_token = syntax::patch_next_token;
@@ -548,9 +540,8 @@ Mode get_mode(const Buffer& buffer) {
             mode.next_token = syntax::general_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {
-                syntax::overlay_matching_pairs({-1, 237, 0}),
-                syntax::overlay_matching_tokens({-1, 237, 0}, types)};
+            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
+                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             mode.overlays = overlays;
         }
         break;
