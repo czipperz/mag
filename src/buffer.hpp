@@ -39,6 +39,12 @@ struct Buffer {
 
     void* file_time;
 
+    /// If `true` then the buffer should be saved with carriage returns.
+    ///
+    /// This is populated when a file is loaded from disk based on if the file contained carriage
+    /// returns.  The `contents` will never have carriage returns.
+    bool use_carriage_returns;
+
     /// If `true`, then `Commit`s will fail to be applied to this buffer.
     ///
     /// This is useful for buffers that do not represent files (ex. directories).

@@ -258,7 +258,8 @@ void reload_file(Client* client, Buffer* buffer) {
     char diff_file[L_tmpnam];
     {
         cz::Process_Options options;
-        if (!save_contents_to_temp_file(&buffer->contents, &options.std_in)) {
+        if (!save_contents_to_temp_file(&buffer->contents, &options.std_in,
+                                        buffer->use_carriage_returns)) {
             client->show_message("Error saving buffer to temp file");
             return;
         }
