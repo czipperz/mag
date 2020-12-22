@@ -26,7 +26,7 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
 
     cz::Str args[] = {"git", "grep", "-n", "--column", "-e", query, "--", ":/"};
 
-    run_console_command(client, editor, top_level_path.buffer(), cz::slice(args), "git grep",
+    run_console_command(client, editor, top_level_path.buffer(), args, "git grep",
                         "Git grep error");
 }
 
@@ -92,7 +92,7 @@ void command_git_grep_token_at_position(Editor* editor, Command_Source source) {
 
     cz::Str args[] = {"git", "grep", "-n", "--column", "-e", query, "--", ":/"};
 
-    run_console_command(source.client, editor, top_level_path.buffer(), cz::slice(args), "git grep",
+    run_console_command(source.client, editor, top_level_path.buffer(), args, "git grep",
                         "Git grep error");
 }
 

@@ -29,7 +29,7 @@ const char* lookup(const char* directory, cz::Str query, Tag* tag) {
         CZ_DEFER(options.std_out.close());
 
         cz::Str rev_parse_args[] = {"global", "-at", query};
-        if (!process.launch_program(cz::slice(rev_parse_args), &options)) {
+        if (!process.launch_program(rev_parse_args, &options)) {
             return "Couldn't launch `global`";
         }
     }
@@ -145,7 +145,7 @@ static bool gnu_global_completion_engine(Editor* editor, Completion_Engine_Conte
     cz::Str args[] = {"global", "-c", context->query};
     cz::Process_Options options;
     options.working_directory = (const char*)context->data;
-    return run_command_for_completion_results(context, cz::slice(args), options);
+    return run_command_for_completion_results(context, args, options);
 }
 
 void command_complete_at_point(Editor* editor, Command_Source source) {

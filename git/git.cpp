@@ -33,7 +33,7 @@ bool get_git_top_level(Client* client,
         CZ_DEFER(options.std_out.close());
 
         cz::Str rev_parse_args[] = {"git", "rev-parse", "--show-toplevel"};
-        if (!process.launch_program(cz::slice(rev_parse_args), &options)) {
+        if (!process.launch_program(rev_parse_args, &options)) {
             client->show_message("No git repository found");
             return false;
         }

@@ -281,7 +281,7 @@ void reload_file(Client* client, Buffer* buffer) {
         cz::Str args[] = {"diff", "-" /* stdin */, buffer_path};
 
         cz::Process process;
-        if (!process.launch_program(cz::slice(args), &options)) {
+        if (!process.launch_program(args, &options)) {
             client->show_message("Error launching diff");
             return;
         }
