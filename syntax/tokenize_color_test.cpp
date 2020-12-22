@@ -38,7 +38,7 @@ bool color_test_next_token(Contents_Iterator* iterator, Token* token, uint64_t* 
 
     if (use_color) {
         iterator->advance();
-        token->type = Token_Type_::encode({{}, color, {}});
+        token->type = Token_Type_::encode({color, color, {}});
         ++color;
     } else {
         while (!iterator->at_eob()) {
