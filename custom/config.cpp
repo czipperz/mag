@@ -46,6 +46,7 @@
 #include "syntax/tokenize_path.hpp"
 #include "syntax/tokenize_process.hpp"
 #include "syntax/tokenize_python.hpp"
+#include "syntax/tokenize_search.hpp"
 #include "syntax/tokenize_sh.hpp"
 
 namespace mag {
@@ -218,7 +219,7 @@ Theme create_theme() {
     Theme theme = {};
     theme.colors = mag::theme::solarized_dark;
 
-    theme.faces.reserve(cz::heap_allocator(), 49);
+    theme.faces.reserve(cz::heap_allocator(), 54);
     theme.faces.push({{}, {}, 0});              // default
     theme.faces.push({1, {}, 0});               // unsaved buffer
     theme.faces.push({{}, {}, Face::REVERSE});  // selected buffer
@@ -281,6 +282,12 @@ Theme create_theme() {
     theme.faces.push({{}, {}, 0});  // Token_Type::DIRECTORY_FILE_TIME
     theme.faces.push({51, {}, 0});  // Token_Type::DIRECTORY_FILE_DIRECTORY
     theme.faces.push({{}, {}, 0});  // Token_Type::DIRECTORY_FILE_NAME
+
+    theme.faces.push({46, {}, 0});   // Token_Type::SEARCH_COMMAND
+    theme.faces.push({214, {}, 0});  // Token_Type::SEARCH_FILE_NAME
+    theme.faces.push({226, {}, 0});  // Token_Type::SEARCH_FILE_LINE
+    theme.faces.push({226, {}, 0});  // Token_Type::SEARCH_FILE_COLUMN
+    theme.faces.push({{}, {}, 0});   // Token_Type::SEARCH_RESULT
 
     static Decoration decorations[] = {syntax::decoration_line_number()};
     theme.decorations = decorations;
@@ -449,7 +456,7 @@ Mode get_mode(const Buffer& buffer) {
             mode.next_token = syntax::path_next_token;
             mode.key_map = path_key_map();
         } else if (buffer.name.contains("*git grep ")) {
-            mode.next_token = syntax::process_next_token;
+            mode.next_token = syntax::search_next_token;
             mode.key_map = search_key_map();
         } else if (buffer.name.starts_with("*man ")) {
             mode.next_token = syntax::process_next_token;
