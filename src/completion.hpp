@@ -35,10 +35,12 @@ struct Completion_Engine_Context {
     void drop();
 };
 
-typedef bool (*Completion_Engine)(Editor* editor, Completion_Engine_Context*);
-bool file_completion_engine(Editor*, Completion_Engine_Context*);
-bool buffer_completion_engine(Editor*, Completion_Engine_Context*);
-bool no_completion_engine(Editor*, Completion_Engine_Context*);
+typedef bool (*Completion_Engine)(Editor* editor,
+                                  Completion_Engine_Context* context,
+                                  bool is_initial_frame);
+bool file_completion_engine(Editor*, Completion_Engine_Context*, bool);
+bool buffer_completion_engine(Editor*, Completion_Engine_Context*, bool);
+bool no_completion_engine(Editor*, Completion_Engine_Context*, bool);
 
 typedef void (*Completion_Filter)(Editor* editor,
                                   Completion_Filter_Context* context,
@@ -63,7 +65,8 @@ void spaces_are_wildcards_completion_filter(Editor* editor,
 
 bool run_command_for_completion_results(Completion_Engine_Context* context,
                                         cz::Slice<cz::Str> args,
-                                        cz::Process_Options options);
+                                        cz::Process_Options options,
+                                        bool force_reload = false);
 
 struct Completion_Cache {
     Completion_Engine engine;

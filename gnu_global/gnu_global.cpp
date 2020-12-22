@@ -141,11 +141,13 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
                                command_lookup_prompt_callback, nullptr);
 }
 
-static bool gnu_global_completion_engine(Editor* editor, Completion_Engine_Context* context) {
+static bool gnu_global_completion_engine(Editor* editor,
+                                         Completion_Engine_Context* context,
+                                         bool is_initial_frame) {
     cz::Str args[] = {"global", "-c", context->query};
     cz::Process_Options options;
     options.working_directory = (const char*)context->data;
-    return run_command_for_completion_results(context, args, options);
+    return run_command_for_completion_results(context, args, options, is_initial_frame);
 }
 
 void command_complete_at_point(Editor* editor, Command_Source source) {

@@ -217,7 +217,7 @@ static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
     }
 }
 
-bool file_completion_engine(Editor*, Completion_Engine_Context* context) {
+bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
     ZoneScoped;
 
     if (!context->data) {
@@ -272,10 +272,12 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context) {
     return true;
 }
 
-bool buffer_completion_engine(Editor* editor, Completion_Engine_Context* context) {
+bool buffer_completion_engine(Editor* editor,
+                              Completion_Engine_Context* context,
+                              bool is_initial_frame) {
     ZoneScoped;
 
-    if (context->results.len() > 0) {
+    if (!is_initial_frame && context->results.len() > 0) {
         return false;
     }
 
@@ -294,14 +296,15 @@ bool buffer_completion_engine(Editor* editor, Completion_Engine_Context* context
     return true;
 }
 
-bool no_completion_engine(Editor*, Completion_Engine_Context*) {
+bool no_completion_engine(Editor*, Completion_Engine_Context*, bool) {
     return false;
 }
 
 bool run_command_for_completion_results(Completion_Engine_Context* context,
                                         cz::Slice<cz::Str> args,
-                                        cz::Process_Options options) {
-    if (context->results.len() > 0) {
+                                        cz::Process_Options options,
+                                        bool force_reload) {
+    if (!force_reload && context->results.len() > 0) {
         return false;
     }
 
