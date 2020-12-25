@@ -50,7 +50,13 @@ static void command_man_response(Editor* editor, Client* client, cz::Str page, v
         return;
     }
 
-    Buffer_Id buffer_id = editor->create_temp_buffer("man");
+    cz::String name = {};
+    CZ_DEFER(name.drop(cz::heap_allocator()));
+    name.reserve(cz::heap_allocator(), 4 + page.len);
+    name.append("man ");
+    name.append(page);
+
+    Buffer_Id buffer_id = editor->create_temp_buffer(name);
     client->set_selected_buffer(buffer_id);
     editor->add_job(job_process_append(buffer_id, process, stdout_read));
 }
