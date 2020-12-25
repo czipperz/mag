@@ -163,6 +163,7 @@ bool Buffer::commit(Commit commit, Command_Function committer) {
     redo();
 
     last_committer = committer;
+    return true;
 }
 
 bool Buffer::check_last_committer(Command_Function committer, cz::Slice<Cursor> cursors) const {
