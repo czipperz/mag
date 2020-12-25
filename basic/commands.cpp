@@ -856,7 +856,7 @@ void command_create_cursors_lines_in_region(Editor* editor, Command_Source sourc
             break;
         }
 
-        Cursor cursor;
+        Cursor cursor = {};
         cursor.point = cursor.mark = iterator.position;
         window->cursors.reserve(cz::heap_allocator(), 1);
         window->cursors.push(cursor);
