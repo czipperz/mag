@@ -33,6 +33,8 @@ Window_Unified* Window_Unified::create(Buffer_Id buffer_id) {
     window->completion_cache = {};  // not sure if this is really necessary
     window->completion_cache.init();
     window->completing = false;
+
+    window->pinned = false;
     return window;
 }
 

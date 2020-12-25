@@ -38,6 +38,9 @@ struct Window_Unified : Window {
     Completion_Cache completion_cache;
     bool completing;
 
+    /// If a window is pinned then it won't be closed via `command_one_window_except_pinned`.
+    bool pinned;
+
     static Window_Unified* create(Buffer_Id buffer_id);
     Window_Unified* clone();
 

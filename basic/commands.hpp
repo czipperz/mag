@@ -7,6 +7,7 @@ namespace mag {
 namespace basic {
 
 void command_toggle_read_only(Editor* editor, Command_Source source);
+void command_toggle_pinned(Editor* editor, Command_Source source);
 
 void command_set_mark(Editor* editor, Command_Source source);
 void command_swap_mark_point(Editor* editor, Command_Source source);

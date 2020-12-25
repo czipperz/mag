@@ -29,6 +29,7 @@
 #include "solarized_dark.hpp"
 #include "syntax/decoration_line_number.hpp"
 #include "syntax/decoration_read_only_indicator.hpp"
+#include "syntax/decoration_pinned_indicator.hpp"
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
@@ -162,7 +163,8 @@ Key_Map create_key_map() {
 
     BIND(key_map, "C-x C-c", command_quit);
 
-    BIND(key_map, "C-x 1", command_one_window);
+    BIND(key_map, "C-x 1", command_one_window_except_pinned);
+    BIND(key_map, "C-x C-1", command_one_window);
     BIND(key_map, "C-x 2", command_split_window_horizontal);
     BIND(key_map, "C-x 3", command_split_window_vertical);
     BIND(key_map, "C-x 0", command_close_window);
@@ -175,6 +177,7 @@ Key_Map create_key_map() {
     BIND(key_map, "C-x C-d", command_apply_diff);
 
     BIND(key_map, "C-x q", command_toggle_read_only);
+    BIND(key_map, "C-x C-q", command_toggle_pinned);
 
     BIND(key_map, "C-x u", command_uppercase_letter);
     BIND(key_map, "C-x l", command_lowercase_letter);
@@ -293,7 +296,8 @@ Theme create_theme() {
     theme.faces.push({{}, {}, 0});   // Token_Type::SEARCH_RESULT
 
     static Decoration decorations[] = {syntax::decoration_line_number(),
-                                       syntax::decoration_read_only_indicator()};
+                                       syntax::decoration_read_only_indicator(),
+                                       syntax::decoration_pinned_indicator()};
     theme.decorations = decorations;
 
     static Overlay overlays[] = {syntax::overlay_matching_region({-1, 237, 0}),

@@ -117,6 +117,7 @@ void Client::save_offscreen_window(Window_Unified* window) {
         // Delete the window because another window is already saved
         Window::drop_(window);
     } else {
+        window->pinned = false;
         _offscreen_windows.reserve(cz::heap_allocator(), 1);
         _offscreen_windows.insert(index, window);
     }

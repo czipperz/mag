@@ -32,6 +32,50 @@ void command_one_window(Editor* editor, Command_Source source) {
     source.client->window->parent = nullptr;
 }
 
+static Window* trickle_up(Client* client, Window* w, Window* selected_window) {
+    switch (w->tag) {
+    case Window::UNIFIED: {
+        Window_Unified* window = (Window_Unified*)w;
+        if (window->pinned || w == selected_window) {
+            return w;
+        } else {
+            client->save_offscreen_window(window);
+            return nullptr;
+        }
+    }
+
+    case Window::VERTICAL_SPLIT:
+    case Window::HORIZONTAL_SPLIT: {
+        Window_Split* window = (Window_Split*)w;
+        Window* first = trickle_up(client, window->first, selected_window);
+        Window* second = trickle_up(client, window->second, selected_window);
+        if (first && second) {
+            window->first = first;
+            first->parent = window;
+            window->second = second;
+            second->parent = window;
+            return w;
+        }
+
+        Window_Split::drop_non_recursive(window);
+        if (first) {
+            return first;
+        }
+        if (second) {
+            return second;
+        }
+        return nullptr;
+    }
+    }
+}
+
+void command_one_window_except_pinned(Editor* editor, Command_Source source) {
+    Window* top =
+        trickle_up(source.client, source.client->window, source.client->selected_normal_window);
+    source.client->window = top;
+    source.client->window->parent = nullptr;
+}
+
 void command_close_window(Editor* editor, Command_Source source) {
     Window_Unified* child = source.client->selected_normal_window;
     Window_Split* parent = child->parent;
