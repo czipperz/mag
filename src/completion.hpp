@@ -74,12 +74,12 @@ struct Completion_Cache {
 
     Completion_Filter_Context filter_context;
 
-    enum State {
+    enum {
         INITIAL,
         LOADING,
         LOADED,
-    };
-    State state;
+    } state;
+
     size_t change_index;
 
     void init() { engine_context.init(); }
