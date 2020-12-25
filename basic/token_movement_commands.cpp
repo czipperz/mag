@@ -406,8 +406,7 @@ void command_forward_matching_token(Editor* editor, Command_Source source) {
     sort_cursors(window->cursors);
 }
 
-static Cursor create_cursor_with_offsets(cz::Vector<Cursor>* cursors,
-                                         Cursor cursor,
+static Cursor create_cursor_with_offsets(Cursor cursor,
                                          Contents_Iterator it) {
     Cursor new_cursor = {};
     new_cursor.point = it.position;
@@ -435,7 +434,7 @@ static int create_cursor_forward_matching_token(Buffer* buffer, Window_Unified* 
         return created;
     }
 
-    Cursor new_cursor = create_cursor_with_offsets(&window->cursors, cursor, it);
+    Cursor new_cursor = create_cursor_with_offsets(cursor, it);
 
     window->cursors.reserve(cz::heap_allocator(), 1);
     window->cursors.push(new_cursor);
@@ -450,7 +449,7 @@ static int create_cursor_backward_matching_token(Buffer* buffer, Window_Unified*
         return created;
     }
 
-    Cursor new_cursor = create_cursor_with_offsets(&window->cursors, cursor, it);
+    Cursor new_cursor = create_cursor_with_offsets(cursor, it);
 
     window->cursors.reserve(cz::heap_allocator(), 1);
     window->cursors.insert(0, new_cursor);

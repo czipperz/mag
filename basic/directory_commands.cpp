@@ -53,8 +53,7 @@ static int create_directory(const char* path) {
 #endif
 }
 
-static void get_selected_entry(Client* client,
-                               Window_Unified* window,
+static void get_selected_entry(Window_Unified* window,
                                Buffer* buffer,
                                bool* has_entry,
                                SSOStr* selected) {
@@ -115,7 +114,7 @@ void command_directory_reload(Editor* editor, Command_Source source) {
 
     bool has_entry;
     SSOStr selected;
-    get_selected_entry(source.client, window, buffer, &has_entry, &selected);
+    get_selected_entry(window, buffer, &has_entry, &selected);
     CZ_DEFER(if (has_entry) { selected.drop(cz::heap_allocator()); });
 
     reload_directory_window(source.client, window, buffer, has_entry, selected.as_str());
@@ -126,7 +125,7 @@ void command_directory_toggle_sort(Editor* editor, Command_Source source) {
 
     bool has_entry;
     SSOStr selected;
-    get_selected_entry(source.client, window, buffer, &has_entry, &selected);
+    get_selected_entry(window, buffer, &has_entry, &selected);
     CZ_DEFER(if (has_entry) { selected.drop(cz::heap_allocator()); });
 
     // :DirectorySortFormat

@@ -91,8 +91,7 @@ static Command lookup_key_chain(Key_Map* map, size_t start, size_t* end, cz::Sli
     return {};
 }
 
-static bool get_key_press_command(Editor* editor,
-                                  Client* client,
+static bool get_key_press_command(Client* client,
                                   Key_Map* key_map,
                                   size_t* start,
                                   cz::Slice<Key> key_chain,
@@ -153,7 +152,7 @@ static bool handle_key_press(Editor* editor,
                              bool* waiting_for_more_keys) {
     Command command;
     Command_Source source;
-    if (get_key_press_command(editor, client, key_map, start, key_chain, previous_command,
+    if (get_key_press_command(client, key_map, start, key_chain, previous_command,
                               waiting_for_more_keys, &source, &command)) {
         run_command(command, editor, source);
         return true;
@@ -196,8 +195,8 @@ static bool handle_key_press_buffer(Editor* editor,
     if (buffer->mode.key_map) {
         Command command;
         Command_Source source;
-        if (get_key_press_command(editor, client, buffer->mode.key_map, start, key_chain,
-                                  previous_command, waiting_for_more_keys, &source, &command)) {
+        if (get_key_press_command(client, buffer->mode.key_map, start, key_chain, previous_command,
+                                  waiting_for_more_keys, &source, &command)) {
             unlocked = true;
             handle->unlock();
             run_command(command, editor, source);
@@ -223,7 +222,7 @@ static bool handle_key_press_completion(Editor* editor,
 
     Command command;
     Command_Source source;
-    if (get_key_press_command(editor, client, custom::window_completion_key_map(), start, key_chain,
+    if (get_key_press_command(client, custom::window_completion_key_map(), start, key_chain,
                               previous_command, waiting_for_more_keys, &source, &command)) {
         run_command(command, editor, source);
         return true;

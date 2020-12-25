@@ -80,7 +80,7 @@ static void open_file_and_goto_position(Editor* editor,
         if (window->cols < 160) {
             tag = Window::HORIZONTAL_SPLIT;
         }
-        split_window(editor, client, tag);
+        split_window(client, tag);
     }
 
     cycle_window(client);

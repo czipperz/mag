@@ -105,7 +105,7 @@ static bool setup_paste(cz::Slice<Cursor> cursors, Copy_Chain* global_copy_chain
     return true;
 }
 
-static void run_paste(cz::Slice<Cursor> cursors, Editor* editor, Buffer* buffer) {
+static void run_paste(cz::Slice<Cursor> cursors, Buffer* buffer) {
     // :CopyLeak Probably we will need to copy all the values here.
     Transaction transaction;
     transaction.init(cursors.len, 0);
@@ -141,7 +141,7 @@ void command_paste(Editor* editor, Command_Source source) {
         return;
     }
 
-    run_paste(cursors, editor, buffer);
+    run_paste(cursors, buffer);
 }
 
 void command_paste_previous(Editor* editor, Command_Source source) {
@@ -177,7 +177,7 @@ void command_paste_previous(Editor* editor, Command_Source source) {
             WITH_WINDOW_BUFFER(window);
             buffer->undo();
             window->update_cursors(buffer);
-            run_paste(cursors, editor, buffer);
+            run_paste(cursors, buffer);
         }
     } else {
         source.client->show_message("Error: previous command was not paste");

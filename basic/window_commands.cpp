@@ -93,7 +93,7 @@ void command_close_window(Editor* editor, Command_Source source) {
     }
 }
 
-void split_window(Editor* editor, Client* client, Window::Tag tag) {
+void split_window(Client* client, Window::Tag tag) {
     Window_Unified* top = client->selected_normal_window;
     Window_Unified* bottom = top->clone();
 
@@ -108,11 +108,11 @@ void split_window(Editor* editor, Client* client, Window::Tag tag) {
 }
 
 void command_split_window_horizontal(Editor* editor, Command_Source source) {
-    split_window(editor, source.client, Window::HORIZONTAL_SPLIT);
+    split_window(source.client, Window::HORIZONTAL_SPLIT);
 }
 
 void command_split_window_vertical(Editor* editor, Command_Source source) {
-    split_window(editor, source.client, Window::VERTICAL_SPLIT);
+    split_window(source.client, Window::VERTICAL_SPLIT);
 }
 
 Window_Unified* window_first(Window* window) {
