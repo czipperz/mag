@@ -19,7 +19,6 @@ bool cmake_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
         return false;
     }
 
-    Contents_Iterator start = *iterator;
     token->start = iterator->position;
     char first_ch = iterator->get();
     iterator->advance();

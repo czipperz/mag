@@ -57,8 +57,6 @@ bool color_test_next_token(Contents_Iterator* iterator, Token* token, uint64_t* 
     }
 
     *state = ((color << 1) | use_color);
-
-ret:
     token->end = iterator->position;
     return true;
 }
