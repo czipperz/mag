@@ -67,6 +67,8 @@ static Window* trickle_up(Client* client, Window* w, Window* selected_window) {
         return nullptr;
     }
     }
+
+    CZ_PANIC("Invalid window tag");
 }
 
 void command_one_window_except_pinned(Editor* editor, Command_Source source) {

@@ -863,8 +863,6 @@ void run(Server* server, Client* client) {
         return;
     }
 
-    Scroll_State scroll = {};
-
     SDL_StartTextInput();
     CZ_DEFER(SDL_StopTextInput());
 
