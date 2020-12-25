@@ -1,4 +1,4 @@
-#include "tokenize_cpp.hpp"
+#include "tokenize_general.hpp"
 
 #include <ctype.h>
 #include "common.hpp"
@@ -21,7 +21,6 @@ bool general_next_token(Contents_Iterator* iterator, Token* token, uint64_t* sta
         return false;
     }
 
-    Contents_Iterator start = *iterator;
     token->start = iterator->position;
     char first_ch = iterator->get();
     iterator->advance();

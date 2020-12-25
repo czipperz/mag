@@ -1,4 +1,4 @@
-#include "tokenize_cpp.hpp"
+#include "tokenize_js.hpp"
 
 #include <ctype.h>
 #include "common.hpp"

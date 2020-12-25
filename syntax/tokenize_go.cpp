@@ -1,4 +1,4 @@
-#include "tokenize_cpp.hpp"
+#include "tokenize_go.hpp"
 
 #include <ctype.h>
 #include "common.hpp"
