@@ -14,6 +14,11 @@
 namespace mag {
 namespace basic {
 
+void command_toggle_read_only(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    buffer->read_only = !buffer->read_only;
+}
+
 void command_set_mark(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;

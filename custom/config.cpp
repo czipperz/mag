@@ -28,6 +28,7 @@
 #include "prose/alternate.hpp"
 #include "solarized_dark.hpp"
 #include "syntax/decoration_line_number.hpp"
+#include "syntax/decoration_read_only_indicator.hpp"
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
@@ -173,6 +174,8 @@ Key_Map create_key_map() {
 
     BIND(key_map, "C-x C-d", command_apply_diff);
 
+    BIND(key_map, "C-x q", command_toggle_read_only);
+
     BIND(key_map, "C-x u", command_uppercase_letter);
     BIND(key_map, "C-x l", command_lowercase_letter);
     BIND(key_map, "C-x C-u", command_uppercase_region);
@@ -289,7 +292,8 @@ Theme create_theme() {
     theme.faces.push({226, {}, 0});  // Token_Type::SEARCH_FILE_COLUMN
     theme.faces.push({{}, {}, 0});   // Token_Type::SEARCH_RESULT
 
-    static Decoration decorations[] = {syntax::decoration_line_number()};
+    static Decoration decorations[] = {syntax::decoration_line_number(),
+                                       syntax::decoration_read_only_indicator()};
     theme.decorations = decorations;
 
     static Overlay overlays[] = {syntax::overlay_matching_region({-1, 237, 0}),
