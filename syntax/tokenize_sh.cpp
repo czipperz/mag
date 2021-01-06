@@ -125,15 +125,16 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                                              matches(start, iterator->position, "elif") ||
                                              matches(start, iterator->position, "while") ||
                                              matches(start, iterator->position, "until") ||
-                                             matches(start, iterator->position, "then") ||
-                                             matches(start, iterator->position, "do") ||
                                              matches(start, iterator->position, "."))) {
             token->type = Token_Type::KEYWORD;
             at_start_of_statement = true;
             goto ret;
+        } else if (at_start_of_statement && (matches(start, iterator->position, "then") ||
+                                             matches(start, iterator->position, "do"))) {
+            token->type = Token_Type::OPEN_PAIR;
+            at_start_of_statement = true;
+            goto ret;
         } else if (at_start_of_statement && (matches(start, iterator->position, "else") ||
-                                             matches(start, iterator->position, "fi") ||
-                                             matches(start, iterator->position, "done") ||
                                              matches(start, iterator->position, "for") ||
                                              matches(start, iterator->position, "select") ||
                                              matches(start, iterator->position, "continue") ||
@@ -149,6 +150,9 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                                              matches(start, iterator->position, "echo") ||
                                              matches(start, iterator->position, "export"))) {
             token->type = Token_Type::KEYWORD;
+        } else if (at_start_of_statement && (matches(start, iterator->position, "fi") ||
+                                             matches(start, iterator->position, "done"))) {
+            token->type = Token_Type::CLOSE_PAIR;
         } else {
             token->type = Token_Type::DEFAULT;
         }
