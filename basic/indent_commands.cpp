@@ -222,16 +222,21 @@ void command_delete_whitespace(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     uint64_t count = 0;
+    size_t edits = 0;
     for (size_t i = 0; i < cursors.len; ++i) {
         Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
         forward_through_whitespace(&it);
         uint64_t end = it.position;
         backward_through_whitespace(&it);
-        count += end - it.position;
+        uint64_t local_count = end - it.position;
+        if (local_count > 0) {
+            ++edits;
+        }
+        count += local_count;
     }
 
     Transaction transaction;
-    transaction.init(cursors.len, count);
+    transaction.init(edits, count);
     CZ_DEFER(transaction.drop());
 
     uint64_t offset = 0;
@@ -241,6 +246,9 @@ void command_delete_whitespace(Editor* editor, Command_Source source) {
         uint64_t end = it.position;
         backward_through_whitespace(&it);
         uint64_t count = end - it.position;
+        if (count == 0) {
+            continue;
+        }
 
         char* value = (char*)transaction.value_allocator().alloc({count, 1});
         for (Contents_Iterator x = it; x.position < end; x.advance()) {
