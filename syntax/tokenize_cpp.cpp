@@ -922,6 +922,9 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
 
         if (look_for_normal_keyword(start_iterator, token, first_char)) {
             token->type = Token_Type::KEYWORD;
+            if (matches(start_iterator, token->end, "return")) {
+                normal_state = IN_EXPR;
+            }
             goto done;
         }
 
