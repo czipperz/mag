@@ -4,29 +4,59 @@
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "movement.hpp"
+#include "token.hpp"
 
 namespace mag {
 namespace basic {
 
-static uint64_t find_indent_width(Contents_Iterator it) {
-    Contents_Iterator end;
-    while (1) {
-        end = it;
-        backward_through_whitespace(&it);
-        if (it.at_bob()) {
+static uint64_t find_indent_width(Buffer* buffer, Contents_Iterator it) {
+    Contents_Iterator original = it;
+
+    // Find a line backwards that isn't empty (including the current line).
+    while (!it.at_bob()) {
+        start_of_line(&it);
+
+        if (!it.at_eob() && it.get() != '\n') {
             break;
         }
 
-        Contents_Iterator x = it;
-        x.retreat();
-        if (x.get() == '\n') {
-            break;
-        }
-
-        it = x;
+        it.retreat();
     }
 
-    return end.position - it.position;
+    // Look at all tokens between it and original and add one indentation (4) for each unmatched
+    // open pair.
+    int64_t depth = 0;
+
+    Tokenizer_Check_Point check_point = {};
+    buffer->token_cache.update(buffer);
+    buffer->token_cache.find_check_point(it.position, &check_point);
+
+    Contents_Iterator token_iterator = it;
+    token_iterator.retreat_to(check_point.position);
+    uint64_t state = check_point.state;
+
+    Token token;
+    while (buffer->mode.next_token(&token_iterator, &token, &state)) {
+        if (token.start < it.position) {
+            continue;
+        }
+        if (token.end > original.position) {
+            break;
+        }
+        if (token.type == Token_Type::OPEN_PAIR) {
+            ++depth;
+        }
+        if (token.type == Token_Type::CLOSE_PAIR) {
+            --depth;
+        }
+    }
+    // Don't unindent if the line has more close pairs.  A line `}` shouldn't cause the next line to
+    // be unindented even more.  It should be indented the same amount as the closing pair.
+    depth = cz::max(depth, (int64_t)0);
+
+    Contents_Iterator end = it;
+    forward_through_whitespace(&end);
+    return depth * 4 + end.position - it.position;
 }
 
 void command_insert_newline_indent(Editor* editor, Command_Source source) {
@@ -42,7 +72,7 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
         backward_through_whitespace(&it);
         spaces -= it.position;
 
-        uint64_t offset = find_indent_width(it);
+        uint64_t offset = find_indent_width(buffer, it);
         if (offset > spaces) {
             count += offset - spaces;
         }
@@ -60,7 +90,7 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
         backward_through_whitespace(&it);
         spaces -= it.position;
 
-        uint64_t count = find_indent_width(it);
+        uint64_t count = find_indent_width(buffer, it);
         if (count > spaces) {
             count -= spaces;
         } else {
