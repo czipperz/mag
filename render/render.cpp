@@ -499,12 +499,14 @@ static void draw_window(Cell* cells,
                         cz::Slice<Screen_Position_Query> spqs) {
     ZoneScoped;
 
-    w->rows = count_rows - 1;
+    w->rows = count_rows;
     w->cols = count_cols;
 
     switch (w->tag) {
     case Window::UNIFIED: {
         Window_Unified* window = (Window_Unified*)w;
+
+        --window->rows;
 
         if (!*window_cache) {
             *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
@@ -536,7 +538,7 @@ static void draw_window(Cell* cells,
         }
 
         if (window->tag == Window::VERTICAL_SPLIT) {
-            size_t left_cols = (count_cols - 1) / 2;
+            size_t left_cols = (count_cols - 1) * window->split_ratio;
             size_t right_cols = count_cols - left_cols - 1;
 
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, client,
@@ -554,7 +556,7 @@ static void draw_window(Cell* cells,
                         window->second, selected_window, start_row,
                         start_col + count_cols - right_cols, count_rows, right_cols, spqs);
         } else {
-            size_t top_rows = (count_rows - 1) / 2;
+            size_t top_rows = (count_rows - 1) * window->split_ratio;
             size_t bottom_rows = count_rows - top_rows - 1;
 
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, client,

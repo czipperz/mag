@@ -117,6 +117,30 @@ void command_split_window_vertical(Editor* editor, Command_Source source) {
     split_window(source.client, Window::VERTICAL_SPLIT);
 }
 
+void command_split_increase_ratio(Editor* editor, Command_Source source) {
+    Window_Split* split = source.client->selected_normal_window->parent;
+    if (!split) {
+        return;
+    }
+    split->split_ratio = cz::min(split->split_ratio + 0.1f, 0.9f);
+}
+
+void command_split_decrease_ratio(Editor* editor, Command_Source source) {
+    Window_Split* split = source.client->selected_normal_window->parent;
+    if (!split) {
+        return;
+    }
+    split->split_ratio = cz::max(split->split_ratio - 0.1f, 0.1f);
+}
+
+void command_split_reset_ratio(Editor* editor, Command_Source source) {
+    Window_Split* split = source.client->selected_normal_window->parent;
+    if (!split) {
+        return;
+    }
+    split->split_ratio = 0.5f;
+}
+
 Window_Unified* window_first(Window* window) {
     switch (window->tag) {
     case Window::UNIFIED:

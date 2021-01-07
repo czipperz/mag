@@ -168,6 +168,7 @@ Window_Split* Window_Split::create(Window::Tag tag, Window* first, Window* secon
 
     window->first = first;
     window->second = second;
+    window->split_ratio = 0.5f;
     return window;
 }
 

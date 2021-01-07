@@ -56,6 +56,9 @@ struct Window_Split : Window {
     Window* first;
     Window* second;
 
+    /// Percent of `rows` allocated to the `first` child.  `0.6` means 60%.
+    float split_ratio;
+
     static Window_Split* create(Window::Tag tag, Window* first, Window* second);
     static void drop_non_recursive(Window_Split* window);
 };

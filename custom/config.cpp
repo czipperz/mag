@@ -169,6 +169,10 @@ Key_Map create_key_map() {
     BIND(key_map, "C-x C-1", command_one_window);
     BIND(key_map, "C-x 2", command_split_window_horizontal);
     BIND(key_map, "C-x 3", command_split_window_vertical);
+    BIND(key_map, "C-x 4", command_split_increase_ratio);
+    BIND(key_map, "C-x 5", command_split_decrease_ratio);
+    BIND(key_map, "C-x A-4", command_split_reset_ratio);
+    BIND(key_map, "C-x A-5", command_split_reset_ratio);
     BIND(key_map, "C-x 0", command_close_window);
 
     BIND(key_map, "C-x h", command_mark_buffer);
