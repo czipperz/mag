@@ -1174,19 +1174,12 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
     if (isdigit(first_char)) {
         token->start = iterator->position;
         iterator->advance();
-        if (!iterator->at_eob()) {
+        while (!iterator->at_eob()) {
             char ch = iterator->get();
-            if (isdigit(ch)) {
-                iterator->advance();
-                while (!iterator->at_eob() && isdigit(iterator->get())) {
-                    iterator->advance();
-                }
-            } else if (ch == 'x') {
-                iterator->advance();
-                while (!iterator->at_eob() && isxdigit(iterator->get())) {
-                    iterator->advance();
-                }
+            if (!isalnum(ch) && ch != '.') {
+                break;
             }
+            iterator->advance();
         }
         token->end = iterator->position;
         token->type = Token_Type::NUMBER;
