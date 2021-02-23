@@ -886,9 +886,7 @@ void command_cursors_align(Editor* editor, Command_Source source) {
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
 
-        Contents_Iterator it2 = iterator;
-        start_of_line(&it2);
-        uint64_t col = iterator.position - it2.position;
+        uint64_t col = get_visual_column(editor->theme, iterator);
 
         if (i == 0 || col > max_column) {
             max_column = col;
@@ -908,6 +906,10 @@ void command_cursors_align(Editor* editor, Command_Source source) {
 
     char* buf = (char*)transaction.value_allocator().alloc({max_column - min_column, 1});
     CZ_DEBUG_ASSERT(buf);
+
+    // Note: we fill with spaces as this is supposed to be used not to correctly indent lines but
+    // rather to align things in those lines.  We don't want to start inserting tabs because then
+    // they might look different on a different users screen.
     memset(buf, ' ', max_column - min_column);
 
     iterator.retreat_to(cursors[0].point);
@@ -915,9 +917,7 @@ void command_cursors_align(Editor* editor, Command_Source source) {
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
 
-        Contents_Iterator it2 = iterator;
-        start_of_line(&it2);
-        uint64_t col = iterator.position - it2.position;
+        uint64_t col = get_visual_column(editor->theme, iterator);
         if (col == max_column) {
             continue;
         }
