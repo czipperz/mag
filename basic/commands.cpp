@@ -846,6 +846,8 @@ void command_create_cursors_lines_in_region(Editor* editor, Command_Source sourc
         return;
     }
 
+    Copy_Chain* local_copy_chain = window->cursors[0].local_copy_chain;
+
     uint64_t start = window->cursors[0].start();
     uint64_t end = window->cursors[0].end();
 
@@ -858,11 +860,14 @@ void command_create_cursors_lines_in_region(Editor* editor, Command_Source sourc
 
         Cursor cursor = {};
         cursor.point = cursor.mark = iterator.position;
+        cursor.local_copy_chain = local_copy_chain;
         window->cursors.reserve(cz::heap_allocator(), 1);
         window->cursors.push(cursor);
     }
 
-    window->cursors[0] = {start, start};
+    Cursor new_cursor = {start, start};
+    new_cursor.local_copy_chain = local_copy_chain;
+    window->cursors[0] = new_cursor;
 
     window->show_marks = false;
 }

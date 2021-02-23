@@ -409,6 +409,7 @@ void command_forward_matching_token(Editor* editor, Command_Source source) {
 static Cursor create_cursor_with_offsets(Cursor cursor,
                                          Contents_Iterator it) {
     Cursor new_cursor = {};
+    new_cursor.local_copy_chain = cursor.local_copy_chain;
     new_cursor.point = it.position;
     if (cursor.mark < cursor.point) {
         if (it.position < cursor.point - cursor.mark) {
