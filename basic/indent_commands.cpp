@@ -176,9 +176,15 @@ static void change_indent(Editor* editor, Command_Source source, int64_t indent_
         backward_through_whitespace(&iterator);
 
         uint64_t old_columns = count_visual_columns(editor->theme, iterator, end);
+        uint64_t new_columns = old_columns;
+        if (indent_offset < 0 && -indent_offset > new_columns) {
+            new_columns = 0;
+        } else {
+            new_columns += indent_offset;
+        }
         uint64_t old_tabs, old_spaces, new_tabs, new_spaces;
         analyze_indent(editor->theme, old_columns, &old_tabs, &old_spaces);
-        analyze_indent(editor->theme, old_columns + indent_offset, &new_tabs, &new_spaces);
+        analyze_indent(editor->theme, new_columns, &new_tabs, &new_spaces);
 
         bool adding = false, removing = false;
         if (old_spaces > new_spaces) {
@@ -226,9 +232,15 @@ static void change_indent(Editor* editor, Command_Source source, int64_t indent_
         }
 
         uint64_t old_columns = count_visual_columns(editor->theme, start_of_whitespace, end);
+        uint64_t new_columns = old_columns;
+        if (indent_offset < 0 && -indent_offset > new_columns) {
+            new_columns = 0;
+        } else {
+            new_columns += indent_offset;
+        }
         uint64_t old_tabs, old_spaces, new_tabs, new_spaces;
         analyze_indent(editor->theme, old_columns, &old_tabs, &old_spaces);
-        analyze_indent(editor->theme, old_columns + indent_offset, &new_tabs, &new_spaces);
+        analyze_indent(editor->theme, new_columns, &new_tabs, &new_spaces);
 
         bool adding = false, removing = false;
         uint64_t spaces_to_remove = 0, tabs_to_remove = 0;
