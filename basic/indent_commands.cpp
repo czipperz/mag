@@ -9,7 +9,7 @@
 namespace mag {
 namespace basic {
 
-static uint64_t find_indent_width(Buffer* buffer, Contents_Iterator it) {
+static uint64_t find_indent_width(const Theme& theme, Buffer* buffer, Contents_Iterator it) {
     Contents_Iterator original = it;
 
     // Find a line backwards that isn't empty (including the current line).
@@ -56,7 +56,8 @@ static uint64_t find_indent_width(Buffer* buffer, Contents_Iterator it) {
 
     Contents_Iterator end = it;
     forward_through_whitespace(&end);
-    return depth * 4 + end.position - it.position;
+
+    return depth * theme.indent_columns + get_visual_column(theme, end);
 }
 
 void command_insert_newline_indent(Editor* editor, Command_Source source) {
@@ -64,50 +65,51 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
 
     cz::Slice<Cursor> cursors = window->cursors;
 
-    uint64_t count = 0;
+    uint64_t alloc_space = cursors.len;  // 1 newline per cursor
     for (size_t i = 0; i < cursors.len; ++i) {
         Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
         forward_through_whitespace(&it);
-        uint64_t spaces = it.position;
+        uint64_t end = it.position;
         backward_through_whitespace(&it);
-        spaces -= it.position;
+        alloc_space += end - it.position;
 
-        uint64_t offset = find_indent_width(buffer, it);
-        if (offset > spaces) {
-            count += offset - spaces;
-        }
+        alloc_space += find_indent_width(editor->theme, buffer, it);
     }
 
     Transaction transaction;
-    transaction.init(cursors.len, count + cursors.len);
+    transaction.init(cursors.len * 2, alloc_space);
     CZ_DEFER(transaction.drop());
 
-    uint64_t offset = 0;
+    int64_t offset = 0;
     for (size_t i = 0; i < cursors.len; ++i) {
         Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
         forward_through_whitespace(&it);
-        uint64_t spaces = it.position;
+        uint64_t end = it.position;
         backward_through_whitespace(&it);
-        spaces -= it.position;
 
-        uint64_t count = find_indent_width(buffer, it);
-        if (count > spaces) {
-            count -= spaces;
-        } else {
-            count = 0;
-        }
+        Edit remove;
+        remove.value = buffer->contents.slice(transaction.value_allocator(), it, end);
+        remove.position = it.position + offset;
+        remove.flags = Edit::REMOVE;
+        transaction.push(remove);
 
-        char* value = (char*)transaction.value_allocator().alloc({count + 1, 1});
+        uint64_t columns = find_indent_width(editor->theme, buffer, it);
+
+        uint64_t num_tabs, num_spaces;
+        analyze_indent(editor->theme, columns, &num_tabs, &num_spaces);
+
+        char* value = (char*)transaction.value_allocator().alloc({1 + num_tabs + num_spaces, 1});
         value[0] = '\n';
-        memset(value + 1, ' ', count);
+        memset(value + 1, '\t', num_tabs);
+        memset(value + 1 + num_tabs, ' ', num_spaces);
 
-        Edit edit;
-        edit.value = SSOStr::from_constant({value, count + 1});
-        edit.position = it.position + offset;
-        edit.flags = Edit::INSERT;
-        transaction.push(edit);
+        Edit insert;
+        insert.value = SSOStr::from_constant({value, 1 + num_tabs + num_spaces});
+        insert.position = it.position + offset;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
 
-        offset += count + 1;
+        offset += insert.value.len() - remove.value.len();
     }
 
     transaction.commit(buffer);
