@@ -87,7 +87,7 @@ void go_to_visual_column(const Theme& theme, Contents_Iterator* iterator, uint64
             col -= col % theme.tab_column_width;
             if (col > column) {
                 if (col - column <= column - current) {
-                    iterator->advance(col - column);
+                    iterator->advance();
                 }
                 break;
             }
