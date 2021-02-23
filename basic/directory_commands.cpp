@@ -72,11 +72,12 @@ static void get_selected_entry(Window_Unified* window,
     }
 }
 
-static void reload_directory_window(Client* client,
-                                      Window_Unified* window,
-                                      Buffer* buffer,
-                                      bool has_entry,
-                                      cz::Str selected) {
+static void reload_directory_window(Editor* editor,
+                                    Client* client,
+                                    Window_Unified* window,
+                                    Buffer* buffer,
+                                    bool has_entry,
+                                    cz::Str selected) {
     // :DirectorySortFormat
     const size_t offset = 22;
 
@@ -88,7 +89,7 @@ static void reload_directory_window(Client* client,
     kill_extra_cursors(window, client);
 
     Contents_Iterator second_line_iterator = buffer->contents.start();
-    forward_line(&second_line_iterator);
+    forward_line(editor->theme, &second_line_iterator);
 
     if (has_entry) {
         Contents_Iterator it = second_line_iterator;
@@ -117,7 +118,7 @@ void command_directory_reload(Editor* editor, Command_Source source) {
     get_selected_entry(window, buffer, &has_entry, &selected);
     CZ_DEFER(if (has_entry) { selected.drop(cz::heap_allocator()); });
 
-    reload_directory_window(source.client, window, buffer, has_entry, selected.as_str());
+    reload_directory_window(editor, source.client, window, buffer, has_entry, selected.as_str());
 }
 
 void command_directory_toggle_sort(Editor* editor, Command_Source source) {
@@ -141,7 +142,7 @@ void command_directory_toggle_sort(Editor* editor, Command_Source source) {
         buffer->contents.remove(26, 4);
     }
 
-    reload_directory_window(source.client, window, buffer, has_entry, selected.as_str());
+    reload_directory_window(editor, source.client, window, buffer, has_entry, selected.as_str());
 }
 
 static bool get_path(Buffer* buffer, cz::String* path, uint64_t point) {

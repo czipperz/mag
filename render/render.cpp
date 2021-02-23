@@ -99,19 +99,19 @@ static void draw_buffer_contents(Cell* cells,
         // Ensure the cursor is visible
         uint64_t selected_cursor_position = window->cursors[0].point;
         Contents_Iterator second_visible_line_iterator = iterator;
-        forward_line(&second_visible_line_iterator);
+        forward_line(editor->theme, &second_visible_line_iterator);
         if (selected_cursor_position < second_visible_line_iterator.position) {
             // We are above the second visible line and thus readjust
             iterator = buffer->contents.iterator_at(selected_cursor_position);
             start_of_line(&iterator);
-            backward_line(&iterator);
+            backward_line(editor->theme, &iterator);
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
         } else if (selected_cursor_position > window_cache->v.unified.visible_end) {
             // We are below the "visible" section of the buffer ie on the last line or beyond the
             // last line.
             iterator = buffer->contents.iterator_at(selected_cursor_position);
             start_of_line(&iterator);
-            forward_line(&iterator);
+            forward_line(editor->theme, &iterator);
             compute_visible_start(window, &iterator);
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
         }

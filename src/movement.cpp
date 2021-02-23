@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include "buffer.hpp"
 #include "contents.hpp"
+#include "theme.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -48,45 +49,82 @@ void start_of_line_text(Contents_Iterator* iterator) {
     forward_through_whitespace(iterator);
 }
 
-void forward_line(Contents_Iterator* iterator) {
-    Contents_Iterator start = *iterator;
-    Contents_Iterator end = *iterator;
-    start_of_line(&start);
-    end_of_line(&end);
-    uint64_t column = iterator->position - start.position;
-    if (end.at_eob()) {
-        return;
+uint64_t get_current_column(const Theme& theme, Contents_Iterator iterator) {
+    Contents_Iterator end = iterator;
+    start_of_line(&iterator);
+
+    uint64_t column = 0;
+
+    while (iterator.position < end.position) {
+        if (iterator.get() == '\t') {
+            column += theme.tab_column_width;
+            column -= column % theme.tab_column_width;
+        } else {
+            column++;
+        }
+        iterator.advance();
     }
 
-    Contents_Iterator next_end = end;
-    next_end.advance();
-    end_of_line(&next_end);
-    if (next_end.position < end.position + 1 + column) {
-        *iterator = next_end;
-    } else {
-        end.advance(column + 1);
-        *iterator = end;
+    return column;
+}
+
+void go_to_column(const Theme& theme, Contents_Iterator* iterator, uint64_t column) {
+    start_of_line(iterator);
+
+    uint64_t current = 0;
+
+    while (!iterator->at_eob() && current < column) {
+        char ch = iterator->get();
+        if (ch == '\n') {
+            break;
+        } else if (ch == '\t') {
+            uint64_t col = current;
+            col += theme.tab_column_width;
+            col -= col % theme.tab_column_width;
+            if (col > column) {
+                if (col - column <= column - current) {
+                    iterator->advance(col - column);
+                }
+                break;
+            }
+            current = col;
+        } else {
+            current++;
+        }
+        iterator->advance();
     }
 }
 
-void backward_line(Contents_Iterator* iterator) {
-    Contents_Iterator start = *iterator;
-    start_of_line(&start);
-    uint64_t column = iterator->position - start.position;
-    if (start.at_bob()) {
+void forward_line(const Theme& theme, Contents_Iterator* iterator) {
+    uint64_t column = get_current_column(theme, *iterator);
+
+    Contents_Iterator backup = *iterator;
+    end_of_line(iterator);
+
+    if (iterator->at_eob()) {
+        *iterator = backup;
         return;
     }
 
-    Contents_Iterator previous_start = start;
-    previous_start.retreat();
-    start_of_line(&previous_start);
-    if (start.position - 1 < previous_start.position + column) {
-        start.retreat();
-        *iterator = start;
-    } else {
-        previous_start.advance(column);
-        *iterator = previous_start;
+    iterator->advance();
+
+    go_to_column(theme, iterator, column);
+}
+
+void backward_line(const Theme& theme, Contents_Iterator* iterator) {
+    uint64_t column = get_current_column(theme, *iterator);
+
+    Contents_Iterator backup = *iterator;
+    start_of_line(iterator);
+
+    if (iterator->at_bob()) {
+        *iterator = backup;
+        return;
     }
+
+    iterator->retreat();
+
+    go_to_column(theme, iterator, column);
 }
 
 void forward_word(Contents_Iterator* iterator) {

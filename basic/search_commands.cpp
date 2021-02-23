@@ -158,7 +158,7 @@ void command_search_open_next(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
-        forward_line(&it);
+        forward_line(editor->theme, &it);
         window->cursors[0].point = it.position;
 
         found = get_file_to_open(buffer, it, &path, &line, &column);
@@ -183,7 +183,7 @@ void command_search_open_previous(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
-        backward_line(&it);
+        backward_line(editor->theme, &it);
         window->cursors[0].point = it.position;
 
         found = get_file_to_open(buffer, it, &path, &line, &column);

@@ -19,7 +19,7 @@ void center_in_window(Window_Unified* window, Contents_Iterator iterator) {
             ++row;
             if (row >= target_rows) {
                 start_of_line(&iterator);
-                // forward_line(&iterator);
+                // forward_line(editor->theme, &iterator);
                 break;
             }
             col = 0;
@@ -30,7 +30,7 @@ void center_in_window(Window_Unified* window, Contents_Iterator iterator) {
                 ++row;
                 if (row >= target_rows) {
                     start_of_line(&iterator);
-                    // forward_line(&iterator);
+                    // forward_line(editor->theme, &iterator);
                     break;
                 }
             }
@@ -119,12 +119,12 @@ static void scroll_down(Editor* editor, Command_Source source, size_t num) {
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     for (size_t i = 0; i < num; ++i) {
-        forward_line(&it);
+        forward_line(editor->theme, &it);
     }
 
     window->start_position = it.position;
 
-    forward_line(&it);
+    forward_line(editor->theme, &it);
     if (window->cursors[0].point < it.position) {
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = it.position;
@@ -136,7 +136,7 @@ static void scroll_up(Editor* editor, Command_Source source, size_t num) {
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     for (size_t i = 0; i < num; ++i) {
-        backward_line(&it);
+        backward_line(editor->theme, &it);
     }
 
     window->start_position = it.position;

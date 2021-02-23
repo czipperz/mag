@@ -63,12 +63,12 @@ void command_backward_word(Editor* editor, Command_Source source) {
 
 void command_forward_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    TRANSFORM_POINTS(forward_line);
+    TRANSFORM_POINTS([&](Contents_Iterator* it) { forward_line(editor->theme, it); });
 }
 
 void command_backward_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    TRANSFORM_POINTS(backward_line);
+    TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(editor->theme, it); });
 }
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
@@ -486,12 +486,12 @@ static void show_created_messages(Client* client, int created) {
     }
 }
 
-static bool create_cursor_forward_line(Buffer* buffer, Window_Unified* window) {
+static bool create_cursor_forward_line(Editor* editor, Buffer* buffer, Window_Unified* window) {
     CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
     Contents_Iterator last_cursor_iterator =
         buffer->contents.iterator_at(window->cursors.last().point);
     Contents_Iterator new_cursor_iterator = last_cursor_iterator;
-    forward_line(&new_cursor_iterator);
+    forward_line(editor->theme, &new_cursor_iterator);
     if (new_cursor_iterator.position != last_cursor_iterator.position) {
         Cursor cursor = {};
         cursor.point = new_cursor_iterator.position;
@@ -508,17 +508,17 @@ static bool create_cursor_forward_line(Buffer* buffer, Window_Unified* window) {
 
 void command_create_cursor_forward_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    if (!create_cursor_forward_line(buffer, window)) {
+    if (!create_cursor_forward_line(editor, buffer, window)) {
         show_no_create_cursor_message(source.client);
     }
 }
 
-static bool create_cursor_backward_line(Buffer* buffer, Window_Unified* window) {
+static bool create_cursor_backward_line(Editor* editor, Buffer* buffer, Window_Unified* window) {
     CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
     Contents_Iterator first_cursor_iterator =
         buffer->contents.iterator_at(window->cursors[0].point);
     Contents_Iterator new_cursor_iterator = first_cursor_iterator;
-    backward_line(&new_cursor_iterator);
+    backward_line(editor->theme, &new_cursor_iterator);
     if (new_cursor_iterator.position != first_cursor_iterator.position) {
         Cursor cursor = {};
         cursor.point = new_cursor_iterator.position;
@@ -535,7 +535,7 @@ static bool create_cursor_backward_line(Buffer* buffer, Window_Unified* window) 
 
 void command_create_cursor_backward_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    if (!create_cursor_backward_line(buffer, window)) {
+    if (!create_cursor_backward_line(editor, buffer, window)) {
         show_no_create_cursor_message(source.client);
     }
 }
@@ -702,7 +702,7 @@ void command_create_cursor_forward(Editor* editor, Command_Source source) {
     if (window->show_marks) {
         created = create_cursor_forward_search(buffer, window);
     } else {
-        created = create_cursor_forward_line(buffer, window);
+        created = create_cursor_forward_line(editor, buffer, window);
     }
     show_created_messages(source.client, created);
 }
@@ -713,7 +713,7 @@ void command_create_cursor_backward(Editor* editor, Command_Source source) {
     if (window->show_marks) {
         created = create_cursor_backward_search(buffer, window);
     } else {
-        created = create_cursor_backward_line(buffer, window);
+        created = create_cursor_backward_line(editor, buffer, window);
     }
     show_created_messages(source.client, created);
 }
@@ -853,7 +853,7 @@ void command_create_cursors_lines_in_region(Editor* editor, Command_Source sourc
 
     Contents_Iterator iterator = buffer->contents.iterator_at(start);
     while (true) {
-        forward_line(&iterator);
+        forward_line(editor->theme, &iterator);
         if (iterator.position >= end) {
             break;
         }
