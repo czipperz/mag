@@ -145,10 +145,10 @@ Key_Map create_key_map() {
     BIND(key_map, "C-m", command_insert_newline_indent);
     BIND(key_map, "\n", command_insert_newline_indent);
     BIND(key_map, "C-j", command_insert_newline_no_indent);
-    BIND(key_map, "C-i", command_insert_indent);
-    BIND(key_map, "\t", command_insert_indent);
-    BIND(key_map, "A-i", command_delete_indent);
-    BIND(key_map, "S-\t", command_delete_indent);
+    BIND(key_map, "C-i", command_increase_indent);
+    BIND(key_map, "\t", command_increase_indent);
+    BIND(key_map, "A-i", command_decrease_indent);
+    BIND(key_map, "S-\t", command_decrease_indent);
     BIND(key_map, "A-=", command_delete_whitespace);
 
     BIND(key_map, "C-/", command_undo);

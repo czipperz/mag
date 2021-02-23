@@ -150,102 +150,142 @@ void command_auto_indent(Editor* editor, Command_Source source) {
 }
 */
 
-void command_insert_indent(Editor* editor, Command_Source source) {
+static bool at_empty_line(Contents_Iterator iterator) {
+    return (iterator.at_eob() || iterator.get() == '\n') &&
+           (iterator.at_bob() || (iterator.retreat(), iterator.get() == '\n'));
+}
+
+static void change_indent(Editor* editor, Command_Source source, int64_t indent_offset) {
     WITH_SELECTED_BUFFER(source.client);
 
     cz::Slice<Cursor> cursors = window->cursors;
 
-    SSOStr value = SSOStr::from_constant("    ");
-
-    Transaction transaction;
-    transaction.init(cursors.len, 0);
-    CZ_DEFER(transaction.drop());
+    uint64_t edits = 0;
+    uint64_t alloc_len = 0;
 
     Contents_Iterator iterator = buffer->contents.start();
+    for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+        if (cursors.len > 1 && at_empty_line(iterator)) {
+            --edits;
+            continue;
+        }
 
-    uint64_t offset = 0;
+        forward_through_whitespace(&iterator);
+        uint64_t end = iterator.position;
+        backward_through_whitespace(&iterator);
+
+        uint64_t old_columns = count_visual_columns(editor->theme, iterator, end);
+        uint64_t old_tabs, old_spaces, new_tabs, new_spaces;
+        analyze_indent(editor->theme, old_columns, &old_tabs, &old_spaces);
+        analyze_indent(editor->theme, old_columns + indent_offset, &new_tabs, &new_spaces);
+
+        bool adding = false, removing = false;
+        if (old_spaces > new_spaces) {
+            removing = true;
+            alloc_len += old_spaces - new_spaces;
+        } else if (old_spaces < new_spaces) {
+            adding = true;
+            alloc_len += new_spaces - old_spaces;
+        }
+        if (old_tabs > new_tabs) {
+            removing = true;
+            alloc_len += old_tabs - new_tabs;
+        } else if (old_tabs < new_tabs) {
+            adding = true;
+            alloc_len += new_tabs - old_tabs;
+        }
+        edits += adding + removing;
+    }
+
+    Transaction transaction;
+    transaction.init(edits, alloc_len);
+    CZ_DEFER(transaction.drop());
+
+    iterator = buffer->contents.start();
+    int64_t offset = 0;
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
 
-        Edit edit;
-        if (!iterator.at_eob() && iterator.get() == '\t') {
-            edit.value = SSOStr::from_char('\t');
-        } else if (cursors.len > 1 && (iterator.at_eob() || iterator.get() == '\n') &&
-                   (iterator.at_bob() || (iterator.retreat(), iterator.get() == '\n'))) {
+        if (cursors.len > 1 && at_empty_line(iterator)) {
             continue;
-        } else {
-            edit.value = value;
         }
 
-        edit.position = cursors[i].point + offset;
-        edit.flags = Edit::INSERT;
-        transaction.push(edit);
+        Contents_Iterator end_of_whitespace = iterator;
+        forward_through_whitespace(&end_of_whitespace);
+        uint64_t end = end_of_whitespace.position;
 
-        offset += edit.value.short_.len();
+        // Go to between tabs and spaces.
+        backward_through_whitespace(&iterator);
+        Contents_Iterator start_of_whitespace = iterator;
+        while (!iterator.at_eob()) {
+            if (iterator.get() != '\t') {
+                break;
+            }
+            iterator.advance();
+        }
+
+        uint64_t old_columns = count_visual_columns(editor->theme, start_of_whitespace, end);
+        uint64_t old_tabs, old_spaces, new_tabs, new_spaces;
+        analyze_indent(editor->theme, old_columns, &old_tabs, &old_spaces);
+        analyze_indent(editor->theme, old_columns + indent_offset, &new_tabs, &new_spaces);
+
+        bool adding = false, removing = false;
+        uint64_t spaces_to_remove = 0, tabs_to_remove = 0;
+        uint64_t spaces_to_add = 0, tabs_to_add = 0;
+        if (old_spaces > new_spaces) {
+            removing = true;
+            spaces_to_remove = old_spaces - new_spaces;
+        } else if (old_spaces < new_spaces) {
+            adding = true;
+            spaces_to_add = new_spaces - old_spaces;
+        }
+        if (old_tabs > new_tabs) {
+            removing = true;
+            tabs_to_remove = old_tabs - new_tabs;
+        } else if (old_tabs < new_tabs) {
+            adding = true;
+            tabs_to_add = new_tabs - old_tabs;
+        }
+
+        if (removing) {
+            char* buffer =
+                (char*)transaction.value_allocator().alloc({tabs_to_remove + spaces_to_remove, 1});
+            memset(buffer, '\t', tabs_to_remove);
+            memset(buffer + tabs_to_remove, ' ', spaces_to_remove);
+
+            Edit remove_indent;
+            remove_indent.value =
+                SSOStr::from_constant({buffer, tabs_to_remove + spaces_to_remove});
+            remove_indent.position = iterator.position + offset - tabs_to_remove;
+            remove_indent.flags = Edit::REMOVE;
+            transaction.push(remove_indent);
+        }
+
+        if (adding) {
+            char* buffer =
+                (char*)transaction.value_allocator().alloc({tabs_to_add + spaces_to_add, 1});
+            memset(buffer, '\t', tabs_to_add);
+            memset(buffer + tabs_to_add, ' ', spaces_to_add);
+
+            Edit add_indent;
+            add_indent.value = SSOStr::from_constant({buffer, spaces_to_add + tabs_to_add});
+            add_indent.position = iterator.position + offset - tabs_to_remove;
+            add_indent.flags = Edit::INSERT;
+            transaction.push(add_indent);
+        }
+
+        offset += (int64_t)0 + new_spaces - old_spaces + new_tabs - old_tabs;
     }
 
     transaction.commit(buffer);
 }
 
-void command_delete_indent(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-
-    cz::Slice<Cursor> cursors = window->cursors;
-
-    SSOStr value = SSOStr::from_constant("    ");
-
-    Transaction transaction;
-    transaction.init(cursors.len, 0);
-    CZ_DEFER(transaction.drop());
-
-    Contents_Iterator iterator = buffer->contents.start();
-
-    uint64_t offset = 0;
-    for (size_t i = 0; i < cursors.len; ++i) {
-        iterator.advance_to(cursors[i].point);
-
-        Edit edit;
-        if (!iterator.at_eob() && iterator.get() == '\t') {
-            edit.value = SSOStr::from_char('\t');
-        } else {
-            uint64_t num;
-            for (num = 0; num < 4; ++num) {
-                if (iterator.at_bob()) {
-                    break;
-                }
-                iterator.retreat();
-                if (iterator.get() != ' ') {
-                    iterator.advance();
-                    break;
-                }
-            }
-
-            if (num != 4) {
-                for (num = 0; num < 4; ++num) {
-                    if (iterator.at_eob() || iterator.get() != ' ') {
-                        break;
-                    }
-                    iterator.advance();
-                }
-                iterator.retreat(num);
-            }
-
-            if (num == 0) {
-                continue;
-            } else {
-                edit.value = value;
-                edit.value.short_.set_len(num);
-            }
-        }
-
-        edit.position = iterator.position - offset;
-        edit.flags = Edit::REMOVE;
-        transaction.push(edit);
-
-        offset += edit.value.short_.len();
-    }
-
-    transaction.commit(buffer);
+void command_increase_indent(Editor* editor, Command_Source source) {
+    return change_indent(editor, source, editor->theme.indent_width);
+}
+void command_decrease_indent(Editor* editor, Command_Source source) {
+    return change_indent(editor, source, -(int64_t)editor->theme.indent_width);
 }
 
 void command_delete_whitespace(Editor* editor, Command_Source source) {
