@@ -49,7 +49,7 @@ void start_of_line_text(Contents_Iterator* iterator) {
     forward_through_whitespace(iterator);
 }
 
-uint64_t get_current_column(const Theme& theme, Contents_Iterator iterator) {
+uint64_t get_visual_column(const Theme& theme, Contents_Iterator iterator) {
     Contents_Iterator end = iterator;
     start_of_line(&iterator);
 
@@ -68,7 +68,7 @@ uint64_t get_current_column(const Theme& theme, Contents_Iterator iterator) {
     return column;
 }
 
-void go_to_column(const Theme& theme, Contents_Iterator* iterator, uint64_t column) {
+void go_to_visual_column(const Theme& theme, Contents_Iterator* iterator, uint64_t column) {
     start_of_line(iterator);
 
     uint64_t current = 0;
@@ -96,7 +96,7 @@ void go_to_column(const Theme& theme, Contents_Iterator* iterator, uint64_t colu
 }
 
 void forward_line(const Theme& theme, Contents_Iterator* iterator) {
-    uint64_t column = get_current_column(theme, *iterator);
+    uint64_t column = get_visual_column(theme, *iterator);
 
     Contents_Iterator backup = *iterator;
     end_of_line(iterator);
@@ -108,11 +108,11 @@ void forward_line(const Theme& theme, Contents_Iterator* iterator) {
 
     iterator->advance();
 
-    go_to_column(theme, iterator, column);
+    go_to_visual_column(theme, iterator, column);
 }
 
 void backward_line(const Theme& theme, Contents_Iterator* iterator) {
-    uint64_t column = get_current_column(theme, *iterator);
+    uint64_t column = get_visual_column(theme, *iterator);
 
     Contents_Iterator backup = *iterator;
     start_of_line(iterator);
@@ -124,7 +124,7 @@ void backward_line(const Theme& theme, Contents_Iterator* iterator) {
 
     iterator->retreat();
 
-    go_to_column(theme, iterator, column);
+    go_to_visual_column(theme, iterator, column);
 }
 
 void forward_word(Contents_Iterator* iterator) {

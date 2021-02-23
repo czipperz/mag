@@ -18,8 +18,8 @@ void start_of_line_text(Contents_Iterator* iterator);
 void forward_through_whitespace(Contents_Iterator* iterator);
 void backward_through_whitespace(Contents_Iterator* iterator);
 
-uint64_t get_current_column(const Theme& theme, Contents_Iterator iterator);
-void go_to_column(const Theme& theme, Contents_Iterator* iterator, uint64_t column);
+uint64_t get_visual_column(const Theme& theme, Contents_Iterator iterator);
+void go_to_visual_column(const Theme& theme, Contents_Iterator* iterator, uint64_t column);
 
 void forward_line(const Theme& theme, Contents_Iterator* iterator);
 void backward_line(const Theme& theme, Contents_Iterator* iterator);
