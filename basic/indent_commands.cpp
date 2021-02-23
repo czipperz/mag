@@ -57,7 +57,7 @@ static uint64_t find_indent_width(const Theme& theme, Buffer* buffer, Contents_I
     Contents_Iterator end = it;
     forward_through_whitespace(&end);
 
-    return depth * theme.indent_columns + get_visual_column(theme, end);
+    return depth * theme.indent_width + get_visual_column(theme, end);
 }
 
 void command_insert_newline_indent(Editor* editor, Command_Source source) {
