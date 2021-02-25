@@ -276,6 +276,7 @@ static void change_indent(Editor* editor, Command_Source source, int64_t indent_
             new_columns = 0;
         } else {
             new_columns += indent_offset;
+            new_columns -= new_columns % editor->theme.indent_width;
         }
         uint64_t old_tabs, old_spaces, new_tabs, new_spaces;
         analyze_indent(editor->theme, old_columns, &old_tabs, &old_spaces);
@@ -333,6 +334,7 @@ static void change_indent(Editor* editor, Command_Source source, int64_t indent_
             new_columns = 0;
         } else {
             new_columns += indent_offset;
+            new_columns -= new_columns % editor->theme.indent_width;
         }
         uint64_t old_tabs, old_spaces, new_tabs, new_spaces;
         analyze_indent(editor->theme, old_columns, &old_tabs, &old_spaces);
