@@ -259,8 +259,8 @@ static void draw_buffer_contents(Cell* cells,
                 ADD_NEWLINE(face);
             }
         } else if (ch == '\t') {
-            size_t end_x = x + editor->theme.tab_column_width;
-            end_x -= end_x % editor->theme.tab_column_width;
+            size_t end_x = x + editor->theme.tab_width;
+            end_x -= end_x % editor->theme.tab_width;
             while (x < end_x) {
                 ADDCH(face, ' ');
             }

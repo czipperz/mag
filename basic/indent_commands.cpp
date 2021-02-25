@@ -138,8 +138,8 @@ static void fix_indent(Editor* editor, Window_Unified* window, Buffer* buffer) {
                 if (spaces > 0) {
                     invalid = true;
                 }
-                columns += editor->theme.tab_column_width;
-                columns -= columns % editor->theme.tab_column_width;
+                columns += editor->theme.tab_width;
+                columns -= columns % editor->theme.tab_width;
             } else if (ch == ' ') {
                 ++spaces;
                 ++columns;
@@ -150,7 +150,7 @@ static void fix_indent(Editor* editor, Window_Unified* window, Buffer* buffer) {
             iterator.advance();
         }
 
-        if (editor->theme.ever_use_tabs && spaces >= editor->theme.tab_column_width) {
+        if (editor->theme.use_tabs && spaces >= editor->theme.tab_width) {
             invalid = true;
         }
     };

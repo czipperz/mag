@@ -55,8 +55,8 @@ uint64_t count_visual_columns(const Theme& theme,
                               uint64_t column) {
     while (iterator.position < end) {
         if (iterator.get() == '\t') {
-            column += theme.tab_column_width;
-            column -= column % theme.tab_column_width;
+            column += theme.tab_width;
+            column -= column % theme.tab_width;
         } else {
             column++;
         }
@@ -83,8 +83,8 @@ void go_to_visual_column(const Theme& theme, Contents_Iterator* iterator, uint64
             break;
         } else if (ch == '\t') {
             uint64_t col = current;
-            col += theme.tab_column_width;
-            col -= col % theme.tab_column_width;
+            col += theme.tab_width;
+            col -= col % theme.tab_width;
             if (col > column) {
                 if (col - column <= column - current) {
                     iterator->advance();
@@ -103,9 +103,9 @@ void analyze_indent(const Theme& theme,
                     uint64_t columns,
                     uint64_t* num_tabs,
                     uint64_t* num_spaces) {
-    if (theme.ever_use_tabs) {
-        *num_tabs = columns / theme.tab_column_width;
-        *num_spaces = columns - *num_tabs * theme.tab_column_width;
+    if (theme.use_tabs) {
+        *num_tabs = columns / theme.tab_width;
+        *num_spaces = columns - *num_tabs * theme.tab_width;
     } else {
         *num_tabs = 0;
         *num_spaces = columns;
