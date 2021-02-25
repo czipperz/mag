@@ -115,41 +115,6 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
     transaction.commit(buffer);
 }
 
-/*
-void command_auto_indent(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-
-    cz::Slice<Cursor> cursors = window->cursors;
-
-    uint64_t count = 0;
-    for (size_t i = 0; i < cursors.len; ++i) {
-        count += find_indent_width(buffer->contents.iterator_at(cursors[i].point));
-    }
-
-    Transaction transaction;
-    transaction.init(cursors.len, count);
-    CZ_DEFER(transaction.drop());
-
-    uint64_t offset = 0;
-    for (size_t i = 0; i < cursors.len; ++i) {
-        uint64_t count = find_indent_width(buffer->contents.iterator_at(cursors[i].point));
-
-        char* value = (char*)transaction.value_allocator().alloc({count, 1});
-        memset(value, ' ', count);
-
-        Edit edit;
-        edit.value.init_from_constant({value, count});
-        edit.position = cursors[i].point + offset;
-        edit.flags = Edit::INSERT;
-        transaction.push(edit);
-
-        offset += count;
-    }
-
-    transaction.commit(buffer);
-}
-*/
-
 static bool at_empty_line(Contents_Iterator iterator) {
     return (iterator.at_eob() || iterator.get() == '\n') &&
            (iterator.at_bob() || (iterator.retreat(), iterator.get() == '\n'));
