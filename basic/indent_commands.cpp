@@ -120,8 +120,137 @@ static bool at_empty_line(Contents_Iterator iterator) {
            (iterator.at_bob() || (iterator.retreat(), iterator.get() == '\n'));
 }
 
+static void fix_indent(Editor* editor, Window_Unified* window, Buffer* buffer) {
+    bool invalid;
+    uint64_t tabs, spaces;
+    uint64_t columns;
+    Contents_Iterator iterator;
+    auto run_detector = [&]() {
+        while (!iterator.at_eob()) {
+            char ch = iterator.get();
+            if (ch == '\n') {
+                break;
+            }
+
+            if (ch == '\t') {
+                ++tabs;
+                // tab after a space is invalid.
+                if (spaces > 0) {
+                    invalid = true;
+                }
+                columns += editor->theme.tab_column_width;
+                columns -= columns % editor->theme.tab_column_width;
+            } else if (ch == ' ') {
+                ++spaces;
+                ++columns;
+            } else {
+                break;
+            }
+
+            iterator.advance();
+        }
+
+        if (editor->theme.ever_use_tabs && spaces >= editor->theme.tab_column_width) {
+            invalid = true;
+        }
+    };
+
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    size_t edits = 0;
+    size_t alloc_len = 0;
+
+    iterator = buffer->contents.start();
+    for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+        start_of_line(&iterator);
+        if (iterator.at_eob() || iterator.get() == '\n') {
+            continue;
+        }
+
+        invalid = false;
+        tabs = 0;
+        spaces = 0;
+        columns = 0;
+
+        run_detector();
+
+        if (invalid) {
+            ++edits;
+            alloc_len += tabs + spaces;
+
+            uint64_t num_tabs, num_spaces;
+            analyze_indent(editor->theme, columns, &num_tabs, &num_spaces);
+            alloc_len += num_tabs + num_spaces;
+        }
+    }
+
+    if (edits == 0) {
+        return;
+    }
+
+    Transaction transaction;
+    transaction.init(edits * 2, alloc_len);
+    CZ_DEFER(transaction.drop());
+
+    int64_t offset = 0;
+
+    iterator = buffer->contents.start();
+    for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+        start_of_line(&iterator);
+        if (iterator.at_eob() || iterator.get() == '\n') {
+            continue;
+        }
+
+        invalid = false;
+        tabs = 0;
+        spaces = 0;
+        columns = 0;
+
+        run_detector();
+
+        start_of_line(&iterator);
+
+        if (!invalid) {
+            continue;
+        }
+
+        // Remove existing indent.
+        Edit remove;
+        remove.value = buffer->contents.slice(transaction.value_allocator(), iterator,
+                                              iterator.position + tabs + spaces);
+        remove.position = iterator.position + offset;
+        remove.flags = Edit::REMOVE;
+        transaction.push(remove);
+
+        // Build buffer with correct number of tabs and spaces.
+        uint64_t num_tabs, num_spaces;
+        analyze_indent(editor->theme, columns, &num_tabs, &num_spaces);
+
+        char* buffer = (char*)transaction.value_allocator().alloc({num_tabs + num_spaces, 1});
+        memset(buffer, '\t', num_tabs);
+        memset(buffer + num_tabs, ' ', num_spaces);
+
+        // Then insert correct indent of the same width.
+        Edit insert;
+        insert.value = SSOStr::from_constant({buffer, num_tabs + num_spaces});
+        insert.position = iterator.position + offset;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+
+        offset += insert.value.len() - remove.value.len();
+    }
+
+    transaction.commit(buffer);
+
+    window->update_cursors(buffer);
+}
+
 static void change_indent(Editor* editor, Command_Source source, int64_t indent_offset) {
     WITH_SELECTED_BUFFER(source.client);
+
+    fix_indent(editor, window, buffer);
 
     cz::Slice<Cursor> cursors = window->cursors;
 
