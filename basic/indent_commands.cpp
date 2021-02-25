@@ -136,6 +136,7 @@ static void change_indent(Editor* editor, Command_Source source, int64_t indent_
             continue;
         }
 
+        start_of_line(&iterator);
         forward_through_whitespace(&iterator);
         uint64_t end = iterator.position;
         backward_through_whitespace(&iterator);
@@ -182,6 +183,7 @@ static void change_indent(Editor* editor, Command_Source source, int64_t indent_
             continue;
         }
 
+        start_of_line(&iterator);
         Contents_Iterator end_of_whitespace = iterator;
         forward_through_whitespace(&end_of_whitespace);
         uint64_t end = end_of_whitespace.position;
