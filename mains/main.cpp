@@ -12,6 +12,12 @@
 #include "sdl.hpp"
 #include "server.hpp"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 using namespace mag;
 
 static int usage() {
@@ -35,7 +41,50 @@ Available clients:\n"
 
 int mag_main(int argc, char** argv) {
     try {
-        program_name = argv[0];
+        // Set the program name.  First try to locate the executable and then if that fails use
+        // argv[0].
+        cz::String program_name_storage = {};
+        CZ_DEFER(program_name_storage.drop(cz::heap_allocator()));
+#ifdef _WIN32
+        program_name_storage.reserve(cz::heap_allocator(), MAX_PATH);
+#else
+        program_name_storage.reserve(cz::heap_allocator(), PATH_MAX);
+#endif
+        while (1) {
+#ifdef _WIN32
+            DWORD count =
+                GetModuleFileNameA(NULL, program_name_storage.buffer(), program_name_storage.cap());
+#else
+            ssize_t count = readlink("/proc/self/exe", program_name_storage.buffer(),
+                                     program_name_storage.cap());
+#endif
+            if (count <= 0) {
+                // Failure.
+                break;
+            } else if (count <= program_name_storage.cap()) {
+                // Success.
+                program_name_storage.set_len(count);
+
+                // String is already null terminated on Windows but we need to do it manually on
+                // Linux.
+#ifndef _WIN32
+                program_name_storage.reserve(cz::heap_allocator(), 1);
+                program_name_storage.null_terminate();
+#endif
+                break;
+            } else {
+                // Try again with more storage.
+                program_name_storage.reserve(cz::heap_allocator(), program_name_storage.cap() * 2);
+            }
+        }
+
+        // If we never set the len then we couldn't get a valid path.
+        if (program_name_storage.len() == 0) {
+            program_name = argv[0];
+        } else {
+            program_name = program_name_storage.buffer();
+        }
+
         cz::String program_dir_ = cz::Str(program_name).duplicate(cz::heap_allocator());
         CZ_DEFER(program_dir_.drop(cz::heap_allocator()));
         cz::path::convert_to_forward_slashes(program_dir_.buffer(), program_dir_.len());
