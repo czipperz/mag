@@ -865,7 +865,8 @@ void command_create_cursors_lines_in_region(Editor* editor, Command_Source sourc
         window->cursors.push(cursor);
     }
 
-    Cursor new_cursor = {start, start};
+    Cursor new_cursor = {};
+    new_cursor.point = new_cursor.mark = start;
     new_cursor.local_copy_chain = local_copy_chain;
     window->cursors[0] = new_cursor;
 
