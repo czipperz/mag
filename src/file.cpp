@@ -113,8 +113,8 @@ void* get_file_time(const char* path) {
 
 #ifndef _WIN32
 static void to_date(const struct tm* tm, Date* date) {
-    date->year = tm->tm_year;
-    date->month = tm->tm_mon;
+    date->year = tm->tm_year + 1900;
+    date->month = tm->tm_mon + 1;
     date->day_of_month = tm->tm_mday;
     date->day_of_week = tm->tm_wday;
     date->hour = tm->tm_hour;

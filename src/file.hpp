@@ -34,7 +34,7 @@ struct Date {
     int hour;
     /// Index minute (0 = 00:01:00).
     int minute;
-    /// Index second (0 = 00:00:01);
+    /// Index second (0 = 00:00:01).
     int second;
 };
 
