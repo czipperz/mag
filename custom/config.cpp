@@ -26,6 +26,7 @@
 #include "man/man.hpp"
 #include "overlay.hpp"
 #include "prose/alternate.hpp"
+#include "prose/search.hpp"
 #include "solarized_dark.hpp"
 #include "syntax/decoration_line_number.hpp"
 #include "syntax/decoration_read_only_indicator.hpp"
@@ -208,6 +209,8 @@ Key_Map create_key_map() {
     BIND(key_map, "A-g s", git::command_git_grep);
     BIND(key_map, "A-g A-s", git::command_git_grep_token_at_position);
     BIND(key_map, "A-g f", git::command_git_find_file);
+    BIND(key_map, "A-g r", prose::command_search_in_current_directory);
+    BIND(key_map, "A-g A-r", prose::command_search_in_current_directory_token_at_position);
 
     BIND(key_map, "A-g A-t", gnu_global::command_lookup_at_point);
     BIND(key_map, "A-g t", gnu_global::command_lookup_prompt);
@@ -469,7 +472,7 @@ Mode get_mode(const Buffer& buffer) {
         if (buffer.name == "*client mini buffer*") {
             mode.next_token = syntax::path_next_token;
             mode.key_map = path_key_map();
-        } else if (buffer.name.contains("*git grep ")) {
+        } else if (buffer.name.contains("*git grep ") || buffer.name.contains("*ag ")) {
             mode.next_token = syntax::search_next_token;
             mode.key_map = search_key_map();
         } else if (buffer.name.starts_with("*man ")) {
