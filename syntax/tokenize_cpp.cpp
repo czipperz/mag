@@ -530,6 +530,7 @@ static void continue_inside_oneline_comment(Contents_Iterator* iterator,
             break;
         } else {
             continue_into_next_line = false;
+            *comment_state = COMMENT_MIDDLE_OF_LINE;
         }
     }
 }
