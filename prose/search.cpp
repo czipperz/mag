@@ -21,7 +21,7 @@ static void run_ag(Client* client,
     buffer_name.append("ag ");
     buffer_name.append(query);
 
-    run_console_command(client, editor, directory, {args, 3 + query_word}, buffer_name, "Ag error");
+    run_console_command(client, editor, directory, {args, (size_t)(3 + query_word)}, buffer_name, "Ag error");
 }
 
 static char* copy_directory(const cz::String& buffer_directory) {
