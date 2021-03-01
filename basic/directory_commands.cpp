@@ -1,5 +1,6 @@
 #include "directory_commands.hpp"
 
+#include <cz/file.hpp>
 #include <cz/fs/directory.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
@@ -174,7 +175,7 @@ static cz::Result for_each_file(cz::String* path,
                                 File_Callback file_callback,
                                 Directory_Start_Callback directory_start_callback,
                                 Directory_End_Callback directory_end_callback) {
-    if (is_directory(path->buffer())) {
+    if (cz::file::is_directory(path->buffer())) {
         CZ_TRY(directory_start_callback(path->buffer()));
 
         cz::fs::DirectoryIterator iterator(cz::heap_allocator());

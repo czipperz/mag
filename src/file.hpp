@@ -5,6 +5,7 @@ struct Str;
 struct Input_File;
 struct Output_File;
 struct Result;
+struct File_Time;
 }
 
 namespace mag {
@@ -15,33 +16,7 @@ struct Client;
 struct Contents;
 struct Buffer_Id;
 
-bool is_directory(const char* path);
-
-void* get_file_time(const char* path);
-bool is_out_of_date(const char* path, void* file_time);
-bool is_file_time_before(const void* file_time, const void* other_file_time);
-
-struct Date {
-    /// Printable year (2020 = year 2020).
-    int year;
-    /// Printable month (1 = January).
-    int month;
-    /// Printable day of month (1 = 1st).
-    int day_of_month;
-    /// Index day of week (0 = Sunday).
-    int day_of_week;
-    /// Index hour (0 = 01:00:00 AM).
-    int hour;
-    /// Index minute (0 = 00:01:00).
-    int minute;
-    /// Index second (0 = 00:00:01).
-    int second;
-};
-
-/// Convert a `file_time` to a `Date` in UTC.
-bool file_time_to_date_utc(const void* file_time, Date* date);
-/// Convert a `file_time` to a `Date` in the local time zone.
-bool file_time_to_date_local(const void* file_time, Date* date);
+bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* file_time);
 
 cz::Result reload_directory_buffer(Buffer* buffer);
 

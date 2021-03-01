@@ -19,14 +19,14 @@
 
 namespace mag {
 
-static bool is_out_of_date(Buffer* buffer) {
+static bool check_out_of_date_and_update_file_time(Buffer* buffer) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     if (!buffer->get_path(cz::heap_allocator(), &path)) {
         return false;
     }
 
-    return is_out_of_date(path.buffer(), buffer->file_time);
+    return check_out_of_date_and_update_file_time(path.buffer(), &buffer->file_time);
 }
 
 static void initialize_file_time(Buffer* buffer) {
@@ -36,7 +36,7 @@ static void initialize_file_time(Buffer* buffer) {
         return;
     }
 
-    buffer->file_time = get_file_time(path.buffer());
+    buffer->has_file_time = get_file_time(path.buffer(), &buffer->file_time);
 }
 
 void Buffer::init() {
@@ -46,11 +46,11 @@ void Buffer::init() {
 }
 
 void Buffer::check_for_external_update(Client* client) {
-    if (!is_unchanged() || !file_time) {
+    if (!is_unchanged() || !has_file_time) {
         return;
     }
 
-    if (is_out_of_date(this)) {
+    if (check_out_of_date_and_update_file_time(this)) {
         reload_file(client, this);
     }
 }

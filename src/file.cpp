@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cz/bit_array.hpp>
 #include <cz/defer.hpp>
+#include <cz/file.hpp>
 #include <cz/fs/directory.hpp>
 #include <cz/fs/read_to_string.hpp>
 #include <cz/path.hpp>
@@ -16,166 +17,21 @@
 #include "config.hpp"
 #include "editor.hpp"
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#endif
-
 namespace mag {
 
-bool is_directory(const char* path) {
-#ifdef _WIN32
-    DWORD result = GetFileAttributes(path);
-    if (result == INVALID_FILE_ATTRIBUTES) {
-        return false;
-    }
-    return result & FILE_ATTRIBUTE_DIRECTORY;
-#else
-    struct stat buf;
-    if (stat(path, &buf) < 0) {
-        return false;
-    }
-    return S_ISDIR(buf.st_mode);
-#endif
-}
+bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* file_time) {
+    cz::File_Time new_ft;
 
-static bool get_file_time(const char* path, void* file_time) {
-#ifdef _WIN32
-    HANDLE handle = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                               FILE_FLAG_BACKUP_SEMANTICS, NULL);
-    if (handle != INVALID_HANDLE_VALUE) {
-        CZ_DEFER(CloseHandle(handle));
-        if (GetFileTime(handle, NULL, NULL, (FILETIME*)file_time)) {
-            return true;
-        }
-    }
-    return false;
-#else
-    struct stat st;
-    if (stat(path, &st) != 0) {
-        return false;
-    }
-    *(time_t*)file_time = st.st_mtime;
-    return true;
-#endif
-}
-
-bool is_out_of_date(const char* path, void* file_time) {
-#ifdef _WIN32
-    FILETIME new_ft;
-#else
-    time_t new_ft;
-#endif
-
-    if (!get_file_time(path, &new_ft)) {
+    if (!cz::get_file_time(path, &new_ft)) {
         return false;
     }
 
-    if (is_file_time_before(file_time, &new_ft)) {
-#ifdef _WIN32
-        *(FILETIME*)file_time = new_ft;
-#else
-        *(time_t*)file_time = new_ft;
-#endif
+    if (cz::is_file_time_before(*file_time, new_ft)) {
+        *file_time = new_ft;
         return true;
     }
 
     return false;
-}
-
-bool is_file_time_before(const void* file_time, const void* other_file_time) {
-#ifdef _WIN32
-    return CompareFileTime((const FILETIME*)file_time, (const FILETIME*)other_file_time) < 0;
-#else
-    return *(const time_t*)file_time < *(const time_t*)other_file_time;
-#endif
-}
-
-void* get_file_time(const char* path) {
-#ifdef _WIN32
-    void* file_time = malloc(sizeof(FILETIME));
-    CZ_ASSERT(file_time);
-#else
-    void* file_time = malloc(sizeof(time_t));
-    CZ_ASSERT(file_time);
-#endif
-
-    if (get_file_time(path, file_time)) {
-        return file_time;
-    } else {
-        free(file_time);
-        return nullptr;
-    }
-}
-
-#ifndef _WIN32
-static void to_date(const struct tm* tm, Date* date) {
-    date->year = tm->tm_year + 1900;
-    date->month = tm->tm_mon + 1;
-    date->day_of_month = tm->tm_mday;
-    date->day_of_week = tm->tm_wday;
-    date->hour = tm->tm_hour;
-    date->minute = tm->tm_min;
-    date->second = tm->tm_sec;
-}
-#endif
-
-bool file_time_to_date_utc(const void* file_time, Date* date) {
-#ifdef _WIN32
-    SYSTEMTIME system_time;
-    if (!FileTimeToSystemTime((const FILETIME*)file_time, &system_time)) {
-        return false;
-    }
-    date->year = system_time.wYear;
-    date->month = system_time.wMonth;
-    date->day_of_month = system_time.wDay;
-    date->day_of_week = system_time.wDayOfWeek;
-    date->hour = system_time.wHour;
-    date->minute = system_time.wMinute;
-    date->second = system_time.wSecond;
-    return true;
-#else
-    // Try to use thread safe versions of gmtime when possible.
-#if _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _BSD_SOURCE || _SVID_SOURCE || _POSIX_SOURCE
-    struct tm storage;
-    struct tm* tm = gmtime_r((const time_t*)file_time, &storage);
-#elif defined(__STDC_LIB_EXT1__)
-    struct tm storage;
-    struct tm* tm = gmtime_s((const time_t*)file_time, &storage);
-#else
-    struct tm* tm = gmtime((const time_t*)file_time);
-#endif
-
-    to_date(tm, date);
-    return true;
-#endif
-}
-
-bool file_time_to_date_local(const void* file_time, Date* date) {
-#ifdef _WIN32
-    FILETIME local_time;
-    if (!FileTimeToLocalFileTime((const FILETIME*)file_time, &local_time)) {
-        return false;
-    }
-    return file_time_to_date_utc(&local_time, date);
-#else
-    // Try to use thread safe versions of localtime when possible.
-#if _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _BSD_SOURCE || _SVID_SOURCE || _POSIX_SOURCE
-    struct tm storage;
-    struct tm* tm = localtime_r((const time_t*)file_time, &storage);
-#elif defined(__STDC_LIB_EXT1__)
-    struct tm storage;
-    struct tm* tm = localtime_s((const time_t*)file_time, &storage);
-#else
-    struct tm* tm = localtime((const time_t*)file_time);
-#endif
-
-    to_date(tm, date);
-    return true;
-#endif
 }
 
 static cz::Result load_file(Buffer* buffer, const char* path) {
@@ -258,7 +114,7 @@ static cz::Result load_directory(Editor* editor,
 }
 
 static void sort_files(cz::Slice<cz::Str> files,
-                       void** file_times,
+                       cz::File_Time* file_times,
                        unsigned char* file_directories,
                        bool sort_names) {
     auto swap = [&](size_t i, size_t j) {
@@ -267,7 +123,7 @@ static void sort_files(cz::Slice<cz::Str> files,
         }
 
         cz::Str tfile = files[i];
-        void* tfile_time = file_times[i];
+        cz::File_Time tfile_time = file_times[i];
         bool tfile_directory = cz::bit_array::get(file_directories, i);
 
         files[i] = files[j];
@@ -311,13 +167,8 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
     CZ_TRY(cz::fs::files(cz::heap_allocator(), buffer_array.allocator(), buffer->directory.buffer(),
                          &files));
 
-    void** file_times = (void**)malloc(sizeof(void*) * files.len());
-    CZ_DEFER({
-        for (size_t i = 0; i < files.len(); ++i) {
-            free(file_times[i]);
-        }
-        free(file_times);
-    });
+    cz::File_Time* file_times = (cz::File_Time*)malloc(sizeof(cz::File_Time) * files.len());
+    CZ_DEFER(free(file_times));
 
     unsigned char* file_directories =
         (unsigned char*)calloc(1, cz::bit_array::alloc_size(files.len()));
@@ -334,9 +185,10 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
         file.append(files[i]);
         file.null_terminate();
 
-        file_times[i] = get_file_time(file.buffer());
+        file_times[i] = {};
+        cz::get_file_time(file.buffer(), &file_times[i]);
 
-        if (is_directory(file.buffer())) {
+        if (cz::file::is_directory(file.buffer())) {
             cz::bit_array::set(file_directories, i);
         }
     }
@@ -357,8 +209,8 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
     }
 
     for (size_t i = 0; i < files.len(); ++i) {
-        Date date;
-        if (file_times[i] && file_time_to_date_local(file_times[i], &date)) {
+        cz::Date date;
+        if (cz::file_time_to_date_local(file_times[i], &date)) {
             char date_string[32];
             snprintf(date_string, sizeof(date_string), "%04d/%02d/%02d %02d:%02d:%02d ", date.year,
                      date.month, date.day_of_month, date.hour, date.minute, date.second);

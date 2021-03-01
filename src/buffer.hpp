@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cz/buffer_array.hpp>
+#include <cz/date.hpp>
 #include <cz/option.hpp>
 #include <cz/string.hpp>
 #include <cz/vector.hpp>
@@ -37,7 +38,8 @@ struct Buffer {
         TEMPORARY,
     } type = FILE;
 
-    void* file_time;
+    bool has_file_time;
+    cz::File_Time file_time;
 
     /// If `true` then the buffer should be saved with carriage returns.
     ///
