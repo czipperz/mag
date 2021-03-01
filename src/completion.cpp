@@ -41,6 +41,11 @@ bool Completion_Cache::update(size_t changes_len) {
 }
 
 void Completion_Cache::set_engine(Completion_Engine new_engine) {
+    if (engine == new_engine) {
+        state = Completion_Cache::INITIAL;
+        return;
+    }
+
     engine = new_engine;
     state = Completion_Cache::INITIAL;
     if (engine_context.cleanup) {
