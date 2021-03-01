@@ -1,8 +1,6 @@
 # Features
 * Prose
   - find file
-  - search
-  - finish alternate
 
 * Autocomplete
   - While typing in normal buffers
