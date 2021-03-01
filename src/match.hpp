@@ -21,6 +21,9 @@ bool matches(Contents_Iterator start, uint64_t end, cz::Str query);
 bool matches(Contents_Iterator start, uint64_t end, Contents_Iterator query);
 
 /// Tests if the region from `start` to `end` matches the region from `query_start` to `query_end`.
-bool matches(Contents_Iterator start, uint64_t end, Contents_Iterator query_start, uint64_t query_end);
+bool matches(Contents_Iterator start,
+             uint64_t end,
+             Contents_Iterator query_start,
+             uint64_t query_end);
 
 }
