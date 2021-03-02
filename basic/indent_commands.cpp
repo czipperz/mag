@@ -261,7 +261,6 @@ static void change_indent(Editor* editor, Command_Source source, int64_t indent_
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
         if (cursors.len > 1 && at_empty_line(iterator)) {
-            --edits;
             continue;
         }
 
