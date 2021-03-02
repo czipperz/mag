@@ -10,4 +10,6 @@ if [ ! -e compile_commands.json ]; then
     ln -s "$(pwd)/build/debug/compile_commands.json" .
 fi
 
+global -u || :
+
 ./run-tests.sh
