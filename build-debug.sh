@@ -10,6 +10,12 @@ if [ ! -e compile_commands.json ]; then
     ln -s "$(pwd)/build/debug/compile_commands.json" .
 fi
 
-global -u || :
+set +e
+if [ -e GTAGS ]; then
+    global -u
+else
+    gtags
+fi
+set -e
 
 ./run-tests.sh
