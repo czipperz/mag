@@ -106,7 +106,7 @@ void split_window(Client* client, Window::Tag tag) {
     top->parent = parent;
     bottom->parent = parent;
 
-    client->selected_normal_window = top;
+    client->selected_normal_window = bottom;
 }
 
 void command_split_window_horizontal(Editor* editor, Command_Source source) {
