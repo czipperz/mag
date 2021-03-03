@@ -29,8 +29,8 @@
 #include "prose/search.hpp"
 #include "solarized_dark.hpp"
 #include "syntax/decoration_line_number.hpp"
-#include "syntax/decoration_read_only_indicator.hpp"
 #include "syntax/decoration_pinned_indicator.hpp"
+#include "syntax/decoration_read_only_indicator.hpp"
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
@@ -309,9 +309,10 @@ Theme create_theme() {
                                        syntax::decoration_pinned_indicator()};
     theme.decorations = decorations;
 
-    static Overlay overlays[] = {syntax::overlay_matching_region({-1, 237, 0}),
-                                 syntax::overlay_preferred_column({-1, 21, 0}),
-                                 syntax::overlay_trailing_spaces({-1, 208, 0})};
+    static Overlay overlays[] = {
+        syntax::overlay_matching_region({-1, 237, 0}),
+        syntax::overlay_preferred_column({-1, 21, 0}, theme.tab_width, 100),
+        syntax::overlay_trailing_spaces({-1, 208, 0})};
     theme.overlays = overlays;
 
     theme.max_completion_results = 5;
