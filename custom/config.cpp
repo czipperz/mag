@@ -232,6 +232,11 @@ Key_Map create_key_map() {
 
 Theme create_theme() {
     Theme theme = {};
+
+    theme.indent_width = 4;
+    theme.tab_width = 4;
+    theme.use_tabs = false;
+
     theme.colors = mag::theme::solarized_dark;
 
     theme.faces.reserve(cz::heap_allocator(), 54);
