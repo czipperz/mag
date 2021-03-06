@@ -71,6 +71,7 @@ static void draw_buffer_contents(Cell* cells,
                                  Window_Cache* window_cache,
                                  size_t total_cols,
                                  Editor* editor,
+                                 Client* client,
                                  Buffer* buffer,
                                  Window_Unified* window,
                                  size_t start_row,
@@ -79,6 +80,15 @@ static void draw_buffer_contents(Cell* cells,
                                  size_t* cursor_pos_y,
                                  size_t* cursor_pos_x) {
     ZoneScoped;
+
+    // Try to deal with out of bounds cursors and positions.
+    if (window->start_position > buffer->contents.len) {
+        window->start_position = buffer->contents.len;
+    }
+    if (window->cursors.last().point > buffer->contents.len) {
+        kill_extra_cursors(window, client);
+        window->cursors[0].point = window->cursors[0].mark = buffer->contents.len;
+    }
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     start_of_line(&iterator);
@@ -488,7 +498,7 @@ static void draw_buffer(Cell* cells,
 
     WITH_WINDOW_BUFFER(window);
     size_t cursor_pos_y, cursor_pos_x;
-    draw_buffer_contents(cells, window_cache, total_cols, editor, buffer, window, start_row,
+    draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
                          start_col, spqs, &cursor_pos_y, &cursor_pos_x);
     draw_buffer_decoration(cells, total_cols, editor, window, buffer, is_selected_window, start_row,
                            start_col);
@@ -702,8 +712,8 @@ void render_to_cells(Cell* cells,
             window->rows = mini_buffer_height;
             window->cols = total_cols - start_col;
             size_t cursor_pos_y, cursor_pos_x;
-            draw_buffer_contents(cells, nullptr, total_cols, editor, buffer, window, start_row,
-                                 start_col, {}, &cursor_pos_y, &cursor_pos_x);
+            draw_buffer_contents(cells, nullptr, total_cols, editor, client, buffer, window,
+                                 start_row, start_col, {}, &cursor_pos_y, &cursor_pos_x);
         } else {
             for (; x < total_cols; ++x) {
                 SET_IND({}, ' ');
