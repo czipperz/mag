@@ -331,10 +331,20 @@ static void draw_buffer_decoration(Cell* cells,
     string.reserve(1024);
     buffer->render_name(string.allocator, &string);
 
+    string.reserve(1);
+    string.push(' ');
+
     for (size_t i = 0; i < editor->theme.decorations.len; ++i) {
-        string.reserve(5);
-        string.push(' ');
-        editor->theme.decorations[i].append(buffer, window, &string);
+        if (editor->theme.decorations[i].append(buffer, window, &string)) {
+            string.reserve(1);
+            string.push(' ');
+        }
+    }
+    for (size_t i = 0; i < buffer->mode.decorations.len; ++i) {
+        if (buffer->mode.decorations[i].append(buffer, window, &string)) {
+            string.reserve(1);
+            string.push(' ');
+        }
     }
 
     size_t max = cz::min<size_t>(string.len(), window->cols - x);

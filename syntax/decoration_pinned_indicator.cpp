@@ -12,7 +12,7 @@
 namespace mag {
 namespace syntax {
 
-static void decoration_pinned_indicator_append(Buffer* buffer,
+static bool decoration_pinned_indicator_append(Buffer* buffer,
                                                Window_Unified* window,
                                                cz::AllocatedString* string,
                                                void* _data) {
@@ -20,7 +20,9 @@ static void decoration_pinned_indicator_append(Buffer* buffer,
 
     if (window->pinned) {
         write(string_writer(string), "Pinned");
+        return true;
     }
+    return false;
 }
 
 static void decoration_pinned_indicator_cleanup(void* _data) {}

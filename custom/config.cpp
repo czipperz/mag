@@ -29,6 +29,7 @@
 #include "prose/alternate.hpp"
 #include "prose/search.hpp"
 #include "solarized_dark.hpp"
+#include "syntax/decoration_line_ending_indicator.hpp"
 #include "syntax/decoration_line_number.hpp"
 #include "syntax/decoration_pinned_indicator.hpp"
 #include "syntax/decoration_read_only_indicator.hpp"
@@ -496,6 +497,9 @@ Mode get_mode(const Buffer& buffer) {
         break;
 
     case Buffer::FILE:
+        static Decoration decorations[] = {syntax::decoration_line_ending_indicator()};
+        mode.decorations = decorations;
+
         if (buffer.name.ends_with(".c") || buffer.name.ends_with(".h") ||
             buffer.name.ends_with(".cc") || buffer.name.ends_with(".hh") ||
             buffer.name.ends_with(".cpp") || buffer.name.ends_with(".hpp") ||

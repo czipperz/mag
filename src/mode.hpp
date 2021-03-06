@@ -8,6 +8,7 @@ namespace mag {
 struct Contents_Iterator;
 struct Token;
 struct Key_Map;
+struct Decoration;
 struct Overlay;
 
 struct Mode {
@@ -17,6 +18,7 @@ struct Mode {
                        Token* token /* out */,
                        uint64_t* state /* in/out */);
 
+    cz::Slice<Decoration> decorations;
     cz::Slice<Overlay> overlays;
 
     /// The number of columns in a level of indentation.

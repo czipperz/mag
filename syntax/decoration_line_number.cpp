@@ -12,7 +12,7 @@
 namespace mag {
 namespace syntax {
 
-static void decoration_line_number_append(Buffer* buffer,
+static bool decoration_line_number_append(Buffer* buffer,
                                           Window_Unified* window,
                                           cz::AllocatedString* string,
                                           void* _data) {
@@ -30,6 +30,7 @@ static void decoration_line_number_append(Buffer* buffer,
     }
 
     write(string_writer(string), 'L', line_number + 1, " C", iterator.position - line_start + 1);
+    return true;
 }
 
 static void decoration_line_number_cleanup(void* _data) {}
