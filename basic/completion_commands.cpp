@@ -18,21 +18,37 @@ void command_insert_completion(Editor* editor, Command_Source source) {
 
     cz::Str value = context->results[context->selected];
 
+    size_t common_base;
+    for (common_base = 0; common_base < query.len && common_base < value.len; ++common_base) {
+        if (query[common_base] != value[common_base]) {
+            break;
+        }
+    }
+
     Transaction transaction;
-    transaction.init(2, query.len + value.len);
     CZ_DEFER(transaction.drop());
 
-    Edit remove;
-    remove.value = SSOStr::as_duplicate(transaction.value_allocator(), query);
-    remove.position = 0;
-    remove.flags = Edit::REMOVE;
-    transaction.push(remove);
+    bool removing = common_base < query.len;
+    bool inserting = common_base < value.len;
 
-    Edit insert;
-    insert.value = SSOStr::as_duplicate(transaction.value_allocator(), value);
-    insert.position = 0;
-    insert.flags = Edit::INSERT;
-    transaction.push(insert);
+    transaction.init(removing + inserting, query.len + value.len - 2 * common_base);
+
+    if (removing) {
+        Edit remove;
+        remove.value =
+            SSOStr::as_duplicate(transaction.value_allocator(), query.slice_start(common_base));
+        remove.position = common_base;
+        remove.flags = Edit::REMOVE;
+        transaction.push(remove);
+    }
+    if (inserting) {
+        Edit insert;
+        insert.value =
+            SSOStr::as_duplicate(transaction.value_allocator(), value.slice_start(common_base));
+        insert.position = common_base;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+    }
 
     transaction.commit(buffer);
 }
