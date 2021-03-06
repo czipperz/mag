@@ -90,7 +90,7 @@ static void reload_directory_window(Editor* editor,
     kill_extra_cursors(window, client);
 
     Contents_Iterator second_line_iterator = buffer->contents.start();
-    forward_line(editor->theme, &second_line_iterator);
+    forward_line(buffer->mode, &second_line_iterator);
 
     if (has_entry) {
         Contents_Iterator it = second_line_iterator;

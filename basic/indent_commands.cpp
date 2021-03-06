@@ -9,7 +9,7 @@
 namespace mag {
 namespace basic {
 
-static uint64_t find_indent_width(const Theme& theme, Buffer* buffer, Contents_Iterator it) {
+static uint64_t find_indent_width(const Mode& mode, Buffer* buffer, Contents_Iterator it) {
     Contents_Iterator original = it;
 
     // Find a line backwards that isn't empty (including the current line).
@@ -57,7 +57,7 @@ static uint64_t find_indent_width(const Theme& theme, Buffer* buffer, Contents_I
     Contents_Iterator end = it;
     forward_through_whitespace(&end);
 
-    return depth * theme.indent_width + get_visual_column(theme, end);
+    return depth * mode.indent_width + get_visual_column(mode, end);
 }
 
 void command_insert_newline_indent(Editor* editor, Command_Source source) {
@@ -73,7 +73,7 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
         backward_through_whitespace(&it);
         alloc_space += end - it.position;
 
-        alloc_space += find_indent_width(editor->theme, buffer, it);
+        alloc_space += find_indent_width(buffer->mode, buffer, it);
     }
 
     Transaction transaction;
@@ -93,10 +93,10 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
         remove.flags = Edit::REMOVE;
         transaction.push(remove);
 
-        uint64_t columns = find_indent_width(editor->theme, buffer, it);
+        uint64_t columns = find_indent_width(buffer->mode, buffer, it);
 
         uint64_t num_tabs, num_spaces;
-        analyze_indent(editor->theme, columns, &num_tabs, &num_spaces);
+        analyze_indent(buffer->mode, columns, &num_tabs, &num_spaces);
 
         char* value = (char*)transaction.value_allocator().alloc({1 + num_tabs + num_spaces, 1});
         value[0] = '\n';
@@ -126,7 +126,7 @@ struct Invalid_Indent_Data {
     uint64_t columns;
 };
 
-static Invalid_Indent_Data detect_invalid_indent(const Theme& theme, Contents_Iterator iterator) {
+static Invalid_Indent_Data detect_invalid_indent(const Mode& mode, Contents_Iterator iterator) {
     Invalid_Indent_Data data = {};
 
     while (!iterator.at_eob()) {
@@ -141,8 +141,8 @@ static Invalid_Indent_Data detect_invalid_indent(const Theme& theme, Contents_It
             if (data.spaces > 0) {
                 data.invalid = true;
             }
-            data.columns += theme.tab_width;
-            data.columns -= data.columns % theme.tab_width;
+            data.columns += mode.tab_width;
+            data.columns -= data.columns % mode.tab_width;
         } else if (ch == ' ') {
             ++data.spaces;
             ++data.columns;
@@ -153,16 +153,14 @@ static Invalid_Indent_Data detect_invalid_indent(const Theme& theme, Contents_It
         iterator.advance();
     }
 
-    if (theme.use_tabs && data.spaces >= theme.tab_width) {
+    if (mode.use_tabs && data.spaces >= mode.tab_width) {
         data.invalid = true;
     }
 
     return data;
 }
 
-static void change_indent(Editor* editor, Command_Source source, int64_t indent_offset) {
-    WITH_SELECTED_BUFFER(source.client);
-
+static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent_offset) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     uint64_t edits = 0;
@@ -177,17 +175,17 @@ static void change_indent(Editor* editor, Command_Source source, int64_t indent_
 
         start_of_line(&iterator);
 
-        Invalid_Indent_Data data = detect_invalid_indent(editor->theme, iterator);
+        Invalid_Indent_Data data = detect_invalid_indent(buffer->mode, iterator);
 
         uint64_t new_columns = data.columns;
         if (indent_offset < 0 && -indent_offset > new_columns) {
             new_columns = 0;
         } else {
             new_columns += indent_offset;
-            new_columns -= new_columns % editor->theme.indent_width;
+            new_columns -= new_columns % buffer->mode.indent_width;
         }
         uint64_t new_tabs, new_spaces;
-        analyze_indent(editor->theme, new_columns, &new_tabs, &new_spaces);
+        analyze_indent(buffer->mode, new_columns, &new_tabs, &new_spaces);
 
         if (data.invalid) {
             edits += 2;
@@ -227,17 +225,17 @@ static void change_indent(Editor* editor, Command_Source source, int64_t indent_
 
         start_of_line(&iterator);
 
-        Invalid_Indent_Data data = detect_invalid_indent(editor->theme, iterator);
+        Invalid_Indent_Data data = detect_invalid_indent(buffer->mode, iterator);
 
         uint64_t new_columns = data.columns;
         if (indent_offset < 0 && -indent_offset > new_columns) {
             new_columns = 0;
         } else {
             new_columns += indent_offset;
-            new_columns -= new_columns % editor->theme.indent_width;
+            new_columns -= new_columns % buffer->mode.indent_width;
         }
         uint64_t new_tabs, new_spaces;
-        analyze_indent(editor->theme, new_columns, &new_tabs, &new_spaces);
+        analyze_indent(buffer->mode, new_columns, &new_tabs, &new_spaces);
 
         // Go to between tabs and spaces.
         while (!iterator.at_eob()) {
@@ -323,10 +321,12 @@ static void change_indent(Editor* editor, Command_Source source, int64_t indent_
 }
 
 void command_increase_indent(Editor* editor, Command_Source source) {
-    return change_indent(editor, source, editor->theme.indent_width);
+    WITH_SELECTED_BUFFER(source.client);
+    change_indent(window, buffer, buffer->mode.indent_width);
 }
 void command_decrease_indent(Editor* editor, Command_Source source) {
-    return change_indent(editor, source, -(int64_t)editor->theme.indent_width);
+    WITH_SELECTED_BUFFER(source.client);
+    change_indent(window, buffer, -(int64_t)buffer->mode.indent_width);
 }
 
 void command_delete_whitespace(Editor* editor, Command_Source source) {

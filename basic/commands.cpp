@@ -63,12 +63,12 @@ void command_backward_word(Editor* editor, Command_Source source) {
 
 void command_forward_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    TRANSFORM_POINTS([&](Contents_Iterator* it) { forward_line(editor->theme, it); });
+    TRANSFORM_POINTS([&](Contents_Iterator* it) { forward_line(buffer->mode, it); });
 }
 
 void command_backward_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(editor->theme, it); });
+    TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(buffer->mode, it); });
 }
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
@@ -491,7 +491,7 @@ static bool create_cursor_forward_line(Editor* editor, Buffer* buffer, Window_Un
     Contents_Iterator last_cursor_iterator =
         buffer->contents.iterator_at(window->cursors.last().point);
     Contents_Iterator new_cursor_iterator = last_cursor_iterator;
-    forward_line(editor->theme, &new_cursor_iterator);
+    forward_line(buffer->mode, &new_cursor_iterator);
     if (new_cursor_iterator.position != last_cursor_iterator.position) {
         Cursor cursor = {};
         cursor.point = new_cursor_iterator.position;
@@ -518,7 +518,7 @@ static bool create_cursor_backward_line(Editor* editor, Buffer* buffer, Window_U
     Contents_Iterator first_cursor_iterator =
         buffer->contents.iterator_at(window->cursors[0].point);
     Contents_Iterator new_cursor_iterator = first_cursor_iterator;
-    backward_line(editor->theme, &new_cursor_iterator);
+    backward_line(buffer->mode, &new_cursor_iterator);
     if (new_cursor_iterator.position != first_cursor_iterator.position) {
         Cursor cursor = {};
         cursor.point = new_cursor_iterator.position;
@@ -853,7 +853,7 @@ void command_create_cursors_lines_in_region(Editor* editor, Command_Source sourc
 
     Contents_Iterator iterator = buffer->contents.iterator_at(start);
     while (true) {
-        forward_line(editor->theme, &iterator);
+        forward_line(buffer->mode, &iterator);
         if (iterator.position >= end) {
             break;
         }
@@ -887,7 +887,7 @@ void command_cursors_align(Editor* editor, Command_Source source) {
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
 
-        uint64_t col = get_visual_column(editor->theme, iterator);
+        uint64_t col = get_visual_column(buffer->mode, iterator);
 
         if (i == 0 || col > max_column) {
             max_column = col;
@@ -918,7 +918,7 @@ void command_cursors_align(Editor* editor, Command_Source source) {
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
 
-        uint64_t col = get_visual_column(editor->theme, iterator);
+        uint64_t col = get_visual_column(buffer->mode, iterator);
         if (col == max_column) {
             continue;
         }

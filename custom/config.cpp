@@ -238,10 +238,6 @@ Key_Map create_key_map() {
 Theme create_theme() {
     Theme theme = {};
 
-    theme.indent_width = 4;
-    theme.tab_width = 4;
-    theme.use_tabs = false;
-
     theme.colors = mag::theme::solarized_dark;
 
     theme.faces.reserve(cz::heap_allocator(), 54);
@@ -319,10 +315,9 @@ Theme create_theme() {
                                        syntax::decoration_pinned_indicator()};
     theme.decorations = decorations;
 
-    static Overlay overlays[] = {
-        syntax::overlay_matching_region({-1, 237, 0}),
-        syntax::overlay_preferred_column({-1, 21, 0}, theme.tab_width, 100),
-        syntax::overlay_trailing_spaces({-1, 208, 0})};
+    static Overlay overlays[] = {syntax::overlay_matching_region({-1, 237, 0}),
+                                 syntax::overlay_preferred_column({-1, 21, 0}),
+                                 syntax::overlay_trailing_spaces({-1, 208, 0})};
     theme.overlays = overlays;
 
     theme.max_completion_results = 5;
@@ -472,7 +467,15 @@ static Key_Map* git_edit_key_map() {
 
 Mode get_mode(const Buffer& buffer) {
     Mode mode = {};
+
+    mode.indent_width = 4;
+    mode.tab_width = 4;
+    mode.use_tabs = false;
+
+    mode.preferred_column = 100;
+
     mode.next_token = default_next_token;
+
     switch (buffer.type) {
     case Buffer::DIRECTORY:
         mode.next_token = syntax::directory_next_token;

@@ -36,10 +36,10 @@ static Face overlay_preferred_column_get_face_and_advance(Buffer* buffer,
     } else {
         uint64_t offset = 1;
         if (ch == '\t') {
-            offset = data->tab_width;
+            offset = buffer->mode.tab_width;
         }
-        if (data->column <= data->preferred_column &&
-            data->column + offset > data->preferred_column) {
+        if (data->column <= buffer->mode.preferred_column &&
+            data->column + offset > buffer->mode.preferred_column) {
             face = data->face;
         }
         data->column += offset;
@@ -60,7 +60,7 @@ static void overlay_preferred_column_cleanup(void* data) {
     free(data);
 }
 
-Overlay overlay_preferred_column(Face face, uint64_t tab_width, uint64_t preferred_column) {
+Overlay overlay_preferred_column(Face face) {
     static const Overlay::VTable vtable = {
         overlay_preferred_column_start_frame,
         overlay_preferred_column_get_face_and_advance,
@@ -72,8 +72,6 @@ Overlay overlay_preferred_column(Face face, uint64_t tab_width, uint64_t preferr
     Data* data = (Data*)malloc(sizeof(Data));
     CZ_ASSERT(data);
     data->face = face;
-    data->tab_width = tab_width;
-    data->preferred_column = preferred_column;
     return {&vtable, data};
 }
 

@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include "buffer.hpp"
 #include "contents.hpp"
-#include "theme.hpp"
+#include "mode.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -49,14 +49,14 @@ void start_of_line_text(Contents_Iterator* iterator) {
     forward_through_whitespace(iterator);
 }
 
-uint64_t count_visual_columns(const Theme& theme,
+uint64_t count_visual_columns(const Mode& mode,
                               Contents_Iterator iterator,
                               uint64_t end,
                               uint64_t column) {
     while (iterator.position < end) {
         if (iterator.get() == '\t') {
-            column += theme.tab_width;
-            column -= column % theme.tab_width;
+            column += mode.tab_width;
+            column -= column % mode.tab_width;
         } else {
             column++;
         }
@@ -66,13 +66,13 @@ uint64_t count_visual_columns(const Theme& theme,
     return column;
 }
 
-uint64_t get_visual_column(const Theme& theme, Contents_Iterator iterator) {
+uint64_t get_visual_column(const Mode& mode, Contents_Iterator iterator) {
     uint64_t end = iterator.position;
     start_of_line(&iterator);
-    return count_visual_columns(theme, iterator, end);
+    return count_visual_columns(mode, iterator, end);
 }
 
-void go_to_visual_column(const Theme& theme, Contents_Iterator* iterator, uint64_t column) {
+void go_to_visual_column(const Mode& mode, Contents_Iterator* iterator, uint64_t column) {
     start_of_line(iterator);
 
     uint64_t current = 0;
@@ -83,8 +83,8 @@ void go_to_visual_column(const Theme& theme, Contents_Iterator* iterator, uint64
             break;
         } else if (ch == '\t') {
             uint64_t col = current;
-            col += theme.tab_width;
-            col -= col % theme.tab_width;
+            col += mode.tab_width;
+            col -= col % mode.tab_width;
             if (col > column) {
                 if (col - column <= column - current) {
                     iterator->advance();
@@ -99,21 +99,18 @@ void go_to_visual_column(const Theme& theme, Contents_Iterator* iterator, uint64
     }
 }
 
-void analyze_indent(const Theme& theme,
-                    uint64_t columns,
-                    uint64_t* num_tabs,
-                    uint64_t* num_spaces) {
-    if (theme.use_tabs) {
-        *num_tabs = columns / theme.tab_width;
-        *num_spaces = columns - *num_tabs * theme.tab_width;
+void analyze_indent(const Mode& mode, uint64_t columns, uint64_t* num_tabs, uint64_t* num_spaces) {
+    if (mode.use_tabs) {
+        *num_tabs = columns / mode.tab_width;
+        *num_spaces = columns - *num_tabs * mode.tab_width;
     } else {
         *num_tabs = 0;
         *num_spaces = columns;
     }
 }
 
-void forward_line(const Theme& theme, Contents_Iterator* iterator) {
-    uint64_t column = get_visual_column(theme, *iterator);
+void forward_line(const Mode& mode, Contents_Iterator* iterator) {
+    uint64_t column = get_visual_column(mode, *iterator);
 
     Contents_Iterator backup = *iterator;
     end_of_line(iterator);
@@ -125,11 +122,11 @@ void forward_line(const Theme& theme, Contents_Iterator* iterator) {
 
     iterator->advance();
 
-    go_to_visual_column(theme, iterator, column);
+    go_to_visual_column(mode, iterator, column);
 }
 
-void backward_line(const Theme& theme, Contents_Iterator* iterator) {
-    uint64_t column = get_visual_column(theme, *iterator);
+void backward_line(const Mode& mode, Contents_Iterator* iterator) {
+    uint64_t column = get_visual_column(mode, *iterator);
 
     Contents_Iterator backup = *iterator;
     start_of_line(iterator);
@@ -141,7 +138,7 @@ void backward_line(const Theme& theme, Contents_Iterator* iterator) {
 
     iterator->retreat();
 
-    go_to_visual_column(theme, iterator, column);
+    go_to_visual_column(mode, iterator, column);
 }
 
 void forward_word(Contents_Iterator* iterator) {
