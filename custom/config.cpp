@@ -9,6 +9,7 @@
 #include "basic/diff_commands.hpp"
 #include "basic/directory_commands.hpp"
 #include "basic/indent_commands.hpp"
+#include "basic/number_commands.hpp"
 #include "basic/search_commands.hpp"
 #include "basic/shift_commands.hpp"
 #include "basic/token_movement_commands.hpp"
@@ -114,6 +115,10 @@ Key_Map create_key_map() {
 
     BIND(key_map, "C-c a", command_cursors_align);
     BIND(key_map, "C-c l", command_create_cursors_lines_in_region);
+
+    BIND(key_map, "C-c #", command_insert_numbers);
+    BIND(key_map, "C-c +", command_increment_numbers);
+    BIND(key_map, "C-c -", command_decrement_numbers);
 
     BIND(key_map, "A-<", command_start_of_buffer);
     BIND(key_map, "A->", command_end_of_buffer);
