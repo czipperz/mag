@@ -21,7 +21,8 @@ static void run_ag(Client* client,
     buffer_name.append("ag ");
     buffer_name.append(query);
 
-    run_console_command(client, editor, directory, {args, (size_t)(3 + query_word)}, buffer_name, "Ag error");
+    run_console_command(client, editor, directory, {args, (size_t)(3 + query_word)}, buffer_name,
+                        "Ag error");
 }
 
 static char* copy_directory(const cz::String& buffer_directory) {
@@ -57,6 +58,7 @@ void command_search_in_current_directory(Editor* editor, Command_Source source) 
     *selected_buffer_id = source.client->selected_window()->id;
     source.client->show_dialog(editor, "ag: ", no_completion_engine,
                                command_search_in_current_directory_callback, selected_buffer_id);
+    source.client->fill_mini_buffer_with_selected_region(editor);
 }
 
 void command_search_in_current_directory_token_at_position(Editor* editor, Command_Source source) {

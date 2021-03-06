@@ -216,4 +216,33 @@ void Client::show_dialog(Editor* editor,
     setup_completion_cache(this, editor);
 }
 
+void Client::fill_mini_buffer_with_selected_region(Editor* editor) {
+    Transaction transaction = {};
+    CZ_DEFER(transaction.drop());
+
+    {
+        Window_Unified* window = selected_normal_window;
+        WITH_WINDOW_BUFFER(window);
+        if (!window->show_marks) {
+            return;
+        }
+
+        uint64_t start = window->cursors[0].start();
+        uint64_t end = window->cursors[0].end();
+        transaction.init(1, end - start);
+
+        Edit edit;
+        edit.value = buffer->contents.slice(transaction.value_allocator(),
+                                            buffer->contents.iterator_at(start), end);
+        edit.position = 0;
+        edit.flags = Edit::INSERT;
+        transaction.push(edit);
+    }
+
+    {
+        WITH_WINDOW_BUFFER(mini_buffer_window());
+        transaction.commit(buffer);
+    }
+}
+
 }
