@@ -139,6 +139,7 @@ static void command_lookup_prompt_callback(Editor* editor,
 void command_lookup_prompt(Editor* editor, Command_Source source) {
     source.client->show_dialog(editor, "Lookup: ", no_completion_engine,
                                command_lookup_prompt_callback, nullptr);
+    source.client->fill_mini_buffer_with_selected_region(editor);
 }
 
 static bool gnu_global_completion_engine(Editor* editor,
