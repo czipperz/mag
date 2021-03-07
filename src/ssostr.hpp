@@ -55,7 +55,7 @@ struct ShortStr {
 
     const char* buffer() const { return _buffer; }
 
-    void set_len(size_t len) { _buffer[MAX] = ((len << 1) | 1); }
+    void set_len(size_t len) { _buffer[MAX] = (char)((len << 1) | 1); }
     size_t len() const { return _buffer[MAX] >> 1; }
 
     bool is_short() const { return _buffer[MAX] & 1; }
