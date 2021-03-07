@@ -355,6 +355,7 @@ static Key_Map create_cpp_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-x C-f", clang_format::command_clang_format_buffer);
     BIND(key_map, "A-;", cpp::command_comment);
+    BIND(key_map, "A-q", cpp::command_reformat_comment);
     return key_map;
 }
 

@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include "command_macros.hpp"
 #include "editor.hpp"
+#include "match.hpp"
 #include "movement.hpp"
 #include "transaction.hpp"
 #include "window.hpp"
@@ -168,6 +169,209 @@ void command_comment(Editor* editor, Command_Source source) {
             transaction.push(edit);
         }
     }
+
+    transaction.commit(buffer);
+}
+
+static bool end_of_sentence(cz::Str word) {
+    return word.ends_with(".") || word.ends_with("!") || word.ends_with("?") ||
+           word.ends_with(".)") || word.ends_with("!)") || word.ends_with("?)");
+}
+
+void command_reformat_comment(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+
+    start_of_line_text(&iterator);
+    uint64_t column = get_visual_column(buffer->mode, iterator);
+
+    bool doc_comment;
+    if (looking_at(iterator, "// ")) {
+        doc_comment = false;
+    } else if (looking_at(iterator, "/// ")) {
+        doc_comment = true;
+    } else {
+        return;
+    }
+
+    uint64_t start_position = iterator.position;
+    while (1) {
+        uint64_t point = iterator.position;
+        backward_line(buffer->mode, &iterator);
+
+        start_of_line_text(&iterator);
+        uint64_t col = get_visual_column(buffer->mode, iterator);
+        if (col != column) {
+            break;
+        }
+        if (!looking_at(iterator, doc_comment ? "/// " : "// ")) {
+            break;
+        }
+
+        start_position = iterator.position;
+        if (point == iterator.position) {
+            break;
+        }
+    }
+
+    iterator.advance_to(start_position);
+    Contents_Iterator start = iterator;
+    start.advance(strlen(doc_comment ? "/// " : "// "));
+
+    cz::Buffer_Array buffer_array;
+    buffer_array.create();
+    CZ_DEFER(buffer_array.drop());
+
+    size_t words_len_sum = 0;
+    size_t extra_spaces = 0;
+
+    cz::Vector<SSOStr> words = {};
+    CZ_DEFER(words.drop(cz::heap_allocator()));
+    words.reserve(cz::heap_allocator(), 32);
+
+    uint64_t end_position = iterator.position;
+    while (1) {
+        // Skip comment start on this line.
+        while (!iterator.at_eob() && !isspace(iterator.get())) {
+            iterator.advance();
+        }
+        while (!iterator.at_eob() && isspace(iterator.get())) {
+            iterator.advance();
+        }
+
+        // Parse words on this line.
+        while (1) {
+            // Parse one word.
+            Contents_Iterator word_start = iterator;
+            while (!iterator.at_eob() && !isspace(iterator.get())) {
+                iterator.advance();
+            }
+
+            words.reserve(cz::heap_allocator(), 1);
+            SSOStr word =
+                buffer->contents.slice(buffer_array.allocator(), word_start, iterator.position);
+            words_len_sum += word.len();
+
+            // TODO: make "sentences end in two spaces" a config variable (in the Mode).
+            if (end_of_sentence(word.as_str())) {
+                extra_spaces++;
+            }
+
+            words.push(word);
+
+            // Skip to start of next word.
+            while (!iterator.at_eob()) {
+                char ch = iterator.get();
+                if (ch == '\n' || !isspace(ch)) {
+                    break;
+                }
+                iterator.advance();
+            }
+
+            // End of line.
+            if (iterator.at_eob() || iterator.get() == '\n') {
+                break;
+            }
+        }
+
+        // Check if the next line fits the pattern.
+        if (iterator.at_eob()) {
+            break;
+        }
+        iterator.advance();
+
+        start_of_line_text(&iterator);
+        uint64_t col = get_visual_column(buffer->mode, iterator);
+        if (col != column) {
+            break;
+        }
+        if (!looking_at(iterator, doc_comment ? "/// " : "// ")) {
+            break;
+        }
+
+        end_position = iterator.position;
+    }
+
+    iterator.retreat_to(end_position);
+    Contents_Iterator end = iterator;
+    end_of_line(&end);
+
+    if (words.len() == 0) {
+        return;
+    }
+
+    uint64_t tabs, spaces;
+    analyze_indent(buffer->mode, column, &tabs, &spaces);
+
+    size_t total_columns = extra_spaces + words_len_sum + words.len() - 1;
+    size_t word_column_limit =
+        buffer->mode.preferred_column - column - strlen(doc_comment ? "/// " : "// ");
+    size_t lines = (total_columns + word_column_limit - 1) / word_column_limit;
+    size_t word_column_goal = (total_columns + lines / 2) / lines;
+    word_column_goal = std::min(word_column_goal + 3, word_column_limit);
+
+    cz::String new_region = {};
+    CZ_DEFER(new_region.drop(cz::heap_allocator()));
+
+    size_t current_column = 0;
+    size_t previous_spaces = 0;
+    for (size_t i = 0; i < words.len(); ++i) {
+        auto& word = words[i];
+
+        size_t end_of_word_column = current_column + previous_spaces + word.len();
+
+        // Test if the word fits on this line.
+        if (end_of_word_column <= word_column_goal) {
+            // If so then add it.
+            new_region.reserve(cz::heap_allocator(), previous_spaces + word.len());
+            for (size_t j = 0; j < previous_spaces; ++j) {
+                new_region.push(' ');
+            }
+            new_region.append(word.as_str());
+
+            current_column += previous_spaces + word.len();
+        } else {
+            // Otherwise make a new line.
+            new_region.reserve(
+                cz::heap_allocator(),
+                1 + tabs + spaces + strlen(doc_comment ? "/// " : "// ") + word.len());
+
+            new_region.push('\n');
+            for (size_t j = 0; j < tabs; ++j) {
+                new_region.push('\t');
+            }
+            for (size_t j = 0; j < spaces; ++j) {
+                new_region.push(' ');
+            }
+            new_region.append(doc_comment ? "/// " : "// ");
+
+            new_region.append(word.as_str());
+
+            current_column = word.len();
+        }
+
+        previous_spaces = 1;
+        if (end_of_sentence(word.as_str())) {
+            previous_spaces = 2;
+        }
+    }
+
+    Transaction transaction;
+    CZ_DEFER(transaction.drop());
+    transaction.init(2, end.position - start.position + new_region.len());
+
+    Edit remove;
+    remove.value = buffer->contents.slice(transaction.value_allocator(), start, end.position);
+    remove.position = start.position;
+    remove.flags = Edit::REMOVE;
+    transaction.push(remove);
+
+    Edit insert;
+    insert.value = SSOStr::from_constant(new_region.clone(transaction.value_allocator()));
+    insert.position = start.position;
+    insert.flags = Edit::INSERT;
+    transaction.push(insert);
 
     transaction.commit(buffer);
 }
