@@ -4,12 +4,11 @@ Mag is a text editor.  It is designed to be fast and configurable.  Users of Mag
 edit the source code of the editor to customize it to fit their usages.  Mag is designed to be used
 primarily on C and C++ code, but coding in any language is supported.
 
-## Bultin features
+## Builtin features
 * Multiple cursors
-  - Intuitively integrated with search functionality.
-  - Edit multiple points at the same time.
+  - Intuitively integrated with search and syntax highlighting functionality.
 * Syntax highlighting for C/C++, Markdown, CSS, diff files, and more.
-* File name completion
+* File name completion (Control-P equivalent).
 * Built in support for `git grep`, `clang-format`, `man`, and other external programs.
 * Automatically updates files when edited externally.
 * Easy to add new commands and visual enhancements.
