@@ -67,6 +67,10 @@ endif()
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS})
 
+if (WIN32)
+  add_dependencies(${PROJECT_NAME} sdl2_dlls)
+endif()
+
 target_link_libraries(${PROJECT_NAME} tracy)
 
 if (NOT WIN32)
@@ -77,23 +81,47 @@ endif()
 # Include icon / logo
 if (WIN32)
   # Build logo.png into logo.ico
-  add_custom_target(icon COMMAND magick convert ${CMAKE_SOURCE_DIR}/res/logo.png -define icon:auto-resize=256,128,96,64,48,32,16 ${CMAKE_SOURCE_DIR}/res/logo.ico
-                    DEPENDS ${CMAKE_SOURCE_DIR}/res/logo.png)
+  add_custom_target(icon DEPENDS ${CMAKE_SOURCE_DIR}/res/logo.ico)
+  add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/res/logo.ico
+                     COMMAND magick convert ${CMAKE_SOURCE_DIR}/res/logo.png -define icon:auto-resize=256,128,96,64,48,32,16 ${CMAKE_SOURCE_DIR}/res/logo.ico
+                     DEPENDS ${CMAKE_SOURCE_DIR}/res/logo.png)
 else()
-  add_custom_target(icon COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/logo.png ${CMAKE_BINARY_DIR}
-                    DEPENDS ${CMAKE_SOURCE_DIR}/res/logo.png)
+  add_custom_target(icon DEPENDS ${CMAKE_BINARY_DIR}/logo.png)
+  add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/logo.png
+                     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/logo.png ${CMAKE_BINARY_DIR}
+                     DEPENDS ${CMAKE_SOURCE_DIR}/res/logo.png)
 endif()
 add_dependencies(${PROJECT_NAME} icon)
 
 if (WIN32)
   # Copy diff and clang_format binaries and dependencies
-  add_custom_target(copy_resources ALL
-      ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/diff.exe ${CMAKE_SOURCE_DIR}/res/diff_COPYING ${CMAKE_SOURCE_DIR}/res/libiconv2.dll ${CMAKE_SOURCE_DIR}/res/libintl3.dll
-      ${CMAKE_SOURCE_DIR}/res/clang-format.exe
-      ${CMAKE_BINARY_DIR})
+  add_custom_target(copy_resources
+      DEPENDS ${CMAKE_BINARY_DIR}/diff.exe
+              ${CMAKE_BINARY_DIR}/diff_COPYING
+              ${CMAKE_BINARY_DIR}/libiconv2.dll
+              ${CMAKE_BINARY_DIR}/libintl3.dll
+              ${CMAKE_BINARY_DIR}/clang-format.exe)
+
+  add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/diff.exe
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/diff.exe ${CMAKE_BINARY_DIR}
+      DEPENDS ${CMAKE_SOURCE_DIR}/res/diff.exe)
+  add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/diff_COPYING
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/diff_COPYING ${CMAKE_BINARY_DIR}
+      DEPENDS ${CMAKE_SOURCE_DIR}/res/diff_COPYING)
+  add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/libiconv2.dll
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/libiconv2.dll ${CMAKE_BINARY_DIR}
+      DEPENDS ${CMAKE_SOURCE_DIR}/res/libiconv2.dll)
+  add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/libintl3.dll
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/libintl3.dll ${CMAKE_BINARY_DIR}
+      DEPENDS ${CMAKE_SOURCE_DIR}/res/libintl3.dll)
+  add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/clang-format.exe
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/res/clang-format.exe ${CMAKE_BINARY_DIR}
+      DEPENDS ${CMAKE_SOURCE_DIR}/res/clang-format.exe)
 else()
   # diff is assumed to be installed on linux
+  add_custom_target(copy_resources)
 endif()
+add_dependencies(${PROJECT_NAME} copy_resources)
 
 # If tracy is enabled, disable building tests.
 if (TRACY_ENABLE)
