@@ -201,6 +201,8 @@ static size_t judge_word_column_goal_score(cz::Slice<SSOStr> words,
             // If we went over the limit then we had a giant word; that couldn't be fixed no matter
             // what goal column we adjust to.
             if (current_column <= word_column_limit) {
+                // I think that it's really ugly to have the start of a sentence dangle on the line
+                // before the sentence begins.  So I give that a big penalty.
                 size_t offset = previous_word_just_after_end_of_sentence ? 5 : 0;
 
                 score += (word_column_limit - current_column + offset) *
@@ -250,7 +252,8 @@ static size_t find_word_column_goal(cz::Slice<SSOStr> words, size_t word_column_
         if (score < min_score) {
             min_score = score;
             best_goal = word_column_goal;
-        } else if (max_column_length < 50) {
+        } else if (max_column_length <= word_column_limit / 2) {
+            // We could just combine lines at this point and be better off.
             break;
         }
 
