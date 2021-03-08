@@ -178,6 +178,88 @@ static bool end_of_sentence(cz::Str word) {
            word.ends_with(".)") || word.ends_with("!)") || word.ends_with("?)");
 }
 
+static size_t judge_word_column_goal_score(cz::Slice<SSOStr> words,
+                                           size_t word_column_limit,
+                                           size_t word_column_goal,
+                                           size_t* max_column_length) {
+    size_t score = 0;
+    size_t current_column = 0;
+    size_t previous_spaces = 0;
+    *max_column_length = 0;
+    bool previous_word_just_after_end_of_sentence = false;
+    bool next_word_just_after_end_of_sentence = false;
+    for (size_t i = 0; i < words.len; ++i) {
+        auto& word = words[i];
+
+        // Test if the word fits on this line.
+        if (current_column + previous_spaces + word.len() <= word_column_goal) {
+            // If so then add it.
+            current_column += previous_spaces + word.len();
+        } else {
+            // Otherwise make a new line.
+
+            // If we went over the limit then we had a giant word; that couldn't be fixed no matter
+            // what goal column we adjust to.
+            if (current_column <= word_column_limit) {
+                size_t offset = previous_word_just_after_end_of_sentence ? 5 : 0;
+
+                score += (word_column_limit - current_column + offset) *
+                         (word_column_limit - current_column + offset);
+
+                *max_column_length = std::max(*max_column_length, current_column);
+            }
+
+            current_column = word.len();
+
+            previous_word_just_after_end_of_sentence = false;
+            next_word_just_after_end_of_sentence = false;
+        }
+
+        previous_spaces = 1;
+        if (end_of_sentence(word.as_str())) {
+            previous_spaces = 2;
+
+            previous_word_just_after_end_of_sentence = false;
+            next_word_just_after_end_of_sentence = true;
+        } else {
+            previous_word_just_after_end_of_sentence = next_word_just_after_end_of_sentence;
+            next_word_just_after_end_of_sentence = false;
+        }
+    }
+
+    // Duplicate the code from end of line above as we need to add the score for the last line of
+    // the comment.
+    if (current_column <= word_column_limit) {
+        score += (word_column_limit - current_column) * (word_column_limit - current_column);
+
+        *max_column_length = std::max(*max_column_length, current_column);
+    }
+
+    return score;
+}
+
+static size_t find_word_column_goal(cz::Slice<SSOStr> words, size_t word_column_limit) {
+    size_t min_score = SIZE_MAX;
+    size_t best_goal = word_column_limit;
+
+    size_t word_column_goal = word_column_limit;
+    while (1) {
+        size_t max_column_length;
+        size_t score = judge_word_column_goal_score(words, word_column_limit, word_column_goal,
+                                                    &max_column_length);
+        if (score < min_score) {
+            min_score = score;
+            best_goal = word_column_goal;
+        } else if (max_column_length < 50) {
+            break;
+        }
+
+        word_column_goal = max_column_length - 1;
+    }
+
+    return best_goal;
+}
+
 void command_reformat_comment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -307,9 +389,8 @@ void command_reformat_comment(Editor* editor, Command_Source source) {
     size_t total_columns = extra_spaces + words_len_sum + words.len() - 1;
     size_t word_column_limit =
         buffer->mode.preferred_column - column - strlen(doc_comment ? "/// " : "// ");
-    size_t lines = (total_columns + word_column_limit - 1) / word_column_limit;
-    size_t word_column_goal = (total_columns + lines / 2) / lines;
-    word_column_goal = std::min(word_column_goal + 3, word_column_limit);
+
+    size_t word_column_goal = find_word_column_goal(words, word_column_limit);
 
     cz::String new_region = {};
     CZ_DEFER(new_region.drop(cz::heap_allocator()));
@@ -319,10 +400,8 @@ void command_reformat_comment(Editor* editor, Command_Source source) {
     for (size_t i = 0; i < words.len(); ++i) {
         auto& word = words[i];
 
-        size_t end_of_word_column = current_column + previous_spaces + word.len();
-
         // Test if the word fits on this line.
-        if (end_of_word_column <= word_column_goal) {
+        if (current_column + previous_spaces + word.len() <= word_column_goal) {
             // If so then add it.
             new_region.reserve(cz::heap_allocator(), previous_spaces + word.len());
             for (size_t j = 0; j < previous_spaces; ++j) {
