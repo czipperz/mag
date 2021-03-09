@@ -8,6 +8,7 @@
 #include "basic/cpp_commands.hpp"
 #include "basic/diff_commands.hpp"
 #include "basic/directory_commands.hpp"
+#include "basic/help_commands.hpp"
 #include "basic/indent_commands.hpp"
 #include "basic/number_commands.hpp"
 #include "basic/search_commands.hpp"
@@ -63,6 +64,9 @@ using namespace basic;
 
 Key_Map create_key_map() {
     Key_Map key_map = {};
+
+    BIND(key_map, "C-h", command_dump_key_map);
+
     BIND(key_map, "C-SPACE", command_set_mark);
     BIND(key_map, "C-@", command_set_mark);
     BIND(key_map, "C-x C-x", command_swap_mark_point);

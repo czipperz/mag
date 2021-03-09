@@ -16,6 +16,7 @@ enum Modifiers : uint_fast8_t {
 };
 
 namespace Key_Code_ {
+/// @AddKeyCode If you add more key codes, make sure to update help_commands.cpp's `append_key()`.
 enum Key_Code : uint16_t {
     BACKSPACE = (uint16_t)UCHAR_MAX + 1,
 
