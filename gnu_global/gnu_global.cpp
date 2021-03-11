@@ -82,6 +82,8 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
 
     Contents_Iterator iterator = start_of_line_position(buffer->contents, tag.line);
     window->cursors[0].point = iterator.position;
+
+    window->start_position = iterator.position;
 }
 
 void command_lookup_at_point(Editor* editor, Command_Source source) {
