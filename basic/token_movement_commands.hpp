@@ -27,6 +27,8 @@ void command_create_cursors_to_end_matching_token(Editor* editor, Command_Source
 void command_create_cursors_to_start_matching_token(Editor* editor, Command_Source source);
 void command_create_all_cursors_matching_token(Editor* editor, Command_Source source);
 
+void command_create_all_cursors_matching_token_or_search(Editor* editor, Command_Source source);
+
 void backward_up_pair(Buffer* buffer, Contents_Iterator* cursor);
 void forward_up_pair(Buffer* buffer, Contents_Iterator* cursor);
 

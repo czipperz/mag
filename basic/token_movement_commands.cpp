@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cz/sort.hpp>
 #include "command.hpp"
+#include "commands.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "match.hpp"
@@ -406,8 +407,7 @@ void command_forward_matching_token(Editor* editor, Command_Source source) {
     sort_cursors(window->cursors);
 }
 
-static Cursor create_cursor_with_offsets(Cursor cursor,
-                                         Contents_Iterator it) {
+static Cursor create_cursor_with_offsets(Cursor cursor, Contents_Iterator it) {
     Cursor new_cursor = {};
     new_cursor.local_copy_chain = cursor.local_copy_chain;
     new_cursor.point = it.position;
@@ -522,6 +522,14 @@ void command_create_all_cursors_matching_token(Editor* editor, Command_Source so
     }
 
     show_created_messages(source.client, created);
+}
+
+void command_create_all_cursors_matching_token_or_search(Editor* editor, Command_Source source) {
+    if (source.client->selected_window()->show_marks) {
+        return command_create_cursors_all_search(editor, source);
+    } else {
+        return command_create_all_cursors_matching_token(editor, source);
+    }
 }
 
 }
