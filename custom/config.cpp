@@ -426,6 +426,8 @@ static Key_Map create_path_key_map() {
 
     BIND(key_map, "C-l", command_path_up_directory);
     BIND(key_map, "A-i", command_insert_completion);
+    BIND(key_map, "\t", command_insert_completion);
+    BIND(key_map, "C-i", command_insert_completion);
     BIND(key_map, "C-j", command_insert_completion_and_submit_mini_buffer);
     BIND(key_map, "C-m", command_submit_mini_buffer);
     BIND(key_map, "\n", command_submit_mini_buffer);
