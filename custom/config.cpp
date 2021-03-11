@@ -415,7 +415,7 @@ static Key_Map* man_key_map() {
     return &key_map;
 }
 
-static Key_Map create_path_key_map() {
+static Key_Map create_mini_buffer_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-n", command_next_completion);
     BIND(key_map, "C-p", command_previous_completion);
@@ -434,8 +434,8 @@ static Key_Map create_path_key_map() {
     return key_map;
 }
 
-static Key_Map* path_key_map() {
-    static Key_Map key_map = create_path_key_map();
+static Key_Map* mini_buffer_key_map() {
+    static Key_Map key_map = create_mini_buffer_key_map();
     return &key_map;
 }
 
@@ -492,7 +492,7 @@ Mode get_mode(const Buffer& buffer) {
     case Buffer::TEMPORARY:
         if (buffer.name == "*client mini buffer*") {
             mode.next_token = syntax::path_next_token;
-            mode.key_map = path_key_map();
+            mode.key_map = mini_buffer_key_map();
         } else if (buffer.name.contains("*git grep ") || buffer.name.contains("*ag ")) {
             mode.next_token = syntax::search_next_token;
             mode.key_map = search_key_map();
