@@ -55,6 +55,8 @@ void command_git_find_file(Editor* editor, Command_Source source) {
     source.client->show_dialog(editor, "Git Find File: ", git_find_file_completion_engine,
                                command_git_find_file_response, directory);
     source.client->mini_buffer_completion_cache.engine_context.data = directory;
+    // Don't deallocate the directory in the completion engine context because
+    // we deallocate when the dialog is closed by passing it to show_dialog.
     source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void*) {};
 }
 
