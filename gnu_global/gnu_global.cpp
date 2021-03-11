@@ -43,6 +43,10 @@ const char* lookup(const char* directory, cz::Str query, Tag* tag) {
         return "Failed to run `global`";
     }
 
+    if (buffer.len() == 0) {
+        return "No global tag results";
+    }
+
     const char* file_name_start = buffer.find('\t');
     if (!file_name_start || file_name_start + 1 >= buffer.end()) {
         return "Invalid `global` output";
