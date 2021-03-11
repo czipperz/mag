@@ -98,12 +98,12 @@ Key_Map create_key_map() {
     BIND(key_map, "C-A-b", command_backward_token_pair);
     BIND(key_map, "C-A-f", command_forward_token_pair);
 
-    BIND(key_map, "C-c b", command_backward_matching_token);
-    BIND(key_map, "C-c f", command_forward_matching_token);
-    BIND(key_map, "C-c C-b", command_create_cursor_backward_matching_token);
-    BIND(key_map, "C-c C-f", command_create_cursor_forward_matching_token);
-    BIND(key_map, "C-c C-A-b", command_create_cursors_to_start_matching_token);
-    BIND(key_map, "C-c C-A-f", command_create_cursors_to_end_matching_token);
+    BIND(key_map, "A-j", command_backward_matching_token);
+    BIND(key_map, "A-q", command_forward_matching_token);
+    BIND(key_map, "C-j", command_create_cursor_backward_matching_token);
+    BIND(key_map, "C-q", command_create_cursor_forward_matching_token);
+    BIND(key_map, "C-A-j", command_create_cursors_to_start_matching_token);
+    BIND(key_map, "C-A-q", command_create_cursors_to_end_matching_token);
 
     BIND(key_map, "C-A-n", command_create_cursor_forward);
     BIND(key_map, "C-A-p", command_create_cursor_backward);
@@ -156,7 +156,6 @@ Key_Map create_key_map() {
     BIND(key_map, "A-m", command_open_line);
     BIND(key_map, "C-m", command_insert_newline_indent);
     BIND(key_map, "\n", command_insert_newline_indent);
-    BIND(key_map, "C-j", command_insert_newline_no_indent);
     BIND(key_map, "C-i", command_increase_indent);
     BIND(key_map, "\t", command_increase_indent);
     BIND(key_map, "A-i", command_decrease_indent);
@@ -360,7 +359,7 @@ static Key_Map create_cpp_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-x C-f", clang_format::command_clang_format_buffer);
     BIND(key_map, "A-;", cpp::command_comment);
-    BIND(key_map, "A-q", cpp::command_reformat_comment);
+    BIND(key_map, "A-h", cpp::command_reformat_comment);
     return key_map;
 }
 
