@@ -275,6 +275,7 @@ static void process_event(Server* server,
 
             KEY_CASE(SPACE, ' ');
             KEY_CASE(BACKSPACE, Key_Code::BACKSPACE);
+            KEY_CASE(INSERT, Key_Code::INSERT);
             KEY_CASE(RETURN, '\n');
             KEY_CASE(TAB, '\t');
             KEY_CASE(UP, Key_Code::UP);

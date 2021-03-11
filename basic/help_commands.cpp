@@ -40,6 +40,7 @@ static void append_key(cz::String* prefix, Key key) {
 #define KEY_CODE_CASE(KEY) CASE(Key_Code::KEY, #KEY)
 
         KEY_CODE_CASE(BACKSPACE);
+        KEY_CODE_CASE(INSERT);
 
         KEY_CODE_CASE(UP);
         KEY_CODE_CASE(DOWN);

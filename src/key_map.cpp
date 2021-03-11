@@ -60,6 +60,9 @@ static void parse_key(Key* key, size_t* i, cz::Str description) {
     } else if (d.starts_with("BACKSPACE")) {
         key->code = Key_Code::BACKSPACE;
         *i += 9;
+    } else if (d.starts_with("INSERT")) {
+        key->code = Key_Code::INSERT;
+        *i += 6;
     } else if (d.starts_with("UP")) {
         key->code = Key_Code::UP;
         *i += 2;
