@@ -75,6 +75,8 @@ Key_Map create_key_map() {
     BIND(key_map, "A-w", command_copy);
     BIND(key_map, "C-y", command_paste);
     BIND(key_map, "A-y", command_paste_previous);
+    BIND(key_map, "C-INSERT", command_copy);
+    BIND(key_map, "S-INSERT", command_paste);
 
     BIND(key_map, "C-f", command_forward_char);
     BIND(key_map, "C-b", command_backward_char);
