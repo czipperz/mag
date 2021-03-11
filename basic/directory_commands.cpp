@@ -41,7 +41,7 @@ static int create_directory(const char* path) {
         return 1;
     }
 #else
-    if (mkdir(path, 0644) == 0) {
+    if (mkdir(path, 0755) == 0) {
         return 0;
     }
 
