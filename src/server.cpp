@@ -133,7 +133,11 @@ struct File_Wrapper {
 #endif
 
 static void run_command(Command command, Editor* editor, Command_Source source) {
-    command.function(editor, source);
+    try {
+        command.function(editor, source);
+    } catch (std::exception& ex) {
+        source.client->show_message(ex.what());
+    }
 
 #ifndef NDEBUG
     static File_Wrapper log("log.txt", "a");
