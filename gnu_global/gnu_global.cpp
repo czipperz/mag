@@ -13,6 +13,13 @@
 namespace mag {
 namespace gnu_global {
 
+bool completion_engine(Editor* editor, Completion_Engine_Context* context, bool is_initial_frame) {
+    cz::Str args[] = {"global", "-c", context->query};
+    cz::Process_Options options;
+    options.working_directory = (const char*)context->data;
+    return run_command_for_completion_results(context, args, options, is_initial_frame);
+}
+
 const char* lookup(const char* directory, cz::Str query, Tag* tag) {
     cz::Input_File std_out_read;
     CZ_DEFER(std_out_read.close());
@@ -143,18 +150,25 @@ static void command_lookup_prompt_callback(Editor* editor,
 }
 
 void command_lookup_prompt(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Lookup: ", no_completion_engine,
-                               command_lookup_prompt_callback, nullptr);
-    source.client->fill_mini_buffer_with_selected_region(editor);
-}
+    char* directory;
+    {
+        WITH_SELECTED_BUFFER(source.client);
 
-static bool gnu_global_completion_engine(Editor* editor,
-                                         Completion_Engine_Context* context,
-                                         bool is_initial_frame) {
-    cz::Str args[] = {"global", "-c", context->query};
-    cz::Process_Options options;
-    options.working_directory = (const char*)context->data;
-    return run_command_for_completion_results(context, args, options, is_initial_frame);
+        directory = (char*)malloc(buffer->directory.len() + 1);
+        CZ_ASSERT(directory);
+        memcpy(directory, buffer->directory.buffer(), buffer->directory.len());
+        directory[buffer->directory.len()] = '\0';
+    }
+
+    source.client->show_dialog(editor, "Lookup: ", completion_engine,
+                               command_lookup_prompt_callback, nullptr);
+
+    source.client->mini_buffer_completion_cache.engine_context.data = directory;
+    source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* directory) {
+        free(directory);
+    };
+
+    source.client->fill_mini_buffer_with_selected_region(editor);
 }
 
 void command_complete_at_point(Editor* editor, Command_Source source) {
@@ -172,7 +186,7 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
     memcpy(directory, buffer->directory.buffer(), buffer->directory.len());
     directory[buffer->directory.len()] = '\0';
 
-    window->start_completion(gnu_global_completion_engine);
+    window->start_completion(completion_engine);
     window->completion_cache.engine_context.data = directory;
     window->completion_cache.engine_context.cleanup = [](void* directory) { free(directory); };
 }

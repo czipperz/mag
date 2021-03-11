@@ -25,5 +25,7 @@ void command_lookup_prompt(Editor* editor, Command_Source source);
 
 void command_complete_at_point(Editor* editor, Command_Source source);
 
+bool completion_engine(Editor* editor, Completion_Engine_Context* context, bool is_initial_frame);
+
 }
 }
