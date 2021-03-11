@@ -405,7 +405,7 @@ static bool look_for_type_keyword(Contents_Iterator iterator, Token* token, char
     switch (token->end - token->start) {
         LEN(3, CASE('i', "int"));
         LEN(4, {
-            CASE('a', "int");
+            CASE('a', "auto");
             CASE('b', "bool");
             CASE('c', "char");
             CASE('l', "long");
