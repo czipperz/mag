@@ -162,8 +162,8 @@ void Window::drop_(Window* window) {
 Window_Split* Window_Split::create(Window::Tag tag, Window* first, Window* second) {
     Window_Split* window = (Window_Split*)malloc(sizeof(Window_Split));
     window->parent = nullptr;
-    window->rows = 0;
-    window->cols = 0;
+    window->rows = first->rows + second->rows + 1;
+    window->cols = first->cols + second->cols + 1;
     window->tag = tag;
 
     window->first = first;

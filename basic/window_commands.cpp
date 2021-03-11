@@ -99,6 +99,16 @@ void split_window(Client* client, Window::Tag tag) {
     Window_Unified* top = client->selected_normal_window;
     Window_Unified* bottom = top->clone();
 
+    if (tag == Window::HORIZONTAL_SPLIT) {
+        size_t nr = (bottom->rows - 1) / 2;
+        top->rows = nr;
+        bottom->rows -= nr + 1;
+    } else {
+        size_t nr = (bottom->cols - 1) / 2;
+        top->cols = nr;
+        bottom->cols -= nr + 1;
+    }
+
     Window_Split* parent = Window_Split::create(tag, top, bottom);
 
     client->replace_window(top, parent);

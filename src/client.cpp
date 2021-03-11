@@ -161,6 +161,9 @@ void Client::replace_window(Window* o, Window* n) {
         this->window = n;
         n->parent = nullptr;
     }
+
+    n->rows = o->rows;
+    n->cols = o->cols;
 }
 
 void Client::show_message(cz::Str text) {
