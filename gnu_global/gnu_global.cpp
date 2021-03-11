@@ -163,6 +163,8 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
     source.client->show_dialog(editor, "Lookup: ", completion_engine,
                                command_lookup_prompt_callback, nullptr);
 
+    // If data wasn't cleared by show_dialog then it needs to be cleaned up now.
+    free(source.client->mini_buffer_completion_cache.engine_context.data);
     source.client->mini_buffer_completion_cache.engine_context.data = directory;
     source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* directory) {
         free(directory);
