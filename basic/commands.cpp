@@ -9,7 +9,7 @@
 #include "insert.hpp"
 #include "movement.hpp"
 #include "transaction.hpp"
-#include "visible_region_commands.hpp"
+#include "visible_region.hpp"
 
 namespace mag {
 namespace basic {
