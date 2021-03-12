@@ -357,7 +357,7 @@ static void command_directory_copy_path_callback(Editor* editor,
         return;
     }
 
-    cz::String new_path;
+    cz::String new_path = {};
     if (cz::path::is_absolute(query)) {
         new_path = query.duplicate_null_terminate(cz::heap_allocator());
     } else {
@@ -367,6 +367,15 @@ static void command_directory_copy_path_callback(Editor* editor,
         new_path.null_terminate();
     }
     CZ_DEFER(new_path.drop(cz::heap_allocator()));
+
+    if (cz::file::is_directory(new_path.buffer())) {
+        cz::Option<cz::Str> name = cz::path::name_component(path);
+        if (name.is_present) {
+            new_path.reserve(cz::heap_allocator(), name.value.len + 1);
+            new_path.append(name.value);
+            new_path.null_terminate();
+        }
+    }
 
     if (copy_path(&path, &new_path).is_err()) {
         client->show_message("Couldn't copy path");
