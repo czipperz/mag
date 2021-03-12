@@ -4,6 +4,7 @@
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
+#include "visible_region.hpp"
 #include "window.hpp"
 
 namespace mag {
@@ -38,6 +39,9 @@ void goto_jump(Editor* editor, Client* client, Jump* jump) {
     window->show_marks = false;
     window->cursors[0].point = jump->position;
     window->cursors[0].mark = window->cursors[0].point;
+
+    WITH_WINDOW_BUFFER(window);
+    center_in_window(window, buffer->contents.iterator_at(jump->position));
 }
 
 }
