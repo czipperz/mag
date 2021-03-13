@@ -126,6 +126,72 @@ void command_start_of_line_text(Editor* editor, Command_Source source) {
 void command_delete_backward_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
+    // See if there are any cusrors that are going to delete tabs.
+    cz::Slice<Cursor> cursors = window->cursors;
+    Contents_Iterator it = buffer->contents.start();
+    size_t tabs = 0;
+    for (size_t e = 0; e < cursors.len; ++e) {
+        if (cursors[e].point == 0) {
+            continue;
+        }
+
+        it.advance_to(cursors[e].point);
+
+        it.retreat();
+        if (it.get() == '\t') {
+            ++tabs;
+        }
+    }
+
+    // Treat tabs as if they were spaces when doing deletion.
+    int64_t offset = 0;
+    if (tabs > 0 && buffer->mode.tab_width > 1) {
+        Transaction transaction;
+        transaction.init(cursors.len + tabs, buffer->mode.tab_width - 1);
+        CZ_DEFER(transaction.drop());
+
+        char* buf = (char*)transaction.value_allocator().alloc({buffer->mode.tab_width - 1, 1});
+        memset(buf, ' ', buffer->mode.tab_width - 1);
+        SSOStr spaces = SSOStr::from_constant({buf, buffer->mode.tab_width - 1});
+
+        for (size_t c = 0; c < cursors.len; ++c) {
+            if (cursors[c].point == 0) {
+                continue;
+            }
+
+            it.advance_to(cursors[c].point);
+
+            it.retreat();
+
+            // Remove the character.
+            Edit remove;
+            remove.position = it.position + offset;
+            remove.value = SSOStr::from_char(it.get());
+            remove.flags = Edit::REMOVE;
+            transaction.push(remove);
+
+            // And if it was a tab insert a bunch of spaces.
+            if (it.get() == '\t') {
+                uint64_t column = get_visual_column(buffer->mode, it);
+                size_t len = buffer->mode.tab_width - 1 - column % buffer->mode.tab_width;
+
+                Edit insert;
+                insert.position = it.position + offset;
+                insert.value = SSOStr::from_constant({buf, len});
+                insert.flags = Edit::INSERT;
+                transaction.push(insert);
+
+                offset += buffer->mode.tab_width - 1;
+            }
+
+            --offset;
+        }
+
+        // Don't merge edits around tab replacement.
+        transaction.commit(buffer, nullptr);
+        return;
+    }
+
     if (buffer->check_last_committer(command_delete_backward_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
         Commit commit = buffer->commits[buffer->commit_index - 1];
