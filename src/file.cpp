@@ -336,6 +336,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     path.null_terminate();
 
     cz::String result = {};
+    result.reserve(allocator, path.len());
 
 #ifdef _WIN32
     // Todo: support symbolic links on Windows.
