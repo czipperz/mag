@@ -7,6 +7,7 @@
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "movement.hpp"
+#include "visible_region.hpp"
 #include "window_commands.hpp"
 
 namespace mag {
@@ -99,6 +100,8 @@ static void open_file_and_goto_position(Editor* editor,
     }
 
     window->cursors[0].point = cz::min(buffer->contents.len, iterator.position + column - 1);
+
+    center_in_window(window, buffer->contents.iterator_at(window->cursors[0].point));
 }
 
 void command_search_reload(Editor* editor, Command_Source source) {
