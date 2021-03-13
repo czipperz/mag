@@ -1,4 +1,6 @@
+#include <inttypes.h>
 #include <cz/defer.hpp>
+#include <cz/file.hpp>
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
 #include <cz/str.hpp>
@@ -7,6 +9,7 @@
 #include "command_macros.hpp"
 #include "custom/config.hpp"
 #include "file.hpp"
+#include "movement.hpp"
 #include "ncurses.hpp"
 #include "program_info.hpp"
 #include "sdl.hpp"
@@ -26,6 +29,9 @@ static int usage() {
 \n\
 Mag is a text editor.\n\
 \n\
+Files should be one of the following forms:\n\
+  FILE, FILE:LINE, or FILE:LINE:COLUMN.\n\
+\n\
 Options:\n\
   --help             View the help page.\n\
   --client=CLIENT    Launches a specified client.\n\
@@ -37,6 +43,80 @@ Available clients:\n"
             "  sdl       grapical window (default)\n",
             program_name);
     return 1;
+}
+
+/// Decode the argument as one of FILE, FILE:LINE, FILE:LINE:COLUMN and then open it.
+static void open_arg(Editor* editor, Client* client, cz::Str arg) {
+    // If the file exists then immediately open it.
+    if (cz::file::does_file_exist(arg.buffer)) {
+    open:
+        open_file(editor, client, arg);
+        return;
+    }
+
+    // Test FILE:LINE.  If these tests fail then it's not of this form.  If the FILE component
+    // doesn't exist then the file being opened just has a colon and a bunch of numbers in its path.
+    const char* colon = arg.rfind(':');
+    if (!colon) {
+        goto open;
+    }
+    for (size_t i = 1; colon[i] != '\0'; ++i) {
+        if (!isdigit(colon[i])) {
+            goto open;
+        }
+    }
+
+    uint64_t line = 0;
+    sscanf(colon + 1, "%" PRIu64, &line);
+
+    cz::String path = arg.slice_end(colon).duplicate_null_terminate(cz::heap_allocator());
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+
+    if (cz::file::does_file_exist(path.buffer())) {
+        // Argument is of form FILE:LINE.
+        open_file(editor, client, path);
+
+        WITH_SELECTED_BUFFER(client);
+        Contents_Iterator it = start_of_line_position(buffer->contents, line);
+        window->cursors[0].point = it.position;
+        window->cursors[0].mark = window->cursors[0].point;
+        return;
+    }
+
+    // Test FILE:LINE:COLUMN.  If these tests fail then it's not of this
+    // form.  If the FILE component doesn't exist then the file being
+    // opened just has a colon and a bunch of numbers in its path.
+    colon = path.rfind(':');
+    if (!colon) {
+        goto open;
+    }
+    for (size_t i = 1; colon[i] != '\0'; ++i) {
+        if (!isdigit(colon[i])) {
+            goto open;
+        }
+    }
+
+    uint64_t column = 0;
+    sscanf(colon + 1, "%" PRIu64, &column);
+
+    path.set_len(colon - path.buffer());
+    path.null_terminate();
+
+    if (cz::file::does_file_exist(path.buffer())) {
+        // Argument is of form FILE:LINE:COLUMN.
+        open_file(editor, client, path);
+
+        WITH_SELECTED_BUFFER(client);
+        Contents_Iterator it = start_of_line_position(buffer->contents, line);
+        Contents_Iterator eol = it;
+        end_of_line(&eol);
+        it.advance(std::min(column, eol.position - it.position));
+        window->cursors[0].point = it.position;
+        window->cursors[0].mark = window->cursors[0].point;
+        return;
+    }
+
+    goto open;
 }
 
 int mag_main(int argc, char** argv) {
@@ -131,7 +211,7 @@ int mag_main(int argc, char** argv) {
 
                 return usage();
             } else {
-                open_file(&server.editor, &client, arg);
+                open_arg(&server.editor, &client, arg);
             }
         }
 
