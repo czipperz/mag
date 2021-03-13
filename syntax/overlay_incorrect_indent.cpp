@@ -46,6 +46,10 @@ static Face overlay_incorrect_indent_get_face_and_advance(
         return {};
     }
 
+    if (!buffer->mode.use_tabs && ch == '\t') {
+        return data->face;
+    }
+
     if (!buffer->mode.use_tabs || ch == '\t') {
         return {};
     }
