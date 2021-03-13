@@ -152,18 +152,36 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::Str query) {
     while (true) {
         pattern.pieces.reserve(cz::heap_allocator(), 1);
 
-        const char* space = query.find(' ');
-        if (!space) {
-            pattern.pieces.push(query);
+        // A piece ends in either a space, forward slash, or the end of the query.
+        size_t i = 0;
+        for (; i < query.len; ++i) {
+            if (query[i] == ' ') {
+                break;
+            }
+
+            // Forward slashes break the piece but are still included in the piece.
+            if (query[i] == '/') {
+                ++i;
+                break;
+            }
+        }
+
+        // Add the piece.
+        pattern.pieces.push(query.slice_end(i));
+
+        // If no spaces or forward slashes were found, continue.
+        if (i == query.len) {
             break;
         }
 
-        pattern.pieces.push(query.slice_end(space));
-        while (space < query.end() && *space == ' ') {
-            ++space;
+        // Look for the start of the next piece.  Note that spaces are ignored whereas
+        // forward slashes are still included in pieces so we don't jump over them.
+        while (i < query.len && query[i] == ' ') {
+            ++i;
         }
 
-        query = query.slice_start(space);
+        // Advance.
+        query = query.slice_start(i);
     }
 
     return pattern;
