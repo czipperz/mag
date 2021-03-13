@@ -47,12 +47,18 @@ static int test_extensions(cz::String& path,
     for (size_t i = 0; i < src_extensions.len; ++i) {
         if (path.ends_with(src_extensions[i])) {
             path.set_len(path.len() - src_extensions[i].len);
+
+            // See if we can find the paired file.
             if (test_all_files(path, dest_extensions)) {
                 return 2;
             }
+
+            // If not we want to approximate by filling in the paired extension.
+            path.append(dest_extensions[i]);
             return 1;
         }
     }
+
     return 0;
 }
 
@@ -77,11 +83,14 @@ void command_alternate(Editor* editor, Command_Source source) {
 
     if (result == 0) {
         source.client->show_message("File doesn't have a supported extension");
-    } else if (result == 1) {
-        source.client->show_message("Couldn't find the alternate file");
-    } else if (result == 2) {
-        open_file(editor, source.client, path);
+        return;
     }
+
+    if (result == 1) {
+        source.client->show_message("Couldn't find the alternate file; guessing on the extension");
+    }
+
+    open_file(editor, source.client, path);
 }
 
 }
