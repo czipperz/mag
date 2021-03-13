@@ -120,7 +120,19 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         }
 
         if (top == AFTER_DOLLAR) {
-            token->type = Token_Type::IDENTIFIER;
+            Contents_Iterator it = start;
+            while (it.position < iterator->position) {
+                if (!isalnum(it.get()) && it.get() != '_') {
+                    break;
+                }
+                it.advance();
+            }
+
+            if (it.position == iterator->position) {
+                token->type = Token_Type::IDENTIFIER;
+            } else {
+                token->type = Token_Type::DEFAULT;
+            }
         } else if (at_start_of_statement && (matches(start, iterator->position, "if") ||
                                              matches(start, iterator->position, "elif") ||
                                              matches(start, iterator->position, "while") ||
