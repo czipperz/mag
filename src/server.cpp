@@ -27,7 +27,7 @@ static bool is_word_char(char c) {
 }
 static bool can_merge_insert(cz::Str str, char code) {
     char last = str[str.len - 1];
-    return is_word_char(last) && is_word_char(code);
+    return last == code || (is_word_char(last) && is_word_char(code));
 }
 
 static void command_insert_char(Editor* editor, Command_Source source) {
