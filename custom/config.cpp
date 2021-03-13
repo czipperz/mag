@@ -34,6 +34,7 @@
 #include "syntax/decoration_line_number.hpp"
 #include "syntax/decoration_pinned_indicator.hpp"
 #include "syntax/decoration_read_only_indicator.hpp"
+#include "syntax/overlay_incorrect_indent.hpp"
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
@@ -322,7 +323,8 @@ Theme create_theme() {
 
     static Overlay overlays[] = {syntax::overlay_matching_region({-1, 237, 0}),
                                  syntax::overlay_preferred_column({-1, 21, 0}),
-                                 syntax::overlay_trailing_spaces({-1, 208, 0})};
+                                 syntax::overlay_trailing_spaces({-1, 208, 0}),
+                                 syntax::overlay_incorrect_indent({-1, 208, 0})};
     theme.overlays = overlays;
 
     theme.max_completion_results = 5;
