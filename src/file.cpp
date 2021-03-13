@@ -313,7 +313,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
         if (ptr) {
             // If we're using the heap allocator then we don't
             // need to reallocate since realpath uses malloc.
-            if (allocator.vtable.alloc == cz::heap_allocator_alloc) {
+            if (allocator.vtable->alloc == cz::heap_allocator_alloc) {
                 size_t len = strlen(ptr);
                 return {ptr, len, len + 1};
             } else {
@@ -432,7 +432,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
             }
 
             // Retry with a bigger buffer.
-            if (res == temp_path.cap()) {
+            if ((size_t)res == temp_path.cap()) {
                 temp_path.reserve_total(cz::heap_allocator(), temp_path.cap() * 2);
                 continue;
             }
