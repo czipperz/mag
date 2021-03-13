@@ -333,9 +333,9 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     if (path[path.len() - 1] == '/') {
         path.pop();
     }
+    path.null_terminate();
 
     cz::String result = {};
-    result.reserve(allocator, path.len());
 
 #ifdef _WIN32
     // Todo: support symbolic links on Windows.
@@ -416,7 +416,6 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     // component is a symbolic link it and the ones before it are replaced by
     // the link's contents.  Thus we iterate the path in reverse.
 
-    size_t offset = 0;  // The offset from the end of the string including the null terminator.
     while (1) {
         // Try to read the link.
         ssize_t res;
@@ -439,7 +438,18 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
 
             // Store the result in path.
             temp_path.set_len(res);
-            std::swap(temp_path, path);
+            if (cz::path::is_absolute(temp_path)) {
+                temp_path.null_terminate();
+                std::swap(temp_path, path);
+            } else {
+                path.reserve(cz::heap_allocator(), 4 + temp_path.len());
+                path.append("/../");
+                path.append(temp_path);
+                size_t len = path.len();
+                cz::path::flatten(path.buffer(), &len);
+                path.set_len(len);
+                path.null_terminate();
+            }
 
             // Prevent infinite loops by stopping after a set count.
             if (dereference_count == max_dereferences) {
@@ -450,27 +460,27 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
             ++dereference_count;
         }
 
-        ++offset;
+        size_t offset = 0;
         // Advance through the text part of the component.
-        while (offset < path.len() && path[path.len() - offset] != '/') {
+        while (offset < path.len() && path[path.len() - offset - 1] != '/') {
             ++offset;
         }
         // Advance through forward slashes.
-        while (offset < path.len() && path[path.len() - offset] == '/') {
+        while (offset < path.len() && path[path.len() - offset - 1] == '/') {
             ++offset;
         }
 
         // Push the component onto the path.
-        result.reserve(cz::heap_allocator(), path.len() - offset);
+        result.reserve(allocator, offset);
         result.insert(0, path.slice_start(path.len() - offset));
-
-        // And chop the component off the path.
-        path.set_len(path.len() - offset);
-        path.null_terminate();
 
         if (offset >= path.len()) {
             break;
         }
+
+        // And chop the component off the path.
+        path.set_len(path.len() - offset);
+        path.null_terminate();
     }
 #endif
 
