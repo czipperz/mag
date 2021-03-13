@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <algorithm>
+#include <cz/allocator.hpp>
 #include <cz/bit_array.hpp>
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
@@ -11,11 +12,19 @@
 #include <cz/path.hpp>
 #include <cz/process.hpp>
 #include <cz/sort.hpp>
+#include <cz/string.hpp>
 #include <cz/try.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "config.hpp"
 #include "editor.hpp"
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <limits.h>
+#include <unistd.h>
+#endif
 
 namespace mag {
 
@@ -258,6 +267,218 @@ static cz::Result load_path(Editor* editor, char* path, size_t path_len, Buffer_
     return result;
 }
 
+cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
+    cz::String user_path_nt = user_path.duplicate_null_terminate(cz::heap_allocator());
+    CZ_DEFER(user_path_nt.drop(cz::heap_allocator()));
+
+    // Use the kernel functions to standardize the path if they work.
+#ifdef _WIN32
+    {
+        // Open the file in read mode.
+        HANDLE handle = CreateFile(user_path_nt.buffer(), GENERIC_READ, FILE_SHARE_READ, nullptr,
+                                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (handle != INVALID_HANDLE_VALUE) {
+            CZ_DEFER(CloseHandle(handle));
+
+            cz::String buffer = {};
+            buffer.reserve(allocator, MAX_PATH);
+            while (1) {
+                // Get the standardized file name.
+                DWORD res = GetFinalPathNameByHandleA(handle, buffer.buffer(), buffer.cap(), 0);
+
+                if (res <= 0) {
+                    // Failure so stop.
+                    break;
+                } else if (res < buffer.cap()) {
+                    // Success.
+                    buffer.set_len(res);
+
+                    // Remove the "\\?\" prefix.
+                    buffer.remove(0, 4);
+
+                    cz::path::convert_to_forward_slashes(buffer.buffer(), buffer.len());
+                    return buffer;
+                } else {
+                    // Retry with capacity as res.
+                    buffer.reserve(allocator, res);
+                }
+            }
+            buffer.drop(allocator);
+        }
+    }
+#elif _BSD_SOURCE || _XOPEN_SOURCE >= 500 || _XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED
+    // ^ Feature test for realpath.
+    {
+        char* ptr = realpath(user_path_nt.buffer(), nullptr);
+        if (ptr) {
+            // If we're using the heap allocator then we don't
+            // need to reallocate since realpath uses malloc.
+            if (allocator.vtable.alloc == cz::heap_allocator_alloc) {
+                size_t len = strlen(ptr);
+                return {ptr, len, len + 1};
+            } else {
+                CZ_DEFER(free(ptr));
+                return cz::Str{ptr}.duplicate_null_terminate(allocator);
+            }
+        }
+    }
+#endif
+
+    // Fallback to doing it ourselves.
+    cz::path::convert_to_forward_slashes(user_path_nt.buffer(), user_path_nt.len());
+
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    cz::path::make_absolute(user_path_nt, cz::heap_allocator(), &path);
+    if (path[path.len() - 1] == '/') {
+        path.pop();
+    }
+
+    cz::String result = {};
+    result.reserve(allocator, path.len());
+
+#ifdef _WIN32
+    // Todo: support symbolic links on Windows.
+
+    // Append drive as uppercase.
+    CZ_ASSERT(isalpha(path[0]));
+    CZ_ASSERT(path[1] == ':');
+    CZ_ASSERT(path[2] == '/');
+    result.push(toupper(path[0]));
+    result.push(':');
+
+    // Only append the forward slash now if there are no components.
+    if (path.len() == 3) {
+        result.push('/');
+    }
+
+    // Step through each component of the path and fix the capitalization.
+    size_t start = 3;
+    while (1) {
+        // Advance over forward slashes.
+        while (start < path.len() && path[start] == '/') {
+            ++start;
+        }
+        if (start == path.len()) {
+            break;
+        }
+
+        // Find end of component.
+        size_t end = start;
+        while (end < path.len() && path[end] != '/') {
+            ++end;
+        }
+
+        // Temporarily terminate the string at the end point.
+        char swap = '\0';
+        if (end < path.len()) {
+            std::swap(swap, path[end]);
+        }
+
+        // Find the file on disk.
+        WIN32_FIND_DATAA find_data;
+        HANDLE handle = FindFirstFile(path.buffer(), &find_data);
+
+        if (end < path.len()) {
+            std::swap(swap, path[end]);
+        }
+
+        // If the find failed then just use the rest of the path as is.
+        if (handle == INVALID_HANDLE_VALUE) {
+            cz::Str rest_of_path = path.slice_start(start);
+            result.reserve(allocator, rest_of_path.len + 1);
+            result.push('/');
+            result.append(rest_of_path);
+            break;
+        }
+
+        FindClose(handle);
+
+        // The find succeeded so get the proper component spelling and append it.
+        cz::Str proper_component = find_data.cFileName;
+        result.reserve(allocator, proper_component.len + 1);
+        result.push('/');
+        result.append(proper_component);
+
+        start = end;
+    }
+#else
+    // Path stores the components we have already dereferenced.
+    result.reserve(allocator, path.len());
+
+    // path stores the path we are trying to test.
+    // temp_path will store the result of one readlink call.
+    cz::String temp_path = {};
+    temp_path.reserve(cz::heap_allocator(), path.len());
+    CZ_DEFER(temp_path.drop(cz::heap_allocator()));
+
+    // Try to dereference each component of the path as a symbolic link.  If any
+    // component is a symbolic link it and the ones before it are replaced by
+    // the link's contents.  Thus we iterate the path in reverse.
+
+    size_t offset = 0;  // The offset from the end of the string including the null terminator.
+    while (1) {
+        // Try to read the link.
+        ssize_t res;
+        const size_t max_dereferences = 5;
+        size_t dereference_count = 0;
+        while (1) {
+            // Dereference the symbolic link.
+            res = readlink(path.buffer(), temp_path.buffer(), temp_path.cap());
+
+            // If we had an error, stop.
+            if (res < 0) {
+                break;
+            }
+
+            // Retry with a bigger buffer.
+            if (res == temp_path.cap()) {
+                temp_path.reserve_total(cz::heap_allocator(), temp_path.cap() * 2);
+                continue;
+            }
+
+            // Store the result in path.
+            temp_path.set_len(res);
+            std::swap(temp_path, path);
+
+            // Prevent infinite loops by stopping after a set count.
+            if (dereference_count == max_dereferences) {
+                break;
+            }
+
+            // Try dereferencing again.
+            ++dereference_count;
+        }
+
+        ++offset;
+        // Advance through the text part of the component.
+        while (offset < path.len() && path[path.len() - offset] != '/') {
+            ++offset;
+        }
+        // Advance through forward slashes.
+        while (offset < path.len() && path[path.len() - offset] == '/') {
+            ++offset;
+        }
+
+        // Push the component onto the path.
+        result.reserve(cz::heap_allocator(), path.len() - offset);
+        result.insert(0, path.slice_start(path.len() - offset));
+
+        // And chop the component off the path.
+        path.set_len(path.len() - offset);
+        path.null_terminate();
+
+        if (offset >= path.len()) {
+            break;
+        }
+    }
+#endif
+
+    result.reserve(allocator, 1);
+    result.null_terminate();
+    return result;
+}
+
 bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id) {
     if (path.len == 0) {
         return false;
@@ -341,17 +562,8 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
         return;
     }
 
-    cz::String fs_user_path = user_path.duplicate(cz::heap_allocator());
-    CZ_DEFER(fs_user_path.drop(cz::heap_allocator()));
-    cz::path::convert_to_forward_slashes(fs_user_path.buffer(), fs_user_path.len());
-
-    cz::String path = {};
+    cz::String path = standardize_path(cz::heap_allocator(), user_path);
     CZ_DEFER(path.drop(cz::heap_allocator()));
-    cz::path::make_absolute(fs_user_path, cz::heap_allocator(), &path);
-    if (path[path.len() - 1] == '/') {
-        path.pop();
-    }
-    path.reserve(cz::heap_allocator(), 2);
 
     Buffer_Id buffer_id;
     if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
