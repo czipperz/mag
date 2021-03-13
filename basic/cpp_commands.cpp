@@ -389,7 +389,6 @@ void command_reformat_comment(Editor* editor, Command_Source source) {
     uint64_t tabs, spaces;
     analyze_indent(buffer->mode, column, &tabs, &spaces);
 
-    size_t total_columns = extra_spaces + words_len_sum + words.len() - 1;
     size_t word_column_limit =
         buffer->mode.preferred_column - column - strlen(doc_comment ? "/// " : "// ");
 
