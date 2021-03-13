@@ -237,14 +237,6 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
         uint64_t new_tabs, new_spaces;
         analyze_indent(buffer->mode, new_columns, &new_tabs, &new_spaces);
 
-        // Go to between tabs and spaces.
-        while (!iterator.at_eob()) {
-            if (iterator.get() != '\t') {
-                break;
-            }
-            iterator.advance();
-        }
-
         if (data.invalid) {
             // Remove existing indent.
             Edit remove;
@@ -268,6 +260,14 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
 
             offset += insert.value.len() - remove.value.len();
         } else {
+            // Go to between tabs and spaces.
+            while (!iterator.at_eob()) {
+                if (iterator.get() != '\t') {
+                    break;
+                }
+                iterator.advance();
+            }
+
             bool adding = false, removing = false;
             uint64_t spaces_to_remove = 0, tabs_to_remove = 0;
             uint64_t spaces_to_add = 0, tabs_to_add = 0;
