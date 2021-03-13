@@ -32,8 +32,8 @@ static bool is_separator(char ch) {
 }
 
 static bool is_general(char ch) {
-    return ch != '"' && ch != '\'' && ch != '`' && ch != '$' && ch != '#' && ch != '/' &&
-           ch != '.' && !is_separator(ch) && !isspace(ch);
+    return ch != '"' && ch != '\'' && ch != '`' && ch != '$' && ch != '#' && !is_separator(ch) &&
+           !isspace(ch);
 }
 
 enum {
