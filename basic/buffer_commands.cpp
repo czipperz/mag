@@ -80,6 +80,7 @@ static void command_switch_buffer_callback(Editor* editor,
     }
 
     if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
+        client->show_message("Couldn't find the buffer to switch to");
         return;
     }
 
@@ -163,6 +164,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
         buffer_id = *(Buffer_Id*)data;
     } else {
         if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
+            client->show_message("Couldn't find the buffer to kill");
             return;
         }
     }
