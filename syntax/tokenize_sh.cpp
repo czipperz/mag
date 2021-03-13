@@ -142,7 +142,8 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             at_start_of_statement = true;
             goto ret;
         } else if (at_start_of_statement && (matches(start, iterator->position, "then") ||
-                                             matches(start, iterator->position, "do"))) {
+                                             matches(start, iterator->position, "do") ||
+                                             matches(start, iterator->position, "case"))) {
             token->type = Token_Type::OPEN_PAIR;
             at_start_of_statement = true;
             goto ret;
@@ -163,7 +164,8 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                                              matches(start, iterator->position, "export"))) {
             token->type = Token_Type::KEYWORD;
         } else if (at_start_of_statement && (matches(start, iterator->position, "fi") ||
-                                             matches(start, iterator->position, "done"))) {
+                                             matches(start, iterator->position, "done") ||
+                                             matches(start, iterator->position, "esac"))) {
             token->type = Token_Type::CLOSE_PAIR;
         } else {
             token->type = Token_Type::DEFAULT;
