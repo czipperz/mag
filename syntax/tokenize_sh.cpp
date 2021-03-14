@@ -95,6 +95,17 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
+    if (top == AFTER_DOLLAR && (isalnum(first_ch) || first_ch == '_')) {
+        while (!iterator->at_eob()) {
+            if (!isalnum(iterator->get()) && iterator->get() != '_') {
+                break;
+            }
+            iterator->advance();
+        }
+        token->type = Token_Type::IDENTIFIER;
+        goto ret;
+    }
+
     if (is_general(first_ch)) {
         if (first_ch == '\\' && !iterator->at_eob()) {
             iterator->advance();
@@ -119,25 +130,11 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             iterator->advance();
         }
 
-        if (top == AFTER_DOLLAR) {
-            Contents_Iterator it = start;
-            while (it.position < iterator->position) {
-                if (!isalnum(it.get()) && it.get() != '_') {
-                    break;
-                }
-                it.advance();
-            }
-
-            if (it.position == iterator->position) {
-                token->type = Token_Type::IDENTIFIER;
-            } else {
-                token->type = Token_Type::DEFAULT;
-            }
-        } else if (at_start_of_statement && (matches(start, iterator->position, "if") ||
-                                             matches(start, iterator->position, "elif") ||
-                                             matches(start, iterator->position, "while") ||
-                                             matches(start, iterator->position, "until") ||
-                                             matches(start, iterator->position, "."))) {
+        if (at_start_of_statement && (matches(start, iterator->position, "if") ||
+                                      matches(start, iterator->position, "elif") ||
+                                      matches(start, iterator->position, "while") ||
+                                      matches(start, iterator->position, "until") ||
+                                      matches(start, iterator->position, "."))) {
             token->type = Token_Type::KEYWORD;
             at_start_of_statement = true;
             goto ret;
