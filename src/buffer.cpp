@@ -9,6 +9,7 @@
 #include "cursor.hpp"
 #include "diff.hpp"
 #include "file.hpp"
+#include "match.hpp"
 #include "transaction.hpp"
 
 #ifdef _WIN32
@@ -82,9 +83,10 @@ static void insert(Contents* contents, uint64_t position, cz::Str str) {
     contents->insert(position, str);
 }
 
-static void remove(Contents* contents, uint64_t position, uint64_t len) {
-    CZ_ASSERT(position + len <= contents->len);
-    contents->remove(position, len);
+static void remove(Contents* contents, uint64_t position, cz::Str str) {
+    CZ_ASSERT(position + str.len <= contents->len);
+    CZ_DEBUG_ASSERT(looking_at(contents->iterator_at(position), str));
+    contents->remove(position, str.len);
 }
 
 static void apply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
@@ -93,7 +95,7 @@ static void apply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
         if (edit->flags & Edit::INSERT_MASK) {
             insert(&buffer->contents, edit->position, edit->value.as_str());
         } else {
-            remove(&buffer->contents, edit->position, edit->value.len());
+            remove(&buffer->contents, edit->position, edit->value.as_str());
         }
     }
 }
@@ -102,7 +104,7 @@ static void unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
     for (size_t i = edits.len; i-- > 0;) {
         const Edit* edit = &edits[i];
         if (edit->flags & Edit::INSERT_MASK) {
-            remove(&buffer->contents, edit->position, edit->value.len());
+            remove(&buffer->contents, edit->position, edit->value.as_str());
         } else {
             insert(&buffer->contents, edit->position, edit->value.as_str());
         }
