@@ -2,6 +2,7 @@
 
 #include <ctype.h>
 #include <Tracy.hpp>
+#include <cz/sort.hpp>
 #include "command_macros.hpp"
 #include "decoration.hpp"
 #include "movement.hpp"
@@ -80,6 +81,16 @@ static void draw_buffer_contents(Cell* cells,
                                  size_t* cursor_pos_y,
                                  size_t* cursor_pos_x) {
     ZoneScoped;
+
+// If we're in debug mode assert that we're sorted.  In release mode we just sort the cursors.
+#ifdef NDEBUG
+    cz::sort(window->cursors,
+             [](const Cursor& left, const Cursor& right) { return left->point < right->point; });
+#else
+    CZ_DEBUG_ASSERT(cz::is_sorted(window->cursors, [](const Cursor* left, const Cursor* right) {
+        return left->point < right->point;
+    }));
+#endif
 
     // Try to deal with out of bounds cursors and positions.
     if (window->start_position > buffer->contents.len) {
