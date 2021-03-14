@@ -585,7 +585,7 @@ static void render(SDL_Window* window,
             *total_rows = rows;
             *total_cols = cols;
 
-            size_t grid_size = rows * cols;
+            size_t grid_size = (size_t)rows * cols;
             cellss[0] = (Cell*)malloc(grid_size * sizeof(Cell));
             cellss[1] = (Cell*)malloc(grid_size * sizeof(Cell));
 
@@ -691,7 +691,7 @@ static void render(SDL_Window* window,
         SDL_LockTexture(*texture, nullptr, &pixels, &pitch);
         SDL_LockSurface(*surface);
         CZ_DEBUG_ASSERT(pitch == (*surface)->pitch);
-        memcpy(pixels, (*surface)->pixels, (*surface)->h * (*surface)->pitch);
+        memcpy(pixels, (*surface)->pixels, (size_t)(*surface)->h * (*surface)->pitch);
         SDL_UnlockSurface(*surface);
         SDL_UnlockTexture(*texture);
 
@@ -777,7 +777,7 @@ void setIcon(SDL_Window* sdlWindow) {
         HINSTANCE handle = ::GetModuleHandle(nullptr);
         HICON icon = ::LoadIcon(handle, "IDI_MAIN_ICON");
         if (icon != nullptr) {
-            ::SetClassLongPtr(hwnd, GCLP_HICON, reinterpret_cast<LONG>(icon));
+            ::SetClassLongPtr(hwnd, GCLP_HICON, (LONG)icon);
         }
     }
 #else

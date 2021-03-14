@@ -178,7 +178,7 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
         Invalid_Indent_Data data = detect_invalid_indent(buffer->mode, iterator);
 
         uint64_t new_columns = data.columns;
-        if (indent_offset < 0 && -indent_offset > new_columns) {
+        if (indent_offset < 0 && (uint64_t)-indent_offset > new_columns) {
             new_columns = 0;
         } else {
             new_columns += indent_offset;
@@ -228,7 +228,7 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
         Invalid_Indent_Data data = detect_invalid_indent(buffer->mode, iterator);
 
         uint64_t new_columns = data.columns;
-        if (indent_offset < 0 && -indent_offset > new_columns) {
+        if (indent_offset < 0 && (uint64_t)-indent_offset > new_columns) {
             new_columns = 0;
         } else {
             new_columns += indent_offset;

@@ -66,7 +66,7 @@ static void append_key(cz::String* prefix, Key key) {
         break;
 
     default:
-        prefix->push(key.code);
+        prefix->push((char)key.code);
     }
 }
 

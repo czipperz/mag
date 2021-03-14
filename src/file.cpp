@@ -284,7 +284,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
             buffer.reserve(allocator, MAX_PATH);
             while (1) {
                 // Get the standardized file name.
-                DWORD res = GetFinalPathNameByHandleA(handle, buffer.buffer(), buffer.cap(), 0);
+                DWORD res = GetFinalPathNameByHandleA(handle, buffer.buffer(), (DWORD)buffer.cap(), 0);
 
                 if (res <= 0) {
                     // Failure so stop.
