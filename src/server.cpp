@@ -7,6 +7,7 @@
 #include "command_macros.hpp"
 #include "custom/config.hpp"
 #include "insert.hpp"
+#include "movement.hpp"
 
 namespace mag {
 
@@ -33,6 +34,105 @@ static bool can_merge_insert(cz::Str str, char code) {
 static void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     char code = source.keys[0].code;
+
+    // Merge spaces into tabs.
+    if (buffer->mode.use_tabs && code == ' ') {
+        // See if there are any cursors we want to merge at.
+        cz::Slice<Cursor> cursors = window->cursors;
+        Contents_Iterator it = buffer->contents.start();
+        size_t merge_tab = 0;
+        for (size_t e = 0; e < cursors.len; ++e) {
+            // No space before so we can't merge.
+            if (cursors[e].point == 0) {
+                continue;
+            }
+
+            it.advance_to(cursors[e].point);
+
+            uint64_t column = get_visual_column(buffer->mode, it);
+
+            // If the character before is not a space we can't merge.
+            it.retreat();
+            if (it.get() != ' ') {
+                continue;
+            }
+
+            // And if we're not going to hit a tab level we can't use a tab.
+            if ((column + 1) % buffer->mode.tab_width == 0) {
+                ++merge_tab;
+            }
+        }
+
+        if (merge_tab > 0) {
+            Transaction transaction;
+            transaction.init(cursors.len + merge_tab, buffer->mode.tab_width);
+            CZ_DEFER(transaction.drop());
+
+            char* buf = (char*)transaction.value_allocator().alloc({buffer->mode.tab_width, 1});
+            memset(buf, ' ', buffer->mode.tab_width);
+
+            int64_t offset = 0;
+            if (cursors.len > 1) {
+                it.retreat_to(cursors[0].point);
+            }
+            for (size_t c = 0; c < cursors.len; ++c) {
+                if (cursors[c].point == 0) {
+                    continue;
+                }
+
+                it.advance_to(cursors[c].point);
+
+                uint64_t column = get_visual_column(buffer->mode, it);
+
+                // Get the previous character.
+                it.retreat();
+
+                // If the character before is not a space we can't merge.
+                // And if we're not going to hit a tab level we can't use a tab.
+                if (it.get() == ' ' && (column + 1) % buffer->mode.tab_width == 0) {
+                    uint64_t end = it.position + 1;
+                    while (!it.at_bob()) {
+                        it.retreat();
+                        if (it.get() != ' ') {
+                            it.advance();
+                            break;
+                        }
+                    }
+
+                    // Remove the spaces.
+                    Edit remove;
+                    remove.position = it.position + offset;
+                    remove.value = SSOStr::from_constant({buf, end - it.position});
+                    remove.flags = Edit::REMOVE;
+                    transaction.push(remove);
+
+                    // Insert the character.
+                    Edit insert;
+                    insert.position = it.position + offset;
+                    insert.value = SSOStr::from_char('\t');
+                    insert.flags = Edit::INSERT;
+                    transaction.push(insert);
+
+                    offset -= end - it.position;
+                    ++offset;
+                    continue;
+                }
+
+                // Insert the character.
+                Edit insert;
+                insert.position = it.position + offset;
+                insert.value = SSOStr::from_char(it.get());
+                insert.flags = Edit::INSERT;
+                transaction.push(insert);
+
+                ++offset;
+            }
+
+            // Don't merge edits around tab replacement.
+            transaction.commit(buffer, nullptr);
+            return;
+        }
+    }
 
     if (buffer->check_last_committer(command_insert_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
