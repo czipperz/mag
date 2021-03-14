@@ -67,6 +67,7 @@ Key_Map create_key_map() {
     Key_Map key_map = {};
 
     BIND(key_map, "C-h", command_dump_key_map);
+    BIND(key_map, "A-x", command_run_command_by_name);
 
     BIND(key_map, "C-SPACE", command_set_mark);
     BIND(key_map, "C-@", command_set_mark);

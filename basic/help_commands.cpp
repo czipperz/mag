@@ -1,4 +1,4 @@
-#include "cpp_commands.hpp"
+#include "help_commands.hpp"
 
 #include <ctype.h>
 #include "command_macros.hpp"
@@ -106,6 +106,94 @@ void command_dump_key_map(Editor* editor, Command_Source source) {
     add_key_map(&buffer->contents, &prefix, editor->key_map);
 
     source.client->set_selected_buffer(buffer_id);
+}
+
+/// Append all commands in the key map to the results.  All strings are allocated with `allocator`.
+static void get_command_names(cz::Vector<cz::Str>* results,
+                              cz::Allocator allocator,
+                              const Key_Map& key_map) {
+    for (size_t i = 0; i < key_map.bindings.len(); ++i) {
+        if (key_map.bindings[i].is_command) {
+            results->reserve(cz::heap_allocator(), 1);
+            results->push(cz::Str{key_map.bindings[i].v.command.string}.duplicate(allocator));
+        } else {
+            get_command_names(results, allocator, *key_map.bindings[i].v.map);
+        }
+    }
+}
+
+static bool command_completion_engine(Editor* editor,
+                                      Completion_Engine_Context* context,
+                                      bool is_initial_frame) {
+    ZoneScoped;
+
+    if (!is_initial_frame && context->results.len() > 0) {
+        return false;
+    }
+
+    context->results_buffer_array.clear();
+    context->results.set_len(0);
+    context->results.reserve(cz::heap_allocator(), 128);
+    context->results_buffer_array.allocator();
+
+    get_command_names(&context->results, context->results_buffer_array.allocator(),
+                      editor->key_map);
+
+    return true;
+}
+
+static Command_Function find_command(const Key_Map& key_map, cz::Str str) {
+    for (size_t i = 0; i < key_map.bindings.len(); ++i) {
+        if (key_map.bindings[i].is_command) {
+            if (str == key_map.bindings[i].v.command.string) {
+                return key_map.bindings[i].v.command.function;
+            }
+        } else {
+            Command_Function command = find_command(*key_map.bindings[i].v.map, str);
+            if (command) {
+                return command;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+static void command_run_command_by_name_callback(Editor* editor,
+                                                 Client* client,
+                                                 cz::Str str,
+                                                 void* data) {
+    Command_Function command;
+
+    {
+        Buffer_Id* buffer_id = (Buffer_Id*)data;
+        WITH_BUFFER(*buffer_id);
+        command = find_command(*buffer->mode.key_map, str);
+    }
+
+    if (!command) {
+        command = find_command(editor->key_map, str);
+    }
+
+    if (!command) {
+        client->show_message("No command found by that name");
+        return;
+    }
+
+    Command_Source source;
+    source.client = client;
+    source.keys = {};
+    source.previous_command = command_run_command_by_name;
+    command(editor, source);
+}
+
+void command_run_command_by_name(Editor* editor, Command_Source source) {
+    Buffer_Id* buffer_id = (Buffer_Id*)malloc(sizeof(Buffer_Id));
+    CZ_ASSERT(buffer_id);
+    *buffer_id = source.client->selected_window()->id;
+
+    source.client->show_dialog(editor, "Run command: ", command_completion_engine,
+                               command_run_command_by_name_callback, buffer_id);
 }
 
 }
