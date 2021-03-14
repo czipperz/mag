@@ -78,6 +78,18 @@ if (NOT WIN32)
   target_link_libraries(${PROJECT_NAME} dl)
 endif()
 
+# Run GNU Global if it is available.
+if (WIN32)
+  add_custom_target(update_global
+                    COMMAND ${CMAKE_SOURCE_DIR}/update-global.bat
+                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+else()
+  add_custom_target(update_global
+                    COMMAND ${CMAKE_SOURCE_DIR}/update-global.sh
+                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif()
+add_dependencies(${PROJECT_NAME} update_global)
+
 # Include icon / logo
 if (WIN32)
   # Build logo.png into logo.ico
