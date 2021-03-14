@@ -659,7 +659,9 @@ bool save_contents(const Contents* contents, const char* path, bool use_carriage
 
 bool save_contents_to_temp_file_cr(const Contents* contents, cz::Input_File* fd) {
     char temp_file_buffer[L_tmpnam];
-    tmpnam(temp_file_buffer);
+    if (!tmpnam(temp_file_buffer)) {
+        return false;
+    }
     if (!save_contents_cr(contents, temp_file_buffer)) {
         return false;
     }
@@ -669,7 +671,9 @@ bool save_contents_to_temp_file_cr(const Contents* contents, cz::Input_File* fd)
 
 bool save_contents_to_temp_file_no_cr(const Contents* contents, cz::Input_File* fd) {
     char temp_file_buffer[L_tmpnam];
-    tmpnam(temp_file_buffer);
+    if (!tmpnam(temp_file_buffer)) {
+        return false;
+    }
     if (!save_contents_no_cr(contents, temp_file_buffer)) {
         return false;
     }

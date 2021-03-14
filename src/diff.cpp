@@ -257,6 +257,11 @@ void reload_file(Client* client, Buffer* buffer) {
 
     char diff_file[L_tmpnam];
     {
+        if (!tmpnam(diff_file)) {
+            // Couldn't create a temp file.
+            return;
+        }
+
         cz::Process_Options options;
         if (!save_contents_to_temp_file(&buffer->contents, &options.std_in,
                                         buffer->use_carriage_returns)) {
@@ -265,7 +270,6 @@ void reload_file(Client* client, Buffer* buffer) {
         }
         CZ_DEFER(options.std_in.close());
 
-        tmpnam(diff_file);
         if (!options.std_out.open(diff_file)) {
             client->show_message("Error creating temp file to store diff in");
             return;
