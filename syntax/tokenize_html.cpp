@@ -1,6 +1,6 @@
 #include "tokenize_html.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
 #include "face.hpp"
@@ -10,7 +10,7 @@ namespace mag {
 namespace syntax {
 
 static bool islabelch(char ch) {
-    return isalnum(ch) || ch == '-' || ch == '_';
+    return cz::is_alnum(ch) || ch == '-' || ch == '_';
 }
 
 bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
@@ -133,7 +133,7 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
 
     while (!iterator->at_eob()) {
         char ch = iterator->get();
-        if (isspace(ch) || ch == '<' || ch == '>' || ch == '&') {
+        if (cz::is_space(ch) || ch == '<' || ch == '>' || ch == '&') {
             break;
         }
         iterator->advance();

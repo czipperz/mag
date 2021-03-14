@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
 #include <cz/heap.hpp>
@@ -61,7 +62,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg) {
         goto open;
     }
     for (size_t i = 1; colon[i] != '\0'; ++i) {
-        if (!isdigit(colon[i])) {
+        if (!cz::is_digit(colon[i])) {
             goto open;
         }
     }
@@ -91,7 +92,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg) {
         goto open;
     }
     for (size_t i = 1; colon[i] != '\0'; ++i) {
-        if (!isdigit(colon[i])) {
+        if (!cz::is_digit(colon[i])) {
             goto open;
         }
     }

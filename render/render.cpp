@@ -1,6 +1,6 @@
 #include "render.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include <Tracy.hpp>
 #include <cz/sort.hpp>
 #include "command_macros.hpp"

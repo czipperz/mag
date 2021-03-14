@@ -1,6 +1,6 @@
 #include "overlay_incorrect_indent.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "buffer.hpp"
 #include "overlay.hpp"
 #include "window.hpp"

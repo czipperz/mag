@@ -1,6 +1,6 @@
 #include "server.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include <Tracy.hpp>
 #include <cz/heap.hpp>
 #include "client.hpp"
@@ -24,7 +24,7 @@ Client Server::make_client() {
 }
 
 static bool is_word_char(char c) {
-    return isalnum(c) || c == '_';
+    return cz::is_alnum(c) || c == '_';
 }
 static bool can_merge_insert(cz::Str str, char code) {
     char last = str[str.len - 1];

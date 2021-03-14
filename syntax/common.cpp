@@ -1,6 +1,6 @@
 #include "common.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "contents.hpp"
 
 namespace mag {
@@ -13,7 +13,7 @@ bool advance_whitespace(Contents_Iterator* iterator) {
         }
 
         char ch = iterator->get();
-        if (!isspace(ch)) {
+        if (!cz::is_space(ch)) {
             return true;
         }
         iterator->advance();

@@ -1,6 +1,6 @@
 #include "tokenize_css.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
 #include "face.hpp"
@@ -10,10 +10,10 @@ namespace mag {
 namespace syntax {
 
 static bool is_id_start(char ch) {
-    return ch == '-' || ch == '_' || isalpha(ch);
+    return ch == '-' || ch == '_' || cz::is_alpha(ch);
 }
 static bool is_id_cont(char ch) {
-    return is_id_start(ch) || isdigit(ch);
+    return is_id_start(ch) || cz::is_digit(ch);
 }
 
 enum {
@@ -29,9 +29,9 @@ enum {
 };
 
 uint8_t hex_value(char ch) {
-    if (isdigit(ch)) {
+    if (cz::is_digit(ch)) {
         return ch - '0';
-    } else if (isupper(ch)) {
+    } else if (cz::is_upper(ch)) {
         return ch - 'A' + 10;
     } else {
         return ch - 'a' + 10;
@@ -71,9 +71,9 @@ bool css_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) 
         goto ret;
     }
 
-    if (*state == BEFORE_COLOR_HEX && isxdigit(first_ch)) {
+    if (*state == BEFORE_COLOR_HEX && cz::is_hex_digit(first_ch)) {
         Contents_Iterator end = *iterator;
-        while (!end.at_eob() && isxdigit(end.get())) {
+        while (!end.at_eob() && cz::is_hex_digit(end.get())) {
             end.advance();
         }
 
@@ -191,8 +191,8 @@ not_a_color:
         goto ret;
     }
 
-    if (isdigit(first_ch) || first_ch == '.') {
-        while (!iterator->at_eob() && (isdigit(iterator->get()) || iterator->get() == '.')) {
+    if (cz::is_digit(first_ch) || first_ch == '.') {
+        while (!iterator->at_eob() && (cz::is_digit(iterator->get()) || iterator->get() == '.')) {
         number_case:
             iterator->advance();
         }

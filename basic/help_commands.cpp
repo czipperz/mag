@@ -1,6 +1,6 @@
 #include "help_commands.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "file.hpp"
@@ -24,8 +24,8 @@ static void append_key(cz::String* prefix, Key key) {
         prefix->append("A-");
     }
     if (key.modifiers & Modifiers::SHIFT) {
-        if (key.code <= UCHAR_MAX && islower(key.code)) {
-            prefix->push(toupper(key.code));
+        if (key.code <= UCHAR_MAX && cz::is_lower(key.code)) {
+            prefix->push(cz::to_upper(key.code));
             return;
         } else {
             prefix->append("S-");

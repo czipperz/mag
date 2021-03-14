@@ -1,6 +1,6 @@
 #include "tokenize_color_test.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
 #include "face.hpp"
@@ -19,7 +19,7 @@ static bool advance_whitespace(Contents_Iterator* iterator, bool* use_color) {
         if (ch == '\n') {
             *use_color = false;
         }
-        if (!isspace(ch)) {
+        if (!cz::is_space(ch)) {
             return true;
         }
         iterator->advance();

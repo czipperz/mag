@@ -1,6 +1,6 @@
 #include "commands.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/option.hpp>
 #include <cz/sort.hpp>
@@ -1066,7 +1066,7 @@ void command_search_backward(Editor* editor, Command_Source source) {
 
 static void parse_number(cz::Str str, uint64_t* number) {
     for (size_t i = 0; i < str.len; ++i) {
-        if (!isdigit(str[i])) {
+        if (!cz::is_digit(str[i])) {
             break;
         }
         *number *= 10;

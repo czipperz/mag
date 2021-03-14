@@ -1,6 +1,6 @@
 #include "tokenize_sh.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "contents.hpp"
 #include "face.hpp"
 #include "match.hpp"
@@ -19,7 +19,7 @@ static bool advance_whitespace(Contents_Iterator* iterator, bool* at_start_of_st
         if (ch == '\n') {
             *at_start_of_statement = true;
         }
-        if (!isspace(ch)) {
+        if (!cz::is_space(ch)) {
             return true;
         }
         iterator->advance();
@@ -33,7 +33,7 @@ static bool is_separator(char ch) {
 
 static bool is_general(char ch) {
     return ch != '"' && ch != '\'' && ch != '`' && ch != '$' && ch != '#' && !is_separator(ch) &&
-           !isspace(ch);
+           !cz::is_space(ch);
 }
 
 enum {
@@ -95,9 +95,9 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
-    if (top == AFTER_DOLLAR && (isalnum(first_ch) || first_ch == '_')) {
+    if (top == AFTER_DOLLAR && (cz::is_alnum(first_ch) || first_ch == '_')) {
         while (!iterator->at_eob()) {
-            if (!isalnum(iterator->get()) && iterator->get() != '_') {
+            if (!cz::is_alnum(iterator->get()) && iterator->get() != '_') {
                 break;
             }
             iterator->advance();

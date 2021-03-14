@@ -1,6 +1,6 @@
 #include "search_commands.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/util.hpp>
@@ -35,7 +35,7 @@ static bool parse_number(Contents_Iterator* iterator, uint64_t* num) {
         if (ch == ':') {
             return true;
         }
-        if (!isdigit(ch)) {
+        if (!cz::is_digit(ch)) {
             return false;
         }
         *num *= 10;

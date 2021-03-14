@@ -1,6 +1,6 @@
 #include "clang_format.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include <stdio.h>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
@@ -60,7 +60,7 @@ static cz::Str stringify_xml(char* buffer, size_t len) {
 static void parse_number(uint64_t* num, size_t* index, cz::Str str) {
     *num = 0;
     for (; *index < str.len; ++*index) {
-        if (!isdigit(str[*index])) {
+        if (!cz::is_digit(str[*index])) {
             break;
         }
         *num *= 10;

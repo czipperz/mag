@@ -2,7 +2,7 @@
 
 #include "ncurses.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include <ncurses.h>
 #include <Tracy.hpp>
 #include <algorithm>

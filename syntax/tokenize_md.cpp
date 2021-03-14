@@ -1,6 +1,6 @@
 #include "tokenize_md.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "contents.hpp"
 #include "token.hpp"
 
@@ -23,7 +23,7 @@ static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* state) {
         }
 
         char ch = iterator->get();
-        if (!isspace(ch)) {
+        if (!cz::is_space(ch)) {
             return true;
         }
         if (ch == '\n') {

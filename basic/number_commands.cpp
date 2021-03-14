@@ -1,6 +1,6 @@
 #include "commands.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/option.hpp>
 #include <cz/util.hpp>
@@ -57,12 +57,12 @@ static void change_numbers(Editor* editor, Command_Source source, int difference
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
 
-        if (!iterator.at_bob() && !isdigit(iterator.get())) {
+        if (!iterator.at_bob() && !cz::is_digit(iterator.get())) {
             iterator.retreat();
         }
         while (!iterator.at_bob()) {
             char ch = iterator.get();
-            if (ch != '-' && !isdigit(ch)) {
+            if (ch != '-' && !cz::is_digit(ch)) {
                 iterator.advance();
                 break;
             }
@@ -76,7 +76,7 @@ static void change_numbers(Editor* editor, Command_Source source, int difference
                 break;
             }
             char ch = iterator.get();
-            if (ch != '-' && !isdigit(ch)) {
+            if (ch != '-' && !cz::is_digit(ch)) {
                 break;
             }
             buf[j] = ch;

@@ -1,6 +1,6 @@
 #include "tokenize_cpp.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include <Tracy.hpp>
 #include "contents.hpp"
 #include "match.hpp"
@@ -74,7 +74,7 @@ static bool skip_whitespace(Contents_Iterator* iterator,
                     return false;
                 }
 
-                while (*ch = iterator->get(), *ch == '\\' || isblank(*ch)) {
+                while (*ch = iterator->get(), *ch == '\\' || cz::is_blank(*ch)) {
                     iterator->advance();
                     if (iterator->at_eob()) {
                         return false;
@@ -86,7 +86,7 @@ static bool skip_whitespace(Contents_Iterator* iterator,
                 }
             }
 
-            if (!isspace(*ch)) {
+            if (!cz::is_space(*ch)) {
                 return true;
             }
 
@@ -114,7 +114,7 @@ static bool skip_whitespace(Contents_Iterator* iterator,
                     return false;
                 }
 
-                while (*ch = iterator->get(), *ch == '\\' || isblank(*ch)) {
+                while (*ch = iterator->get(), *ch == '\\' || cz::is_blank(*ch)) {
                     iterator->advance();
                     if (iterator->at_eob()) {
                         return false;
@@ -132,7 +132,7 @@ static bool skip_whitespace(Contents_Iterator* iterator,
                     *comment_state = COMMENT_START_OF_LINE;
                 }
             }
-            if (!isspace(*ch)) {
+            if (!cz::is_space(*ch)) {
                 return true;
             }
         }
@@ -140,7 +140,7 @@ static bool skip_whitespace(Contents_Iterator* iterator,
 }
 
 static bool is_identifier_continuation(char ch) {
-    return isalnum(ch) || ch == '_';
+    return cz::is_alnum(ch) || ch == '_';
 }
 
 #define LOAD_COMBINED_STATE(SC)                                          \
@@ -521,7 +521,7 @@ static void continue_inside_oneline_comment(Contents_Iterator* iterator,
             continue_into_next_line = false;
         } else if (ch == '\\') {
             continue_into_next_line = true;
-        } else if (isblank(ch)) {
+        } else if (cz::is_blank(ch)) {
         } else if (ch == '`') {
             *comment_state = COMMENT_MIDDLE_OF_LINE;
             break;
@@ -545,7 +545,7 @@ static void continue_around_oneline_comment(Contents_Iterator* iterator) {
             continue_into_next_line = false;
         } else if (ch == '\\') {
             continue_into_next_line = true;
-        } else if (isblank(ch)) {
+        } else if (cz::is_blank(ch)) {
         } else {
             continue_into_next_line = false;
         }
@@ -831,7 +831,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                     iterator->advance();
 
                     // Skip all spaces and then we eat newline in the outer loop.
-                    while (!iterator->at_eob() && isblank(iterator->get())) {
+                    while (!iterator->at_eob() && cz::is_blank(iterator->get())) {
                         iterator->advance();
                     }
 
@@ -872,7 +872,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         normal_state = START_OF_STATEMENT;
     }
 
-    if (isalpha(first_char) || first_char == '_') {
+    if (cz::is_alpha(first_char) || first_char == '_') {
         ZoneScopedN("identifier");
 
         Contents_Iterator start_iterator = *iterator;
@@ -1082,7 +1082,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         }
     }
 
-    if (ispunct(first_char)) {
+    if (cz::is_punct(first_char)) {
         ZoneScopedN("punctuation");
         token->start = iterator->position;
         iterator->advance();
@@ -1172,12 +1172,12 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         goto done;
     }
 
-    if (isdigit(first_char)) {
+    if (cz::is_digit(first_char)) {
         token->start = iterator->position;
         iterator->advance();
         while (!iterator->at_eob()) {
             char ch = iterator->get();
-            if (!isalnum(ch) && ch != '.') {
+            if (!cz::is_alnum(ch) && ch != '.') {
                 break;
             }
             iterator->advance();

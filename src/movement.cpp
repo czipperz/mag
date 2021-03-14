@@ -1,6 +1,6 @@
 #include "movement.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "buffer.hpp"
 #include "contents.hpp"
 #include "mode.hpp"
@@ -27,7 +27,7 @@ void end_of_line(Contents_Iterator* iterator) {
 }
 
 void forward_through_whitespace(Contents_Iterator* iterator) {
-    while (!iterator->at_eob() && isblank(iterator->get())) {
+    while (!iterator->at_eob() && cz::is_blank(iterator->get())) {
         iterator->advance();
     }
 }
@@ -39,7 +39,7 @@ void backward_through_whitespace(Contents_Iterator* iterator) {
         }
 
         iterator->retreat();
-    } while (isblank(iterator->get()));
+    } while (cz::is_blank(iterator->get()));
 
     iterator->advance();
 }
@@ -145,10 +145,10 @@ void forward_word(Contents_Iterator* iterator) {
     if (iterator->at_eob()) {
         return;
     }
-    while (!iterator->at_eob() && !isalnum(iterator->get())) {
+    while (!iterator->at_eob() && !cz::is_alnum(iterator->get())) {
         iterator->advance();
     }
-    while (!iterator->at_eob() && isalnum(iterator->get())) {
+    while (!iterator->at_eob() && cz::is_alnum(iterator->get())) {
         iterator->advance();
     }
     return;
@@ -160,14 +160,14 @@ void backward_word(Contents_Iterator* iterator) {
             return;
         }
         iterator->retreat();
-    } while (!isalnum(iterator->get()));
+    } while (!cz::is_alnum(iterator->get()));
 
     do {
         if (iterator->at_bob()) {
             return;
         }
         iterator->retreat();
-    } while (isalnum(iterator->get()));
+    } while (cz::is_alnum(iterator->get()));
 
     iterator->advance();
 }

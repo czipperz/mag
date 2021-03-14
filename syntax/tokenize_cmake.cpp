@@ -1,6 +1,6 @@
 #include "tokenize_cmake.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
 #include "face.hpp"
@@ -11,7 +11,7 @@ namespace mag {
 namespace syntax {
 
 static bool is_special(char ch) {
-    return ch == '"' || ch == '\'' || ch == '$' || ch == '{' || ch == '[' || ch == '(' || ch == '}' || ch == ']' || ch == ')' || ch == '#' || isspace(ch);
+    return ch == '"' || ch == '\'' || ch == '$' || ch == '{' || ch == '[' || ch == '(' || ch == '}' || ch == ']' || ch == ')' || ch == '#' || cz::is_space(ch);
 }
 
 bool cmake_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {

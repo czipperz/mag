@@ -1,6 +1,6 @@
 #include "tokenize_directory.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
 #include "face.hpp"

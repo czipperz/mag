@@ -1,6 +1,6 @@
 #include "overlay_trailing_spaces.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "overlay.hpp"
 #include "window.hpp"
 
@@ -23,7 +23,7 @@ static Face overlay_trailing_spaces_get_face_and_advance(
     void* _data) {
     Data* data = (Data*)_data;
 
-    if (!isblank(current_position_iterator.get())) {
+    if (!cz::is_blank(current_position_iterator.get())) {
         return {};
     }
 
@@ -42,7 +42,7 @@ static Face overlay_trailing_spaces_get_face_and_advance(
         if (current_position_iterator.at_eob() || current_position_iterator.get() == '\n') {
             return data->face;
         }
-        if (!isblank(current_position_iterator.get())) {
+        if (!cz::is_blank(current_position_iterator.get())) {
             return {};
         }
         current_position_iterator.advance();

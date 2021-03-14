@@ -1,6 +1,6 @@
 #include "capitalization_commands.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "command_macros.hpp"
 #include "transaction.hpp"
 #include "window.hpp"
@@ -27,7 +27,7 @@ void command_uppercase_letter(Editor* editor, Command_Source source) {
         transaction.push(remove);
 
         Edit insert;
-        insert.value = SSOStr::from_char(toupper(ch));
+        insert.value = SSOStr::from_char(cz::to_upper(ch));
         insert.position = point;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
@@ -55,7 +55,7 @@ void command_lowercase_letter(Editor* editor, Command_Source source) {
         transaction.push(remove);
 
         Edit insert;
-        insert.value = SSOStr::from_char(tolower(ch));
+        insert.value = SSOStr::from_char(cz::to_lower(ch));
         insert.position = point;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
@@ -96,7 +96,7 @@ void command_uppercase_region(Editor* editor, Command_Source source) {
         insert.value = remove.value.duplicate(transaction.value_allocator());
         cz::Str str = insert.value.as_str();
         for (size_t i = 0; i < str.len; ++i) {
-            ((char*)str.buffer)[i] = toupper(str.buffer[i]);
+            ((char*)str.buffer)[i] = cz::to_upper(str.buffer[i]);
         }
 
         insert.position = start.position;
@@ -141,7 +141,7 @@ void command_lowercase_region(Editor* editor, Command_Source source) {
         insert.value = remove.value.duplicate(transaction.value_allocator());
         cz::Str str = insert.value.as_str();
         for (size_t i = 0; i < str.len; ++i) {
-            ((char*)str.buffer)[i] = tolower(str.buffer[i]);
+            ((char*)str.buffer)[i] = cz::to_lower(str.buffer[i]);
         }
 
         insert.position = start.position;

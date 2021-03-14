@@ -1,6 +1,6 @@
 #include "tokenize_js.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
 #include "face.hpp"
@@ -11,10 +11,10 @@ namespace mag {
 namespace syntax {
 
 static bool is_id_start(char ch) {
-    return ch == '$' || ch == '_' || isalpha(ch);
+    return ch == '$' || ch == '_' || cz::is_alpha(ch);
 }
 static bool is_id_cont(char ch) {
-    return is_id_start(ch) || isdigit(ch);
+    return is_id_start(ch) || cz::is_digit(ch);
 }
 
 enum {

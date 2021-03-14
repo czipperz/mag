@@ -1,6 +1,6 @@
 #include "diff.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include <stdio.h>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
@@ -102,13 +102,13 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
             return result;
         }
 
-        while (isdigit(x = fw.get())) {
+        while (cz::is_digit(x = fw.get())) {
             line *= 10;
             line += x - '0';
             CZ_TRY(fw.advance());
         }
 
-        while (x = fw.get(), x == ',' || isdigit(x)) {
+        while (x = fw.get(), x == ',' || cz::is_digit(x)) {
             CZ_TRY(fw.advance());
         }
 

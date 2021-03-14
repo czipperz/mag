@@ -1,6 +1,6 @@
 #include "cpp_commands.hpp"
 
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "match.hpp"
@@ -78,12 +78,12 @@ void command_comment(Editor* editor, Command_Source source) {
                 } else {
                     Contents_Iterator s = start;
                     s.retreat();
-                    space_start = !isspace(s.get());
+                    space_start = !cz::is_space(s.get());
                 }
                 if (end.at_eob()) {
                     space_end = true;
                 } else {
-                    space_end = !isspace(end.get());
+                    space_end = !cz::is_space(end.get());
                 }
 
                 Edit edit_start;
@@ -318,10 +318,10 @@ void command_reformat_comment(Editor* editor, Command_Source source) {
     uint64_t end_position = iterator.position;
     while (1) {
         // Skip comment start on this line.
-        while (!iterator.at_eob() && !isspace(iterator.get())) {
+        while (!iterator.at_eob() && !cz::is_space(iterator.get())) {
             iterator.advance();
         }
-        while (!iterator.at_eob() && isspace(iterator.get())) {
+        while (!iterator.at_eob() && cz::is_space(iterator.get())) {
             iterator.advance();
         }
 
@@ -329,7 +329,7 @@ void command_reformat_comment(Editor* editor, Command_Source source) {
         while (1) {
             // Parse one word.
             Contents_Iterator word_start = iterator;
-            while (!iterator.at_eob() && !isspace(iterator.get())) {
+            while (!iterator.at_eob() && !cz::is_space(iterator.get())) {
                 iterator.advance();
             }
 
@@ -348,7 +348,7 @@ void command_reformat_comment(Editor* editor, Command_Source source) {
             // Skip to start of next word.
             while (!iterator.at_eob()) {
                 char ch = iterator.get();
-                if (ch == '\n' || !isspace(ch)) {
+                if (ch == '\n' || !cz::is_space(ch)) {
                     break;
                 }
                 iterator.advance();

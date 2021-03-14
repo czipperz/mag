@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cz/allocator.hpp>
 #include <cz/bit_array.hpp>
+#include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
 #include <cz/fs/directory.hpp>
@@ -342,10 +343,10 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     // Todo: support symbolic links on Windows.
 
     // Append drive as uppercase.
-    CZ_ASSERT(isalpha(path[0]));
+    CZ_ASSERT(cz::is_alpha(path[0]));
     CZ_ASSERT(path[1] == ':');
     CZ_ASSERT(path[2] == '/');
-    result.push(toupper(path[0]));
+    result.push(cz::to_upper(path[0]));
     result.push(':');
 
     // Only append the forward slash now if there are no components.

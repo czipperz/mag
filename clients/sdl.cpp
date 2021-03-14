@@ -4,7 +4,7 @@
 #include <SDL_image.h>
 #include <SDL_syswm.h>
 #include <SDL_ttf.h>
-#include <ctype.h>
+#include <cz/char_type.hpp>
 #include <inttypes.h>
 #include <Tracy.hpp>
 #include <command_macros.hpp>
@@ -341,7 +341,7 @@ static void process_event(Server* server,
 #undef UPPER
 
             default:
-                if (key.code <= UCHAR_MAX && isalpha(key.code)) {
+                if (key.code <= UCHAR_MAX && cz::is_alpha(key.code)) {
                     // It's already upper case
                 } else {
                     key.modifiers |= SHIFT;
@@ -350,7 +350,7 @@ static void process_event(Server* server,
             }
         } else {
             if (key.code <= UCHAR_MAX) {
-                key.code = tolower(key.code);
+                key.code = cz::to_lower(key.code);
             }
         }
 
