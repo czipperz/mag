@@ -100,6 +100,7 @@ struct Mouse_State {
 
     bool mouse_down;
     Screen_Position mouse_down_pos;
+    int mouse_down_data;
 };
 
 static void process_event(Server* server,
@@ -415,14 +416,47 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
                 spq.sp.window == mouse->mouse_down_pos.window) {
                 if (spq.sp.window->show_marks ||
                     spq.sp.position != mouse->mouse_down_pos.position) {
-                    spq.sp.window->show_marks = true;
-                    spq.sp.window->cursors[0].mark = mouse->mouse_down_pos.position;
-                    spq.sp.window->cursors[0].point = spq.sp.position;
+                    kill_extra_cursors(spq.sp.window, client);
+                    if (mouse->mouse_down_data == MOUSE_DOWN) {
+                        spq.sp.window->show_marks = true;
+                        spq.sp.window->cursors[0].mark = mouse->mouse_down_pos.position;
+                        spq.sp.window->cursors[0].point = spq.sp.position;
+                    } else {
+                        WITH_WINDOW_BUFFER(spq.sp.window);
+                        Contents_Iterator mark =
+                            buffer->contents.iterator_at(mouse->mouse_down_pos.position);
+                        Contents_Iterator point = buffer->contents.iterator_at(spq.sp.position);
+
+                        Contents_Iterator* start;
+                        Contents_Iterator* end;
+                        if (mark.position < point.position) {
+                            start = &mark;
+                            end = &point;
+                        } else {
+                            start = &point;
+                            end = &mark;
+                        }
+
+                        if (mouse->mouse_down_data == MOUSE_SELECT_WORD) {
+                            forward_char(start);
+                            backward_word(start);
+                            forward_word(end);
+                        } else {
+                            start_of_line(start);
+                            end_of_line(end);
+                            forward_char(end);
+                        }
+
+                        spq.sp.window->show_marks = true;
+                        spq.sp.window->cursors[0].mark = mark.position;
+                        spq.sp.window->cursors[0].point = point.position;
+                    }
                 }
             }
         } else if (spq.data == MOUSE_DOWN) {
             mouse->mouse_down = true;
             mouse->mouse_down_pos = spq.sp;
+            mouse->mouse_down_data = spq.data;
 
             if (spq.sp.found_window) {
                 Window_Unified* window = spq.sp.window;
@@ -435,7 +469,8 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
                 }
             }
         } else if (spq.data == MOUSE_SELECT_WORD) {
-            mouse->mouse_down = false;
+            mouse->mouse_down = true;
+            mouse->mouse_down_data = spq.data;
 
             if (spq.sp.found_window) {
                 Window_Unified* window = spq.sp.window;
@@ -456,7 +491,8 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
                 }
             }
         } else if (spq.data == MOUSE_SELECT_LINE) {
-            mouse->mouse_down = false;
+            mouse->mouse_down = true;
+            mouse->mouse_down_data = spq.data;
 
             if (spq.sp.found_window) {
                 Window_Unified* window = spq.sp.window;
