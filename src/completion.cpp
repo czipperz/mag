@@ -3,6 +3,7 @@
 #include <Tracy.hpp>
 #include <algorithm>
 #include <cz/defer.hpp>
+#include <cz/file.hpp>
 #include <cz/fs/directory.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
@@ -280,9 +281,13 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
             context->results.reserve(cz::heap_allocator(), 1);
             cz::String file = {};
             file.reserve(context->results_buffer_array.allocator(),
-                         prefix.len + iterator.file().len);
+                         prefix.len + iterator.file().len + 1);
             file.append(prefix);
             file.append(iterator.file());
+            file.null_terminate();
+            if (cz::file::is_directory(file.buffer())) {
+                file.push('/');
+            }
             context->results.push(file);
 
             auto result = iterator.advance();
