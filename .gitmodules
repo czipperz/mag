@@ -3,4 +3,4 @@
 	url = https://github.com/czipperz/cz
 [submodule "tracy"]
 	path = tracy
-	url = https://bitbucket.org/wolfpld/tracy
+	url = https://github.com/wolfpld/tracy
