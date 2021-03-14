@@ -29,7 +29,10 @@ struct Contents {
     SSOStr slice(cz::Allocator allocator, Contents_Iterator start, uint64_t end) const;
     void slice_into(Contents_Iterator start, uint64_t end, char* string) const;
     void slice_into(Contents_Iterator start, uint64_t end, cz::String* string) const;
-    void slice_into(cz::Allocator allocator, Contents_Iterator start, uint64_t end, cz::String* string) const;
+    void slice_into(cz::Allocator allocator,
+                    Contents_Iterator start,
+                    uint64_t end,
+                    cz::String* string) const;
 
     char get_once(uint64_t position) const;
     Contents_Iterator iterator_at(uint64_t position) const;
@@ -53,6 +56,14 @@ struct Contents_Iterator {
 
     void retreat_to(uint64_t new_position) { return retreat(position - new_position); }
     void advance_to(uint64_t new_position) { return advance(new_position - position); }
+
+    void go_to(uint64_t new_position) {
+        if (new_position < position) {
+            retreat_to(new_position);
+        } else {
+            advance_to(new_position);
+        }
+    }
 
     void retreat() {
         ZoneScopedN("retreat 1");
