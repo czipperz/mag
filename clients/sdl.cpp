@@ -851,8 +851,13 @@ void run(Server* server, Client* client) {
     }
     CZ_DEFER(IMG_Quit());
 
-    SDL_Window* window = SDL_CreateWindow("Mag", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                          800, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    const char* window_name = "Mag";
+#ifndef NDEBUG
+    window_name = "Mag [DEBUG]";
+#endif
+    SDL_Window* window =
+        SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 800,
+                         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (!window) {
         fprintf(stderr, "Failed to create a window: %s\n", SDL_GetError());
         return;
