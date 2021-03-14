@@ -152,8 +152,10 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
 
         char* buf = (char*)transaction.value_allocator().alloc({buffer->mode.tab_width - 1, 1});
         memset(buf, ' ', buffer->mode.tab_width - 1);
-        SSOStr spaces = SSOStr::from_constant({buf, buffer->mode.tab_width - 1});
 
+        if (cursors.len > 1) {
+            it.retreat_to(cursors[0].point);
+        }
         for (size_t c = 0; c < cursors.len; ++c) {
             if (cursors[c].point == 0) {
                 continue;
@@ -181,7 +183,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
                 insert.flags = Edit::INSERT;
                 transaction.push(insert);
 
-                offset += buffer->mode.tab_width - 1;
+                offset += len;
             }
 
             --offset;
