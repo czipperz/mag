@@ -1,7 +1,7 @@
 #include "render.hpp"
 
-#include <cz/char_type.hpp>
 #include <Tracy.hpp>
+#include <cz/char_type.hpp>
 #include <cz/sort.hpp>
 #include "command_macros.hpp"
 #include "decoration.hpp"
@@ -123,6 +123,7 @@ static void draw_buffer_contents(Cell* cells,
 
         bool recalculate_visible_end =
             window->start_position != window_cache->v.unified.visible_start;
+        uint64_t old_visible_start = window_cache->v.unified.visible_start;
         if (recalculate_visible_end) {
             // The start position variable was updated in a command so we recalculate the end
             // position.
@@ -132,9 +133,6 @@ static void draw_buffer_contents(Cell* cells,
             window_cache->v.unified.visible_start = window->start_position;
             window_cache->v.unified.visible_end = visible_end_iterator.position;
         }
-
-        // Save the start position iterator so we can use it for animating.
-        Contents_Iterator anim_iterator = iterator;
 
         // Ensure the cursor is visible
         uint64_t selected_cursor_position = window->cursors[0].point;
@@ -165,20 +163,21 @@ static void draw_buffer_contents(Cell* cells,
             true/* (std::abs((int64_t)window_cache->v.unified.visible_start -
                       (int64_t)anim_iterator.position) <= max_animation_distance) */ ) {
             // Setup animation.
+            Contents_Iterator anim_iterator = iterator;
             int64_t old_offset = window_cache->v.unified.animation.line_offset;
-            if (window_cache->v.unified.visible_start < anim_iterator.position) {
-                // Calculate the number of lines we moved up.
-                while (window_cache->v.unified.visible_start < anim_iterator.position) {
+            if (old_visible_start < anim_iterator.position) {
+                // Calculate the number of lines we moved down.
+                while (old_visible_start < anim_iterator.position) {
                     backward_char(&anim_iterator);
                     start_of_line(&anim_iterator);
-                    ++window_cache->v.unified.animation.line_offset;
+                    --window_cache->v.unified.animation.line_offset;
                 }
-            } else if (window_cache->v.unified.visible_start > anim_iterator.position) {
-                // Calculate the number of lines we moved down.
-                while (window_cache->v.unified.visible_start > anim_iterator.position) {
+            } else if (old_visible_start > anim_iterator.position) {
+                // Calculate the number of lines we moved up.
+                while (old_visible_start > anim_iterator.position) {
                     end_of_line(&anim_iterator);
                     forward_char(&anim_iterator);
-                    --window_cache->v.unified.animation.line_offset;
+                    ++window_cache->v.unified.animation.line_offset;
                 }
             }
 
