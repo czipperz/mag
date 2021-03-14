@@ -76,12 +76,12 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
 
     buffer->token_cache.update(buffer);
     Tokenizer_Check_Point check_point = {};
-    // Note: use start_position_iterator over window->start_position here
-    // because it accounts for animation that isn't tracked in the editor state.
-    buffer->token_cache.find_check_point(start_position_iterator.position, &check_point);
+    buffer->token_cache.find_check_point(window->start_position, &check_point);
 
     Contents_Iterator iterator = start_position_iterator;
-    iterator.retreat_to(check_point.position);
+    // Use `go_to` because if we're animating then
+    // `window->start_position` is much later than the start position.
+    iterator.go_to(check_point.position);
     uint64_t state = check_point.state;
     Token token;
 
