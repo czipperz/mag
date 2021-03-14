@@ -36,7 +36,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
     char code = source.keys[0].code;
 
     // Merge spaces into tabs.
-    if (buffer->mode.use_tabs && code == ' ') {
+    if (buffer->mode.use_tabs && code == ' ' && buffer->mode.tab_width > 0) {
         // See if there are any cursors we want to merge at.
         cz::Slice<Cursor> cursors = window->cursors;
         Contents_Iterator it = buffer->contents.start();
@@ -57,8 +57,18 @@ static void command_insert_char(Editor* editor, Command_Source source) {
                 continue;
             }
 
+            uint64_t end = it.position + 1;
+            while (!it.at_bob() && end - it.position + 1 < buffer->mode.tab_width) {
+                it.retreat();
+                if (it.get() != ' ') {
+                    it.advance();
+                    break;
+                }
+            }
+
             // And if we're not going to hit a tab level we can't use a tab.
-            if ((column + 1) % buffer->mode.tab_width == 0) {
+            if ((column + 1) % buffer->mode.tab_width == 0 &&
+                end - it.position + 1 == buffer->mode.tab_width) {
                 ++merge_tab;
             }
         }
@@ -68,60 +78,63 @@ static void command_insert_char(Editor* editor, Command_Source source) {
             transaction.init(cursors.len + merge_tab, buffer->mode.tab_width);
             CZ_DEFER(transaction.drop());
 
-            char* buf = (char*)transaction.value_allocator().alloc({buffer->mode.tab_width, 1});
-            memset(buf, ' ', buffer->mode.tab_width);
+            char* buf = (char*)transaction.value_allocator().alloc({buffer->mode.tab_width - 1, 1});
+            memset(buf, ' ', buffer->mode.tab_width - 1);
+            SSOStr spaces = SSOStr::from_constant({buf, buffer->mode.tab_width - 1});
 
             int64_t offset = 0;
             if (cursors.len > 1) {
                 it.retreat_to(cursors[0].point);
             }
             for (size_t c = 0; c < cursors.len; ++c) {
-                if (cursors[c].point == 0) {
-                    continue;
-                }
-
                 it.advance_to(cursors[c].point);
 
-                uint64_t column = get_visual_column(buffer->mode, it);
+                if (it.position > 0) {
+                    uint64_t column = get_visual_column(buffer->mode, it);
 
-                // Get the previous character.
-                it.retreat();
+                    uint64_t end = it.position;
+                    it.retreat();
 
-                // If the character before is not a space we can't merge.
-                // And if we're not going to hit a tab level we can't use a tab.
-                if (it.get() == ' ' && (column + 1) % buffer->mode.tab_width == 0) {
-                    uint64_t end = it.position + 1;
-                    while (!it.at_bob()) {
-                        it.retreat();
-                        if (it.get() != ' ') {
-                            it.advance();
-                            break;
+                    // If the character before is not a space we can't merge.
+                    // And if we're not going to hit a tab level we can't use a tab.
+                    if (it.get() == ' ' && (column + 1) % buffer->mode.tab_width == 0) {
+                        while (!it.at_bob()) {
+                            it.retreat();
+                            if (it.get() != ' ') {
+                                it.advance();
+                                break;
+                            }
+                        }
+
+                        if (end - it.position + 1 == buffer->mode.tab_width) {
+                            // Remove the spaces.
+                            Edit remove;
+                            remove.position = it.position + offset;
+                            remove.value = spaces;
+                            remove.flags = Edit::REMOVE;
+                            transaction.push(remove);
+
+                            // Insert the character.
+                            Edit insert;
+                            insert.position = it.position + offset;
+                            insert.value = SSOStr::from_char('\t');
+                            insert.flags = Edit::INSERT;
+                            transaction.push(insert);
+
+                            offset -= end - it.position;
+                            ++offset;
+                            continue;
                         }
                     }
 
-                    // Remove the spaces.
-                    Edit remove;
-                    remove.position = it.position + offset;
-                    remove.value = SSOStr::from_constant({buf, end - it.position});
-                    remove.flags = Edit::REMOVE;
-                    transaction.push(remove);
-
-                    // Insert the character.
-                    Edit insert;
-                    insert.position = it.position + offset;
-                    insert.value = SSOStr::from_char('\t');
-                    insert.flags = Edit::INSERT;
-                    transaction.push(insert);
-
-                    offset -= end - it.position;
-                    ++offset;
-                    continue;
+                    // Reset if we arent replacing with a tab.
+                    it.advance_to(end);
                 }
 
                 // Insert the character.
                 Edit insert;
                 insert.position = it.position + offset;
-                insert.value = SSOStr::from_char(it.get());
+                insert.value = SSOStr::from_char(code);
                 insert.flags = Edit::INSERT;
                 transaction.push(insert);
 
