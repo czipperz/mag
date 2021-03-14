@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <cz/defer.hpp>
 #include <cz/option.hpp>
+#include <cz/sort.hpp>
 #include <cz/util.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
@@ -39,6 +40,9 @@ void command_swap_mark_point(Editor* editor, Command_Source source) {
     for (size_t c = 0; c < cursors.len; ++c) {
         cz::swap(cursors[c].point, cursors[c].mark);
     }
+
+    cz::sort(cursors,
+             [](const Cursor* left, const Cursor* right) { return left->point < right->point; });
 }
 
 void command_forward_char(Editor* editor, Command_Source source) {
