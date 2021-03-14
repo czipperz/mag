@@ -90,6 +90,19 @@ static void draw_buffer_contents(Cell* cells,
         window->cursors[0].point = window->cursors[0].mark = buffer->contents.len;
     }
 
+    // Delete cursors at the same point.
+    for (size_t i = 0; i + 1 < window->cursors.len();) {
+        if (window->cursors[i].point == window->cursors[i + 1].point) {
+            if (window->cursors.len() == 2) {
+                kill_extra_cursors(window, client);
+            } else {
+                window->cursors.remove(i + 1);
+            }
+        } else {
+            ++i;
+        }
+    }
+
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     start_of_line(&iterator);
     if (window_cache) {
