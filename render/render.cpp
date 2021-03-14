@@ -85,7 +85,7 @@ static void draw_buffer_contents(Cell* cells,
 // If we're in debug mode assert that we're sorted.  In release mode we just sort the cursors.
 #ifdef NDEBUG
     cz::sort(window->cursors,
-             [](const Cursor& left, const Cursor& right) { return left->point < right->point; });
+             [](const Cursor* left, const Cursor* right) { return left->point < right->point; });
 #else
     CZ_DEBUG_ASSERT(cz::is_sorted(window->cursors, [](const Cursor* left, const Cursor* right) {
         return left->point < right->point;
