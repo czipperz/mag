@@ -122,6 +122,12 @@ static void draw_buffer_contents(Cell* cells,
         ZoneScopedN("update window cache");
 
         if (buffer->changes.len() != window_cache->v.unified.change_index) {
+            position_after_changes({buffer->changes.start() + window_cache->v.unified.change_index,
+                                    buffer->changes.len() - window_cache->v.unified.change_index},
+                                   &window_cache->v.unified.animation.visible_start);
+            position_after_changes({buffer->changes.start() + window_cache->v.unified.change_index,
+                                    buffer->changes.len() - window_cache->v.unified.change_index},
+                                   &window_cache->v.unified.visible_start);
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
         }
 
