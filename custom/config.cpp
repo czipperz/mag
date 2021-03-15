@@ -557,7 +557,13 @@ Mode get_mode(const Buffer& buffer) {
             mode.overlays = overlays;
         } else if (buffer.name.ends_with(".sh") || buffer.name.ends_with(".bash") ||
                    buffer.name.ends_with(".zsh") || buffer.name == ".bashrc" ||
-                   buffer.name == ".zshrc") {
+                   buffer.name == ".zshrc" || buffer.name == "Makefile") {
+            if (buffer.name == "Makefile") {
+                // Makefiles must use tabs so set that up automatically.
+                mode.tab_width = mode.indent_width;
+                mode.use_tabs = true;
+            }
+
             mode.next_token = syntax::sh_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
