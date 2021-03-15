@@ -7,6 +7,7 @@
 #include "overlay.hpp"
 #include "theme.hpp"
 #include "token.hpp"
+#include "visible_region.hpp"
 #include "window.hpp"
 
 namespace mag {
@@ -61,7 +62,7 @@ static void set_token_matches(Data* data) {
 
 static void overlay_matching_tokens_start_frame(Buffer* buffer,
                                                 Window_Unified* window,
-                                                Contents_Iterator start_position_iterator,
+                                                Contents_Iterator iterator,
                                                 void* _data) {
     ZoneScoped;
 
@@ -72,13 +73,18 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
         return;
     }
 
+    Contents_Iterator visible_end_iterator = iterator;
+    compute_visible_end(window, &visible_end_iterator);
+    if (visible_end_iterator.position < window->start_position) {
+        return;
+    }
+
     uint64_t cursor_point = window->cursors[0].point;
 
     buffer->token_cache.update(buffer);
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.find_check_point(window->start_position, &check_point);
 
-    Contents_Iterator iterator = start_position_iterator;
     // Use `go_to` because if we're animating then
     // `window->start_position` is much later than the start position.
     iterator.go_to(check_point.position);
