@@ -101,7 +101,7 @@ static bool decoration_line_number_append(Buffer* buffer,
     }
 
     Contents_Iterator iterator = buffer->contents.iterator_at(bd->position);
-    uint64_t max_offset = 1000000;
+    uint64_t max_offset = 200000;
     if (iterator.position < window->cursors[0].point) {
         uint64_t end = std::min(iterator.position + max_offset, window->cursors[0].point);
         while (iterator.position < end) {
