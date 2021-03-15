@@ -194,6 +194,9 @@ static void draw_buffer_contents(Cell* cells,
 
             window_cache->v.unified.animation.visible_start = iterator.position;
         }
+
+        buffer->token_cache.update(buffer);
+        buffer->token_cache.generate_check_points_until(buffer, iterator.position);
     } else {
         window->start_position = iterator.position;
     }
