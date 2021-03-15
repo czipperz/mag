@@ -4,10 +4,10 @@
 #include <SDL_image.h>
 #include <SDL_syswm.h>
 #include <SDL_ttf.h>
-#include <cz/char_type.hpp>
 #include <inttypes.h>
 #include <Tracy.hpp>
 #include <command_macros.hpp>
+#include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
@@ -868,6 +868,14 @@ void run(Server* server, Client* client) {
 
     SDL_Renderer* renderer =
         SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    // Retry with less requirements if it doesn't work the first time around.
+    if (!renderer) {
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    }
+    if (!renderer) {
+        renderer = SDL_CreateRenderer(window, -1, 0);
+    }
+
     if (!renderer) {
         fprintf(stderr, "Failed to create a renderer: %s\n", SDL_GetError());
         return;
