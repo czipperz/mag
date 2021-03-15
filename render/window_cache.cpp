@@ -63,7 +63,7 @@ bool cache_windows_check_points(Window_Cache* window_cache,
                 iterator = buffer->contents.start();
             }
 
-            while (1) {
+            for (size_t i = 0; i < 100; ++i) {
                 if (callback(callback_data)) {
                     return true;
                 }
@@ -72,6 +72,8 @@ bool cache_windows_check_points(Window_Cache* window_cache,
                     return false;
                 }
             }
+
+            return true;
         }
     }
 
