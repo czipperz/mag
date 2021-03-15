@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <Tracy.hpp>
+#include <algorithm>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
 #include <cz/write.hpp>
