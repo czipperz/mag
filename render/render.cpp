@@ -117,6 +117,8 @@ static void draw_buffer_contents(Cell* cells,
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     start_of_line(&iterator);
     if (window_cache) {
+        ZoneScopedN("update window cache");
+
         if (buffer->changes.len() != window_cache->v.unified.change_index) {
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
         }
@@ -168,6 +170,8 @@ static void draw_buffer_contents(Cell* cells,
 
         // Run animations.
         if (window_cache->v.unified.animation.speed != 0) {
+            ZoneScopedN("run animation");
+
             iterator.go_to(window_cache->v.unified.animation.visible_start);
 
             // Offset the start by the speed.

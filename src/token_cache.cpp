@@ -1,6 +1,7 @@
 #include "token_cache.hpp"
 
 #include <stdlib.h>
+#include <Tracy.hpp>
 #include <cz/bit_array.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
@@ -31,6 +32,8 @@ bool Token_Cache::find_check_point(uint64_t position, Tokenizer_Check_Point* cp)
 }
 
 bool Token_Cache::find_check_point(uint64_t position, size_t* index_out) {
+    ZoneScoped;
+
     size_t start = 0;
     size_t end = check_points.len();
     size_t result_index = check_points.len();
@@ -133,6 +136,8 @@ void Token_Cache::update(Buffer* buffer) {
 }
 
 void Token_Cache::generate_check_points_until(Buffer* buffer, uint64_t position) {
+    ZoneScoped;
+
     uint64_t state;
     Contents_Iterator iterator;
     if (check_points.len() > 0) {

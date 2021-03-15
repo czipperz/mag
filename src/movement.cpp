@@ -1,5 +1,6 @@
 #include "movement.hpp"
 
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include "buffer.hpp"
 #include "contents.hpp"
@@ -9,6 +10,8 @@
 namespace mag {
 
 void start_of_line(Contents_Iterator* iterator) {
+    ZoneScoped;
+
     do {
         if (iterator->at_bob()) {
             return;
@@ -21,6 +24,7 @@ void start_of_line(Contents_Iterator* iterator) {
 }
 
 void end_of_line(Contents_Iterator* iterator) {
+    ZoneScoped;
     while (!iterator->at_eob() && iterator->get() != '\n') {
         iterator->advance();
     }
@@ -185,6 +189,8 @@ void backward_char(Contents_Iterator* iterator) {
 }
 
 Contents_Iterator start_of_line_position(const Contents& contents, uint64_t lines) {
+    ZoneScoped;
+
     Contents_Iterator iterator = contents.start();
     while (!iterator.at_eob() && lines > 1) {
         if (iterator.get() == '\n') {
@@ -196,6 +202,8 @@ Contents_Iterator start_of_line_position(const Contents& contents, uint64_t line
 }
 
 bool get_token_at_position(Buffer* buffer, Contents_Iterator* token_iterator, Token* token) {
+    ZoneScoped;
+
     uint64_t position = token_iterator->position;
 
     buffer->token_cache.update(buffer);

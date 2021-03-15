@@ -1,7 +1,7 @@
 #include "server.hpp"
 
-#include <cz/char_type.hpp>
 #include <Tracy.hpp>
+#include <cz/char_type.hpp>
 #include <cz/heap.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -247,6 +247,8 @@ struct File_Wrapper {
 
 static void run_command(Command command, Editor* editor, Command_Source source) {
     try {
+        ZoneScoped;
+        ZoneText(command.string, strlen(command.string));
         command.function(editor, source);
     } catch (std::exception& ex) {
         source.client->show_message(ex.what());
