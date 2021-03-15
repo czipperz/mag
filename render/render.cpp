@@ -114,6 +114,8 @@ static void draw_buffer_contents(Cell* cells,
         }
     }
 
+    buffer->token_cache.update(buffer);
+
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     start_of_line(&iterator);
     if (window_cache) {
@@ -176,20 +178,52 @@ static void draw_buffer_contents(Cell* cells,
 
             // Offset the start by the speed.
             if (window_cache->v.unified.animation.speed < 0) {
-                for (float i = window_cache->v.unified.animation.speed; i < 0; ++i) {
-                    backward_char(&iterator);
-                    start_of_line(&iterator);
+                if (window_cache->v.unified.animation.speed > -(float)window->rows ||
+                    !buffer->token_cache.is_covered(window->start_position)) {
+                    // Until we're going really fast go line by line.
+                    for (float i = window_cache->v.unified.animation.speed; i < 0; ++i) {
+                        backward_char(&iterator);
+                        start_of_line(&iterator);
+                    }
+                } else {
+                    // Teleport almost all the way there.
+                    uint64_t pos = iterator.position;
+                    iterator.retreat_to(window->start_position);
+
+                    compute_visible_end(window, &iterator);
+
+                    if (iterator.position >= pos) {
+                        iterator.retreat_to(window->start_position);
+                    }
                 }
+
+                CZ_DEBUG_ASSERT(window->start_position == window_cache->v.unified.visible_start);
                 if (window_cache->v.unified.visible_start >= iterator.position) {
                     iterator.advance_to(window_cache->v.unified.visible_start);
                     window_cache->v.unified.animation.speed = 0;
                 }
             }
             if (window_cache->v.unified.animation.speed > 0) {
-                for (float i = window_cache->v.unified.animation.speed; i > 0; --i) {
-                    end_of_line(&iterator);
-                    forward_char(&iterator);
+                if (window_cache->v.unified.animation.speed < (float)window->rows ||
+                    !buffer->token_cache.is_covered(window->start_position)) {
+                    // Until we're going really fast go line by line.
+                    for (float i = window_cache->v.unified.animation.speed; i > 0; --i) {
+                        end_of_line(&iterator);
+                        forward_char(&iterator);
+                    }
+                } else {
+                    // Teleport almost all the way there.
+                    uint64_t pos = iterator.position;
+                    iterator.advance_to(window->start_position);
+
+                    compute_visible_start(window, &iterator);
+
+                    if (iterator.position < pos) {
+                        iterator.advance_to(window->start_position);
+                    }
                 }
+
+                CZ_DEBUG_ASSERT(window->start_position == window_cache->v.unified.visible_start);
                 if (window_cache->v.unified.visible_start <= iterator.position) {
                     iterator.retreat_to(window_cache->v.unified.visible_start);
                     window_cache->v.unified.animation.speed = 0;
@@ -198,12 +232,12 @@ static void draw_buffer_contents(Cell* cells,
 
             window_cache->v.unified.animation.visible_start = iterator.position;
         }
-
-        buffer->token_cache.update(buffer);
-        buffer->token_cache.generate_check_points_until(buffer, iterator.position);
     } else {
         window->start_position = iterator.position;
     }
+
+    // Note we run update above the if statement.
+    buffer->token_cache.generate_check_points_until(buffer, iterator.position);
 
     size_t y = 0;
     size_t x = 0;

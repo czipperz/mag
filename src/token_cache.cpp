@@ -185,4 +185,12 @@ bool Token_Cache::next_check_point(Buffer* buffer, Contents_Iterator* iterator, 
     return false;
 }
 
+bool Token_Cache::is_covered(uint64_t position) {
+    uint64_t cpp = 0;
+    if (check_points.len() > 0) {
+        cpp = check_points.last().position;
+    }
+    return position < cpp + 1024;
+}
+
 }

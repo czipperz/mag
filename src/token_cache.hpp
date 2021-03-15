@@ -32,6 +32,10 @@ struct Token_Cache {
     /// Update the cache based on recent changes
     void update(Buffer* buffer);
 
+    /// Check if a position is covered by a check point.
+    bool is_covered(uint64_t position);
+
+    /// Generate check points until `position` is covered.
     void generate_check_points_until(Buffer* buffer, uint64_t position);
 
     /// Add a check point onto the end
