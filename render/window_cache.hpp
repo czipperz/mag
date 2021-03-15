@@ -18,15 +18,8 @@ struct Window_Unified_Cache {
 
     // Animate when the visible region shifts.
     struct {
-        uint64_t max_offset;
-        int64_t line_offset;
         float speed;
-
-        // For performance reasons, cache the visible region position of the last frame.
-        bool has_cache;
-        size_t cached_change_index;
-        int64_t cached_line_offset;
-        Contents_Iterator cached_iterator;
+        uint64_t visible_start;
     } animation;
 };
 

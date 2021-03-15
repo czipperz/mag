@@ -121,12 +121,9 @@ static void draw_buffer_contents(Cell* cells,
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
         }
 
-        bool recalculate_visible_end =
-            window->start_position != window_cache->v.unified.visible_start;
-        uint64_t old_visible_start = window_cache->v.unified.visible_start;
-        if (recalculate_visible_end) {
-            // The start position variable was updated in a command so we recalculate the end
-            // position.
+        if (window->start_position != window_cache->v.unified.visible_start) {
+            // The start position variable was updated in a
+            // command so we recalculate the end position.
             Contents_Iterator visible_end_iterator =
                 buffer->contents.iterator_at(window->start_position);
             compute_visible_end(window, &visible_end_iterator);
@@ -154,131 +151,48 @@ static void draw_buffer_contents(Cell* cells,
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
         }
 
-        // Don't animate movements over a massive difference as it's too slow.
-        // uint64_t max_animation_distance = 10000000;
-
-        // Start animating when the visible end was manually
-        // changed or the cursor was moved off screen.
-        if ((recalculate_visible_end || window->start_position != iterator.position) &&
-            true/* (std::abs((int64_t)window_cache->v.unified.visible_start -
-                      (int64_t)anim_iterator.position) <= max_animation_distance) */ ) {
-            // Setup animation.
-            Contents_Iterator anim_iterator = iterator;
-            int64_t old_offset = window_cache->v.unified.animation.line_offset;
-            if (old_visible_start < anim_iterator.position) {
-                // Calculate the number of lines we moved down.
-                while (old_visible_start < anim_iterator.position) {
-                    backward_char(&anim_iterator);
-                    start_of_line(&anim_iterator);
-                    --window_cache->v.unified.animation.line_offset;
-                }
-            } else if (old_visible_start > anim_iterator.position) {
-                // Calculate the number of lines we moved up.
-                while (old_visible_start > anim_iterator.position) {
-                    end_of_line(&anim_iterator);
-                    forward_char(&anim_iterator);
-                    ++window_cache->v.unified.animation.line_offset;
-                }
-            }
-
-            // If we're animating and the user moves the buffer in the opposite
-            // direction then we stop the animation already occurring.  Note that
-            // we don't reset the line offset so the animation looks continuous.
-            if (old_offset < 0 && window_cache->v.unified.animation.line_offset > 0 ||
-                old_offset > 0 && window_cache->v.unified.animation.line_offset < 0) {
-                window_cache->v.unified.animation.max_offset = 0;
+        // Setup animation.
+        if (window_cache->v.unified.animation.visible_start < iterator.position) {
+            if (window_cache->v.unified.animation.speed < 0) {
                 window_cache->v.unified.animation.speed = 0;
             }
-
-            window_cache->v.unified.animation.max_offset =
-                std::max(window_cache->v.unified.animation.max_offset,
-                         (uint64_t)std::abs(window_cache->v.unified.animation.line_offset));
-        }
-
-        window->start_position = iterator.position;
-
-        // Tick animations moving down.
-        if (window_cache->v.unified.animation.line_offset < 0) {
-            // If we're jumping a bunch of lines slow down at the end.
-            if (window_cache->v.unified.animation.max_offset > 100 &&
-                -window_cache->v.unified.animation.line_offset * 3 <=
-                    window_cache->v.unified.animation.max_offset) {
-                window_cache->v.unified.animation.speed /= 1.3f;
-                window_cache->v.unified.animation.speed -= 2;
-                window_cache->v.unified.animation.speed =
-                    std::max(window_cache->v.unified.animation.speed, 2.0f);
-            } else {
-                window_cache->v.unified.animation.speed += 2;
-                window_cache->v.unified.animation.speed *= 1.3f;
+            window_cache->v.unified.animation.speed += 2;
+            window_cache->v.unified.animation.speed *= 1.3f;
+        } else if (window_cache->v.unified.animation.visible_start > iterator.position) {
+            if (window_cache->v.unified.animation.speed > 0) {
+                window_cache->v.unified.animation.speed = 0;
             }
-
-            window_cache->v.unified.animation.line_offset +=
-                window_cache->v.unified.animation.speed;
-
-            // Reset the state as we're done.
-            if (window_cache->v.unified.animation.line_offset >= 0) {
-                window_cache->v.unified.animation = {};
-            }
-        }
-
-        // Tick animations moving up.
-        if (window_cache->v.unified.animation.line_offset > 0) {
-            // If we're jumping a bunch of lines slow down at the end.
-            if (window_cache->v.unified.animation.max_offset > 100 &&
-                window_cache->v.unified.animation.line_offset * 3 <=
-                    window_cache->v.unified.animation.max_offset) {
-                window_cache->v.unified.animation.speed /= 1.3f;
-                window_cache->v.unified.animation.speed += 2;
-                window_cache->v.unified.animation.speed =
-                    std::min(window_cache->v.unified.animation.speed, -2.0f);
-            } else {
-                window_cache->v.unified.animation.speed -= 2;
-                window_cache->v.unified.animation.speed *= 1.3f;
-            }
-
-            window_cache->v.unified.animation.line_offset +=
-                window_cache->v.unified.animation.speed;
-
-            // Reset the state as we're done.
-            if (window_cache->v.unified.animation.line_offset <= 0) {
-                window_cache->v.unified.animation = {};
-            }
+            window_cache->v.unified.animation.speed -= 2;
+            window_cache->v.unified.animation.speed *= 1.3f;
         }
 
         // Run animations.
-        if (window_cache->v.unified.animation.line_offset != 0) {
-            // Setup the cache if it either doesn't exist or is out of date.
-            if (!window_cache->v.unified.animation.has_cache ||
-                window_cache->v.unified.animation.cached_change_index !=
-                    window_cache->v.unified.change_index) {
-                window_cache->v.unified.animation.has_cache = true;
-                window_cache->v.unified.animation.cached_change_index =
-                    window_cache->v.unified.change_index;
-                window_cache->v.unified.animation.cached_line_offset = 0;
-                window_cache->v.unified.animation.cached_iterator = iterator;
-            }
+        if (window_cache->v.unified.animation.speed != 0) {
+            iterator.go_to(window_cache->v.unified.animation.visible_start);
 
-            // Offset the iterator by the animation line offset.
-            if (window_cache->v.unified.animation.line_offset <
-                window_cache->v.unified.animation.cached_line_offset) {
-                for (int64_t i = window_cache->v.unified.animation.cached_line_offset;
-                     i > window_cache->v.unified.animation.line_offset; --i) {
-                    backward_char(&window_cache->v.unified.animation.cached_iterator);
-                    start_of_line(&window_cache->v.unified.animation.cached_iterator);
+            // Offset the start by the speed.
+            if (window_cache->v.unified.animation.speed < 0) {
+                for (float i = window_cache->v.unified.animation.speed; i < 0; ++i) {
+                    backward_char(&iterator);
+                    start_of_line(&iterator);
+                }
+                if (window_cache->v.unified.visible_start >= iterator.position) {
+                    iterator.advance_to(window_cache->v.unified.visible_start);
+                    window_cache->v.unified.animation.speed = 0;
                 }
             }
-            if (window_cache->v.unified.animation.line_offset >
-                window_cache->v.unified.animation.cached_line_offset) {
-                for (int64_t i = window_cache->v.unified.animation.cached_line_offset;
-                     i < window_cache->v.unified.animation.line_offset; ++i) {
-                    end_of_line(&window_cache->v.unified.animation.cached_iterator);
-                    forward_char(&window_cache->v.unified.animation.cached_iterator);
+            if (window_cache->v.unified.animation.speed > 0) {
+                for (float i = window_cache->v.unified.animation.speed; i > 0; --i) {
+                    end_of_line(&iterator);
+                    forward_char(&iterator);
+                }
+                if (window_cache->v.unified.visible_start <= iterator.position) {
+                    iterator.retreat_to(window_cache->v.unified.visible_start);
+                    window_cache->v.unified.animation.speed = 0;
                 }
             }
 
-            window_cache->v.unified.animation.cached_line_offset =
-                window_cache->v.unified.animation.line_offset;
-            iterator = window_cache->v.unified.animation.cached_iterator;
+            window_cache->v.unified.animation.visible_start = iterator.position;
         }
     } else {
         window->start_position = iterator.position;

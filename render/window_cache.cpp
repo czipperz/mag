@@ -97,6 +97,7 @@ void cache_window_unified_position(Window_Unified* window,
     Contents_Iterator visible_end_iterator = buffer->contents.iterator_at(start_position);
     compute_visible_end(window, &visible_end_iterator);
     window_cache->v.unified.visible_start = start_position;
+    window->start_position = start_position;
     window_cache->v.unified.visible_end = visible_end_iterator.position;
     window_cache->v.unified.change_index = buffer->changes.len();
 
@@ -113,6 +114,7 @@ void cache_window_unified_create(Editor* editor,
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified.id = window->id;
     window_cache->v.unified.animation = {};
+    window_cache->v.unified.animation.visible_start = window->start_position;
     cache_window_unified_position(window, window_cache, window->start_position, buffer);
 }
 
