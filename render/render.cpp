@@ -218,7 +218,7 @@ static void draw_buffer_contents(Cell* cells,
 
                     compute_visible_start(window, &iterator);
 
-                    if (iterator.position < pos) {
+                    if (iterator.position <= pos) {
                         iterator.advance_to(window->start_position);
                     }
                 }
