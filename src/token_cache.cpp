@@ -75,6 +75,7 @@ void Token_Cache::update(Buffer* buffer) {
     ZoneScoped;
 
     cz::Slice<Change> changes = buffer->changes;
+    cz::Slice<Change> pending_changes = {changes.elems + change_index, changes.len - change_index};
     unsigned char* changed_check_points =
         (unsigned char*)calloc(1, cz::bit_array::alloc_size(check_points.len()));
     CZ_DEFER(free(changed_check_points));
@@ -82,18 +83,21 @@ void Token_Cache::update(Buffer* buffer) {
     for (size_t i = 1; i < check_points.len(); ++i) {
         uint64_t pos = check_points[i].position;
 
-        bool cntinue = any_changes_after({changes.elems + change_index, changes.len - change_index},
-                                         check_points[i].position);
+        bool cntinue = any_changes_after(pending_changes, check_points[i].position);
 
-        position_after_changes({changes.elems + change_index, changes.len - change_index}, &pos);
+        position_after_changes(pending_changes, &pos);
 
         if (check_points[i].position != pos) {
             cz::bit_array::set(changed_check_points, i);
         }
 
+        uint64_t offset = pos - check_points[i].position;
         check_points[i].position = pos;
 
         if (!cntinue) {
+            for (size_t j = i + 1; j < check_points.len(); ++j) {
+                check_points[j].position += offset;
+            }
             break;
         }
     }
