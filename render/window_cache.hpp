@@ -20,6 +20,7 @@ struct Window_Unified_Cache {
     struct {
         float speed;
         uint64_t visible_start;
+        bool slam_on_the_breaks;
     } animation;
 };
 

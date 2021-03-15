@@ -156,7 +156,16 @@ static void draw_buffer_contents(Cell* cells,
         }
 
         // Setup animation.
-        if (window_cache->v.unified.animation.visible_start < iterator.position) {
+        if (window_cache->v.unified.animation.slam_on_the_breaks) {
+            window_cache->v.unified.animation.speed *= 0.5f;
+            if (window_cache->v.unified.animation.speed > 0) {
+                window_cache->v.unified.animation.speed =
+                    std::max(window_cache->v.unified.animation.speed, 1.0f);
+            } else {
+                window_cache->v.unified.animation.speed =
+                    std::min(window_cache->v.unified.animation.speed, -1.0f);
+            }
+        } else if (window_cache->v.unified.animation.visible_start < iterator.position) {
             if (window_cache->v.unified.animation.speed < 0) {
                 window_cache->v.unified.animation.speed = 0;
             }
@@ -191,6 +200,8 @@ static void draw_buffer_contents(Cell* cells,
                     iterator.retreat_to(window->start_position);
 
                     compute_visible_end(window, &iterator);
+                    window_cache->v.unified.animation.slam_on_the_breaks = true;
+                    window_cache->v.unified.animation.speed = -(float)window->rows;
 
                     if (iterator.position >= pos) {
                         iterator.retreat_to(window->start_position);
@@ -201,6 +212,7 @@ static void draw_buffer_contents(Cell* cells,
                 if (window_cache->v.unified.visible_start >= iterator.position) {
                     iterator.advance_to(window_cache->v.unified.visible_start);
                     window_cache->v.unified.animation.speed = 0;
+                    window_cache->v.unified.animation.slam_on_the_breaks = false;
                 }
             }
             if (window_cache->v.unified.animation.speed > 0) {
@@ -217,6 +229,8 @@ static void draw_buffer_contents(Cell* cells,
                     iterator.advance_to(window->start_position);
 
                     compute_visible_start(window, &iterator);
+                    window_cache->v.unified.animation.slam_on_the_breaks = true;
+                    window_cache->v.unified.animation.speed = (float)window->rows;
 
                     if (iterator.position <= pos) {
                         iterator.advance_to(window->start_position);
@@ -227,6 +241,7 @@ static void draw_buffer_contents(Cell* cells,
                 if (window_cache->v.unified.visible_start <= iterator.position) {
                     iterator.retreat_to(window_cache->v.unified.visible_start);
                     window_cache->v.unified.animation.speed = 0;
+                    window_cache->v.unified.animation.slam_on_the_breaks = false;
                 }
             }
 
