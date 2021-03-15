@@ -55,6 +55,19 @@ bool Token_Cache::find_check_point(uint64_t position, size_t* index_out) {
     }
 }
 
+static bool any_changes_after(cz::Slice<Change> changes, uint64_t position) {
+    for (size_t c = 0; c < changes.len; ++c) {
+        for (size_t e = 0; e < changes[c].commit.edits.len; ++e) {
+            auto& edit = changes[c].commit.edits[e];
+            if (edit.position >= position) {
+                return true;
+            }
+            position_after_edit(edit, &position);
+        }
+    }
+    return false;
+}
+
 void Token_Cache::update(Buffer* buffer) {
     ZoneScoped;
 
@@ -66,6 +79,9 @@ void Token_Cache::update(Buffer* buffer) {
     for (size_t i = 1; i < check_points.len(); ++i) {
         uint64_t pos = check_points[i].position;
 
+        bool cntinue = any_changes_after({changes.elems + change_index, changes.len - change_index},
+                                         check_points[i].position);
+
         position_after_changes({changes.elems + change_index, changes.len - change_index}, &pos);
 
         if (check_points[i].position != pos) {
@@ -73,6 +89,10 @@ void Token_Cache::update(Buffer* buffer) {
         }
 
         check_points[i].position = pos;
+
+        if (!cntinue) {
+            break;
+        }
     }
     change_index = changes.len;
 

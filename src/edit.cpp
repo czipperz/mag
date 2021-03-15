@@ -24,33 +24,39 @@ static void position_after_remove(uint64_t position, uint64_t len, uint64_t* poi
     }
 }
 
+void position_after_edit(const Edit& edit, uint64_t* position) {
+    if (edit.flags & Edit::INSERT_MASK) {
+        if (edit.flags & Edit::AFTER_POSITION_MASK) {
+            position_after_insert_after(edit.position, edit.value.len(), position);
+        } else {
+            position_after_insert_before(edit.position, edit.value.len(), position);
+        }
+    } else {
+        position_after_remove(edit.position, edit.value.len(), position);
+    }
+}
+
+void position_before_edit(const Edit& edit, uint64_t* position) {
+    if (edit.flags & Edit::INSERT_MASK) {
+        position_after_remove(edit.position, edit.value.len(), position);
+    } else {
+        if (edit.flags & Edit::AFTER_POSITION_MASK) {
+            position_after_insert_after(edit.position, edit.value.len(), position);
+        } else {
+            position_after_insert_before(edit.position, edit.value.len(), position);
+        }
+    }
+}
+
 void position_after_edits(cz::Slice<const Edit> edits, uint64_t* position) {
     for (size_t i = 0; i < edits.len; ++i) {
-        const Edit* edit = &edits[i];
-        if (edit->flags & Edit::INSERT_MASK) {
-            if (edit->flags & Edit::AFTER_POSITION_MASK) {
-                position_after_insert_after(edit->position, edit->value.len(), position);
-            } else {
-                position_after_insert_before(edit->position, edit->value.len(), position);
-            }
-        } else {
-            position_after_remove(edit->position, edit->value.len(), position);
-        }
+        position_after_edit(edits[i], position);
     }
 }
 
 void position_before_edits(cz::Slice<const Edit> edits, uint64_t* position) {
     for (size_t i = edits.len; i-- > 0;) {
-        const Edit* edit = &edits[i];
-        if (edit->flags & Edit::INSERT_MASK) {
-            position_after_remove(edit->position, edit->value.len(), position);
-        } else {
-            if (edit->flags & Edit::AFTER_POSITION_MASK) {
-                position_after_insert_after(edit->position, edit->value.len(), position);
-            } else {
-                position_after_insert_before(edit->position, edit->value.len(), position);
-            }
-        }
+        position_before_edit(edits[i], position);
     }
 }
 

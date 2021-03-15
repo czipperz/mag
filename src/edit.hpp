@@ -30,6 +30,9 @@ struct Edit {
     Flags flags;
 };
 
+void position_after_edit(const Edit& edit, uint64_t* position);
+void position_before_edit(const Edit& edit, uint64_t* position);
+
 void position_after_edits(cz::Slice<const Edit> edits, uint64_t* position);
 void position_before_edits(cz::Slice<const Edit> edits, uint64_t* position);
 
