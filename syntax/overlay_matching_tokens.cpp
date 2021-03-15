@@ -73,6 +73,10 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
         return;
     }
 
+    if (buffer->contents.len == 0) {
+        return;
+    }
+
     Contents_Iterator visible_end_iterator = iterator;
     compute_visible_end(window, &visible_end_iterator);
     if (visible_end_iterator.position < window->start_position) {
