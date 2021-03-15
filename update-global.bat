@@ -5,3 +5,5 @@ if exist GTAGS (
 ) else (
     gtags
 )
+
+exit /b 0

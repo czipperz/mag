@@ -5,3 +5,5 @@ if [ -e GTAGS ]; then
 else
     gtags
 fi
+
+exit 0
