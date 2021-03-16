@@ -60,12 +60,22 @@ bool Token_Cache::find_check_point(uint64_t position, size_t* index_out) {
 
 static bool any_changes_after(cz::Slice<Change> changes, uint64_t position) {
     for (size_t c = 0; c < changes.len; ++c) {
-        for (size_t e = 0; e < changes[c].commit.edits.len; ++e) {
-            auto& edit = changes[c].commit.edits[e];
-            if (edit.position >= position) {
-                return true;
+        if (changes[c].is_redo) {
+            for (size_t e = 0; e < changes[c].commit.edits.len; ++e) {
+                auto& edit = changes[c].commit.edits[e];
+                if (edit.position >= position) {
+                    return true;
+                }
+                position_after_edit(edit, &position);
             }
-            position_after_edit(edit, &position);
+        } else {
+            for (size_t e = changes[c].commit.edits.len; e-- > 0;) {
+                auto& edit = changes[c].commit.edits[e];
+                if (edit.position >= position) {
+                    return true;
+                }
+                position_before_edit(edit, &position);
+            }
         }
     }
     return false;
