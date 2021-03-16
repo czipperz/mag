@@ -183,12 +183,18 @@ static void draw_buffer_contents(Cell* cells,
             }
             window_cache->v.unified.animation.speed += 2;
             window_cache->v.unified.animation.speed *= 1.3f;
+            if (window_cache->v.unified.animation.speed > (float)window->rows) {
+                window_cache->v.unified.animation.speed = (float)window->rows;
+            }
         } else if (window_cache->v.unified.animation.visible_start > iterator.position) {
             if (window_cache->v.unified.animation.speed > 0) {
                 window_cache->v.unified.animation.speed = 0;
             }
             window_cache->v.unified.animation.speed -= 2;
             window_cache->v.unified.animation.speed *= 1.3f;
+            if (window_cache->v.unified.animation.speed < -(float)window->rows) {
+                window_cache->v.unified.animation.speed = -(float)window->rows;
+            }
         }
 
         // Run animations.
