@@ -94,7 +94,6 @@ static void render(int* total_rows,
                    int16_t* colors,
                    int16_t used_colors) {
     ZoneScoped;
-    FrameMarkStart("ncurses");
 
     int rows, cols;
     {
@@ -173,7 +172,7 @@ static void render(int* total_rows,
         }
     }
 
-    FrameMarkEnd("ncurses");
+    FrameMark;
 }
 
 static void process_key_press(Server* server, Client* client, int ch) {

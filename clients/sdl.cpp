@@ -551,7 +551,6 @@ static void render(SDL_Window* window,
                    Client* client,
                    cz::Slice<Screen_Position_Query> spqs) {
     ZoneScoped;
-    FrameMarkStart("sdl");
 
     int rows, cols;
     {
@@ -700,7 +699,7 @@ static void render(SDL_Window* window,
         SDL_RenderPresent(renderer);
     }
 
-    FrameMarkEnd("sdl");
+    FrameMark;
 }
 
 static bool get_character_dims(TTF_Font* font, int* character_width, int* character_height) {
