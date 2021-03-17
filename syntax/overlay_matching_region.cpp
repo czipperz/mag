@@ -22,7 +22,7 @@ struct Data {
     size_t countdown_cursor_region;
 };
 
-static void overlay_matching_region_start_frame(Buffer* buffer,
+static void overlay_matching_region_start_frame(const Buffer* buffer,
                                                 Window_Unified* window,
                                                 Contents_Iterator start_position_iterator,
                                                 void* _data) {
@@ -48,7 +48,7 @@ static void overlay_matching_region_start_frame(Buffer* buffer,
     data->countdown_cursor_region = 0;
 }
 
-static Face overlay_matching_region_get_face_and_advance(Buffer* buffer,
+static Face overlay_matching_region_get_face_and_advance(const Buffer* buffer,
                                                          Window_Unified* window,
                                                          Contents_Iterator iterator,
                                                          void* _data) {
@@ -87,7 +87,7 @@ static Face overlay_matching_region_get_face_and_advance(Buffer* buffer,
     }
 }
 
-static Face overlay_matching_region_get_face_newline_padding(Buffer* buffer,
+static Face overlay_matching_region_get_face_newline_padding(const Buffer* buffer,
                                                              Window_Unified* window,
                                                              Contents_Iterator iterator,
                                                              void* _data) {

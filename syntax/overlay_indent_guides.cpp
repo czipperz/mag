@@ -27,7 +27,7 @@ struct Data {
     uint64_t saved_column;
 };
 
-static void overlay_indent_guides_start_frame(Buffer*,
+static void overlay_indent_guides_start_frame(const Buffer*,
                                               Window_Unified*,
                                               Contents_Iterator start_position_iterator,
                                               void* _data) {
@@ -38,7 +38,7 @@ static void overlay_indent_guides_start_frame(Buffer*,
     data->has_saved_column = false;
 }
 
-static Face overlay_indent_guides_get_face_and_advance(Buffer*,
+static Face overlay_indent_guides_get_face_and_advance(const Buffer*,
                                                        Window_Unified*,
                                                        Contents_Iterator current_position_iterator,
                                                        void* _data) {
@@ -82,7 +82,7 @@ static Face overlay_indent_guides_get_face_and_advance(Buffer*,
     return face;
 }
 
-static Face overlay_indent_guides_get_face_newline_padding(Buffer*,
+static Face overlay_indent_guides_get_face_newline_padding(const Buffer*,
                                                            Window_Unified*,
                                                            Contents_Iterator end_of_line_iterator,
                                                            void*) {

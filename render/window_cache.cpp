@@ -93,7 +93,7 @@ bool cache_windows_check_points(Window_Cache* window_cache,
 void cache_window_unified_position(Window_Unified* window,
                                    Window_Cache* window_cache,
                                    uint64_t start_position,
-                                   Buffer* buffer) {
+                                   const Buffer* buffer) {
     ZoneScoped;
 
     Contents_Iterator visible_end_iterator = buffer->contents.iterator_at(start_position);

@@ -15,7 +15,7 @@ struct Data {
     uint64_t end;
 };
 
-static void overlay_selected_line_start_frame(Buffer* buffer,
+static void overlay_selected_line_start_frame(const Buffer* buffer,
                                               Window_Unified* window,
                                               Contents_Iterator start_position_iterator,
                                               void* _data) {
@@ -38,7 +38,7 @@ static void overlay_selected_line_start_frame(Buffer* buffer,
     }
 }
 
-static Face overlay_selected_line_get_face_and_advance(Buffer* buffer,
+static Face overlay_selected_line_get_face_and_advance(const Buffer* buffer,
                                                        Window_Unified* window,
                                                        Contents_Iterator iterator,
                                                        void* _data) {

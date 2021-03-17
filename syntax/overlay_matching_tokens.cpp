@@ -60,7 +60,7 @@ static void set_token_matches(Data* data) {
     data->token_matches = true;
 }
 
-static void overlay_matching_tokens_start_frame(Buffer* buffer,
+static void overlay_matching_tokens_start_frame(const Buffer* buffer,
                                                 Window_Unified* window,
                                                 Contents_Iterator iterator,
                                                 void* _data) {
@@ -86,7 +86,8 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
 
     uint64_t cursor_point = window->cursors[0].point;
 
-    buffer->token_cache.update(buffer);
+    // The token cache is updated in the main render loop.
+    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.find_check_point(window->start_position, &check_point);
 
@@ -151,7 +152,7 @@ static void overlay_matching_tokens_start_frame(Buffer* buffer,
     }
 }
 
-static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
+static Face overlay_matching_tokens_get_face_and_advance(const Buffer* buffer,
                                                          Window_Unified* window,
                                                          Contents_Iterator iterator,
                                                          void* _data) {
@@ -180,7 +181,7 @@ static Face overlay_matching_tokens_get_face_and_advance(Buffer* buffer,
     }
 }
 
-static Face overlay_matching_tokens_get_face_newline_padding(Buffer* buffer,
+static Face overlay_matching_tokens_get_face_newline_padding(const Buffer* buffer,
                                                              Window_Unified* window,
                                                              Contents_Iterator iterator,
                                                              void* _data) {

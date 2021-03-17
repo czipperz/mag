@@ -11,13 +11,13 @@ struct Data {
     Face face;
 };
 
-static void overlay_trailing_spaces_start_frame(Buffer* buffer,
+static void overlay_trailing_spaces_start_frame(const Buffer* buffer,
                                                 Window_Unified* window,
                                                 Contents_Iterator start_position_iterator,
                                                 void* data) {}
 
 static Face overlay_trailing_spaces_get_face_and_advance(
-    Buffer* buffer,
+    const Buffer* buffer,
     Window_Unified* window,
     Contents_Iterator current_position_iterator,
     void* _data) {
@@ -49,7 +49,7 @@ static Face overlay_trailing_spaces_get_face_and_advance(
     }
 }
 
-static Face overlay_trailing_spaces_get_face_newline_padding(Buffer* buffer,
+static Face overlay_trailing_spaces_get_face_newline_padding(const Buffer* buffer,
                                                              Window_Unified* window,
                                                              Contents_Iterator end_of_line_iterator,
                                                              void* data) {

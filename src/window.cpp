@@ -48,12 +48,12 @@ Window_Unified* Window_Unified::clone() {
     return window;
 }
 
-void Window_Unified::update_cursors(Buffer* buffer) {
+void Window_Unified::update_cursors(const Buffer* buffer) {
     ZoneScoped;
 
     cz::Slice<Cursor> cursors = this->cursors;
-    cz::Slice<Change> new_changes = {buffer->changes.elems() + change_index,
-                                     buffer->changes.len() - change_index};
+    cz::Slice<const Change> new_changes = {buffer->changes.elems() + change_index,
+                                           buffer->changes.len() - change_index};
     for (size_t c = 0; c < cursors.len; ++c) {
         position_after_changes(new_changes, &cursors[c].point);
         position_after_changes(new_changes, &cursors[c].mark);
@@ -79,21 +79,20 @@ void Window_Unified::start_completion(Completion_Engine completion_engine) {
     completing = true;
 }
 
-void Window_Unified::update_completion_cache(Buffer* buffer) {
+void Window_Unified::update_completion_cache(const Buffer* buffer) {
     CZ_DEBUG_ASSERT(completing);
 
     if (completion_cache.update(buffer->changes.len())) {
         Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);
         Token token;
-        if (!get_token_at_position(buffer, &iterator, &token)) {
+        if (!get_token_at_position_no_update(buffer, &iterator, &token)) {
             abort_completion();
             return;
         }
 
         completion_cache.engine_context.query.reserve(cz::heap_allocator(),
                                                       token.end - token.start);
-        buffer->contents.slice_into(iterator, token.end,
-                                    &completion_cache.engine_context.query);
+        buffer->contents.slice_into(iterator, token.end, &completion_cache.engine_context.query);
     }
 }
 

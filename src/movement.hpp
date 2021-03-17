@@ -41,4 +41,9 @@ Contents_Iterator start_of_line_position(const Contents& contents, uint64_t line
 /// start of the `token`.
 bool get_token_at_position(Buffer* buffer, Contents_Iterator* iterator, Token* token);
 
+/// Same as `get_token_at_position` but doesn't update the buffer's token cache.
+bool get_token_at_position_no_update(const Buffer* buffer,
+                                     Contents_Iterator* iterator,
+                                     Token* token);
+
 }

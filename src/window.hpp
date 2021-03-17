@@ -44,10 +44,16 @@ struct Window_Unified : Window {
     static Window_Unified* create(Buffer_Id buffer_id);
     Window_Unified* clone();
 
-    void update_cursors(Buffer* buffer);
+    void update_cursors(const Buffer* buffer);
 
     void start_completion(Completion_Engine completion_engine);
-    void update_completion_cache(Buffer*);
+
+    /// Update the completion cache for the buffer.  Note that you must call
+    /// `buffer->token_cache.update(buffer)` before invoking this function or
+    /// else the results will be undefined.  It would call it itself but it needs
+    /// to not modify the buffer so we can render immutable buffer objects.
+    void update_completion_cache(const Buffer*);
+
     void finish_completion(Buffer*);
     void abort_completion();
 };

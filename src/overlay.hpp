@@ -11,15 +11,15 @@ struct Window_Unified;
 
 struct Overlay {
     struct VTable {
-        void (*start_frame)(Buffer*,
+        void (*start_frame)(const Buffer*,
                             Window_Unified*,
                             Contents_Iterator start_position_iterator,
                             void*);
-        Face (*get_face_and_advance)(Buffer*,
+        Face (*get_face_and_advance)(const Buffer*,
                                      Window_Unified*,
                                      Contents_Iterator current_position_iterator,
                                      void*);
-        Face (*get_face_newline_padding)(Buffer*,
+        Face (*get_face_newline_padding)(const Buffer*,
                                          Window_Unified*,
                                          Contents_Iterator end_of_line_iterator,
                                          void*);
@@ -30,17 +30,19 @@ struct Overlay {
     const VTable* vtable;
     void* data;
 
-    void start_frame(Buffer* buffer,
+    void start_frame(const Buffer* buffer,
                      Window_Unified* window,
                      Contents_Iterator start_position_iterator) {
         vtable->start_frame(buffer, window, start_position_iterator, data);
     }
 
-    Face get_face_and_advance(Buffer* buffer, Window_Unified* window, Contents_Iterator iterator) {
+    Face get_face_and_advance(const Buffer* buffer,
+                              Window_Unified* window,
+                              Contents_Iterator iterator) {
         return vtable->get_face_and_advance(buffer, window, iterator, data);
     }
 
-    Face get_face_newline_padding(Buffer* buffer,
+    Face get_face_newline_padding(const Buffer* buffer,
                                   Window_Unified* window,
                                   Contents_Iterator iterator) {
         return vtable->get_face_newline_padding(buffer, window, iterator, data);

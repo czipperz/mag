@@ -26,14 +26,14 @@ struct Token_Cache {
     void reset();
 
     /// Find the last check point before the start position
-    bool find_check_point(uint64_t position, Tokenizer_Check_Point*);
-    bool find_check_point(uint64_t position, size_t* index);
+    bool find_check_point(uint64_t position, Tokenizer_Check_Point*) const;
+    bool find_check_point(uint64_t position, size_t* index) const;
 
     /// Update the cache based on recent changes
     void update(Buffer* buffer);
 
     /// Check if a position is covered by a check point.
-    bool is_covered(uint64_t position);
+    bool is_covered(uint64_t position) const;
 
     /// Generate check points until `position` is covered.
     void generate_check_points_until(Buffer* buffer, uint64_t position);

@@ -96,6 +96,13 @@ const Buffer* Buffer_Handle::try_lock_reading() {
     }
 }
 
+void Buffer_Handle::reduce_writing_to_reading() {
+    CZ_DEBUG_ASSERT(starting_readers.load() == 0);
+
+    starting_readers.fetch_add(1);
+    active_readers.fetch_add(1);
+}
+
 void Buffer_Handle::unlock() {
     uint32_t ar = active_readers.load();
 

@@ -202,11 +202,18 @@ Contents_Iterator start_of_line_position(const Contents& contents, uint64_t line
 }
 
 bool get_token_at_position(Buffer* buffer, Contents_Iterator* token_iterator, Token* token) {
+    buffer->token_cache.update(buffer);
+
+    return get_token_at_position_no_update(buffer, token_iterator, token);
+}
+
+bool get_token_at_position_no_update(const Buffer* buffer,
+                                     Contents_Iterator* token_iterator,
+                                     Token* token) {
     ZoneScoped;
 
     uint64_t position = token_iterator->position;
 
-    buffer->token_cache.update(buffer);
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.find_check_point(token_iterator->position, &check_point);
 

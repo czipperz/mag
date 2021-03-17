@@ -52,6 +52,9 @@ public:
     /// Multiple readers may use the buffer at the same time.
     const Buffer* try_lock_reading();
 
+    /// Reduce the permissions of the lock from that of writing to only reading.
+    void reduce_writing_to_reading();
+
     /// Unlock the buffer.
     ///
     /// Note: If this thread is a reader then this only actually unlocks

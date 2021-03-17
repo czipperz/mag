@@ -44,7 +44,7 @@ static void update_remove(const Edit& edit, Buffer_Data* data) {
     }
 }
 
-static bool decoration_line_number_append(Buffer* buffer,
+static bool decoration_line_number_append(const Buffer* buffer,
                                           Window_Unified* window,
                                           cz::AllocatedString* string,
                                           void* _data) {

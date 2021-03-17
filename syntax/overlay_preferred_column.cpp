@@ -16,7 +16,7 @@ struct Data {
     uint64_t column;
 };
 
-static void overlay_preferred_column_start_frame(Buffer* buffer,
+static void overlay_preferred_column_start_frame(const Buffer* buffer,
                                                  Window_Unified* window,
                                                  Contents_Iterator start_position_iterator,
                                                  void* _data) {
@@ -24,7 +24,7 @@ static void overlay_preferred_column_start_frame(Buffer* buffer,
     data->column = 0;
 }
 
-static Face overlay_preferred_column_get_face_and_advance(Buffer* buffer,
+static Face overlay_preferred_column_get_face_and_advance(const Buffer* buffer,
                                                           Window_Unified* window,
                                                           Contents_Iterator iterator,
                                                           void* _data) {
@@ -47,7 +47,7 @@ static Face overlay_preferred_column_get_face_and_advance(Buffer* buffer,
     return face;
 }
 
-static Face overlay_preferred_column_get_face_newline_padding(Buffer* buffer,
+static Face overlay_preferred_column_get_face_newline_padding(const Buffer* buffer,
                                                               Window_Unified* window,
                                                               Contents_Iterator iterator,
                                                               void* _data) {

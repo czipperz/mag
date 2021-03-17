@@ -45,7 +45,7 @@ bool cache_windows_check_points(Window_Cache* window_cache,
 void cache_window_unified_position(Window_Unified* window,
                                    Window_Cache* window_cache,
                                    uint64_t start_position,
-                                   Buffer* buffer);
+                                   const Buffer* buffer);
 void cache_window_unified_create(Editor* editor,
                                  Window_Cache* window_cache,
                                  Window_Unified* window);

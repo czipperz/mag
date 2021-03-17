@@ -21,7 +21,7 @@ void Token_Cache::reset() {
     ran_to_end = false;
 }
 
-bool Token_Cache::find_check_point(uint64_t position, Tokenizer_Check_Point* cp) {
+bool Token_Cache::find_check_point(uint64_t position, Tokenizer_Check_Point* cp) const {
     size_t result_index;
     if (find_check_point(position, &result_index)) {
         *cp = check_points[result_index];
@@ -31,7 +31,7 @@ bool Token_Cache::find_check_point(uint64_t position, Tokenizer_Check_Point* cp)
     }
 }
 
-bool Token_Cache::find_check_point(uint64_t position, size_t* index_out) {
+bool Token_Cache::find_check_point(uint64_t position, size_t* index_out) const {
     ZoneScoped;
 
     size_t start = 0;
@@ -199,7 +199,7 @@ bool Token_Cache::next_check_point(Buffer* buffer, Contents_Iterator* iterator, 
     return false;
 }
 
-bool Token_Cache::is_covered(uint64_t position) {
+bool Token_Cache::is_covered(uint64_t position) const {
     uint64_t cpp = 0;
     if (check_points.len() > 0) {
         cpp = check_points.last().position;

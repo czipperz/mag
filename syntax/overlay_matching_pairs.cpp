@@ -51,7 +51,7 @@ static bool binary_search(cz::Slice<Token> tokens, uint64_t position, size_t* to
     return false;
 }
 
-static void overlay_matching_pairs_start_frame(Buffer* buffer,
+static void overlay_matching_pairs_start_frame(const Buffer* buffer,
                                                Window_Unified* window,
                                                Contents_Iterator start_position_iterator,
                                                void* _data) {
@@ -64,8 +64,9 @@ static void overlay_matching_pairs_start_frame(Buffer* buffer,
     Contents_Iterator end_iterator = start_position_iterator;
     compute_visible_end(window, &end_iterator);
 
+    // Note: we update the token cache in the render loop.
+    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
     Tokenizer_Check_Point check_point = {};
-    buffer->token_cache.update(buffer);
     buffer->token_cache.find_check_point(start_position_iterator.position, &check_point);
 
     cz::Vector<Token> tokens = {};
@@ -137,7 +138,7 @@ static void overlay_matching_pairs_start_frame(Buffer* buffer,
     data->points.set_len(new_end - data->points.start());
 }
 
-static Face overlay_matching_pairs_get_face_and_advance(Buffer* buffer,
+static Face overlay_matching_pairs_get_face_and_advance(const Buffer* buffer,
                                                         Window_Unified* window,
                                                         Contents_Iterator iterator,
                                                         void* _data) {
@@ -155,7 +156,7 @@ static Face overlay_matching_pairs_get_face_and_advance(Buffer* buffer,
     return face;
 }
 
-static Face overlay_matching_pairs_get_face_newline_padding(Buffer* buffer,
+static Face overlay_matching_pairs_get_face_newline_padding(const Buffer* buffer,
                                                             Window_Unified* window,
                                                             Contents_Iterator iterator,
                                                             void* _data) {
