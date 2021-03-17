@@ -1,6 +1,7 @@
 #pragma once
 
-#include <mutex>
+#include <atomic>
+#include <cz/semaphore.hpp>
 #include "buffer.hpp"
 
 #ifdef NDEBUG
@@ -10,51 +11,56 @@
 namespace mag {
 
 class Buffer_Handle {
-    std::mutex mutex;
+    cz::Semaphore semaphore;
+    std::atomic_uint32_t starting_readers;
+    std::atomic_uint32_t active_readers;
+    std::atomic_uint32_t pending_writers;
     Buffer buffer;
-
-#ifndef NDEBUG
-    int simultaneous_access_count;
-#endif
 
 public:
     Buffer_Id id;
 
     /// Call this with `buffer.directory`, `buffer.file`, and `buffer.is_temp` set.
     void init(Buffer_Id buffer_id, Buffer buffer) {
+        semaphore.init(/*initial_value=*/1);
+
         id = buffer_id;
 
         this->buffer = buffer;
         this->buffer.init();
-
-#ifndef NDEBUG
-        simultaneous_access_count = 0;
-#endif
     }
 
-    Buffer* lock() {
-        mutex.lock();
+    /// Lock the buffer for the purposes of reading and writing.
+    /// Stalls until exclusive access can be obtained.
+    Buffer* lock_writing();
 
-#ifndef NDEBUG
-        ++simultaneous_access_count;
-        CZ_ASSERT(simultaneous_access_count == 1);
-#endif
+    /// Lock the buffer for the purposes of reading.  Stalls until access can be obtained.
+    ///
+    /// This does *not* wait for pending writers (see
+    /// `lock_writing`) unlike calls to `try_lock_reading`.
+    ///
+    /// Once `lock_reading` locks the buffer other readers will be allowed to
+    /// use the buffer.  Note that if those other readers use `try_lock_reading`
+    /// to gain access then they will still have to wait for pending writers.
+    const Buffer* lock_reading();
 
-        return &buffer;
-    }
+    /// Lock the buffer for the purposes of reading, or return promptly with `nullptr` for failure.
+    ///
+    /// If the buffer is locked for writing, or there are one or more pending writers (via
+    /// `lock_writing`), or there are many spurious errors then `nullptr` is returned.
+    ///
+    /// Multiple readers may use the buffer at the same time.
+    const Buffer* try_lock_reading();
 
-    void unlock() {
-#ifndef NDEBUG
-        --simultaneous_access_count;
-#endif
-
-        mutex.unlock();
-    }
+    /// Unlock the buffer.
+    ///
+    /// Note: If this thread is a reader then this only actually unlocks
+    /// the buffer if there are no other remaining readers.
+    void unlock();
 
     void drop() {
         buffer.drop();
-        using std::mutex;
-        this->mutex.~mutex();
+        semaphore.drop();
     }
 };
 

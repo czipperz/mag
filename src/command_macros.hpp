@@ -17,7 +17,7 @@
 
 #define WITH_BUFFER(BUFFER_ID)                         \
     Buffer_Handle* handle = editor->lookup(BUFFER_ID); \
-    Buffer* buffer = handle->lock();                   \
+    Buffer* buffer = handle->lock_writing();           \
     CZ_DEFER(handle->unlock())
 
 #define TRANSFORM_POINTS(FUNC)                                                           \

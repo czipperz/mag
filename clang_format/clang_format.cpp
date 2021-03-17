@@ -125,7 +125,7 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
     transaction.init(2 * replacements.len(), total_len);
     CZ_DEFER(transaction.drop());
 
-    Buffer* buffer = handle->lock();
+    Buffer* buffer = handle->lock_writing();
     CZ_DEFER(handle->unlock());
 
     cz::Slice<const Change> changes = {buffer->changes.start() + change_index,

@@ -307,7 +307,7 @@ static bool handle_key_press_buffer(Editor* editor,
                                     Command* previous_command,
                                     bool* waiting_for_more_keys) {
     Buffer_Handle* handle = editor->lookup(client->selected_window()->id);
-    Buffer* buffer = handle->lock();
+    Buffer* buffer = handle->lock_writing();
     bool unlocked = false;
     CZ_DEFER(if (!unlocked) handle->unlock());
 

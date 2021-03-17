@@ -33,7 +33,7 @@ static bool process_append_job_tick(Editor* editor, void* _data) {
             return true;
         }
 
-        Buffer* buffer = handle->lock();
+        Buffer* buffer = handle->lock_writing();
         CZ_DEFER(handle->unlock());
         buffer->contents.append({buf, (size_t)read_result});
         return false;
