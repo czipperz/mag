@@ -1,5 +1,6 @@
 #include "buffer_handle.hpp"
 
+#include <Tracy.hpp>
 #include <cz/assert.hpp>
 #include <cz/defer.hpp>
 
@@ -17,6 +18,8 @@ static bool join_readers(std::atomic_uint32_t& readers) {
 }
 
 Buffer* Buffer_Handle::lock_writing() {
+    ZoneScoped;
+
     pending_writers.fetch_add(1);
     CZ_DEFER(pending_writers.fetch_sub(1));
 
@@ -26,6 +29,8 @@ Buffer* Buffer_Handle::lock_writing() {
 }
 
 const Buffer* Buffer_Handle::lock_reading() {
+    ZoneScoped;
+
     {
         // Prevent `try_lock_reading` readers from acquiring
         // the lock because that causes a race condition.
@@ -54,6 +59,8 @@ const Buffer* Buffer_Handle::lock_reading() {
 }
 
 const Buffer* Buffer_Handle::try_lock_reading() {
+    ZoneScoped;
+
     for (int attempts = 0;; ++attempts) {
         // Limit the number of attempts just in case we
         // can't make progress due to spurious failures.
@@ -97,6 +104,8 @@ const Buffer* Buffer_Handle::try_lock_reading() {
 }
 
 void Buffer_Handle::reduce_writing_to_reading() {
+    ZoneScoped;
+
     CZ_DEBUG_ASSERT(starting_readers.load() == 0);
 
     starting_readers.fetch_add(1);
@@ -104,6 +113,8 @@ void Buffer_Handle::reduce_writing_to_reading() {
 }
 
 void Buffer_Handle::unlock() {
+    ZoneScoped;
+
     uint32_t ar = active_readers.load();
 
     // If there are active readers then this thread is a reader.
