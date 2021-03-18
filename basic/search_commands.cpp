@@ -89,7 +89,7 @@ static void open_file_and_goto_position(Editor* editor,
     open_file(editor, client, path);
 
     WITH_SELECTED_BUFFER(client);
-    push_jump(window, client, handle->id, buffer);
+    push_jump(window, client, buffer);
 
     Contents_Iterator iterator = buffer->contents.start();
     while (!iterator.at_eob() && line > 1) {

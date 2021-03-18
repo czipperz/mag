@@ -15,13 +15,13 @@ void Jump::update(Buffer* buffer) {
     change_index = buffer->changes.len();
 }
 
-void push_jump(Window_Unified* window, Client* client, Buffer_Id buffer_id, Buffer* buffer) {
+void push_jump(Window_Unified* window, Client* client, Buffer* buffer) {
     kill_extra_cursors(window, client);
 
     Cursor* cursor = &window->cursors[0];
 
     Jump jump;
-    jump.buffer_id = buffer_id;
+    jump.buffer_id = window->id;
     jump.position = cursor->point;
     jump.change_index = buffer->changes.len();
     client->jump_chain.push(jump);

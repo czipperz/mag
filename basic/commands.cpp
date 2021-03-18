@@ -77,19 +77,19 @@ void command_backward_line(Editor* editor, Command_Source source) {
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    push_jump(window, source.client, handle->id, buffer);
+    push_jump(window, source.client, buffer);
     window->cursors[0].point = buffer->contents.len;
 }
 
 void command_start_of_buffer(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    push_jump(window, source.client, handle->id, buffer);
+    push_jump(window, source.client, buffer);
     window->cursors[0].point = 0;
 }
 
 void command_push_jump(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    push_jump(window, source.client, handle->id, buffer);
+    push_jump(window, source.client, buffer);
 }
 
 void command_unpop_jump(Editor* editor, Command_Source source) {
@@ -102,7 +102,7 @@ void command_unpop_jump(Editor* editor, Command_Source source) {
 void command_pop_jump(Editor* editor, Command_Source source) {
     if (source.client->jump_chain.index == source.client->jump_chain.jumps.len()) {
         WITH_SELECTED_BUFFER(source.client);
-        push_jump(window, source.client, handle->id, buffer);
+        push_jump(window, source.client, buffer);
         source.client->jump_chain.pop();
     }
 
@@ -1083,7 +1083,7 @@ static void command_goto_line_callback(Editor* editor, Client* client, cz::Str s
     parse_number(str, &lines);
 
     WITH_SELECTED_BUFFER(client);
-    push_jump(window, client, handle->id, buffer);
+    push_jump(window, client, buffer);
 
     Contents_Iterator iterator = start_of_line_position(buffer->contents, lines);
     window->cursors[0].point = iterator.position;
@@ -1097,7 +1097,7 @@ static void command_goto_position_callback(Editor* editor,
     parse_number(str, &position);
 
     WITH_SELECTED_BUFFER(client);
-    push_jump(window, client, handle->id, buffer);
+    push_jump(window, client, buffer);
     window->cursors[0].point = cz::min(position, buffer->contents.len);
 }
 
@@ -1144,7 +1144,7 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
 
 void command_mark_buffer(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    push_jump(window, source.client, handle->id, buffer);
+    push_jump(window, source.client, buffer);
     window->show_marks = true;
     window->cursors[0].mark = 0;
     window->cursors[0].point = buffer->contents.len;

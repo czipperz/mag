@@ -141,7 +141,7 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
             return;
         }
 
-        push_jump(window, source.client, handle->id, buffer);
+        push_jump(window, source.client, buffer);
     }
 
     CZ_DEFER(tag.buffer.drop(cz::heap_allocator()));
@@ -164,7 +164,7 @@ static void command_lookup_prompt_callback(Editor* editor,
             return;
         }
 
-        push_jump(window, client, handle->id, buffer);
+        push_jump(window, client, buffer);
     }
     CZ_DEFER(tag.buffer.drop(cz::heap_allocator()));
 

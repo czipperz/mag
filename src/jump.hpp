@@ -51,7 +51,7 @@ struct Window_Unified;
 struct Client;
 struct Buffer;
 struct Editor;
-void push_jump(Window_Unified* window, Client* client, Buffer_Id buffer_id, Buffer* buffer);
+void push_jump(Window_Unified* window, Client* client, Buffer* buffer);
 void goto_jump(Editor* editor, Client* client, Jump* jump);
 
 }
