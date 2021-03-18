@@ -9,6 +9,7 @@
 #include <file.hpp>
 #include <movement.hpp>
 #include <token.hpp>
+#include "visible_region.hpp"
 
 namespace mag {
 namespace gnu_global {
@@ -92,9 +93,21 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
     kill_extra_cursors(window, client);
 
     Contents_Iterator iterator = start_of_line_position(buffer->contents, tag.line);
+    uint64_t old_point = window->cursors[0].point;
     window->cursors[0].point = iterator.position;
 
-    window->start_position = iterator.position;
+    if (iterator.position < window->start_position) {
+        window->start_position = iterator.position;
+    } else if (iterator.position > old_point) {
+        Contents_Iterator ve = iterator;
+        ve.retreat_to(window->start_position);
+        compute_visible_end(window, &ve);
+        if (iterator.position < ve.position) {
+            center_in_window(window, iterator);
+        } else {
+            window->start_position = iterator.position;
+        }
+    }
 }
 
 void command_lookup_at_point(Editor* editor, Command_Source source) {
