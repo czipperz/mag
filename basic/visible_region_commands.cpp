@@ -24,6 +24,7 @@ void command_up_page(Editor* editor, Command_Source source) {
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     compute_visible_start(window, &it);
     window->start_position = it.position;
+    forward_line(buffer->mode, &it);
     window->cursors[0].point = it.position;
 }
 
@@ -34,6 +35,7 @@ void command_down_page(Editor* editor, Command_Source source) {
     compute_visible_end(window, &it);
     forward_char(&it);
     window->start_position = it.position;
+    forward_line(buffer->mode, &it);
     window->cursors[0].point = it.position;
 }
 
