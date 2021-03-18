@@ -248,9 +248,9 @@ Theme create_theme() {
     theme.colors = mag::theme::solarized_dark;
 
     theme.faces.reserve(cz::heap_allocator(), 54);
-    theme.faces.push({{}, {}, 0});              // default
-    theme.faces.push({1, {}, 0});               // unsaved buffer
-    theme.faces.push({{}, {}, Face::REVERSE});  // selected buffer
+    theme.faces.push({{}, 17, 0});             // saved and unselected buffer
+    theme.faces.push({1, {}, 0});              // unsaved buffer
+    theme.faces.push({{}, 0, Face::REVERSE});  // selected buffer
 
     theme.faces.push({0, 7, 0});   // cursor
     theme.faces.push({0, 12, 0});  // marked region

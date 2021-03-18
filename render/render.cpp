@@ -486,13 +486,13 @@ static void draw_buffer_decoration(Cell* cells,
     size_t x = 0;
 
     Face face = {};
-    apply_face(&face, editor->theme.faces[0]);
     if (!buffer->is_unchanged()) {
         apply_face(&face, editor->theme.faces[1]);
     }
     if (is_selected_window) {
         apply_face(&face, editor->theme.faces[2]);
     }
+    apply_face(&face, editor->theme.faces[0]);
 
     cz::AllocatedString string = {};
     string.allocator = cz::heap_allocator();
