@@ -41,8 +41,7 @@ struct Data {
 static void set_token_matches(Data* data) {
     data->token_matches = false;
 
-    if (data->token.type != data->cursor_token_type ||
-        data->token.end - data->token.start != data->cursor_token_length) {
+    if (data->token.end - data->token.start != data->cursor_token_length) {
         return;
     }
 
