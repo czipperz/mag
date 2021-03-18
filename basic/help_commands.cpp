@@ -1,6 +1,7 @@
 #include "help_commands.hpp"
 
 #include <cz/char_type.hpp>
+#include <cz/stringify.hpp>
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "file.hpp"
@@ -91,10 +92,12 @@ static void add_key_map(Contents* contents, cz::String* prefix, const Key_Map& k
     }
 }
 
+const char* const mag_build_directory = CZ_STRINGIFY(MAG_BUILD_DIRECTORY);
+
 void command_dump_key_map(Editor* editor, Command_Source source) {
     Buffer_Id buffer_id;
-    if (!find_temp_buffer(editor, source.client, "*key map*", &buffer_id)) {
-        buffer_id = editor->create_temp_buffer("key map", {});
+    if (!find_temp_buffer(editor, source.client, "*key map*", {mag_build_directory}, &buffer_id)) {
+        buffer_id = editor->create_temp_buffer("key map", {mag_build_directory});
     }
 
     WITH_BUFFER(buffer_id);
