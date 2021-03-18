@@ -59,7 +59,8 @@ static bool load_completion_cache(Editor* editor,
     } while (0)
 
 static void apply_face(Face* face, Face layer) {
-    face->flags |= layer.flags;
+    face->flags |= (layer.flags & ~Face::Flags::REVERSE);
+    face->flags ^= (layer.flags & Face::Flags::REVERSE);
     if (layer.foreground != -1 && face->foreground == -1) {
         face->foreground = layer.foreground;
     }
