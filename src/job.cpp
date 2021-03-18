@@ -71,7 +71,12 @@ bool run_console_command(Client* client,
                          cz::Str script,
                          cz::Str buffer_name,
                          cz::Str error) {
-    Buffer_Id buffer_id = editor->create_temp_buffer(buffer_name, {working_directory});
+    cz::Option<cz::Str> wd = {};
+    if (working_directory) {
+        wd = {working_directory};
+    }
+
+    Buffer_Id buffer_id = editor->create_temp_buffer(buffer_name, wd);
     {
         WITH_BUFFER(buffer_id);
         buffer->contents.append(script);
