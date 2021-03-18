@@ -285,7 +285,8 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
             buffer.reserve(allocator, MAX_PATH);
             while (1) {
                 // Get the standardized file name.
-                DWORD res = GetFinalPathNameByHandleA(handle, buffer.buffer(), (DWORD)buffer.cap(), 0);
+                DWORD res =
+                    GetFinalPathNameByHandleA(handle, buffer.buffer(), (DWORD)buffer.cap(), 0);
 
                 if (res <= 0) {
                     // Failure so stop.
@@ -543,7 +544,8 @@ bool find_temp_buffer(Editor* editor, Client* client, cz::Str path, Buffer_Id* b
     const char* ptr = path.find("* (");
     if (ptr) {
         name = {path.buffer, size_t(ptr + 1 - path.buffer)};
-        directory = {ptr + 3, size_t(path.end() - (ptr + 3) - 1)};
+        cz::Str dir = {ptr + 3, size_t(path.end() - (ptr + 3) - 1)};
+        directory = {dir};
     } else {
         name = path;
         if (name.ends_with("* ")) {
@@ -551,6 +553,14 @@ bool find_temp_buffer(Editor* editor, Client* client, cz::Str path, Buffer_Id* b
         }
     }
 
+    return find_temp_buffer(editor, client, name, directory, buffer_id);
+}
+
+bool find_temp_buffer(Editor* editor,
+                      Client* client,
+                      cz::Str name,
+                      cz::Option<cz::Str> directory,
+                      Buffer_Id* buffer_id) {
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
         Buffer_Handle* handle = editor->buffers[i];
 
@@ -558,7 +568,7 @@ bool find_temp_buffer(Editor* editor, Client* client, cz::Str path, Buffer_Id* b
         CZ_DEFER(handle->unlock());
 
         if (buffer->name == name) {
-            if (!directory.buffer || buffer->directory == directory) {
+            if (!directory.is_present || buffer->directory == directory.value) {
                 *buffer_id = handle->id;
                 return true;
             }

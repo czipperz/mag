@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cz/option.hpp>
+
 namespace cz {
 struct Allocator;
 struct Str;
@@ -54,9 +56,15 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path);
 /// Find a buffer by its path.  The path must be standardized with `standardize_path`.
 bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id);
 
-/// Find temporary buffer by parsing the path.
+/// Find temporary buffer by parsing the `path`.
 ///
 /// `path` should be of the style `NAME` or `NAME (DIRECTORY)`.
 bool find_temp_buffer(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id);
 
+/// Find temporary buffer with a matching `name` and `directory`.
+bool find_temp_buffer(Editor* editor,
+                      Client* client,
+                      cz::Str name,
+                      cz::Option<cz::Str> directory,
+                      Buffer_Id* buffer_id);
 }
