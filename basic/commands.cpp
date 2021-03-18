@@ -511,30 +511,34 @@ void command_redo(Editor* editor, Command_Source source) {
 }
 
 void command_stop_action(Editor* editor, Command_Source source) {
-    bool done = false;
+    const char* message = nullptr;
 
     Window_Unified* window = source.client->selected_window();
-    if (!done && window->completing) {
+    if (!message && window->completing) {
         window->abort_completion();
-        done = true;
+        message = "Stop completion";
     }
 
-    if (!done && window->show_marks) {
+    if (!message && window->show_marks) {
         window->show_marks = false;
-        done = true;
+        message = "Stop selecting region";
     }
 
-    if (!done && window->cursors.len() > 1) {
+    if (!message && window->cursors.len() > 1) {
         kill_extra_cursors(window, source.client);
-        done = true;
+        message = "Stop multiple cursors";
     }
 
-    if (!done && window->id == source.client->mini_buffer_window()->id) {
+    if (!message && window->id == source.client->mini_buffer_window()->id) {
         source.client->hide_mini_buffer(editor);
-        done = true;
+        message = "Stop prompting";
     }
 
-    source.client->show_message("Quit");
+    if (!message) {
+        message = "Nothing to stop";
+    }
+
+    source.client->show_message(message);
 }
 
 void command_quit(Editor* editor, Command_Source source) {
