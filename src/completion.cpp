@@ -122,6 +122,8 @@ struct Wildcard_Pattern {
 };
 
 static Wildcard_Pattern parse_spaces_are_wildcards(cz::Str query) {
+    ZoneScoped;
+
     Wildcard_Pattern pattern = {};
 
     if (query.len > 0) {
@@ -193,6 +195,8 @@ void spaces_are_wildcards_completion_filter(Editor* editor,
                                             Completion_Engine_Context* engine_context,
                                             cz::Str selected_result,
                                             bool has_selected_result) {
+    ZoneScoped;
+
     Wildcard_Pattern pattern = parse_spaces_are_wildcards(engine_context->query);
     CZ_DEFER(pattern.pieces.drop(cz::heap_allocator()));
 
@@ -333,6 +337,8 @@ bool run_command_for_completion_results(Completion_Engine_Context* context,
                                         cz::Slice<cz::Str> args,
                                         cz::Process_Options options,
                                         bool force_reload) {
+    ZoneScoped;
+
     if (!force_reload && context->results.len() > 0) {
         return false;
     }

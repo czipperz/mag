@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <Tracy.hpp>
 #include <command_macros.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
@@ -22,6 +23,8 @@ bool completion_engine(Editor* editor, Completion_Engine_Context* context, bool 
 }
 
 const char* lookup(const char* directory, cz::Str query, Tag* tag) {
+    ZoneScoped;
+
     cz::Input_File std_out_read;
     CZ_DEFER(std_out_read.close());
 
@@ -87,6 +90,8 @@ const char* lookup(const char* directory, cz::Str query, Tag* tag) {
 }
 
 static void open_tag(Editor* editor, Client* client, const Tag& tag) {
+    ZoneScoped;
+
     open_file(editor, client, tag.file_name);
 
     WITH_SELECTED_BUFFER(client);
@@ -111,6 +116,8 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
 }
 
 void command_lookup_at_point(Editor* editor, Command_Source source) {
+    ZoneScoped;
+
     Tag tag;
     {
         WITH_SELECTED_BUFFER(source.client);
@@ -146,6 +153,8 @@ static void command_lookup_prompt_callback(Editor* editor,
                                            Client* client,
                                            cz::Str query,
                                            void* data) {
+    ZoneScoped;
+
     Tag tag;
     {
         WITH_SELECTED_BUFFER(client);
@@ -163,6 +172,8 @@ static void command_lookup_prompt_callback(Editor* editor,
 }
 
 void command_lookup_prompt(Editor* editor, Command_Source source) {
+    ZoneScoped;
+
     char* directory;
     {
         WITH_SELECTED_BUFFER(source.client);
@@ -187,6 +198,8 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
 }
 
 void command_complete_at_point(Editor* editor, Command_Source source) {
+    ZoneScoped;
+
     WITH_SELECTED_BUFFER(source.client);
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
