@@ -52,6 +52,9 @@ struct Mode {
 
     /// Stores the preferred max line length.
     uint64_t preferred_column = 100;
+
+    /// Increase the level of indentation on the line after an open pair automatically.
+    bool indent_after_open_pair = false;
 };
 
 inline bool default_next_token(Contents_Iterator*, Token*, uint64_t*) {

@@ -483,6 +483,8 @@ Mode get_mode(const Buffer& buffer) {
     mode.tab_width = 4;
     mode.use_tabs = false;
 
+    mode.indent_after_open_pair = false;
+
     mode.preferred_column = 100;
 
     mode.next_token = default_next_token;

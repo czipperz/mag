@@ -9,7 +9,7 @@
 namespace mag {
 namespace basic {
 
-static uint64_t find_indent_width(const Mode& mode, Buffer* buffer, Contents_Iterator it) {
+static uint64_t find_indent_width(Buffer* buffer, Contents_Iterator it) {
     Contents_Iterator original = it;
 
     // Find a line backwards that isn't empty (including the current line).
@@ -27,37 +27,41 @@ static uint64_t find_indent_width(const Mode& mode, Buffer* buffer, Contents_Ite
     // open pair.
     int64_t depth = 0;
 
-    Tokenizer_Check_Point check_point = {};
-    buffer->token_cache.update(buffer);
-    buffer->token_cache.find_check_point(it.position, &check_point);
+    if (buffer->mode.indent_after_open_pair) {
+        Tokenizer_Check_Point check_point = {};
+        buffer->token_cache.update(buffer);
+        buffer->token_cache.find_check_point(it.position, &check_point);
 
-    Contents_Iterator token_iterator = it;
-    token_iterator.retreat_to(check_point.position);
-    uint64_t state = check_point.state;
+        Contents_Iterator token_iterator = it;
+        token_iterator.retreat_to(check_point.position);
+        uint64_t state = check_point.state;
 
-    Token token;
-    while (buffer->mode.next_token(&token_iterator, &token, &state)) {
-        if (token.start < it.position) {
-            continue;
+        Token token;
+        while (buffer->mode.next_token(&token_iterator, &token, &state)) {
+            if (token.start < it.position) {
+                continue;
+            }
+            if (token.end > original.position) {
+                break;
+            }
+            if (token.type == Token_Type::OPEN_PAIR) {
+                ++depth;
+            }
+            if (token.type == Token_Type::CLOSE_PAIR) {
+                --depth;
+            }
         }
-        if (token.end > original.position) {
-            break;
-        }
-        if (token.type == Token_Type::OPEN_PAIR) {
-            ++depth;
-        }
-        if (token.type == Token_Type::CLOSE_PAIR) {
-            --depth;
-        }
+
+        // Don't unindent if the line has more close pairs.  A line `}`
+        // shouldn't cause the next line to be unindented even more.
+        // It should be indented the same amount as the closing pair.
+        depth = cz::max(depth, (int64_t)0);
     }
-    // Don't unindent if the line has more close pairs.  A line `}` shouldn't cause the next line to
-    // be unindented even more.  It should be indented the same amount as the closing pair.
-    depth = cz::max(depth, (int64_t)0);
 
     Contents_Iterator end = it;
     forward_through_whitespace(&end);
 
-    return depth * mode.indent_width + get_visual_column(mode, end);
+    return depth * buffer->mode.indent_width + get_visual_column(buffer->mode, end);
 }
 
 void command_insert_newline_indent(Editor* editor, Command_Source source) {
@@ -73,7 +77,7 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
         backward_through_whitespace(&it);
         alloc_space += end - it.position;
 
-        alloc_space += find_indent_width(buffer->mode, buffer, it);
+        alloc_space += find_indent_width(buffer, it);
     }
 
     Transaction transaction;
@@ -93,7 +97,7 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
         remove.flags = Edit::REMOVE;
         transaction.push(remove);
 
-        uint64_t columns = find_indent_width(buffer->mode, buffer, it);
+        uint64_t columns = find_indent_width(buffer, it);
 
         uint64_t num_tabs, num_spaces;
         analyze_indent(buffer->mode, columns, &num_tabs, &num_spaces);
