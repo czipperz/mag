@@ -433,7 +433,7 @@ static void draw_buffer_contents(Cell* cells,
             while (x < end_x) {
                 ADDCH(face, ' ');
             }
-        } else if (isprint(ch)) {
+        } else if (cz::is_print(ch)) {
             ADDCH(face, ch);
         } else {
             ADDCH(face, '\\');

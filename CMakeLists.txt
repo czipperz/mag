@@ -75,8 +75,7 @@ endif()
 target_link_libraries(${PROJECT_NAME} tracy)
 
 if (NOT WIN32)
-  target_link_libraries(${PROJECT_NAME} pthread)
-  target_link_libraries(${PROJECT_NAME} dl)
+  target_link_libraries(${PROJECT_NAME} pthread dl)
 endif()
 
 # Run GNU Global if it is available.
@@ -150,6 +149,7 @@ else()
   target_link_libraries(${TEST_EXECUTABLE} cz)
   target_link_libraries(${TEST_EXECUTABLE} czt)
   target_link_libraries(${TEST_EXECUTABLE} tracy)
+  target_link_libraries(${TEST_EXECUTABLE} pthread dl)
 endif()
 
 add_library(tracy tracy/TracyClient.cpp)

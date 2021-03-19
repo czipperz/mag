@@ -1,5 +1,7 @@
 #include "directory_commands.hpp"
 
+#include <errno.h>
+#include <stdio.h>
 #include <cz/file.hpp>
 #include <cz/fs/directory.hpp>
 #include <cz/path.hpp>

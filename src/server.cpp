@@ -1,5 +1,6 @@
 #include "server.hpp"
 
+#include <stdio.h>
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/heap.hpp>
@@ -285,7 +286,7 @@ static void failed_key_press(Editor* editor,
                              Command* previous_command,
                              size_t start) {
     Key key = client->key_chain[start];
-    if (key.modifiers == 0 && (isprint(key.code) || key.code == '\t' || key.code == '\n')) {
+    if (key.modifiers == 0 && (cz::is_print(key.code) || key.code == '\t' || key.code == '\n')) {
         Command_Source source;
         source.client = client;
         source.keys = {client->key_chain.start() + start, 1};

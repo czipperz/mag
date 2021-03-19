@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <stdio.h>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
@@ -133,8 +134,8 @@ int mag_main(int argc, char** argv) {
 #endif
         while (1) {
 #ifdef _WIN32
-            DWORD count =
-                GetModuleFileNameA(NULL, program_name_storage.buffer(), (DWORD)program_name_storage.cap());
+            DWORD count = GetModuleFileNameA(NULL, program_name_storage.buffer(),
+                                             (DWORD)program_name_storage.cap());
 #else
             ssize_t count = readlink("/proc/self/exe", program_name_storage.buffer(),
                                      program_name_storage.cap());
