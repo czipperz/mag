@@ -51,7 +51,6 @@ file(GLOB_RECURSE SRCS src/*.cpp custom/*.cpp basic/*.cpp prose/*.cpp clang_form
                        gnu_global/*.cpp syntax/*.cpp man/*.cpp render/*.cpp)
 add_library(${LIBRARY_NAME} ${SRCS})
 target_include_directories(${LIBRARY_NAME} PUBLIC custom)
-message(MAG_BUILD_DIRECTORY=${CMAKE_SOURCE_DIR})
 target_compile_definitions(${LIBRARY_NAME} PUBLIC MAG_BUILD_DIRECTORY=${CMAKE_SOURCE_DIR})
 
 # Build mag (mag.exe)
