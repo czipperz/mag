@@ -184,9 +184,12 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
         uint64_t new_columns = data.columns;
         if (indent_offset < 0 && (uint64_t)-indent_offset > new_columns) {
             new_columns = 0;
-        } else {
+        } else if (indent_offset > 0) {
             new_columns += indent_offset;
             new_columns -= new_columns % buffer->mode.indent_width;
+        } else {
+            new_columns += indent_offset;
+            new_columns += new_columns % buffer->mode.indent_width;
         }
         uint64_t new_tabs, new_spaces;
         analyze_indent(buffer->mode, new_columns, &new_tabs, &new_spaces);
