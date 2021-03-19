@@ -188,6 +188,9 @@ static void setup_completion_cache(Client* client, Editor* editor) {
     completion_cache->set_engine(engine);
 
     client->update_mini_buffer_completion_cache(editor);
+
+    // Reset the state because it may get updated by updating the completion cache.
+    completion_cache->state = Completion_Cache::INITIAL;
 }
 
 void Client::update_mini_buffer_completion_cache(Editor* editor) {
