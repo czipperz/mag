@@ -4,16 +4,40 @@
 #include <stdio.h>
 #include <Tracy.hpp>
 #include <command_macros.hpp>
+#include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
+#include <cz/write.hpp>
 #include <file.hpp>
+#include <limits>
 #include <movement.hpp>
 #include <token.hpp>
 #include "visible_region.hpp"
 
 namespace mag {
 namespace gnu_global {
+
+template <class T>
+static bool parse_number(cz::Str str, T* number) {
+    *number = 0;
+    for (size_t i = 0; i < str.len; ++i) {
+        if (!cz::is_digit(str[i])) {
+            return false;
+        }
+
+        if (*number > std::numeric_limits<T>::max() / 10) {
+            return false;
+        }
+        *number *= 10;
+
+        if (*number > std::numeric_limits<T>::max() - (str[i] - '0')) {
+            return false;
+        }
+        *number += str[i] - '0';
+    }
+    return true;
+}
 
 bool completion_engine(Editor* editor, Completion_Engine_Context* context, bool is_initial_frame) {
     cz::Str args[] = {"global", "-c", context->query};
@@ -22,7 +46,10 @@ bool completion_engine(Editor* editor, Completion_Engine_Context* context, bool 
     return run_command_for_completion_results(context, args, options, is_initial_frame);
 }
 
-const char* lookup(const char* directory, cz::Str query, Tag* tag) {
+const char* lookup(const char* directory,
+                   cz::Str query,
+                   cz::Vector<Tag>* tags,
+                   cz::String* buffer) {
     ZoneScoped;
 
     cz::Input_File std_out_read;
@@ -45,52 +72,58 @@ const char* lookup(const char* directory, cz::Str query, Tag* tag) {
         }
     }
 
-    cz::String buffer = {};
-    CZ_DEFER(buffer.drop(cz::heap_allocator()));
-    read_to_string(std_out_read, cz::heap_allocator(), &buffer);
+    *buffer = {};
+    read_to_string(std_out_read, cz::heap_allocator(), buffer);
 
     int return_value = process.join();
     if (return_value != 0) {
         return "Failed to run `global`";
     }
 
-    if (buffer.len() == 0) {
-        return "No global tag results";
+    cz::Str rest = *buffer;
+    while (1) {
+        const char* lf = rest.find('\n');
+        if (!lf) {
+            break;
+        }
+
+        cz::Str line = rest.slice_end(lf);
+        rest = rest.slice_start(lf + 1);
+
+        const char* file_name_start = line.find('\t');
+        if (!file_name_start || file_name_start + 1 >= line.end()) {
+            return "Invalid `global` output";
+        }
+
+        ++file_name_start;
+
+        const char* line_number_start = line.slice_start(file_name_start).find('\t');
+        if (!line_number_start || line_number_start + 2 >= line.end()) {
+            return "Invalid `global` output";
+        }
+
+        *(char*)line_number_start = '\0';
+
+        Tag tag;
+        tag.file_name = file_name_start;
+        if (!parse_number(line.slice_start(line_number_start + 1), &tag.line)) {
+            return "Invalid `global` output";
+        }
+
+        tags->reserve(cz::heap_allocator(), 1);
+        tags->push(tag);
     }
-
-    const char* file_name_start = buffer.find('\t');
-    if (!file_name_start || file_name_start + 1 >= buffer.end()) {
-        return "Invalid `global` output";
-    }
-
-    ++file_name_start;
-
-    const char* line_number_start = buffer.slice_start(file_name_start).find('\t');
-    if (!line_number_start || line_number_start + 2 >= buffer.end()) {
-        return "Invalid `global` output";
-    }
-
-    const char* line_number_end = buffer.slice_start(line_number_start + 1).find('\n');
-    if (!line_number_end) {
-        return "Invalid `global` output";
-    }
-    *(char*)line_number_start = '\0';
-    *(char*)line_number_end = '\0';
-
-    int scan_ret = sscanf(line_number_start + 1, "%" PRIu64, &tag->line);
-    if (scan_ret == EOF || scan_ret < 1) {
-        return "Invalid `global` output";
-    }
-
-    tag->file_name = file_name_start;
-    tag->buffer = buffer;
-    buffer = {};
 
     return nullptr;
 }
 
 static void open_tag(Editor* editor, Client* client, const Tag& tag) {
     ZoneScoped;
+
+    {
+        WITH_SELECTED_BUFFER(client);
+        push_jump(window, client, buffer);
+    }
 
     open_file(editor, client, tag.file_name);
 
@@ -115,10 +148,102 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
     }
 }
 
+struct Tag_Completion_Engine_Data {
+    cz::Vector<Tag> tags;
+    cz::String buffer;
+};
+
+static void tag_completion_engine_cleanup(void* _data) {
+    Tag_Completion_Engine_Data* data = (Tag_Completion_Engine_Data*)_data;
+    data->tags.drop(cz::heap_allocator());
+    data->buffer.drop(cz::heap_allocator());
+    free(data);
+}
+
+static bool tag_completion_engine(Editor* editor,
+                                  Completion_Engine_Context* context,
+                                  bool is_initial_frame) {
+    if (!is_initial_frame) {
+        return false;
+    }
+
+    Tag_Completion_Engine_Data* data = (Tag_Completion_Engine_Data*)context->data;
+
+    context->results.set_len(0);
+    context->results.reserve(cz::heap_allocator(), data->tags.len());
+
+    for (size_t i = 0; i < data->tags.len(); ++i) {
+        cz::AllocatedString string = {};
+        string.allocator = context->results_buffer_array.allocator();
+        cz::write(cz::string_writer(&string), data->tags[i].file_name, ':', data->tags[i].line);
+        string.realloc();
+
+        context->results.push(string);
+    }
+
+    return true;
+}
+
+static void prompt_open_tags_callback(Editor* editor, Client* client, cz::Str query, void* data) {
+    const char* colon = query.rfind(':');
+    if (!colon) {
+        open_file(editor, client, query);
+        return;
+    }
+
+    Tag tag;
+    tag.file_name = query.slice_end(colon);
+    tag.line = 0;
+    if (!parse_number(query.slice_start(colon + 1), &tag.line)) {
+        tag.file_name = query;
+        tag.line = 0;
+    }
+
+    open_tag(editor, client, tag);
+}
+
+void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::String buffer) {
+    if (tags.len() == 0) {
+        tags.drop(cz::heap_allocator());
+        buffer.drop(cz::heap_allocator());
+
+        client->show_message("No global tag results");
+        return;
+    }
+
+    if (tags.len() == 1) {
+        CZ_DEFER({
+            tags.drop(cz::heap_allocator());
+            buffer.drop(cz::heap_allocator());
+        });
+
+        open_tag(editor, client, tags[0]);
+        return;
+    }
+
+    Tag_Completion_Engine_Data* data =
+        (Tag_Completion_Engine_Data*)malloc(sizeof(Tag_Completion_Engine_Data));
+    CZ_ASSERT(data);
+    data->tags = tags;
+    data->buffer = buffer;
+
+    client->show_dialog(editor, "Open tag: ", tag_completion_engine, prompt_open_tags_callback,
+                        nullptr);
+
+    if (client->mini_buffer_completion_cache.engine_context.data) {
+        client->mini_buffer_completion_cache.engine_context.cleanup(
+            client->mini_buffer_completion_cache.engine_context.data);
+    }
+
+    client->mini_buffer_completion_cache.engine_context.data = data;
+    client->mini_buffer_completion_cache.engine_context.cleanup = tag_completion_engine_cleanup;
+}
+
 void command_lookup_at_point(Editor* editor, Command_Source source) {
     ZoneScoped;
 
-    Tag tag;
+    cz::Vector<Tag> tags = {};
+    cz::String str_buffer = {};
     {
         WITH_SELECTED_BUFFER(source.client);
 
@@ -135,18 +260,16 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
         buffer->contents.slice_into(iterator, token.end, query);
         query[token.end - token.start] = '\0';
 
-        const char* lookup_error = lookup(buffer->directory.buffer(), query, &tag);
+        const char* lookup_error = lookup(buffer->directory.buffer(), query, &tags, &str_buffer);
         if (lookup_error) {
+            tags.drop(cz::heap_allocator());
+            str_buffer.drop(cz::heap_allocator());
             source.client->show_message(lookup_error);
             return;
         }
-
-        push_jump(window, source.client, buffer);
     }
 
-    CZ_DEFER(tag.buffer.drop(cz::heap_allocator()));
-
-    open_tag(editor, source.client, tag);
+    prompt_open_tags(editor, source.client, tags, str_buffer);
 }
 
 static void command_lookup_prompt_callback(Editor* editor,
@@ -155,20 +278,20 @@ static void command_lookup_prompt_callback(Editor* editor,
                                            void* data) {
     ZoneScoped;
 
-    Tag tag;
+    cz::Vector<Tag> tags = {};
+    cz::String str_buffer = {};
     {
         WITH_SELECTED_BUFFER(client);
-        const char* lookup_error = lookup(buffer->directory.buffer(), query, &tag);
+        const char* lookup_error = lookup(buffer->directory.buffer(), query, &tags, &str_buffer);
         if (lookup_error) {
+            tags.drop(cz::heap_allocator());
+            str_buffer.drop(cz::heap_allocator());
             client->show_message(lookup_error);
             return;
         }
-
-        push_jump(window, client, buffer);
     }
-    CZ_DEFER(tag.buffer.drop(cz::heap_allocator()));
 
-    open_tag(editor, client, tag);
+    prompt_open_tags(editor, client, tags, str_buffer);
 }
 
 void command_lookup_prompt(Editor* editor, Command_Source source) {
