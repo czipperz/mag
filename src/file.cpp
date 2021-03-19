@@ -272,6 +272,23 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     cz::String user_path_nt = user_path.duplicate_null_terminate(cz::heap_allocator());
     CZ_DEFER(user_path_nt.drop(cz::heap_allocator()));
 
+#ifndef _WIN32
+    // Don't dereference any symbolic links in `/proc` because the symbolic
+    // links are often broken.  Example usage is `mag <(git diff)` will open
+    // `/proc/self/fd/%d` with the result of the subcommand (`git diff`).
+    if (user_path.starts_with("/proc/")) {
+        cz::path::convert_to_forward_slashes(user_path_nt.buffer(), user_path_nt.len());
+
+        cz::String path = {};
+        cz::path::make_absolute(user_path_nt, allocator, &path);
+        if (path[path.len() - 1] == '/') {
+            path.pop();
+        }
+        path.null_terminate();
+        return path;
+    }
+#endif
+
     // Use the kernel functions to standardize the path if they work.
 #ifdef _WIN32
     {
