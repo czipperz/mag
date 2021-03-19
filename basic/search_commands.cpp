@@ -60,7 +60,7 @@ static bool get_file_to_open(Buffer* buffer,
         return false;
     }
     if (!parse_number(&iterator, column)) {
-        return false;
+        *column = 0;
     }
 
     path->reserve(cz::heap_allocator(),
