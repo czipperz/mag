@@ -3,6 +3,7 @@
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/option.hpp>
+#include <cz/path.hpp>
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
 #include "command_macros.hpp"
@@ -1162,6 +1163,54 @@ void command_submit_mini_buffer(Editor* editor, Command_Source source) {
     source.client->_message.response_callback(editor, source.client, mini_buffer_contents,
                                               source.client->_message.response_callback_data);
     source.client->dealloc_message();
+}
+
+void command_insert_home_directory(Editor* editor, Command_Source source) {
+    const char* user_home_path;
+#ifdef _WIN32
+    user_home_path = getenv("USERPROFILE");
+#else
+    user_home_path = getenv("HOME");
+#endif
+
+    if (!user_home_path) {
+        return;
+    }
+
+    cz::Str str = user_home_path;
+    size_t extra = 0;
+    if (!str.ends_with("/") && !str.ends_with("\\")) {
+        extra = 1;
+    }
+
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    Transaction transaction;
+    transaction.init(cursors.len, str.len + extra);
+
+    char* buf = (char*)transaction.value_allocator().alloc({str.len + extra, 1});
+    memcpy(buf, str.buffer, str.len);
+    if (extra) {
+        buf[str.len] = '/';
+    }
+
+    cz::path::convert_to_forward_slashes(buf, str.len);
+
+    SSOStr ssostr = SSOStr::from_constant({buf, str.len + extra});
+
+    uint64_t offset = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        Edit insert;
+        insert.value = ssostr;
+        insert.position = cursors[c].point + offset;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+        offset += str.len;
+    }
+
+    transaction.commit(buffer);
 }
 
 }

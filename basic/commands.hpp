@@ -86,5 +86,7 @@ void command_mark_buffer(Editor* editor, Command_Source source);
 
 void command_submit_mini_buffer(Editor* editor, Command_Source source);
 
+void command_insert_home_directory(Editor* editor, Command_Source source);
+
 }
 }
