@@ -571,7 +571,7 @@ Mode get_mode(const Buffer& buffer) {
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             mode.overlays = overlays;
-        } else if (buffer.name.ends_with(".py")) {
+        } else if (buffer.name.ends_with(".py") || buffer.name.ends_with(".gpy")) {
             mode.next_token = syntax::python_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
