@@ -527,7 +527,7 @@ bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id
     }
 
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
-        Buffer_Handle* handle = editor->buffers[i];
+        Buffer_Handle* handle = editor->buffers[i].get();
 
         {
             const Buffer* buffer = handle->lock_reading();
@@ -579,8 +579,7 @@ bool find_temp_buffer(Editor* editor,
                       cz::Option<cz::Str> directory,
                       Buffer_Id* buffer_id) {
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
-        Buffer_Handle* handle = editor->buffers[i];
-
+        Buffer_Handle* handle = editor->buffers[i].get();
         const Buffer* buffer = handle->lock_reading();
         CZ_DEFER(handle->unlock());
 

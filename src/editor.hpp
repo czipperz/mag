@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <cz/arc.hpp>
 #include <cz/heap.hpp>
 #include <cz/option.hpp>
 #include <cz/vector.hpp>
@@ -13,7 +14,7 @@
 namespace mag {
 
 struct Editor {
-    cz::Vector<Buffer_Handle*> buffers;
+    cz::Vector<cz::Arc<Buffer_Handle> > buffers;
 
     Key_Map key_map;
     Theme theme;
@@ -28,8 +29,7 @@ struct Editor {
 
     void drop() {
         for (size_t i = 0; i < buffers.len(); ++i) {
-            buffers[i]->drop();
-            cz::heap_allocator().dealloc({buffers[i], sizeof(Buffer_Handle)});
+            buffers[i].drop();
         }
         buffers.drop(cz::heap_allocator());
 
@@ -58,10 +58,19 @@ struct Editor {
         }
     }
 
-    Buffer_Handle* lookup(Buffer_Id id) {
+    bool lookup(Buffer_Id id, cz::Arc<Buffer_Handle>* buffer_handle) {
         size_t index;
         if (binary_search_buffer_id(id, &index)) {
-            return buffers[index];
+            *buffer_handle = buffers[index];
+            return true;
+        }
+        return false;
+    }
+
+    Buffer_Handle* lookup(Buffer_Id id) {
+        cz::Arc<Buffer_Handle> buffer_handle;
+        if (lookup(id, &buffer_handle)) {
+            return buffer_handle.get();
         }
         return nullptr;
     }
@@ -69,17 +78,19 @@ struct Editor {
     void kill(Buffer_Id id) {
         size_t index;
         if (binary_search_buffer_id(id, &index)) {
-            buffers[index]->drop();
-            cz::heap_allocator().dealloc({buffers[index], sizeof(Buffer_Handle)});
+            buffers[index].drop();
             buffers.remove(index);
         }
     }
 
     Buffer_Id create_buffer(Buffer buffer) {
-        Buffer_Handle* buffer_handle = cz::heap_allocator().create<Buffer_Handle>();
+        cz::Arc<Buffer_Handle> buffer_handle;
+        buffer_handle.init_emplace();
         buffer_handle->init({buffer_counter++}, buffer);
+
         buffers.reserve(cz::heap_allocator(), 1);
         buffers.push(buffer_handle);
+
         return buffer_handle->id;
     }
 

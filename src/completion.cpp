@@ -318,7 +318,7 @@ bool buffer_completion_engine(Editor* editor,
     context->results.set_len(0);
     context->results.reserve(cz::heap_allocator(), editor->buffers.len());
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
-        Buffer_Handle* handle = editor->buffers[i];
+        Buffer_Handle* handle = editor->buffers[i].get();
         const Buffer* buffer = handle->lock_reading();
         CZ_DEFER(handle->unlock());
 

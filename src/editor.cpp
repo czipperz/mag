@@ -29,11 +29,7 @@ Buffer_Id Editor::create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir)
     buffer.name.append(temp_name);
     buffer.name.push('*');
 
-    Buffer_Handle* buffer_handle = cz::heap_allocator().create<Buffer_Handle>();
-    buffer_handle->init({buffer_counter++}, buffer);
-    buffers.reserve(cz::heap_allocator(), 1);
-    buffers.push(buffer_handle);
-    return buffer_handle->id;
+    return create_buffer(buffer);
 }
 
 }
