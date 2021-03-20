@@ -158,6 +158,7 @@ Key_Map create_key_map() {
     BIND(key_map, "A-m", command_open_line);
     BIND(key_map, "C-m", command_insert_newline_indent);
     BIND(key_map, "\n", command_insert_newline_indent);
+    BIND(key_map, "S-\n", command_insert_newline_indent);
     BIND(key_map, "C-i", command_increase_indent);
     BIND(key_map, "\t", command_increase_indent);
     BIND(key_map, "A-i", command_decrease_indent);
@@ -339,6 +340,7 @@ static Key_Map create_directory_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-m", command_directory_open_path);
     BIND(key_map, "\n", command_directory_open_path);
+    BIND(key_map, "S-\n", command_directory_open_path);
     BIND(key_map, "C-j", command_directory_open_path);
     BIND(key_map, "d", command_directory_delete_path);
     BIND(key_map, "c", command_directory_copy_path);
@@ -397,6 +399,7 @@ static Key_Map create_search_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-m", command_search_open);
     BIND(key_map, "\n", command_search_open);
+    BIND(key_map, "S-\n", command_search_open);
     BIND(key_map, "g", command_search_reload);
 
     BIND(key_map, "n", command_forward_line);
@@ -435,6 +438,7 @@ static Key_Map create_mini_buffer_key_map() {
     BIND(key_map, "C-j", command_insert_completion_and_submit_mini_buffer);
     BIND(key_map, "C-m", command_submit_mini_buffer);
     BIND(key_map, "\n", command_submit_mini_buffer);
+    BIND(key_map, "S-\n", command_submit_mini_buffer);
     return key_map;
 }
 
@@ -455,6 +459,7 @@ static Key_Map create_window_completion_key_map() {
     BIND(key_map, "C-j", window_completion::command_finish_completion);
     BIND(key_map, "C-m", window_completion::command_finish_completion);
     BIND(key_map, "\n", window_completion::command_finish_completion);
+    BIND(key_map, "S-\n", window_completion::command_finish_completion);
     BIND(key_map, "A-c", window_completion::command_finish_completion);
     return key_map;
 }
