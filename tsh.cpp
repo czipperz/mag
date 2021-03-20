@@ -1,6 +1,6 @@
 #include "tokenize_sh.hpp"
 
-#include <cz/char_type.hpp>
+#include <ctype.h>
 #include "contents.hpp"
 #include "face.hpp"
 #include "match.hpp"
@@ -19,7 +19,7 @@ static bool advance_whitespace(Contents_Iterator* iterator, bool* at_start_of_st
         if (ch == '\n') {
             *at_start_of_statement = true;
         }
-        if (!cz::is_space(ch)) {
+        if (!isspace(ch)) {
             return true;
         }
         iterator->advance();
@@ -32,8 +32,8 @@ static bool is_separator(char ch) {
 }
 
 static bool is_general(char ch) {
-    return ch != '"' && ch != '\'' && ch != '`' && ch != '$' && ch != '#' && !is_separator(ch) &&
-           !cz::is_space(ch);
+    return ch != '"' && ch != '\'' && ch != '`' && ch != '$' && ch != '#' && ch != '/' &&
+           ch != '.' && !is_separator(ch) && !isspace(ch);
 }
 
 enum {
@@ -95,24 +95,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
-    if (top == AFTER_DOLLAR && (cz::is_alnum(first_ch) || first_ch == '_')) {
-        while (!iterator->at_eob()) {
-            if (!cz::is_alnum(iterator->get()) && iterator->get() != '_') {
-                break;
-            }
-            iterator->advance();
-        }
-        token->type = Token_Type::IDENTIFIER;
-        goto ret;
-    }
-
     if (is_general(first_ch)) {
-        // Handle one-char variables specially like `$@` and `$*`.
-        if (top == AFTER_DOLLAR) {
-            token->type = Token_Type::IDENTIFIER;
-            goto ret;
-        }
-
         if (first_ch == '\\' && !iterator->at_eob()) {
             iterator->advance();
         }
@@ -136,17 +119,18 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             iterator->advance();
         }
 
-        if (at_start_of_statement && (matches(start, iterator->position, "if") ||
-                                      matches(start, iterator->position, "elif") ||
-                                      matches(start, iterator->position, "while") ||
-                                      matches(start, iterator->position, "until") ||
-                                      matches(start, iterator->position, "."))) {
+        if (top == AFTER_DOLLAR) {
+            token->type = Token_Type::IDENTIFIER;
+        } else if (at_start_of_statement && (matches(start, iterator->position, "if") ||
+                                             matches(start, iterator->position, "elif") ||
+                                             matches(start, iterator->position, "while") ||
+                                             matches(start, iterator->position, "until") ||
+                                             matches(start, iterator->position, "."))) {
             token->type = Token_Type::KEYWORD;
             at_start_of_statement = true;
             goto ret;
         } else if (at_start_of_statement && (matches(start, iterator->position, "then") ||
-                                             matches(start, iterator->position, "do") ||
-                                             matches(start, iterator->position, "case"))) {
+                                             matches(start, iterator->position, "do"))) {
             token->type = Token_Type::OPEN_PAIR;
             at_start_of_statement = true;
             goto ret;
@@ -167,8 +151,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                                              matches(start, iterator->position, "export"))) {
             token->type = Token_Type::KEYWORD;
         } else if (at_start_of_statement && (matches(start, iterator->position, "fi") ||
-                                             matches(start, iterator->position, "done") ||
-                                             matches(start, iterator->position, "esac"))) {
+                                             matches(start, iterator->position, "done"))) {
             token->type = Token_Type::CLOSE_PAIR;
         } else {
             token->type = Token_Type::DEFAULT;
