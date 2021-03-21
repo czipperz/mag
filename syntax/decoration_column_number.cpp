@@ -14,13 +14,6 @@
 namespace mag {
 namespace syntax {
 
-struct Buffer_Data {
-    Buffer_Id id;
-    size_t change_index;
-    uint64_t position;
-    uint64_t line_number;
-};
-
 static bool decoration_column_number_append(const Buffer* buffer,
                                             Window_Unified* window,
                                             cz::AllocatedString* string,
