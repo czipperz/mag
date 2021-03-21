@@ -33,7 +33,9 @@ struct Run_Jobs {
 
                 if (remove) {
                     jobs->remove(i);
-                    --i;
+                    if (i > 0) {
+                        --i;
+                    }
                     remove = false;
                 }
 
