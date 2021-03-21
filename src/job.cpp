@@ -111,6 +111,7 @@ bool run_console_command_in(Client* client,
         client->show_message("Error: I/O operation failed");
         return false;
     }
+    stdout_read.set_non_blocking();
     CZ_DEFER(options.std_out.close());
 
     cz::Process process;
