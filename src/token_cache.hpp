@@ -17,7 +17,11 @@ struct Token_Cache {
     cz::Vector<Tokenizer_Check_Point> check_points;
     bool ran_to_end;
 
+    /// Destroy the token cache.
     void drop();
+
+    /// Duplicate the token cache.
+    Token_Cache clone();
 
     /// Reset to the initial state.
     ///

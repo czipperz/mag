@@ -15,6 +15,12 @@ void Token_Cache::drop() {
     check_points.drop(cz::heap_allocator());
 }
 
+Token_Cache Token_Cache::clone() {
+    Token_Cache cache = *this;
+    cache.check_points = cache.check_points.clone(cz::heap_allocator());
+    return cache;
+}
+
 void Token_Cache::reset() {
     change_index = 0;
     check_points.set_len(0);

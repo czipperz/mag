@@ -12,7 +12,7 @@ using namespace mag::basic;
 
 #define SETUP_TEST(CONTENTS)                                              \
     Server server = {};                                                   \
-    server.editor.create();                                               \
+    server.init();                                                        \
     CZ_DEFER(server.drop());                                              \
     Editor* editor = &server.editor;                                      \
     Buffer test_buffer = {};                                              \

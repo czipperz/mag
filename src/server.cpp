@@ -4,6 +4,7 @@
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/heap.hpp>
+#include <cz/mutex.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "custom/config.hpp"
@@ -11,6 +12,107 @@
 #include "movement.hpp"
 
 namespace mag {
+
+struct Run_Jobs {
+    cz::Mutex* mutex;
+    cz::Vector<Job>* jobs;
+    bool* stop;
+
+    void operator()() {
+        ZoneScopedN("job thread");
+
+        bool remove = false;
+        while (1) {
+            size_t i = 0;
+
+            Job job;
+            {
+                ZoneScopedN("job thread find job");
+                mutex->lock();
+                CZ_DEFER(mutex->unlock());
+
+                if (remove) {
+                    jobs->remove(i);
+                    --i;
+                    remove = false;
+                }
+
+                if (*stop) {
+                    for (size_t i = 0; i < jobs->len(); ++i) {
+                        (*jobs)[i].kill((*jobs)[i].data);
+                    }
+                    return;
+                }
+
+                if (jobs->len() == 0) {
+                    i = 0;
+                    goto sleep;
+                }
+
+                if (i == jobs->len()) {
+                    i = 0;
+                }
+
+                job = (*jobs)[i];
+                ++i;
+            }
+
+            {
+                ZoneScopedN("job thread run job");
+                if (job.tick(job.data)) {
+                    remove = true;
+                }
+            }
+
+            if (false) {
+            sleep:
+                ZoneScopedN("job thread sleeping");
+                std::this_thread::sleep_for(std::chrono::milliseconds(3));
+            }
+        }
+    }
+};
+
+void Server::init() {
+    job_mutex = new cz::Mutex;
+    job_mutex->init();
+    job_data = new cz::Vector<Job>{};
+    job_stop = new bool(false);
+    job_thread = new std::thread(Run_Jobs{job_mutex, job_data, job_stop});
+
+    editor.create();
+}
+
+void Server::drop() {
+    {
+        job_mutex->lock();
+        CZ_DEFER(job_mutex->unlock());
+        *job_stop = true;
+    }
+
+    job_thread->join();
+    delete job_thread;
+    job_mutex->drop();
+    delete job_mutex;
+    job_data->drop(cz::heap_allocator());
+    delete job_data;
+    delete job_stop;
+
+    editor.drop();
+}
+
+void Server::slurp_jobs() {
+    if (editor.pending_jobs.len() > 0) {
+        job_mutex->lock();
+        CZ_DEFER(job_mutex->unlock());
+
+        job_data->reserve(cz::heap_allocator(), editor.pending_jobs.len());
+        for (size_t i = 0; i < editor.pending_jobs.len(); ++i) {
+            job_data->push(editor.pending_jobs[i]);
+        }
+        editor.pending_jobs.set_len(0);
+    }
+}
 
 Client Server::make_client() {
     Client client = {};

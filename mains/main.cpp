@@ -180,7 +180,7 @@ int mag_main(int argc, char** argv) {
         }
 
         Server server = {};
-        server.editor.create();
+        server.init();
         CZ_DEFER(server.drop());
 
         Buffer scratch = {};

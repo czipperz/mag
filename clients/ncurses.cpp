@@ -332,8 +332,8 @@ void run(Server* server, Client* client) {
         render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client, colors,
                used_colors);
 
-        bool has_jobs = server->editor.jobs.len() > 0;
-        server->editor.tick_jobs();
+        bool has_jobs = true;
+        server->slurp_jobs();
 
         int ch = ERR;
         cache_windows_check_points(window_cache, client->window, &server->editor, getch_callback,

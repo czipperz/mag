@@ -948,7 +948,7 @@ void run(Server* server, Client* client) {
 
         process_mouse_events(&server->editor, client, &mouse);
 
-        server->editor.tick_jobs();
+        server->slurp_jobs();
 
         SDL_Event event;
         if (cache_windows_check_points(window_cache, client->window, &server->editor,
