@@ -20,16 +20,6 @@
 
 namespace mag {
 
-static bool check_out_of_date_and_update_file_time(Buffer* buffer) {
-    cz::String path = {};
-    CZ_DEFER(path.drop(cz::heap_allocator()));
-    if (!buffer->get_path(cz::heap_allocator(), &path)) {
-        return false;
-    }
-
-    return check_out_of_date_and_update_file_time(path.buffer(), &buffer->file_time);
-}
-
 static void initialize_file_time(Buffer* buffer) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -44,16 +34,6 @@ void Buffer::init() {
     mode = custom::get_mode(*this);
 
     initialize_file_time(this);
-}
-
-void Buffer::check_for_external_update(Client* client) {
-    if (!is_unchanged() || !has_file_time) {
-        return;
-    }
-
-    if (check_out_of_date_and_update_file_time(this)) {
-        reload_file(client, this);
-    }
 }
 
 void Buffer::drop() {

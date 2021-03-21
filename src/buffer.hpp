@@ -119,8 +119,6 @@ struct Buffer {
     bool is_unchanged() const;
     void mark_saved();
 
-    void check_for_external_update(Client* client);
-
     /// Composes the `directory` and `name` as well as adding a null terminator.
     ///
     /// If `type` is `TEMPORARY`, `get_path` returns `false` and not change the string.

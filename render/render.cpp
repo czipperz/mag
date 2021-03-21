@@ -5,6 +5,8 @@
 #include <cz/sort.hpp>
 #include "command_macros.hpp"
 #include "decoration.hpp"
+#include "diff.hpp"
+#include "file.hpp"
 #include "movement.hpp"
 #include "overlay.hpp"
 #include "server.hpp"
@@ -69,9 +71,12 @@ static void apply_face(Face* face, Face layer) {
     }
 }
 
-static Contents_Iterator update_cursors_and_run_animation(Client* client,
+static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
+                                                          Client* client,
                                                           Window_Unified* window,
-                                                          Buffer* buffer,
+                                                          cz::Arc<Buffer_Handle> handle,
+                                                          const Buffer* buffer,
+                                                          Buffer* buffer_mut,
                                                           Window_Cache* window_cache) {
     ZoneScoped;
 
@@ -109,7 +114,9 @@ static Contents_Iterator update_cursors_and_run_animation(Client* client,
         }
     }
 
-    buffer->token_cache.update(buffer);
+    if (buffer_mut) {
+        buffer_mut->token_cache.update(buffer);
+    }
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     start_of_line(&iterator);
@@ -264,9 +271,15 @@ static Contents_Iterator update_cursors_and_run_animation(Client* client,
         window->start_position = iterator.position;
     }
 
-    // Note: we update the token cache at the top of this function.
-    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
-    buffer->token_cache.generate_check_points_until(buffer, iterator.position);
+    if (buffer_mut) {
+        // Note: we update the token cache at the top of this function.
+        CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
+        buffer_mut->token_cache.generate_check_points_until(buffer, iterator.position);
+
+        if (!buffer->token_cache.is_covered(buffer->contents.len)) {
+            editor->add_job(job_syntax_highlight_buffer(handle.clone_downgrade()));
+        }
+    }
 
     return iterator;
 }
@@ -639,7 +652,8 @@ static void draw_buffer(Cell* cells,
                         bool is_selected_window,
                         size_t start_row,
                         size_t start_col,
-                        cz::Slice<Screen_Position_Query> spqs) {
+                        cz::Slice<Screen_Position_Query> spqs,
+                        bool reloaded) {
     ZoneScoped;
 
     for (size_t spqsi = 0; spqsi < spqs.len; ++spqsi) {
@@ -650,21 +664,30 @@ static void draw_buffer(Cell* cells,
         }
     }
 
-    WITH_WINDOW_BUFFER(window);
+    cz::Arc<Buffer_Handle> handle = editor->lookup(window->id);
+    const Buffer* buffer = handle->lock_reading();
+    CZ_DEFER(handle->unlock());
 
-    Contents_Iterator iterator =
-        update_cursors_and_run_animation(client, window, buffer, window_cache);
+    Buffer* buffer_mut = nullptr;
+    if (reloaded ||
+        (window_cache && window_cache->v.unified.change_index != buffer->changes.len())) {
+        buffer_mut = handle->increase_reading_to_writing();
+    }
 
-    handle->reduce_writing_to_reading();
-    const Buffer* const_buffer = buffer;
+    Contents_Iterator iterator = update_cursors_and_run_animation(editor, client, window, handle,
+                                                                  buffer, buffer_mut, window_cache);
+
+    if (buffer_mut) {
+        handle->reduce_writing_to_reading();
+    }
 
     size_t cursor_pos_y, cursor_pos_x;
-    draw_buffer_contents(cells, window_cache, total_cols, editor, client, const_buffer, window,
-                         start_row, start_col, spqs, &cursor_pos_y, &cursor_pos_x, iterator);
-    draw_buffer_decoration(cells, total_cols, editor, window, const_buffer, is_selected_window,
-                           start_row, start_col);
-    draw_window_completion(cells, editor, client, window, const_buffer, total_cols, start_row,
-                           start_col, cursor_pos_y, cursor_pos_x);
+    draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
+                         start_col, spqs, &cursor_pos_y, &cursor_pos_x, iterator);
+    draw_buffer_decoration(cells, total_cols, editor, window, buffer, is_selected_window, start_row,
+                           start_col);
+    draw_window_completion(cells, editor, client, window, buffer, total_cols, start_row, start_col,
+                           cursor_pos_y, cursor_pos_x);
 }
 
 static void draw_window(Cell* cells,
@@ -690,6 +713,7 @@ static void draw_window(Cell* cells,
 
         --window->rows;
 
+        bool reloaded = true;
         if (!*window_cache) {
             *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
             cache_window_unified_create(editor, *window_cache, window);
@@ -698,10 +722,12 @@ static void draw_window(Cell* cells,
             cache_window_unified_create(editor, *window_cache, window);
         } else if ((*window_cache)->v.unified.id != window->id) {
             cache_window_unified_create(editor, *window_cache, window);
+        } else {
+            reloaded = false;
         }
 
         draw_buffer(cells, *window_cache, total_cols, editor, client, window,
-                    window == selected_window, start_row, start_col, spqs);
+                    window == selected_window, start_row, start_col, spqs, reloaded);
         break;
     }
 
@@ -807,11 +833,32 @@ static bool load_completion_cache(Editor* editor,
 }
 
 void process_buffer_external_updates(Editor* editor, Client* client, Window* window) {
+    ZoneScoped;
+
     switch (window->tag) {
     case Window::UNIFIED: {
-        auto w = (Window_Unified*)window;
-        WITH_BUFFER(w->id);
-        buffer->check_for_external_update(client);
+        Window_Unified* w = (Window_Unified*)window;
+        cz::Arc<Buffer_Handle> handle = editor->lookup(w->id);
+        const Buffer* buffer = handle->lock_reading();
+        CZ_DEFER(handle->unlock());
+
+        if (!buffer->is_unchanged() || !buffer->has_file_time) {
+            return;
+        }
+
+        cz::String path = {};
+        CZ_DEFER(path.drop(cz::heap_allocator()));
+        if (!buffer->get_path(cz::heap_allocator(), &path)) {
+            return;
+        }
+
+        cz::File_Time file_time = buffer->file_time;
+        if (check_out_of_date_and_update_file_time(path.buffer(), &file_time)) {
+            Buffer* buffer_mut = handle->increase_reading_to_writing();
+            buffer_mut->file_time = file_time;
+            reload_file(client, buffer_mut);
+        }
+
         break;
     }
 
@@ -872,8 +919,8 @@ void render_to_cells(Cell* cells,
             WITH_WINDOW_BUFFER(window);
             window->rows = mini_buffer_height;
             window->cols = total_cols - start_col;
-            Contents_Iterator iterator =
-                update_cursors_and_run_animation(client, window, buffer, nullptr);
+            Contents_Iterator iterator = update_cursors_and_run_animation(
+                editor, client, window, handle, buffer, buffer, nullptr);
             size_t cursor_pos_y, cursor_pos_x;
             draw_buffer_contents(cells, nullptr, total_cols, editor, client, buffer, window,
                                  start_row, start_col, {}, &cursor_pos_y, &cursor_pos_x, iterator);

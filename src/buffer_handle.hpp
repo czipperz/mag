@@ -56,6 +56,12 @@ public:
     /// Reduce the permissions of the lock from that of writing to only reading.
     void reduce_writing_to_reading();
 
+    /// Increase the permissions of the lock from that
+    /// of only reading to that of reading and writing.
+    ///
+    /// If there are other readers, this will stall until they `unlock`.
+    Buffer* increase_reading_to_writing();
+
     /// Unlock the buffer.
     ///
     /// Note: If this thread is a reader then this only actually unlocks

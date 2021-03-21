@@ -35,6 +35,8 @@ bool cache_windows_check_points(Window_Cache* window_cache,
                                 Editor* editor,
                                 bool (*callback)(void*),
                                 void* callback_data) {
+    return false;
+
     ZoneScoped;
 
     CZ_DEBUG_ASSERT(window_cache->tag == w->tag);

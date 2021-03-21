@@ -112,6 +112,14 @@ void Buffer_Handle::reduce_writing_to_reading() {
     active_readers.fetch_add(1);
 }
 
+Buffer* Buffer_Handle::increase_reading_to_writing() {
+    ZoneScoped;
+
+    // Todo: do this atomically if possible.
+    unlock();
+    return lock_writing();
+}
+
 void Buffer_Handle::unlock() {
     ZoneScoped;
 
