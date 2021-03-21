@@ -25,6 +25,8 @@ static void process_append_job_kill(void* _data) {
 }
 
 static bool process_append_job_tick(void* _data) {
+    ZoneScoped;
+
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
     char buf[1024];
     int64_t read_result = data->std_out.read_text(buf, sizeof(buf), &data->carry);
@@ -76,6 +78,8 @@ bool run_console_command(Client* client,
                          cz::Str script,
                          cz::Str buffer_name,
                          cz::Str error) {
+    ZoneScoped;
+
     cz::Option<cz::Str> wd = {};
     if (working_directory) {
         wd = {working_directory};
@@ -98,6 +102,8 @@ bool run_console_command_in(Client* client,
                             const char* working_directory,
                             cz::Str script,
                             cz::Str error) {
+    ZoneScoped;
+
     cz::Process_Options options;
     options.working_directory = working_directory;
 

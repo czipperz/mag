@@ -1,6 +1,7 @@
 #include "clang_format.hpp"
 
 #include <stdio.h>
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
@@ -33,6 +34,7 @@ static bool advance(size_t* index, cz::Str str, cz::Str expected) {
 }
 
 static cz::Str stringify_xml(char* buffer, size_t len) {
+    ZoneScoped;
     for (size_t i = 0; i < len;) {
         size_t end;
         if (advance(&(end = i), {buffer, len}, "&lt;")) {
@@ -71,6 +73,8 @@ static void parse_number(uint64_t* num, size_t* index, cz::Str str) {
 static void parse_replacements(cz::Vector<Replacement>* replacements,
                                cz::Str output_xml,
                                size_t* total_len) {
+    ZoneScoped;
+
     // Todo: make this more secure.
     size_t index = 0;
     int count_greater = 0;
@@ -116,6 +120,8 @@ static void parse_replacements(cz::Vector<Replacement>* replacements,
 static void parse_and_apply_replacements(Buffer_Handle* handle,
                                          cz::Str output_xml,
                                          size_t change_index) {
+    ZoneScoped;
+
     cz::Vector<Replacement> replacements = {};
     CZ_DEFER(replacements.drop(cz::heap_allocator()));
     size_t total_len = 0;
@@ -181,6 +187,8 @@ struct Clang_Format_Job_Data {
 };
 
 static bool clang_format_job_tick(void* _data) {
+    ZoneScoped;
+
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
     while (1) {
         char buf[1024];
