@@ -307,7 +307,7 @@ struct File_Wrapper {
 static void run_command(Command command, Editor* editor, Command_Source source) {
     try {
         ZoneScoped;
-        ZoneText(command.string, strlen(command.string));
+        TracyMessage(command.string, strlen(command.string));
         command.function(editor, source);
     } catch (std::exception& ex) {
         source.client->show_message(ex.what());
