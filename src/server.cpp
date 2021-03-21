@@ -413,7 +413,7 @@ static bool handle_key_press_buffer(Editor* editor,
                                     Command* previous_command,
                                     bool* waiting_for_more_keys) {
     cz::Arc<Buffer_Handle> handle = editor->lookup(client->selected_window()->id);
-    Buffer* buffer = handle->lock_writing();
+    const Buffer* buffer = handle->lock_reading();
     bool unlocked = false;
     CZ_DEFER(if (!unlocked) handle->unlock());
 
