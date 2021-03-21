@@ -38,8 +38,7 @@ static bool process_append_job_tick(void* _data) {
         }
         CZ_DEFER(handle.drop());
 
-        Buffer* buffer = handle->lock_writing();
-        CZ_DEFER(handle->unlock());
+        WITH_BUFFER_HANDLE(handle);
         buffer->contents.append({buf, (size_t)read_result});
         return false;
     } else if (read_result == 0) {

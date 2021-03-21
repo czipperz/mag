@@ -7,6 +7,7 @@
 #include <cz/heap.hpp>
 #include "buffer.hpp"
 #include "buffer_handle.hpp"
+#include "command_macros.hpp"
 #include "contents.hpp"
 #include "job.hpp"
 #include "token.hpp"
@@ -280,8 +281,7 @@ static bool job_syntax_highlight_buffer_tick(void* _data) {
     {
         ZoneScopedN("job_syntax_highlight_buffer_tick record results");
 
-        Buffer* buffer = handle->lock_writing();
-        CZ_DEFER(handle->unlock());
+        WITH_BUFFER_HANDLE(handle);
 
         if (clone.check_points.len() < buffer->token_cache.check_points.len()) {
             return false;

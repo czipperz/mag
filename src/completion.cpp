@@ -10,6 +10,7 @@
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
 #include "buffer.hpp"
+#include "command_macros.hpp"
 #include "editor.hpp"
 #include "file.hpp"
 
@@ -319,8 +320,7 @@ bool buffer_completion_engine(Editor* editor,
     context->results.reserve(cz::heap_allocator(), editor->buffers.len());
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
         Buffer_Handle* handle = editor->buffers[i].get();
-        const Buffer* buffer = handle->lock_reading();
-        CZ_DEFER(handle->unlock());
+        WITH_CONST_BUFFER_HANDLE(handle);
 
         cz::String result = {};
         buffer->render_name(context->results_buffer_array.allocator(), &result);

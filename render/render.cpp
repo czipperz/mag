@@ -664,9 +664,7 @@ static void draw_buffer(Cell* cells,
         }
     }
 
-    cz::Arc<Buffer_Handle> handle = editor->lookup(window->id);
-    const Buffer* buffer = handle->lock_reading();
-    CZ_DEFER(handle->unlock());
+    WITH_CONST_BUFFER(window->id);
 
     Buffer* buffer_mut = nullptr;
     if (reloaded ||
@@ -838,9 +836,7 @@ void process_buffer_external_updates(Editor* editor, Client* client, Window* win
     switch (window->tag) {
     case Window::UNIFIED: {
         Window_Unified* w = (Window_Unified*)window;
-        cz::Arc<Buffer_Handle> handle = editor->lookup(w->id);
-        const Buffer* buffer = handle->lock_reading();
-        CZ_DEFER(handle->unlock());
+        WITH_CONST_WINDOW_BUFFER(w);
 
         if (!buffer->is_unchanged() || !buffer->has_file_time) {
             return;

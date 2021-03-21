@@ -24,6 +24,23 @@
     Buffer* buffer = HANDLE->lock_writing(); \
     CZ_DEFER(HANDLE->unlock())
 
+#define WITH_CONST_SELECTED_BUFFER(CLIENT)                \
+    Window_Unified* window = (CLIENT)->selected_window(); \
+    WITH_CONST_WINDOW_BUFFER(window)
+
+#define WITH_CONST_WINDOW_BUFFER(WINDOW) \
+    WITH_CONST_BUFFER((WINDOW)->id);     \
+    (WINDOW)->update_cursors(buffer)
+
+#define WITH_CONST_BUFFER(BUFFER_ID)                           \
+    /* Note: this Arc does not need to be destructed. */       \
+    cz::Arc<Buffer_Handle> handle = editor->lookup(BUFFER_ID); \
+    WITH_CONST_BUFFER_HANDLE(handle)
+
+#define WITH_CONST_BUFFER_HANDLE(HANDLE)           \
+    const Buffer* buffer = HANDLE->lock_reading(); \
+    CZ_DEFER(HANDLE->unlock())
+
 #define TRANSFORM_POINTS(FUNC)                                                           \
     do {                                                                                 \
         cz::Slice<Cursor> cursors = window->cursors;                                     \

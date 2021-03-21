@@ -533,8 +533,7 @@ bool find_buffer_by_path(Editor* editor,
         cz::Arc<Buffer_Handle> handle = editor->buffers[i];
 
         {
-            const Buffer* buffer = handle->lock_reading();
-            CZ_DEFER(handle->unlock());
+            WITH_CONST_BUFFER_HANDLE(handle);
 
             if (buffer->directory == directory && buffer->name == name) {
                 goto ret;
@@ -586,8 +585,7 @@ bool find_temp_buffer(Editor* editor,
                       cz::Arc<Buffer_Handle>* handle_out) {
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
         cz::Arc<Buffer_Handle> handle = editor->buffers[i];
-        const Buffer* buffer = handle->lock_reading();
-        CZ_DEFER(handle->unlock());
+        WITH_CONST_BUFFER_HANDLE(handle);
 
         if (buffer->name == name) {
             if (!directory.is_present || buffer->directory == directory.value) {
