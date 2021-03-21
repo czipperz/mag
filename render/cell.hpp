@@ -5,7 +5,7 @@
 #include "theme.hpp"
 
 namespace mag {
-namespace client {
+namespace render {
 
 struct Cell {
     Face face;

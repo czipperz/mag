@@ -30,6 +30,8 @@
 #include "res/resources.h"
 #endif
 
+using namespace mag::render;
+
 namespace mag {
 namespace client {
 namespace sdl {

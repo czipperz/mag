@@ -12,7 +12,7 @@
 namespace mag {
 struct Server;
 
-namespace client {
+namespace render {
 
 bool load_mini_buffer_completion_cache(Server* server, Client* client);
 

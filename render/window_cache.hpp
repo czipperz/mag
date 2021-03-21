@@ -8,7 +8,7 @@
 #include "window.hpp"
 
 namespace mag {
-namespace client {
+namespace render {
 
 struct Window_Unified_Cache {
     Buffer_Id id;

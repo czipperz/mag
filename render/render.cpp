@@ -12,7 +12,7 @@
 #include "visible_region.hpp"
 
 namespace mag {
-namespace client {
+namespace render {
 
 static bool load_completion_cache(Editor* editor,
                                   Completion_Cache* completion_cache,

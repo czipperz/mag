@@ -2,11 +2,11 @@
 
 #include "ncurses.hpp"
 
-#include <cz/char_type.hpp>
 #include <ncurses.h>
 #include <Tracy.hpp>
 #include <algorithm>
 #include <cz/bit_array.hpp>
+#include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <thread>
@@ -18,6 +18,8 @@
 #include "server.hpp"
 #include "token.hpp"
 #include "window_cache.hpp"
+
+using namespace mag::render;
 
 namespace mag {
 namespace client {

@@ -6,7 +6,7 @@
 #include "visible_region.hpp"
 
 namespace mag {
-namespace client {
+namespace render {
 
 void destroy_window_cache_children(Window_Cache* window_cache) {
     switch (window_cache->tag) {
