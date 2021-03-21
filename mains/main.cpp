@@ -1,5 +1,6 @@
 #include <inttypes.h>
 #include <stdio.h>
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
@@ -49,6 +50,8 @@ Available clients:\n"
 
 /// Decode the argument as one of FILE, FILE:LINE, FILE:LINE:COLUMN and then open it.
 static void open_arg(Editor* editor, Client* client, cz::Str arg) {
+    ZoneScoped;
+
     // If the file exists then immediately open it.
     if (cz::file::does_file_exist(arg.buffer)) {
     open:
@@ -122,6 +125,8 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg) {
 }
 
 int mag_main(int argc, char** argv) {
+    ZoneScoped;
+
     try {
         // Set the program name.  First try to locate the executable and then if that fails use
         // argv[0].

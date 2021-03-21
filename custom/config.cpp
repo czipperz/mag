@@ -1,5 +1,6 @@
 #include "config.hpp"
 
+#include <Tracy.hpp>
 #include "basic/buffer_commands.hpp"
 #include "basic/capitalization_commands.hpp"
 #include "basic/commands.hpp"
@@ -66,6 +67,8 @@ using namespace basic;
 #define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, {FUNC, #FUNC}))
 
 Key_Map create_key_map() {
+    ZoneScoped;
+
     Key_Map key_map = {};
 
     BIND(key_map, "C-h", command_dump_key_map);
@@ -246,6 +249,8 @@ Key_Map create_key_map() {
 }
 
 Theme create_theme() {
+    ZoneScoped;
+
     Theme theme = {};
 
     theme.colors = mag::theme::solarized_dark;
@@ -487,6 +492,8 @@ static Key_Map* git_edit_key_map() {
 }
 
 Mode get_mode(const Buffer& buffer) {
+    ZoneScoped;
+
     Mode mode = {};
 
     mode.indent_width = 4;
