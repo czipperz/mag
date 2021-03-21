@@ -10,12 +10,15 @@ project(mag)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Define TRACY_INCLUDE_DIRS for cz to use.
+set(TRACY_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/tracy)
+
 add_subdirectory(cz)
 
 include_directories(cz/include)
 include_directories(.)
 include_directories(src)
-include_directories(tracy)
+include_directories(${TRACY_INCLUDE_DIRS})
 
 if (WIN32)
   # Fake find_package results
