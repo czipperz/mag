@@ -244,14 +244,14 @@ static bool job_syntax_highlight_buffer_tick(void* _data) {
     Token_Cache clone = {};
     CZ_DEFER(clone.drop());
 
+    const Buffer* buffer = handle->try_lock_reading();
+    if (!buffer) {
+        return false;
+    }
+    CZ_DEFER(handle->unlock());
+
     {
         ZoneScopedN("job_syntax_highlight_buffer_tick run syntax highlighting");
-
-        const Buffer* buffer = handle->try_lock_reading();
-        if (!buffer) {
-            return false;
-        }
-        CZ_DEFER(handle->unlock());
 
         if (buffer->token_cache.is_covered(buffer->contents.len)) {
             return true;
@@ -278,19 +278,19 @@ static bool job_syntax_highlight_buffer_tick(void* _data) {
         }
     }
 
+    Buffer* buffer_mut = handle->increase_reading_to_writing();
+
     {
         ZoneScopedN("job_syntax_highlight_buffer_tick record results");
 
-        WITH_BUFFER_HANDLE(handle);
-
-        if (clone.check_points.len() < buffer->token_cache.check_points.len()) {
+        if (clone.check_points.len() < buffer_mut->token_cache.check_points.len()) {
             return false;
         }
 
         // Update again since we could've been pre-empted before we relocked.
-        clone.update(buffer);
+        clone.update(buffer_mut);
 
-        std::swap(buffer->token_cache, clone);
+        std::swap(buffer_mut->token_cache, clone);
     }
 
     return false;
