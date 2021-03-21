@@ -1,7 +1,8 @@
 #pragma once
 
 #include <atomic>
-#include <cz/semaphore.hpp>
+#include <cz/condition_variable.hpp>
+#include <cz/mutex.hpp>
 #include "buffer.hpp"
 
 #ifdef NDEBUG
@@ -12,24 +13,19 @@ namespace mag {
 
 struct Buffer_Handle {
 private:
-    cz::Semaphore semaphore;
-    std::atomic_uint32_t starting_readers;
-    std::atomic_uint32_t active_readers;
-    std::atomic_uint32_t pending_writers;
+    cz::Mutex mutex;
+    cz::Condition_Variable waiters_condition;
+    uint32_t waiters_count;
+    uint32_t active_state;
+
     Buffer buffer;
 
 public:
     Buffer_Id id;
 
     /// Call this with `buffer.directory`, `buffer.file`, and `buffer.is_temp` set.
-    void init(Buffer_Id buffer_id, Buffer buffer) {
-        semaphore.init(/*initial_value=*/1);
-
-        id = buffer_id;
-
-        this->buffer = buffer;
-        this->buffer.init();
-    }
+    void init(Buffer_Id buffer_id, Buffer buffer);
+    void drop();
 
     /// Lock the buffer for the purposes of reading and writing.
     /// Stalls until exclusive access can be obtained.
@@ -67,11 +63,6 @@ public:
     /// Note: If this thread is a reader then this only actually unlocks
     /// the buffer if there are no other remaining readers.
     void unlock();
-
-    void drop() {
-        buffer.drop();
-        semaphore.drop();
-    }
 };
 
 }
