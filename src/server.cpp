@@ -19,7 +19,8 @@ struct Run_Jobs {
     bool* stop;
 
     void operator()() {
-        ZoneScopedN("job thread");
+        tracy::SetThreadName("Job thread");
+        ZoneScoped;
 
         bool remove = false;
         while (1) {
