@@ -81,20 +81,20 @@ bool run_console_command(Client* client,
         wd = {working_directory};
     }
 
-    Buffer_Id buffer_id = editor->create_temp_buffer(buffer_name, wd);
+    cz::Arc<Buffer_Handle> handle = editor->create_temp_buffer(buffer_name, wd);
     {
-        WITH_BUFFER(buffer_id);
+        WITH_BUFFER_HANDLE(handle);
         buffer->contents.append(script);
         buffer->contents.append("\n");
     }
-    client->set_selected_buffer(buffer_id);
+    client->set_selected_buffer(handle->id);
 
-    return run_console_command_in(client, editor, buffer_id, working_directory, script, error);
+    return run_console_command_in(client, editor, handle, working_directory, script, error);
 }
 
 bool run_console_command_in(Client* client,
                             Editor* editor,
-                            Buffer_Id buffer_id,
+                            cz::Arc<Buffer_Handle> handle,
                             const char* working_directory,
                             cz::Str script,
                             cz::Str error) {
@@ -115,12 +115,7 @@ bool run_console_command_in(Client* client,
         return false;
     }
 
-    cz::Arc<Buffer_Handle> buffer_handle;
-    if (!editor->lookup(buffer_id, &buffer_handle)) {
-        CZ_PANIC("Buffer was deleted while we were using it");
-    }
-
-    editor->add_job(job_process_append(buffer_handle.clone_downgrade(), process, stdout_read));
+    editor->add_job(job_process_append(handle.clone_downgrade(), process, stdout_read));
     return true;
 }
 

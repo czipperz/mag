@@ -119,7 +119,7 @@ static cz::Result load_directory(Editor* editor,
         return result;
     }
 
-    *buffer_id = editor->create_buffer(buffer);
+    *buffer_id = editor->create_buffer(buffer)->id;
     return result;
 }
 
@@ -264,7 +264,7 @@ static cz::Result load_path(Editor* editor, char* path, size_t path_len, Buffer_
 
     path[path_len] = '\0';
     cz::Result result = load_file(&buffer, path);
-    *buffer_id = editor->create_buffer(buffer);
+    *buffer_id = editor->create_buffer(buffer)->id;
     return result;
 }
 
@@ -509,7 +509,10 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     return result;
 }
 
-bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id) {
+bool find_buffer_by_path(Editor* editor,
+                         Client* client,
+                         cz::Str path,
+                         cz::Arc<Buffer_Handle>* handle_out) {
     if (path.len == 0) {
         return false;
     }
@@ -527,7 +530,7 @@ bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id
     }
 
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
-        Buffer_Handle* handle = editor->buffers[i].get();
+        cz::Arc<Buffer_Handle> handle = editor->buffers[i];
 
         {
             const Buffer* buffer = handle->lock_reading();
@@ -549,13 +552,16 @@ bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id
         }
 
     ret:
-        *buffer_id = handle->id;
+        *handle_out = handle;
         return true;
     }
     return false;
 }
 
-bool find_temp_buffer(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id) {
+bool find_temp_buffer(Editor* editor,
+                      Client* client,
+                      cz::Str path,
+                      cz::Arc<Buffer_Handle>* handle_out) {
     cz::Str name;
     cz::Str directory = {};
     const char* ptr = path.find("* (");
@@ -570,22 +576,22 @@ bool find_temp_buffer(Editor* editor, Client* client, cz::Str path, Buffer_Id* b
         }
     }
 
-    return find_temp_buffer(editor, client, name, directory, buffer_id);
+    return find_temp_buffer(editor, client, name, directory, handle_out);
 }
 
 bool find_temp_buffer(Editor* editor,
                       Client* client,
                       cz::Str name,
                       cz::Option<cz::Str> directory,
-                      Buffer_Id* buffer_id) {
+                      cz::Arc<Buffer_Handle>* handle_out) {
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
-        Buffer_Handle* handle = editor->buffers[i].get();
+        cz::Arc<Buffer_Handle> handle = editor->buffers[i];
         const Buffer* buffer = handle->lock_reading();
         CZ_DEFER(handle->unlock());
 
         if (buffer->name == name) {
             if (!directory.is_present || buffer->directory == directory.value) {
-                *buffer_id = handle->id;
+                *handle_out = handle;
                 return true;
             }
         }
@@ -604,11 +610,12 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     Buffer_Id buffer_id;
-    if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
-        if (load_path(editor, path.buffer(), path.len(), &buffer_id).is_err()) {
-            client->show_message("File not found");
-            // Still open empty file buffer.
-        }
+    cz::Arc<Buffer_Handle> handle;
+    if (find_buffer_by_path(editor, client, path, &handle)) {
+        buffer_id = handle->id;
+    } else if (load_path(editor, path.buffer(), path.len(), &buffer_id).is_err()) {
+        client->show_message("File not found");
+        // Still open empty file buffer.
     }
 
     client->set_selected_buffer(buffer_id);

@@ -72,20 +72,20 @@ static void command_switch_buffer_callback(Editor* editor,
                                            Client* client,
                                            cz::Str path,
                                            void* data) {
-    Buffer_Id buffer_id;
+    cz::Arc<Buffer_Handle> handle;
     if (path.starts_with("*")) {
-        if (find_temp_buffer(editor, client, path, &buffer_id)) {
+        if (find_temp_buffer(editor, client, path, &handle)) {
             goto cont;
         }
     }
 
-    if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
+    if (!find_buffer_by_path(editor, client, path, &handle)) {
         client->show_message("Couldn't find the buffer to switch to");
         return;
     }
 
 cont:
-    client->set_selected_buffer(buffer_id);
+    client->set_selected_buffer(handle->id);
 }
 
 void command_switch_buffer(Editor* editor, Command_Source source) {
@@ -163,10 +163,12 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
     if (path.len == 0) {
         buffer_id = *(Buffer_Id*)data;
     } else {
-        if (!find_buffer_by_path(editor, client, path, &buffer_id)) {
+        cz::Arc<Buffer_Handle> handle;
+        if (!find_buffer_by_path(editor, client, path, &handle)) {
             client->show_message("Couldn't find the buffer to kill");
             return;
         }
+        buffer_id = handle->id;
     }
 
     // TODO: prevent killing *scratch*

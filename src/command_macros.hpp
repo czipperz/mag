@@ -15,10 +15,14 @@
     WITH_BUFFER((WINDOW)->id);     \
     (WINDOW)->update_cursors(buffer)
 
-#define WITH_BUFFER(BUFFER_ID)                         \
-    Buffer_Handle* handle = editor->lookup(BUFFER_ID); \
-    Buffer* buffer = handle->lock_writing();           \
-    CZ_DEFER(handle->unlock())
+#define WITH_BUFFER(BUFFER_ID)                                 \
+    /* Note: this Arc does not need to be destructed. */       \
+    cz::Arc<Buffer_Handle> handle = editor->lookup(BUFFER_ID); \
+    WITH_BUFFER_HANDLE(handle)
+
+#define WITH_BUFFER_HANDLE(HANDLE)           \
+    Buffer* buffer = HANDLE->lock_writing(); \
+    CZ_DEFER(HANDLE->unlock())
 
 #define TRANSFORM_POINTS(FUNC)                                                           \
     do {                                                                                 \

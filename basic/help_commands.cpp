@@ -95,12 +95,12 @@ static void add_key_map(Contents* contents, cz::String* prefix, const Key_Map& k
 const char* const mag_build_directory = CZ_STRINGIFY(MAG_BUILD_DIRECTORY);
 
 void command_dump_key_map(Editor* editor, Command_Source source) {
-    Buffer_Id buffer_id;
-    if (!find_temp_buffer(editor, source.client, "*key map*", {mag_build_directory}, &buffer_id)) {
-        buffer_id = editor->create_temp_buffer("key map", {mag_build_directory});
+    cz::Arc<Buffer_Handle> handle;
+    if (!find_temp_buffer(editor, source.client, "*key map*", {mag_build_directory}, &handle)) {
+        handle = editor->create_temp_buffer("key map", {mag_build_directory});
     }
 
-    WITH_BUFFER(buffer_id);
+    WITH_BUFFER_HANDLE(handle);
     buffer->contents.remove(0, buffer->contents.len);
 
     cz::String prefix = {};
@@ -108,7 +108,7 @@ void command_dump_key_map(Editor* editor, Command_Source source) {
 
     add_key_map(&buffer->contents, &prefix, editor->key_map);
 
-    source.client->set_selected_buffer(buffer_id);
+    source.client->set_selected_buffer(handle->id);
 }
 
 /// Append all commands in the key map to the results.  All strings are allocated with `allocator`.

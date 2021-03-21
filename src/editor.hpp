@@ -58,7 +58,9 @@ struct Editor {
         }
     }
 
-    bool lookup(Buffer_Id id, cz::Arc<Buffer_Handle>* buffer_handle) {
+    /// Try to look up a buffer by its id.  Doesn't increment the reference count.
+    /// If the buffer doesn't exist then returns `false`.
+    bool try_lookup(Buffer_Id id, cz::Arc<Buffer_Handle>* buffer_handle) {
         size_t index;
         if (binary_search_buffer_id(id, &index)) {
             *buffer_handle = buffers[index];
@@ -67,12 +69,14 @@ struct Editor {
         return false;
     }
 
-    Buffer_Handle* lookup(Buffer_Id id) {
+    /// Look up a buffer by its id.  Doesn't increment the reference count.
+    /// Panics if the buffer doesn't exist.
+    cz::Arc<Buffer_Handle> lookup(Buffer_Id id) {
         cz::Arc<Buffer_Handle> buffer_handle;
-        if (lookup(id, &buffer_handle)) {
-            return buffer_handle.get();
+        if (!try_lookup(id, &buffer_handle)) {
+            CZ_PANIC("mag::Editor::lookup on invalid buffer id.");
         }
-        return nullptr;
+        return buffer_handle;
     }
 
     void kill(Buffer_Id id) {
@@ -83,7 +87,8 @@ struct Editor {
         }
     }
 
-    Buffer_Id create_buffer(Buffer buffer) {
+    /// Do not decrement the reference count by calling `drop` on the return value.
+    cz::Arc<Buffer_Handle> create_buffer(Buffer buffer) {
         cz::Arc<Buffer_Handle> buffer_handle;
         buffer_handle.init_emplace();
         buffer_handle->init({buffer_counter++}, buffer);
@@ -91,10 +96,11 @@ struct Editor {
         buffers.reserve(cz::heap_allocator(), 1);
         buffers.push(buffer_handle);
 
-        return buffer_handle->id;
+        return buffer_handle;
     }
 
-    Buffer_Id create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir = {});
+    /// Do not decrement the reference count by calling `drop` on the return value.
+    cz::Arc<Buffer_Handle> create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir = {});
 
 private:
     bool binary_search_buffer_id(Buffer_Id id, size_t* index) {

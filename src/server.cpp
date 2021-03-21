@@ -19,7 +19,7 @@ Client Server::make_client() {
     Buffer mini_buffer = {};
     mini_buffer.type = Buffer::TEMPORARY;
     mini_buffer.name = cz::Str("*client mini buffer*").duplicate(cz::heap_allocator());
-    Buffer_Id mini_buffer_id = editor.create_buffer(mini_buffer);
+    Buffer_Id mini_buffer_id = editor.create_buffer(mini_buffer)->id;
     client.init(selected_buffer_id, mini_buffer_id);
     return client;
 }
@@ -307,7 +307,7 @@ static bool handle_key_press_buffer(Editor* editor,
                                     cz::Slice<Key> key_chain,
                                     Command* previous_command,
                                     bool* waiting_for_more_keys) {
-    Buffer_Handle* handle = editor->lookup(client->selected_window()->id);
+    cz::Arc<Buffer_Handle> handle = editor->lookup(client->selected_window()->id);
     Buffer* buffer = handle->lock_writing();
     bool unlocked = false;
     CZ_DEFER(if (!unlocked) handle->unlock());

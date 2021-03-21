@@ -49,7 +49,7 @@ bool run_console_command(Client* client,
 
 bool run_console_command_in(Client* client,
                             Editor* editor,
-                            Buffer_Id buffer_id,
+                            cz::Arc<Buffer_Handle> buffer_id,
                             const char* working_directory,
                             cz::Str script,
                             cz::Str error);

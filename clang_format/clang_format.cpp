@@ -280,13 +280,8 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
         return;
     }
 
-    cz::Arc<Buffer_Handle> handle2;
-    if (!editor->lookup(handle->id, &handle2)) {
-        CZ_PANIC("Buffer was deleted while we were using it");
-    }
-
     editor->add_job(
-        job_clang_format(buffer->changes.len(), handle2.clone_downgrade(), process, stdout_read));
+        job_clang_format(buffer->changes.len(), handle.clone_downgrade(), process, stdout_read));
 }
 
 }

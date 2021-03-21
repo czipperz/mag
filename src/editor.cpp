@@ -8,7 +8,7 @@
 
 namespace mag {
 
-Buffer_Id Editor::create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir) {
+cz::Arc<Buffer_Handle> Editor::create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir) {
     Buffer buffer = {};
 
     if (dir.is_present) {

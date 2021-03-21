@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cz/arc.hpp>
 #include <cz/option.hpp>
 
 namespace cz {
@@ -13,8 +14,8 @@ struct File_Time;
 }
 
 namespace mag {
-
 struct Buffer;
+struct Buffer_Handle;
 struct Editor;
 struct Client;
 struct Contents;
@@ -54,17 +55,29 @@ bool save_contents_to_temp_file(const Contents* contents,
 cz::String standardize_path(cz::Allocator allocator, cz::Str user_path);
 
 /// Find a buffer by its path.  The path must be standardized with `standardize_path`.
-bool find_buffer_by_path(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id);
+///
+/// Doesn't increment the reference count.
+bool find_buffer_by_path(Editor* editor,
+                         Client* client,
+                         cz::Str path,
+                         cz::Arc<Buffer_Handle>* handle_out);
 
 /// Find temporary buffer by parsing the `path`.
 ///
 /// `path` should be of the style `NAME` or `NAME (DIRECTORY)`.
-bool find_temp_buffer(Editor* editor, Client* client, cz::Str path, Buffer_Id* buffer_id);
+///
+/// Doesn't increment the reference count.
+bool find_temp_buffer(Editor* editor,
+                      Client* client,
+                      cz::Str path,
+                      cz::Arc<Buffer_Handle>* handle_out);
 
 /// Find temporary buffer with a matching `name` and `directory`.
+///
+/// Doesn't increment the reference count.
 bool find_temp_buffer(Editor* editor,
                       Client* client,
                       cz::Str name,
                       cz::Option<cz::Str> directory,
-                      Buffer_Id* buffer_id);
+                      cz::Arc<Buffer_Handle>* handle_out);
 }
