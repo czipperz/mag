@@ -130,10 +130,6 @@ static bool decoration_line_number_append(const Buffer* buffer,
 
     write(string_writer(string), 'L', bd->line_number + 1);
 
-    Contents_Iterator line_start = iterator;
-    start_of_line(&line_start);
-    write(string_writer(string), " C", iterator.position - line_start.position + 1);
-
     return true;
 }
 
