@@ -316,6 +316,8 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
                     buffer.remove(0, 4);
 
                     cz::path::convert_to_forward_slashes(buffer.buffer(), buffer.len());
+
+                    buffer.null_terminate();
                     return buffer;
                 } else {
                     // Retry with capacity as res.
