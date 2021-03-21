@@ -31,6 +31,7 @@
 #include "prose/search.hpp"
 #include "solarized_dark.hpp"
 #include "syntax/decoration_column_number.hpp"
+#include "syntax/decoration_cursor_count.hpp"
 #include "syntax/decoration_line_ending_indicator.hpp"
 #include "syntax/decoration_line_number.hpp"
 #include "syntax/decoration_pinned_indicator.hpp"
@@ -321,7 +322,8 @@ Theme create_theme() {
 
     static Decoration decorations[] = {
         syntax::decoration_line_number(), syntax::decoration_column_number(),
-        syntax::decoration_read_only_indicator(), syntax::decoration_pinned_indicator()};
+        syntax::decoration_cursor_count(), syntax::decoration_read_only_indicator(),
+        syntax::decoration_pinned_indicator()};
     theme.decorations = decorations;
 
     static Overlay overlays[] = {syntax::overlay_matching_region({-1, 237, 0}),
