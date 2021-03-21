@@ -58,7 +58,13 @@ static void command_man_response(Editor* editor, Client* client, cz::Str page, v
 
     Buffer_Id buffer_id = editor->create_temp_buffer(name);
     client->set_selected_buffer(buffer_id);
-    editor->add_job(job_process_append(buffer_id, process, stdout_read));
+
+    cz::Arc<Buffer_Handle> handle;
+    if (!editor->lookup(buffer_id, &handle)) {
+        CZ_PANIC("Buffer was deleted while we were using it");
+    }
+
+    editor->add_job(job_process_append(handle.clone_downgrade(), process, stdout_read));
 }
 
 void command_man(Editor* editor, Command_Source source) {

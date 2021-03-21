@@ -10,7 +10,8 @@
 
 namespace mag {
 
-class Buffer_Handle {
+struct Buffer_Handle {
+private:
     cz::Semaphore semaphore;
     std::atomic_uint32_t starting_readers;
     std::atomic_uint32_t active_readers;

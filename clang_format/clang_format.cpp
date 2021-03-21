@@ -1,7 +1,7 @@
 #include "clang_format.hpp"
 
-#include <cz/char_type.hpp>
 #include <stdio.h>
+#include <cz/char_type.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
 #include <cz/vector.hpp>
@@ -172,7 +172,7 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
 }
 
 struct Clang_Format_Job_Data {
-    Buffer_Id buffer_id;
+    cz::Arc_Weak<Buffer_Handle> buffer_handle;
     cz::Process process;
     cz::Carriage_Return_Carry carry;
     cz::Input_File std_out;
@@ -180,7 +180,7 @@ struct Clang_Format_Job_Data {
     cz::String output_xml;
 };
 
-static bool clang_format_job_tick(Editor* editor, void* _data) {
+static bool clang_format_job_tick(void* _data) {
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
     while (1) {
         char buf[1024];
@@ -194,9 +194,10 @@ static bool clang_format_job_tick(Editor* editor, void* _data) {
             data->std_out.close();
             data->process.join();
 
-            Buffer_Handle* handle = editor->lookup(data->buffer_id);
-            if (handle) {
-                parse_and_apply_replacements(handle,
+            cz::Arc<Buffer_Handle> handle;
+            if (data->buffer_handle.upgrade(&handle)) {
+                CZ_DEFER(handle.drop());
+                parse_and_apply_replacements(handle.get(),
                                              {data->output_xml.buffer(), data->output_xml.len()},
                                              data->change_index);
             }
@@ -211,21 +212,22 @@ static bool clang_format_job_tick(Editor* editor, void* _data) {
     }
 }
 
-static void clang_format_job_kill(Editor* editor, void* _data) {
+static void clang_format_job_kill(void* _data) {
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
     data->std_out.close();
     data->process.kill();
     data->output_xml.drop(cz::heap_allocator());
+    data->buffer_handle.drop();
     free(data);
 }
 
 static Job job_clang_format(size_t change_index,
-                            Buffer_Id buffer_id,
+                            cz::Arc_Weak<Buffer_Handle> buffer_handle,
                             cz::Process process,
                             cz::Input_File std_out) {
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)malloc(sizeof(Clang_Format_Job_Data));
     CZ_ASSERT(data);
-    data->buffer_id = buffer_id;
+    data->buffer_handle = buffer_handle;
     data->process = process;
     data->carry = {};
     data->std_out = std_out;
@@ -278,7 +280,13 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
         return;
     }
 
-    editor->add_job(job_clang_format(buffer->changes.len(), handle->id, process, stdout_read));
+    cz::Arc<Buffer_Handle> handle2;
+    if (!editor->lookup(handle->id, &handle2)) {
+        CZ_PANIC("Buffer was deleted while we were using it");
+    }
+
+    editor->add_job(
+        job_clang_format(buffer->changes.len(), handle2.clone_downgrade(), process, stdout_read));
 }
 
 }

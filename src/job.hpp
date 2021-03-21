@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cz/arc.hpp>
 #include <cz/str.hpp>
 
 namespace cz {
@@ -9,6 +10,7 @@ struct Input_File;
 
 namespace mag {
 struct Buffer_Id;
+struct Buffer_Handle;
 struct Client;
 struct Editor;
 
@@ -17,19 +19,21 @@ struct Job {
     /// Run one tick of the job.  Returns `true` iff the job has halted.
     ///
     /// When the job has halted, `tick` will no longer be invoked.
-    bool (*tick)(Editor* editor, void* data);
+    bool (*tick)(void* data);
 
     /// Cleanup the `Job` because it is forcibly no longer going to be ran.
     ///
     /// This is invoked when the editor closed.  This is not invoked when the tasks halts (`tick`
     /// returns true), because often times you want different cleanup behavior on a successful exit
     /// than an unsuccessful exit.
-    void (*kill)(Editor* editor, void* data);
+    void (*kill)(void* data);
 
     void* data;
 };
 
-Job job_process_append(Buffer_Id buffer_id, cz::Process process, cz::Input_File output);
+Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
+                       cz::Process process,
+                       cz::Input_File output);
 bool run_console_command(Client* client,
                          Editor* editor,
                          const char* working_directory,

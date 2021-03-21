@@ -1,5 +1,6 @@
 #include "job.hpp"
 
+#include <cz/arc.hpp>
 #include <cz/defer.hpp>
 #include <cz/process.hpp>
 #include "client.hpp"
@@ -9,29 +10,31 @@
 namespace mag {
 
 struct Process_Append_Job_Data {
-    Buffer_Id buffer_id;
+    cz::Arc_Weak<Buffer_Handle> buffer_handle;
     cz::Process process;
     cz::Carriage_Return_Carry carry;
     cz::Input_File std_out;
 };
 
-static void process_append_job_kill(Editor* editor, void* _data) {
+static void process_append_job_kill(void* _data) {
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
     data->std_out.close();
     data->process.kill();
+    data->buffer_handle.drop();
     free(data);
 }
 
-static bool process_append_job_tick(Editor* editor, void* _data) {
+static bool process_append_job_tick(void* _data) {
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
     char buf[1024];
     int64_t read_result = data->std_out.read_text(buf, sizeof(buf), &data->carry);
     if (read_result > 0) {
-        Buffer_Handle* handle = editor->lookup(data->buffer_id);
-        if (!handle) {
-            process_append_job_kill(editor, data);
+        cz::Arc<Buffer_Handle> handle;
+        if (!data->buffer_handle.upgrade(&handle)) {
+            process_append_job_kill(data);
             return true;
         }
+        CZ_DEFER(handle.drop());
 
         Buffer* buffer = handle->lock_writing();
         CZ_DEFER(handle->unlock());
@@ -49,11 +52,13 @@ static bool process_append_job_tick(Editor* editor, void* _data) {
     }
 }
 
-Job job_process_append(Buffer_Id buffer_id, cz::Process process, cz::Input_File std_out) {
+Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
+                       cz::Process process,
+                       cz::Input_File std_out) {
     Process_Append_Job_Data* data =
         (Process_Append_Job_Data*)malloc(sizeof(Process_Append_Job_Data));
     CZ_ASSERT(data);
-    data->buffer_id = buffer_id;
+    data->buffer_handle = buffer_handle;
     data->process = process;
     data->carry = {};
     data->std_out = std_out;
@@ -110,7 +115,12 @@ bool run_console_command_in(Client* client,
         return false;
     }
 
-    editor->add_job(job_process_append(buffer_id, process, stdout_read));
+    cz::Arc<Buffer_Handle> buffer_handle;
+    if (!editor->lookup(buffer_id, &buffer_handle)) {
+        CZ_PANIC("Buffer was deleted while we were using it");
+    }
+
+    editor->add_job(job_process_append(buffer_handle.clone_downgrade(), process, stdout_read));
     return true;
 }
 
