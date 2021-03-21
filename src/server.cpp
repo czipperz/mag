@@ -1,7 +1,9 @@
 #include "server.hpp"
 
+#include <limits.h>
 #include <stdio.h>
 #include <Tracy.hpp>
+#include <algorithm>
 #include <cz/char_type.hpp>
 #include <cz/heap.hpp>
 #include <cz/mutex.hpp>
@@ -288,55 +290,6 @@ static void command_insert_char(Editor* editor, Command_Source source) {
     insert_char(buffer, window, code, command_insert_char);
 }
 
-static Command lookup_key_chain(Key_Map* map, size_t start, size_t* end, cz::Slice<Key> key_chain) {
-    size_t index = start;
-    for (; index < key_chain.len; ++index) {
-        Key_Bind* bind = map->lookup(key_chain[index]);
-        if (bind == nullptr) {
-            ++index;
-            *end = index;
-            return {command_insert_char, "command_insert_char"};
-        }
-
-        if (bind->is_command) {
-            ++index;
-            *end = index;
-            return bind->v.command;
-        } else {
-            map = bind->v.map;
-        }
-    }
-
-    return {};
-}
-
-static bool get_key_press_command(Client* client,
-                                  Key_Map* key_map,
-                                  size_t* start,
-                                  cz::Slice<Key> key_chain,
-                                  Command* previous_command,
-                                  bool* waiting_for_more_keys,
-                                  Command_Source* source,
-                                  Command* command) {
-    size_t index = *start;
-    *command = lookup_key_chain(key_map, *start, &index, key_chain);
-    if (command->function && command->function != command_insert_char) {
-        source->client = client;
-        source->keys = {client->key_chain.start() + *start, index - *start};
-        source->previous_command = previous_command->function;
-
-        *previous_command = *command;
-        *start = index;
-        return true;
-    } else {
-        if (index == *start) {
-            *waiting_for_more_keys = true;
-        }
-
-        return false;
-    }
-}
-
 #ifndef NDEBUG
 struct File_Wrapper {
     FILE* file;
@@ -368,92 +321,93 @@ static void run_command(Command command, Editor* editor, Command_Source source) 
 #endif
 }
 
-static bool handle_key_press(Editor* editor,
-                             Client* client,
-                             Key_Map* key_map,
-                             size_t* start,
-                             cz::Slice<Key> key_chain,
-                             Command* previous_command,
-                             bool* waiting_for_more_keys) {
-    Command command;
-    Command_Source source;
-    if (get_key_press_command(client, key_map, start, key_chain, previous_command,
-                              waiting_for_more_keys, &source, &command)) {
-        run_command(command, editor, source);
-        return true;
-    } else {
-        return false;
-    }
-}
+static bool lookup_key_press(cz::Slice<Key> key_chain,
+                             size_t start,
+                             Command* command,
+                             size_t* end,
+                             size_t* max_depth,
+                             Key_Map* map) {
+    *end = start;
 
-static void failed_key_press(Editor* editor,
-                             Client* client,
-                             Command* previous_command,
-                             size_t start) {
-    Key key = client->key_chain[start];
-    if (key.modifiers == 0 && (cz::is_print(key.code) || key.code == '\t' || key.code == '\n')) {
-        Command_Source source;
-        source.client = client;
-        source.keys = {client->key_chain.start() + start, 1};
-        source.previous_command = previous_command->function;
+    // Record the max depth so we know how many keys to delete.
+    CZ_DEFER(*max_depth = std::max(*max_depth, *end - start));
 
-        Command command = {command_insert_char, "command_insert_char"};
-        run_command(command, editor, source);
-        *previous_command = command;
-    } else {
-        client->show_message("Invalid key combo");
-        *previous_command = {};
-    }
-}
-
-static bool handle_key_press_buffer(Editor* editor,
-                                    Client* client,
-                                    size_t* start,
-                                    cz::Slice<Key> key_chain,
-                                    Command* previous_command,
-                                    bool* waiting_for_more_keys) {
-    cz::Arc<Buffer_Handle> handle = editor->lookup(client->selected_window()->id);
-    const Buffer* buffer = handle->lock_reading();
-    bool unlocked = false;
-    CZ_DEFER(if (!unlocked) handle->unlock());
-
-    if (buffer->mode.key_map) {
-        Command command;
-        Command_Source source;
-        if (get_key_press_command(client, buffer->mode.key_map, start, key_chain, previous_command,
-                                  waiting_for_more_keys, &source, &command)) {
-            unlocked = true;
-            handle->unlock();
-            run_command(command, editor, source);
+    while (1) {
+        // We need more keys to get to a command.
+        if (*end == key_chain.len) {
+            command->function = nullptr;
             return true;
-        } else {
+        }
+
+        // Look up this key in this level of the tree.
+        Key_Bind* bind = map->lookup(key_chain[*end]);
+        ++*end;
+
+        // No key is bound in this key map.  So break.
+        if (bind == nullptr) {
             return false;
         }
-    } else {
-        return false;
+
+        // A command is bound so record the number of keys consumed and the command.
+        if (bind->is_command) {
+            *command = bind->v.command;
+            CZ_DEBUG_ASSERT(command->function);
+            return true;
+        }
+
+        // Descend one level.
+        map = bind->v.map;
     }
 }
 
-static bool handle_key_press_completion(Editor* editor,
-                                        Client* client,
-                                        size_t* start,
-                                        cz::Slice<Key> key_chain,
-                                        Command* previous_command,
-                                        bool* waiting_for_more_keys) {
+static bool lookup_key_press_completion(cz::Slice<Key> key_chain,
+                                        size_t start,
+                                        Command* command,
+                                        size_t* end,
+                                        size_t* max_depth,
+                                        Client* client) {
     Window_Unified* window = client->selected_window();
     if (!window->completing) {
         return false;
     }
 
-    Command command;
-    Command_Source source;
-    if (get_key_press_command(client, custom::window_completion_key_map(), start, key_chain,
-                              previous_command, waiting_for_more_keys, &source, &command)) {
-        run_command(command, editor, source);
+    return lookup_key_press(key_chain, start, command, end, max_depth,
+                            custom::window_completion_key_map());
+}
+
+static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
+                                    size_t start,
+                                    Command* command,
+                                    size_t* end,
+                                    size_t* max_depth,
+                                    Editor* editor,
+                                    Client* client) {
+    WITH_CONST_SELECTED_BUFFER(client);
+    return lookup_key_press(key_chain, start, command, end, max_depth, buffer->mode.key_map);
+}
+
+static bool lookup_key_press_global(cz::Slice<Key> key_chain,
+                                    size_t start,
+                                    Command* command,
+                                    size_t* end,
+                                    size_t* max_depth,
+                                    Editor* editor) {
+    return lookup_key_press(key_chain, start, command, end, max_depth, &editor->key_map);
+}
+
+static bool handle_key_press_insert(cz::Slice<Key> key_chain,
+                                    size_t start,
+                                    Command* command,
+                                    size_t* end,
+                                    size_t* max_depth) {
+    Key key = key_chain[start];
+    if (key.modifiers == 0 && ((key.code <= UCHAR_MAX && cz::is_print(key.code)) ||
+                               key.code == '\t' || key.code == '\n')) {
+        *command = {command_insert_char, "command_insert_char"};
+        *end = start = 1;
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 void Server::receive(Client* client, Key key) {
@@ -465,29 +419,42 @@ void Server::receive(Client* client, Key key) {
     cz::Slice<Key> key_chain = client->key_chain;
     size_t start = 0;
     while (start < key_chain.len) {
-        bool waiting_for_more_keys = false;
+        Command command;
+        size_t end;
+        size_t max_depth = 1;
 
-        if (handle_key_press_completion(&editor, client, &start, key_chain, &previous_command,
-                                        &waiting_for_more_keys)) {
-            continue;
+        // Try the different key maps or fall back to trying
+        // to convert the key press to inserting text.
+        if (lookup_key_press_completion(key_chain, start, &command, &end, &max_depth, client) ||
+            lookup_key_press_buffer(key_chain, start, &command, &end, &max_depth, &editor,
+                                    client) ||
+            lookup_key_press_global(key_chain, start, &command, &end, &max_depth, &editor) ||
+            handle_key_press_insert(key_chain, start, &command, &end, &max_depth)) {
+            // We need more keys before we can run a command.
+            if (command.function == nullptr) {
+                break;
+            }
+
+            // Make the source of the command.
+            Command_Source source;
+            source.client = client;
+            source.keys = {key_chain.start() + start, end - start};
+            source.previous_command = previous_command.function;
+
+            // Update the state variables.
+            previous_command = command;
+            start = end;
+
+            // Run the command.
+            run_command(command, &editor, source);
+        } else {
+            // Print a message that this key press failed.
+            client->show_message("Invalid key combo");
+            previous_command = {};
+
+            // Discard the number of keys consumed.
+            start += max_depth;
         }
-
-        if (handle_key_press_buffer(&editor, client, &start, key_chain, &previous_command,
-                                    &waiting_for_more_keys)) {
-            continue;
-        }
-
-        if (handle_key_press(&editor, client, &editor.key_map, &start, key_chain, &previous_command,
-                             &waiting_for_more_keys)) {
-            continue;
-        }
-
-        if (waiting_for_more_keys) {
-            break;
-        }
-
-        failed_key_press(&editor, client, &previous_command, start);
-        ++start;
     }
 
     client->key_chain.remove_range(0, start);

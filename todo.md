@@ -29,5 +29,4 @@
   - scroll
 
 # Bugs
-* Remove all keys when sequence doesn't match instead of just the first
 * Screen jumps when cursor is at the bottom and inserting text
