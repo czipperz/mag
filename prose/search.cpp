@@ -45,7 +45,7 @@ static void command_search_in_current_directory_callback(Editor* editor,
     CZ_DEFER(free(directory));
 
     {
-        WITH_BUFFER(*(Buffer_Id*)data);
+        WITH_CONST_BUFFER(*(Buffer_Id*)data);
         directory = copy_directory(buffer->directory);
     }
 

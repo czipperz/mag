@@ -29,7 +29,7 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
     cz::String top_level_path = {};
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
     {
-        WITH_BUFFER(*(Buffer_Id*)data);
+        WITH_CONST_BUFFER(*(Buffer_Id*)data);
         if (!get_git_top_level(client, buffer->directory.buffer(), cz::heap_allocator(),
                                &top_level_path)) {
             client->show_message("No git directory");

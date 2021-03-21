@@ -15,7 +15,7 @@ void Jump::update(Buffer* buffer) {
     change_index = buffer->changes.len();
 }
 
-void push_jump(Window_Unified* window, Client* client, Buffer* buffer) {
+void push_jump(Window_Unified* window, Client* client, const Buffer* buffer) {
     kill_extra_cursors(window, client);
 
     Cursor* cursor = &window->cursors[0];

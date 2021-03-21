@@ -121,13 +121,13 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
     ZoneScoped;
 
     {
-        WITH_SELECTED_BUFFER(client);
+        WITH_CONST_SELECTED_BUFFER(client);
         push_jump(window, client, buffer);
     }
 
     open_file(editor, client, tag.file_name);
 
-    WITH_SELECTED_BUFFER(client);
+    WITH_CONST_SELECTED_BUFFER(client);
     kill_extra_cursors(window, client);
 
     Contents_Iterator iterator = start_of_line_position(buffer->contents, tag.line);
@@ -281,7 +281,7 @@ static void command_lookup_prompt_callback(Editor* editor,
     cz::Vector<Tag> tags = {};
     cz::String str_buffer = {};
     {
-        WITH_SELECTED_BUFFER(client);
+        WITH_CONST_SELECTED_BUFFER(client);
         const char* lookup_error = lookup(buffer->directory.buffer(), query, &tags, &str_buffer);
         if (lookup_error) {
             tags.drop(cz::heap_allocator());
@@ -299,7 +299,7 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
 
     char* directory;
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
 
         directory = (char*)malloc(buffer->directory.len() + 1);
         CZ_ASSERT(directory);

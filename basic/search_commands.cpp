@@ -44,7 +44,7 @@ static bool parse_number(Contents_Iterator* iterator, uint64_t* num) {
     }
 }
 
-static bool get_file_to_open(Buffer* buffer,
+static bool get_file_to_open(const Buffer* buffer,
                              Contents_Iterator relative_start,
                              cz::String* path,
                              uint64_t* line,
@@ -88,7 +88,7 @@ static void open_file_and_goto_position(Editor* editor,
 
     open_file(editor, client, path);
 
-    WITH_SELECTED_BUFFER(client);
+    WITH_CONST_SELECTED_BUFFER(client);
     push_jump(window, client, buffer);
 
     Contents_Iterator iterator = buffer->contents.start();
@@ -138,7 +138,7 @@ void command_search_open(Editor* editor, Command_Source source) {
 
     bool found;
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
         found = get_file_to_open(buffer, buffer->contents.iterator_at(window->cursors[0].point),
                                  &path, &line, &column);
     }
@@ -159,7 +159,7 @@ void command_search_open_next(Editor* editor, Command_Source source) {
 
     bool found;
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
         forward_line(buffer->mode, &it);
         window->cursors[0].point = it.position;
@@ -184,7 +184,7 @@ void command_search_open_previous(Editor* editor, Command_Source source) {
 
     bool found;
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
         backward_line(buffer->mode, &it);
         window->cursors[0].point = it.position;

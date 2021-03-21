@@ -228,7 +228,7 @@ void Client::fill_mini_buffer_with_selected_region(Editor* editor) {
 
     {
         Window_Unified* window = selected_normal_window;
-        WITH_WINDOW_BUFFER(window);
+        WITH_CONST_WINDOW_BUFFER(window);
         if (!window->show_marks) {
             return;
         }

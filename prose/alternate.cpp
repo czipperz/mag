@@ -66,7 +66,7 @@ void command_alternate(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
 
         if (!buffer->get_path(cz::heap_allocator(), &path)) {
             return;

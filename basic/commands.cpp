@@ -47,49 +47,49 @@ void command_swap_mark_point(Editor* editor, Command_Source source) {
 }
 
 void command_forward_char(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     TRANSFORM_POINTS(forward_char);
 }
 
 void command_backward_char(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     TRANSFORM_POINTS(backward_char);
 }
 
 void command_forward_word(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     TRANSFORM_POINTS(forward_word);
 }
 
 void command_backward_word(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     TRANSFORM_POINTS(backward_word);
 }
 
 void command_forward_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     TRANSFORM_POINTS([&](Contents_Iterator* it) { forward_line(buffer->mode, it); });
 }
 
 void command_backward_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(buffer->mode, it); });
 }
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     push_jump(window, source.client, buffer);
     window->cursors[0].point = buffer->contents.len;
 }
 
 void command_start_of_buffer(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     push_jump(window, source.client, buffer);
     window->cursors[0].point = 0;
 }
 
 void command_push_jump(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     push_jump(window, source.client, buffer);
 }
 
@@ -102,7 +102,7 @@ void command_unpop_jump(Editor* editor, Command_Source source) {
 
 void command_pop_jump(Editor* editor, Command_Source source) {
     if (source.client->jump_chain.index == source.client->jump_chain.jumps.len()) {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
         push_jump(window, source.client, buffer);
         source.client->jump_chain.pop();
     }
@@ -114,17 +114,17 @@ void command_pop_jump(Editor* editor, Command_Source source) {
 }
 
 void command_end_of_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     TRANSFORM_POINTS(end_of_line);
 }
 
 void command_start_of_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     TRANSFORM_POINTS(start_of_line);
 }
 
 void command_start_of_line_text(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     TRANSFORM_POINTS(start_of_line_text);
 }
 
@@ -563,7 +563,9 @@ static void show_created_messages(Client* client, int created) {
     }
 }
 
-static bool create_cursor_forward_line(Editor* editor, Buffer* buffer, Window_Unified* window) {
+static bool create_cursor_forward_line(Editor* editor,
+                                       const Buffer* buffer,
+                                       Window_Unified* window) {
     CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
     Contents_Iterator last_cursor_iterator =
         buffer->contents.iterator_at(window->cursors.last().point);
@@ -584,13 +586,15 @@ static bool create_cursor_forward_line(Editor* editor, Buffer* buffer, Window_Un
 }
 
 void command_create_cursor_forward_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     if (!create_cursor_forward_line(editor, buffer, window)) {
         show_no_create_cursor_message(source.client);
     }
 }
 
-static bool create_cursor_backward_line(Editor* editor, Buffer* buffer, Window_Unified* window) {
+static bool create_cursor_backward_line(Editor* editor,
+                                        const Buffer* buffer,
+                                        Window_Unified* window) {
     CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
     Contents_Iterator first_cursor_iterator =
         buffer->contents.iterator_at(window->cursors[0].point);
@@ -611,7 +615,7 @@ static bool create_cursor_backward_line(Editor* editor, Buffer* buffer, Window_U
 }
 
 void command_create_cursor_backward_line(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     if (!create_cursor_backward_line(editor, buffer, window)) {
         show_no_create_cursor_message(source.client);
     }
@@ -636,7 +640,7 @@ static cz::Option<uint64_t> search_forward(Contents_Iterator start_it, cz::Str q
     return {};
 }
 
-static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
+static cz::Option<uint64_t> search_forward_slice(const Buffer* buffer,
                                                  Contents_Iterator start,
                                                  uint64_t end) {
     CZ_DEBUG_ASSERT(end >= start.position);
@@ -683,7 +687,7 @@ static cz::Option<uint64_t> search_forward_slice(Buffer* buffer,
         }                                                                                  \
     } while (0)
 
-static int create_cursor_forward_search(Buffer* buffer, Window_Unified* window) {
+static int create_cursor_forward_search(const Buffer* buffer, Window_Unified* window) {
     cz::Slice<Cursor> cursors = window->cursors;
     CZ_DEBUG_ASSERT(cursors.len >= 1);
     size_t c = cursors.len - 1;
@@ -699,7 +703,7 @@ static int create_cursor_forward_search(Buffer* buffer, Window_Unified* window) 
 }
 
 void command_create_cursor_forward_search(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_search(buffer, window);
     show_created_messages(source.client, created);
 }
@@ -736,7 +740,7 @@ static cz::Option<uint64_t> search_backward(Contents_Iterator start_it, cz::Str 
     return {};
 }
 
-static cz::Option<uint64_t> search_backward_slice(Buffer* buffer,
+static cz::Option<uint64_t> search_backward_slice(const Buffer* buffer,
                                                   Contents_Iterator start,
                                                   uint64_t end) {
     CZ_DEBUG_ASSERT(end >= start.position);
@@ -752,7 +756,7 @@ static cz::Option<uint64_t> search_backward_slice(Buffer* buffer,
     return search_backward(start, slice.as_str());
 }
 
-static int create_cursor_backward_search(Buffer* buffer, Window_Unified* window) {
+static int create_cursor_backward_search(const Buffer* buffer, Window_Unified* window) {
     cz::Slice<Cursor> cursors = window->cursors;
     CZ_DEBUG_ASSERT(cursors.len >= 1);
     size_t c = 0;
@@ -768,13 +772,13 @@ static int create_cursor_backward_search(Buffer* buffer, Window_Unified* window)
 }
 
 void command_create_cursor_backward_search(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
     show_created_messages(source.client, created);
 }
 
 void command_create_cursor_forward(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     int created;
     if (window->show_marks) {
         created = create_cursor_forward_search(buffer, window);
@@ -785,7 +789,7 @@ void command_create_cursor_forward(Editor* editor, Command_Source source) {
 }
 
 void command_create_cursor_backward(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     int created;
     if (window->show_marks) {
         created = create_cursor_backward_search(buffer, window);
@@ -796,7 +800,7 @@ void command_create_cursor_backward(Editor* editor, Command_Source source) {
 }
 
 void command_create_cursors_all_search(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
     if (created >= 0) {
         if (created > 0) {
@@ -814,7 +818,7 @@ void command_create_cursors_all_search(Editor* editor, Command_Source source) {
 }
 
 void command_create_cursors_to_end_search(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_search(buffer, window);
     if (created == 1) {
         while (create_cursor_forward_search(buffer, window) == 1) {
@@ -824,7 +828,7 @@ void command_create_cursors_to_end_search(Editor* editor, Command_Source source)
 }
 
 void command_create_cursors_to_start_search(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
     if (created == 1) {
         while (create_cursor_backward_search(buffer, window) == 1) {
@@ -854,10 +858,12 @@ static void set_cursor_position_to_edit_undo(Cursor* cursor, const Edit* edit, i
     }
 }
 
-static void create_cursors_last_change(Window_Unified* window, Buffer* buffer, Client* client) {
+static void create_cursors_last_change(Window_Unified* window,
+                                       const Buffer* buffer,
+                                       Client* client) {
     kill_extra_cursors(window, client);
 
-    Change* change = &buffer->changes.last();
+    const Change* change = &buffer->changes.last();
     cz::Slice<const Edit> edits = change->commit.edits;
     window->cursors.reserve(cz::heap_allocator(), edits.len - 1);
 
@@ -908,7 +914,7 @@ void command_create_cursors_redo(Editor* editor, Command_Source source) {
 }
 
 void command_create_cursors_last_change(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     if (buffer->changes.len() == 0) {
         return;
     }
@@ -917,7 +923,7 @@ void command_create_cursors_last_change(Editor* editor, Command_Source source) {
 }
 
 void command_create_cursors_lines_in_region(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
 
     if (window->cursors.len() > 1) {
         return;
@@ -1015,7 +1021,7 @@ static void command_search_forward_callback(Editor* editor,
                                             Client* client,
                                             cz::Str query,
                                             void* data) {
-    WITH_SELECTED_BUFFER(client);
+    WITH_CONST_SELECTED_BUFFER(client);
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_forward, {
@@ -1029,7 +1035,7 @@ void command_search_forward(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
-        WITH_WINDOW_BUFFER(window);
+        WITH_CONST_WINDOW_BUFFER(window);
         for (size_t c = 0; c < cursors.len; ++c) {
             bool created;
             SEARCH_SLICE_THEN(search_forward_slice, created, cursors[c] = new_cursor);
@@ -1044,7 +1050,7 @@ static void command_search_backward_callback(Editor* editor,
                                              Client* client,
                                              cz::Str query,
                                              void* data) {
-    WITH_SELECTED_BUFFER(client);
+    WITH_CONST_SELECTED_BUFFER(client);
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_backward, {
@@ -1058,7 +1064,7 @@ void command_search_backward(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
-        WITH_WINDOW_BUFFER(window);
+        WITH_CONST_WINDOW_BUFFER(window);
         for (size_t c = 0; c < cursors.len; ++c) {
             bool created;
             SEARCH_SLICE_THEN(search_backward_slice, created, cursors[c] = new_cursor);
@@ -1083,7 +1089,7 @@ static void command_goto_line_callback(Editor* editor, Client* client, cz::Str s
     uint64_t lines = 0;
     parse_number(str, &lines);
 
-    WITH_SELECTED_BUFFER(client);
+    WITH_CONST_SELECTED_BUFFER(client);
     push_jump(window, client, buffer);
 
     Contents_Iterator iterator = start_of_line_position(buffer->contents, lines);
@@ -1097,7 +1103,7 @@ static void command_goto_position_callback(Editor* editor,
     uint64_t position = 0;
     parse_number(str, &position);
 
-    WITH_SELECTED_BUFFER(client);
+    WITH_CONST_SELECTED_BUFFER(client);
     push_jump(window, client, buffer);
     window->cursors[0].point = cz::min(position, buffer->contents.len);
 }
@@ -1144,7 +1150,7 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
 }
 
 void command_mark_buffer(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     push_jump(window, source.client, buffer);
     window->show_marks = true;
     window->cursors[0].mark = 0;
