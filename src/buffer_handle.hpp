@@ -5,6 +5,10 @@
 #include <cz/mutex.hpp>
 #include "buffer.hpp"
 
+#ifdef TRACY_ENABLE
+#include <tracy/client/TracyLock.hpp>
+#endif
+
 #ifdef NDEBUG
 #include <cz/assert.hpp>
 #endif
@@ -17,6 +21,10 @@ private:
     cz::Condition_Variable waiters_condition;
     uint32_t waiters_count;
     uint32_t active_state;
+
+#ifdef TRACY_ENABLE
+    tracy::SharedLockableCtx* context;
+#endif
 
     Buffer buffer;
 

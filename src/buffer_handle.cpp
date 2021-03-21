@@ -19,6 +19,15 @@ void Buffer_Handle::init(Buffer_Id buffer_id, Buffer buffer) {
     waiters_count = 0;
     active_state = UNLOCKED;
 
+#ifdef TRACY_ENABLE
+    context = new tracy::SharedLockableCtx([]() -> const tracy::SourceLocationData* {
+        static constexpr tracy::SourceLocationData srcloc{nullptr, "cz::Buffer_Handle", __FILE__,
+                                                          __LINE__, 0};
+        return &srcloc;
+    }());
+    context->CustomName(buffer.name.buffer(), buffer.name.len());
+#endif
+
     id = buffer_id;
 
     this->buffer = buffer;
@@ -30,10 +39,18 @@ void Buffer_Handle::drop() {
 
     mutex.drop();
     waiters_condition.drop();
+
+#ifdef TRACY_ENABLE
+    delete context;
+#endif
 }
 
 Buffer* Buffer_Handle::lock_writing() {
     ZoneScoped;
+
+#ifdef TRACY_ENABLE
+    const auto run_after = context->BeforeLock();
+#endif
 
     {
         mutex.lock();
@@ -49,11 +66,21 @@ Buffer* Buffer_Handle::lock_writing() {
         active_state = LOCKED_WRITING;
     }
 
+#ifdef TRACY_ENABLE
+    if (run_after) {
+        context->AfterLock();
+    }
+#endif
+
     return &buffer;
 }
 
 const Buffer* Buffer_Handle::lock_reading() {
     ZoneScoped;
+
+#ifdef TRACY_ENABLE
+    const auto run_after = context->BeforeLockShared();
+#endif
 
     {
         mutex.lock();
@@ -79,25 +106,33 @@ const Buffer* Buffer_Handle::lock_reading() {
         }
     }
 
+#ifdef TRACY_ENABLE
+    if (run_after) {
+        context->AfterLockShared();
+    }
+#endif
+
     return &buffer;
 }
 
 const Buffer* Buffer_Handle::try_lock_reading() {
     ZoneScoped;
 
-    {
+    const Buffer* result = nullptr;
+
+    do {
         mutex.lock();
         CZ_DEFER(mutex.unlock());
 
         // Already locked in writing mode.
         if (active_state == LOCKED_WRITING) {
-            return nullptr;
+            goto ret;
         }
 
         // Yield priority to a waiting thread.
         if (waiters_count > 0) {
             waiters_condition.signal_one();
-            return nullptr;
+            goto ret;
         }
 
         if (active_state == UNLOCKED) {
@@ -109,13 +144,26 @@ const Buffer* Buffer_Handle::try_lock_reading() {
             CZ_DEBUG_ASSERT(active_state >= READER_0);
             ++active_state;
         }
-    }
 
-    return &buffer;
+    } while (0);
+
+    result = &buffer;
+
+ret:
+#ifdef TRACY_ENABLE
+    context->AfterTryLockShared(result != nullptr);
+#endif
+
+    return result;
 }
 
 void Buffer_Handle::reduce_writing_to_reading() {
     ZoneScoped;
+
+#ifdef TRACY_ENABLE
+    context->AfterUnlock();
+    const auto run_after = context->BeforeLockShared();
+#endif
 
     {
         mutex.lock();
@@ -128,12 +176,23 @@ void Buffer_Handle::reduce_writing_to_reading() {
         // Wake up all waiters so other readers will also run.
         waiters_condition.signal_all();
     }
+
+#ifdef TRACY_ENABLE
+    if (run_after) {
+        context->AfterLockShared();
+    }
+#endif
 }
 
 Buffer* Buffer_Handle::increase_reading_to_writing() {
     ZoneScoped;
 
-    {
+#ifdef TRACY_ENABLE
+    context->AfterUnlockShared();
+    const auto run_after = context->BeforeLock();
+#endif
+
+    do {
         mutex.lock();
         CZ_DEFER(mutex.unlock());
 
@@ -144,7 +203,7 @@ Buffer* Buffer_Handle::increase_reading_to_writing() {
             // If we're the only reader then lock in writing mode.
             if (active_state == READER_0) {
                 active_state = LOCKED_WRITING;
-                return &buffer;
+                break;
             }
 
             --active_state;
@@ -162,7 +221,13 @@ Buffer* Buffer_Handle::increase_reading_to_writing() {
 
             active_state = LOCKED_WRITING;
         }
+    } while (0);
+
+#ifdef TRACY_ENABLE
+    if (run_after) {
+        context->AfterLock();
     }
+#endif
 
     return &buffer;
 }
@@ -175,6 +240,14 @@ void Buffer_Handle::unlock() {
         CZ_DEFER(mutex.unlock());
 
         CZ_DEBUG_ASSERT(active_state != UNLOCKED);
+
+#ifdef TRACY_ENABLE
+        if (active_state == LOCKED_WRITING) {
+            context->AfterUnlock();
+        } else {
+            context->AfterUnlockShared();
+        }
+#endif
 
         // If we're either the only writer or reader then unlock.
         if (active_state <= READER_0) {
