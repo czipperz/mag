@@ -39,7 +39,7 @@ void Client::clear_mini_buffer(Editor* editor) {
 }
 
 void Client::dealloc_message() {
-    free(_message.response_callback_data);
+    cz::heap_allocator().dealloc({_message.response_callback_data, 0});
     _message.response_callback_data = nullptr;
 }
 

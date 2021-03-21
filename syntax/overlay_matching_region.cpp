@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <Tracy.hpp>
+#include <cz/heap.hpp>
 #include "buffer.hpp"
 #include "overlay.hpp"
 #include "theme.hpp"
@@ -12,6 +13,7 @@
 namespace mag {
 namespace syntax {
 
+namespace overlay_matching_region_impl {
 struct Data {
     Face face;
 
@@ -21,6 +23,8 @@ struct Data {
 
     size_t countdown_cursor_region;
 };
+}
+using namespace overlay_matching_region_impl;
 
 static void overlay_matching_region_start_frame(const Buffer* buffer,
                                                 Window_Unified* window,
@@ -97,7 +101,7 @@ static Face overlay_matching_region_get_face_newline_padding(const Buffer* buffe
 static void overlay_matching_region_end_frame(void* _data) {}
 
 static void overlay_matching_region_cleanup(void* data) {
-    free(data);
+    cz::heap_allocator().dealloc((Data*)data);
 }
 
 Overlay overlay_matching_region(Face face) {
@@ -109,8 +113,9 @@ Overlay overlay_matching_region(Face face) {
         overlay_matching_region_cleanup,
     };
 
-    Data* data = (Data*)malloc(sizeof(Data));
+    Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
+    *data = {};
     data->face = face;
     return {&vtable, data};
 }

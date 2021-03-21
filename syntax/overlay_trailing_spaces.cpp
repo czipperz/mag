@@ -1,15 +1,19 @@
 #include "overlay_trailing_spaces.hpp"
 
 #include <cz/char_type.hpp>
+#include <cz/heap.hpp>
 #include "overlay.hpp"
 #include "window.hpp"
 
 namespace mag {
 namespace syntax {
 
+namespace overlay_trailing_spaces_impl {
 struct Data {
     Face face;
 };
+}
+using namespace overlay_trailing_spaces_impl;
 
 static void overlay_trailing_spaces_start_frame(const Buffer* buffer,
                                                 Window_Unified* window,
@@ -59,7 +63,7 @@ static Face overlay_trailing_spaces_get_face_newline_padding(const Buffer* buffe
 static void overlay_trailing_spaces_end_frame(void* data) {}
 
 static void overlay_trailing_spaces_cleanup(void* data) {
-    free(data);
+    cz::heap_allocator().dealloc((Data*)data);
 }
 
 Overlay overlay_trailing_spaces(Face face) {
@@ -71,8 +75,9 @@ Overlay overlay_trailing_spaces(Face face) {
         overlay_trailing_spaces_cleanup,
     };
 
-    Data* data = (Data*)calloc(1, sizeof(Data));
+    Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
+    *data = {};
     data->face = face;
     return {&vtable, data};
 }

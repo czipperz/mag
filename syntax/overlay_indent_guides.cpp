@@ -18,6 +18,7 @@
 namespace mag {
 namespace syntax {
 
+namespace overlay_indent_guides_impl {
 struct Data {
     Face face;
     cz::Vector<uint64_t> columns;
@@ -26,6 +27,8 @@ struct Data {
     bool has_saved_column;
     uint64_t saved_column;
 };
+}
+using namespace overlay_indent_guides_impl;
 
 static void overlay_indent_guides_start_frame(const Buffer*,
                                               Window_Unified*,
@@ -94,7 +97,7 @@ static void overlay_indent_guides_end_frame(void* data) {}
 static void overlay_indent_guides_cleanup(void* _data) {
     Data* data = (Data*)_data;
     data->columns.drop(cz::heap_allocator());
-    free(data);
+    cz::heap_allocator().dealloc(data);
 }
 
 Overlay overlay_indent_guides(Face face) {
@@ -106,8 +109,9 @@ Overlay overlay_indent_guides(Face face) {
         overlay_indent_guides_cleanup,
     };
 
-    Data* data = (Data*)calloc(1, sizeof(Data));
+    Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
+    *data = {};
     data->face = face;
     return {&vtable, data};
 }

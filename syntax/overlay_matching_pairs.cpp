@@ -17,11 +17,14 @@
 namespace mag {
 namespace syntax {
 
+namespace overlay_matching_pairs_impl {
 struct Data {
     Face face;
     size_t index;
     cz::Vector<uint64_t> points;
 };
+}
+using namespace overlay_matching_pairs_impl;
 
 static bool binary_search(cz::Slice<Token> tokens, uint64_t position, size_t* token_index) {
     size_t start = 0;
@@ -168,7 +171,7 @@ static void overlay_matching_pairs_end_frame(void* _data) {}
 static void overlay_matching_pairs_cleanup(void* _data) {
     Data* data = (Data*)_data;
     data->points.drop(cz::heap_allocator());
-    free(data);
+    cz::heap_allocator().dealloc(data);
 }
 
 Overlay overlay_matching_pairs(Face face) {
@@ -180,8 +183,9 @@ Overlay overlay_matching_pairs(Face face) {
         overlay_matching_pairs_cleanup,
     };
 
-    Data* data = (Data*)calloc(1, sizeof(Data));
+    Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
+    *data = {};
     data->face = face;
     return {&vtable, data};
 }

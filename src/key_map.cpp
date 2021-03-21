@@ -129,6 +129,7 @@ void Key_Map::bind(cz::Str description, Command command) {
             } else {
                 bind.is_command = false;
                 Key_Map* new_map = cz::heap_allocator().alloc<Key_Map>();
+                CZ_ASSERT(new_map);
                 *new_map = {};
                 bind.v.map = new_map;
                 key_map->bindings.insert(bind_index, bind);

@@ -25,16 +25,11 @@ static void run_ag(Client* client,
                         "Ag error");
 }
 
-static char* copy_directory(const cz::String& buffer_directory) {
-    char* directory = nullptr;
-    if (buffer_directory.len() > 0) {
-        directory = (char*)malloc(buffer_directory.len() + 1);
-        CZ_ASSERT(directory);
-
-        memcpy(directory, buffer_directory.buffer(), buffer_directory.len());
-        directory[buffer_directory.len()] = '\0';
+static char* copy_directory(cz::Str buffer_directory) {
+    if (buffer_directory.len > 0) {
+        return buffer_directory.duplicate_null_terminate(cz::heap_allocator()).buffer();
     }
-    return directory;
+    return nullptr;
 }
 
 static void command_search_in_current_directory_callback(Editor* editor,
@@ -42,7 +37,7 @@ static void command_search_in_current_directory_callback(Editor* editor,
                                                          cz::Str query,
                                                          void* data) {
     char* directory = nullptr;
-    CZ_DEFER(free(directory));
+    CZ_DEFER(cz::heap_allocator().dealloc({directory, 1}));
 
     {
         WITH_CONST_BUFFER(*(Buffer_Id*)data);
@@ -53,7 +48,7 @@ static void command_search_in_current_directory_callback(Editor* editor,
 }
 
 void command_search_in_current_directory(Editor* editor, Command_Source source) {
-    Buffer_Id* selected_buffer_id = (Buffer_Id*)malloc(sizeof(Buffer_Id));
+    Buffer_Id* selected_buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
     CZ_ASSERT(selected_buffer_id);
     *selected_buffer_id = source.client->selected_window()->id;
     source.client->show_dialog(editor, "ag: ", no_completion_engine,
@@ -63,7 +58,7 @@ void command_search_in_current_directory(Editor* editor, Command_Source source) 
 
 void command_search_in_current_directory_token_at_position(Editor* editor, Command_Source source) {
     char* directory = nullptr;
-    CZ_DEFER(free(directory));
+    CZ_DEFER(cz::heap_allocator().dealloc({directory, 1}));
 
     cz::String query = {};
     CZ_DEFER(query.drop(cz::heap_allocator()));

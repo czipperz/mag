@@ -178,7 +178,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
 }
 
 void command_kill_buffer(Editor* editor, Command_Source source) {
-    Buffer_Id* buffer_id = (Buffer_Id*)malloc(sizeof(Buffer_Id));
+    Buffer_Id* buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
     CZ_ASSERT(buffer_id);
     *buffer_id = source.client->selected_window()->id;
     source.client->show_dialog(editor, "Buffer to kill: ", buffer_completion_engine,

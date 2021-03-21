@@ -108,15 +108,15 @@ static void render(int* total_rows,
             destroy_window_cache(*window_cache);
             *window_cache = nullptr;
 
-            free(cellss[0]);
-            free(cellss[1]);
+            cz::heap_allocator().dealloc(cellss[0], *total_rows * *total_cols);
+            cz::heap_allocator().dealloc(cellss[1], *total_rows * *total_cols);
 
             *total_rows = rows;
             *total_cols = cols;
 
             size_t grid_size = rows * cols;
-            cellss[0] = (Cell*)malloc(grid_size * sizeof(Cell));
-            cellss[1] = (Cell*)malloc(grid_size * sizeof(Cell));
+            cellss[0] = cz::heap_allocator().alloc<Cell>(grid_size);
+            cellss[1] = cz::heap_allocator().alloc<Cell>(grid_size);
 
             for (size_t i = 0; i < grid_size; ++i) {
                 cellss[0][i].face = {};
@@ -263,9 +263,10 @@ void run(Server* server, Client* client) {
 
     start_color();
 
-    int16_t* colors = (int16_t*)calloc(sizeof(int16_t), COLORS);
+    int16_t* colors = cz::heap_allocator().alloc<int16_t>(COLORS);
     CZ_ASSERT(colors);
-    CZ_DEFER(free(colors));
+    CZ_DEFER(cz::heap_allocator().dealloc(colors, COLORS));
+    memset(colors, 0, sizeof(int16_t) * COLORS);
     colors[0] = 1;
     colors[7] = 1;
     colors[21] = 1;
@@ -306,17 +307,17 @@ void run(Server* server, Client* client) {
         }
     }
 
+    int total_rows = 0;
+    int total_cols = 0;
+
     Cell* cellss[2] = {nullptr, nullptr};
     CZ_DEFER({
-        free(cellss[0]);
-        free(cellss[1]);
+        cz::heap_allocator().dealloc(cellss[0], total_rows * total_cols);
+        cz::heap_allocator().dealloc(cellss[1], total_rows * total_cols);
     });
 
     Window_Cache* window_cache = nullptr;
     CZ_DEFER(destroy_window_cache(window_cache));
-
-    int total_rows = 0;
-    int total_cols = 0;
 
     client->system_copy_text_func = ncurses_copy;
     client->system_copy_text_data = nullptr;

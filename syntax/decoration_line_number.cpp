@@ -14,6 +14,7 @@
 namespace mag {
 namespace syntax {
 
+namespace decoration_line_number_impl {
 struct Buffer_Data {
     Buffer_Id id;
     size_t change_index;
@@ -24,6 +25,8 @@ struct Buffer_Data {
 struct Data {
     cz::Vector<Buffer_Data> buffer_datas;
 };
+}
+using namespace decoration_line_number_impl;
 
 static void update_insert(const Edit& edit, Buffer_Data* data) {
     if (data->position > edit.position ||
@@ -136,12 +139,13 @@ static bool decoration_line_number_append(const Buffer* buffer,
 static void decoration_line_number_cleanup(void* _data) {
     Data* data = (Data*)_data;
     data->buffer_datas.drop(cz::heap_allocator());
-    free(data);
+    cz::heap_allocator().dealloc(data);
 }
 
 Decoration decoration_line_number() {
-    Data* data = (Data*)calloc(1, sizeof(Data));
+    Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
+    *data = {};
     static const Decoration::VTable vtable = {decoration_line_number_append,
                                               decoration_line_number_cleanup};
     return {&vtable, data};

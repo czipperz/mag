@@ -177,8 +177,8 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
     CZ_TRY(cz::fs::files(cz::heap_allocator(), buffer_array.allocator(), buffer->directory.buffer(),
                          &files));
 
-    cz::File_Time* file_times = (cz::File_Time*)malloc(sizeof(cz::File_Time) * files.len());
-    CZ_DEFER(free(file_times));
+    cz::File_Time* file_times = cz::heap_allocator().alloc<cz::File_Time>(files.len());
+    CZ_DEFER(cz::heap_allocator().dealloc(file_times, files.len()));
 
     unsigned char* file_directories =
         (unsigned char*)calloc(1, cz::bit_array::alloc_size(files.len()));

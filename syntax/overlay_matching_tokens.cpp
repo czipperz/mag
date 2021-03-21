@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <Tracy.hpp>
+#include <cz/heap.hpp>
 #include "buffer.hpp"
 #include "overlay.hpp"
 #include "theme.hpp"
@@ -22,6 +23,7 @@ static bool is_matching_token(cz::Slice<const Token_Type> types, Token_Type type
     return false;
 }
 
+namespace overlay_matching_tokens_impl {
 struct Data {
     Face face;
     cz::Slice<const Token_Type> token_types;
@@ -37,6 +39,8 @@ struct Data {
     Token token;
     uint64_t state;
 };
+}
+using namespace overlay_matching_tokens_impl;
 
 static void set_token_matches(Data* data) {
     data->token_matches = false;
@@ -190,7 +194,7 @@ static Face overlay_matching_tokens_get_face_newline_padding(const Buffer* buffe
 static void overlay_matching_tokens_end_frame(void* _data) {}
 
 static void overlay_matching_tokens_cleanup(void* data) {
-    free(data);
+    cz::heap_allocator().dealloc((Data*)data);
 }
 
 Overlay overlay_matching_tokens(Face face, cz::Slice<const Token_Type> types) {
@@ -202,8 +206,9 @@ Overlay overlay_matching_tokens(Face face, cz::Slice<const Token_Type> types) {
         overlay_matching_tokens_cleanup,
     };
 
-    Data* data = (Data*)malloc(sizeof(Data));
+    Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
+    *data = {};
     data->face = face;
     data->token_types = types;
     return {&vtable, data};

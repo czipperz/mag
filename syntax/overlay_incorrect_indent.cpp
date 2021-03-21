@@ -1,6 +1,7 @@
 #include "overlay_incorrect_indent.hpp"
 
 #include <cz/char_type.hpp>
+#include <cz/heap.hpp>
 #include "buffer.hpp"
 #include "overlay.hpp"
 #include "window.hpp"
@@ -8,11 +9,14 @@
 namespace mag {
 namespace syntax {
 
+namespace overlay_incorrect_indent_impl {
 struct Data {
     Face face;
     bool at_start_of_line;
     uint64_t highlight_countdown;
 };
+}
+using namespace overlay_incorrect_indent_impl;
 
 static void overlay_incorrect_indent_start_frame(const Buffer* buffer,
                                                  Window_Unified* window,
@@ -87,7 +91,7 @@ static Face overlay_incorrect_indent_get_face_newline_padding(
 static void overlay_incorrect_indent_end_frame(void* data) {}
 
 static void overlay_incorrect_indent_cleanup(void* data) {
-    free(data);
+    cz::heap_allocator().dealloc((Data*)data);
 }
 
 Overlay overlay_incorrect_indent(Face face) {
@@ -99,7 +103,7 @@ Overlay overlay_incorrect_indent(Face face) {
         overlay_incorrect_indent_cleanup,
     };
 
-    Data* data = (Data*)calloc(1, sizeof(Data));
+    Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
     data->face = face;
     data->at_start_of_line = true;

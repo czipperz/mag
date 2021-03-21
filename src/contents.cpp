@@ -13,13 +13,13 @@ namespace mag {
 
 void Contents::drop() {
     for (size_t i = 0; i < buckets.len(); ++i) {
-        cz::heap_allocator().dealloc({buckets[i].elems, CONTENTS_BUCKET_MAX_SIZE});
+        cz::heap_allocator().dealloc(buckets[i].elems, CONTENTS_BUCKET_MAX_SIZE);
     }
     buckets.drop(cz::heap_allocator());
 }
 
 static cz::Slice<char> bucket_alloc() {
-    char* buffer = (char*)cz::heap_allocator().alloc({CONTENTS_BUCKET_MAX_SIZE, 1});
+    char* buffer = cz::heap_allocator().alloc<char>(CONTENTS_BUCKET_MAX_SIZE);
     return {buffer, 0};
 }
 
@@ -41,6 +41,7 @@ static void bucket_append(cz::Slice<char>* bucket, cz::Str str) {
 }
 
 void Contents::remove(uint64_t start, uint64_t len) {
+    ZoneScoped;
     CZ_DEBUG_ASSERT(start + len <= this->len);
     this->len -= len;
 
@@ -66,6 +67,8 @@ void Contents::remove(uint64_t start, uint64_t len) {
 }
 
 void Contents::insert(uint64_t start, cz::Str str) {
+    ZoneScoped;
+
     CZ_DEBUG_ASSERT(start <= this->len);
     this->len += str.len;
 
@@ -170,12 +173,14 @@ static void slice_impl(char* buffer,
 }
 
 void Contents::stringify_into(cz::Allocator allocator, cz::String* string) const {
+    ZoneScoped;
     string->reserve(allocator, len);
     slice_impl(string->buffer(), buckets, start(), len);
     string->set_len(string->len() + len);
 }
 
 cz::String Contents::stringify(cz::Allocator allocator) const {
+    ZoneScoped;
     cz::String string = {};
     stringify_into(allocator, &string);
     return string;
@@ -202,10 +207,12 @@ SSOStr Contents::slice(cz::Allocator allocator, Contents_Iterator start, uint64_
 }
 
 void Contents::slice_into(Contents_Iterator start, uint64_t end, char* string) const {
+    ZoneScoped;
     slice_impl(string, buckets, start, end - start.position);
 }
 
 void Contents::slice_into(Contents_Iterator start, uint64_t end, cz::String* string) const {
+    ZoneScoped;
     CZ_DEBUG_ASSERT(string->cap() - string->len() >= end - start.position);
     slice_impl(string->end(), buckets, start, end - start.position);
     string->set_len(string->len() + end - start.position);
@@ -215,6 +222,7 @@ void Contents::slice_into(cz::Allocator allocator,
                           Contents_Iterator start,
                           uint64_t end,
                           cz::String* string) const {
+    ZoneScoped;
     string->reserve(allocator, end - start.position);
     slice_into(start, end, string);
 }

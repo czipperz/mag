@@ -27,7 +27,7 @@ void destroy_window_cache(Window_Cache* window_cache) {
 
     destroy_window_cache_children(window_cache);
 
-    free(window_cache);
+    cz::heap_allocator().dealloc(window_cache);
 }
 
 void cache_window_unified_position(Window_Unified* window,

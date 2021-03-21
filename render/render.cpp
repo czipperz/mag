@@ -713,7 +713,8 @@ static void draw_window(Cell* cells,
 
         bool reloaded = true;
         if (!*window_cache) {
-            *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
+            *window_cache = cz::heap_allocator().alloc<Window_Cache>();
+            CZ_ASSERT(*window_cache);
             cache_window_unified_create(editor, *window_cache, window);
         } else if ((*window_cache)->tag != window->tag) {
             destroy_window_cache_children(*window_cache);
@@ -734,7 +735,8 @@ static void draw_window(Cell* cells,
         Window_Split* window = (Window_Split*)w;
 
         if (!*window_cache) {
-            *window_cache = (Window_Cache*)malloc(sizeof(Window_Cache));
+            *window_cache = cz::heap_allocator().alloc<Window_Cache>();
+            CZ_ASSERT(*window_cache);
             (*window_cache)->tag = window->tag;
             (*window_cache)->v.split = {};
         } else if ((*window_cache)->tag != window->tag) {

@@ -15,7 +15,8 @@
 namespace mag {
 
 Window_Unified* Window_Unified::create(Buffer_Id buffer_id) {
-    Window_Unified* window = (Window_Unified*)malloc(sizeof(Window_Unified));
+    Window_Unified* window = cz::heap_allocator().alloc<Window_Unified>();
+    CZ_ASSERT(window);
     window->parent = nullptr;
     window->rows = 0;
     window->cols = 0;
@@ -39,7 +40,8 @@ Window_Unified* Window_Unified::create(Buffer_Id buffer_id) {
 }
 
 Window_Unified* Window_Unified::clone() {
-    Window_Unified* window = (Window_Unified*)malloc(sizeof(Window_Unified));
+    Window_Unified* window = cz::heap_allocator().alloc<Window_Unified>();
+    CZ_ASSERT(window);
     *window = *this;
     window->cursors = this->cursors.clone(cz::heap_allocator());
     window->completion_cache = {};
@@ -143,6 +145,7 @@ void Window::drop_(Window* window) {
         Window_Unified* w = (Window_Unified*)window;
         w->cursors.drop(cz::heap_allocator());
         w->completion_cache.drop();
+        cz::heap_allocator().dealloc(w);
         break;
     }
 
@@ -151,15 +154,15 @@ void Window::drop_(Window* window) {
         Window_Split* w = (Window_Split*)window;
         Window::drop_(w->first);
         Window::drop_(w->second);
+        cz::heap_allocator().dealloc(w);
         break;
     }
     }
-
-    free(window);
 }
 
 Window_Split* Window_Split::create(Window::Tag tag, Window* first, Window* second) {
-    Window_Split* window = (Window_Split*)malloc(sizeof(Window_Split));
+    Window_Split* window = cz::heap_allocator().alloc<Window_Split>();
+    CZ_ASSERT(window);
     window->parent = nullptr;
     window->rows = first->rows + second->rows + 1;
     window->cols = first->cols + second->cols + 1;
@@ -172,7 +175,7 @@ Window_Split* Window_Split::create(Window::Tag tag, Window* first, Window* secon
 }
 
 void Window_Split::drop_non_recursive(Window_Split* window) {
-    free(window);
+    cz::heap_allocator().dealloc(window);
 }
 
 void kill_extra_cursors(Window_Unified* window, Client* client) {

@@ -1,5 +1,6 @@
 #include "transaction.hpp"
 
+#include <cz/heap.hpp>
 #include "buffer.hpp"
 #include "commit.hpp"
 
@@ -9,11 +10,11 @@ void Transaction::init(size_t num_edits, size_t total_edit_values) {
     // Note: format tied to buffer.cpp:reload_buffer_from_file() (static function)
     edit_offset = 0;
     value_offset = num_edits * sizeof(Edit);
-    memory = malloc(value_offset + total_edit_values);
+    memory = cz::heap_allocator().alloc<char>(value_offset + total_edit_values);
 }
 
 void Transaction::drop() {
-    free(memory);
+    cz::heap_allocator().dealloc({memory, 0});
 }
 
 static void* transaction_alloc(void* data, cz::AllocInfo new_info) {

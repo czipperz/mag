@@ -580,15 +580,15 @@ static void render(SDL_Window* window,
             destroy_window_cache(*window_cache);
             *window_cache = nullptr;
 
-            free(cellss[0]);
-            free(cellss[1]);
+            cz::heap_allocator().dealloc(cellss[0], *total_rows * *total_cols);
+            cz::heap_allocator().dealloc(cellss[1], *total_rows * *total_cols);
 
             *total_rows = rows;
             *total_cols = cols;
 
             size_t grid_size = (size_t)rows * cols;
-            cellss[0] = (Cell*)malloc(grid_size * sizeof(Cell));
-            cellss[1] = (Cell*)malloc(grid_size * sizeof(Cell));
+            cellss[0] = cz::heap_allocator().alloc<Cell>(grid_size);
+            cellss[1] = cz::heap_allocator().alloc<Cell>(grid_size);
 
             for (size_t i = 0; i < grid_size; ++i) {
                 cellss[0][i].face = {};
@@ -896,17 +896,17 @@ void run(Server* server, Client* client) {
     }
     CZ_DEFER(TTF_CloseFont(font));
 
+    int total_rows = 0;
+    int total_cols = 0;
+
     Cell* cellss[2] = {nullptr, nullptr};
     CZ_DEFER({
-        free(cellss[0]);
-        free(cellss[1]);
+        cz::heap_allocator().dealloc(cellss[0], total_rows * total_cols);
+        cz::heap_allocator().dealloc(cellss[1], total_rows * total_cols);
     });
 
     Window_Cache* window_cache = nullptr;
     CZ_DEFER(destroy_window_cache(window_cache));
-
-    int total_rows = 0;
-    int total_cols = 0;
 
     int character_width;
     int character_height;

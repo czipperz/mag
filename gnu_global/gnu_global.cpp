@@ -157,7 +157,7 @@ static void tag_completion_engine_cleanup(void* _data) {
     Tag_Completion_Engine_Data* data = (Tag_Completion_Engine_Data*)_data;
     data->tags.drop(cz::heap_allocator());
     data->buffer.drop(cz::heap_allocator());
-    free(data);
+    cz::heap_allocator().dealloc(data);
 }
 
 static bool tag_completion_engine(Editor* editor,
@@ -221,8 +221,7 @@ void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::
         return;
     }
 
-    Tag_Completion_Engine_Data* data =
-        (Tag_Completion_Engine_Data*)malloc(sizeof(Tag_Completion_Engine_Data));
+    Tag_Completion_Engine_Data* data = cz::heap_allocator().alloc<Tag_Completion_Engine_Data>();
     CZ_ASSERT(data);
     data->tags = tags;
     data->buffer = buffer;
@@ -254,9 +253,9 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
             return;
         }
 
-        char* query = (char*)malloc(token.end - token.start + 1);
+        char* query = cz::heap_allocator().alloc<char>(token.end - token.start + 1);
         CZ_ASSERT(query);
-        CZ_DEFER(free(query));
+        CZ_DEFER(cz::heap_allocator().dealloc({query, 0 /* wrong size but that's ok */}));
         buffer->contents.slice_into(iterator, token.end, query);
         query[token.end - token.start] = '\0';
 
@@ -301,20 +300,18 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
 
-        directory = (char*)malloc(buffer->directory.len() + 1);
-        CZ_ASSERT(directory);
-        memcpy(directory, buffer->directory.buffer(), buffer->directory.len());
-        directory[buffer->directory.len()] = '\0';
+        directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer();
     }
 
     source.client->show_dialog(editor, "Lookup: ", completion_engine,
                                command_lookup_prompt_callback, nullptr);
 
     // If data wasn't cleared by show_dialog then it needs to be cleaned up now.
-    free(source.client->mini_buffer_completion_cache.engine_context.data);
+    cz::heap_allocator().dealloc(
+        {source.client->mini_buffer_completion_cache.engine_context.data, 0});
     source.client->mini_buffer_completion_cache.engine_context.data = directory;
     source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* directory) {
-        free(directory);
+        cz::heap_allocator().dealloc({directory, 0});
     };
 
     source.client->fill_mini_buffer_with_selected_region(editor);
@@ -332,14 +329,13 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
         return;
     }
 
-    char* directory = (char*)malloc(buffer->directory.len() + 1);
-    CZ_ASSERT(directory);
-    memcpy(directory, buffer->directory.buffer(), buffer->directory.len());
-    directory[buffer->directory.len()] = '\0';
+    char* directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer();
 
     window->start_completion(completion_engine);
     window->completion_cache.engine_context.data = directory;
-    window->completion_cache.engine_context.cleanup = [](void* directory) { free(directory); };
+    window->completion_cache.engine_context.cleanup = [](void* directory) {
+        cz::heap_allocator().dealloc({directory, 0});
+    };
 }
 
 }

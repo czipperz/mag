@@ -210,7 +210,7 @@ static bool clang_format_job_tick(void* _data) {
         }
 
         data->output_xml.drop(cz::heap_allocator());
-        free(data);
+        cz::heap_allocator().dealloc(data);
         return true;
     } else {
         // Nothing to read right now
@@ -224,14 +224,14 @@ static void clang_format_job_kill(void* _data) {
     data->process.kill();
     data->output_xml.drop(cz::heap_allocator());
     data->buffer_handle.drop();
-    free(data);
+    cz::heap_allocator().dealloc(data);
 }
 
 static Job job_clang_format(size_t change_index,
                             cz::Arc_Weak<Buffer_Handle> buffer_handle,
                             cz::Process process,
                             cz::Input_File std_out) {
-    Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)malloc(sizeof(Clang_Format_Job_Data));
+    Clang_Format_Job_Data* data = cz::heap_allocator().alloc<Clang_Format_Job_Data>();
     CZ_ASSERT(data);
     data->buffer_handle = buffer_handle;
     data->process = process;

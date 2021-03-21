@@ -21,7 +21,7 @@ static void process_append_job_kill(void* _data) {
     data->std_out.close();
     data->process.kill();
     data->buffer_handle.drop();
-    free(data);
+    cz::heap_allocator().dealloc(data);
 }
 
 static bool process_append_job_tick(void* _data) {
@@ -45,7 +45,7 @@ static bool process_append_job_tick(void* _data) {
         // End of file
         data->std_out.close();
         data->process.join();
-        free(data);
+        cz::heap_allocator().dealloc(data);
         return true;
     } else {
         // Nothing to read right now
@@ -56,8 +56,7 @@ static bool process_append_job_tick(void* _data) {
 Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
                        cz::Process process,
                        cz::Input_File std_out) {
-    Process_Append_Job_Data* data =
-        (Process_Append_Job_Data*)malloc(sizeof(Process_Append_Job_Data));
+    Process_Append_Job_Data* data = cz::heap_allocator().alloc<Process_Append_Job_Data>();
     CZ_ASSERT(data);
     data->buffer_handle = buffer_handle;
     data->process = process;

@@ -226,7 +226,7 @@ struct Job_Syntax_Highlight_Buffer_Data {
 static void job_syntax_highlight_buffer_kill(void* _data) {
     Job_Syntax_Highlight_Buffer_Data* data = (Job_Syntax_Highlight_Buffer_Data*)_data;
     data->handle.drop();
-    free(data);
+    cz::heap_allocator().dealloc(data);
 }
 
 static bool job_syntax_highlight_buffer_tick(void* _data) {
@@ -298,7 +298,7 @@ static bool job_syntax_highlight_buffer_tick(void* _data) {
 
 Job job_syntax_highlight_buffer(cz::Arc_Weak<Buffer_Handle> handle) {
     Job_Syntax_Highlight_Buffer_Data* data =
-        (Job_Syntax_Highlight_Buffer_Data*)malloc(sizeof(Job_Syntax_Highlight_Buffer_Data));
+        cz::heap_allocator().alloc<Job_Syntax_Highlight_Buffer_Data>();
     CZ_ASSERT(data);
     data->handle = handle;
 

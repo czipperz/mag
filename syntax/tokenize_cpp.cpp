@@ -10,6 +10,7 @@
 namespace mag {
 namespace syntax {
 
+namespace tokenize_cpp_impl {
 enum State : uint64_t {
     NORMAL_STATE_MASK = 0x000000000000000F,
     START_OF_STATEMENT = 0x0000000000000000,
@@ -50,6 +51,8 @@ enum State : uint64_t {
     COMMENT_CODE_INLINE = 0x0300000000000000,
     COMMENT_CODE_MULTILINE = 0x0400000000000000,
 };
+}
+using namespace tokenize_cpp_impl;
 
 static bool skip_whitespace(Contents_Iterator* iterator,
                             char* ch,

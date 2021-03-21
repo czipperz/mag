@@ -1,5 +1,6 @@
 #include "overlay_selected_line.hpp"
 
+#include <cz/heap.hpp>
 #include "buffer.hpp"
 #include "movement.hpp"
 #include "overlay.hpp"
@@ -9,11 +10,14 @@
 namespace mag {
 namespace syntax {
 
+namespace overlay_selected_line_impl {
 struct Data {
     Face face;
     uint64_t start;
     uint64_t end;
 };
+}
+using namespace overlay_selected_line_impl;
 
 static void overlay_selected_line_start_frame(const Buffer* buffer,
                                               Window_Unified* window,
@@ -53,7 +57,7 @@ static Face overlay_selected_line_get_face_and_advance(const Buffer* buffer,
 static void overlay_selected_line_end_frame(void* data) {}
 
 static void overlay_selected_line_cleanup(void* data) {
-    free(data);
+    cz::heap_allocator().dealloc((Data*)data);
 }
 
 Overlay overlay_selected_line(Face face) {
@@ -65,7 +69,7 @@ Overlay overlay_selected_line(Face face) {
         overlay_selected_line_cleanup,
     };
 
-    Data* data = (Data*)malloc(sizeof(Data));
+    Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
     data->face = face;
     return {&vtable, data};

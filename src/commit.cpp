@@ -1,11 +1,12 @@
 #include "commit.hpp"
 
 #include <stdlib.h>
+#include <cz/heap.hpp>
 
 namespace mag {
 
 void Commit::drop() {
-    free((void*)edits.elems);
+    cz::heap_allocator().dealloc({(void*)edits.elems, 0});
 }
 
 }
