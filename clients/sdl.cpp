@@ -950,12 +950,6 @@ void run(Server* server, Client* client) {
 
         server->slurp_jobs();
 
-        SDL_Event event;
-        if (cache_windows_check_points(window_cache, client->window, &server->editor,
-                                       poll_event_callback, &event)) {
-            process_event(server, client, event, &mouse, character_width, character_height);
-        }
-
         process_events(server, client, &mouse, character_width, character_height);
 
         process_scroll(server, client, &mouse.scroll);

@@ -335,23 +335,18 @@ void run(Server* server, Client* client) {
         bool has_jobs = true;
         server->slurp_jobs();
 
-        int ch = ERR;
-        cache_windows_check_points(window_cache, client->window, &server->editor, getch_callback,
-                                   &ch);
-
         process_buffer_external_updates(&server->editor, client, client->window);
 
-        if (ch == ERR) {
-            if (has_jobs) {
-                ch = getch();
-                if (ch == ERR) {
-                    continue;
-                }
-            } else {
-                timeout(10);
-                ch = getch();
-                nodelay(stdscr, TRUE);
+        int ch;
+        if (has_jobs) {
+            ch = getch();
+            if (ch == ERR) {
+                continue;
             }
+        } else {
+            timeout(10);
+            ch = getch();
+            nodelay(stdscr, TRUE);
         }
 
         process_key_presses(server, client, ch);

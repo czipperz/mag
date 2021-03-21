@@ -30,68 +30,6 @@ void destroy_window_cache(Window_Cache* window_cache) {
     free(window_cache);
 }
 
-bool cache_windows_check_points(Window_Cache* window_cache,
-                                Window* w,
-                                Editor* editor,
-                                bool (*callback)(void*),
-                                void* callback_data) {
-    return false;
-
-    ZoneScoped;
-
-    CZ_DEBUG_ASSERT(window_cache->tag == w->tag);
-
-    switch (w->tag) {
-    case Window::UNIFIED: {
-        Window_Unified* window = (Window_Unified*)w;
-
-        // TODO: Make this non blocking!
-        {
-            WITH_WINDOW_BUFFER(window);
-            buffer->token_cache.update(buffer);
-
-            if (buffer->token_cache.ran_to_end) {
-                return false;
-            }
-
-            uint64_t state;
-            Contents_Iterator iterator;
-            if (buffer->token_cache.check_points.len() > 0) {
-                state = buffer->token_cache.check_points.last().state;
-                iterator =
-                    buffer->contents.iterator_at(buffer->token_cache.check_points.last().position);
-            } else {
-                state = 0;
-                iterator = buffer->contents.start();
-            }
-
-            for (size_t i = 0; i < 100; ++i) {
-                if (callback(callback_data)) {
-                    return true;
-                }
-
-                if (!buffer->token_cache.next_check_point(buffer, &iterator, &state)) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-    }
-
-    case Window::VERTICAL_SPLIT:
-    case Window::HORIZONTAL_SPLIT: {
-        Window_Split* window = (Window_Split*)w;
-        return cache_windows_check_points(window_cache->v.split.first, window->first, editor,
-                                          callback, callback_data) ||
-               cache_windows_check_points(window_cache->v.split.second, window->second, editor,
-                                          callback, callback_data);
-    }
-    }
-
-    CZ_PANIC("");
-}
-
 void cache_window_unified_position(Window_Unified* window,
                                    Window_Cache* window_cache,
                                    uint64_t start_position,
