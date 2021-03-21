@@ -327,6 +327,12 @@ static bool lookup_key_press(cz::Slice<Key> key_chain,
                              size_t* end,
                              size_t* max_depth,
                              Key_Map* map) {
+    // map can be null if the user hasn't configured a Mode
+    // to have a special key map which is quite likely.
+    if (map == nullptr) {
+        return false;
+    }
+
     *end = start;
 
     // Record the max depth so we know how many keys to delete.
