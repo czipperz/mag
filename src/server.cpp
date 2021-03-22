@@ -5,6 +5,7 @@
 #include <Tracy.hpp>
 #include <algorithm>
 #include <cz/char_type.hpp>
+#include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/mutex.hpp>
 #include "client.hpp"
@@ -18,21 +19,50 @@ namespace mag {
 
 struct Run_Jobs {
     cz::Mutex* mutex;
-    cz::Vector<Job>* jobs;
+    cz::Vector<Asynchronous_Job>* jobs;
+    cz::Vector<Synchronous_Job>* pending_jobs;
     bool* stop;
+
+#ifdef TRACY_ENABLE
+    tracy::SharedLockableCtx* mutex_context;
+#else
+    void* mutex_context;  // unused
+#endif
 
     void operator()() {
         tracy::SetThreadName("Job thread");
         ZoneScoped;
 
+        Asynchronous_Job_Handler handler = {};
+        handler.pending_jobs.reserve(cz::heap_allocator(), 2);
+        CZ_DEFER({
+            for (size_t i = 0; i < handler.pending_jobs.len(); ++i) {
+                handler.pending_jobs[i].kill(handler.pending_jobs[i].data);
+            }
+            handler.pending_jobs.drop(cz::heap_allocator());
+        });
+
         bool remove = false;
         while (1) {
             size_t i = 0;
 
-            Job job;
+            Asynchronous_Job job;
             {
                 ZoneScopedN("job thread find job");
+
+#ifdef TRACY_ENABLE
+                const auto run_after = mutex_context->BeforeLock();
+#endif
                 mutex->lock();
+#ifdef TRACY_ENABLE
+                if (run_after) {
+                    mutex_context->AfterLock();
+                }
+#endif
+
+#ifdef TRACY_ENABLE
+                CZ_DEFER(mutex_context->AfterUnlock());
+#endif
                 CZ_DEFER(mutex->unlock());
 
                 if (remove) {
@@ -44,11 +74,12 @@ struct Run_Jobs {
                 }
 
                 if (*stop) {
-                    for (size_t i = 0; i < jobs->len(); ++i) {
-                        (*jobs)[i].kill((*jobs)[i].data);
-                    }
                     return;
                 }
+
+                pending_jobs->reserve(cz::heap_allocator(), handler.pending_jobs.len());
+                pending_jobs->append(handler.pending_jobs);
+                handler.pending_jobs.set_len(0);
 
                 if (jobs->len() == 0) {
                     i = 0;
@@ -65,7 +96,7 @@ struct Run_Jobs {
 
             {
                 ZoneScopedN("job thread run job");
-                if (job.tick(job.data)) {
+                if (job.tick(&handler, job.data)) {
                     remove = true;
                 }
             }
@@ -82,17 +113,43 @@ struct Run_Jobs {
 void Server::init() {
     job_mutex = new cz::Mutex;
     job_mutex->init();
-    job_data = new cz::Vector<Job>{};
+    job_jobs = new cz::Vector<Asynchronous_Job>{};
+    job_pending_jobs = new cz::Vector<Synchronous_Job>{};
     job_stop = new bool(false);
-    job_thread = new std::thread(Run_Jobs{job_mutex, job_data, job_stop});
+
+#ifdef TRACY_ENABLE
+    job_mutex_context = new tracy::SharedLockableCtx([]() -> const tracy::SourceLocationData* {
+        static constexpr tracy::SourceLocationData srcloc{nullptr, "mag::Server", __FILE__,
+                                                          __LINE__, 0};
+        return &srcloc;
+    }());
+#else
+    void* job_mutex_context = nullptr;
+#endif
+
+    job_thread = new std::thread(
+        Run_Jobs{job_mutex, job_jobs, job_pending_jobs, job_stop, job_mutex_context});
 
     editor.create();
 }
 
 void Server::drop() {
     {
+#ifdef TRACY_ENABLE
+        const auto run_after = job_mutex_context->BeforeLock();
+#endif
         job_mutex->lock();
+#ifdef TRACY_ENABLE
+        if (run_after) {
+            job_mutex_context->AfterLock();
+        }
+#endif
+
+#ifdef TRACY_ENABLE
+        CZ_DEFER(job_mutex_context->AfterUnlock());
+#endif
         CZ_DEFER(job_mutex->unlock());
+
         *job_stop = true;
     }
 
@@ -100,24 +157,69 @@ void Server::drop() {
     delete job_thread;
     job_mutex->drop();
     delete job_mutex;
-    job_data->drop(cz::heap_allocator());
-    delete job_data;
+
+    for (size_t i = 0; i < job_jobs->len(); ++i) {
+        (*job_jobs)[i].kill((*job_jobs)[i].data);
+    }
+    job_jobs->drop(cz::heap_allocator());
+    delete job_jobs;
+
+    for (size_t i = 0; i < job_pending_jobs->len(); ++i) {
+        (*job_pending_jobs)[i].kill((*job_pending_jobs)[i].data);
+    }
+    job_pending_jobs->drop(cz::heap_allocator());
+    delete job_pending_jobs;
+
     delete job_stop;
+
+#ifdef TRACY_ENABLE
+    delete job_mutex_context;
+#endif
 
     editor.drop();
 }
 
-void Server::slurp_jobs() {
-    if (editor.pending_jobs.len() > 0) {
-        job_mutex->lock();
-        CZ_DEFER(job_mutex->unlock());
+bool Server::slurp_jobs() {
+    ZoneScoped;
 
-        job_data->reserve(cz::heap_allocator(), editor.pending_jobs.len());
-        for (size_t i = 0; i < editor.pending_jobs.len(); ++i) {
-            job_data->push(editor.pending_jobs[i]);
-        }
-        editor.pending_jobs.set_len(0);
+#ifdef TRACY_ENABLE
+    const auto run_after = job_mutex_context->BeforeLock();
+#endif
+    job_mutex->lock();
+#ifdef TRACY_ENABLE
+    if (run_after) {
+        job_mutex_context->AfterLock();
     }
+#endif
+
+#ifdef TRACY_ENABLE
+    CZ_DEFER(job_mutex_context->AfterUnlock());
+#endif
+    CZ_DEFER(job_mutex->unlock());
+
+    job_jobs->reserve(cz::heap_allocator(), editor.pending_jobs.len());
+    job_jobs->append(editor.pending_jobs);
+    editor.pending_jobs.set_len(0);
+
+    editor.synchronous_jobs.reserve(cz::heap_allocator(), job_pending_jobs->len());
+    editor.synchronous_jobs.append(*job_pending_jobs);
+    job_pending_jobs->set_len(0);
+
+    return job_jobs->len() > 0;
+}
+
+bool Server::run_synchronous_jobs(Client* client) {
+    ZoneScoped;
+
+    for (size_t i = 0; i < editor.synchronous_jobs.len();) {
+        if (editor.synchronous_jobs[i].tick(&editor, client, editor.synchronous_jobs[i].data)) {
+            editor.synchronous_jobs.remove(i);
+            continue;
+        }
+        ++i;
+    }
+
+    return editor.synchronous_jobs.len() > 0;
 }
 
 Client Server::make_client() {

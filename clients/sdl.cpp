@@ -949,6 +949,7 @@ void run(Server* server, Client* client) {
         process_mouse_events(&server->editor, client, &mouse);
 
         server->slurp_jobs();
+        server->run_synchronous_jobs(client);
 
         process_events(server, client, &mouse, character_width, character_height);
 

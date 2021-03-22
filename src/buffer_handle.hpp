@@ -9,10 +9,6 @@
 #include <tracy/client/TracyLock.hpp>
 #endif
 
-#ifdef NDEBUG
-#include <cz/assert.hpp>
-#endif
-
 namespace mag {
 
 struct Buffer_Handle {
@@ -63,7 +59,10 @@ public:
     /// Increase the permissions of the lock from that
     /// of only reading to that of reading and writing.
     ///
-    /// If there are other readers, this will stall until they `unlock`.
+    /// If there are other readers, this will stall until they `unlock`.  Note that other
+    /// writers may preempt this function finishing, which may modify the state of the
+    /// buffer.  Thus you should handle the possibility that the buffer changed while
+    /// `increase_reading_to_writing` was stalled similarly to a compare and swap operation.
     Buffer* increase_reading_to_writing();
 
     /// Unlock the buffer.

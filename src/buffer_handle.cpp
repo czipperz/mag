@@ -21,7 +21,7 @@ void Buffer_Handle::init(Buffer_Id buffer_id, Buffer buffer) {
 
 #ifdef TRACY_ENABLE
     context = new tracy::SharedLockableCtx([]() -> const tracy::SourceLocationData* {
-        static constexpr tracy::SourceLocationData srcloc{nullptr, "cz::Buffer_Handle", __FILE__,
+        static constexpr tracy::SourceLocationData srcloc{nullptr, "mag::Buffer_Handle", __FILE__,
                                                           __LINE__, 0};
         return &srcloc;
     }());

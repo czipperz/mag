@@ -186,7 +186,7 @@ struct Clang_Format_Job_Data {
     cz::String output_xml;
 };
 
-static bool clang_format_job_tick(void* _data) {
+static bool clang_format_job_tick(Asynchronous_Job_Handler*, void* _data) {
     ZoneScoped;
 
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
@@ -227,10 +227,10 @@ static void clang_format_job_kill(void* _data) {
     cz::heap_allocator().dealloc(data);
 }
 
-static Job job_clang_format(size_t change_index,
-                            cz::Arc_Weak<Buffer_Handle> buffer_handle,
-                            cz::Process process,
-                            cz::Input_File std_out) {
+static Asynchronous_Job job_clang_format(size_t change_index,
+                                         cz::Arc_Weak<Buffer_Handle> buffer_handle,
+                                         cz::Process process,
+                                         cz::Input_File std_out) {
     Clang_Format_Job_Data* data = cz::heap_allocator().alloc<Clang_Format_Job_Data>();
     CZ_ASSERT(data);
     data->buffer_handle = buffer_handle;
@@ -240,7 +240,7 @@ static Job job_clang_format(size_t change_index,
     data->change_index = change_index;
     data->output_xml = {};
 
-    Job job;
+    Asynchronous_Job job;
     job.tick = clang_format_job_tick;
     job.kill = clang_format_job_kill;
     job.data = data;
@@ -287,7 +287,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
         return;
     }
 
-    editor->add_job(
+    editor->add_asynchronous_job(
         job_clang_format(buffer->changes.len(), handle.clone_downgrade(), process, stdout_read));
 }
 

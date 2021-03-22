@@ -5,6 +5,10 @@
 #include "editor.hpp"
 #include "key_map.hpp"
 
+#ifdef TRACY_ENABLE
+#include <tracy/client/TracyLock.hpp>
+#endif
+
 namespace cz {
 struct Mutex;
 }
@@ -19,8 +23,13 @@ struct Server {
 
     std::thread* job_thread;
     cz::Mutex* job_mutex;
-    cz::Vector<Job>* job_data;
+    cz::Vector<Asynchronous_Job>* job_jobs;
+    cz::Vector<Synchronous_Job>* job_pending_jobs;
     bool* job_stop;
+
+#ifdef TRACY_ENABLE
+    tracy::SharedLockableCtx* job_mutex_context;
+#endif
 
     void init();
     void drop();
@@ -29,7 +38,8 @@ struct Server {
 
     void receive(Client* client, Key key);
 
-    void slurp_jobs();
+    bool slurp_jobs();
+    bool run_synchronous_jobs(Client* client);
 };
 
 }

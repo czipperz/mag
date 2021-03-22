@@ -333,8 +333,9 @@ void run(Server* server, Client* client) {
         render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client, colors,
                used_colors);
 
-        bool has_jobs = true;
-        server->slurp_jobs();
+        bool has_jobs = false;
+        has_jobs |= server->slurp_jobs();
+        has_jobs |= server->run_synchronous_jobs(client);
 
         process_buffer_external_updates(&server->editor, client, client->window);
 

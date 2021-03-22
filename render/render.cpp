@@ -277,7 +277,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         buffer_mut->token_cache.generate_check_points_until(buffer, iterator.position);
 
         if (!buffer->token_cache.is_covered(buffer->contents.len)) {
-            editor->add_job(job_syntax_highlight_buffer(handle.clone_downgrade()));
+            editor->add_asynchronous_job(job_syntax_highlight_buffer(handle.clone_downgrade()));
         }
     }
 

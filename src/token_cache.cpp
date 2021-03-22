@@ -229,7 +229,7 @@ static void job_syntax_highlight_buffer_kill(void* _data) {
     cz::heap_allocator().dealloc(data);
 }
 
-static bool job_syntax_highlight_buffer_tick(void* _data) {
+static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _data) {
     ZoneScoped;
 
     Job_Syntax_Highlight_Buffer_Data* data = (Job_Syntax_Highlight_Buffer_Data*)_data;
@@ -296,13 +296,13 @@ static bool job_syntax_highlight_buffer_tick(void* _data) {
     return false;
 }
 
-Job job_syntax_highlight_buffer(cz::Arc_Weak<Buffer_Handle> handle) {
+Asynchronous_Job job_syntax_highlight_buffer(cz::Arc_Weak<Buffer_Handle> handle) {
     Job_Syntax_Highlight_Buffer_Data* data =
         cz::heap_allocator().alloc<Job_Syntax_Highlight_Buffer_Data>();
     CZ_ASSERT(data);
     data->handle = handle;
 
-    Job job;
+    Asynchronous_Job job;
     job.tick = job_syntax_highlight_buffer_tick;
     job.kill = job_syntax_highlight_buffer_kill;
     job.data = data;

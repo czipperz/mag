@@ -24,7 +24,7 @@ static void process_append_job_kill(void* _data) {
     cz::heap_allocator().dealloc(data);
 }
 
-static bool process_append_job_tick(void* _data) {
+static bool process_append_job_tick(Asynchronous_Job_Handler*, void* _data) {
     ZoneScoped;
 
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
@@ -53,9 +53,9 @@ static bool process_append_job_tick(void* _data) {
     }
 }
 
-Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
-                       cz::Process process,
-                       cz::Input_File std_out) {
+Asynchronous_Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
+                                    cz::Process process,
+                                    cz::Input_File std_out) {
     Process_Append_Job_Data* data = cz::heap_allocator().alloc<Process_Append_Job_Data>();
     CZ_ASSERT(data);
     data->buffer_handle = buffer_handle;
@@ -63,7 +63,7 @@ Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
     data->carry = {};
     data->std_out = std_out;
 
-    Job job;
+    Asynchronous_Job job;
     job.tick = process_append_job_tick;
     job.kill = process_append_job_kill;
     job.data = data;
@@ -120,7 +120,8 @@ bool run_console_command_in(Client* client,
         return false;
     }
 
-    editor->add_job(job_process_append(handle.clone_downgrade(), process, stdout_read));
+    editor->add_asynchronous_job(
+        job_process_append(handle.clone_downgrade(), process, stdout_read));
     return true;
 }
 

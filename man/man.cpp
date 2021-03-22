@@ -59,7 +59,8 @@ static void command_man_response(Editor* editor, Client* client, cz::Str page, v
     cz::Arc<Buffer_Handle> handle = editor->create_temp_buffer(name);
     client->set_selected_buffer(handle->id);
 
-    editor->add_job(job_process_append(handle.clone_downgrade(), process, stdout_read));
+    editor->add_asynchronous_job(
+        job_process_append(handle.clone_downgrade(), process, stdout_read));
 }
 
 void command_man(Editor* editor, Command_Source source) {

@@ -23,7 +23,8 @@ struct Editor {
 
     uint64_t buffer_counter;
 
-    cz::Vector<Job> pending_jobs;
+    cz::Vector<Asynchronous_Job> pending_jobs;
+    cz::Vector<Synchronous_Job> synchronous_jobs;
 
     void create() { copy_buffer.create(); }
 
@@ -41,11 +42,20 @@ struct Editor {
             pending_jobs[i].kill(pending_jobs[i].data);
         }
         pending_jobs.drop(cz::heap_allocator());
+        for (size_t i = 0; i < synchronous_jobs.len(); ++i) {
+            synchronous_jobs[i].kill(synchronous_jobs[i].data);
+        }
+        synchronous_jobs.drop(cz::heap_allocator());
     }
 
-    void add_job(Job job) {
+    void add_asynchronous_job(Asynchronous_Job job) {
         pending_jobs.reserve(cz::heap_allocator(), 1);
         pending_jobs.push(job);
+    }
+
+    void add_synchronous_job(Synchronous_Job job) {
+        synchronous_jobs.reserve(cz::heap_allocator(), 1);
+        synchronous_jobs.push(job);
     }
 
     /// Try to look up a buffer by its id.  Doesn't increment the reference count.

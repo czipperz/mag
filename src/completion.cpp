@@ -249,14 +249,14 @@ static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
 bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
     ZoneScoped;
 
-    if (!context->data) {
-        context->data = cz::heap_allocator().alloc<File_Completion_Engine_Data>();
-        CZ_ASSERT(context->data);
-        context->data = {};
+    File_Completion_Engine_Data* data = (File_Completion_Engine_Data*)context->data;
+    if (!data) {
+        data = cz::heap_allocator().alloc<File_Completion_Engine_Data>();
+        CZ_ASSERT(data);
+        *data = {};
+        context->data = data;
         context->cleanup = file_completion_engine_data_cleanup;
     }
-
-    File_Completion_Engine_Data* data = (File_Completion_Engine_Data*)context->data;
 
     data->temp_result.set_len(0);
     cz::Str prefix = get_directory_to_list(&data->temp_result, context->query);

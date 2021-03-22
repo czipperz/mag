@@ -5,10 +5,10 @@
 #include <cz/vector.hpp>
 
 namespace mag {
+struct Asynchronous_Job;
 struct Buffer;
 struct Buffer_Handle;
 struct Contents_Iterator;
-struct Job;
 
 struct Tokenizer_Check_Point {
     uint64_t position;
@@ -51,6 +51,6 @@ struct Token_Cache {
 
 /// Make a job that generates token cache check points
 /// for the buffer.  Takes ownership of the `handle`.
-Job job_syntax_highlight_buffer(cz::Arc_Weak<Buffer_Handle> handle);
+Asynchronous_Job job_syntax_highlight_buffer(cz::Arc_Weak<Buffer_Handle> handle);
 
 }
