@@ -191,14 +191,34 @@ void backward_char(Contents_Iterator* iterator) {
 Contents_Iterator start_of_line_position(const Contents& contents, uint64_t lines) {
     ZoneScoped;
 
-    Contents_Iterator iterator = contents.start();
-    while (!iterator.at_eob() && lines > 1) {
-        if (iterator.get() == '\n') {
-            --lines;
+    Contents_Iterator it;
+    it.contents = contents;
+    it.index = 0;
+
+    uint64_t pos = 0;
+    for (size_t i = 0; i < contents.buckets.len(); ++i) {
+        if (line <= contents.bucket_lfs[i]) {
+            it.position = pos;
+            it.bucket = i;
+
+            while (line > 0) {
+                --line;
+                end_of_line(&it);
+                forward_char(&it);
+            }
+
+            return it;
         }
-        iterator.advance();
+
+        line -= contents.bucket_lfs[i];
+        pos += contents.buckets[i].len;
     }
-    return iterator;
+
+    CZ_DEBUG_ASSERT(pos == contents.len);
+    it.position = pos;
+    it.bucket = contents.buckets.len();
+
+    return it;
 }
 
 bool get_token_at_position(Buffer* buffer, Contents_Iterator* token_iterator, Token* token) {

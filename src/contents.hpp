@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <Tracy.hpp>
+#include <cz/assert.hpp>
 #include <cz/allocator.hpp>
 #include <cz/slice.hpp>
 #include <cz/str.hpp>
@@ -16,6 +17,7 @@ struct Contents_Iterator;
 
 struct Contents {
     cz::Vector<cz::Slice<char>> buckets;
+    cz::Vector<uint64_t> bucket_lfs;
     uint64_t len;
 
     void drop();
@@ -36,6 +38,8 @@ struct Contents {
 
     char get_once(uint64_t position) const;
     Contents_Iterator iterator_at(uint64_t position) const;
+
+    uint64_t get_line_number(uint64_t position) const;
 
     inline Contents_Iterator start() const;
 };

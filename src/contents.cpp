@@ -4,6 +4,7 @@
 #include <Tracy.hpp>
 #include <cz/heap.hpp>
 #include <cz/util.hpp>
+#include "movement.hpp"
 #include "ssostr.hpp"
 
 namespace mag {
@@ -16,6 +17,7 @@ void Contents::drop() {
         cz::heap_allocator().dealloc(buckets[i].elems, CONTENTS_BUCKET_MAX_SIZE);
     }
     buckets.drop(cz::heap_allocator());
+    bucket_lfs.drop(cz::heap_allocator());
 }
 
 static cz::Slice<char> bucket_alloc() {
@@ -23,19 +25,46 @@ static cz::Slice<char> bucket_alloc() {
     return {buffer, 0};
 }
 
-static void bucket_remove(cz::Slice<char>* bucket, uint64_t start, uint64_t len) {
+static uint64_t count_lines(cz::Str str) {
+    ZoneScoped;
+
+    uint64_t lines = 0;
+    for (size_t i = 0; i < str.len; ++i) {
+        if (str[i] == '\n') {
+            ++lines;
+        }
+    }
+    return lines;
+}
+
+static void bucket_remove(cz::Slice<char>* bucket, uint64_t* lines, uint64_t start, uint64_t len) {
+    uint64_t count = count_lines({bucket->elems + start, len});
+    CZ_DEBUG_ASSERT(*lines >= count);
+    *lines -= count;
+
     uint64_t end = start + len;
     memmove(bucket->elems + start, bucket->elems + end, bucket->len - end);
     bucket->len -= len;
 }
 
-static void bucket_insert(cz::Slice<char>* bucket, uint64_t position, cz::Str str) {
+static void bucket_insert(cz::Slice<char>* bucket,
+                          uint64_t* lines,
+                          uint64_t position,
+                          cz::Str str) {
+    *lines += count_lines(str);
+
     memmove(bucket->elems + position + str.len, bucket->elems + position, bucket->len - position);
     memcpy(bucket->elems + position, str.buffer, str.len);
     bucket->len += str.len;
 }
 
 static void bucket_append(cz::Slice<char>* bucket, cz::Str str) {
+    memcpy(bucket->elems + bucket->len, str.buffer, str.len);
+    bucket->len += str.len;
+}
+
+static void bucket_append(cz::Slice<char>* bucket, uint64_t* lines, cz::Str str) {
+    *lines += count_lines(str);
     memcpy(bucket->elems + bucket->len, str.buffer, str.len);
     bucket->len += str.len;
 }
@@ -48,9 +77,11 @@ void Contents::remove(uint64_t start, uint64_t len) {
     for (size_t v = 0; v < buckets.len(); ++v) {
         if (start < buckets[v].len) {
             if (start + len <= buckets[v].len) {
-                bucket_remove(&buckets[v], start, len);
+                bucket_remove(&buckets[v], &bucket_lfs[v], start, len);
                 return;
             } else {
+                bucket_lfs[v] -= count_lines({buckets[v].elems + start, buckets[v].len - start});
+
                 // :EmptyBuckets This is where empty buckets are created, and
                 // then never reclaimed.  Perhaps we sort them to the end of the
                 // list periodically and then reuse them that way?
@@ -75,29 +106,38 @@ void Contents::insert(uint64_t start, cz::Str str) {
     for (size_t b = 0; b < buckets.len(); ++b) {
         if (start <= buckets[b].len) {
             if (buckets[b].len + str.len <= CONTENTS_BUCKET_MAX_SIZE) {
-                bucket_insert(&buckets[b], start, str);
+                bucket_insert(&buckets[b], &bucket_lfs[b], start, str);
                 return;
             } else {
                 // Overflowing one buffer into multiple buffers.
                 size_t extra_buffers = (buckets[b].len + str.len - 1) / CONTENTS_BUCKET_DESIRED_LEN;
                 buckets.reserve(cz::heap_allocator(), extra_buffers);
+                bucket_lfs.reserve(cz::heap_allocator(), extra_buffers);
                 for (size_t i = 0; i < extra_buffers; ++i) {
                     buckets.insert(b + i + 1, bucket_alloc());
+                    bucket_lfs.insert(b + i + 1, 0);
                 }
 
                 // Characters after the start point are saved for later
                 char overflow[CONTENTS_BUCKET_MAX_SIZE];
                 size_t overflow_offset = start;
                 size_t overflow_len = buckets[b].len - overflow_offset;
+                uint64_t overflow_lines =
+                    count_lines({buckets[b].elems + overflow_offset, overflow_len});
                 memcpy(overflow, buckets[b].elems + overflow_offset, overflow_len);
                 buckets[b].len = overflow_offset;
+                bucket_lfs[b] -= overflow_lines;
                 size_t overflow_index = 0;
 
                 // Overflow the initial buffer into the second
                 if (buckets[b].len > CONTENTS_BUCKET_DESIRED_LEN) {
+                    uint64_t lines = count_lines({buckets[b].elems + CONTENTS_BUCKET_DESIRED_LEN,
+                                                  buckets[b].len - CONTENTS_BUCKET_DESIRED_LEN});
                     bucket_append(&buckets[b + 1], {buckets[b].elems + CONTENTS_BUCKET_DESIRED_LEN,
                                                     buckets[b].len - CONTENTS_BUCKET_DESIRED_LEN});
                     buckets[b].len = CONTENTS_BUCKET_DESIRED_LEN;
+                    bucket_lfs[b + 1] += lines;
+                    bucket_lfs[b] -= lines;
                 }
 
                 // Fill buffers (including initial) except for the last one
@@ -108,20 +148,23 @@ void Contents::insert(uint64_t start, cz::Str str) {
                         // Here we are inserting a small string into a big
                         // buffer so need to split the final string into two.
                         size_t len = str.len - str_index;
-                        bucket_append(&buckets[bucket_index], {str.buffer + str_index, len});
+                        bucket_append(&buckets[bucket_index], &bucket_lfs[bucket_index],
+                                      {str.buffer + str_index, len});
                         overflow_index = offset - len;
-                        bucket_append(&buckets[bucket_index], {overflow, overflow_index});
+                        bucket_append(&buckets[bucket_index], &bucket_lfs[bucket_index],
+                                      {overflow, overflow_index});
                         str_index = str.len;
                     } else {
-                        bucket_append(&buckets[bucket_index], {str.buffer + str_index, offset});
+                        bucket_append(&buckets[bucket_index], &bucket_lfs[bucket_index],
+                                      {str.buffer + str_index, offset});
                         str_index += offset;
                     }
                 }
 
                 // Fill final buffer
-                bucket_append(&buckets[b + extra_buffers],
+                bucket_append(&buckets[b + extra_buffers], &bucket_lfs[b + extra_buffers],
                               {str.buffer + str_index, str.len - str_index});
-                bucket_append(&buckets[b + extra_buffers],
+                bucket_append(&buckets[b + extra_buffers], &bucket_lfs[b + extra_buffers],
                               {overflow + overflow_index, overflow_len - overflow_index});
                 return;
             }
@@ -134,6 +177,8 @@ void Contents::insert(uint64_t start, cz::Str str) {
     if (str.len > 0) {
         buckets.reserve(cz::heap_allocator(),
                         (str.len + CONTENTS_BUCKET_DESIRED_LEN - 1) / CONTENTS_BUCKET_DESIRED_LEN);
+        bucket_lfs.reserve(cz::heap_allocator(), (str.len + CONTENTS_BUCKET_DESIRED_LEN - 1) /
+                                                     CONTENTS_BUCKET_DESIRED_LEN);
         do {
             cz::Slice<char> bucket = bucket_alloc();
             if (str.len > CONTENTS_BUCKET_DESIRED_LEN) {
@@ -145,6 +190,7 @@ void Contents::insert(uint64_t start, cz::Str str) {
                 str.len = 0;
             }
             buckets.push(bucket);
+            bucket_lfs.push(count_lines({bucket.elems, bucket.len}));
         } while (str.len > 0);
     }
 }
@@ -235,6 +281,27 @@ char Contents::get_once(uint64_t pos) const {
             return buckets[i][pos];
         }
         pos -= buckets[i].len;
+    }
+
+    CZ_PANIC("Out of bounds");
+}
+
+uint64_t Contents::get_line_number(uint64_t pos) const {
+    ZoneScoped;
+
+    uint64_t line = 0;
+    for (size_t i = 0; i < buckets.len(); ++i) {
+        if (pos < buckets[i].len) {
+            return line + count_lines({buckets[i].elems, pos});
+        }
+
+        line += bucket_lfs[i];
+        pos -= buckets[i].len;
+    }
+
+    // Handle eof.
+    if (pos == 0) {
+        return line;
     }
 
     CZ_PANIC("Out of bounds");
