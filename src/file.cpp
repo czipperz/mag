@@ -2,6 +2,7 @@
 #include "file.hpp"
 
 #include <time.h>
+#include <Tracy.hpp>
 #include <algorithm>
 #include <cz/allocator.hpp>
 #include <cz/bit_array.hpp>
@@ -19,6 +20,7 @@
 #include "command_macros.hpp"
 #include "config.hpp"
 #include "editor.hpp"
+#include "tracy_format.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -601,6 +603,8 @@ bool find_temp_buffer(Editor* editor,
 }
 
 void open_file(Editor* editor, Client* client, cz::Str user_path) {
+    ZoneScoped;
+
     if (user_path.len == 0) {
         client->show_message("File path must not be empty");
         return;
@@ -608,6 +612,9 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
 
     cz::String path = standardize_path(cz::heap_allocator(), user_path);
     CZ_DEFER(path.drop(cz::heap_allocator()));
+
+    TracyFormat(message, len, 1024, "open_path: %s", path.buffer());
+    TracyMessage(message, len);
 
     Buffer_Id buffer_id;
     cz::Arc<Buffer_Handle> handle;

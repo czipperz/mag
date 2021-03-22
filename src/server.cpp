@@ -12,6 +12,7 @@
 #include "custom/config.hpp"
 #include "insert.hpp"
 #include "movement.hpp"
+#include "tracy_format.hpp"
 
 namespace mag {
 
@@ -307,7 +308,8 @@ struct File_Wrapper {
 static void run_command(Command command, Editor* editor, Command_Source source) {
     try {
         ZoneScoped;
-        TracyMessage(command.string, strlen(command.string));
+        TracyFormat(message, len, 1024, "run_command: %s", command.string);
+        TracyMessage(message, len);
         command.function(editor, source);
     } catch (std::exception& ex) {
         source.client->show_message(ex.what());
