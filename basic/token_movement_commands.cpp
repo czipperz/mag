@@ -278,7 +278,7 @@ int find_backward_matching_token(Buffer* buffer,
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.update(buffer);
     size_t check_point_index;
-    if (buffer->token_cache.find_check_point(token_iterator.position, &check_point_index)) {
+    if (buffer->token_cache.find_check_point(token_to_match.start, &check_point_index)) {
         check_point = buffer->token_cache.check_points[check_point_index];
     } else {
         check_point_index = 0;
