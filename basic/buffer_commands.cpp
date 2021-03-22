@@ -59,12 +59,12 @@ void command_save_file(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     if (buffer->type != Buffer::FILE) {
-        source.client->show_message("Buffer must be associated with a file");
+        source.client->show_message(editor, "Buffer must be associated with a file");
         return;
     }
 
     if (!save_buffer(buffer)) {
-        source.client->show_message("Error saving file");
+        source.client->show_message(editor, "Error saving file");
     }
 }
 
@@ -80,7 +80,7 @@ static void command_switch_buffer_callback(Editor* editor,
     }
 
     if (!find_buffer_by_path(editor, client, path, &handle)) {
-        client->show_message("Couldn't find the buffer to switch to");
+        client->show_message(editor, "Couldn't find the buffer to switch to");
         return;
     }
 
@@ -165,7 +165,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
     } else {
         cz::Arc<Buffer_Handle> handle;
         if (!find_buffer_by_path(editor, client, path, &handle)) {
-            client->show_message("Couldn't find the buffer to kill");
+            client->show_message(editor, "Couldn't find the buffer to kill");
             return;
         }
         buffer_id = handle->id;

@@ -82,12 +82,13 @@ void command_alternate(Editor* editor, Command_Source source) {
     }
 
     if (result == 0) {
-        source.client->show_message("File doesn't have a supported extension");
+        source.client->show_message(editor, "File doesn't have a supported extension");
         return;
     }
 
     if (result == 1) {
-        source.client->show_message("Couldn't find the alternate file; guessing on the extension");
+        source.client->show_message(editor,
+                                    "Couldn't find the alternate file; guessing on the extension");
     }
 
     open_file(editor, source.client, path);

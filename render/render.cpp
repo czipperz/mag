@@ -560,7 +560,7 @@ static void draw_window_completion(Cell* cells,
     load_completion_cache(editor, &window->completion_cache,
                           editor->theme.window_completion_filter);
     if (window->completion_cache.filter_context.results.len() == 0) {
-        client->show_message("No completion results");
+        client->show_message(editor, "No completion results");
         window->abort_completion();
         return;
     }
@@ -854,7 +854,7 @@ void process_buffer_external_updates(Editor* editor, Client* client, Window* win
         if (check_out_of_date_and_update_file_time(path.buffer(), &file_time)) {
             Buffer* buffer_mut = handle->increase_reading_to_writing();
             buffer_mut->file_time = file_time;
-            reload_file(client, buffer_mut);
+            reload_file(editor, client, buffer_mut);
         }
 
         break;
@@ -906,9 +906,13 @@ void render_to_cells(Cell* cells,
 
         Face minibuffer_prompt_face = {};
         apply_face(&minibuffer_prompt_face, editor->theme.faces[5]);
-        for (size_t i = 0; i < client->_message.text.len && i < total_cols; ++i) {
-            SET_IND(minibuffer_prompt_face, client->_message.text[i]);
-            ++x;
+        {
+            WITH_CONST_BUFFER(client->messages_id);
+            Contents_Iterator it = buffer->contents.iterator_at(client->_message.start);
+            for (; it.position < client->_message.end && y < 1; it.advance()) {
+                SET_IND(minibuffer_prompt_face, it.get());
+                ++x;
+            }
         }
 
         if (client->_message.tag > Message::SHOW) {

@@ -38,14 +38,14 @@ static void command_man_response(Editor* editor, Client* client, cz::Str page, v
     cz::Process_Options options;
     cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
-        client->show_message("Error: I/O operation failed");
+        client->show_message(editor, "Error: I/O operation failed");
         return;
     }
     CZ_DEFER(options.std_out.close());
 
     cz::Process process;
     if (!process.launch_script(script.buffer(), &options)) {
-        client->show_message("Error: Couldn't show man page");
+        client->show_message(editor, "Error: Couldn't show man page");
         stdout_read.close();
         return;
     }

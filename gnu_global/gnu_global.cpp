@@ -207,7 +207,7 @@ void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::
         tags.drop(cz::heap_allocator());
         buffer.drop(cz::heap_allocator());
 
-        client->show_message("No global tag results");
+        client->show_message(editor, "No global tag results");
         return;
     }
 
@@ -249,7 +249,7 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
         Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
         Token token;
         if (!get_token_at_position(buffer, &iterator, &token)) {
-            source.client->show_message("Cursor is not positioned at a token");
+            source.client->show_message(editor, "Cursor is not positioned at a token");
             return;
         }
 
@@ -263,7 +263,7 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
         if (lookup_error) {
             tags.drop(cz::heap_allocator());
             str_buffer.drop(cz::heap_allocator());
-            source.client->show_message(lookup_error);
+            source.client->show_message(editor, lookup_error);
             return;
         }
     }
@@ -285,7 +285,7 @@ static void command_lookup_prompt_callback(Editor* editor,
         if (lookup_error) {
             tags.drop(cz::heap_allocator());
             str_buffer.drop(cz::heap_allocator());
-            client->show_message(lookup_error);
+            client->show_message(editor, lookup_error);
             return;
         }
     }
@@ -325,7 +325,7 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
     Token token;
     if (!get_token_at_position(buffer, &iterator, &token)) {
-        source.client->show_message("Cursor is not positioned at a token");
+        source.client->show_message(editor, "Cursor is not positioned at a token");
         return;
     }
 

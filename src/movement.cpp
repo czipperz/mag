@@ -188,11 +188,11 @@ void backward_char(Contents_Iterator* iterator) {
     }
 }
 
-Contents_Iterator start_of_line_position(const Contents& contents, uint64_t lines) {
+Contents_Iterator start_of_line_position(const Contents& contents, uint64_t line) {
     ZoneScoped;
 
     Contents_Iterator it;
-    it.contents = contents;
+    it.contents = &contents;
     it.index = 0;
 
     uint64_t pos = 0;

@@ -107,7 +107,7 @@ bool run_console_command_in(Client* client,
 
     cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
-        client->show_message("Error: I/O operation failed");
+        client->show_message(editor, "Error: I/O operation failed");
         return false;
     }
     stdout_read.set_non_blocking();
@@ -115,7 +115,7 @@ bool run_console_command_in(Client* client,
 
     cz::Process process;
     if (!process.launch_script(script, &options)) {
-        client->show_message(error);
+        client->show_message(editor, error);
         stdout_read.close();
         return false;
     }

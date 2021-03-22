@@ -226,11 +226,19 @@ Client Server::make_client() {
     Client client = {};
     Buffer_Id selected_buffer_id = {editor.buffers.len() - 1};
 
+    Buffer messages = {};
+    messages.type = Buffer::TEMPORARY;
+    messages.name = cz::Str("*client messages*").duplicate(cz::heap_allocator());
+    messages.read_only = true;
+    Buffer_Id messages_id = editor.create_buffer(messages)->id;
+
     Buffer mini_buffer = {};
     mini_buffer.type = Buffer::TEMPORARY;
     mini_buffer.name = cz::Str("*client mini buffer*").duplicate(cz::heap_allocator());
     Buffer_Id mini_buffer_id = editor.create_buffer(mini_buffer)->id;
-    client.init(selected_buffer_id, mini_buffer_id);
+
+    client.init(selected_buffer_id, mini_buffer_id, messages_id);
+
     return client;
 }
 
@@ -414,7 +422,7 @@ static void run_command(Command command, Editor* editor, Command_Source source) 
         TracyMessage(message, len);
         command.function(editor, source);
     } catch (std::exception& ex) {
-        source.client->show_message(ex.what());
+        source.client->show_message(editor, ex.what());
     }
 
 #ifndef NDEBUG
@@ -559,7 +567,7 @@ void Server::receive(Client* client, Key key) {
             run_command(command, &editor, source);
         } else {
             // Print a message that this key press failed.
-            client->show_message("Invalid key combo");
+            client->show_message(&editor, "Invalid key combo");
             previous_command = {};
 
             // Discard the number of keys consumed.

@@ -13,7 +13,8 @@
 namespace mag {
 namespace git {
 
-bool get_git_top_level(Client* client,
+bool get_git_top_level(Editor* editor,
+                       Client* client,
                        const char* dir_cstr,
                        cz::Allocator allocator,
                        cz::String* top_level_path) {
@@ -26,7 +27,7 @@ bool get_git_top_level(Client* client,
         options.working_directory = dir_cstr;
 
         if (!create_process_output_pipe(&options.std_out, &std_out_read)) {
-            client->show_message("Error: I/O operation failed");
+            client->show_message(editor, "Error: I/O operation failed");
             return false;
         }
         options.std_err = options.std_out;
@@ -34,7 +35,7 @@ bool get_git_top_level(Client* client,
 
         cz::Str rev_parse_args[] = {"git", "rev-parse", "--show-toplevel"};
         if (!process.launch_program(rev_parse_args, &options)) {
-            client->show_message("No git repository found");
+            client->show_message(editor, "No git repository found");
             return false;
         }
     }
@@ -43,7 +44,7 @@ bool get_git_top_level(Client* client,
 
     int return_value = process.join();
     if (return_value != 0) {
-        client->show_message("No git repository found");
+        client->show_message(editor, "No git repository found");
         return false;
     }
 
@@ -57,7 +58,7 @@ void command_save_and_quit(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
         if (!save_buffer(buffer)) {
-            source.client->show_message("Error saving file");
+            source.client->show_message(editor, "Error saving file");
             return;
         }
     }
@@ -71,7 +72,7 @@ void command_abort_and_quit(Editor* editor, Command_Source source) {
         clear_buffer(buffer);
 
         if (!save_buffer(buffer)) {
-            source.client->show_message("Error saving file");
+            source.client->show_message(editor, "Error saving file");
             return;
         }
     }

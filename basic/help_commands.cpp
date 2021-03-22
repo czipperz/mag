@@ -179,7 +179,7 @@ static void command_run_command_by_name_callback(Editor* editor,
     }
 
     if (!command) {
-        client->show_message("No command found by that name");
+        client->show_message(editor, "No command found by that name");
         return;
     }
 

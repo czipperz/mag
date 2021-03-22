@@ -5,12 +5,14 @@
 
 namespace mag {
 
-void Client::init(Buffer_Id selected_buffer_id, Buffer_Id mini_buffer_id) {
+void Client::init(Buffer_Id selected_buffer_id, Buffer_Id mini_buffer_id, Buffer_Id messages_id) {
     selected_normal_window = Window_Unified::create(selected_buffer_id);
     window = selected_normal_window;
 
     _mini_buffer = Window_Unified::create(mini_buffer_id);
     mini_buffer_completion_cache.init();
+
+    this->messages_id = messages_id;
 }
 
 void Client::drop() {
@@ -166,10 +168,22 @@ void Client::replace_window(Window* o, Window* n) {
     n->cols = o->cols;
 }
 
-void Client::show_message(cz::Str text) {
+void Client::show_message(Editor* editor, cz::Str text) {
+    uint64_t start, end;
+    {
+        WITH_BUFFER(messages_id);
+
+        start = buffer->contents.len;
+        end = buffer->contents.len + text.len;
+
+        buffer->contents.append(text);
+        buffer->contents.append("\n\n");
+    }
+
     _message_time = std::chrono::system_clock::now();
     _message = {};
-    _message.text = text;
+    _message.start = start;
+    _message.end = end;
     _message.tag = Message::SHOW;
     _select_mini_buffer = false;
 }
@@ -210,9 +224,7 @@ void Client::show_dialog(Editor* editor,
     dealloc_message();
     clear_mini_buffer(editor);
 
-    _message_time = std::chrono::system_clock::now();
-    _message = {};
-    _message.text = prompt;
+    show_message(editor, prompt);
     _message.tag = Message::RESPOND;
     _message.completion_engine = completion_engine;
     _message.response_callback = response_callback;

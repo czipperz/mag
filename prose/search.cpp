@@ -71,7 +71,7 @@ void command_search_in_current_directory_token_at_position(Editor* editor, Comma
         Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
         Token token;
         if (!get_token_at_position(buffer, &iterator, &token)) {
-            source.client->show_message("Cursor is not positioned at a token");
+            source.client->show_message(editor, "Cursor is not positioned at a token");
             return;
         }
 

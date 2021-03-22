@@ -85,7 +85,7 @@ static void reload_directory_window(Editor* editor,
     const size_t offset = 22;
 
     if (reload_directory_buffer(buffer).is_err()) {
-        client->show_message("Couldn't reload directory");
+        client->show_message(editor, "Couldn't reload directory");
         return;
     }
 
@@ -263,12 +263,12 @@ static void command_directory_delete_path_callback(Editor* editor, Client* clien
 
     WITH_SELECTED_BUFFER(client);
     if (!get_path(buffer, &path, window->cursors[0].point)) {
-        client->show_message("Cursor not on a valid path");
+        client->show_message(editor, "Cursor not on a valid path");
         return;
     }
 
     if (remove_path(&path).is_err()) {
-        client->show_message("Couldn't delete path");
+        client->show_message(editor, "Couldn't delete path");
         return;
     }
 }
@@ -355,7 +355,7 @@ static void command_directory_copy_path_callback(Editor* editor,
 
     WITH_SELECTED_BUFFER(client);
     if (!get_path(buffer, &path, window->cursors[0].point)) {
-        client->show_message("Cursor not on a valid path");
+        client->show_message(editor, "Cursor not on a valid path");
         return;
     }
 
@@ -380,7 +380,7 @@ static void command_directory_copy_path_callback(Editor* editor,
     }
 
     if (copy_path(&path, &new_path).is_err()) {
-        client->show_message("Couldn't copy path");
+        client->show_message(editor, "Couldn't copy path");
         return;
     }
 }
@@ -401,7 +401,7 @@ static void command_directory_rename_path_callback(Editor* editor,
 
     WITH_SELECTED_BUFFER(client);
     if (!get_path(buffer, &path, window->cursors[0].point)) {
-        client->show_message("Cursor not on a valid path");
+        client->show_message(editor, "Cursor not on a valid path");
         return;
     }
 
@@ -417,7 +417,7 @@ static void command_directory_rename_path_callback(Editor* editor,
     CZ_DEFER(new_path.drop(cz::heap_allocator()));
 
     if (rename(path.buffer(), new_path.buffer()) != 0) {
-        client->show_message("Couldn't rename path");
+        client->show_message(editor, "Couldn't rename path");
         return;
     }
 }
@@ -464,9 +464,9 @@ static void command_create_directory_callback(Editor* editor,
 
     int res = create_directory(new_path.buffer());
     if (res == 1) {
-        client->show_message("Couldn't create directory");
+        client->show_message(editor, "Couldn't create directory");
     } else if (res == 2) {
-        client->show_message("Directory already exists");
+        client->show_message(editor, "Directory already exists");
     }
 }
 

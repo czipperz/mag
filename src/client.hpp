@@ -34,12 +34,14 @@ struct Client {
     Window_Unified* _mini_buffer;
     bool _select_mini_buffer;
 
+    Buffer_Id messages_id;
+
     Completion_Cache mini_buffer_completion_cache;
 
     std::chrono::system_clock::time_point _message_time;
     Message _message;
 
-    void init(Buffer_Id selected_buffer_id, Buffer_Id mini_buffer_id);
+    void init(Buffer_Id selected_buffer_id, Buffer_Id mini_buffer_id, Buffer_Id messages_id);
     void drop();
 
     Window_Unified* mini_buffer_window() const { return _mini_buffer; }
@@ -64,7 +66,7 @@ struct Client {
 
     void replace_window(Window* o, Window* n);
 
-    void show_message(cz::Str text);
+    void show_message(Editor* editor, cz::Str text);
     void show_dialog(Editor* editor,
                      cz::Str prompt,
                      Completion_Engine completion_engine,

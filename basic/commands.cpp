@@ -480,7 +480,7 @@ void command_delete_end_of_line(Editor* editor, Command_Source source) {
 void command_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->undo()) {
-        source.client->show_message("Nothing to undo");
+        source.client->show_message(editor, "Nothing to undo");
         return;
     }
 
@@ -497,7 +497,7 @@ void command_undo(Editor* editor, Command_Source source) {
 void command_redo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->redo()) {
-        source.client->show_message("Nothing to redo");
+        source.client->show_message(editor, "Nothing to redo");
         return;
     }
 
@@ -539,27 +539,27 @@ void command_stop_action(Editor* editor, Command_Source source) {
         message = "Nothing to stop";
     }
 
-    source.client->show_message(message);
+    source.client->show_message(editor, message);
 }
 
 void command_quit(Editor* editor, Command_Source source) {
     source.client->queue_quit = true;
 }
 
-static void show_no_create_cursor_message(Client* client) {
-    client->show_message("No more cursors to create");
+static void show_no_create_cursor_message(Editor* editor, Client* client) {
+    client->show_message(editor, "No more cursors to create");
 }
 
-static void show_no_region_message(Client* client) {
-    client->show_message("Must select a non-empty region first");
+static void show_no_region_message(Editor* editor, Client* client) {
+    client->show_message(editor, "Must select a non-empty region first");
 }
 
-static void show_created_messages(Client* client, int created) {
+static void show_created_messages(Editor* editor, Client* client, int created) {
     if (created == -1) {
-        show_no_region_message(client);
+        show_no_region_message(editor, client);
     }
     if (created == 0) {
-        show_no_create_cursor_message(client);
+        show_no_create_cursor_message(editor, client);
     }
 }
 
@@ -588,7 +588,7 @@ static bool create_cursor_forward_line(Editor* editor,
 void command_create_cursor_forward_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     if (!create_cursor_forward_line(editor, buffer, window)) {
-        show_no_create_cursor_message(source.client);
+        show_no_create_cursor_message(editor, source.client);
     }
 }
 
@@ -617,7 +617,7 @@ static bool create_cursor_backward_line(Editor* editor,
 void command_create_cursor_backward_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     if (!create_cursor_backward_line(editor, buffer, window)) {
-        show_no_create_cursor_message(source.client);
+        show_no_create_cursor_message(editor, source.client);
     }
 }
 
@@ -705,7 +705,7 @@ static int create_cursor_forward_search(const Buffer* buffer, Window_Unified* wi
 void command_create_cursor_forward_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_search(buffer, window);
-    show_created_messages(source.client, created);
+    show_created_messages(editor, source.client, created);
 }
 
 static cz::Option<uint64_t> search_backward(Contents_Iterator start_it, cz::Str query) {
@@ -774,7 +774,7 @@ static int create_cursor_backward_search(const Buffer* buffer, Window_Unified* w
 void command_create_cursor_backward_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
-    show_created_messages(source.client, created);
+    show_created_messages(editor, source.client, created);
 }
 
 void command_create_cursor_forward(Editor* editor, Command_Source source) {
@@ -785,7 +785,7 @@ void command_create_cursor_forward(Editor* editor, Command_Source source) {
     } else {
         created = create_cursor_forward_line(editor, buffer, window);
     }
-    show_created_messages(source.client, created);
+    show_created_messages(editor, source.client, created);
 }
 
 void command_create_cursor_backward(Editor* editor, Command_Source source) {
@@ -796,7 +796,7 @@ void command_create_cursor_backward(Editor* editor, Command_Source source) {
     } else {
         created = create_cursor_backward_line(editor, buffer, window);
     }
-    show_created_messages(source.client, created);
+    show_created_messages(editor, source.client, created);
 }
 
 void command_create_cursors_all_search(Editor* editor, Command_Source source) {
@@ -814,7 +814,7 @@ void command_create_cursors_all_search(Editor* editor, Command_Source source) {
         }
     }
 
-    show_created_messages(source.client, created);
+    show_created_messages(editor, source.client, created);
 }
 
 void command_create_cursors_to_end_search(Editor* editor, Command_Source source) {
@@ -824,7 +824,7 @@ void command_create_cursors_to_end_search(Editor* editor, Command_Source source)
         while (create_cursor_forward_search(buffer, window) == 1) {
         }
     }
-    show_created_messages(source.client, created);
+    show_created_messages(editor, source.client, created);
 }
 
 void command_create_cursors_to_start_search(Editor* editor, Command_Source source) {
@@ -834,7 +834,7 @@ void command_create_cursors_to_start_search(Editor* editor, Command_Source sourc
         while (create_cursor_backward_search(buffer, window) == 1) {
         }
     }
-    show_created_messages(source.client, created);
+    show_created_messages(editor, source.client, created);
 }
 
 static void set_cursor_position_to_edit_redo(Cursor* cursor, const Edit* edit) {
@@ -894,7 +894,7 @@ static void create_cursors_last_change(Window_Unified* window,
 void command_create_cursors_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->undo()) {
-        source.client->show_message("Nothing to undo");
+        source.client->show_message(editor, "Nothing to undo");
         return;
     }
 
@@ -905,7 +905,7 @@ void command_create_cursors_undo(Editor* editor, Command_Source source) {
 void command_create_cursors_redo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->redo()) {
-        source.client->show_message("Nothing to redo");
+        source.client->show_message(editor, "Nothing to redo");
         return;
     }
 

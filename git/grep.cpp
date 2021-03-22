@@ -30,9 +30,9 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
     {
         WITH_CONST_BUFFER(*(Buffer_Id*)data);
-        if (!get_git_top_level(client, buffer->directory.buffer(), cz::heap_allocator(),
+        if (!get_git_top_level(editor, client, buffer->directory.buffer(), cz::heap_allocator(),
                                &top_level_path)) {
-            client->show_message("No git directory");
+            client->show_message(editor, "No git directory");
             return;
         }
     }
@@ -58,16 +58,16 @@ void command_git_grep_token_at_position(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
 
-        if (!get_git_top_level(source.client, buffer->directory.buffer(), cz::heap_allocator(),
-                               &top_level_path)) {
-            source.client->show_message("No git directory");
+        if (!get_git_top_level(editor, source.client, buffer->directory.buffer(),
+                               cz::heap_allocator(), &top_level_path)) {
+            source.client->show_message(editor, "No git directory");
             return;
         }
 
         Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
         Token token;
         if (!get_token_at_position(buffer, &iterator, &token)) {
-            source.client->show_message("Cursor is not positioned at a token");
+            source.client->show_message(editor, "Cursor is not positioned at a token");
             return;
         }
 

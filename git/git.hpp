@@ -6,7 +6,8 @@
 namespace mag {
 namespace git {
 
-bool get_git_top_level(Client* client,
+bool get_git_top_level(Editor* editor,
+                       Client* client,
                        const char* dir_cstr,
                        cz::Allocator allocator,
                        cz::String* top_level_path);
