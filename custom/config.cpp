@@ -1,6 +1,7 @@
 #include "config.hpp"
 
 #include <Tracy.hpp>
+#include <cz/defer.hpp>
 #include "basic/buffer_commands.hpp"
 #include "basic/capitalization_commands.hpp"
 #include "basic/commands.hpp"
@@ -370,6 +371,7 @@ static Key_Map create_directory_key_map() {
 
 static Key_Map* directory_key_map() {
     static Key_Map key_map = create_directory_key_map();
+    static CZ_DEFER(key_map.drop());
     return &key_map;
 }
 
@@ -383,6 +385,7 @@ static Key_Map create_cpp_key_map() {
 
 static Key_Map* cpp_key_map() {
     static Key_Map key_map = create_cpp_key_map();
+    static CZ_DEFER(key_map.drop());
     return &key_map;
 }
 
@@ -394,6 +397,7 @@ static Key_Map create_js_key_map() {
 
 static Key_Map* js_key_map() {
     static Key_Map key_map = create_js_key_map();
+    static CZ_DEFER(key_map.drop());
     return &key_map;
 }
 
@@ -405,6 +409,7 @@ static Key_Map create_go_key_map() {
 
 static Key_Map* go_key_map() {
     static Key_Map key_map = create_go_key_map();
+    static CZ_DEFER(key_map.drop());
     return &key_map;
 }
 
@@ -422,16 +427,19 @@ static Key_Map create_search_key_map() {
 
 static Key_Map* search_key_map() {
     static Key_Map key_map = create_search_key_map();
+    static CZ_DEFER(key_map.drop());
     return &key_map;
 }
 
 static Key_Map create_man_key_map() {
     Key_Map key_map = {};
+    static CZ_DEFER(key_map.drop());
     return key_map;
 }
 
 static Key_Map* man_key_map() {
     static Key_Map key_map = create_man_key_map();
+    static CZ_DEFER(key_map.drop());
     return &key_map;
 }
 
@@ -459,6 +467,7 @@ static Key_Map create_mini_buffer_key_map() {
 
 static Key_Map* mini_buffer_key_map() {
     static Key_Map key_map = create_mini_buffer_key_map();
+    static CZ_DEFER(key_map.drop());
     return &key_map;
 }
 
@@ -481,6 +490,7 @@ static Key_Map create_window_completion_key_map() {
 
 static Key_Map* window_completion_key_map() {
     static Key_Map key_map = create_window_completion_key_map();
+    static CZ_DEFER(key_map.drop());
     return &key_map;
 }
 
@@ -493,6 +503,7 @@ static Key_Map create_git_edit_key_map() {
 
 static Key_Map* git_edit_key_map() {
     static Key_Map key_map = create_git_edit_key_map();
+    static CZ_DEFER(key_map.drop());
     return &key_map;
 }
 
