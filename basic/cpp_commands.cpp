@@ -438,6 +438,11 @@ void command_reformat_comment(Editor* editor, Command_Source source) {
         }
     }
 
+    // We already have the correct contents so don't replace them for no reason.
+    if (matches(start, end.position, new_region)) {
+        return;
+    }
+
     Transaction transaction;
     CZ_DEFER(transaction.drop());
     transaction.init(2, end.position - start.position + new_region.len());
