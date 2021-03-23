@@ -42,7 +42,13 @@ void command_down_page(Editor* editor, Command_Source source) {
     compute_visible_end(window, &it);
     forward_char(&it);
     window->start_position = it.position;
-    forward_line(buffer->mode, &it);
+
+    // Go to the start of 1 row from the end of the visible region.
+    window->rows -= 1;
+    CZ_DEFER(window->rows += 1);
+    compute_visible_end(window, &it);
+    forward_char(&it);
+
     window->cursors[0].point = it.position;
 }
 
