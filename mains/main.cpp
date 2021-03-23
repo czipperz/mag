@@ -203,6 +203,54 @@ int mag_main(int argc, char** argv) {
         scratch.type = Buffer::TEMPORARY;
         scratch.name = cz::Str("*scratch*").duplicate(cz::heap_allocator());
         server.editor.create_buffer(scratch);
+
+        Buffer splash_page = {};
+        splash_page.type = Buffer::TEMPORARY;
+        splash_page.name = cz::Str("*splash page*").duplicate(cz::heap_allocator());
+        splash_page.read_only = true;
+        splash_page.contents.append(
+            "\
+MMM             MMM         AA                GGGGGG\n\
+MMMM           MMMM        AAAA           GGGGGG  GGGGGG\n\
+MM MM         MM MM       AA  AA        GGGG\n\
+MM  MM       MM  MM      AAA  AAA      GGG\n\
+MM  MM       MM  MM      AA    AA      GGG\n\
+MM   MM     MM   MM     AAAAAAAAAA     GGG     GGGGGGGGGG\n\
+MM    MMM MMM    MM    AA        AA    GGG     GG    GGGG\n\
+MM     MMMMM     MM   AAA        AAA    GGGG           GG\n\
+MM      MMM      MM   AA          AA      GGGGGG  GGGGGG\n\
+MM      MMM      MM  AA            AA         GGGGGGG\n\
+\n\
+\n\
+Mag: A customizable text editor.\n\
+\n\
+\n\
+Main key bindings:\n\
+\n\
+C-g     Stop action          C-o     Open file\n\
+C-h     View key bindings    A-x     Run command by name\n\
+A-o     Go to other window   C-x b   Switch to open buffer\n\
+C-x 3   Split vertically     C-x 2   Split horizontally\n\
+C-/     Undo                 A-/     Redo\n\
+\n\
+C-n     Move down line       C-A-n   Create cursor down (line or search)\n\
+C-p     Move up line         C-A-p   Create cursor up (line or search)\n\
+A-q     Down matching token  C-q     Create cursor next matching token\n\
+A-j     Up matching token    C-j     Create cursor previous matching token\n\
+A-r     Search forward       C-r     Search reverse\n\
+\n\
+C-SPACE Select region        TAB     Increase indent level\n\
+A-w     Copy region          C-y     Paste (A-y to cycle paste)\n\
+\n\
+Key binding prefixes:\n\
+C-x     Editor state commands\n\
+C-c     Cursor commands\n\
+A-g     Project or directory commands\n\
+\n\
+Configuration should be done by editing `custom/config.cpp`.\n\
+");
+        server.editor.create_buffer(splash_page);
+
         server.editor.key_map = custom::create_key_map();
         server.editor.theme = custom::create_theme();
 
