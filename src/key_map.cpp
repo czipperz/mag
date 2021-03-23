@@ -53,6 +53,7 @@ static void parse_key(Key* key, size_t* i, cz::Str description) {
     }
     CZ_ASSERT(*i < description.len);
 
+    /// @AddKeyCode if this is refactored change the documentation.
     cz::Str d = {description.buffer + *i, description.len - *i};
     if (d.starts_with("SPACE")) {
         key->code = ' ';
@@ -64,7 +65,7 @@ static void parse_key(Key* key, size_t* i, cz::Str description) {
         key->code = Key_Code::INSERT;
         *i += 6;
     } else if (d.starts_with("DELETE")) {
-        key->code = Key_Code::DELETE;
+        key->code = Key_Code::DELETE_;
         *i += 6;
     } else if (d.starts_with("HOME")) {
         key->code = Key_Code::HOME;

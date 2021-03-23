@@ -3,6 +3,10 @@
 #include <limits.h>
 #include <stdint.h>
 
+namespace cz {
+struct String;
+}
+
 namespace mag {
 
 enum Modifiers : uint_fast8_t {
@@ -16,7 +20,7 @@ enum Modifiers : uint_fast8_t {
 };
 
 namespace Key_Code_ {
-/// @AddKeyCode If you add more key codes, make sure to update help_commands.cpp's `append_key()`.
+/// @AddKeyCode If you add more key codes, update `Key_Map::bind()` and `stringify_key()`.
 enum Key_Code : uint16_t {
     BACKSPACE = (uint16_t)UCHAR_MAX + 1,
     INSERT,
@@ -58,5 +62,11 @@ struct Key {
         return modifiers < other.modifiers;
     }
 };
+
+constexpr const size_t stringify_key_max_size = 21;
+
+/// Append a key to the string.  Assumes there is enough space
+/// (reserve at least `stringify_key_max_size` characters in advance).
+void stringify_key(cz::String* prefix, Key key);
 
 }

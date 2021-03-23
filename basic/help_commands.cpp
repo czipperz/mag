@@ -13,75 +13,12 @@
 namespace mag {
 namespace basic {
 
-/// Append a key to the string.  Assumes there is enough space (reserve at least 21 characters in
-/// advance).
-///
-/// @AddKeyCode If this is refactored make sure to update the documentation in `Key_Code`.
-static void append_key(cz::String* prefix, Key key) {
-    if (key.modifiers & Modifiers::CONTROL) {
-        prefix->append("C-");
-    }
-    if (key.modifiers & Modifiers::ALT) {
-        prefix->append("A-");
-    }
-    if (key.modifiers & Modifiers::SHIFT) {
-        if (key.code <= UCHAR_MAX && cz::is_lower(key.code)) {
-            prefix->push(cz::to_upper(key.code));
-            return;
-        } else {
-            prefix->append("S-");
-        }
-    }
-
-    switch (key.code) {
-#define CASE(CONDITION, STRING) \
-    case CONDITION:             \
-        prefix->append(STRING); \
-        break
-#define KEY_CODE_CASE(KEY) CASE(Key_Code::KEY, #KEY)
-
-        KEY_CODE_CASE(BACKSPACE);
-        KEY_CODE_CASE(INSERT);
-        CASE(DELETE_, "DELETE");
-        KEY_CODE_CASE(HOME);
-        KEY_CODE_CASE(END);
-        KEY_CODE_CASE(PAGE_UP);
-        KEY_CODE_CASE(PAGE_DOWN);
-
-        KEY_CODE_CASE(UP);
-        KEY_CODE_CASE(DOWN);
-        KEY_CODE_CASE(LEFT);
-        KEY_CODE_CASE(RIGHT);
-
-        KEY_CODE_CASE(SCROLL_UP);
-        KEY_CODE_CASE(SCROLL_DOWN);
-        KEY_CODE_CASE(SCROLL_LEFT);
-        KEY_CODE_CASE(SCROLL_RIGHT);
-        KEY_CODE_CASE(SCROLL_UP_ONE);
-        KEY_CODE_CASE(SCROLL_DOWN_ONE);
-
-        CASE(' ', "SPACE");
-
-#undef KEY_CODE_CASE
-
-    case '\t':
-        prefix->append("TAB");
-        break;
-    case '\n':
-        prefix->append("ENTER");
-        break;
-
-    default:
-        prefix->push((char)key.code);
-    }
-}
-
 static void add_key_map(Contents* contents, cz::String* prefix, const Key_Map& key_map) {
-    prefix->reserve(cz::heap_allocator(), 32);
+    prefix->reserve(cz::heap_allocator(), stringify_key_max_size + 1);
     for (size_t i = 0; i < key_map.bindings.len(); ++i) {
         auto& binding = key_map.bindings[i];
         size_t old_len = prefix->len();
-        append_key(prefix, binding.key);
+        stringify_key(prefix, binding.key);
 
         if (binding.is_command) {
             contents->append(*prefix);

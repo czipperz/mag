@@ -574,7 +574,21 @@ void Server::receive(Client* client, Key key) {
             run_command(command, &editor, source);
         } else {
             // Print a message that this key press failed.
-            client->show_message(&editor, "Invalid key combo");
+            cz::String message = {};
+            CZ_DEFER(message.drop(cz::heap_allocator()));
+
+            cz::Str prefix = "Unbound key chain:";
+            message.reserve(cz::heap_allocator(),
+                            prefix.len + stringify_key_max_size * max_depth + max_depth);
+            message.append(prefix);
+
+            CZ_DEBUG_ASSERT(max_depth > 0);
+            for (size_t i = start; i < start + max_depth; ++i) {
+                message.push(' ');
+                stringify_key(&message, key_chain[i]);
+            }
+
+            client->show_message(&editor, message);
             previous_command = {};
 
             // Discard the number of keys consumed.
