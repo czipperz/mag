@@ -36,6 +36,7 @@ void forward_char(Contents_Iterator* iterator);
 void backward_char(Contents_Iterator* iterator);
 
 Contents_Iterator start_of_line_position(const Contents& contents, uint64_t lines);
+Contents_Iterator iterator_at_line_column(const Contents& contents, uint64_t line, uint64_t column);
 
 /// Get the `token` at the `iterator`'s position, if there is one.  Positions the `iterator` at the
 /// start of the `token`.

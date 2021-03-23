@@ -90,16 +90,7 @@ static void open_file_and_goto_position(Editor* editor,
     WITH_CONST_SELECTED_BUFFER(client);
     push_jump(window, client, buffer);
 
-    Contents_Iterator iterator = buffer->contents.start();
-    while (!iterator.at_eob() && line > 1) {
-        if (iterator.get() == '\n') {
-            --line;
-        }
-        iterator.advance();
-    }
-
-    window->cursors[0].point = cz::min(buffer->contents.len, iterator.position + column - 1);
-
+    Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
     center_in_window(window, buffer->contents.iterator_at(window->cursors[0].point));
 }
 

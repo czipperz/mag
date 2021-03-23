@@ -225,6 +225,30 @@ Contents_Iterator start_of_line_position(const Contents& contents, uint64_t line
     return it;
 }
 
+Contents_Iterator iterator_at_line_column(const Contents& contents,
+                                          uint64_t line,
+                                          uint64_t column) {
+    Contents_Iterator iterator = start_of_line_position(contents, line);
+
+    if (column > 0) {
+        --column;
+    }
+
+    while (!iterator.at_eob()) {
+        if (column == 0) {
+            break;
+        }
+        if (iterator.get() == '\n') {
+            break;
+        }
+
+        --column;
+        iterator.advance();
+    }
+
+    return iterator;
+}
+
 bool get_token_at_position(Buffer* buffer, Contents_Iterator* token_iterator, Token* token) {
     buffer->token_cache.update(buffer);
 
