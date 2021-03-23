@@ -91,7 +91,8 @@ static void open_file_and_goto_position(Editor* editor,
     push_jump(window, client, buffer);
 
     Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
-    center_in_window(window, buffer->contents.iterator_at(window->cursors[0].point));
+    window->cursors[0].point = iterator.position;
+    center_in_window(window, iterator);
 }
 
 void command_search_reload(Editor* editor, Command_Source source) {
