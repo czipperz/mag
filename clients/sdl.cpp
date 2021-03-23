@@ -888,15 +888,9 @@ void run(Server* server, Client* client) {
     }
     CZ_DEFER(SDL_DestroyRenderer(renderer));
 
-    const char* font_file;
-#ifdef _WIN32
-    font_file = "C:/Windows/Fonts/MesloLGM-Regular.ttf";
-#else
-    font_file = "/usr/share/fonts/TTF/MesloLGMDZ-Regular.ttf";
-#endif
-    TTF_Font* font = TTF_OpenFont(font_file, 15);
+    TTF_Font* font = TTF_OpenFont(server->editor.theme.font_file, 15);
     if (!font) {
-        fprintf(stderr, "Failed to open the font file '%s': %s\n", font_file, SDL_GetError());
+        fprintf(stderr, "Failed to open the font file '%s': %s\n", server->editor.theme.font_file, SDL_GetError());
         return;
     }
     CZ_DEFER(TTF_CloseFont(font));

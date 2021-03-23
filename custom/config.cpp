@@ -261,6 +261,12 @@ static Theme create_theme() {
 
     Theme theme = {};
 
+#ifdef _WIN32
+    theme.font_file = "C:/Windows/Fonts/MesloLGM-Regular.ttf";
+#else
+    theme.font_file = "/usr/share/fonts/TTF/MesloLGMDZ-Regular.ttf";
+#endif
+
     theme.colors = mag::theme::solarized_dark;
 
     theme.faces.reserve(cz::heap_allocator(), 54);

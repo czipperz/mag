@@ -10,6 +10,8 @@ struct Decoration;
 struct Overlay;
 
 struct Theme {
+    const char* font_file;
+
     /// The colors to be defined.  Note that they are not always available.
     ///
     /// Color 0 should be the default background color.  Color 7 should be the
