@@ -250,6 +250,8 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
     }
     CZ_DEFER(handle->unlock());
 
+    bool stop = false;
+
     {
         ZoneScopedN("job_syntax_highlight_buffer_tick run syntax highlighting");
 
@@ -273,6 +275,7 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
 
         for (size_t i = 0; i < 100; ++i) {
             if (!clone.next_check_point(buffer, &iterator, &state)) {
+                stop = true;
                 break;
             }
         }
@@ -283,6 +286,7 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
     {
         ZoneScopedN("job_syntax_highlight_buffer_tick record results");
 
+        // Someone else pre-empted us and added a bunch of check points.
         if (clone.check_points.len() < buffer_mut->token_cache.check_points.len()) {
             return false;
         }
@@ -293,7 +297,7 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
         std::swap(buffer_mut->token_cache, clone);
     }
 
-    return false;
+    return stop;
 }
 
 Asynchronous_Job job_syntax_highlight_buffer(cz::Arc_Weak<Buffer_Handle> handle) {
