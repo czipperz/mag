@@ -24,7 +24,14 @@ void command_up_page(Editor* editor, Command_Source source) {
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     compute_visible_start(window, &it);
     window->start_position = it.position;
-    forward_line(buffer->mode, &it);
+
+    // We move forward one line to prevent the start position from being overridden
+    // in the rendering process.  But if we're at the start of the buffer then
+    // going forward one line because looks weird and won't be overridden anyway.
+    if (!it.at_bob()) {
+        forward_line(buffer->mode, &it);
+    }
+
     window->cursors[0].point = it.position;
 }
 
