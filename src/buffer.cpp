@@ -5,7 +5,6 @@
 #include <cz/bit_array.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
-#include "config.hpp"
 #include "cursor.hpp"
 #include "diff.hpp"
 #include "file.hpp"
@@ -31,8 +30,6 @@ static void initialize_file_time(Buffer* buffer) {
 }
 
 void Buffer::init() {
-    mode = custom::get_mode(*this);
-
     initialize_file_time(this);
 }
 

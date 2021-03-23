@@ -13,6 +13,7 @@ struct Overlay;
 
 struct Mode {
     Key_Map* key_map;
+    Key_Map* completion_key_map;
 
     bool (*next_token)(Contents_Iterator* iterator /* in/out */,
                        Token* token /* out */,

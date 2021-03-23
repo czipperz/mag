@@ -5,8 +5,22 @@
 #include <stdio.h>
 #include <cz/defer.hpp>
 #include <cz/option.hpp>
+#include "custom/config.hpp"
 
 namespace mag {
+
+cz::Arc<Buffer_Handle> Editor::create_buffer(Buffer buffer) {
+    custom::buffer_created_callback(this, &buffer);
+
+    cz::Arc<Buffer_Handle> buffer_handle;
+    buffer_handle.init_emplace();
+    buffer_handle->init({buffer_counter++}, buffer);
+
+    buffers.reserve(cz::heap_allocator(), 1);
+    buffers.push(buffer_handle);
+
+    return buffer_handle;
+}
 
 cz::Arc<Buffer_Handle> Editor::create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir) {
     Buffer buffer = {};

@@ -251,8 +251,7 @@ Configuration should be done by editing `custom/config.cpp`.\n\
 ");
         server.editor.create_buffer(splash_page);
 
-        server.editor.key_map = custom::create_key_map();
-        server.editor.theme = custom::create_theme();
+        custom::editor_created_callback(&server.editor);
 
         Client client = server.make_client();
         CZ_DEFER(client.drop());

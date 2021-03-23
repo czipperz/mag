@@ -483,14 +483,20 @@ static bool lookup_key_press_completion(cz::Slice<Key> key_chain,
                                         Command* command,
                                         size_t* end,
                                         size_t* max_depth,
+                                        Editor* editor,
                                         Client* client) {
     Window_Unified* window = client->selected_window();
     if (!window->completing) {
         return false;
     }
 
+    WITH_CONST_WINDOW_BUFFER(window);
+    if (!buffer->mode.completion_key_map) {
+        return false;
+    }
+
     return lookup_key_press(key_chain, start, command, end, max_depth,
-                            custom::window_completion_key_map());
+                            buffer->mode.completion_key_map);
 }
 
 static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
@@ -543,7 +549,8 @@ void Server::receive(Client* client, Key key) {
 
         // Try the different key maps or fall back to trying
         // to convert the key press to inserting text.
-        if (lookup_key_press_completion(key_chain, start, &command, &end, &max_depth, client) ||
+        if (lookup_key_press_completion(key_chain, start, &command, &end, &max_depth, &editor,
+                                        client) ||
             lookup_key_press_buffer(key_chain, start, &command, &end, &max_depth, &editor,
                                     client) ||
             lookup_key_press_global(key_chain, start, &command, &end, &max_depth, &editor) ||

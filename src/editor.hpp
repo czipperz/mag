@@ -88,16 +88,7 @@ struct Editor {
     }
 
     /// Do not decrement the reference count by calling `drop` on the return value.
-    cz::Arc<Buffer_Handle> create_buffer(Buffer buffer) {
-        cz::Arc<Buffer_Handle> buffer_handle;
-        buffer_handle.init_emplace();
-        buffer_handle->init({buffer_counter++}, buffer);
-
-        buffers.reserve(cz::heap_allocator(), 1);
-        buffers.push(buffer_handle);
-
-        return buffer_handle;
-    }
+    cz::Arc<Buffer_Handle> create_buffer(Buffer buffer);
 
     /// Do not decrement the reference count by calling `drop` on the return value.
     cz::Arc<Buffer_Handle> create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir = {});

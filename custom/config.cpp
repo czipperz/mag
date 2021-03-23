@@ -66,7 +66,7 @@ using namespace basic;
 
 #define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, {FUNC, #FUNC}))
 
-Key_Map create_key_map() {
+static Key_Map create_key_map() {
     ZoneScoped;
 
     Key_Map key_map = {};
@@ -248,7 +248,7 @@ Key_Map create_key_map() {
     return key_map;
 }
 
-Theme create_theme() {
+static Theme create_theme() {
     ZoneScoped;
 
     Theme theme = {};
@@ -342,6 +342,11 @@ Theme create_theme() {
     theme.window_completion_filter = prefix_completion_filter;
 
     return theme;
+}
+
+void editor_created_callback(Editor* editor) {
+    editor->key_map = create_key_map();
+    editor->theme = create_theme();
 }
 
 static Key_Map create_directory_key_map() {
@@ -474,7 +479,7 @@ static Key_Map create_window_completion_key_map() {
     return key_map;
 }
 
-Key_Map* window_completion_key_map() {
+static Key_Map* window_completion_key_map() {
     static Key_Map key_map = create_window_completion_key_map();
     return &key_map;
 }
@@ -491,139 +496,138 @@ static Key_Map* git_edit_key_map() {
     return &key_map;
 }
 
-Mode get_mode(const Buffer& buffer) {
+void buffer_created_callback(Editor* editor, Buffer* buffer) {
     ZoneScoped;
 
-    Mode mode = {};
+    buffer->mode.indent_width = 4;
+    buffer->mode.tab_width = 4;
+    buffer->mode.use_tabs = false;
 
-    mode.indent_width = 4;
-    mode.tab_width = 4;
-    mode.use_tabs = false;
+    buffer->mode.indent_after_open_pair = false;
 
-    mode.indent_after_open_pair = false;
+    buffer->mode.preferred_column = 100;
 
-    mode.preferred_column = 100;
+    buffer->mode.completion_key_map = window_completion_key_map();
 
-    mode.next_token = default_next_token;
+    buffer->mode.next_token = default_next_token;
 
-    switch (buffer.type) {
+    switch (buffer->type) {
     case Buffer::DIRECTORY:
-        mode.next_token = syntax::directory_next_token;
-        mode.key_map = directory_key_map();
+        buffer->mode.next_token = syntax::directory_next_token;
+        buffer->mode.key_map = directory_key_map();
         break;
 
     case Buffer::TEMPORARY:
-        if (buffer.name == "*client mini buffer*") {
-            mode.next_token = syntax::path_next_token;
-            mode.key_map = mini_buffer_key_map();
-        } else if (buffer.name.contains("*git grep ") || buffer.name.contains("*ag ")) {
-            mode.next_token = syntax::search_next_token;
-            mode.key_map = search_key_map();
-        } else if (buffer.name.starts_with("*man ")) {
-            mode.next_token = syntax::process_next_token;
-            mode.key_map = man_key_map();
+        if (buffer->name == "*client mini buffer*") {
+            buffer->mode.next_token = syntax::path_next_token;
+            buffer->mode.key_map = mini_buffer_key_map();
+        } else if (buffer->name.contains("*git grep ") || buffer->name.contains("*ag ")) {
+            buffer->mode.next_token = syntax::search_next_token;
+            buffer->mode.key_map = search_key_map();
+        } else if (buffer->name.starts_with("*man ")) {
+            buffer->mode.next_token = syntax::process_next_token;
+            buffer->mode.key_map = man_key_map();
         }
         break;
 
     case Buffer::FILE:
         static Decoration decorations[] = {syntax::decoration_line_ending_indicator()};
-        mode.decorations = decorations;
+        buffer->mode.decorations = decorations;
 
-        if (buffer.name.ends_with(".c") || buffer.name.ends_with(".h") ||
-            buffer.name.ends_with(".cc") || buffer.name.ends_with(".hh") ||
-            buffer.name.ends_with(".cpp") || buffer.name.ends_with(".hpp") ||
-            buffer.name.ends_with(".glsl")) {
-            mode.next_token = syntax::cpp_next_token;
-            mode.key_map = cpp_key_map();
+        if (buffer->name.ends_with(".c") || buffer->name.ends_with(".h") ||
+            buffer->name.ends_with(".cc") || buffer->name.ends_with(".hh") ||
+            buffer->name.ends_with(".cpp") || buffer->name.ends_with(".hpp") ||
+            buffer->name.ends_with(".glsl")) {
+            buffer->mode.next_token = syntax::cpp_next_token;
+            buffer->mode.key_map = cpp_key_map();
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            mode.overlays = overlays;
-        } else if (buffer.name.ends_with(".md")) {
-            mode.next_token = syntax::md_next_token;
-        } else if (buffer.name.ends_with(".css")) {
-            mode.next_token = syntax::css_next_token;
+            buffer->mode.overlays = overlays;
+        } else if (buffer->name.ends_with(".md")) {
+            buffer->mode.next_token = syntax::md_next_token;
+        } else if (buffer->name.ends_with(".css")) {
+            buffer->mode.next_token = syntax::css_next_token;
             static const Token_Type types[] = {
                 Token_Type::CSS_PROPERTY, Token_Type::CSS_ELEMENT_SELECTOR,
                 Token_Type::CSS_ID_SELECTOR, Token_Type::CSS_CLASS_SELECTOR,
                 Token_Type::CSS_PSEUDO_SELECTOR};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            mode.overlays = overlays;
-        } else if (buffer.name.ends_with(".html")) {
-            mode.next_token = syntax::html_next_token;
+            buffer->mode.overlays = overlays;
+        } else if (buffer->name.ends_with(".html")) {
+            buffer->mode.next_token = syntax::html_next_token;
             static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
                                                Token_Type::HTML_ATTRIBUTE_NAME};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            mode.overlays = overlays;
-        } else if (buffer.name.ends_with(".js")) {
-            mode.next_token = syntax::js_next_token;
-            mode.key_map = js_key_map();
+            buffer->mode.overlays = overlays;
+        } else if (buffer->name.ends_with(".js")) {
+            buffer->mode.next_token = syntax::js_next_token;
+            buffer->mode.key_map = js_key_map();
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            mode.overlays = overlays;
-        } else if (buffer.name.ends_with(".go")) {
-            mode.next_token = syntax::go_next_token;
-            mode.key_map = go_key_map();
+            buffer->mode.overlays = overlays;
+        } else if (buffer->name.ends_with(".go")) {
+            buffer->mode.next_token = syntax::go_next_token;
+            buffer->mode.key_map = go_key_map();
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            mode.overlays = overlays;
-        } else if (buffer.name.ends_with(".sh") || buffer.name.ends_with(".bash") ||
-                   buffer.name.ends_with(".zsh") || buffer.name == ".bashrc" ||
-                   buffer.name == ".zshrc" || buffer.name == "Makefile") {
-            if (buffer.name == "Makefile") {
+            buffer->mode.overlays = overlays;
+        } else if (buffer->name.ends_with(".sh") || buffer->name.ends_with(".bash") ||
+                   buffer->name.ends_with(".zsh") || buffer->name == ".bashrc" ||
+                   buffer->name == ".zshrc" || buffer->name == "Makefile") {
+            if (buffer->name == "Makefile") {
                 // Makefiles must use tabs so set that up automatically.
-                mode.tab_width = mode.indent_width;
-                mode.use_tabs = true;
+                buffer->mode.tab_width = buffer->mode.indent_width;
+                buffer->mode.use_tabs = true;
             }
 
-            mode.next_token = syntax::sh_next_token;
+            buffer->mode.next_token = syntax::sh_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            mode.overlays = overlays;
-        } else if (buffer.name.ends_with(".py") || buffer.name.ends_with(".gpy")) {
-            mode.next_token = syntax::python_next_token;
+            buffer->mode.overlays = overlays;
+        } else if (buffer->name.ends_with(".py") || buffer->name.ends_with(".gpy")) {
+            buffer->mode.next_token = syntax::python_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            mode.overlays = overlays;
-        } else if (buffer.name == "CMakeLists.txt") {
-            mode.next_token = syntax::cmake_next_token;
+            buffer->mode.overlays = overlays;
+        } else if (buffer->name == "CMakeLists.txt") {
+            buffer->mode.next_token = syntax::cmake_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            mode.overlays = overlays;
-        } else if (buffer.name.ends_with(".patch") || buffer.name.ends_with(".diff")) {
-            mode.next_token = syntax::patch_next_token;
-            if (buffer.name == "addp-hunk-edit.diff") {
-                mode.key_map = git_edit_key_map();
+            buffer->mode.overlays = overlays;
+        } else if (buffer->name.ends_with(".patch") || buffer->name.ends_with(".diff")) {
+            buffer->mode.next_token = syntax::patch_next_token;
+            if (buffer->name == "addp-hunk-edit.diff") {
+                buffer->mode.key_map = git_edit_key_map();
             }
-        } else if (buffer.name == "git-rebase-todo") {
-            mode.next_token = syntax::git_rebase_todo_next_token;
-            mode.key_map = git_edit_key_map();
-        } else if (buffer.name == "COMMIT_EDITMSG") {
-            mode.next_token = syntax::git_commit_edit_message_next_token;
-            mode.key_map = git_edit_key_map();
-        } else if (buffer.name == "color test") {
-            mode.next_token = syntax::color_test_next_token;
+        } else if (buffer->name == "git-rebase-todo") {
+            buffer->mode.next_token = syntax::git_rebase_todo_next_token;
+            buffer->mode.key_map = git_edit_key_map();
+        } else if (buffer->name == "COMMIT_EDITMSG") {
+            buffer->mode.next_token = syntax::git_commit_edit_message_next_token;
+            buffer->mode.key_map = git_edit_key_map();
+        } else if (buffer->name == "color test") {
+            buffer->mode.next_token = syntax::color_test_next_token;
         } else {
-            mode.next_token = syntax::general_next_token;
+            buffer->mode.next_token = syntax::general_next_token;
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            mode.overlays = overlays;
+            buffer->mode.overlays = overlays;
         }
         break;
     }
-    return mode;
 }
 
 }
