@@ -4,6 +4,7 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/util.hpp>
+#include <syntax/tokenize_search.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "movement.hpp"
@@ -158,6 +159,12 @@ void command_search_open_next(Editor* editor, Command_Source source) {
     bool found;
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
+        if (buffer->mode.next_token != syntax::search_next_token) {
+            cycle_window(source.client);
+            source.client->show_message(editor, "Error: trying to parse buffer not in search mode");
+            return;
+        }
+
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
         forward_line(buffer->mode, &it);
         window->cursors[0].point = it.position;
@@ -183,6 +190,12 @@ void command_search_open_previous(Editor* editor, Command_Source source) {
     bool found;
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
+        if (buffer->mode.next_token != syntax::search_next_token) {
+            cycle_window(source.client);
+            source.client->show_message(editor, "Error: trying to parse buffer not in search mode");
+            return;
+        }
+
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
         backward_line(buffer->mode, &it);
         window->cursors[0].point = it.position;
