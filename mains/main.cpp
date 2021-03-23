@@ -7,6 +7,7 @@
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
 #include <cz/str.hpp>
+#include "basic/window_commands.hpp"
 #include "client.hpp"
 #include "command.hpp"
 #include "command_macros.hpp"
@@ -48,14 +49,24 @@ Available clients:\n"
     return 1;
 }
 
+static void open_file_tiling(Editor* editor, Client* client, cz::Str arg, uint32_t* opened_count) {
+    if (*opened_count > 0) {
+        basic::split_window(
+            client, (*opened_count % 2 == 1) ? Window::VERTICAL_SPLIT : Window::HORIZONTAL_SPLIT);
+    }
+    ++*opened_count;
+
+    open_file(editor, client, arg);
+}
+
 /// Decode the argument as one of FILE, FILE:LINE, FILE:LINE:COLUMN and then open it.
-static void open_arg(Editor* editor, Client* client, cz::Str arg) {
+static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* opened_count) {
     ZoneScoped;
 
     // If the file exists then immediately open it.
     if (cz::file::does_file_exist(arg.buffer)) {
     open:
-        open_file(editor, client, arg);
+        open_file_tiling(editor, client, arg, opened_count);
         return;
     }
 
@@ -79,7 +90,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg) {
 
     if (cz::file::does_file_exist(path.buffer())) {
         // Argument is of form FILE:LINE.
-        open_file(editor, client, path);
+        open_file_tiling(editor, client, path, opened_count);
 
         WITH_SELECTED_BUFFER(client);
         Contents_Iterator it = start_of_line_position(buffer->contents, line);
@@ -112,7 +123,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg) {
 
     if (cz::file::does_file_exist(path.buffer())) {
         // Argument is of form FILE:LINE:COLUMN.
-        open_file(editor, client, path);
+        open_file_tiling(editor, client, path, opened_count);
 
         WITH_SELECTED_BUFFER(client);
         Contents_Iterator it = iterator_at_line_column(buffer->contents, line, column);
@@ -198,6 +209,7 @@ int mag_main(int argc, char** argv) {
         Client client = server.make_client();
         CZ_DEFER(client.drop());
 
+        uint32_t opened_count = 0;
         int chosen_client = 1;
         for (int i = 1; i < argc; ++i) {
             cz::Str arg = argv[i];
@@ -218,7 +230,7 @@ int mag_main(int argc, char** argv) {
 
                 return usage();
             } else {
-                open_arg(&server.editor, &client, arg);
+                open_arg(&server.editor, &client, arg, &opened_count);
             }
         }
 
