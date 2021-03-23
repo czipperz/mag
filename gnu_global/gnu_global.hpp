@@ -29,6 +29,9 @@ const char* lookup(const char* directory, cz::Str query, cz::Vector<Tag>* tags, 
 /// Cleans up `tags` and `buffer`.
 void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::String buffer);
 
+/// Chain `lookup` and `prompt_open_tags`.
+void lookup_and_prompt(Editor* editor, Client* client, const char* directory, cz::Str query);
+
 void command_lookup_at_point(Editor* editor, Command_Source source);
 
 void command_lookup_prompt(Editor* editor, Command_Source source);

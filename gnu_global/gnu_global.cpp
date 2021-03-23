@@ -238,11 +238,30 @@ void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::
     client->mini_buffer_completion_cache.engine_context.cleanup = tag_completion_engine_cleanup;
 }
 
+void lookup_and_prompt(Editor* editor, Client* client, const char* directory, cz::Str query) {
+    cz::Vector<Tag> tags = {};
+    cz::String str_buffer = {};
+
+    const char* lookup_error = lookup(directory, query, &tags, &str_buffer);
+    if (lookup_error) {
+        tags.drop(cz::heap_allocator());
+        str_buffer.drop(cz::heap_allocator());
+        client->show_message(editor, lookup_error);
+        return;
+    }
+
+    prompt_open_tags(editor, client, tags, str_buffer);
+}
+
 void command_lookup_at_point(Editor* editor, Command_Source source) {
     ZoneScoped;
 
-    cz::Vector<Tag> tags = {};
-    cz::String str_buffer = {};
+    SSOStr query = {};
+    CZ_DEFER(query.drop(cz::heap_allocator()));
+
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+
     {
         WITH_SELECTED_BUFFER(source.client);
 
@@ -253,22 +272,12 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
             return;
         }
 
-        char* query = cz::heap_allocator().alloc<char>(token.end - token.start + 1);
-        CZ_ASSERT(query);
-        CZ_DEFER(cz::heap_allocator().dealloc({query, 0 /* wrong size but that's ok */}));
-        buffer->contents.slice_into(iterator, token.end, query);
-        query[token.end - token.start] = '\0';
+        query = buffer->contents.slice(cz::heap_allocator(), iterator, token.end);
 
-        const char* lookup_error = lookup(buffer->directory.buffer(), query, &tags, &str_buffer);
-        if (lookup_error) {
-            tags.drop(cz::heap_allocator());
-            str_buffer.drop(cz::heap_allocator());
-            source.client->show_message(editor, lookup_error);
-            return;
-        }
+        directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
     }
 
-    prompt_open_tags(editor, source.client, tags, str_buffer);
+    lookup_and_prompt(editor, source.client, directory.buffer(), query.as_str());
 }
 
 static void command_lookup_prompt_callback(Editor* editor,
@@ -277,20 +286,15 @@ static void command_lookup_prompt_callback(Editor* editor,
                                            void* data) {
     ZoneScoped;
 
-    cz::Vector<Tag> tags = {};
-    cz::String str_buffer = {};
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        const char* lookup_error = lookup(buffer->directory.buffer(), query, &tags, &str_buffer);
-        if (lookup_error) {
-            tags.drop(cz::heap_allocator());
-            str_buffer.drop(cz::heap_allocator());
-            client->show_message(editor, lookup_error);
-            return;
-        }
+        directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
     }
 
-    prompt_open_tags(editor, client, tags, str_buffer);
+    lookup_and_prompt(editor, client, directory.buffer(), query);
 }
 
 void command_lookup_prompt(Editor* editor, Command_Source source) {
