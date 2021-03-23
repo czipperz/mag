@@ -21,6 +21,7 @@ struct Run_Jobs {
     cz::Mutex* mutex;
     cz::Vector<Asynchronous_Job>* jobs;
     cz::Vector<Synchronous_Job>* pending_jobs;
+    cz::String* message;
     bool* stop;
 
 #ifdef TRACY_ENABLE
@@ -41,6 +42,9 @@ struct Run_Jobs {
             }
             handler.pending_jobs.drop(cz::heap_allocator());
         });
+
+        cz::String queue_message = {};
+        CZ_DEFER(queue_message.drop(cz::heap_allocator()));
 
         bool remove = false;
         while (1) {
@@ -64,6 +68,11 @@ struct Run_Jobs {
                 CZ_DEFER(mutex_context->AfterUnlock());
 #endif
                 CZ_DEFER(mutex->unlock());
+
+                if (queue_message.len() != 0) {
+                    std::swap(*message, queue_message);
+                    queue_message.set_len(0);
+                }
 
                 if (remove) {
                     jobs->remove(i);
@@ -96,7 +105,16 @@ struct Run_Jobs {
 
             {
                 ZoneScopedN("job thread run job");
-                if (job.tick(&handler, job.data)) {
+                try {
+                    if (job.tick(&handler, job.data)) {
+                        remove = true;
+                    }
+                } catch (std::exception& ex) {
+                    cz::Str prefix = "Job failed with message: ";
+                    cz::Str message = ex.what();
+                    queue_message.reserve(cz::heap_allocator(), prefix.len + message.len);
+                    queue_message.append(prefix);
+                    queue_message.append(message);
                     remove = true;
                 }
             }
@@ -115,6 +133,7 @@ void Server::init() {
     job_mutex->init();
     job_jobs = new cz::Vector<Asynchronous_Job>{};
     job_pending_jobs = new cz::Vector<Synchronous_Job>{};
+    job_message = new cz::String{};
     job_stop = new bool(false);
 
 #ifdef TRACY_ENABLE
@@ -128,7 +147,7 @@ void Server::init() {
 #endif
 
     job_thread = new std::thread(
-        Run_Jobs{job_mutex, job_jobs, job_pending_jobs, job_stop, job_mutex_context});
+        Run_Jobs{job_mutex, job_jobs, job_pending_jobs, job_message, job_stop, job_mutex_context});
 
     editor.create();
 }
@@ -170,11 +189,16 @@ void Server::drop() {
     job_pending_jobs->drop(cz::heap_allocator());
     delete job_pending_jobs;
 
+    job_message->drop(cz::heap_allocator());
+    delete job_message;
+
     delete job_stop;
 
 #ifdef TRACY_ENABLE
     delete job_mutex_context;
 #endif
+
+    pending_message.drop(cz::heap_allocator());
 
     editor.drop();
 }
@@ -205,11 +229,18 @@ bool Server::slurp_jobs() {
     editor.synchronous_jobs.append(*job_pending_jobs);
     job_pending_jobs->set_len(0);
 
+    std::swap(pending_message, *job_message);
+
     return job_jobs->len() > 0;
 }
 
 bool Server::run_synchronous_jobs(Client* client) {
     ZoneScoped;
+
+    if (pending_message.len() > 0) {
+        client->show_message(&editor, pending_message);
+        pending_message.set_len(0);
+    }
 
     for (size_t i = 0; i < editor.synchronous_jobs.len();) {
         if (editor.synchronous_jobs[i].tick(&editor, client, editor.synchronous_jobs[i].data)) {

@@ -11,6 +11,7 @@
 
 namespace cz {
 struct Mutex;
+struct String;
 }
 
 namespace mag {
@@ -25,11 +26,14 @@ struct Server {
     cz::Mutex* job_mutex;
     cz::Vector<Asynchronous_Job>* job_jobs;
     cz::Vector<Synchronous_Job>* job_pending_jobs;
+    cz::String* job_message;
     bool* job_stop;
 
 #ifdef TRACY_ENABLE
     tracy::SharedLockableCtx* job_mutex_context;
 #endif
+
+    cz::String pending_message;
 
     void init();
     void drop();
