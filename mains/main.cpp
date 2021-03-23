@@ -210,20 +210,21 @@ int mag_main(int argc, char** argv) {
         splash_page.read_only = true;
         splash_page.contents.append(
             "\
-MMM             MMM         AA                GGGGGG\n\
-MMMM           MMMM        AAAA           GGGGGG  GGGGGG\n\
-MM MM         MM MM       AA  AA        GGGG\n\
-MM  MM       MM  MM      AAA  AAA      GGG\n\
-MM  MM       MM  MM      AA    AA      GGG\n\
-MM   MM     MM   MM     AAAAAAAAAA     GGG     GGGGGGGGGG\n\
-MM    MMM MMM    MM    AA        AA    GGG     GG    GGGG\n\
-MM     MMMMM     MM   AAA        AAA    GGGG           GG\n\
-MM      MMM      MM   AA          AA      GGGGGG  GGGGGG\n\
-MM      MMM      MM  AA            AA         GGGGGGG\n\
-\n\
-\n\
-Mag: A customizable text editor.\n\
-\n\
+MMM             MMM\n\
+MMMM           MMMM\n\
+MM MM         MM MM\n\
+MM  MM       MM  MM\n\
+MM  MM.     .MM  MM      .aaaaaa.      .gggggg.\n\
+MM   MM     MM   MM    aa^      aa    ggg    ggg\n\
+MM    MMM MMM    MM   aa        aa    gg      gg\n\
+MM     MMMMM     MM   aa        aa    gg      gg\n\
+MM     ^MMM^     MM    aaa      aa    ggg.   ggg\n\
+MM      ^M^      MM      ^aaaaa^ ^a    ^gggggggg\n\
+                                              gg\n\
+Mag: A customizable text editoor.             gg\n\
+                                              gg\n\
+     ggg.             .g.          .g.      ggg\n\
+         ^ggggggggggg^   ^gggggggg^   ^ggggg^\n\
 \n\
 Main key bindings:\n\
 \n\
