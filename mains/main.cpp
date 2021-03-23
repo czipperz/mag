@@ -115,10 +115,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg) {
         open_file(editor, client, path);
 
         WITH_SELECTED_BUFFER(client);
-        Contents_Iterator it = start_of_line_position(buffer->contents, line);
-        Contents_Iterator eol = it;
-        end_of_line(&eol);
-        it.advance(std::min(column, eol.position - it.position));
+        Contents_Iterator it = iterator_at_line_column(buffer->contents, line, column);
         window->cursors[0].point = it.position;
         window->cursors[0].mark = window->cursors[0].point;
         return;
