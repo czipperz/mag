@@ -102,7 +102,10 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg) {
     }
 
     uint64_t column = 0;
-    sscanf(colon + 1, "%" PRIu64, &column);
+    if (sscanf(colon + 1, "%" PRIu64, &column) < 1) {
+        goto open;
+    }
+    std::swap(line, column);
 
     path.set_len(colon - path.buffer());
     path.null_terminate();
