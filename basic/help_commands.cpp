@@ -2,6 +2,7 @@
 
 #include <cz/char_type.hpp>
 #include <cz/stringify.hpp>
+#include "gnu_global/gnu_global.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "file.hpp"
@@ -139,6 +140,44 @@ void command_run_command_by_name(Editor* editor, Command_Source source) {
 
     source.client->show_dialog(editor, "Run command: ", command_completion_engine,
                                command_run_command_by_name_callback, buffer_id);
+}
+
+void command_go_to_key_map_binding(Editor* editor, Command_Source source) {
+    cz::String query = {};
+    CZ_DEFER(query.drop(cz::heap_allocator()));
+
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+        end_of_line(&it);
+        Contents_Iterator end = it;
+
+        // Backward through identifier characters.
+        do {
+            if (it.at_bob()) {
+                return;
+            }
+
+            it.retreat();
+        } while (cz::is_alnum(it.get()) || it.get() == '_');
+        it.advance();
+
+        // Nothing at point.
+        if (end.position <= it.position) {
+            return;
+        }
+
+        query.reserve(cz::heap_allocator(), end.position - it.position);
+        buffer->contents.slice_into(it, end.position, &query);
+
+        directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
+    }
+
+    gnu_global::lookup_and_prompt(editor, source.client, directory.buffer(), query);
 }
 
 }

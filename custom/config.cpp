@@ -446,12 +446,24 @@ static Key_Map* search_key_map() {
 
 static Key_Map create_man_key_map() {
     Key_Map key_map = {};
-    static CZ_DEFER(key_map.drop());
     return key_map;
 }
 
 static Key_Map* man_key_map() {
     static Key_Map key_map = create_man_key_map();
+    static CZ_DEFER(key_map.drop());
+    return &key_map;
+}
+
+static Key_Map create_key_map_key_map() {
+    Key_Map key_map = {};
+    BIND(key_map, "\n", command_go_to_key_map_binding);
+    BIND(key_map, "C-m", command_go_to_key_map_binding);
+    return key_map;
+}
+
+static Key_Map* key_map_key_map() {
+    static Key_Map key_map = create_key_map_key_map();
     static CZ_DEFER(key_map.drop());
     return &key_map;
 }
@@ -551,6 +563,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.starts_with("*man ")) {
             buffer->mode.next_token = syntax::process_next_token;
             buffer->mode.key_map = man_key_map();
+        } else if (buffer->name == "*key map*") {
+            buffer->mode.key_map = key_map_key_map();
         }
         break;
 
