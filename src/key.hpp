@@ -20,12 +20,19 @@ namespace Key_Code_ {
 enum Key_Code : uint16_t {
     BACKSPACE = (uint16_t)UCHAR_MAX + 1,
     INSERT,
+    DELETE_,
+    HOME,
+    END,
+    PAGE_UP,
+    PAGE_DOWN,
 
+    // Arrow keys
     UP,
     DOWN,
     LEFT,
     RIGHT,
 
+    // Mouse scroll events
     SCROLL_UP,
     SCROLL_DOWN,
     SCROLL_LEFT,

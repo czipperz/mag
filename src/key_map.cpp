@@ -63,6 +63,21 @@ static void parse_key(Key* key, size_t* i, cz::Str description) {
     } else if (d.starts_with("INSERT")) {
         key->code = Key_Code::INSERT;
         *i += 6;
+    } else if (d.starts_with("DELETE")) {
+        key->code = Key_Code::DELETE;
+        *i += 6;
+    } else if (d.starts_with("HOME")) {
+        key->code = Key_Code::HOME;
+        *i += 4;
+    } else if (d.starts_with("END")) {
+        key->code = Key_Code::END;
+        *i += 3;
+    } else if (d.starts_with("PAGE_UP")) {
+        key->code = Key_Code::PAGE_UP;
+        *i += 7;
+    } else if (d.starts_with("PAGE_DOWN")) {
+        key->code = Key_Code::PAGE_DOWN;
+        *i += 9;
     } else if (d.starts_with("UP")) {
         key->code = Key_Code::UP;
         *i += 2;

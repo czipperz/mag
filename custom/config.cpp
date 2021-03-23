@@ -143,7 +143,9 @@ static Key_Map create_key_map() {
     BIND(key_map, "C-x C-@", command_push_jump);
 
     BIND(key_map, "C-e", command_end_of_line);
+    BIND(key_map, "END", command_end_of_line);
     BIND(key_map, "C-a", command_start_of_line);
+    BIND(key_map, "HOME", command_start_of_line);
     BIND(key_map, "A-a", command_start_of_line_text);
 
     BIND(key_map, "A-r", command_search_forward);
@@ -151,8 +153,11 @@ static Key_Map create_key_map() {
 
     BIND(key_map, "BACKSPACE", command_delete_backward_char);
     BIND(key_map, "S-BACKSPACE", command_delete_backward_char);
-    BIND(key_map, "C-d", command_delete_forward_char);
     BIND(key_map, "A-BACKSPACE", command_delete_backward_word);
+    BIND(key_map, "C-d", command_delete_forward_char);
+    BIND(key_map, "DELETE", command_delete_forward_char);
+    BIND(key_map, "S-DELETE", command_delete_forward_char);
+    BIND(key_map, "A-DELETE", command_delete_forward_word);
     BIND(key_map, "A-d", command_delete_forward_word);
 
     BIND(key_map, "C-k", command_delete_line);
@@ -239,7 +244,9 @@ static Key_Map create_key_map() {
     BIND(key_map, "C-l", command_center_in_window);
 
     BIND(key_map, "A-v", command_up_page);
+    BIND(key_map, "PAGE_UP", command_up_page);
     BIND(key_map, "C-v", command_down_page);
+    BIND(key_map, "PAGE_DOWN", command_down_page);
 
     BIND(key_map, "SCROLL_DOWN", command_scroll_down);
     BIND(key_map, "SCROLL_UP", command_scroll_up);

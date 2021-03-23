@@ -279,6 +279,11 @@ static void process_event(Server* server,
             KEY_CASE(SPACE, ' ');
             KEY_CASE(BACKSPACE, Key_Code::BACKSPACE);
             KEY_CASE(INSERT, Key_Code::INSERT);
+            KEY_CASE(DELETE, Key_Code::DELETE_);
+            KEY_CASE(HOME, Key_Code::HOME);
+            KEY_CASE(END, Key_Code::END);
+            KEY_CASE(PAGEUP, Key_Code::PAGE_UP);
+            KEY_CASE(PAGEDOWN, Key_Code::PAGE_DOWN);
             KEY_CASE(RETURN, '\n');
             KEY_CASE(TAB, '\t');
             KEY_CASE(UP, Key_Code::UP);

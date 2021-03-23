@@ -42,6 +42,11 @@ static void append_key(cz::String* prefix, Key key) {
 
         KEY_CODE_CASE(BACKSPACE);
         KEY_CODE_CASE(INSERT);
+        CASE(DELETE_, "DELETE");
+        KEY_CODE_CASE(HOME);
+        KEY_CODE_CASE(END);
+        KEY_CODE_CASE(PAGE_UP);
+        KEY_CODE_CASE(PAGE_DOWN);
 
         KEY_CODE_CASE(UP);
         KEY_CODE_CASE(DOWN);
