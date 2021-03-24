@@ -11,6 +11,7 @@
 #include "overlay.hpp"
 #include "server.hpp"
 #include "token.hpp"
+#include "tracy_format.hpp"
 #include "visible_region.hpp"
 
 namespace mag {
@@ -277,6 +278,9 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         buffer_mut->token_cache.generate_check_points_until(buffer, iterator.position);
 
         if (!buffer->token_cache.is_covered(buffer->contents.len)) {
+            TracyFormat(message, len, 1024, "Start syntax highlighting: %.*s",
+                        (int)buffer->name.len(), buffer->name.buffer());
+            TracyMessage(message, len);
             editor->add_asynchronous_job(job_syntax_highlight_buffer(handle.clone_downgrade()));
         }
     }
