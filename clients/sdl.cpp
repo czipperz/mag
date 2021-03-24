@@ -69,10 +69,6 @@ static bool poll_event(SDL_Event* data) {
     return SDL_PollEvent(data);
 }
 
-static bool poll_event_callback(void* data) {
-    return poll_event((SDL_Event*)data);
-}
-
 struct Scroll_State {
     int scrolling;            // flag (scrolling or not)
     int sensitivity = 40;     // how fast we want to scroll

@@ -65,12 +65,6 @@ static int mock_getch() {
 #undef getch
 #define getch() (mock_getch())
 
-static bool getch_callback(void* data) {
-    int* out = (int*)data;
-    *out = getch();
-    return *out != ERR;
-}
-
 static int16_t get_face_color(Face_Color fc) {
     if (fc.is_themed) {
         return fc.x.theme_index;
