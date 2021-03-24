@@ -77,9 +77,7 @@ static void open_file_and_goto_position(Editor* editor,
                                         uint64_t line,
                                         uint64_t column) {
     if (client->window == client->selected_normal_window) {
-        Window_Unified* window = client->selected_normal_window;
-        Window::Tag tag = Window::HORIZONTAL_SPLIT;
-        Window_Split* split = split_window(client, tag);
+        Window_Split* split = split_window(client, Window::HORIZONTAL_SPLIT);
         split->split_ratio = 0.75f;
     }
 
