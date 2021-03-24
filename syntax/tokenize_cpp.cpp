@@ -1187,6 +1187,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         }
         token->end = iterator->position;
         token->type = Token_Type::NUMBER;
+        normal_state = IN_EXPR;
         goto done;
     }
 
