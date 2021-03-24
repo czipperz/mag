@@ -191,31 +191,36 @@ static bool clang_format_job_tick(Asynchronous_Job_Handler*, void* _data) {
 
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
     char buf[1024];
-    int64_t read_result = data->std_out.read_text(buf, sizeof(buf), &data->carry);
-    if (read_result > 0) {
-        data->output_xml.reserve(cz::heap_allocator(), read_result);
-        data->output_xml.append({buf, (size_t)read_result});
-        return false;
-    } else if (read_result == 0) {
-        // End of file
-        data->std_out.close();
-        data->process.join();
+    for (int reads = 0; reads < 128; ++reads) {
+        int64_t read_result = data->std_out.read_text(buf, sizeof(buf), &data->carry);
+        if (read_result > 0) {
+            data->output_xml.reserve(cz::heap_allocator(), read_result);
+            data->output_xml.append({buf, (size_t)read_result});
+            continue;
+        } else if (read_result == 0) {
+            // End of file
+            data->std_out.close();
+            data->process.join();
 
-        cz::Arc<Buffer_Handle> handle;
-        if (data->buffer_handle.upgrade(&handle)) {
-            CZ_DEFER(handle.drop());
-            parse_and_apply_replacements(handle.get(),
-                                         {data->output_xml.buffer(), data->output_xml.len()},
-                                         data->change_index);
+            cz::Arc<Buffer_Handle> handle;
+            if (data->buffer_handle.upgrade(&handle)) {
+                CZ_DEFER(handle.drop());
+                parse_and_apply_replacements(handle.get(),
+                                             {data->output_xml.buffer(), data->output_xml.len()},
+                                             data->change_index);
+            }
+
+            data->output_xml.drop(cz::heap_allocator());
+            cz::heap_allocator().dealloc(data);
+            return true;
+        } else {
+            // Nothing to read right now
+            return false;
         }
-
-        data->output_xml.drop(cz::heap_allocator());
-        cz::heap_allocator().dealloc(data);
-        return true;
-    } else {
-        // Nothing to read right now
-        return false;
     }
+
+    // Let another job run.
+    return false;
 }
 
 static void clang_format_job_kill(void* _data) {

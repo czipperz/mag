@@ -29,28 +29,33 @@ static bool process_append_job_tick(Asynchronous_Job_Handler*, void* _data) {
 
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
     char buf[1024];
-    int64_t read_result = data->std_out.read_text(buf, sizeof(buf), &data->carry);
-    if (read_result > 0) {
-        cz::Arc<Buffer_Handle> handle;
-        if (!data->buffer_handle.upgrade(&handle)) {
-            process_append_job_kill(data);
-            return true;
-        }
-        CZ_DEFER(handle.drop());
+    for (int reads = 0; reads < 128; ++reads) {
+        int64_t read_result = data->std_out.read_text(buf, sizeof(buf), &data->carry);
+        if (read_result > 0) {
+            cz::Arc<Buffer_Handle> handle;
+            if (!data->buffer_handle.upgrade(&handle)) {
+                process_append_job_kill(data);
+                return true;
+            }
+            CZ_DEFER(handle.drop());
 
-        WITH_BUFFER_HANDLE(handle);
-        buffer->contents.append({buf, (size_t)read_result});
-        return false;
-    } else if (read_result == 0) {
-        // End of file
-        data->std_out.close();
-        data->process.join();
-        cz::heap_allocator().dealloc(data);
-        return true;
-    } else {
-        // Nothing to read right now
-        return false;
+            WITH_BUFFER_HANDLE(handle);
+            buffer->contents.append({buf, (size_t)read_result});
+            continue;
+        } else if (read_result == 0) {
+            // End of file
+            data->std_out.close();
+            data->process.join();
+            cz::heap_allocator().dealloc(data);
+            return true;
+        } else {
+            // Nothing to read right now
+            return false;
+        }
     }
+
+    // Let another job run.
+    return false;
 }
 
 Asynchronous_Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
