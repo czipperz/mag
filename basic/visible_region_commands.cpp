@@ -25,12 +25,11 @@ void command_up_page(Editor* editor, Command_Source source) {
     compute_visible_start(window, &it);
     window->start_position = it.position;
 
-    // We move forward one line to prevent the start position from being overridden
-    // in the rendering process.  But if we're at the start of the buffer then
-    // going forward one line because looks weird and won't be overridden anyway.
-    if (!it.at_bob()) {
-        forward_line(buffer->mode, &it);
-    }
+    // Go to the start of 1 row from the end of the visible region.
+    window->rows -= 1;
+    CZ_DEFER(window->rows += 1);
+    compute_visible_end(window, &it);
+    forward_char(&it);
 
     window->cursors[0].point = it.position;
 }
@@ -43,11 +42,12 @@ void command_down_page(Editor* editor, Command_Source source) {
     forward_char(&it);
     window->start_position = it.position;
 
-    // Go to the start of 1 row from the end of the visible region.
-    window->rows -= 1;
-    CZ_DEFER(window->rows += 1);
-    compute_visible_end(window, &it);
-    forward_char(&it);
+    // We move forward one line to prevent the start position from being overridden
+    // in the rendering process.  But if we're at the start of the buffer then
+    // going forward one line because looks weird and won't be overridden anyway.
+    if (!it.at_bob()) {
+        forward_line(buffer->mode, &it);
+    }
 
     window->cursors[0].point = it.position;
 }
