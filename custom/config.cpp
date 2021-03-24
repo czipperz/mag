@@ -266,6 +266,7 @@ static Theme create_theme() {
 #else
     theme.font_file = "/usr/share/fonts/TTF/MesloLGMDZ-Regular.ttf";
 #endif
+    theme.font_size = 15;
 
     theme.colors = mag::theme::solarized_dark;
 

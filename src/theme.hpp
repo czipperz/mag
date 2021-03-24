@@ -11,6 +11,7 @@ struct Overlay;
 
 struct Theme {
     const char* font_file;
+    uint32_t font_size;
 
     /// The colors to be defined.  Note that they are not always available.
     ///
