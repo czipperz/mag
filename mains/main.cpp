@@ -214,17 +214,17 @@ MMM             MMM\n\
 MMMM           MMMM\n\
 MM MM         MM MM\n\
 MM  MM       MM  MM\n\
-MM  MM.     .MM  MM      .aaaaaa.      .gggggg.\n\
-MM   MM     MM   MM    aa^      aa    ggg    ggg\n\
-MM    MMM MMM    MM   aa        aa    gg      gg\n\
-MM     MMMMM     MM   aa        aa    gg      gg\n\
-MM     ^MMM^     MM    aaa      aa    ggg.   ggg\n\
-MM      ^M^      MM      ^aaaaa^ ^a    ^gggggggg\n\
-                                              gg\n\
-Mag: A customizable text editoor.             gg\n\
-                                              gg\n\
-     ggg.             .g.          .g.      ggg\n\
-         ^ggggggggggg^   ^gggggggg^   ^ggggg^\n\
+MM  MM.     .MM  MM      .aaaaa.      .gggggg.\n\
+MM   MM     MM   MM    aa^     aa    ggg    ggg\n\
+MM    MMM MMM    MM   aa       aa    gg      gg\n\
+MM     MMMMM     MM   aa       aa    gg      gg\n\
+MM     ^MMM^     MM    aaa     aa    ggg.   ggg\n\
+MM      ^M^      MM      ^aaaa^ ^a    ^gggggggg\n\
+                                             gg\n\
+Mag: A customizable text editor.             gg\n\
+                                             gg\n\
+     ggg.             .g.          .g.     ggg\n\
+         ^ggggggggggg^   ^gggggggg^   ^gggg^\n\
 \n\
 Main key bindings:\n\
 \n\
