@@ -138,7 +138,9 @@ static Key_Map create_key_map() {
     BIND(key_map, "A->", command_end_of_buffer);
 
     BIND(key_map, "C-x C-p", command_pop_jump);
+    BIND(key_map, "A-LEFT", command_pop_jump);
     BIND(key_map, "C-x C-n", command_unpop_jump);
+    BIND(key_map, "A-RIGHT", command_unpop_jump);
     BIND(key_map, "C-x C-SPACE", command_push_jump);
     BIND(key_map, "C-x C-@", command_push_jump);
 
