@@ -85,6 +85,11 @@ static void command_switch_buffer_callback(Editor* editor,
     }
 
 cont:
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        push_jump(window, client, buffer);
+    }
+
     client->set_selected_buffer(handle->id);
 }
 
