@@ -1,5 +1,6 @@
 #include "render.hpp"
 
+#include <math.h>
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/sort.hpp>
@@ -149,8 +150,9 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         // Ensure the cursor is visible
         uint64_t selected_cursor_position = window->cursors[0].point;
         Contents_Iterator second_visible_line_iterator = iterator;
-        forward_line(buffer->mode, &second_visible_line_iterator);
-        if (selected_cursor_position < second_visible_line_iterator.position) {
+        end_of_line(&second_visible_line_iterator);
+        forward_char(&second_visible_line_iterator);
+        if (iterator.position != 0 && selected_cursor_position < second_visible_line_iterator.position) {
             // We are above the second visible line and thus readjust
             iterator = buffer->contents.iterator_at(selected_cursor_position);
             start_of_line(&iterator);
@@ -162,9 +164,11 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             // We are below the "visible" section of the buffer ie on the last line or beyond
             // the last line.
             iterator = buffer->contents.iterator_at(selected_cursor_position);
-            start_of_line(&iterator);
-            forward_line(buffer->mode, &iterator);
-            compute_visible_start(window, &iterator);
+            {
+                --window->rows;
+                CZ_DEFER(++window->rows);
+                compute_visible_start(window, &iterator);
+            }
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
 
             window_cache->v.unified.animation.slam_on_the_breaks = false;
@@ -172,11 +176,14 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
 
         // Setup animation.
         if (window_cache->v.unified.animation.slam_on_the_breaks) {
-            window_cache->v.unified.animation.speed *= 0.5f;
             if (window_cache->v.unified.animation.speed > 0) {
+                window_cache->v.unified.animation.speed -= 0.9f;
+                window_cache->v.unified.animation.speed /= 1.3f;
                 window_cache->v.unified.animation.speed =
                     std::max(window_cache->v.unified.animation.speed, 1.0f);
             } else {
+                window_cache->v.unified.animation.speed += 0.9f;
+                window_cache->v.unified.animation.speed /= 1.3f;
                 window_cache->v.unified.animation.speed =
                     std::min(window_cache->v.unified.animation.speed, -1.0f);
             }
@@ -206,27 +213,58 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
 
             iterator.go_to(window_cache->v.unified.animation.visible_start);
 
-            // Offset the start by the speed.
             if (window_cache->v.unified.animation.speed < 0) {
-                if (window_cache->v.unified.animation.speed > -(float)window->rows ||
-                    !buffer->token_cache.is_covered(window->start_position)) {
-                    // Until we're going really fast go line by line.
-                    for (float i = window_cache->v.unified.animation.speed; i < 0; ++i) {
+                // If we're within one page and over half way there then start breaking.
+                Contents_Iterator end_iterator = iterator;
+                end_iterator.retreat_to(window->start_position);
+                compute_visible_end(window, &end_iterator);
+
+                bool force_break = false;
+                float speed_loop_speed = 0;
+                if (!window_cache->v.unified.animation.slam_on_the_breaks &&
+                    (iterator.position <= end_iterator.position ||
+                     window_cache->v.unified.animation.speed <= -(float)window->rows)) {
+                    size_t lines = 0;
+                    Contents_Iterator it = iterator;
+                    it.retreat_to(window->start_position);
+                    while (it.position < end_iterator.position) {
+                        end_of_line(&it);
+                        forward_char(&it);
+                        ++lines;
+                    }
+
+                    float distance = 0;
+                    while (1) {
+                        speed_loop_speed *= 1.3f;
+                        speed_loop_speed += 0.9f;
+                        distance += ceilf(speed_loop_speed);
+                        if (distance >= lines) {
+                            break;
+                        }
+                    }
+
+                    force_break = speed_loop_speed <= -window_cache->v.unified.animation.speed;
+                }
+
+                if (window_cache->v.unified.animation.slam_on_the_breaks ||
+                    (!force_break &&
+                     // We haven't tokenized enough to leap all the way without stalling.
+                     (window_cache->v.unified.animation.speed > -(float)window->rows ||
+                      !buffer->token_cache.is_covered(window->start_position)))) {
+                    // Until we're going really fast or over half way there, go line by line.
+                    for (float i = -window_cache->v.unified.animation.speed; i > 0; --i) {
                         backward_char(&iterator);
                         start_of_line(&iterator);
                     }
                 } else {
                     // Teleport almost all the way there.
-                    uint64_t pos = iterator.position;
-                    iterator.retreat_to(window->start_position);
-
-                    compute_visible_end(window, &iterator);
                     window_cache->v.unified.animation.slam_on_the_breaks = true;
-                    window_cache->v.unified.animation.speed = -(float)window->rows;
+                    window_cache->v.unified.animation.speed = -speed_loop_speed * 0.9f;
 
-                    if (iterator.position >= pos) {
-                        iterator.retreat_to(window->start_position);
+                    if (end_iterator.position >= iterator.position) {
+                        end_iterator.retreat_to(window->start_position);
                     }
+                    iterator = end_iterator;
                 }
 
                 CZ_DEBUG_ASSERT(window->start_position == window_cache->v.unified.visible_start);
@@ -236,26 +274,59 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                     window_cache->v.unified.animation.slam_on_the_breaks = false;
                 }
             }
+
             if (window_cache->v.unified.animation.speed > 0) {
-                if (window_cache->v.unified.animation.speed < (float)window->rows ||
-                    !buffer->token_cache.is_covered(window->start_position)) {
-                    // Until we're going really fast go line by line.
+                // If we're within one page and over half way there then start breaking.
+                Contents_Iterator start_iterator = iterator;
+                start_iterator.advance_to(window->start_position);
+                compute_visible_start(window, &start_iterator);
+
+                bool force_break = false;
+                float speed_loop_speed = 0;
+                if (!window_cache->v.unified.animation.slam_on_the_breaks &&
+                    (iterator.position >= start_iterator.position ||
+                     window_cache->v.unified.animation.speed >= (float)window->rows)) {
+                    size_t lines = 1;
+                    Contents_Iterator it = iterator;
+                    it.advance_to(window->start_position);
+                    while (it.position > start_iterator.position) {
+                        backward_char(&it);
+                        start_of_line(&it);
+                        ++lines;
+                    }
+
+                    float distance = 0;
+                    while (1) {
+                        speed_loop_speed *= 1.3f;
+                        speed_loop_speed += 0.9f;
+                        distance += ceilf(speed_loop_speed);
+                        if (distance >= lines) {
+                            break;
+                        }
+                    }
+
+                    force_break = speed_loop_speed <= window_cache->v.unified.animation.speed;
+                }
+
+                if (window_cache->v.unified.animation.slam_on_the_breaks ||
+                    (!force_break &&
+                     // We haven't tokenized enough to leap all the way without stalling.
+                     (window_cache->v.unified.animation.speed < (float)window->rows ||
+                      !buffer->token_cache.is_covered(window->start_position)))) {
+                    // Until we're going really fast or over half way there, go line by line.
                     for (float i = window_cache->v.unified.animation.speed; i > 0; --i) {
                         end_of_line(&iterator);
                         forward_char(&iterator);
                     }
                 } else {
                     // Teleport almost all the way there.
-                    uint64_t pos = iterator.position;
-                    iterator.advance_to(window->start_position);
-
-                    compute_visible_start(window, &iterator);
                     window_cache->v.unified.animation.slam_on_the_breaks = true;
-                    window_cache->v.unified.animation.speed = (float)window->rows;
+                    window_cache->v.unified.animation.speed = speed_loop_speed * 0.9f;
 
-                    if (iterator.position <= pos) {
-                        iterator.advance_to(window->start_position);
+                    if (start_iterator.position <= iterator.position) {
+                        start_iterator.advance_to(window->start_position);
                     }
+                    iterator = start_iterator;
                 }
 
                 CZ_DEBUG_ASSERT(window->start_position == window_cache->v.unified.visible_start);
