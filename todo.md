@@ -28,5 +28,10 @@
   - right click
   - scroll
 
+* File tree
+* List symbols in file
+* Global background job
+* Add more documentation
+
 # Bugs
 * Screen jumps when cursor is at the bottom and inserting text
