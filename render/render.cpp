@@ -184,8 +184,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             if (window_cache->v.unified.animation.speed < 0) {
                 window_cache->v.unified.animation.speed = 0;
             }
-            window_cache->v.unified.animation.speed += 2;
             window_cache->v.unified.animation.speed *= 1.3f;
+            window_cache->v.unified.animation.speed += 0.9f;
             if (window_cache->v.unified.animation.speed > (float)window->rows) {
                 window_cache->v.unified.animation.speed = (float)window->rows;
             }
@@ -193,8 +193,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             if (window_cache->v.unified.animation.speed > 0) {
                 window_cache->v.unified.animation.speed = 0;
             }
-            window_cache->v.unified.animation.speed -= 2;
             window_cache->v.unified.animation.speed *= 1.3f;
+            window_cache->v.unified.animation.speed -= 0.9f;
             if (window_cache->v.unified.animation.speed < -(float)window->rows) {
                 window_cache->v.unified.animation.speed = -(float)window->rows;
             }
