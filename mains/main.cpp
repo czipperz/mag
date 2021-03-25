@@ -7,6 +7,7 @@
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
 #include <cz/str.hpp>
+#include <cz/working_directory.hpp>
 #include "basic/window_commands.hpp"
 #include "client.hpp"
 #include "command.hpp"
@@ -133,6 +134,33 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     }
 
     goto open;
+}
+
+static void switch_to_the_home_directory() {
+    ZoneScoped;
+
+    // Go home only we are in the program directory or we can't identify ourselves.
+    cz::String wd = {};
+    CZ_DEFER(wd.drop(cz::heap_allocator()));
+    if (cz::get_working_directory(cz::heap_allocator(), &wd).is_ok()) {
+        cz::Str prog_dir = program_dir;
+        // Get rid of the trailing / as it isn't in the working directory.
+        prog_dir.len--;
+        if (prog_dir != wd) {
+            return;
+        }
+    }
+
+    const char* user_home_path;
+#ifdef _WIN32
+    user_home_path = getenv("USERPROFILE");
+#else
+    user_home_path = getenv("HOME");
+#endif
+
+    if (user_home_path) {
+        cz::set_working_directory(user_home_path);
+    }
 }
 
 int mag_main(int argc, char** argv) {
@@ -281,6 +309,8 @@ Configuration should be done by editing `custom/config.cpp`.\n\
                 open_arg(&server.editor, &client, arg, &opened_count);
             }
         }
+
+        switch_to_the_home_directory();
 
         switch (chosen_client) {
 #ifdef HAS_NCURSES
