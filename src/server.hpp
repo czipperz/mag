@@ -23,11 +23,7 @@ struct Server {
     Editor editor;
 
     std::thread* job_thread;
-    cz::Mutex* job_mutex;
-    cz::Vector<Asynchronous_Job>* job_jobs;
-    cz::Vector<Synchronous_Job>* job_pending_jobs;
-    cz::String* job_message;
-    bool* job_stop;
+    void* job_data_;
 
 #ifdef TRACY_ENABLE
     tracy::SharedLockableCtx* job_mutex_context;
