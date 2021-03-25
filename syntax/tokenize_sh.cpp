@@ -28,7 +28,8 @@ static bool advance_whitespace(Contents_Iterator* iterator, bool* at_start_of_st
 
 static bool is_separator(char ch) {
     return ch == '?' || ch == '*' || ch == ';' || ch == '<' || ch == '|' || ch == '>' ||
-           ch == '&' || ch == '{' || ch == '(' || ch == '[' || ch == '}' || ch == ')' || ch == ']';
+           ch == '&' || ch == '{' || ch == '(' || ch == '[' || ch == '}' || ch == ')' ||
+           ch == ']' || ch == '+';
 }
 
 static bool is_general(char ch) {
