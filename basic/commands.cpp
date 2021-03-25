@@ -1094,6 +1094,7 @@ static void command_goto_line_callback(Editor* editor, Client* client, cz::Str s
 
     Contents_Iterator iterator = start_of_line_position(buffer->contents, lines);
     window->cursors[0].point = iterator.position;
+    center_in_window(window, iterator);
 }
 
 static void command_goto_position_callback(Editor* editor,
@@ -1105,7 +1106,11 @@ static void command_goto_position_callback(Editor* editor,
 
     WITH_CONST_SELECTED_BUFFER(client);
     push_jump(window, client, buffer);
-    window->cursors[0].point = cz::min(position, buffer->contents.len);
+
+    Contents_Iterator iterator =
+        buffer->contents.iterator_at(cz::min(position, buffer->contents.len));
+    window->cursors[0].point = iterator.position;
+    center_in_window(window, iterator);
 }
 
 void command_goto_line(Editor* editor, Command_Source source) {
