@@ -1,15 +1,16 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
 #include <cz/vector.hpp>
 #include "buffer_id.hpp"
-#include "cursor.hpp"
 #include "completion.hpp"
+#include "cursor.hpp"
 
 namespace mag {
 struct Buffer;
+struct Contents_Iterator;
 
-struct Change;
 struct Window_Split;
 
 struct Window {
@@ -71,5 +72,10 @@ struct Window_Split : Window {
 
 struct Client;
 void kill_extra_cursors(Window_Unified* window, Client* client);
+
+Contents_Iterator nearest_character(const Window_Unified* window,
+                                    const Buffer* buffer,
+                                    uint32_t row,
+                                    uint32_t column);
 
 }

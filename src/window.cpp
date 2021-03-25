@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <Tracy.hpp>
+#include <algorithm>
 #include <cz/heap.hpp>
 #include "buffer.hpp"
 #include "change.hpp"
@@ -190,6 +191,66 @@ void kill_extra_cursors(Window_Unified* window, Client* client) {
         client->global_copy_chain = copy_chain;
         window->cursors[0].local_copy_chain = nullptr;
     }
+}
+
+Contents_Iterator nearest_character(const Window_Unified* window,
+                                    const Buffer* buffer,
+                                    uint32_t row,
+                                    uint32_t column) {
+    Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
+
+    row = std::min(row, (uint32_t)window->rows - 1);
+    column = std::min(column, (uint32_t)window->cols - 1);
+
+    uint32_t it_row = 0;
+    uint32_t it_column = 0;
+    if (it_row == row) {
+        goto match_column;
+    }
+
+    // Find the visual row that matches.
+    while (!iterator.at_eob()) {
+        char ch = iterator.get();
+        ++it_column;
+        iterator.advance();
+
+        // Every character is rendered at one width.
+        if (it_column == window->cols + 1) {
+            ++it_row;
+            it_column = 0;
+            if (it_row == row) {
+                goto match_column;
+            }
+        }
+
+        // Then newlines wrap after they are rendered.
+        if (ch == '\n') {
+            ++it_row;
+            it_column = 0;
+            if (it_row == row) {
+                goto match_column;
+            }
+        }
+    }
+
+match_column:
+    // Find the visual column that matches.
+    while (!iterator.at_eob()) {
+        ++it_column;
+
+        if (it_column == column) {
+            break;
+        }
+
+        // End of the line so this is the best guess.
+        if (iterator.get() == '\n') {
+            break;
+        }
+
+        iterator.advance();
+    }
+
+    return iterator;
 }
 
 }
