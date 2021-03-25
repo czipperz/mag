@@ -566,6 +566,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.key_map = man_key_map();
         } else if (buffer->name == "*key map*") {
             buffer->mode.key_map = key_map_key_map();
+        } else if (buffer->name == "*splash page*") {
+            buffer->mode.use_tabs = false;
         }
         break;
 
