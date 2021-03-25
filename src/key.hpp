@@ -37,6 +37,10 @@ enum Key_Code : uint16_t {
     LEFT,
     RIGHT,
 
+    // Mouse events
+    MOUSE4, // side button usually bound to backwards
+    MOUSE5, // side button usually bound to forwards
+
     // Mouse scroll events
     SCROLL_UP,
     SCROLL_DOWN,

@@ -237,6 +237,16 @@ static void process_event(Server* server,
             spq.data = MOUSE_RIGHT;
             mouse->sp_queries.reserve(cz::heap_allocator(), 1);
             mouse->sp_queries.push(spq);
+        } else if (event.button.button == SDL_BUTTON_X1) {
+            Key key;
+            key.modifiers = 0;
+            key.code = Key_Code::MOUSE4;
+            server->receive(client, key);
+        } else if (event.button.button == SDL_BUTTON_X2) {
+            Key key;
+            key.modifiers = 0;
+            key.code = Key_Code::MOUSE5;
+            server->receive(client, key);
         }
         break;
     }
@@ -413,6 +423,10 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
     for (size_t spqi = 0; spqi < spqs.len; ++spqi) {
         Screen_Position_Query spq = spqs[spqi];
         if (spq.data == MOUSE_MOVE) {
+            client->mouse.window = spq.sp.window;
+            client->mouse.row = spq.sp.window_row;
+            client->mouse.column = spq.sp.window_column;
+
             mouse->mouse_pos = spq.sp;
             if (mouse->mouse_down && spq.sp.found_window && spq.sp.found_position &&
                 mouse->mouse_down_pos.found_window && mouse->mouse_down_pos.found_position &&

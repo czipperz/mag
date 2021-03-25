@@ -41,6 +41,9 @@ void stringify_key(cz::String* prefix, Key key) {
         KEY_CODE_CASE(LEFT);
         KEY_CODE_CASE(RIGHT);
 
+        KEY_CODE_CASE(MOUSE4);
+        KEY_CODE_CASE(MOUSE5);
+
         KEY_CODE_CASE(SCROLL_UP);
         KEY_CODE_CASE(SCROLL_DOWN);
         KEY_CODE_CASE(SCROLL_LEFT);

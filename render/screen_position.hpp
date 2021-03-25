@@ -11,6 +11,8 @@ struct Screen_Position {
     bool found_window = false;
     bool found_position = false;
     Window_Unified* window;
+    uint32_t window_row;
+    uint32_t window_column;
     uint64_t position;
 };
 

@@ -14,6 +14,12 @@
 
 namespace mag {
 
+struct Mouse_Position {
+    Window* window;
+    uint32_t row;
+    uint32_t column;
+};
+
 struct Client {
     cz::Vector<Key> key_chain;
     bool queue_quit;
@@ -26,6 +32,8 @@ struct Client {
     int system_copy_text(cz::Str text) {
         return system_copy_text_func(system_copy_text_data, text);
     }
+
+    Mouse_Position mouse;
 
     cz::Vector<Window_Unified*> _offscreen_windows;
     Window* window;

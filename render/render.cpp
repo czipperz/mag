@@ -665,6 +665,8 @@ static void draw_buffer(Cell* cells,
             start_row <= spqs[spqsi].in_y && spqs[spqsi].in_y < start_row + window->rows) {
             spqs[spqsi].sp.found_window = true;
             spqs[spqsi].sp.window = window;
+            spqs[spqsi].sp.window_row = spqs[spqsi].in_x - start_col;
+            spqs[spqsi].sp.window_column = spqs[spqsi].in_y - start_row;
         }
     }
 
