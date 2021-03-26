@@ -274,11 +274,29 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     cz::String user_path_nt = user_path.duplicate_null_terminate(cz::heap_allocator());
     CZ_DEFER(user_path_nt.drop(cz::heap_allocator()));
 
+    // Dereference home directory.
+    if (user_path_nt.starts_with("~")) {
+        const char* user_home_path;
+#ifdef _WIN32
+        user_home_path = getenv("USERPROFILE");
+#else
+        user_home_path = getenv("HOME");
+#endif
+
+        if (user_home_path) {
+            cz::Str home = user_home_path;
+            user_path_nt.reserve(cz::heap_allocator(), home.len);
+            user_path_nt.remove(0, 1);
+            user_path_nt.insert(0, home);
+            user_path_nt.null_terminate();
+        }
+    }
+
 #ifndef _WIN32
     // Don't dereference any symbolic links in `/proc` because the symbolic
     // links are often broken.  Example usage is `mag <(git diff)` will open
     // `/proc/self/fd/%d` with the result of the subcommand (`git diff`).
-    if (user_path.starts_with("/proc/")) {
+    if (user_path_nt.starts_with("/proc/")) {
         cz::path::convert_to_forward_slashes(user_path_nt.buffer(), user_path_nt.len());
 
         cz::String path = {};

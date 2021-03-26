@@ -483,7 +483,6 @@ static Key_Map create_mini_buffer_key_map() {
     BIND(key_map, "A->", command_last_completion);
 
     BIND(key_map, "C-l", command_path_up_directory);
-    BIND(key_map, "~", command_insert_home_directory);
 
     BIND(key_map, "A-i", command_insert_completion);
     BIND(key_map, "\t", command_insert_completion);

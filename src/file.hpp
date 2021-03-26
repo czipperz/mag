@@ -51,6 +51,8 @@ bool save_contents_to_temp_file(const Contents* contents,
 /// This is done by making the path absolute, converting back slashes
 /// to forward slashes, and then dereferencing all symbolic links.
 ///
+/// If the path starts with `~` then the `~` is replaced with the user home directory.
+///
 /// This also standardizes the capitalization of the path on Windows.
 cz::String standardize_path(cz::Allocator allocator, cz::Str user_path);
 
