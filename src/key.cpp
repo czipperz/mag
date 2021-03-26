@@ -41,6 +41,7 @@ void stringify_key(cz::String* prefix, Key key) {
         KEY_CODE_CASE(LEFT);
         KEY_CODE_CASE(RIGHT);
 
+        KEY_CODE_CASE(MOUSE3);
         KEY_CODE_CASE(MOUSE4);
         KEY_CODE_CASE(MOUSE5);
 

@@ -280,6 +280,27 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
     lookup_and_prompt(editor, source.client, directory.buffer(), query.as_str());
 }
 
+void command_move_mouse_and_lookup_at_point(Editor* editor, Command_Source source) {
+    if (!source.client->mouse.window || source.client->mouse.window->tag != Window::UNIFIED) {
+        return;
+    }
+
+    source.client->selected_normal_window = (Window_Unified*)source.client->mouse.window;
+
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        Contents_Iterator iterator =
+            nearest_character(source.client->selected_normal_window, buffer,
+                              source.client->mouse.row, source.client->mouse.column);
+        kill_extra_cursors(window, source.client);
+        window->cursors[0].point = iterator.position;
+    }
+
+    // This creates a race condition that the buffer hasn't modified
+    // but I don't think that it will likely matter in practice.
+    command_lookup_at_point(editor, source);
+}
+
 static void command_lookup_prompt_callback(Editor* editor,
                                            Client* client,
                                            cz::Str query,

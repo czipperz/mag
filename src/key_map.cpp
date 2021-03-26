@@ -91,6 +91,9 @@ static void parse_key(Key* key, size_t* i, cz::Str description) {
     } else if (d.starts_with("RIGHT")) {
         key->code = Key_Code::RIGHT;
         *i += 5;
+    } else if (d.starts_with("MOUSE3")) {
+        key->code = Key_Code::MOUSE3;
+        *i += 6;
     } else if (d.starts_with("MOUSE4")) {
         key->code = Key_Code::MOUSE4;
         *i += 6;

@@ -33,8 +33,8 @@ void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::
 void lookup_and_prompt(Editor* editor, Client* client, const char* directory, cz::Str query);
 
 void command_lookup_at_point(Editor* editor, Command_Source source);
-
 void command_lookup_prompt(Editor* editor, Command_Source source);
+void command_move_mouse_and_lookup_at_point(Editor* editor, Command_Source source);
 
 void command_complete_at_point(Editor* editor, Command_Source source);
 

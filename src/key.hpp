@@ -38,6 +38,7 @@ enum Key_Code : uint16_t {
     RIGHT,
 
     // Mouse events
+    MOUSE3, // middle mouse button
     MOUSE4, // side button usually bound to backwards
     MOUSE5, // side button usually bound to forwards
 

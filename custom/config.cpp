@@ -243,6 +243,7 @@ static Key_Map create_key_map() {
     BIND(key_map, "A-g A-t", gnu_global::command_lookup_at_point);
     BIND(key_map, "A-g t", gnu_global::command_lookup_prompt);
     BIND(key_map, "A-c", gnu_global::command_complete_at_point);
+    BIND(key_map, "MOUSE3", gnu_global::command_move_mouse_and_lookup_at_point);
 
     BIND(key_map, "A-l", command_goto_center_of_window);
     BIND(key_map, "C-l", command_center_in_window);
