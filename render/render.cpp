@@ -283,18 +283,19 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                     force_break = speed_loop_speed <= -window_cache->v.unified.animation.speed;
                 }
 
+                // If we are already breaking, haven't tokenized to leap all the way without
+                // stalling, or are moving too slow to teleport, then move line by line.
                 if (window_cache->v.unified.animation.slam_on_the_breaks ||
+                    !buffer->token_cache.is_covered(window->start_position) ||
                     (!force_break &&
-                     // We haven't tokenized enough to leap all the way without stalling.
-                     (window_cache->v.unified.animation.speed > -(float)window->rows ||
-                      !buffer->token_cache.is_covered(window->start_position)))) {
-                    // Until we're going really fast or over half way there, go line by line.
+                     window_cache->v.unified.animation.speed > -(float)window->rows)) {
+                    // Go line by line.
                     for (float i = -window_cache->v.unified.animation.speed; i > 0; --i) {
                         backward_char(&iterator);
                         start_of_line(&iterator);
                     }
                 } else {
-                    // Teleport almost all the way there.
+                    // Teleport almost all the way there and start breaking.
                     window_cache->v.unified.animation.slam_on_the_breaks = true;
                     window_cache->v.unified.animation.speed = -speed_loop_speed;
 
@@ -345,18 +346,19 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                     force_break = speed_loop_speed <= window_cache->v.unified.animation.speed;
                 }
 
+                // If we are already breaking, haven't tokenized to leap all the way without
+                // stalling, or are moving too slow to teleport, then move line by line.
                 if (window_cache->v.unified.animation.slam_on_the_breaks ||
+                    !buffer->token_cache.is_covered(window->start_position) ||
                     (!force_break &&
-                     // We haven't tokenized enough to leap all the way without stalling.
-                     (window_cache->v.unified.animation.speed < (float)window->rows ||
-                      !buffer->token_cache.is_covered(window->start_position)))) {
-                    // Until we're going really fast or over half way there, go line by line.
+                     window_cache->v.unified.animation.speed < (float)window->rows)) {
+                    // Go line by line.
                     for (float i = window_cache->v.unified.animation.speed; i > 0; --i) {
                         end_of_line(&iterator);
                         forward_char(&iterator);
                     }
                 } else {
-                    // Teleport almost all the way there.
+                    // Teleport almost all the way there and start breaking.
                     window_cache->v.unified.animation.slam_on_the_breaks = true;
                     window_cache->v.unified.animation.speed = speed_loop_speed;
 
