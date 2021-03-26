@@ -23,6 +23,17 @@ void command_up_page(Editor* editor, Command_Source source) {
     kill_extra_cursors(window, source.client);
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     compute_visible_start(window, &it);
+
+    // We are dealing with an absolutely massive line.  Go up
+    // one line and put the cursor at the top of the screen.
+    if (it.position == window->start_position && it.position > 0) {
+        backward_char(&it);
+        start_of_line(&it);
+        window->start_position = it.position;
+        window->cursors[0].point = it.position;
+        return;
+    }
+
     window->start_position = it.position;
 
     // Go to the start of 1 row from the end of the visible region.

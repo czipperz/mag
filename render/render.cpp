@@ -159,9 +159,13 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             start_of_line(&iterator);
             backward_char(&iterator);
             start_of_line(&iterator);
-            cache_window_unified_position(window, window_cache, iterator.position, buffer);
 
-            window_cache->v.unified.animation.slam_on_the_breaks = false;
+            // Don't readjust if the line above us is absolutely massive
+            // because we just get caught in a loop going up and down.
+            if (selected_cursor_position - iterator.position < (window->rows - 2) * window->cols) {
+                cache_window_unified_position(window, window_cache, iterator.position, buffer);
+                window_cache->v.unified.animation.slam_on_the_breaks = false;
+            }
         } else if (selected_cursor_position > window_cache->v.unified.visible_end) {
             // We are below the "visible" section of the buffer ie on the last line or beyond
             // the last line.
