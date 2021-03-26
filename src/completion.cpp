@@ -232,6 +232,25 @@ static void file_completion_engine_data_cleanup(void* _data) {
 static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
     const char* dir_sep = query.rfind('/');
     if (dir_sep) {
+        // Replace ~ with user home directory.
+        if (query.starts_with("~/")) {
+            const char* user_home_path;
+#ifdef _WIN32
+            user_home_path = getenv("USERPROFILE");
+#else
+            user_home_path = getenv("HOME");
+#endif
+
+            if (user_home_path) {
+                cz::Str home = user_home_path;
+                size_t len = dir_sep - (query.buffer + 1) + 1;
+                directory->reserve(cz::heap_allocator(), home.len + len + 1);
+                directory->append(home);
+                directory->append({query.buffer + 1, len});
+                return {query.buffer, len + 1};
+            }
+        }
+
         // Normal case: "./u" or "/a/b/c".
         size_t len = dir_sep - query.buffer + 1;
         directory->reserve(cz::heap_allocator(), len + 1);
