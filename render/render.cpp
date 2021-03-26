@@ -174,34 +174,38 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             window_cache->v.unified.animation.slam_on_the_breaks = false;
         }
 
+        float speed_start = 0;
+        float speed_increment = 0.5f;
+        float speed_multiplier = 1.3f;
+
         // Setup animation.
         if (window_cache->v.unified.animation.slam_on_the_breaks) {
             if (window_cache->v.unified.animation.speed > 0) {
-                window_cache->v.unified.animation.speed -= 0.9f;
-                window_cache->v.unified.animation.speed /= 1.3f;
+                window_cache->v.unified.animation.speed -= speed_increment;
+                window_cache->v.unified.animation.speed /= speed_multiplier;
                 window_cache->v.unified.animation.speed =
                     std::max(window_cache->v.unified.animation.speed, 1.0f);
             } else {
-                window_cache->v.unified.animation.speed += 0.9f;
-                window_cache->v.unified.animation.speed /= 1.3f;
+                window_cache->v.unified.animation.speed += speed_increment;
+                window_cache->v.unified.animation.speed /= speed_multiplier;
                 window_cache->v.unified.animation.speed =
                     std::min(window_cache->v.unified.animation.speed, -1.0f);
             }
         } else if (window_cache->v.unified.animation.visible_start < iterator.position) {
-            if (window_cache->v.unified.animation.speed < 0) {
-                window_cache->v.unified.animation.speed = 0;
+            if (window_cache->v.unified.animation.speed <= 0) {
+                window_cache->v.unified.animation.speed = speed_start;
             }
-            window_cache->v.unified.animation.speed *= 1.3f;
-            window_cache->v.unified.animation.speed += 0.9f;
+            window_cache->v.unified.animation.speed *= speed_multiplier;
+            window_cache->v.unified.animation.speed += speed_increment;
             if (window_cache->v.unified.animation.speed > (float)window->rows) {
                 window_cache->v.unified.animation.speed = (float)window->rows;
             }
         } else if (window_cache->v.unified.animation.visible_start > iterator.position) {
-            if (window_cache->v.unified.animation.speed > 0) {
-                window_cache->v.unified.animation.speed = 0;
+            if (window_cache->v.unified.animation.speed >= 0) {
+                window_cache->v.unified.animation.speed = speed_start;
             }
-            window_cache->v.unified.animation.speed *= 1.3f;
-            window_cache->v.unified.animation.speed -= 0.9f;
+            window_cache->v.unified.animation.speed *= speed_multiplier;
+            window_cache->v.unified.animation.speed -= speed_increment;
             if (window_cache->v.unified.animation.speed < -(float)window->rows) {
                 window_cache->v.unified.animation.speed = -(float)window->rows;
             }
@@ -220,7 +224,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 compute_visible_end(window, &end_iterator);
 
                 bool force_break = false;
-                float speed_loop_speed = 0;
+                float speed_loop_speed = speed_start;
                 if (!window_cache->v.unified.animation.slam_on_the_breaks &&
                     (iterator.position <= end_iterator.position ||
                      window_cache->v.unified.animation.speed <= -(float)window->rows)) {
@@ -235,8 +239,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
 
                     float distance = 0;
                     while (1) {
-                        speed_loop_speed *= 1.3f;
-                        speed_loop_speed += 0.9f;
+                        speed_loop_speed *= speed_multiplier;
+                        speed_loop_speed += speed_increment;
                         distance += ceilf(speed_loop_speed);
                         if (distance >= lines) {
                             break;
@@ -259,7 +263,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 } else {
                     // Teleport almost all the way there.
                     window_cache->v.unified.animation.slam_on_the_breaks = true;
-                    window_cache->v.unified.animation.speed = -speed_loop_speed * 0.9f;
+                    window_cache->v.unified.animation.speed = -speed_loop_speed;
 
                     if (end_iterator.position >= iterator.position) {
                         end_iterator.retreat_to(window->start_position);
@@ -282,7 +286,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 compute_visible_start(window, &start_iterator);
 
                 bool force_break = false;
-                float speed_loop_speed = 0;
+                float speed_loop_speed = speed_start;
                 if (!window_cache->v.unified.animation.slam_on_the_breaks &&
                     (iterator.position >= start_iterator.position ||
                      window_cache->v.unified.animation.speed >= (float)window->rows)) {
@@ -297,8 +301,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
 
                     float distance = 0;
                     while (1) {
-                        speed_loop_speed *= 1.3f;
-                        speed_loop_speed += 0.9f;
+                        speed_loop_speed *= speed_multiplier;
+                        speed_loop_speed += speed_increment;
                         distance += ceilf(speed_loop_speed);
                         if (distance >= lines) {
                             break;
@@ -321,7 +325,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 } else {
                     // Teleport almost all the way there.
                     window_cache->v.unified.animation.slam_on_the_breaks = true;
-                    window_cache->v.unified.animation.speed = speed_loop_speed * 0.9f;
+                    window_cache->v.unified.animation.speed = speed_loop_speed;
 
                     if (start_iterator.position <= iterator.position) {
                         start_iterator.advance_to(window->start_position);
