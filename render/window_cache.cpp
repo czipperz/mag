@@ -52,6 +52,7 @@ void cache_window_unified_create(Editor* editor,
     WITH_WINDOW_BUFFER(window);
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified.id = window->id;
+    window_cache->v.unified.cursor_count = window->cursors.len();
     window_cache->v.unified.animation = {};
     window_cache->v.unified.animation.visible_start = window->start_position;
     cache_window_unified_position(window, window_cache, window->start_position, buffer);

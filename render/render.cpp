@@ -152,11 +152,13 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         Contents_Iterator second_visible_line_iterator = iterator;
         end_of_line(&second_visible_line_iterator);
         forward_char(&second_visible_line_iterator);
-        if (iterator.position != 0 && selected_cursor_position < second_visible_line_iterator.position) {
+        if (iterator.position != 0 &&
+            selected_cursor_position < second_visible_line_iterator.position) {
             // We are above the second visible line and thus readjust
             iterator = buffer->contents.iterator_at(selected_cursor_position);
             start_of_line(&iterator);
-            backward_line(buffer->mode, &iterator);
+            backward_char(&iterator);
+            start_of_line(&iterator);
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
 
             window_cache->v.unified.animation.slam_on_the_breaks = false;
@@ -173,6 +175,33 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
 
             window_cache->v.unified.animation.slam_on_the_breaks = false;
         }
+
+        // Test if we can fit any of the newly created cursors on the screen.
+        if (window->cursors.len() > window_cache->v.unified.cursor_count) {
+            for (size_t c = window->cursors.len(); c-- > window_cache->v.unified.cursor_count;) {
+                // Test if we can put this cursor on the screen
+                // without bumping the primary cursor off.
+                Contents_Iterator start_iterator =
+                    buffer->contents.iterator_at(window->cursors[c].point);
+                {
+                    --window->rows;
+                    CZ_DEFER(++window->rows);
+                    compute_visible_start(window, &start_iterator);
+                }
+
+                Contents_Iterator test_iterator = start_iterator;
+                end_of_line(&test_iterator);
+                forward_char(&test_iterator);
+
+                if (window->cursors[0].point >= test_iterator.position) {
+                    iterator = start_iterator;
+                    cache_window_unified_position(window, window_cache, iterator.position, buffer);
+                    window_cache->v.unified.animation.slam_on_the_breaks = false;
+                    break;
+                }
+            }
+        }
+        window_cache->v.unified.cursor_count = window->cursors.len();
 
         float speed_start = 0;
         float speed_increment = 0.5f;
