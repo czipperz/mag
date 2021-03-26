@@ -5,10 +5,6 @@
 #include "editor.hpp"
 #include "key_map.hpp"
 
-#ifdef TRACY_ENABLE
-#include <tracy/client/TracyLock.hpp>
-#endif
-
 namespace cz {
 struct Mutex;
 struct String;
@@ -24,10 +20,6 @@ struct Server {
 
     std::thread* job_thread;
     void* job_data_;
-
-#ifdef TRACY_ENABLE
-    tracy::SharedLockableCtx* job_mutex_context;
-#endif
 
     cz::String pending_message;
 

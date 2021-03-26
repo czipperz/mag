@@ -209,17 +209,17 @@ bool Server::slurp_jobs() {
     auto data = (Run_Jobs_Data*)job_data_;
 
 #ifdef TRACY_ENABLE
-    const auto run_after = job_mutex_context->BeforeLock();
+    const auto run_after = data->mutex_context->BeforeLock();
 #endif
     data->mutex.lock();
 #ifdef TRACY_ENABLE
     if (run_after) {
-        job_mutex_context->AfterLock();
+        data->mutex_context->AfterLock();
     }
 #endif
 
 #ifdef TRACY_ENABLE
-    CZ_DEFER(job_mutex_context->AfterUnlock());
+    CZ_DEFER(data->mutex_context->AfterUnlock());
 #endif
     CZ_DEFER(data->mutex.unlock());
 
