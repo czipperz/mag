@@ -10,6 +10,11 @@ namespace mag {
 namespace basic {
 
 static void command_open_file_callback(Editor* editor, Client* client, cz::Str query, void* data) {
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        push_jump(window, client, buffer);
+    }
+
     open_file(editor, client, query);
 }
 
