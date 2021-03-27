@@ -72,8 +72,7 @@ struct Contents_Iterator {
     void retreat() {
         CZ_DEBUG_ASSERT(!at_bob());
         --position;
-        // :EmptyBuckets Once resolved, convert to if
-        while (index == 0) {
+        if (index == 0) {
             --bucket;
             index = contents->buckets[bucket].len;
         }
@@ -84,14 +83,9 @@ struct Contents_Iterator {
         CZ_DEBUG_ASSERT(!at_eob());
         ++position;
         ++index;
-        // :EmptyBuckets Once resolved, convert to if
-        while (index == contents->buckets[bucket].len) {
+        if (index == contents->buckets[bucket].len) {
             ++bucket;
             index = 0;
-            // :EmptyBuckets Once resolved, delete this
-            if (bucket == contents->buckets.len()) {
-                break;
-            }
         }
     }
 };

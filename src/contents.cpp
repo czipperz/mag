@@ -74,23 +74,39 @@ void Contents::remove(uint64_t start, uint64_t len) {
     CZ_DEBUG_ASSERT(start + len <= this->len);
     this->len -= len;
 
-    for (size_t v = 0; v < buckets.len(); ++v) {
+    for (size_t v = 0; v < buckets.len();) {
         if (start < buckets[v].len) {
             if (start + len <= buckets[v].len) {
                 bucket_remove(&buckets[v], &bucket_lfs[v], start, len);
+
+                // Remove empty buckets.
+                if (buckets[v].len == 0 && buckets.len() > 1) {
+                    cz::heap_allocator().dealloc(buckets[v].elems, CONTENTS_BUCKET_MAX_SIZE);
+                    buckets.remove(v);
+                    bucket_lfs.remove(v);
+                }
+
                 return;
             } else {
                 bucket_lfs[v] -= count_lines({buckets[v].elems + start, buckets[v].len - start});
 
-                // :EmptyBuckets This is where empty buckets are created, and
-                // then never reclaimed.  Perhaps we sort them to the end of the
-                // list periodically and then reuse them that way?
                 len -= buckets[v].len - start;
                 buckets[v].len = start;
                 start = 0;
+
+                // Remove empty buckets.
+                if (buckets[v].len == 0) {
+                    CZ_DEBUG_ASSERT(buckets.len() > 1);
+                    cz::heap_allocator().dealloc(buckets[v].elems, CONTENTS_BUCKET_MAX_SIZE);
+                    buckets.remove(v);
+                    bucket_lfs.remove(v);
+                } else {
+                    ++v;
+                }
             }
         } else {
             start -= buckets[v].len;
+            ++v;
         }
     }
 
@@ -355,9 +371,13 @@ void Contents_Iterator::advance(uint64_t offset) {
     CZ_DEBUG_ASSERT(position + offset <= contents->len);
     position += offset;
     index += offset;
-    while (index >= contents->buckets[bucket].len) {
+    while (1) {
         if (bucket == contents->buckets.len()) {
-            CZ_DEBUG_ASSERT(index == contents->buckets[bucket].len);
+            CZ_DEBUG_ASSERT(index == 0);
+            break;
+        }
+
+        if (index < contents->buckets[bucket].len) {
             break;
         }
 
