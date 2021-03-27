@@ -96,9 +96,11 @@ void Token_Cache::update(const Buffer* buffer) {
     cz::Slice<const Change> changes = buffer->changes;
     cz::Slice<const Change> pending_changes = {changes.elems + change_index,
                                                changes.len - change_index};
-    unsigned char* changed_check_points =
-        (unsigned char*)calloc(1, cz::bit_array::alloc_size(check_points.len()));
-    CZ_DEFER(free(changed_check_points));
+    unsigned char* changed_check_points = cz::heap_allocator().alloc_zeroed<unsigned char>(
+        cz::bit_array::alloc_size(check_points.len()));
+    CZ_ASSERT(changed_check_points);
+    CZ_DEFER(cz::heap_allocator().dealloc(changed_check_points,
+                                          cz::bit_array::alloc_size(check_points.len())));
     // Detect check points that changed
     for (size_t i = 1; i < check_points.len(); ++i) {
         uint64_t pos = check_points[i].position;

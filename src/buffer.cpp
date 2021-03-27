@@ -39,15 +39,15 @@ void Buffer::drop() {
 
     commits.drop(cz::heap_allocator());
 
-    unsigned char* dropped =
-        (unsigned char*)calloc(1, cz::bit_array::alloc_size(_commit_id_counter));
+    unsigned char* dropped = cz::heap_allocator().alloc_zeroed<unsigned char>(
+        cz::bit_array::alloc_size(_commit_id_counter));
     for (size_t i = 0; i < changes.len(); ++i) {
         if (!cz::bit_array::get(dropped, changes[i].commit.id.value)) {
             changes[i].commit.drop();
             cz::bit_array::set(dropped, changes[i].commit.id.value);
         }
     }
-    free(dropped);
+    cz::heap_allocator().dealloc(dropped, cz::bit_array::alloc_size(_commit_id_counter));
     changes.drop(cz::heap_allocator());
 
     contents.drop();

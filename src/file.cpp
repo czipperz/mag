@@ -180,11 +180,14 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
                          &files));
 
     cz::File_Time* file_times = cz::heap_allocator().alloc<cz::File_Time>(files.len());
+    CZ_ASSERT(file_times);
     CZ_DEFER(cz::heap_allocator().dealloc(file_times, files.len()));
 
     unsigned char* file_directories =
-        (unsigned char*)calloc(1, cz::bit_array::alloc_size(files.len()));
-    CZ_DEFER(free(file_directories));
+        cz::heap_allocator().alloc_zeroed<unsigned char>(cz::bit_array::alloc_size(files.len()));
+    CZ_ASSERT(file_directories);
+    CZ_DEFER(
+        cz::heap_allocator().dealloc(file_directories, cz::bit_array::alloc_size(files.len())));
 
     cz::String file = {};
     CZ_DEFER(file.drop(cz::heap_allocator()));

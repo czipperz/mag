@@ -257,10 +257,9 @@ void run(Server* server, Client* client) {
 
     start_color();
 
-    int16_t* colors = cz::heap_allocator().alloc<int16_t>(COLORS);
+    int16_t* colors = cz::heap_allocator().alloc_zeroed<int16_t>(COLORS);
     CZ_ASSERT(colors);
     CZ_DEFER(cz::heap_allocator().dealloc(colors, COLORS));
-    memset(colors, 0, sizeof(int16_t) * COLORS);
     colors[0] = 1;
     colors[7] = 1;
     colors[21] = 1;
