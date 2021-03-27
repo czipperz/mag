@@ -11,6 +11,9 @@ primarily on C and C++ code, but coding in any language is supported.
 * File name completion (Control-P equivalent).
 * Built in support for `git grep`, `clang-format`, `man`, and other external programs.
 * Automatically updates files when edited externally.
+* Animated scrolling even over large distances.
+* Multi threaded architecture -- syntax highlighting and external
+  programs are ran on a background thread to prevent stalls.
 * Easy to add new commands and visual enhancements.
 
 ## Building
