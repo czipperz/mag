@@ -28,31 +28,31 @@ void command_open_file(Editor* editor, Command_Source source) {
 void fill_mini_buffer_with_selected_window_directory(Editor* editor, Client* client) {
     cz::String default_value = {};
     CZ_DEFER(default_value.drop(cz::heap_allocator()));
-    cz::Str default_value_str;
 
     {
-        WITH_WINDOW_BUFFER(client->selected_normal_window);
+        WITH_CONST_WINDOW_BUFFER(client->selected_normal_window);
         if (buffer->directory.len() > 0) {
-            default_value_str = buffer->directory;
-        } else {
-            if (cz::get_working_directory(cz::heap_allocator(), &default_value).is_err()) {
-                return;
-            }
-            default_value.reserve(cz::heap_allocator(), 1);
-            default_value.push('/');
-            default_value_str = default_value;
+            default_value = buffer->directory.clone(cz::heap_allocator());
         }
+    }
+
+    if (default_value.len() == 0) {
+        if (cz::get_working_directory(cz::heap_allocator(), &default_value).is_err()) {
+            return;
+        }
+        default_value.reserve(cz::heap_allocator(), 1);
+        default_value.push('/');
     }
 
     Window_Unified* window = client->mini_buffer_window();
     WITH_WINDOW_BUFFER(window);
 
     Transaction transaction;
-    transaction.init(1, default_value_str.len);
+    transaction.init(1, default_value.len());
     CZ_DEFER(transaction.drop());
 
     Edit edit;
-    edit.value = SSOStr::as_duplicate(transaction.value_allocator(), default_value_str);
+    edit.value = SSOStr::as_duplicate(transaction.value_allocator(), default_value);
     edit.position = 0;
     edit.flags = Edit::INSERT;
     transaction.push(edit);
