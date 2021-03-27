@@ -5,7 +5,6 @@
 #include <ncurses.h>
 #include <Tracy.hpp>
 #include <algorithm>
-#include <cz/bit_array.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>

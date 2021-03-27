@@ -127,7 +127,7 @@ static cz::Result load_directory(Editor* editor,
 
 static void sort_files(cz::Slice<cz::Str> files,
                        cz::File_Time* file_times,
-                       unsigned char* file_directories,
+                       cz::Bit_Array file_directories,
                        bool sort_names) {
     auto swap = [&](size_t i, size_t j) {
         if (i == j) {
@@ -136,22 +136,22 @@ static void sort_files(cz::Slice<cz::Str> files,
 
         cz::Str tfile = files[i];
         cz::File_Time tfile_time = file_times[i];
-        bool tfile_directory = cz::bit_array::get(file_directories, i);
+        bool tfile_directory = file_directories.get(i);
 
         files[i] = files[j];
         file_times[i] = file_times[j];
-        if (cz::bit_array::get(file_directories, j)) {
-            cz::bit_array::set(file_directories, i);
+        if (file_directories.get(j)) {
+            file_directories.set(i);
         } else {
-            cz::bit_array::unset(file_directories, i);
+            file_directories.unset(i);
         }
 
         files[j] = tfile;
         file_times[j] = tfile_time;
         if (tfile_directory) {
-            cz::bit_array::set(file_directories, j);
+            file_directories.set(j);
         } else {
-            cz::bit_array::unset(file_directories, j);
+            file_directories.unset(j);
         }
     };
 
@@ -183,11 +183,9 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
     CZ_ASSERT(file_times);
     CZ_DEFER(cz::heap_allocator().dealloc(file_times, files.len()));
 
-    unsigned char* file_directories =
-        cz::heap_allocator().alloc_zeroed<unsigned char>(cz::bit_array::alloc_size(files.len()));
-    CZ_ASSERT(file_directories);
-    CZ_DEFER(
-        cz::heap_allocator().dealloc(file_directories, cz::bit_array::alloc_size(files.len())));
+    cz::Bit_Array file_directories;
+    file_directories.init(cz::heap_allocator(), files.len());
+    CZ_DEFER(file_directories.drop(cz::heap_allocator(), files.len()));
 
     cz::String file = {};
     CZ_DEFER(file.drop(cz::heap_allocator()));
@@ -204,7 +202,7 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
         cz::get_file_time(file.buffer(), &file_times[i]);
 
         if (cz::file::is_directory(file.buffer())) {
-            cz::bit_array::set(file_directories, i);
+            file_directories.set(i);
         }
     }
 
@@ -234,7 +232,7 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
             buffer->contents.append("                    ");
         }
 
-        if (cz::bit_array::get(file_directories, i)) {
+        if (file_directories.get(i)) {
             buffer->contents.append("/ ");
         } else {
             buffer->contents.append("  ");

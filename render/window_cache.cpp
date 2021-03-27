@@ -1,6 +1,5 @@
 #include "window_cache.hpp"
 
-#include <cz/bit_array.hpp>
 #include "command_macros.hpp"
 #include "token.hpp"
 #include "visible_region.hpp"

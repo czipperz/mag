@@ -96,11 +96,10 @@ void Token_Cache::update(const Buffer* buffer) {
     cz::Slice<const Change> changes = buffer->changes;
     cz::Slice<const Change> pending_changes = {changes.elems + change_index,
                                                changes.len - change_index};
-    unsigned char* changed_check_points = cz::heap_allocator().alloc_zeroed<unsigned char>(
-        cz::bit_array::alloc_size(check_points.len()));
-    CZ_ASSERT(changed_check_points);
-    CZ_DEFER(cz::heap_allocator().dealloc(changed_check_points,
-                                          cz::bit_array::alloc_size(check_points.len())));
+    cz::Sized_Bit_Array changed_check_points;
+    changed_check_points.init(cz::heap_allocator(), check_points.len());
+    CZ_DEFER(changed_check_points.drop(cz::heap_allocator()));
+
     // Detect check points that changed
     for (size_t i = 1; i < check_points.len(); ++i) {
         uint64_t pos = check_points[i].position;
@@ -110,7 +109,7 @@ void Token_Cache::update(const Buffer* buffer) {
         position_after_changes(pending_changes, &pos);
 
         if (check_points[i].position != pos) {
-            cz::bit_array::set(changed_check_points, i);
+            changed_check_points.set(i);
         }
 
         uint64_t offset = pos - check_points[i].position;
@@ -131,7 +130,7 @@ void Token_Cache::update(const Buffer* buffer) {
     // Fix check points that were changed
     for (size_t i = 0; i < check_points.len(); ++i) {
         uint64_t end_position = check_points[i].position;
-        if (cz::bit_array::get(changed_check_points, i)) {
+        if (changed_check_points.get(i)) {
             Contents_Iterator iterator = buffer->contents.iterator_at(token.end);
             // Efficiently loop without recalculating the iterator so long as
             // the edit is screwing up future check points.
