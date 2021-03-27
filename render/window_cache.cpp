@@ -48,7 +48,7 @@ void cache_window_unified_create(Editor* editor,
                                  Window_Unified* window) {
     ZoneScoped;
 
-    WITH_WINDOW_BUFFER(window);
+    WITH_CONST_WINDOW_BUFFER(window);
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified.id = window->id;
     window_cache->v.unified.cursor_count = window->cursors.len();
