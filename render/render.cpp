@@ -153,7 +153,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         end_of_line(&second_visible_line_iterator);
         forward_char(&second_visible_line_iterator);
         if (iterator.position != 0 &&
-            selected_cursor_position < second_visible_line_iterator.position) {
+            selected_cursor_position <= second_visible_line_iterator.position) {
             // We are above the second visible line and thus readjust
             iterator = buffer->contents.iterator_at(selected_cursor_position);
             start_of_line(&iterator);
