@@ -12,7 +12,9 @@
 #include "basic/directory_commands.hpp"
 #include "basic/help_commands.hpp"
 #include "basic/indent_commands.hpp"
+#include "basic/markdown_commands.hpp"
 #include "basic/number_commands.hpp"
+#include "basic/reformat_commands.hpp"
 #include "basic/search_commands.hpp"
 #include "basic/shift_commands.hpp"
 #include "basic/token_movement_commands.hpp"
@@ -190,6 +192,10 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-i", command_decrease_indent);
     BIND(key_map, "S-\t", command_decrease_indent);
     BIND(key_map, "A-=", command_delete_whitespace);
+
+    // Note: consider rebinding this in programming language
+    // specific key maps so that the reformat works for comments.
+    BIND(key_map, "A-h", command_reformat_paragraph);
 
     BIND(key_map, "C-/", command_undo);
     BIND(key_map, "C-_", command_undo);
@@ -412,6 +418,18 @@ static Key_Map* cpp_key_map() {
     return &key_map;
 }
 
+static Key_Map create_markdown_key_map() {
+    Key_Map key_map = {};
+    BIND(key_map, "A-h", markdown::command_reformat_paragraph);
+    return key_map;
+}
+
+static Key_Map* markdown_key_map() {
+    static Key_Map key_map = create_markdown_key_map();
+    static CZ_DEFER(key_map.drop());
+    return &key_map;
+}
+
 static Key_Map create_js_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "A-;", cpp::command_comment);
@@ -587,6 +605,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays = overlays;
         } else if (buffer->name.ends_with(".md")) {
             buffer->mode.next_token = syntax::md_next_token;
+            buffer->mode.key_map = markdown_key_map();
         } else if (buffer->name.ends_with(".css")) {
             buffer->mode.next_token = syntax::css_next_token;
             static const Token_Type types[] = {

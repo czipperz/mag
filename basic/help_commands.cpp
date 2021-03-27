@@ -2,10 +2,10 @@
 
 #include <cz/char_type.hpp>
 #include <cz/stringify.hpp>
-#include "gnu_global/gnu_global.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "file.hpp"
+#include "gnu_global/gnu_global.hpp"
 #include "match.hpp"
 #include "movement.hpp"
 #include "transaction.hpp"
@@ -41,6 +41,11 @@ void command_dump_key_map(Editor* editor, Command_Source source) {
     cz::Arc<Buffer_Handle> handle;
     if (!find_temp_buffer(editor, source.client, "*key map*", {mag_build_directory}, &handle)) {
         handle = editor->create_temp_buffer("key map", {mag_build_directory});
+    }
+
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        push_jump(window, source.client, buffer);
     }
 
     WITH_BUFFER_HANDLE(handle);

@@ -5,6 +5,7 @@
 #include "editor.hpp"
 #include "match.hpp"
 #include "movement.hpp"
+#include "reformat_commands.hpp"
 #include "transaction.hpp"
 #include "window.hpp"
 
@@ -173,293 +174,26 @@ void command_comment(Editor* editor, Command_Source source) {
     transaction.commit(buffer);
 }
 
-static bool end_of_sentence(cz::Str word) {
-    return word.ends_with(".") || word.ends_with("!") || word.ends_with("?") ||
-           word.ends_with(".)") || word.ends_with("!)") || word.ends_with("?)");
-}
-
-static size_t judge_word_column_goal_score(cz::Slice<SSOStr> words,
-                                           size_t word_column_limit,
-                                           size_t word_column_goal,
-                                           size_t* max_column_length) {
-    size_t score = 0;
-    size_t current_column = 0;
-    size_t previous_spaces = 0;
-    *max_column_length = 0;
-    bool previous_word_just_after_end_of_sentence = false;
-    bool next_word_just_after_end_of_sentence = false;
-    for (size_t i = 0; i < words.len; ++i) {
-        auto& word = words[i];
-
-        // Test if the word fits on this line.
-        if (current_column + previous_spaces + word.len() <= word_column_goal) {
-            // If so then add it.
-            current_column += previous_spaces + word.len();
-        } else {
-            // Otherwise make a new line.
-
-            // If we went over the limit then we had a giant word; that couldn't be fixed no matter
-            // what goal column we adjust to.
-            if (current_column <= word_column_limit) {
-                // I think that it's really ugly to have the start of a sentence dangle on the line
-                // before the sentence begins.  So I give that a big penalty.
-                size_t offset = previous_word_just_after_end_of_sentence ? 5 : 0;
-
-                score += (word_column_limit - current_column + offset) *
-                         (word_column_limit - current_column + offset);
-
-                *max_column_length = std::max(*max_column_length, current_column);
-            }
-
-            current_column = word.len();
-
-            previous_word_just_after_end_of_sentence = false;
-            next_word_just_after_end_of_sentence = false;
-        }
-
-        previous_spaces = 1;
-        if (end_of_sentence(word.as_str())) {
-            previous_spaces = 2;
-
-            previous_word_just_after_end_of_sentence = false;
-            next_word_just_after_end_of_sentence = true;
-        } else {
-            previous_word_just_after_end_of_sentence = next_word_just_after_end_of_sentence;
-            next_word_just_after_end_of_sentence = false;
-        }
-    }
-
-    // Duplicate the code from end of line above as we need to add the score for the last line of
-    // the comment.
-    if (current_column <= word_column_limit) {
-        score += (word_column_limit - current_column) * (word_column_limit - current_column);
-
-        *max_column_length = std::max(*max_column_length, current_column);
-    }
-
-    return score;
-}
-
-static size_t find_word_column_goal(cz::Slice<SSOStr> words, size_t word_column_limit) {
-    size_t min_score = SIZE_MAX;
-    size_t best_goal = word_column_limit;
-
-    size_t word_column_goal = word_column_limit;
-    while (1) {
-        size_t max_column_length;
-        size_t score = judge_word_column_goal_score(words, word_column_limit, word_column_goal,
-                                                    &max_column_length);
-        if (score < min_score) {
-            min_score = score;
-            best_goal = word_column_goal;
-        } else if (max_column_length <= word_column_limit / 2) {
-            // We could just combine lines at this point and be better off.
-            break;
-        }
-
-        word_column_goal = max_column_length - 1;
-    }
-
-    return best_goal;
-}
-
 void command_reformat_comment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
 
-    start_of_line_text(&iterator);
-    uint64_t column = get_visual_column(buffer->mode, iterator);
-
-    bool doc_comment;
-    if (looking_at(iterator, "// ")) {
-        doc_comment = false;
-    } else if (looking_at(iterator, "/// ")) {
-        doc_comment = true;
-    } else {
+    if (basic::reformat_at(buffer, iterator, "// ", "// ")) {
         return;
     }
 
-    uint64_t start_position = iterator.position;
-    while (1) {
-        uint64_t point = iterator.position;
-        backward_line(buffer->mode, &iterator);
-
-        start_of_line_text(&iterator);
-        uint64_t col = get_visual_column(buffer->mode, iterator);
-        if (col != column) {
-            break;
-        }
-        if (!looking_at(iterator, doc_comment ? "/// " : "// ")) {
-            break;
-        }
-
-        start_position = iterator.position;
-        if (point == iterator.position) {
-            break;
-        }
-    }
-
-    iterator.advance_to(start_position);
-    Contents_Iterator start = iterator;
-    start.advance(strlen(doc_comment ? "/// " : "// "));
-
-    cz::Buffer_Array buffer_array;
-    buffer_array.create();
-    CZ_DEFER(buffer_array.drop());
-
-    size_t words_len_sum = 0;
-    size_t extra_spaces = 0;
-
-    cz::Vector<SSOStr> words = {};
-    CZ_DEFER(words.drop(cz::heap_allocator()));
-    words.reserve(cz::heap_allocator(), 32);
-
-    uint64_t end_position = iterator.position;
-    while (1) {
-        // Skip comment start on this line.
-        while (!iterator.at_eob() && !cz::is_space(iterator.get())) {
-            iterator.advance();
-        }
-        while (!iterator.at_eob() && cz::is_space(iterator.get())) {
-            iterator.advance();
-        }
-
-        // Parse words on this line.
-        while (1) {
-            // Parse one word.
-            Contents_Iterator word_start = iterator;
-            while (!iterator.at_eob() && !cz::is_space(iterator.get())) {
-                iterator.advance();
-            }
-
-            words.reserve(cz::heap_allocator(), 1);
-            SSOStr word =
-                buffer->contents.slice(buffer_array.allocator(), word_start, iterator.position);
-            words_len_sum += word.len();
-
-            // TODO: make "sentences end in two spaces" a config variable (in the Mode).
-            if (end_of_sentence(word.as_str())) {
-                extra_spaces++;
-            }
-
-            words.push(word);
-
-            // Skip to start of next word.
-            while (!iterator.at_eob()) {
-                char ch = iterator.get();
-                if (ch == '\n' || !cz::is_space(ch)) {
-                    break;
-                }
-                iterator.advance();
-            }
-
-            // End of line.
-            if (iterator.at_eob() || iterator.get() == '\n') {
-                break;
-            }
-        }
-
-        // Check if the next line fits the pattern.
-        if (iterator.at_eob()) {
-            break;
-        }
-        iterator.advance();
-
-        start_of_line_text(&iterator);
-        uint64_t col = get_visual_column(buffer->mode, iterator);
-        if (col != column) {
-            break;
-        }
-        if (!looking_at(iterator, doc_comment ? "/// " : "// ")) {
-            break;
-        }
-
-        end_position = iterator.position;
-    }
-
-    iterator.retreat_to(end_position);
-    Contents_Iterator end = iterator;
-    end_of_line(&end);
-
-    if (words.len() == 0) {
+    if (basic::reformat_at(buffer, iterator, "/// ", "/// ")) {
         return;
     }
 
-    uint64_t tabs, spaces;
-    analyze_indent(buffer->mode, column, &tabs, &spaces);
-
-    size_t word_column_limit =
-        buffer->mode.preferred_column - column - strlen(doc_comment ? "/// " : "// ");
-
-    size_t word_column_goal = find_word_column_goal(words, word_column_limit);
-
-    cz::String new_region = {};
-    CZ_DEFER(new_region.drop(cz::heap_allocator()));
-
-    size_t current_column = 0;
-    size_t previous_spaces = 0;
-    for (size_t i = 0; i < words.len(); ++i) {
-        auto& word = words[i];
-
-        // Test if the word fits on this line.
-        if (current_column + previous_spaces + word.len() <= word_column_goal) {
-            // If so then add it.
-            new_region.reserve(cz::heap_allocator(), previous_spaces + word.len());
-            for (size_t j = 0; j < previous_spaces; ++j) {
-                new_region.push(' ');
-            }
-            new_region.append(word.as_str());
-
-            current_column += previous_spaces + word.len();
-        } else {
-            // Otherwise make a new line.
-            new_region.reserve(
-                cz::heap_allocator(),
-                1 + tabs + spaces + strlen(doc_comment ? "/// " : "// ") + word.len());
-
-            new_region.push('\n');
-            for (size_t j = 0; j < tabs; ++j) {
-                new_region.push('\t');
-            }
-            for (size_t j = 0; j < spaces; ++j) {
-                new_region.push(' ');
-            }
-            new_region.append(doc_comment ? "/// " : "// ");
-
-            new_region.append(word.as_str());
-
-            current_column = word.len();
-        }
-
-        previous_spaces = 1;
-        if (end_of_sentence(word.as_str())) {
-            previous_spaces = 2;
-        }
-    }
-
-    // We already have the correct contents so don't replace them for no reason.
-    if (matches(start, end.position, new_region)) {
+    if (basic::reformat_at(buffer, iterator, "//! ", "//! ")) {
         return;
     }
 
-    Transaction transaction;
-    CZ_DEFER(transaction.drop());
-    transaction.init(2, end.position - start.position + new_region.len());
-
-    Edit remove;
-    remove.value = buffer->contents.slice(transaction.value_allocator(), start, end.position);
-    remove.position = start.position;
-    remove.flags = Edit::REMOVE;
-    transaction.push(remove);
-
-    Edit insert;
-    insert.value = SSOStr::from_constant(new_region.clone(transaction.value_allocator()));
-    insert.position = start.position;
-    insert.flags = Edit::INSERT;
-    transaction.push(insert);
-
-    transaction.commit(buffer);
+    if (basic::reformat_at(buffer, iterator, "/* ", " * ")) {
+        return;
+    }
 }
 
 }
