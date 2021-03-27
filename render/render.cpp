@@ -197,7 +197,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 end_of_line(&test_iterator);
                 forward_char(&test_iterator);
 
-                if (window->cursors[0].point >= test_iterator.position) {
+                if (window->cursors[0].point >= test_iterator.position &&
+                    start_iterator.position > iterator.position) {
                     iterator = start_iterator;
                     cache_window_unified_position(window, window_cache, iterator.position, buffer);
                     window_cache->v.unified.animation.slam_on_the_breaks = false;
