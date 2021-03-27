@@ -183,6 +183,10 @@ bool reformat_at(Buffer* buffer,
 
     uint64_t end_position = start_position;
     while (1) {
+        while (!iterator.at_eob() && cz::is_space(iterator.get())) {
+            iterator.advance();
+        }
+
         // Parse words on this line.
         while (1) {
             // Parse one word.
