@@ -78,7 +78,7 @@ static void create_key_remap(Key_Remap& key_remap) {
     key_remap.bind("C-i", "\t");
     key_remap.bind("C-m", "\n");
     key_remap.bind("C-j", "\n");
-    key_remap.bind("C-/", "C-");
+    key_remap.bind("C-/", "C-_");
     key_remap.bind("C-h", "BACKSPACE");
 
     // I hit shift and these keys quite often and want the normal behavior.
