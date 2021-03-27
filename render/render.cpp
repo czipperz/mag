@@ -249,6 +249,12 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         if (window_cache->v.unified.animation.speed != 0) {
             ZoneScopedN("run animation");
 
+            // If we are out of bounds because the user directly modified the `Contents`
+            // without making a `Change` then go back into bounds so we don't crash.
+            if (window_cache->v.unified.animation.visible_start > buffer->contents.len) {
+                window_cache->v.unified.animation.visible_start = buffer->contents.len;
+            }
+
             iterator.go_to(window_cache->v.unified.animation.visible_start);
 
             if (window_cache->v.unified.animation.speed < 0) {
