@@ -67,16 +67,32 @@ using namespace basic;
 
 #define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, {FUNC, #FUNC}))
 
-static Key_Map create_key_map() {
+static void create_key_remap(Key_Remap& key_remap) {
     ZoneScoped;
 
-    Key_Map key_map = {};
+    // Note: The remap is only checked if the key lookup fails.
+
+    // Terminals rebind all of these keys so we do too
+    // so we don't have to double specify these keys.
+    key_remap.bind("C-@", "C-SPACE");
+    key_remap.bind("C-i", "\t");
+    key_remap.bind("C-m", "\n");
+    key_remap.bind("C-j", "\n");
+    key_remap.bind("C-/", "C-");
+    key_remap.bind("C-h", "BACKSPACE");
+
+    // I hit shift and these keys quite often and want the normal behavior.
+    key_remap.bind("S-\n", "\n");
+    key_remap.bind("S-BACKSPACE", "BACKSPACE");
+}
+
+static void create_key_map(Key_Map& key_map) {
+    ZoneScoped;
 
     BIND(key_map, "C-h", command_dump_key_map);
     BIND(key_map, "A-x", command_run_command_by_name);
 
     BIND(key_map, "C-SPACE", command_set_mark);
-    BIND(key_map, "C-@", command_set_mark);
     BIND(key_map, "C-x C-x", command_swap_mark_point);
 
     BIND(key_map, "C-w", command_cut);
@@ -156,7 +172,6 @@ static Key_Map create_key_map() {
     BIND(key_map, "C-r", command_search_backward);
 
     BIND(key_map, "BACKSPACE", command_delete_backward_char);
-    BIND(key_map, "S-BACKSPACE", command_delete_backward_char);
     BIND(key_map, "A-BACKSPACE", command_delete_backward_word);
     BIND(key_map, "C-d", command_delete_forward_char);
     BIND(key_map, "DELETE", command_delete_forward_char);
@@ -171,10 +186,7 @@ static Key_Map create_key_map() {
     BIND(key_map, "C-t", command_transpose_characters);
 
     BIND(key_map, "A-m", command_open_line);
-    BIND(key_map, "C-m", command_insert_newline_indent);
     BIND(key_map, "\n", command_insert_newline_indent);
-    BIND(key_map, "S-\n", command_insert_newline_indent);
-    BIND(key_map, "C-i", command_increase_indent);
     BIND(key_map, "\t", command_increase_indent);
     BIND(key_map, "A-i", command_decrease_indent);
     BIND(key_map, "S-\t", command_decrease_indent);
@@ -257,14 +269,10 @@ static Key_Map create_key_map() {
     BIND(key_map, "SCROLL_UP", command_scroll_up);
     BIND(key_map, "SCROLL_DOWN_ONE", command_scroll_down_one);
     BIND(key_map, "SCROLL_UP_ONE", command_scroll_up_one);
-
-    return key_map;
 }
 
-static Theme create_theme() {
+static void create_theme(Theme& theme) {
     ZoneScoped;
-
-    Theme theme = {};
 
 #ifdef _WIN32
     theme.font_file = "C:/Windows/Fonts/MesloLGM-Regular.ttf";
@@ -360,26 +368,21 @@ static Theme create_theme() {
     theme.max_completion_results = 5;
     theme.mini_buffer_completion_filter = spaces_are_wildcards_completion_filter;
     theme.window_completion_filter = prefix_completion_filter;
-
-    return theme;
 }
 
 void editor_created_callback(Editor* editor) {
-    editor->key_map = create_key_map();
-    editor->theme = create_theme();
+    create_key_remap(editor->key_remap);
+    create_key_map(editor->key_map);
+    create_theme(editor->theme);
 }
 
 static Key_Map create_directory_key_map() {
     Key_Map key_map = {};
-    BIND(key_map, "C-m", command_directory_open_path);
     BIND(key_map, "\n", command_directory_open_path);
-    BIND(key_map, "S-\n", command_directory_open_path);
-    BIND(key_map, "C-j", command_directory_open_path);
     BIND(key_map, "d", command_directory_delete_path);
     BIND(key_map, "c", command_directory_copy_path);
     BIND(key_map, "r", command_directory_rename_path);
     BIND(key_map, "g", command_directory_reload);
-    BIND(key_map, "C-i", command_directory_toggle_sort);
     BIND(key_map, "\t", command_directory_toggle_sort);
     BIND(key_map, "m", command_create_directory);
 
@@ -434,9 +437,7 @@ static Key_Map* go_key_map() {
 
 static Key_Map create_search_key_map() {
     Key_Map key_map = {};
-    BIND(key_map, "C-m", command_search_open);
     BIND(key_map, "\n", command_search_open);
-    BIND(key_map, "S-\n", command_search_open);
     BIND(key_map, "g", command_search_reload);
 
     BIND(key_map, "n", command_forward_line);
@@ -464,7 +465,6 @@ static Key_Map* man_key_map() {
 static Key_Map create_key_map_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "\n", command_go_to_key_map_binding);
-    BIND(key_map, "C-m", command_go_to_key_map_binding);
     return key_map;
 }
 
@@ -487,11 +487,8 @@ static Key_Map create_mini_buffer_key_map() {
 
     BIND(key_map, "A-i", command_insert_completion);
     BIND(key_map, "\t", command_insert_completion);
-    BIND(key_map, "C-i", command_insert_completion);
     BIND(key_map, "C-j", command_insert_completion_and_submit_mini_buffer);
-    BIND(key_map, "C-m", command_submit_mini_buffer);
     BIND(key_map, "\n", command_submit_mini_buffer);
-    BIND(key_map, "S-\n", command_submit_mini_buffer);
     return key_map;
 }
 
@@ -510,10 +507,7 @@ static Key_Map create_window_completion_key_map() {
     BIND(key_map, "A-<", window_completion::command_first_completion);
     BIND(key_map, "A->", window_completion::command_last_completion);
 
-    BIND(key_map, "C-j", window_completion::command_finish_completion);
-    BIND(key_map, "C-m", window_completion::command_finish_completion);
     BIND(key_map, "\n", window_completion::command_finish_completion);
-    BIND(key_map, "S-\n", window_completion::command_finish_completion);
     BIND(key_map, "A-c", window_completion::command_finish_completion);
     return key_map;
 }

@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <cz/arc.hpp>
+#include <cz/buffer_array.hpp>
 #include <cz/heap.hpp>
 #include <cz/option.hpp>
 #include <cz/vector.hpp>
@@ -9,6 +10,7 @@
 #include "buffer_id.hpp"
 #include "job.hpp"
 #include "key_map.hpp"
+#include "key_remap.hpp"
 #include "theme.hpp"
 
 namespace mag {
@@ -16,6 +18,7 @@ namespace mag {
 struct Editor {
     cz::Vector<cz::Arc<Buffer_Handle> > buffers;
 
+    Key_Remap key_remap;
     Key_Map key_map;
     Theme theme;
 
@@ -35,6 +38,7 @@ struct Editor {
         buffers.drop(cz::heap_allocator());
 
         key_map.drop();
+        key_remap.drop();
         theme.drop(cz::heap_allocator());
         copy_buffer.drop();
 

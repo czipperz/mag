@@ -1,7 +1,7 @@
 #include "key_map.hpp"
 
-#include <cz/heap.hpp>
 #include <stdio.h>
+#include <cz/heap.hpp>
 
 namespace mag {
 
@@ -33,104 +33,20 @@ Key_Bind* Key_Map::lookup(Key key) {
     }
 }
 
-static void parse_key(Key* key, size_t* i, cz::Str description) {
-    if (*i + 1 < description.len && description[*i] == 'C' && description[*i + 1] == '-') {
-        key->modifiers |= CONTROL;
-        *i += 2;
-    }
-    if (*i + 1 < description.len && description[*i] == 'A' && description[*i + 1] == '-') {
-        key->modifiers |= ALT;
-        *i += 2;
-    }
-    if (*i + 1 < description.len && description[*i] == 'S' && description[*i + 1] == '-') {
-        key->modifiers |= SHIFT;
-        *i += 2;
-    }
-
-    if (*i == description.len) {
-        fwrite(description.buffer, 1, description.len, stdout);
-        putchar('\n');
-    }
-    CZ_ASSERT(*i < description.len);
-
-    /// @AddKeyCode if this is refactored change the documentation.
-    cz::Str d = {description.buffer + *i, description.len - *i};
-    if (d.starts_with("SPACE")) {
-        key->code = ' ';
-        *i += 5;
-    } else if (d.starts_with("BACKSPACE")) {
-        key->code = Key_Code::BACKSPACE;
-        *i += 9;
-    } else if (d.starts_with("INSERT")) {
-        key->code = Key_Code::INSERT;
-        *i += 6;
-    } else if (d.starts_with("DELETE")) {
-        key->code = Key_Code::DELETE_;
-        *i += 6;
-    } else if (d.starts_with("HOME")) {
-        key->code = Key_Code::HOME;
-        *i += 4;
-    } else if (d.starts_with("END")) {
-        key->code = Key_Code::END;
-        *i += 3;
-    } else if (d.starts_with("PAGE_UP")) {
-        key->code = Key_Code::PAGE_UP;
-        *i += 7;
-    } else if (d.starts_with("PAGE_DOWN")) {
-        key->code = Key_Code::PAGE_DOWN;
-        *i += 9;
-    } else if (d.starts_with("UP")) {
-        key->code = Key_Code::UP;
-        *i += 2;
-    } else if (d.starts_with("DOWN")) {
-        key->code = Key_Code::DOWN;
-        *i += 4;
-    } else if (d.starts_with("LEFT")) {
-        key->code = Key_Code::LEFT;
-        *i += 4;
-    } else if (d.starts_with("RIGHT")) {
-        key->code = Key_Code::RIGHT;
-        *i += 5;
-    } else if (d.starts_with("MOUSE3")) {
-        key->code = Key_Code::MOUSE3;
-        *i += 6;
-    } else if (d.starts_with("MOUSE4")) {
-        key->code = Key_Code::MOUSE4;
-        *i += 6;
-    } else if (d.starts_with("MOUSE5")) {
-        key->code = Key_Code::MOUSE5;
-        *i += 6;
-    } else if (d.starts_with("SCROLL_UP_ONE")) {
-        key->code = Key_Code::SCROLL_UP_ONE;
-        *i += 13;
-    } else if (d.starts_with("SCROLL_DOWN_ONE")) {
-        key->code = Key_Code::SCROLL_DOWN_ONE;
-        *i += 15;
-    } else if (d.starts_with("SCROLL_UP")) {
-        key->code = Key_Code::SCROLL_UP;
-        *i += 9;
-    } else if (d.starts_with("SCROLL_DOWN")) {
-        key->code = Key_Code::SCROLL_DOWN;
-        *i += 11;
-    } else if (d.starts_with("SCROLL_LEFT")) {
-        key->code = Key_Code::SCROLL_LEFT;
-        *i += 11;
-    } else if (d.starts_with("SCROLL_RIGHT")) {
-        key->code = Key_Code::SCROLL_RIGHT;
-        *i += 12;
-    } else {
-        key->code = description[*i];
-        *i += 1;
-    }
-}
-
 void Key_Map::bind(cz::Str description, Command command) {
     size_t i = 0;
     Key_Map* key_map = this;
 
     while (1) {
+        size_t start = i;
+        while (i < description.len && description[i] != ' ') {
+            ++i;
+        }
+
         Key key = {};
-        parse_key(&key, &i, description);
+        if (!Key::parse(&key, description.slice(start, i))) {
+            CZ_PANIC("Key_Map::bind(): Couldn't parse key description");
+        }
 
         size_t bind_index;
         if (lookup_index(key_map, key, &bind_index)) {

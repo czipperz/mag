@@ -6,6 +6,7 @@
 
 namespace cz {
 struct String;
+struct Str;
 }
 
 namespace mag {
@@ -21,7 +22,7 @@ enum Modifiers : uint_fast8_t {
 };
 
 namespace Key_Code_ {
-/// @AddKeyCode If you add more key codes, update `Key_Map::bind()` and `stringify_key()`.
+/// @AddKeyCode If you add more key codes, update `Key::parse()` and `stringify_key()`.
 enum Key_Code : uint16_t {
     BACKSPACE = (uint16_t)UCHAR_MAX + 1,
     INSERT,
@@ -38,9 +39,9 @@ enum Key_Code : uint16_t {
     RIGHT,
 
     // Mouse events
-    MOUSE3, // middle mouse button
-    MOUSE4, // side button usually bound to backwards
-    MOUSE5, // side button usually bound to forwards
+    MOUSE3,  // middle mouse button
+    MOUSE4,  // side button usually bound to backwards
+    MOUSE5,  // side button usually bound to forwards
 
     // Mouse scroll events
     SCROLL_UP,
@@ -67,6 +68,20 @@ struct Key {
         }
         return modifiers < other.modifiers;
     }
+
+    /// Parse a key description into a `Key`.  If parsing fails, `false` is returned.
+    ///
+    /// The description describes a single `Key` object.  If the key code is a space write
+    /// it as `SPACE` and if it is a non-printable character type it out (ex. `BACKSPACE`).
+    /// Prefix `C-`, `A-`, and/or `S-` to add control, alt, and/or shift modifiers.
+    ///
+    /// Examples:
+    /// `c` -- `Key { 0, 'c' }`
+    /// `A-b` -- `Key { ALT, 'b' }`
+    /// `C-SPACE` -- `Key { CONTROL, ' ' }`
+    /// `S-BACKSPACE` -- `Key { SHIFT, BACKSPACE }`
+    /// `C-A-S-\` -- `Key { CONTROL | ALT | SHIFT, '\\' }`
+    static bool parse(Key* key, cz::Str description);
 };
 
 constexpr const size_t stringify_key_max_size = 21;
