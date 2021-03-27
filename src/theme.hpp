@@ -45,6 +45,10 @@ struct Theme {
     Completion_Filter mini_buffer_completion_filter;
     Completion_Filter window_completion_filter;
 
+    /// The number of rows a mouse scroll event should move.
+    /// Used in `command_scroll_down` and `command_scroll_up`.
+    uint32_t mouse_scroll_rows = 4;
+
     void drop(cz::Allocator allocator) {
         faces.drop(allocator);
     }

@@ -368,6 +368,8 @@ static void create_theme(Theme& theme) {
     theme.max_completion_results = 5;
     theme.mini_buffer_completion_filter = spaces_are_wildcards_completion_filter;
     theme.window_completion_filter = prefix_completion_filter;
+
+    theme.mouse_scroll_rows = 4;
 }
 
 void editor_created_callback(Editor* editor) {

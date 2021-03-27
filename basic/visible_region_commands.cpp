@@ -98,10 +98,10 @@ static void scroll_up(Editor* editor, Command_Source source, size_t num) {
 }
 
 void command_scroll_down(Editor* editor, Command_Source source) {
-    scroll_down(editor, source, 4);
+    scroll_down(editor, source, editor->theme.mouse_scroll_rows);
 }
 void command_scroll_up(Editor* editor, Command_Source source) {
-    scroll_up(editor, source, 4);
+    scroll_up(editor, source, editor->theme.mouse_scroll_rows);
 }
 
 void command_scroll_down_one(Editor* editor, Command_Source source) {
