@@ -25,6 +25,7 @@ bool reformat_at(Buffer* buffer,
                  cz::Str acceptable_continuation);
 
 void command_reformat_paragraph(Editor* editor, Command_Source source);
+void command_reformat_comment_hash(Editor* editor, Command_Source source);
 
 }
 }

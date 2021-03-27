@@ -454,6 +454,30 @@ static Key_Map* go_key_map() {
     return &key_map;
 }
 
+static Key_Map create_shell_script_key_map() {
+    Key_Map key_map = {};
+    BIND(key_map, "A-h", basic::command_reformat_comment_hash);
+    return key_map;
+}
+
+static Key_Map* shell_script_key_map() {
+    static Key_Map key_map = create_shell_script_key_map();
+    static CZ_DEFER(key_map.drop());
+    return &key_map;
+}
+
+static Key_Map create_python_key_map() {
+    Key_Map key_map = {};
+    BIND(key_map, "A-h", basic::command_reformat_comment_hash);
+    return key_map;
+}
+
+static Key_Map* python_key_map() {
+    static Key_Map key_map = create_python_key_map();
+    static CZ_DEFER(key_map.drop());
+    return &key_map;
+}
+
 static Key_Map create_search_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "\n", command_search_open);
@@ -648,12 +672,14 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             }
 
             buffer->mode.next_token = syntax::sh_next_token;
+            buffer->mode.key_map = shell_script_key_map();
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};
             buffer->mode.overlays = overlays;
         } else if (buffer->name.ends_with(".py") || buffer->name.ends_with(".gpy")) {
             buffer->mode.next_token = syntax::python_next_token;
+            buffer->mode.key_map = python_key_map();
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
                                          syntax::overlay_matching_tokens({-1, 237, 0}, types)};

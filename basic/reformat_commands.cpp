@@ -334,5 +334,11 @@ void command_reformat_paragraph(Editor* editor, Command_Source source) {
     reformat_at(buffer, buffer->contents.iterator_at(window->cursors[0].point), "", "");
 }
 
+void command_reformat_comment_hash(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    reformat_at(buffer, buffer->contents.iterator_at(window->cursors[0].point), "# ", "# ");
+}
+
 }
 }
