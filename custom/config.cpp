@@ -160,7 +160,6 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-RIGHT", command_unpop_jump);
     BIND(key_map, "MOUSE5", command_unpop_jump);
     BIND(key_map, "C-x C-SPACE", command_push_jump);
-    BIND(key_map, "C-x C-@", command_push_jump);
 
     BIND(key_map, "C-e", command_end_of_line);
     BIND(key_map, "END", command_end_of_line);
