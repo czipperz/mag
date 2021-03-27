@@ -138,7 +138,54 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             bold = true;
             italic = true;
         } else {
+            Contents_Iterator backup = *iterator;
+            backup.retreat_to(token->start);
+            backup.advance();
+
             assign_bold_and_italic();
+
+            Contents_Iterator backup2 = *iterator;
+
+            bool bold_backup = bold;
+            bool italic_backup = italic;
+
+            // Check that we have a paired * or ** in this line.
+            while (1) {
+                if (iterator->at_eob()) {
+                    *iterator = backup;
+                    goto normal_character;
+                }
+
+                char ch = iterator->get();
+                if (ch == '\n') {
+                    break;
+                }
+
+                if (!is_special(ch)) {
+                    iterator->advance();
+                    continue;
+                }
+
+                if (ch != '*' && ch != '_') {
+                    *iterator = backup;
+                    goto normal_character;
+                }
+
+                assign_bold_and_italic();
+                if (!bold && !italic) {
+                    break;
+                }
+                iterator->advance();
+            }
+
+            if (!bold && !italic) {
+                bold = bold_backup;
+                italic = italic_backup;
+                *iterator = backup2;
+            } else {
+                *iterator = backup;
+                goto normal_character;
+            }
         }
 
         while (!iterator->at_eob()) {
@@ -183,6 +230,7 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
+normal_character:
     if (*state == TITLE) {
         token->type = Token_Type::TITLE;
     } else {
