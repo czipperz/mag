@@ -1,5 +1,7 @@
 #include "copy_commands.hpp"
 
+#include <inttypes.h>
+#include <stdio.h>
 #include "command_macros.hpp"
 
 namespace mag {
@@ -182,6 +184,36 @@ void command_paste_previous(Editor* editor, Command_Source source) {
     } else {
         source.client->show_message(editor, "Error: previous command was not paste");
     }
+}
+
+static void copy_length_cursor(Cursor* cursor,
+                               Copy_Chain** copy_chain,
+                               Editor* editor,
+                               Client* client) {
+    uint64_t start = cursor->start();
+    uint64_t end = cursor->end();
+
+    size_t len = snprintf(nullptr, 0, "%" PRIu64, end - start);
+    char* buffer = editor->copy_buffer.allocator().alloc<char>(len + 1);
+    CZ_ASSERT(buffer);
+    snprintf(buffer, len + 1, "%" PRIu64, end - start);
+
+    // :CopyLeak We allocate here.
+    save_copy(copy_chain, editor, SSOStr::from_constant({buffer, len}), client);
+}
+
+void command_copy_selected_region_length(Editor* editor, Command_Source source) {
+    Window_Unified* window = source.client->selected_window();
+    cz::Slice<Cursor> cursors = window->cursors;
+    if (cursors.len == 1) {
+        copy_length_cursor(&cursors[0], &source.client->global_copy_chain, editor, source.client);
+    } else {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            copy_length_cursor(&cursors[c], &cursors[c].local_copy_chain, editor, nullptr);
+        }
+    }
+
+    window->show_marks = false;
 }
 
 }
