@@ -21,7 +21,11 @@ void command_build_debug_git_root(Editor* editor, Command_Source source) {
         }
     }
 
+#ifdef _WIN32
+    cz::Str args[] = {"powershell", ".\\build-debug.ps1"};
+#else
     cz::Str args[] = {"./build-debug.sh"};
+#endif
     run_console_command(source.client, editor, top_level_path.buffer(), args, "build debug",
                         "Failed to run build-debug.sh");
 }

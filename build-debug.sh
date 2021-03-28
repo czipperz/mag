@@ -4,10 +4,6 @@ set -e
 
 cd "$(dirname "$0")"
 
-./build-wrapper.sh build/debug Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+./run-build.sh build/debug Debug
 
-if [ ! -e compile_commands.json ]; then
-    ln -s "$(pwd)/build/debug/compile_commands.json" .
-fi
-
-./run-tests.sh
+./build/debug/test --use-colour=no

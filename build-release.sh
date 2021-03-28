@@ -2,4 +2,4 @@
 
 set -e
 
-"$(dirname "$0")"/build-wrapper.sh build/release Release
+"$(dirname "$0")"/run-build.sh build/release Release

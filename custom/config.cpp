@@ -558,7 +558,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".sh") || buffer->name.ends_with(".bash") ||
                    buffer->name.ends_with(".zsh") || buffer->name == ".bashrc" ||
-                   buffer->name == ".zshrc" || buffer->name == "Makefile") {
+                   buffer->name == ".zshrc" || buffer->name == "Makefile" ||
+                   // Powershell isn't really a shell script but it pretty much works.
+                   buffer->name.ends_with(".ps1")) {
             if (buffer->name == "Makefile") {
                 // Makefiles must use tabs so set that up automatically.
                 buffer->mode.tab_width = buffer->mode.indent_width;
