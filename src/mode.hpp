@@ -56,6 +56,8 @@ struct Mode {
 
     /// Increase the level of indentation on the line after an open pair automatically.
     bool indent_after_open_pair = false;
+
+    void drop();
 };
 
 inline bool default_next_token(Contents_Iterator*, Token*, uint64_t*) {

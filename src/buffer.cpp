@@ -54,6 +54,8 @@ void Buffer::drop() {
     contents.drop();
 
     token_cache.drop();
+
+    mode.drop();
 }
 
 static void insert(Contents* contents, uint64_t position, cz::Str str) {

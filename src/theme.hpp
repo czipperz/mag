@@ -3,11 +3,11 @@
 #include <stdint.h>
 #include <cz/vector.hpp>
 #include "completion.hpp"
-#include "decoration.hpp"
-#include "face.hpp"
-#include "overlay.hpp"
 
 namespace mag {
+struct Face;
+struct Decoration;
+struct Overlay;
 
 struct Theme {
     const char* font_file;
@@ -49,11 +49,7 @@ struct Theme {
     /// Used in `command_scroll_down` and `command_scroll_up`.
     uint32_t mouse_scroll_rows = 4;
 
-    void drop(cz::Allocator allocator) {
-        faces.drop(allocator);
-        decorations.drop(allocator);
-        overlays.drop(allocator);
-    }
+    void drop(cz::Allocator allocator);
 };
 
 }

@@ -1,8 +1,6 @@
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
-#include "theme.hpp"
+#include "face.hpp"
 
 namespace mag {
 namespace render {
