@@ -1,7 +1,7 @@
 #include "tokenize_cpp.hpp"
 
-#include <cz/char_type.hpp>
 #include <Tracy.hpp>
+#include <cz/char_type.hpp>
 #include "contents.hpp"
 #include "match.hpp"
 #include "movement.hpp"
@@ -40,9 +40,10 @@ enum State : uint64_t {
     COMMENT_SAVED_STATE_MASK = 0x0000000000FFF000,
     COMMENT_SAVE_SHIFT = 12,
 
-    COMMENT_MULTILINE_FLAG = 0x1000000000000000,
-    COMMENT_ONELINE_FLAG = 0x2000000000000000,
-    COMMENT_PREVIOUS_ONELINE_FLAG = 0x4000000000000000,
+    COMMENT_MULTILINE_DOC_FLAG = 0x1000000000000000,
+    COMMENT_MULTILINE_NORMAL_FLAG = 0x2000000000000000,
+    COMMENT_ONELINE_FLAG = 0x4000000000000000,
+    COMMENT_PREVIOUS_ONELINE_FLAG = 0x8000000000000000,
 
     COMMENT_STATE_MASK = 0x0700000000000000,
     COMMENT_START_OF_LINE = 0x0000000000000000,
@@ -146,17 +147,18 @@ static bool is_identifier_continuation(char ch) {
     return cz::is_alnum(ch) || ch == '_';
 }
 
-#define LOAD_COMBINED_STATE(SC)                                          \
-    do {                                                                 \
-        in_preprocessor = IN_PREPROCESSOR_FLAG & (SC);                   \
-        normal_state = NORMAL_STATE_MASK & (SC);                         \
-        preprocessor_state = PREPROCESSOR_STATE_MASK & (SC);             \
-        preprocessor_saved_state = PREPROCESSOR_SAVED_STATE_MASK & (SC); \
-        in_multiline_comment = COMMENT_MULTILINE_FLAG & (SC);            \
-        in_oneline_comment = COMMENT_ONELINE_FLAG & (SC);                \
-        previous_in_oneline_comment = in_oneline_comment;                \
-        comment_state = COMMENT_STATE_MASK & (SC);                       \
-        comment_saved_state = COMMENT_SAVED_STATE_MASK & (SC);           \
+#define LOAD_COMBINED_STATE(SC)                                             \
+    do {                                                                    \
+        in_preprocessor = IN_PREPROCESSOR_FLAG & (SC);                      \
+        normal_state = NORMAL_STATE_MASK & (SC);                            \
+        preprocessor_state = PREPROCESSOR_STATE_MASK & (SC);                \
+        preprocessor_saved_state = PREPROCESSOR_SAVED_STATE_MASK & (SC);    \
+        in_multiline_doc_comment = COMMENT_MULTILINE_DOC_FLAG & (SC);       \
+        in_multiline_normal_comment = COMMENT_MULTILINE_NORMAL_FLAG & (SC); \
+        in_oneline_comment = COMMENT_ONELINE_FLAG & (SC);                   \
+        previous_in_oneline_comment = in_oneline_comment;                   \
+        comment_state = COMMENT_STATE_MASK & (SC);                          \
+        comment_saved_state = COMMENT_SAVED_STATE_MASK & (SC);              \
     } while (0)
 
 #define MAKE_COMBINED_STATE(SC)                                                               \
@@ -166,8 +168,11 @@ static bool is_identifier_continuation(char ch) {
         if (in_preprocessor) {                                                                \
             (SC) |= IN_PREPROCESSOR_FLAG;                                                     \
         }                                                                                     \
-        if (in_multiline_comment) {                                                           \
-            (SC) |= COMMENT_MULTILINE_FLAG;                                                   \
+        if (in_multiline_doc_comment) {                                                       \
+            (SC) |= COMMENT_MULTILINE_DOC_FLAG;                                               \
+        }                                                                                     \
+        if (in_multiline_normal_comment) {                                                    \
+            (SC) |= COMMENT_MULTILINE_NORMAL_FLAG;                                            \
         }                                                                                     \
         if (in_oneline_comment) {                                                             \
             (SC) |= COMMENT_ONELINE_FLAG;                                                     \
@@ -556,15 +561,25 @@ static void continue_around_oneline_comment(Contents_Iterator* iterator) {
 }
 
 static void continue_inside_multiline_comment(Contents_Iterator* iterator,
-                                              bool* in_multiline_comment,
+                                              bool* in_multiline_doc_comment,
                                               uint64_t* comment_state) {
+    int counter = 0;
     char previous = 0;
     for (; !iterator->at_eob(); iterator->advance()) {
+        // If a comment is incredibly large, parse it as multiple multiple
+        // tokens so we don't stall the editor.  In practice this is unlikely
+        // to happen unless the user types /** at the start of a big file.
+        if (++counter == 1000) {
+            // Pause in the middle of the comment.
+            *comment_state = COMMENT_MIDDLE_OF_LINE;
+            break;
+        }
+
         char ch = iterator->get();
         if (previous == '*' && ch == '/') {
         end_comment:
             iterator->advance();
-            *in_multiline_comment = false;
+            *in_multiline_doc_comment = false;
             break;
         } else if (ch == '\n') {
             *comment_state = COMMENT_START_OF_LINE;
@@ -586,9 +601,22 @@ static void continue_inside_multiline_comment(Contents_Iterator* iterator,
     }
 }
 
-static void continue_around_multiline_comment(Contents_Iterator* iterator) {
+static void continue_around_multiline_comment(Contents_Iterator* iterator,
+                                              bool* in_multiline_normal_comment) {
+    // Normally we'll reach the end of the comment.
+    *in_multiline_normal_comment = false;
+
+    int counter = 0;
     char previous = 0;
     for (; !iterator->at_eob(); iterator->advance()) {
+        // If a comment is incredibly large, parse it as multiple multiple
+        // tokens so we don't stall the editor.  In practice this is unlikely
+        // to happen unless the user types /** at the start of a big file.
+        if (++counter == 1000) {
+            *in_multiline_normal_comment = true;
+            break;
+        }
+
         char ch = iterator->get();
         if (previous == '*' && ch == '/') {
             iterator->advance();
@@ -600,14 +628,14 @@ static void continue_around_multiline_comment(Contents_Iterator* iterator) {
 }
 
 static void continue_inside_multiline_comment_title(Contents_Iterator* iterator,
-                                                    bool* in_multiline_comment,
+                                                    bool* in_multiline_doc_comment,
                                                     uint64_t* comment_state) {
     char previous = 0;
     for (; !iterator->at_eob(); iterator->advance()) {
         char ch = iterator->get();
         if (previous == '*' && ch == '/') {
             iterator->advance();
-            *in_multiline_comment = false;
+            *in_multiline_doc_comment = false;
             break;
         } else if (ch == '\n') {
             break;
@@ -630,7 +658,8 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
     uint64_t normal_state;
     uint64_t preprocessor_state;
     uint64_t preprocessor_saved_state;
-    bool in_multiline_comment;
+    bool in_multiline_doc_comment;
+    bool in_multiline_normal_comment;
     bool in_oneline_comment;
     bool previous_in_oneline_comment;
     uint64_t comment_state;
@@ -677,7 +706,16 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         }
     }
 
-    if (in_oneline_comment || in_multiline_comment) {
+    if (in_multiline_normal_comment) {
+        ZoneScopedN("block comment continuation");
+        token->start = iterator->position;
+        continue_around_multiline_comment(iterator, &in_multiline_normal_comment);
+        token->type = Token_Type::COMMENT;
+        token->end = iterator->position;
+        goto done;
+    }
+
+    if (in_oneline_comment || in_multiline_doc_comment) {
         // The fact that we stopped here in the middle of a comment means we hit a special
         // character.  As of right now that is one of `, #, *, -, or +.
         switch (comment_state) {
@@ -712,7 +750,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             if (in_oneline_comment) {
                 continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
             } else {
-                continue_inside_multiline_comment_title(iterator, &in_multiline_comment,
+                continue_inside_multiline_comment_title(iterator, &in_multiline_doc_comment,
                                                         &comment_state);
             }
             token->end = iterator->position;
@@ -753,7 +791,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 if (in_oneline_comment) {
                     continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
                 } else {
-                    continue_inside_multiline_comment(iterator, &in_multiline_comment,
+                    continue_inside_multiline_comment(iterator, &in_multiline_doc_comment,
                                                       &comment_state);
                 }
                 token->end = iterator->position;
@@ -1070,14 +1108,14 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                     iterator->advance();
                     token->type = Token_Type::COMMENT;
                 } else {
-                    in_multiline_comment = true;
+                    in_multiline_doc_comment = true;
                     comment_state = COMMENT_START_OF_LINE;
-                    continue_inside_multiline_comment(iterator, &in_multiline_comment,
+                    continue_inside_multiline_comment(iterator, &in_multiline_doc_comment,
                                                       &comment_state);
                     token->type = Token_Type::DOC_COMMENT;
                 }
             } else {
-                continue_around_multiline_comment(iterator);
+                continue_around_multiline_comment(iterator, &in_multiline_normal_comment);
                 token->type = Token_Type::COMMENT;
             }
             token->end = iterator->position;
