@@ -30,11 +30,6 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
                 it.retreat();
                 if (it.get() == '\n') {
                     start_next = it;
-                    if (cursors[c].point > cursors[c].mark) {
-                        --cursors[c].point;
-                    } else {
-                        --cursors[c].mark;
-                    }
                 }
             }
         } else {
@@ -80,6 +75,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
     for (size_t c = 0; c < cursors.len; ++c) {
         // `start_next` is the start of the line we are going to delete (next line).
         Contents_Iterator start_next;
+        bool remove_after_newline = false;
         if (window->show_marks) {
             start_next = buffer->contents.iterator_at(cursors[c].end());
 
@@ -92,11 +88,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
                 it.retreat();
                 if (it.get() == '\n') {
                     start_next = it;
-                    if (cursors[c].point > cursors[c].mark) {
-                        --cursors[c].point;
-                    } else {
-                        --cursors[c].mark;
-                    }
+                    remove_after_newline = true;
                 }
             }
         } else {
@@ -154,8 +146,15 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         buffer->contents.slice_into(start_next, end_next.position, buf + 1);
 
         Edit remove;
-        remove.value = SSOStr::from_constant({buf, end_next.position - start_next.position + 1});
-        remove.position = start_next.position - 1;
+        if (remove_after_newline) {
+            remove.value =
+                SSOStr::from_constant({buf + 1, end_next.position - start_next.position + 1});
+            remove.position = start_next.position;
+        } else {
+            remove.value =
+                SSOStr::from_constant({buf, end_next.position - start_next.position + 1});
+            remove.position = start_next.position - 1;
+        }
         remove.flags = Edit::REMOVE_AFTER_POSITION;
         transaction.push(remove);
 
@@ -234,6 +233,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
             end_prev = buffer->contents.iterator_at(cursors[c].point);
         }
 
+        bool insert_after_newline = false;
         if (override_end) {
             // We are merging with the previous edit, which works on a region directly after us in
             // the file.  `end` is now the end of the total merged region.
@@ -251,13 +251,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
                     it.retreat();
                     if (it.get() == '\n') {
                         end = it;
-                        // In order for the cursor to move with the shift, we have to include it in
-                        // the region that is edited.
-                        if (cursors[c].point > cursors[c].mark) {
-                            --cursors[c].point;
-                        } else {
-                            --cursors[c].mark;
-                        }
+                        insert_after_newline = true;
                     }
                 }
             } else {
@@ -304,8 +298,16 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         buffer->contents.slice_into(start_prev, end_prev.position, buf + 1);
 
         Edit insert;
-        insert.value = SSOStr::from_constant({buf, end_prev.position - start_prev.position + 1});
-        insert.position = end.position;
+        if (insert_after_newline) {
+            CZ_DEBUG_ASSERT(!end.at_eob() && end.get() == '\n');
+            insert.value =
+                SSOStr::from_constant({buf + 1, end_prev.position - start_prev.position + 1});
+            insert.position = end.position + 1;
+        } else {
+            insert.value =
+                SSOStr::from_constant({buf, end_prev.position - start_prev.position + 1});
+            insert.position = end.position;
+        }
         insert.flags = Edit::INSERT_AFTER_POSITION;
         transaction.push(insert);
 
