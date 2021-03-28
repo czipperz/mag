@@ -2,6 +2,7 @@
 
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
+#include <cz/path.hpp>
 #include "basic/buffer_commands.hpp"
 #include "basic/build_commands.hpp"
 #include "basic/capitalization_commands.hpp"
@@ -466,7 +467,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
     buffer->mode.next_token = default_next_token;
 
-    if (buffer->directory.contains("/mag/") || buffer->directory.contains("/cz/")) {
+    if (cz::path::has_component(buffer->directory, "mag") ||
+        cz::path::has_component(buffer->directory, "cz")) {
         BIND(buffer->mode.key_map, "A-g c", command_build_debug_git_root);
     }
 
