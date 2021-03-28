@@ -399,14 +399,6 @@ static Key_Map directory_key_map() {
     return key_map;
 }
 
-static Key_Map cpp_key_map() {
-    Key_Map key_map = {};
-    BIND(key_map, "C-x C-f", clang_format::command_clang_format_buffer);
-    BIND(key_map, "A-;", cpp::command_comment);
-    BIND(key_map, "A-h", cpp::command_reformat_comment);
-    return key_map;
-}
-
 static Key_Map search_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "\n", command_search_open);
@@ -504,7 +496,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->name.ends_with(".cpp") || buffer->name.ends_with(".hpp") ||
             buffer->name.ends_with(".glsl")) {
             buffer->mode.next_token = syntax::cpp_next_token;
-            buffer->mode.key_map = cpp_key_map();
+            BIND(buffer->mode.key_map, "C-x C-f", clang_format::command_clang_format_buffer);
+            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
+            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
@@ -536,6 +530,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.ends_with(".js")) {
             buffer->mode.next_token = syntax::js_next_token;
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
+            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
@@ -545,6 +540,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.ends_with(".go")) {
             buffer->mode.next_token = syntax::go_next_token;
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
+            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
@@ -577,6 +573,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name == "CMakeLists.txt") {
             buffer->mode.next_token = syntax::cmake_next_token;
+            BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
