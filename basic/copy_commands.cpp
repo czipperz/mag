@@ -69,7 +69,7 @@ void command_cut(Editor* editor, Command_Source source) {
 static void copy_cursor(Cursor* cursor,
                         Copy_Chain** copy_chain,
                         Editor* editor,
-                        Buffer* buffer,
+                        const Buffer* buffer,
                         Client* client) {
     uint64_t start = cursor->start();
     uint64_t end = cursor->end();
@@ -81,7 +81,7 @@ static void copy_cursor(Cursor* cursor,
 }
 
 void command_copy(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
     if (cursors.len == 1) {
         copy_cursor(&cursors[0], &source.client->global_copy_chain, editor, buffer, source.client);
