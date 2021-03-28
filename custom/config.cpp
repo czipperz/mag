@@ -407,36 +407,6 @@ static Key_Map cpp_key_map() {
     return key_map;
 }
 
-static Key_Map markdown_key_map() {
-    Key_Map key_map = {};
-    BIND(key_map, "A-h", markdown::command_reformat_paragraph);
-    return key_map;
-}
-
-static Key_Map js_key_map() {
-    Key_Map key_map = {};
-    BIND(key_map, "A-;", cpp::command_comment);
-    return key_map;
-}
-
-static Key_Map go_key_map() {
-    Key_Map key_map = {};
-    BIND(key_map, "A-;", cpp::command_comment);
-    return key_map;
-}
-
-static Key_Map shell_script_key_map() {
-    Key_Map key_map = {};
-    BIND(key_map, "A-h", basic::command_reformat_comment_hash);
-    return key_map;
-}
-
-static Key_Map python_key_map() {
-    Key_Map key_map = {};
-    BIND(key_map, "A-h", basic::command_reformat_comment_hash);
-    return key_map;
-}
-
 static Key_Map search_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "\n", command_search_open);
@@ -444,12 +414,6 @@ static Key_Map search_key_map() {
 
     BIND(key_map, "n", command_forward_line);
     BIND(key_map, "p", command_backward_line);
-    return key_map;
-}
-
-static Key_Map key_map_key_map() {
-    Key_Map key_map = {};
-    BIND(key_map, "\n", command_go_to_key_map_binding);
     return key_map;
 }
 
@@ -523,7 +487,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.starts_with("*man ")) {
             buffer->mode.next_token = syntax::process_next_token;
         } else if (buffer->name == "*key map*") {
-            buffer->mode.key_map = key_map_key_map();
+            BIND(buffer->mode.key_map, "\n", command_go_to_key_map_binding);
         } else if (buffer->name == "*splash page*") {
             buffer->mode.use_tabs = false;
         }
@@ -547,7 +511,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".md")) {
             buffer->mode.next_token = syntax::md_next_token;
-            buffer->mode.key_map = markdown_key_map();
+            BIND(buffer->mode.key_map, "A-h", markdown::command_reformat_paragraph);
         } else if (buffer->name.ends_with(".css")) {
             buffer->mode.next_token = syntax::css_next_token;
 
@@ -568,7 +532,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".js")) {
             buffer->mode.next_token = syntax::js_next_token;
-            buffer->mode.key_map = js_key_map();
+            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
@@ -577,7 +541,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".go")) {
             buffer->mode.next_token = syntax::go_next_token;
-            buffer->mode.key_map = go_key_map();
+            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
@@ -594,7 +558,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             }
 
             buffer->mode.next_token = syntax::sh_next_token;
-            buffer->mode.key_map = shell_script_key_map();
+            BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
@@ -602,7 +566,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".py") || buffer->name.ends_with(".gpy")) {
             buffer->mode.next_token = syntax::python_next_token;
-            buffer->mode.key_map = python_key_map();
+            BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
