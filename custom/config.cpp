@@ -155,7 +155,9 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-c -", command_copy_selected_region_length);
 
     BIND(key_map, "A-<", command_start_of_buffer);
+    BIND(key_map, "C-HOME", command_start_of_buffer);
     BIND(key_map, "A->", command_end_of_buffer);
+    BIND(key_map, "C-END", command_end_of_buffer);
 
     BIND(key_map, "C-x C-p", command_pop_jump);
     BIND(key_map, "A-LEFT", command_pop_jump);
