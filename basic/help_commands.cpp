@@ -119,7 +119,7 @@ static void command_run_command_by_name_callback(Editor* editor,
     {
         Buffer_Id* buffer_id = (Buffer_Id*)data;
         WITH_BUFFER(*buffer_id);
-        command = find_command(*buffer->mode.key_map, str);
+        command = find_command(buffer->mode.key_map, str);
     }
 
     if (!command) {

@@ -28,7 +28,7 @@ struct Key_Map {
 
     /// Lookup the Key_Bind for a specific key.  This does a binary search of the
     /// bindings.
-    Key_Bind* lookup(Key key);
+    const Key_Bind* lookup(Key key) const;
 
     void drop();
 };

@@ -15,7 +15,7 @@ struct Decoration {
     const VTable* vtable;
     void* data;
 
-    bool append(const Buffer* buffer, Window_Unified* window, cz::AllocatedString* string) {
+    bool append(const Buffer* buffer, Window_Unified* window, cz::AllocatedString* string) const {
         return vtable->append(buffer, window, string, data);
     }
 

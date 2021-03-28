@@ -471,7 +471,7 @@ static bool lookup_key_press_inner(cz::Slice<Key> key_chain,
                                    Command* command,
                                    size_t* end,
                                    size_t* max_depth,
-                                   Key_Map* map) {
+                                   const Key_Map* map) {
     *end = start;
 
     // Record the max depth so we know how many keys to delete.
@@ -485,7 +485,7 @@ static bool lookup_key_press_inner(cz::Slice<Key> key_chain,
         }
 
         // Look up this key in this level of the tree.
-        Key_Bind* bind = map->lookup(key_chain[*end]);
+        const Key_Bind* bind = map->lookup(key_chain[*end]);
         ++*end;
 
         // No key is bound in this key map.  So break.
@@ -512,7 +512,7 @@ static bool recursively_remap_and_lookup_key_press(const Key_Remap& remap,
                                                    Command* command,
                                                    size_t* end,
                                                    size_t* max_depth,
-                                                   Key_Map* map) {
+                                                   const Key_Map* map) {
     // Advance through keys that don't have alternatives.
     while (index < key_chain.len() && !remap.bound(key_chain[index])) {
         ++index;
@@ -546,7 +546,7 @@ static bool lookup_key_press(cz::Slice<Key> key_chain_orig,
                              size_t* end,
                              size_t* max_depth,
                              const Key_Remap& remap,
-                             Key_Map* map) {
+                             const Key_Map* map) {
     // `map` can be null if the user hasn't configured a `Mode` to have a special key map.
     if (map == nullptr) {
         return false;
@@ -578,7 +578,7 @@ static bool lookup_key_press_completion(cz::Slice<Key> key_chain,
 
     WITH_CONST_WINDOW_BUFFER(window);
     return lookup_key_press(key_chain, start, command, end, max_depth, editor->key_remap,
-                            buffer->mode.completion_key_map);
+                            &buffer->mode.completion_key_map);
 }
 
 static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
@@ -590,7 +590,7 @@ static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
                                     Client* client) {
     WITH_CONST_SELECTED_BUFFER(client);
     return lookup_key_press(key_chain, start, command, end, max_depth, editor->key_remap,
-                            buffer->mode.key_map);
+                            &buffer->mode.key_map);
 }
 
 static bool lookup_key_press_global(cz::Slice<Key> key_chain,

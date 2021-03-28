@@ -2,25 +2,25 @@
 
 #include <stdint.h>
 #include <cz/slice.hpp>
+#include "key_map.hpp"
 
 namespace mag {
 
 struct Contents_Iterator;
 struct Token;
-struct Key_Map;
 struct Decoration;
 struct Overlay;
 
 struct Mode {
-    Key_Map* key_map;
-    Key_Map* completion_key_map;
+    Key_Map key_map;
+    Key_Map completion_key_map;
 
     bool (*next_token)(Contents_Iterator* iterator /* in/out */,
                        Token* token /* out */,
                        uint64_t* state /* in/out */);
 
-    cz::Slice<Decoration> decorations;
-    cz::Slice<Overlay> overlays;
+    cz::Vector<Decoration> decorations;
+    cz::Vector<Overlay> overlays;
 
     /// The number of columns in a level of indentation.
     ///

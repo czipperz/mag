@@ -358,17 +358,18 @@ static void create_theme(Theme& theme) {
     theme.faces.push({226, {}, 0});  // Token_Type::SEARCH_FILE_COLUMN
     theme.faces.push({{}, {}, 0});   // Token_Type::SEARCH_RESULT
 
-    static Decoration decorations[] = {
-        syntax::decoration_line_number(), syntax::decoration_column_number(),
-        syntax::decoration_cursor_count(), syntax::decoration_read_only_indicator(),
-        syntax::decoration_pinned_indicator()};
-    theme.decorations = decorations;
+    theme.decorations.reserve(cz::heap_allocator(), 5);
+    theme.decorations.push(syntax::decoration_line_number());
+    theme.decorations.push(syntax::decoration_column_number());
+    theme.decorations.push(syntax::decoration_cursor_count());
+    theme.decorations.push(syntax::decoration_read_only_indicator());
+    theme.decorations.push(syntax::decoration_pinned_indicator());
 
-    static Overlay overlays[] = {syntax::overlay_matching_region({-1, 237, 0}),
-                                 syntax::overlay_preferred_column({-1, 21, 0}),
-                                 syntax::overlay_trailing_spaces({-1, 208, 0}),
-                                 syntax::overlay_incorrect_indent({-1, 208, 0})};
-    theme.overlays = overlays;
+    theme.overlays.reserve(cz::heap_allocator(), 4);
+    theme.overlays.push(syntax::overlay_matching_region({-1, 237, 0}));
+    theme.overlays.push(syntax::overlay_preferred_column({-1, 21, 0}));
+    theme.overlays.push(syntax::overlay_trailing_spaces({-1, 208, 0}));
+    theme.overlays.push(syntax::overlay_incorrect_indent({-1, 208, 0}));
 
     theme.max_completion_results = 5;
     theme.mini_buffer_completion_filter = spaces_are_wildcards_completion_filter;
@@ -383,7 +384,7 @@ void editor_created_callback(Editor* editor) {
     create_theme(editor->theme);
 }
 
-static Key_Map create_directory_key_map() {
+static Key_Map directory_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "\n", command_directory_open_path);
     BIND(key_map, "d", command_directory_delete_path);
@@ -398,13 +399,7 @@ static Key_Map create_directory_key_map() {
     return key_map;
 }
 
-static Key_Map* directory_key_map() {
-    static Key_Map key_map = create_directory_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_cpp_key_map() {
+static Key_Map cpp_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-x C-f", clang_format::command_clang_format_buffer);
     BIND(key_map, "A-;", cpp::command_comment);
@@ -412,73 +407,37 @@ static Key_Map create_cpp_key_map() {
     return key_map;
 }
 
-static Key_Map* cpp_key_map() {
-    static Key_Map key_map = create_cpp_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_markdown_key_map() {
+static Key_Map markdown_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "A-h", markdown::command_reformat_paragraph);
     return key_map;
 }
 
-static Key_Map* markdown_key_map() {
-    static Key_Map key_map = create_markdown_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_js_key_map() {
+static Key_Map js_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "A-;", cpp::command_comment);
     return key_map;
 }
 
-static Key_Map* js_key_map() {
-    static Key_Map key_map = create_js_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_go_key_map() {
+static Key_Map go_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "A-;", cpp::command_comment);
     return key_map;
 }
 
-static Key_Map* go_key_map() {
-    static Key_Map key_map = create_go_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_shell_script_key_map() {
+static Key_Map shell_script_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "A-h", basic::command_reformat_comment_hash);
     return key_map;
 }
 
-static Key_Map* shell_script_key_map() {
-    static Key_Map key_map = create_shell_script_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_python_key_map() {
+static Key_Map python_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "A-h", basic::command_reformat_comment_hash);
     return key_map;
 }
 
-static Key_Map* python_key_map() {
-    static Key_Map key_map = create_python_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_search_key_map() {
+static Key_Map search_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "\n", command_search_open);
     BIND(key_map, "g", command_search_reload);
@@ -488,36 +447,13 @@ static Key_Map create_search_key_map() {
     return key_map;
 }
 
-static Key_Map* search_key_map() {
-    static Key_Map key_map = create_search_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_man_key_map() {
-    Key_Map key_map = {};
-    return key_map;
-}
-
-static Key_Map* man_key_map() {
-    static Key_Map key_map = create_man_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_key_map_key_map() {
+static Key_Map key_map_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "\n", command_go_to_key_map_binding);
     return key_map;
 }
 
-static Key_Map* key_map_key_map() {
-    static Key_Map key_map = create_key_map_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_mini_buffer_key_map() {
+static Key_Map mini_buffer_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-n", command_next_completion);
     BIND(key_map, "C-p", command_previous_completion);
@@ -535,13 +471,7 @@ static Key_Map create_mini_buffer_key_map() {
     return key_map;
 }
 
-static Key_Map* mini_buffer_key_map() {
-    static Key_Map key_map = create_mini_buffer_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_window_completion_key_map() {
+static Key_Map window_completion_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-n", window_completion::command_next_completion);
     BIND(key_map, "C-p", window_completion::command_previous_completion);
@@ -555,23 +485,11 @@ static Key_Map create_window_completion_key_map() {
     return key_map;
 }
 
-static Key_Map* window_completion_key_map() {
-    static Key_Map key_map = create_window_completion_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
-}
-
-static Key_Map create_git_edit_key_map() {
+static Key_Map git_edit_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "C-c C-c", git::command_save_and_quit);
     BIND(key_map, "C-c C-k", git::command_abort_and_quit);
     return key_map;
-}
-
-static Key_Map* git_edit_key_map() {
-    static Key_Map key_map = create_git_edit_key_map();
-    static CZ_DEFER(key_map.drop());
-    return &key_map;
 }
 
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
@@ -604,7 +522,6 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.key_map = search_key_map();
         } else if (buffer->name.starts_with("*man ")) {
             buffer->mode.next_token = syntax::process_next_token;
-            buffer->mode.key_map = man_key_map();
         } else if (buffer->name == "*key map*") {
             buffer->mode.key_map = key_map_key_map();
         } else if (buffer->name == "*splash page*") {
@@ -613,8 +530,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         break;
 
     case Buffer::FILE:
-        static Decoration decorations[] = {syntax::decoration_line_ending_indicator()};
-        buffer->mode.decorations = decorations;
+        buffer->mode.decorations.reserve(cz::heap_allocator(), 1);
+        buffer->mode.decorations.push(syntax::decoration_line_ending_indicator());
 
         if (buffer->name.ends_with(".c") || buffer->name.ends_with(".h") ||
             buffer->name.ends_with(".cc") || buffer->name.ends_with(".hh") ||
@@ -622,46 +539,51 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->name.ends_with(".glsl")) {
             buffer->mode.next_token = syntax::cpp_next_token;
             buffer->mode.key_map = cpp_key_map();
+
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
-                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            buffer->mode.overlays = overlays;
+            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".md")) {
             buffer->mode.next_token = syntax::md_next_token;
             buffer->mode.key_map = markdown_key_map();
         } else if (buffer->name.ends_with(".css")) {
             buffer->mode.next_token = syntax::css_next_token;
+
             static const Token_Type types[] = {
                 Token_Type::CSS_PROPERTY, Token_Type::CSS_ELEMENT_SELECTOR,
                 Token_Type::CSS_ID_SELECTOR, Token_Type::CSS_CLASS_SELECTOR,
                 Token_Type::CSS_PSEUDO_SELECTOR};
-            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
-                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            buffer->mode.overlays = overlays;
+            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".html")) {
             buffer->mode.next_token = syntax::html_next_token;
+
             static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
                                                Token_Type::HTML_ATTRIBUTE_NAME};
-            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
-                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            buffer->mode.overlays = overlays;
+            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".js")) {
             buffer->mode.next_token = syntax::js_next_token;
             buffer->mode.key_map = js_key_map();
+
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
-                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            buffer->mode.overlays = overlays;
+            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".go")) {
             buffer->mode.next_token = syntax::go_next_token;
             buffer->mode.key_map = go_key_map();
+
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
-                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            buffer->mode.overlays = overlays;
+            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".sh") || buffer->name.ends_with(".bash") ||
                    buffer->name.ends_with(".zsh") || buffer->name == ".bashrc" ||
                    buffer->name == ".zshrc" || buffer->name == "Makefile") {
@@ -673,23 +595,26 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             buffer->mode.next_token = syntax::sh_next_token;
             buffer->mode.key_map = shell_script_key_map();
+
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
-                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            buffer->mode.overlays = overlays;
+            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".py") || buffer->name.ends_with(".gpy")) {
             buffer->mode.next_token = syntax::python_next_token;
             buffer->mode.key_map = python_key_map();
+
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
-                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            buffer->mode.overlays = overlays;
+            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name == "CMakeLists.txt") {
             buffer->mode.next_token = syntax::cmake_next_token;
+
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
-                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            buffer->mode.overlays = overlays;
+            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".patch") || buffer->name.ends_with(".diff")) {
             buffer->mode.next_token = syntax::patch_next_token;
             if (buffer->name == "addp-hunk-edit.diff") {
@@ -705,11 +630,12 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::color_test_next_token;
         } else {
             buffer->mode.next_token = syntax::general_next_token;
+
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            static Overlay overlays[] = {syntax::overlay_matching_pairs({-1, 237, 0}),
-                                         syntax::overlay_matching_tokens({-1, 237, 0}, types)};
-            buffer->mode.overlays = overlays;
+            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         }
         break;
     }

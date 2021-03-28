@@ -3,11 +3,11 @@
 #include <stdint.h>
 #include <cz/vector.hpp>
 #include "completion.hpp"
+#include "decoration.hpp"
 #include "face.hpp"
+#include "overlay.hpp"
 
 namespace mag {
-struct Decoration;
-struct Overlay;
 
 struct Theme {
     const char* font_file;
@@ -37,8 +37,8 @@ struct Theme {
     /// directly correspond to the token types.
     cz::Vector<Face> faces;
 
-    cz::Slice<Decoration> decorations;
-    cz::Slice<Overlay> overlays;
+    cz::Vector<Decoration> decorations;
+    cz::Vector<Overlay> overlays;
 
     size_t max_completion_results;
 
@@ -51,6 +51,8 @@ struct Theme {
 
     void drop(cz::Allocator allocator) {
         faces.drop(allocator);
+        decorations.drop(allocator);
+        overlays.drop(allocator);
     }
 };
 

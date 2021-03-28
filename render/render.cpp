@@ -458,22 +458,22 @@ static void draw_buffer_contents(Cell* cells,
     }
 
     CZ_DEFER({
-        for (size_t i = 0; i < editor->theme.overlays.len; ++i) {
-            Overlay* overlay = &editor->theme.overlays[i];
+        for (size_t i = 0; i < editor->theme.overlays.len(); ++i) {
+            const Overlay* overlay = &editor->theme.overlays[i];
             overlay->end_frame();
         }
-        for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
-            Overlay* overlay = &buffer->mode.overlays[i];
+        for (size_t i = 0; i < buffer->mode.overlays.len(); ++i) {
+            const Overlay* overlay = &buffer->mode.overlays[i];
             overlay->end_frame();
         }
     });
 
-    for (size_t i = 0; i < editor->theme.overlays.len; ++i) {
-        Overlay* overlay = &editor->theme.overlays[i];
+    for (size_t i = 0; i < editor->theme.overlays.len(); ++i) {
+        const Overlay* overlay = &editor->theme.overlays[i];
         overlay->start_frame(buffer, window, iterator);
     }
-    for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
-        Overlay* overlay = &buffer->mode.overlays[i];
+    for (size_t i = 0; i < buffer->mode.overlays.len(); ++i) {
+        const Overlay* overlay = &buffer->mode.overlays[i];
         overlay->start_frame(buffer, window, iterator);
     }
 
@@ -519,13 +519,13 @@ static void draw_buffer_contents(Cell* cells,
 
         {
             size_t j = 0;
-            for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
-                Overlay* overlay = &editor->theme.overlays[i];
+            for (size_t i = 0; i < editor->theme.overlays.len(); ++i, ++j) {
+                const Overlay* overlay = &editor->theme.overlays[i];
                 Face overlay_face = overlay->get_face_and_advance(buffer, window, iterator);
                 apply_face(&face, overlay_face);
             }
-            for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
-                Overlay* overlay = &buffer->mode.overlays[i];
+            for (size_t i = 0; i < buffer->mode.overlays.len(); ++i, ++j) {
+                const Overlay* overlay = &buffer->mode.overlays[i];
                 Face overlay_face = overlay->get_face_and_advance(buffer, window, iterator);
                 apply_face(&face, overlay_face);
             }
@@ -558,13 +558,13 @@ static void draw_buffer_contents(Cell* cells,
             {
                 Face face;
                 size_t j = 0;
-                for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
-                    Overlay* overlay = &editor->theme.overlays[i];
+                for (size_t i = 0; i < editor->theme.overlays.len(); ++i, ++j) {
+                    const Overlay* overlay = &editor->theme.overlays[i];
                     Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
                     apply_face(&face, overlay_face);
                 }
-                for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
-                    Overlay* overlay = &buffer->mode.overlays[i];
+                for (size_t i = 0; i < buffer->mode.overlays.len(); ++i, ++j) {
+                    const Overlay* overlay = &buffer->mode.overlays[i];
                     Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
                     apply_face(&face, overlay_face);
                 }
@@ -646,13 +646,13 @@ static void draw_buffer_decoration(Cell* cells,
     string.reserve(1);
     string.push(' ');
 
-    for (size_t i = 0; i < editor->theme.decorations.len; ++i) {
+    for (size_t i = 0; i < editor->theme.decorations.len(); ++i) {
         if (editor->theme.decorations[i].append(buffer, window, &string)) {
             string.reserve(1);
             string.push(' ');
         }
     }
-    for (size_t i = 0; i < buffer->mode.decorations.len; ++i) {
+    for (size_t i = 0; i < buffer->mode.decorations.len(); ++i) {
         if (buffer->mode.decorations[i].append(buffer, window, &string)) {
             string.reserve(1);
             string.push(' ');

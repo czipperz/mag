@@ -5,7 +5,7 @@
 
 namespace mag {
 
-static bool lookup_index(Key_Map* key_map, Key key, size_t* out) {
+static bool lookup_index(const Key_Map* key_map, Key key, size_t* out) {
     size_t start = 0;
     size_t end = key_map->bindings.len();
     while (start < end) {
@@ -24,7 +24,7 @@ static bool lookup_index(Key_Map* key_map, Key key, size_t* out) {
     return false;
 }
 
-Key_Bind* Key_Map::lookup(Key key) {
+const Key_Bind* Key_Map::lookup(Key key) const {
     size_t i;
     if (lookup_index(this, key, &i)) {
         return &bindings[i];
