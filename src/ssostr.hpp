@@ -4,6 +4,7 @@
 #include <string.h>
 #include <cz/allocator.hpp>
 #include <cz/str.hpp>
+#include <new>
 
 namespace mag {
 
@@ -74,8 +75,10 @@ struct SSOStr {
     static SSOStr from_constant(cz::Str str) {
         SSOStr self;
         if (str.len <= impl::ShortStr::MAX) {
+            new (&self.short_) impl::ShortStr;
             self.short_.init(str);
         } else {
+            new (&self.allocated) impl::AllocatedStr;
             self.allocated.init(str);
         }
         return self;
@@ -83,6 +86,7 @@ struct SSOStr {
 
     static SSOStr from_char(char c) {
         SSOStr self;
+        new (&self.short_) impl::ShortStr;
         self.short_.init({&c, 1});
         return self;
     }
@@ -90,10 +94,12 @@ struct SSOStr {
     static SSOStr as_duplicate(cz::Allocator allocator, cz::Str str) {
         SSOStr self;
         if (str.len <= impl::ShortStr::MAX) {
+            new (&self.short_) impl::ShortStr;
             self.short_.init(str);
         } else {
             char* buffer = (char*)allocator.alloc({str.len, 1});
             memcpy(buffer, str.buffer, str.len);
+            new (&self.allocated) impl::AllocatedStr;
             self.allocated.init({buffer, str.len});
         }
         return self;
