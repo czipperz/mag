@@ -1,5 +1,6 @@
 #include "client.hpp"
 
+#include <cz/date.hpp>
 #include "command_macros.hpp"
 #include "editor.hpp"
 
@@ -173,11 +174,17 @@ void Client::show_message(Editor* editor, cz::Str text) {
     {
         WITH_BUFFER(messages_id);
 
+        cz::Date date = cz::time_t_to_date_local(time(nullptr));
+        char date_string[32];
+        snprintf(date_string, sizeof(date_string), "%04d/%02d/%02d %02d:%02d:%02d: ", date.year,
+                 date.month, date.day_of_month, date.hour, date.minute, date.second);
+        buffer->contents.append(date_string);
+
         start = buffer->contents.len;
         end = buffer->contents.len + text.len;
 
         buffer->contents.append(text);
-        buffer->contents.append("\n\n");
+        buffer->contents.append("\n");
     }
 
     _message_time = std::chrono::system_clock::now();
