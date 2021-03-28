@@ -3,6 +3,7 @@
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
 #include "basic/buffer_commands.hpp"
+#include "basic/build_commands.hpp"
 #include "basic/capitalization_commands.hpp"
 #include "basic/commands.hpp"
 #include "basic/completion_commands.hpp"
@@ -242,7 +243,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-g m", man::command_man);
 
     BIND(key_map, "A-g A-g", command_goto_line);
-    BIND(key_map, "A-g c", command_goto_position);
+    BIND(key_map, "A-g g", command_goto_position);
 
     BIND(key_map, "A-g n", command_search_open_next);
     BIND(key_map, "A-g p", command_search_open_previous);
@@ -465,6 +466,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
     buffer->mode.next_token = default_next_token;
 
+    if (buffer->directory.contains("/mag/") || buffer->directory.contains("/cz/")) {
+        BIND(buffer->mode.key_map, "A-g c", command_build_debug_git_root);
+    }
+
     switch (buffer->type) {
     case Buffer::DIRECTORY:
         buffer->mode.next_token = syntax::directory_next_token;
@@ -476,6 +481,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::path_next_token;
             buffer->mode.key_map = mini_buffer_key_map();
         } else if (buffer->name.contains("*git grep ") || buffer->name.contains("*ag ")) {
+            buffer->mode.next_token = syntax::search_next_token;
+            buffer->mode.key_map = search_key_map();
+        } else if (buffer->name.contains("*build ")) {
+            // Build will eventually get its own tokenizer and key map.
             buffer->mode.next_token = syntax::search_next_token;
             buffer->mode.key_map = search_key_map();
         } else if (buffer->name.starts_with("*man ")) {
