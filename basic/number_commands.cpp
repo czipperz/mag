@@ -1,10 +1,10 @@
 #include "commands.hpp"
 
+#include <stdio.h>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/option.hpp>
 #include <cz/util.hpp>
-#include <stdio.h>
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "insert.hpp"
@@ -43,9 +43,7 @@ void command_insert_numbers(Editor* editor, Command_Source source) {
     transaction.commit(buffer);
 }
 
-static void change_numbers(Editor* editor, Command_Source source, int difference) {
-    WITH_SELECTED_BUFFER(source.client);
-
+static void change_numbers(Buffer* buffer, Window_Unified* window, int difference) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
@@ -115,11 +113,41 @@ static void change_numbers(Editor* editor, Command_Source source, int difference
 }
 
 void command_increment_numbers(Editor* editor, Command_Source source) {
-    change_numbers(editor, source, +1);
+    WITH_SELECTED_BUFFER(source.client);
+    change_numbers(buffer, window, +1);
 }
 
 void command_decrement_numbers(Editor* editor, Command_Source source) {
-    change_numbers(editor, source, -1);
+    WITH_SELECTED_BUFFER(source.client);
+    change_numbers(buffer, window, -1);
+}
+
+static void command_prompt_increase_numbers_callback(Editor* editor,
+                                                     Client* client,
+                                                     cz::Str mini_buffer_contents,
+                                                     void* data) {
+    char buf[32];
+    if (mini_buffer_contents.len > sizeof(buf) - 1) {
+    parse_error:
+        client->show_message(editor, "Error: couldn't parse number to increase by");
+        return;
+    }
+
+    memcpy(buf, mini_buffer_contents.buffer, mini_buffer_contents.len);
+    buf[mini_buffer_contents.len] = '\0';
+
+    int num = 0;
+    if (sscanf(buf, "%d", &num) != 1) {
+        goto parse_error;
+    }
+
+    WITH_SELECTED_BUFFER(client);
+    change_numbers(buffer, window, num);
+}
+
+void command_prompt_increase_numbers(Editor* editor, Command_Source source) {
+    source.client->show_dialog(editor, "Increase numbers by: ", no_completion_engine,
+                               command_prompt_increase_numbers_callback, nullptr);
 }
 
 }

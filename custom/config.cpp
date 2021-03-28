@@ -149,8 +149,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-c l", command_create_cursors_lines_in_region);
 
     BIND(key_map, "C-c #", command_insert_numbers);
-    BIND(key_map, "C-c +", command_increment_numbers);
-    BIND(key_map, "C-c -", command_decrement_numbers);
+    BIND(key_map, "C-c +", command_prompt_increase_numbers);
 
     BIND(key_map, "A-<", command_start_of_buffer);
     BIND(key_map, "A->", command_end_of_buffer);
