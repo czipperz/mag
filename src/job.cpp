@@ -123,6 +123,8 @@ bool run_console_command_in(Client* client,
     stdout_read.set_non_blocking();
     CZ_DEFER(options.std_out.close());
 
+    options.std_err = options.std_out;
+
     cz::Process process;
     if (!process.launch_script(script, &options)) {
         client->show_message(editor, error);
