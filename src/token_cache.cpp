@@ -274,6 +274,7 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
         ZoneScopedN("job_syntax_highlight_buffer_tick run syntax highlighting");
 
         if (buffer->token_cache.is_covered(buffer->contents.len)) {
+            job_syntax_highlight_buffer_kill(_data);
             return true;
         }
 
@@ -315,10 +316,14 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
         std::swap(buffer_mut->token_cache, clone);
     }
 
+    if (stop) {
+        job_syntax_highlight_buffer_kill(_data);
+    }
     return stop;
 }
 
 Asynchronous_Job job_syntax_highlight_buffer(cz::Arc_Weak<Buffer_Handle> handle) {
+    ZoneScoped;
     Job_Syntax_Highlight_Buffer_Data* data =
         cz::heap_allocator().alloc<Job_Syntax_Highlight_Buffer_Data>();
     CZ_ASSERT(data);
