@@ -78,13 +78,19 @@ void command_backward_line(Editor* editor, Command_Source source) {
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
-    push_jump(window, source.client, buffer);
+    if (source.previous_command != command_start_of_buffer &&
+        source.previous_command != command_end_of_buffer) {
+        push_jump(window, source.client, buffer);
+    }
     window->cursors[0].point = buffer->contents.len;
 }
 
 void command_start_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
-    push_jump(window, source.client, buffer);
+    if (source.previous_command != command_start_of_buffer &&
+        source.previous_command != command_end_of_buffer) {
+        push_jump(window, source.client, buffer);
+    }
     window->cursors[0].point = 0;
 }
 
