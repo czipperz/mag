@@ -11,6 +11,7 @@
 #include "contents.hpp"
 #include "job.hpp"
 #include "token.hpp"
+#include "tracy_format.hpp"
 
 namespace mag {
 
@@ -132,9 +133,25 @@ void Token_Cache::update(const Buffer* buffer) {
         uint64_t end_position = check_points[i].position;
         if (changed_check_points.get(i)) {
             Contents_Iterator iterator = buffer->contents.iterator_at(token.end);
+            size_t start = i;
             // Efficiently loop without recalculating the iterator so long as
             // the edit is screwing up future check points.
             while (i < check_points.len()) {
+                ZoneScopedN("mag::Token_Cache::update: one check point");
+
+                // If we don't resolve after 3 check points we probably won't in the immediate
+                // future so just discard our results.  This prevents us from stalling a
+                // really long time when the user starts typing a block comment at the start
+                // of a big file.  If we're on the main thread this will automatically kick
+                // off a background thread to tokenize the rest of the file.
+                if (i == start + 3) {
+                    TracyFormat(message, len, 1024, "Discarding check points after index %lu",
+                                (unsigned long)i);
+                    TracyMessage(message, len);
+                    check_points.set_len(i);
+                    return;
+                }
+
                 while (token.end < end_position) {
                     if (!buffer->mode.next_token(&iterator, &token, &state)) {
                         break;
