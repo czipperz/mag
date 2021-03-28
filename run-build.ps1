@@ -46,10 +46,11 @@ try {
                     $v = $_.split("="); set-item -force -path "ENV:\$($v[0])"  -value "$($v[1])"
                 }
             }
-        Write-Host "`nVisual Studio 2019 Command Prompt variables set." -ForegroundColor Yellow
+
+        Write-Host "Visual Studio 2019 Command Prompt variables set.`n" -ForegroundColor Yellow
     }
 
-    cmake -GNinja -DCMAKE_BUILD_TYPE="$config" $rest ../..
+    cmake -GNinja -DCMAKE_BUILD_TYPE="$config" $rest ../.. >$null
     if (!$?) { exit 1 }
     cmake --build . --config "$config"
     if (!$?) { exit 1 }

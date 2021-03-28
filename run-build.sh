@@ -12,5 +12,5 @@ shift
 mkdir -p "$directory"
 cd "$directory"
 
-cmake -DCMAKE_BUILD_TYPE="$config" "$@" ../..
+cmake -DCMAKE_BUILD_TYPE="$config" "$@" ../.. >/dev/null
 cmake --build . --config "$config"
