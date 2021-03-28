@@ -63,12 +63,18 @@ bool search_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
     if (*state == START_OF_FILE_LINE) {
         iterator->advance();
         while (!iterator->at_eob()) {
-            if (iterator->get() == ':') {
+            char ch = iterator->get();
+            if (ch == ':') {
                 break;
             }
-            if (iterator->get() == '\n') {
+            if (ch == '\n') {
                 token->type = Token_Type::SEARCH_RESULT;
                 *state = END_OF_LINE;
+                goto ret;
+            }
+            if (!cz::is_digit(ch)) {
+                token->type = Token_Type::SEARCH_RESULT;
+                *state = START_OF_RESULT;
                 goto ret;
             }
             iterator->advance();
@@ -88,12 +94,18 @@ bool search_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
     if (*state == START_OF_FILE_COLUMN) {
         iterator->advance();
         while (!iterator->at_eob()) {
-            if (iterator->get() == ':') {
+            char ch = iterator->get();
+            if (ch == ':') {
                 break;
             }
-            if (iterator->get() == '\n') {
+            if (ch == '\n') {
                 token->type = Token_Type::SEARCH_RESULT;
                 *state = END_OF_LINE;
+                goto ret;
+            }
+            if (!cz::is_digit(ch)) {
+                token->type = Token_Type::SEARCH_RESULT;
+                *state = START_OF_RESULT;
                 goto ret;
             }
             iterator->advance();
