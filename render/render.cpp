@@ -263,10 +263,20 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 end_iterator.retreat_to(window->start_position);
                 compute_visible_end(window, &end_iterator);
 
+                // Tokenization happens from the top of the file to the bottom.  So if we want to
+                // move from the bottom to the top and the bottom isn't tokenized then we would
+                // stall the editor.  So jump to one page from the end and animate from there.
+                bool force_teleport = false;
+                if (!buffer->token_cache.is_covered(
+                        window_cache->v.unified.animation.visible_start)) {
+                    force_teleport = true;
+                    window_cache->v.unified.animation.visible_start = end_iterator.position;
+                }
+
                 bool force_break = false;
                 float speed_loop_speed = speed_start;
                 if (!window_cache->v.unified.animation.slam_on_the_breaks &&
-                    (iterator.position <= end_iterator.position ||
+                    (force_teleport || iterator.position <= end_iterator.position ||
                      window_cache->v.unified.animation.speed <= -(float)window->rows)) {
                     size_t lines = 0;
                     Contents_Iterator it = iterator;
@@ -290,11 +300,10 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                     force_break = speed_loop_speed <= -window_cache->v.unified.animation.speed;
                 }
 
-                // If we are already breaking, haven't tokenized to leap all the way without
-                // stalling, or are moving too slow to teleport, then move line by line.
+                // If we are already breaking or are moving too
+                // slow to teleport, then move line by line.
                 if (window_cache->v.unified.animation.slam_on_the_breaks ||
-                    !buffer->token_cache.is_covered(window->start_position) ||
-                    (!force_break &&
+                    (!force_break && !force_teleport &&
                      window_cache->v.unified.animation.speed > -(float)window->rows)) {
                     // Go line by line.
                     for (float i = -window_cache->v.unified.animation.speed; i > 0; --i) {
