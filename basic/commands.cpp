@@ -1176,6 +1176,11 @@ void command_submit_mini_buffer(Editor* editor, Command_Source source) {
         mini_buffer_contents = clear_buffer(buffer);
     }
 
+    {
+        WITH_BUFFER(source.client->messages_id);
+        buffer->contents.insert(source.client->_message.end, mini_buffer_contents);
+    }
+
     source.client->restore_selected_buffer();
     source.client->_message.response_callback(editor, source.client, mini_buffer_contents,
                                               source.client->_message.response_callback_data);
