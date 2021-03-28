@@ -1,5 +1,6 @@
 #include "client.hpp"
 
+#include <stdio.h>
 #include <cz/date.hpp>
 #include "command_macros.hpp"
 #include "editor.hpp"
