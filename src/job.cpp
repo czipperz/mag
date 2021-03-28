@@ -88,6 +88,11 @@ bool run_console_command(Client* client,
         wd = {working_directory};
     }
 
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        push_jump(window, client, buffer);
+    }
+
     cz::Arc<Buffer_Handle> handle = editor->create_temp_buffer(buffer_name, wd);
     {
         WITH_BUFFER_HANDLE(handle);

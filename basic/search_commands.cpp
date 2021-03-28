@@ -86,8 +86,6 @@ static void open_file_and_goto_position(Editor* editor,
     open_file(editor, client, path);
 
     WITH_CONST_SELECTED_BUFFER(client);
-    push_jump(window, client, buffer);
-
     Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
     window->cursors[0].point = iterator.position;
     center_in_window(window, iterator);
