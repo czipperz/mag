@@ -465,6 +465,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
     buffer->mode.indent_after_open_pair = false;
 
+    buffer->mode.search_case_insensitive = true;
+
     buffer->mode.preferred_column = 100;
 
     buffer->mode.completion_key_map = window_completion_key_map();

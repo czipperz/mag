@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <Tracy.hpp>
+#include <cz/char_type.hpp>
 #include <cz/heap.hpp>
 #include "buffer.hpp"
 #include "overlay.hpp"
@@ -71,12 +72,22 @@ static Face overlay_matching_region_get_face_and_advance(const Buffer* buffer,
     if (data->countdown_cursor_region == 0) {
         Contents_Iterator marked_region_iterator = data->start_marked_region;
         uint64_t end_marked_region = window->cursors[0].end();
-        while (marked_region_iterator.position < end_marked_region && !iterator.at_eob()) {
-            if (marked_region_iterator.get() != iterator.get()) {
-                break;
+        if (buffer->mode.search_case_insensitive) {
+            while (marked_region_iterator.position < end_marked_region && !iterator.at_eob()) {
+                if (cz::to_lower(marked_region_iterator.get()) != cz::to_lower(iterator.get())) {
+                    break;
+                }
+                marked_region_iterator.advance();
+                iterator.advance();
             }
-            marked_region_iterator.advance();
-            iterator.advance();
+        } else {
+            while (marked_region_iterator.position < end_marked_region && !iterator.at_eob()) {
+                if (marked_region_iterator.get() != iterator.get()) {
+                    break;
+                }
+                marked_region_iterator.advance();
+                iterator.advance();
+            }
         }
 
         if (marked_region_iterator.position == end_marked_region) {

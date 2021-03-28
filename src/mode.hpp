@@ -57,6 +57,9 @@ struct Mode {
     /// Increase the level of indentation on the line after an open pair automatically.
     bool indent_after_open_pair = false;
 
+    /// Controls whether search commands stemming from this buffer will be case sensitive.
+    bool search_case_insensitive = true;
+
     void drop();
 };
 
