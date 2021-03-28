@@ -148,7 +148,7 @@ void command_directory_toggle_sort(Editor* editor, Command_Source source) {
     reload_directory_window(editor, source.client, window, buffer, has_entry, selected.as_str());
 }
 
-static bool get_path(Buffer* buffer, cz::String* path, uint64_t point) {
+static bool get_path(const Buffer* buffer, cz::String* path, uint64_t point) {
     Contents_Iterator start = buffer->contents.iterator_at(point);
     Contents_Iterator end = start;
     start_of_line(&start);

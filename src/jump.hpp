@@ -14,7 +14,7 @@ struct Jump {
     uint64_t position;
     size_t change_index;
 
-    void update(Buffer* buffer);
+    void update(const Buffer* buffer);
 };
 
 struct Jump_Chain {

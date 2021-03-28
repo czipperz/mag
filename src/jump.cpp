@@ -9,7 +9,7 @@
 
 namespace mag {
 
-void Jump::update(Buffer* buffer) {
+void Jump::update(const Buffer* buffer) {
     position_after_changes(
         {buffer->changes.elems() + change_index, buffer->changes.len() - change_index}, &position);
     change_index = buffer->changes.len();
@@ -33,7 +33,7 @@ void goto_jump(Editor* editor, Client* client, Jump* jump) {
     Window_Unified* window = client->selected_window();
     kill_extra_cursors(window, client);
     {
-        WITH_WINDOW_BUFFER(window);
+        WITH_CONST_WINDOW_BUFFER(window);
         jump->update(buffer);
     }
     window->show_marks = false;
