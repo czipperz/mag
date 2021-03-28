@@ -101,13 +101,13 @@ struct Wildcard_Pattern {
         for (size_t j = 0; j < pieces.len(); ++j) {
             cz::Str piece = pieces[j];
             if (j == 0 && !wild_start) {
-                if (string.starts_with(piece)) {
+                if (string.starts_with_case_insensitive(piece)) {
                     index += piece.len;
                 } else {
                     return false;
                 }
             } else {
-                const char* find = string.slice_start(index).find(piece);
+                const char* find = string.slice_start(index).find_case_insensitive(piece);
                 if (!find) {
                     return false;
                 } else {
