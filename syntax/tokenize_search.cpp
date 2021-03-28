@@ -41,6 +41,11 @@ bool search_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
             if (iterator->get() == ':') {
                 break;
             }
+            if (iterator->get() == '\n') {
+                token->type = Token_Type::SEARCH_RESULT;
+                *state = END_OF_LINE;
+                goto ret;
+            }
             iterator->advance();
         }
         token->type = Token_Type::SEARCH_FILE_NAME;
@@ -61,6 +66,11 @@ bool search_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
             if (iterator->get() == ':') {
                 break;
             }
+            if (iterator->get() == '\n') {
+                token->type = Token_Type::SEARCH_RESULT;
+                *state = END_OF_LINE;
+                goto ret;
+            }
             iterator->advance();
         }
         token->type = Token_Type::SEARCH_FILE_LINE;
@@ -80,6 +90,11 @@ bool search_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
         while (!iterator->at_eob()) {
             if (iterator->get() == ':') {
                 break;
+            }
+            if (iterator->get() == '\n') {
+                token->type = Token_Type::SEARCH_RESULT;
+                *state = END_OF_LINE;
+                goto ret;
             }
             iterator->advance();
         }
