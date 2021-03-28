@@ -194,6 +194,24 @@ void command_reformat_comment(Editor* editor, Command_Source source) {
     if (basic::reformat_at(buffer, iterator, "/* ", " * ")) {
         return;
     }
+
+    if (basic::reformat_at(buffer, iterator, "/* ", "   ")) {
+        return;
+    }
+}
+
+void command_reformat_comment_block_only(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+
+    if (basic::reformat_at(buffer, iterator, "/* ", " * ")) {
+        return;
+    }
+
+    if (basic::reformat_at(buffer, iterator, "/* ", "   ")) {
+        return;
+    }
 }
 
 }

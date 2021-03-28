@@ -516,6 +516,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-h", markdown::command_reformat_paragraph);
         } else if (buffer->name.ends_with(".css")) {
             buffer->mode.next_token = syntax::css_next_token;
+            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment_block_only);
 
             static const Token_Type types[] = {
                 Token_Type::CSS_PROPERTY, Token_Type::CSS_ELEMENT_SELECTOR,
