@@ -146,7 +146,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         buffer->contents.slice_into(start_next, end_next.position, buf + 1);
 
         Edit remove;
-        if (remove_after_newline) {
+        if (remove_after_newline && end_next.position < buffer->contents.len) {
             remove.value =
                 SSOStr::from_constant({buf + 1, end_next.position - start_next.position + 1});
             remove.position = start_next.position;
