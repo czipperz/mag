@@ -434,10 +434,11 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
         if (!get_path(buffer, &path, window->cursors[0].point)) {
             return;
         }
+        push_jump(window, source.client, buffer);
     }
 
     if (path.len() > 0) {
