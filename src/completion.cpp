@@ -6,6 +6,7 @@
 #include <cz/file.hpp>
 #include <cz/fs/directory.hpp>
 #include <cz/heap.hpp>
+#include <cz/path.hpp>
 #include <cz/process.hpp>
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
@@ -230,8 +231,17 @@ static void file_completion_engine_data_cleanup(void* _data) {
 }
 
 static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
-    const char* dir_sep = query.rfind('/');
-    if (dir_sep) {
+    bool found_dir_sep = false;
+    size_t index = query.len;
+    while (index > 0) {
+        --index;
+        if (cz::path::is_dir_sep(query[index])) {
+            found_dir_sep = true;
+            break;
+        }
+    }
+
+    if (found_dir_sep) {
         // Replace ~ with user home directory.
         if (query.starts_with("~/")) {
             const char* user_home_path;
@@ -243,7 +253,7 @@ static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
 
             if (user_home_path) {
                 cz::Str home = user_home_path;
-                size_t len = dir_sep - (query.buffer + 1) + 1;
+                size_t len = index;
                 directory->reserve(cz::heap_allocator(), home.len + len + 1);
                 directory->append(home);
                 directory->append({query.buffer + 1, len});
@@ -252,7 +262,7 @@ static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
         }
 
         // Normal case: "./u" or "/a/b/c".
-        size_t len = dir_sep - query.buffer + 1;
+        size_t len = index + 1;
         directory->reserve(cz::heap_allocator(), len + 1);
         directory->append({query.buffer, len});
         return {query.buffer, len};
