@@ -16,6 +16,7 @@
 #include "contents.hpp"
 #include "editor.hpp"
 #include "file.hpp"
+#include "job.hpp"
 #include "match.hpp"
 #include "movement.hpp"
 
@@ -443,6 +444,47 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
 
     if (path.len() > 0) {
         open_file(editor, source.client, path);
+    }
+}
+
+void command_directory_run_path(Editor* editor, Command_Source source) {
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
+        if (!get_path(buffer, &path, window->cursors[0].point)) {
+            return;
+        }
+    }
+
+    if (path.len() > 0) {
+        cz::Process_Options options;
+        options.working_directory = directory.buffer();
+
+#ifdef _WIN32
+        cz::path::convert_to_back_slashes(path.buffer(), path.len());
+        cz::Str args[] = {"cmd", "/C", "start", path};
+#else
+        cz::Str args[] = {path};
+#endif
+
+        cz::Process process;
+        if (!process.launch_program(args, &options)) {
+            cz::String string = {};
+            CZ_DEFER(string.drop(cz::heap_allocator()));
+            cz::Str prefix = "Failed to run path ";
+            string.reserve(cz::heap_allocator(), prefix.len + path.len());
+            string.append(prefix);
+            string.append(path);
+            source.client->show_message(editor, string);
+            return;
+        }
+
+        editor->add_asynchronous_job(job_process_silent(process));
     }
 }
 

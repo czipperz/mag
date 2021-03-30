@@ -391,6 +391,7 @@ void editor_created_callback(Editor* editor) {
 static Key_Map directory_key_map() {
     Key_Map key_map = {};
     BIND(key_map, "\n", command_directory_open_path);
+    BIND(key_map, "s", command_directory_run_path);
     BIND(key_map, "d", command_directory_delete_path);
     BIND(key_map, "c", command_directory_copy_path);
     BIND(key_map, "r", command_directory_rename_path);
