@@ -212,6 +212,11 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         float speed_increment = 0.5f;
         float speed_multiplier = 1.3f;
 
+        // When accelerating we preincrement the speed.  So when we break we need to
+        // postdecrement the speed.  The way we do this is by storing the original
+        // speed and then overriding it if we are accelerating with the new speed.
+        float speed_lines_to_shift = window_cache->v.unified.animation.speed;
+
         // Setup animation.
         if (window_cache->v.unified.animation.slam_on_the_breaks) {
             if (window_cache->v.unified.animation.speed > 0) {
@@ -234,6 +239,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             if (window_cache->v.unified.animation.speed > (float)window->rows) {
                 window_cache->v.unified.animation.speed = (float)window->rows;
             }
+            speed_lines_to_shift = window_cache->v.unified.animation.speed;
         } else if (window_cache->v.unified.animation.visible_start > iterator.position) {
             if (window_cache->v.unified.animation.speed >= 0) {
                 window_cache->v.unified.animation.speed = speed_start;
@@ -243,6 +249,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             if (window_cache->v.unified.animation.speed < -(float)window->rows) {
                 window_cache->v.unified.animation.speed = -(float)window->rows;
             }
+            speed_lines_to_shift = window_cache->v.unified.animation.speed;
         }
 
         // Run animations.
@@ -306,7 +313,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                     (!force_break && !force_teleport &&
                      window_cache->v.unified.animation.speed > -(float)window->rows)) {
                     // Go line by line.
-                    for (float i = -window_cache->v.unified.animation.speed; i > 0; --i) {
+                    for (float i = -speed_lines_to_shift; i > 0; --i) {
                         backward_char(&iterator);
                         start_of_line(&iterator);
                     }
@@ -369,7 +376,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                     (!force_break &&
                      window_cache->v.unified.animation.speed < (float)window->rows)) {
                     // Go line by line.
-                    for (float i = window_cache->v.unified.animation.speed; i > 0; --i) {
+                    for (float i = speed_lines_to_shift; i > 0; --i) {
                         end_of_line(&iterator);
                         forward_char(&iterator);
                     }
