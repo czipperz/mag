@@ -59,6 +59,7 @@ bool Key_Remap::bound(Key key) const {
 Key Key_Remap::get(Key key) const {
     size_t index;
     bool present = lookup_index(transformations, key, &index);
+    (void)present;
     CZ_DEBUG_ASSERT(present);
     return transformations[index].out;
 }
