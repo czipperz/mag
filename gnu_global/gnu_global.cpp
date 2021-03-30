@@ -98,7 +98,7 @@ const char* lookup(const char* directory,
         ++file_name_start;
 
         const char* line_number_start = line.slice_start(file_name_start).find('\t');
-        if (!line_number_start || line_number_start + 2 >= line.end()) {
+        if (!line_number_start || line_number_start + 2 > line.end()) {
             return "Invalid `global` output";
         }
 
