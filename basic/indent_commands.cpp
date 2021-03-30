@@ -396,5 +396,66 @@ void command_delete_whitespace(Editor* editor, Command_Source source) {
     transaction.commit(buffer);
 }
 
+void command_merge_lines(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    uint64_t count = 0;
+    size_t edits = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        Contents_Iterator start = buffer->contents.iterator_at(cursors[i].point);
+        end_of_line(&start);
+
+        if (start.at_eob()) {
+            continue;
+        }
+
+        Contents_Iterator end = start;
+        backward_through_whitespace(&start);
+        forward_char(&end);
+        forward_through_whitespace(&end);
+
+        count += end.position - start.position;
+        ++edits;
+    }
+
+    Transaction transaction;
+    transaction.init(edits * 2, count);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        Contents_Iterator start = buffer->contents.iterator_at(cursors[i].point);
+        end_of_line(&start);
+
+        if (start.at_eob()) {
+            continue;
+        }
+
+        Contents_Iterator end = start;
+        backward_through_whitespace(&start);
+        forward_char(&end);
+        forward_through_whitespace(&end);
+
+        Edit remove;
+        remove.value = buffer->contents.slice(transaction.value_allocator(), start, end.position);
+        remove.position = start.position - offset;
+        remove.flags = Edit::REMOVE;
+        transaction.push(remove);
+
+        Edit insert;
+        insert.value = SSOStr::from_char(' ');
+        insert.position = start.position - offset;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+
+        offset += end.position - start.position;
+        --offset;
+    }
+
+    transaction.commit(buffer);
+}
+
 }
 }

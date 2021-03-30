@@ -11,6 +11,7 @@ void command_increase_indent(Editor* editor, Command_Source source);
 void command_decrease_indent(Editor* editor, Command_Source source);
 
 void command_delete_whitespace(Editor* editor, Command_Source source);
+void command_merge_lines(Editor* editor, Command_Source source);
 
 }
 }

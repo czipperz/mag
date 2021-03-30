@@ -196,6 +196,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-i", command_decrease_indent);
     BIND(key_map, "S-\t", command_decrease_indent);
     BIND(key_map, "A-=", command_delete_whitespace);
+    BIND(key_map, "A-^", command_merge_lines);
 
     // Note: consider rebinding this in programming language
     // specific key maps so that the reformat works for comments.
