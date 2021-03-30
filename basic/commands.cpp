@@ -1051,6 +1051,7 @@ static void command_search_forward_callback(Editor* editor,
                                             cz::Str query,
                                             void* data) {
     WITH_CONST_SELECTED_BUFFER(client);
+    push_jump(window, client, buffer);
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_forward, {
@@ -1080,6 +1081,7 @@ static void command_search_backward_callback(Editor* editor,
                                              cz::Str query,
                                              void* data) {
     WITH_CONST_SELECTED_BUFFER(client);
+    push_jump(window, client, buffer);
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_backward, {
