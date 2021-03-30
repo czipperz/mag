@@ -75,6 +75,39 @@ Asynchronous_Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
     return job;
 }
 
+struct Process_Silent_Job_Data {
+    cz::Process process;
+};
+
+static void process_silent_job_kill(void* _data) {
+    Process_Silent_Job_Data* data = (Process_Silent_Job_Data*)_data;
+    data->process.kill();
+    cz::heap_allocator().dealloc(data);
+}
+
+static bool process_silent_job_tick(Asynchronous_Job_Handler*, void* _data) {
+    Process_Silent_Job_Data* data = (Process_Silent_Job_Data*)_data;
+    int ret;
+    if (data->process.try_join(&ret)) {
+        cz::heap_allocator().dealloc(data);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+Asynchronous_Job job_process_silent(cz::Process process) {
+    Process_Silent_Job_Data* data = cz::heap_allocator().alloc<Process_Silent_Job_Data>();
+    CZ_ASSERT(data);
+    data->process = process;
+
+    Asynchronous_Job job;
+    job.tick = process_silent_job_tick;
+    job.kill = process_silent_job_kill;
+    job.data = data;
+    return job;
+}
+
 bool run_console_command(Client* client,
                          Editor* editor,
                          const char* working_directory,

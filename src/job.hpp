@@ -81,6 +81,10 @@ struct Synchronous_Job {
 Asynchronous_Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
                                     cz::Process process,
                                     cz::Input_File output);
+
+/// A job that joins the process when it completes and does nothing until that point.
+Asynchronous_Job job_process_silent(cz::Process process);
+
 bool run_console_command(Client* client,
                          Editor* editor,
                          const char* working_directory,
