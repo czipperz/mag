@@ -5,14 +5,24 @@
 #include "command.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
-#include "reformat_commands.hpp"
 #include "match.hpp"
 #include "movement.hpp"
+#include "reformat_commands.hpp"
 
 namespace mag {
 namespace basic {
 
 static bool end_of_sentence(cz::Str word) {
+    if (word.starts_with("(")) {
+        word = word.slice_start(1);
+    }
+
+    // Special case words that aren't the end of a sentence.
+    if (word.equals_case_insensitive("e.g.") || word.equals_case_insensitive("ex.") ||
+        word.equals_case_insensitive("i.e.") || word.equals_case_insensitive("ie.")) {
+        return false;
+    }
+
     return word.ends_with(".") || word.ends_with("!") || word.ends_with("?") ||
            word.ends_with(".)") || word.ends_with("!)") || word.ends_with("?)");
 }
