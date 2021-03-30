@@ -72,18 +72,46 @@ static void parse_number(uint64_t* num, size_t* index, cz::Str str) {
 
 static void parse_replacements(cz::Vector<Replacement>* replacements,
                                cz::Str output_xml,
-                               size_t* total_len) {
+                               size_t* total_len,
+                               cz::Str* error_line) {
     ZoneScoped;
 
     // Todo: make this more secure.
     size_t index = 0;
     int count_greater = 0;
+    for (; index < output_xml.len && count_greater < 1; ++index) {
+        if (output_xml[index] == '>') {
+            ++count_greater;
+        }
+    }
+    size_t start_of_replacements_tag = index;
     for (; index < output_xml.len && count_greater < 2; ++index) {
         if (output_xml[index] == '>') {
             ++count_greater;
         }
     }
     ++index;
+
+    // If there is an error it looks like `<replacements xml:space='preserve'
+    // incomplete_format='true' line='42'>`.  The normal case has
+    // `incomplete_format='false'` and `line` is not specified.
+    cz::Str replacements_tag = output_xml.slice(start_of_replacements_tag, index);
+    const char* incomplete_format = replacements_tag.find("incomplete_format");
+    if (incomplete_format) {
+        size_t index = incomplete_format - replacements_tag.buffer + strlen("incomplete_format");
+        if (advance(&index, replacements_tag, "='true' line='")) {
+            size_t end = index;
+            for (; end < replacements_tag.len; ++end) {
+                if (!cz::is_digit(replacements_tag[end])) {
+                    break;
+                }
+            }
+
+            if (end > index) {
+                *error_line = replacements_tag.slice(index, end);
+            }
+        }
+    }
 
     while (index < output_xml.len) {
         Replacement replacement;
@@ -119,13 +147,14 @@ static void parse_replacements(cz::Vector<Replacement>* replacements,
 
 static void parse_and_apply_replacements(Buffer_Handle* handle,
                                          cz::Str output_xml,
-                                         size_t change_index) {
+                                         size_t change_index,
+                                         cz::Str* error_line) {
     ZoneScoped;
 
     cz::Vector<Replacement> replacements = {};
     CZ_DEFER(replacements.drop(cz::heap_allocator()));
     size_t total_len = 0;
-    parse_replacements(&replacements, output_xml, &total_len);
+    parse_replacements(&replacements, output_xml, &total_len, error_line);
 
     Transaction transaction;
     transaction.init(2 * replacements.len(), total_len);
@@ -186,7 +215,7 @@ struct Clang_Format_Job_Data {
     cz::String output_xml;
 };
 
-static bool clang_format_job_tick(Asynchronous_Job_Handler*, void* _data) {
+static bool clang_format_job_tick(Asynchronous_Job_Handler* handler, void* _data) {
     ZoneScoped;
 
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
@@ -205,9 +234,21 @@ static bool clang_format_job_tick(Asynchronous_Job_Handler*, void* _data) {
             cz::Arc<Buffer_Handle> handle;
             if (data->buffer_handle.upgrade(&handle)) {
                 CZ_DEFER(handle.drop());
+                cz::Str error_line = {};
                 parse_and_apply_replacements(handle.get(),
                                              {data->output_xml.buffer(), data->output_xml.len()},
-                                             data->change_index);
+                                             data->change_index, &error_line);
+
+                if (error_line.len > 0) {
+                    cz::String message = {};
+                    CZ_DEFER(message.drop(cz::heap_allocator()));
+                    cz::Str prefix = "Error: clang-format failed on line ";
+                    message.reserve(cz::heap_allocator(), prefix.len + error_line.len);
+                    message.append(prefix);
+                    message.append(error_line);
+
+                    handler->show_message(message);
+                }
             }
 
             data->output_xml.drop(cz::heap_allocator());
