@@ -9,6 +9,39 @@
 
 namespace mag {
 
+void Asynchronous_Job_Handler::add_synchronous_job(Synchronous_Job job) {
+    pending_jobs.reserve(cz::heap_allocator(), 1);
+    pending_jobs.push(job);
+}
+
+struct Show_Message_Job_Data {
+    cz::String message;
+};
+
+static void show_message_job_kill(void* _data) {
+    Show_Message_Job_Data* data = (Show_Message_Job_Data*)_data;
+    data->message.drop(cz::heap_allocator());
+}
+
+static bool show_message_job_tick(Editor* editor, Client* client, void* _data) {
+    Show_Message_Job_Data* data = (Show_Message_Job_Data*)_data;
+    client->show_message(editor, data->message);
+    data->message.drop(cz::heap_allocator());
+    return true;
+}
+
+void Asynchronous_Job_Handler::show_message(cz::Str message) {
+    Show_Message_Job_Data* data = cz::heap_allocator().alloc<Show_Message_Job_Data>();
+    CZ_ASSERT(data);
+    data->message = message.duplicate(cz::heap_allocator());
+
+    Synchronous_Job job;
+    job.tick = show_message_job_tick;
+    job.kill = show_message_job_kill;
+    job.data = data;
+    add_synchronous_job(job);
+}
+
 struct Process_Append_Job_Data {
     cz::Arc_Weak<Buffer_Handle> buffer_handle;
     cz::Process process;

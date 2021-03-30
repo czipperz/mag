@@ -29,6 +29,9 @@ public:
     /// `Editor` and `Client` making it much more powerful.  However, because
     /// it runs in the main thread, it is more expensive.
     void add_synchronous_job(Synchronous_Job);
+
+    /// Show a message to the user.
+    void show_message(cz::Str message);
 };
 
 /// An `Asynchronous_Job` represents a task to be performed in the background.
