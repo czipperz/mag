@@ -48,6 +48,8 @@ struct Run_Jobs {
         cz::String queue_message = {};
         CZ_DEFER(queue_message.drop(cz::heap_allocator()));
 
+        bool started = false;
+
         bool remove = false;
         while (1) {
             size_t i = 0;
@@ -105,6 +107,11 @@ struct Run_Jobs {
                 ++i;
             }
 
+            if (!started) {
+                FrameMarkStart("job thread");
+                started = true;
+            }
+
             {
                 ZoneScopedN("job thread run job");
                 try {
@@ -123,6 +130,11 @@ struct Run_Jobs {
 
             if (false) {
             sleep:
+                if (started) {
+                    FrameMarkEnd("job thread");
+                    started = false;
+                }
+
                 ZoneScopedN("job thread sleeping");
                 std::this_thread::sleep_for(std::chrono::milliseconds(3));
             }
