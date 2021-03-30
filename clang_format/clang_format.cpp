@@ -203,7 +203,9 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
 
     transaction.commit(buffer);
 
-    save_buffer(buffer);
+    if (error_line->len == 0) {
+        save_buffer(buffer);
+    }
 }
 
 struct Clang_Format_Job_Data {
