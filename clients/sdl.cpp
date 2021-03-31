@@ -755,30 +755,29 @@ static void process_clipboard_updates(Server* server,
     ZoneScoped;
 
     char* clipboard_currently_cstr = SDL_GetClipboardText();
-    if (clipboard_currently_cstr) {
-        cz::Str clipboard_currently = clipboard_currently_cstr;
+    if (!clipboard_currently_cstr) {
+        return;
+    }
+
+    CZ_DEFER(SDL_free(clipboard_currently_cstr));
+    cz::Str clipboard_currently = clipboard_currently_cstr;
+
+    if (clipboard_currently == "") {
+        return;
+    }
 
 #ifdef _WIN32
-        if (clipboard_currently == "") {
-            return;
-        }
+    cz::strip_carriage_returns(clipboard_currently_cstr, &clipboard_currently.len);
 #endif
 
-#ifdef _WIN32
-        cz::strip_carriage_returns(clipboard_currently_cstr, &clipboard_currently.len);
-#endif
+    if (clipboard->value != clipboard_currently) {
+        set_clipboard_variable(&clipboard->value, clipboard_currently);
 
-        if (clipboard->value != clipboard_currently) {
-            set_clipboard_variable(&clipboard->value, clipboard_currently);
-
-            Copy_Chain* chain = server->editor.copy_buffer.allocator().alloc<Copy_Chain>();
-            chain->value =
-                SSOStr::as_duplicate(server->editor.copy_buffer.allocator(), clipboard->value);
-            chain->previous = client->global_copy_chain;
-            client->global_copy_chain = chain;
-        }
-
-        SDL_free(clipboard_currently_cstr);
+        Copy_Chain* chain = server->editor.copy_buffer.allocator().alloc<Copy_Chain>();
+        chain->value =
+            SSOStr::as_duplicate(server->editor.copy_buffer.allocator(), clipboard->value);
+        chain->previous = client->global_copy_chain;
+        client->global_copy_chain = chain;
     }
 }
 
