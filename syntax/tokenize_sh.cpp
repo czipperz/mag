@@ -9,7 +9,13 @@
 namespace mag {
 namespace syntax {
 
-static bool advance_whitespace(Contents_Iterator* iterator, bool* at_start_of_statement) {
+enum {
+    AT_START_OF_STATEMENT,
+    NORMAL,
+    AFTER_DOLLAR,
+};
+
+static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* top) {
     while (1) {
         if (iterator->at_eob()) {
             return false;
@@ -17,7 +23,7 @@ static bool advance_whitespace(Contents_Iterator* iterator, bool* at_start_of_st
 
         char ch = iterator->get();
         if (ch == '\n') {
-            *at_start_of_statement = true;
+            *top = AT_START_OF_STATEMENT;
         }
         if (!cz::is_space(ch)) {
             return true;
@@ -37,16 +43,10 @@ static bool is_general(char ch) {
            !cz::is_space(ch);
 }
 
-enum {
-    NORMAL,
-    AFTER_DOLLAR,
-};
-
 bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
-    bool at_start_of_statement = !(*state & ((uint64_t)1 << 63));
-    int top = (*state & 3);
+    uint64_t top = (*state & 3);
 
-    if (!advance_whitespace(iterator, &at_start_of_statement)) {
+    if (!advance_whitespace(iterator, &top)) {
         return false;
     }
 
@@ -59,33 +59,38 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     if (first_ch == '{' || first_ch == '(' || first_ch == '[') {
         token->type = Token_Type::OPEN_PAIR;
-        at_start_of_statement = false;
+        top = NORMAL;
         if (first_ch == '(') {
-            at_start_of_statement = true;
-        } else if (first_ch == '{') {
-            goto ret2;
+            top = AT_START_OF_STATEMENT;
         }
         goto ret;
     }
     if (first_ch == '}' || first_ch == ')' || first_ch == ']') {
         token->type = Token_Type::CLOSE_PAIR;
-        at_start_of_statement = false;
+        top = NORMAL;
         goto ret;
     }
 
     if (top == AFTER_DOLLAR &&
         ((is_separator(first_ch) && first_ch != ';') || first_ch == '$' || first_ch == '#')) {
         token->type = Token_Type::IDENTIFIER;
-        at_start_of_statement = first_ch == ';';
+        top = NORMAL;
+        if (first_ch == ';') {
+            top = AT_START_OF_STATEMENT;
+        }
         goto ret;
     }
 
     if (is_separator(first_ch)) {
-        at_start_of_statement = first_ch == ';' || first_ch == '|';
+        top = NORMAL;
+        if (first_ch == ';' || first_ch == '|') {
+            top = AT_START_OF_STATEMENT;
+        }
+
         if (!iterator->at_eob()) {
             if ((first_ch == '&' || first_ch == '|') && iterator->get() == first_ch) {
                 iterator->advance();
-                at_start_of_statement = true;
+                top = AT_START_OF_STATEMENT;
             } else if (first_ch == '>' && iterator->get() == first_ch) {
                 iterator->advance();
             } else if (first_ch == '>' && iterator->get() == '|') {
@@ -104,6 +109,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             iterator->advance();
         }
         token->type = Token_Type::IDENTIFIER;
+        top = NORMAL;
         goto ret;
     }
 
@@ -111,6 +117,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         // Handle one-char variables specially like `$@` and `$*`.
         if (top == AFTER_DOLLAR) {
             token->type = Token_Type::IDENTIFIER;
+            top = NORMAL;
             goto ret;
         }
 
@@ -128,53 +135,54 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                 if (!is_general(ch)) {
                     break;
                 }
-                if (at_start_of_statement && ch == '=') {
+                if (top == AT_START_OF_STATEMENT && ch == '=') {
                     token->type = Token_Type::IDENTIFIER;
-                    at_start_of_statement = false;
+                    top = NORMAL;
                     goto ret;
                 }
             }
             iterator->advance();
         }
 
-        if (at_start_of_statement && (matches(start, iterator->position, "if") ||
-                                      matches(start, iterator->position, "elif") ||
-                                      matches(start, iterator->position, "while") ||
-                                      matches(start, iterator->position, "until") ||
-                                      matches(start, iterator->position, "."))) {
+        if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "if") ||
+                                             matches(start, iterator->position, "elif") ||
+                                             matches(start, iterator->position, "while") ||
+                                             matches(start, iterator->position, "until") ||
+                                             matches(start, iterator->position, "."))) {
             token->type = Token_Type::KEYWORD;
-            at_start_of_statement = true;
+            top = AT_START_OF_STATEMENT;
             goto ret;
-        } else if (at_start_of_statement && (matches(start, iterator->position, "then") ||
-                                             matches(start, iterator->position, "do") ||
-                                             matches(start, iterator->position, "case"))) {
+        } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "then") ||
+                                                    matches(start, iterator->position, "do") ||
+                                                    matches(start, iterator->position, "case"))) {
             token->type = Token_Type::OPEN_PAIR;
-            at_start_of_statement = true;
+            top = AT_START_OF_STATEMENT;
             goto ret;
-        } else if (at_start_of_statement && (matches(start, iterator->position, "else") ||
-                                             matches(start, iterator->position, "for") ||
-                                             matches(start, iterator->position, "select") ||
-                                             matches(start, iterator->position, "continue") ||
-                                             matches(start, iterator->position, "break") ||
-                                             matches(start, iterator->position, "shift") ||
-                                             matches(start, iterator->position, "alias") ||
-                                             matches(start, iterator->position, "set") ||
-                                             matches(start, iterator->position, "unset") ||
-                                             matches(start, iterator->position, "cd") ||
-                                             matches(start, iterator->position, "mv") ||
-                                             matches(start, iterator->position, "cp") ||
-                                             matches(start, iterator->position, "test") ||
-                                             matches(start, iterator->position, "echo") ||
-                                             matches(start, iterator->position, "export"))) {
+        } else if (top == AT_START_OF_STATEMENT &&
+                   (matches(start, iterator->position, "else") ||
+                    matches(start, iterator->position, "for") ||
+                    matches(start, iterator->position, "select") ||
+                    matches(start, iterator->position, "continue") ||
+                    matches(start, iterator->position, "break") ||
+                    matches(start, iterator->position, "shift") ||
+                    matches(start, iterator->position, "alias") ||
+                    matches(start, iterator->position, "set") ||
+                    matches(start, iterator->position, "unset") ||
+                    matches(start, iterator->position, "cd") ||
+                    matches(start, iterator->position, "mv") ||
+                    matches(start, iterator->position, "cp") ||
+                    matches(start, iterator->position, "test") ||
+                    matches(start, iterator->position, "echo") ||
+                    matches(start, iterator->position, "export"))) {
             token->type = Token_Type::KEYWORD;
-        } else if (at_start_of_statement && (matches(start, iterator->position, "fi") ||
-                                             matches(start, iterator->position, "done") ||
-                                             matches(start, iterator->position, "esac"))) {
+        } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "fi") ||
+                                                    matches(start, iterator->position, "done") ||
+                                                    matches(start, iterator->position, "esac"))) {
             token->type = Token_Type::CLOSE_PAIR;
         } else {
             token->type = Token_Type::DEFAULT;
         }
-        at_start_of_statement = false;
+        top = NORMAL;
         goto ret;
     }
 
@@ -187,7 +195,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             iterator->advance();
         }
         token->type = Token_Type::STRING;
-        at_start_of_statement = false;
+        top = NORMAL;
         goto ret;
     }
 
@@ -200,28 +208,22 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             iterator->advance();
         }
         token->type = Token_Type::COMMENT;
-        at_start_of_statement = true;
+        top = AT_START_OF_STATEMENT;
         goto ret;
     }
 
     if (first_ch == '$') {
         top = AFTER_DOLLAR;
         token->type = Token_Type::PUNCTUATION;
-        at_start_of_statement = false;
-        goto ret2;
+        goto ret;
     }
 
     token->type = Token_Type::DEFAULT;
-
-ret:
     top = NORMAL;
 
-ret2:
+ret:
     token->end = iterator->position;
     *state = 0;
-    if (!at_start_of_statement) {
-        *state |= ((uint64_t)1 << 63);
-    }
     *state |= (uint64_t)top;
     return true;
 }
