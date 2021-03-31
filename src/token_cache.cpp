@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <Tracy.hpp>
+#include <chrono>
 #include <cz/bit_array.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
@@ -292,9 +293,14 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
             iterator = buffer->contents.start();
         }
 
-        for (size_t i = 0; i < 100; ++i) {
+        auto time_start = std::chrono::steady_clock::now();
+        while (1) {
             if (!clone.next_check_point(buffer, &iterator, &state)) {
                 stop = true;
+                break;
+            }
+
+            if (std::chrono::steady_clock::now() - time_start > std::chrono::milliseconds(2)) {
                 break;
             }
         }
