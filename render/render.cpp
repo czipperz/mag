@@ -208,9 +208,9 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         }
         window_cache->v.unified.cursor_count = window->cursors.len();
 
-        float speed_start = 0;
+        float speed_start = 0.5f;
         float speed_increment = 0.5f;
-        float speed_multiplier = 1.3f;
+        float speed_multiplier = 1.4f;
 
         // When accelerating we preincrement the speed.  So when we break we need to
         // postdecrement the speed.  The way we do this is by storing the original
@@ -242,7 +242,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             speed_lines_to_shift = window_cache->v.unified.animation.speed;
         } else if (window_cache->v.unified.animation.visible_start > iterator.position) {
             if (window_cache->v.unified.animation.speed >= 0) {
-                window_cache->v.unified.animation.speed = speed_start;
+                window_cache->v.unified.animation.speed = -speed_start;
             }
             window_cache->v.unified.animation.speed *= speed_multiplier;
             window_cache->v.unified.animation.speed -= speed_increment;
