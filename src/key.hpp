@@ -38,6 +38,20 @@ enum Key_Code : uint16_t {
     LEFT,
     RIGHT,
 
+    // Function keys
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    F10,
+    F11,
+    F12,
+
     // Mouse events
     MOUSE3,  // middle mouse button
     MOUSE4,  // side button usually bound to backwards

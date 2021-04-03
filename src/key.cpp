@@ -50,6 +50,30 @@ bool Key::parse(Key* key, cz::Str description) {
         key->code = Key_Code::LEFT;
     } else if (d == "RIGHT") {
         key->code = Key_Code::RIGHT;
+    } else if (d == "F1") {
+        key->code = Key_Code::F1;
+    } else if (d == "F2") {
+        key->code = Key_Code::F2;
+    } else if (d == "F3") {
+        key->code = Key_Code::F3;
+    } else if (d == "F4") {
+        key->code = Key_Code::F4;
+    } else if (d == "F5") {
+        key->code = Key_Code::F5;
+    } else if (d == "F6") {
+        key->code = Key_Code::F6;
+    } else if (d == "F7") {
+        key->code = Key_Code::F7;
+    } else if (d == "F8") {
+        key->code = Key_Code::F8;
+    } else if (d == "F9") {
+        key->code = Key_Code::F9;
+    } else if (d == "F10") {
+        key->code = Key_Code::F10;
+    } else if (d == "F11") {
+        key->code = Key_Code::F11;
+    } else if (d == "F12") {
+        key->code = Key_Code::F12;
     } else if (d == "MOUSE3") {
         key->code = Key_Code::MOUSE3;
     } else if (d == "MOUSE4") {
@@ -112,6 +136,19 @@ void stringify_key(cz::String* prefix, Key key) {
         KEY_CODE_CASE(DOWN);
         KEY_CODE_CASE(LEFT);
         KEY_CODE_CASE(RIGHT);
+
+        KEY_CODE_CASE(F1);
+        KEY_CODE_CASE(F2);
+        KEY_CODE_CASE(F3);
+        KEY_CODE_CASE(F4);
+        KEY_CODE_CASE(F5);
+        KEY_CODE_CASE(F6);
+        KEY_CODE_CASE(F7);
+        KEY_CODE_CASE(F8);
+        KEY_CODE_CASE(F9);
+        KEY_CODE_CASE(F10);
+        KEY_CODE_CASE(F11);
+        KEY_CODE_CASE(F12);
 
         KEY_CODE_CASE(MOUSE3);
         KEY_CODE_CASE(MOUSE4);

@@ -301,6 +301,18 @@ static void process_event(Server* server,
             KEY_CASE(DOWN, Key_Code::DOWN);
             KEY_CASE(LEFT, Key_Code::LEFT);
             KEY_CASE(RIGHT, Key_Code::RIGHT);
+            KEY_CASE(F1, Key_Code::F1);
+            KEY_CASE(F2, Key_Code::F2);
+            KEY_CASE(F3, Key_Code::F3);
+            KEY_CASE(F4, Key_Code::F4);
+            KEY_CASE(F5, Key_Code::F5);
+            KEY_CASE(F6, Key_Code::F6);
+            KEY_CASE(F7, Key_Code::F7);
+            KEY_CASE(F8, Key_Code::F8);
+            KEY_CASE(F9, Key_Code::F9);
+            KEY_CASE(F10, Key_Code::F10);
+            KEY_CASE(F11, Key_Code::F11);
+            KEY_CASE(F12, Key_Code::F12);
 
 #undef KEY_CASE
 
