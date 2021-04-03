@@ -667,7 +667,8 @@ static void render(SDL_Window* window,
                     // Completely default text is cached.
                     bool cache = fg == 7 && new_cell->face.flags == 0;
                     if (cache) {
-                        SDL_Surface* rendered_char = surface_cache[new_cell->code];
+                        SDL_Surface* rendered_char =
+                            surface_cache[(size_t)(unsigned char)new_cell->code];
                         if (rendered_char) {
                             blit_surface(surface, rendered_char, &rect);
                             continue;
@@ -705,7 +706,7 @@ static void render(SDL_Window* window,
                     }
 
                     if (cache) {
-                        surface_cache[new_cell->code] = rendered_char;
+                        surface_cache[(size_t)(unsigned char)new_cell->code] = rendered_char;
                         blit_surface(surface, rendered_char, &rect);
                     } else {
                         CZ_DEFER(SDL_FreeSurface(rendered_char));
