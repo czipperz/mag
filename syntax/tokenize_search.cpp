@@ -1,5 +1,6 @@
 #include "tokenize_search.hpp"
 
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
@@ -22,6 +23,8 @@ enum {
 };
 
 bool search_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+    ZoneScoped;
+
     if (iterator->at_eob()) {
         return false;
     }

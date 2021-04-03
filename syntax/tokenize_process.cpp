@@ -1,5 +1,6 @@
 #include "tokenize_process.hpp"
 
+#include <Tracy.hpp>
 #include "contents.hpp"
 #include "token.hpp"
 
@@ -16,6 +17,8 @@ enum : char {
 };
 
 bool process_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+    ZoneScoped;
+
     if (iterator->at_eob()) {
         return false;
     }

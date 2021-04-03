@@ -1,5 +1,6 @@
 #include "tokenize_js.hpp"
 
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
@@ -44,6 +45,8 @@ static uint64_t fill_lower_bits(uint64_t v) {
 }
 
 bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+    ZoneScoped;
+
     if (!advance_whitespace(iterator)) {
         return false;
     }

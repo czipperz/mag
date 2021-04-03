@@ -1,5 +1,6 @@
 #include "tokenize_css.hpp"
 
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
@@ -44,6 +45,8 @@ uint8_t double_hex_value(char ch) {
 }
 
 bool css_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+    ZoneScoped;
+
     if (!advance_whitespace(iterator)) {
         return false;
     }

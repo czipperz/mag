@@ -1,5 +1,6 @@
 #include "tokenize_directory.hpp"
 
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
@@ -19,6 +20,8 @@ enum {
 };
 
 bool directory_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+    ZoneScoped;
+
     if (iterator->contents->len <= 27 || iterator->at_eob()) {
         return false;
     }

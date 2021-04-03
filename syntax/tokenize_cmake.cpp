@@ -1,5 +1,6 @@
 #include "tokenize_cmake.hpp"
 
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
@@ -16,6 +17,8 @@ static bool is_special(char ch) {
 }
 
 bool cmake_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+    ZoneScoped;
+
     if (!advance_whitespace(iterator)) {
         return false;
     }

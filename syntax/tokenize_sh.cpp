@@ -1,5 +1,6 @@
 #include "tokenize_sh.hpp"
 
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include "contents.hpp"
 #include "face.hpp"
@@ -45,6 +46,8 @@ static bool is_general(char ch) {
 }
 
 bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+    ZoneScoped;
+
     // We could use 5 bits for the depth but then if the
     // depth gets too large we risk corrupting the bitfield.
     uint64_t depth = *state >> 60;

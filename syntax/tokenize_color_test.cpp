@@ -1,5 +1,6 @@
 #include "tokenize_color_test.hpp"
 
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include "common.hpp"
 #include "contents.hpp"
@@ -27,6 +28,8 @@ static bool advance_whitespace(Contents_Iterator* iterator, bool* use_color) {
 }
 
 bool color_test_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+    ZoneScoped;
+
     int16_t color = *state >> 1;
     bool use_color = *state & 1;
 

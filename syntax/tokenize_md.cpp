@@ -1,5 +1,6 @@
 #include "tokenize_md.hpp"
 
+#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include "contents.hpp"
 #include "token.hpp"
@@ -62,6 +63,8 @@ static bool is_special(char ch) {
 }
 
 bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+    ZoneScoped;
+
     if (!advance_whitespace(iterator, state)) {
         return false;
     }
