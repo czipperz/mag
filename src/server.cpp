@@ -673,7 +673,12 @@ void Server::receive(Client* client, Key key) {
             cz::String message = {};
             CZ_DEFER(message.drop(cz::heap_allocator()));
 
-            cz::Str prefix = "Unbound key chain:";
+            cz::Str prefix;
+            if (max_depth == 1) {
+                prefix = "Unbound key:";
+            } else {
+                prefix = "Unbound key chain:";
+            }
             message.reserve(cz::heap_allocator(),
                             prefix.len + stringify_key_max_size * max_depth + max_depth);
             message.append(prefix);
