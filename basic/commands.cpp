@@ -26,6 +26,10 @@ void command_toggle_pinned(Editor* editor, Command_Source source) {
     window->pinned = !window->pinned;
 }
 
+void command_toggle_draw_line_numbers(Editor* editor, Command_Source source) {
+    editor->theme.draw_line_numbers = !editor->theme.draw_line_numbers;
+}
+
 void command_set_mark(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;

@@ -53,13 +53,25 @@ static bool load_completion_cache(Editor* editor,
         }                               \
     } while (0)
 
-#define ADDCH(FACE, CH)          \
-    do {                         \
-        SET_BODY(FACE, CH);      \
-        ++x;                     \
-        if (x == window->cols) { \
-            ADD_NEWLINE({});     \
-        }                        \
+#define ADDCH(FACE, CH)                                                     \
+    do {                                                                    \
+        SET_BODY(FACE, CH);                                                 \
+        ++x;                                                                \
+        if (x == window->cols) {                                            \
+            ADD_NEWLINE({});                                                \
+                                                                            \
+            if (editor->theme.draw_line_numbers) {                          \
+                Face face = editor->theme.faces[11];                        \
+                for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) { \
+                    SET_BODY(face, ' ');                                    \
+                    ++x;                                                    \
+                }                                                           \
+                                                                            \
+                face = editor->theme.faces[10];                             \
+                SET_BODY(face, ' ');                                        \
+                ++x;                                                        \
+            }                                                               \
+        }                                                                   \
     } while (0)
 
 static void apply_face(Face* face, Face layer) {
@@ -484,6 +496,37 @@ static void draw_buffer_contents(Cell* cells,
         overlay->start_frame(buffer, window, iterator);
     }
 
+    uint64_t line_number = buffer->contents.get_line_number(iterator.position) + 1;
+    cz::String line_number_buffer = {};
+    CZ_DEFER(line_number_buffer.drop(cz::heap_allocator()));
+    {
+        Contents_Iterator end_position = buffer->contents.iterator_at(iterator.position);
+        compute_visible_end(window, &end_position);
+
+        size_t line_number_width =
+            log10(buffer->contents.get_line_number(end_position.position) + 1) + 1;
+        line_number_buffer.reserve(cz::heap_allocator(), line_number_width + 1);
+    }
+
+    // Draw line number for first line.
+    if (editor->theme.draw_line_numbers) {
+        int ret = snprintf(line_number_buffer.buffer(), line_number_buffer.cap(), "%*zu",
+                           line_number_buffer.cap() - 1, line_number);
+        if (ret > 0) {
+            line_number_buffer.set_len(ret);
+
+            Face face = editor->theme.faces[9];
+            for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {
+                char ch = line_number_buffer[i];
+                SET_BODY(face, ch);
+                ++x;
+            }
+
+            face = editor->theme.faces[10];
+            ADDCH(face, ' ');
+        }
+    }
+
     Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
     for (; !iterator.at_eob(); iterator.advance()) {
         while (has_token && iterator.position >= token.end) {
@@ -539,7 +582,7 @@ static void draw_buffer_contents(Cell* cells,
         }
 
         Face token_face;
-        const size_t type_face_offset = 9;
+        const size_t type_face_offset = 12;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
             if (token.type & Token_Type::CUSTOM) {
                 token_face = Token_Type_::decode(token.type);
@@ -576,6 +619,26 @@ static void draw_buffer_contents(Cell* cells,
                     apply_face(&face, overlay_face);
                 }
                 ADD_NEWLINE(face);
+            }
+
+            // Draw line number.  Note the first line number is drawn before the loop.
+            if (editor->theme.draw_line_numbers) {
+                line_number += 1;
+                int ret = snprintf(line_number_buffer.buffer(), line_number_buffer.cap(), "%*zu",
+                                   line_number_buffer.cap() - 1, line_number);
+                if (ret > 0) {
+                    line_number_buffer.set_len(ret);
+
+                    Face face = editor->theme.faces[9];
+                    for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {
+                        char ch = line_number_buffer[i];
+                        SET_BODY(face, ch);
+                        ++x;
+                    }
+
+                    face = editor->theme.faces[10];
+                    ADDCH(face, ' ');
+                }
             }
         } else if (ch == '\t') {
             size_t end_x = x + buffer->mode.tab_width;

@@ -49,6 +49,9 @@ struct Theme {
     /// Used in `command_scroll_down` and `command_scroll_up`.
     uint32_t mouse_scroll_rows = 4;
 
+    /// If true then draw line numbers.
+    bool draw_line_numbers = false;
+
     void drop(cz::Allocator allocator);
 };
 

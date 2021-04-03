@@ -235,6 +235,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "C-x q", command_toggle_read_only);
     BIND(key_map, "C-x C-q", command_toggle_pinned);
+    BIND(key_map, "C-x A-q", command_toggle_draw_line_numbers);
 
     BIND(key_map, "C-x u", command_uppercase_letter);
     BIND(key_map, "C-x l", command_lowercase_letter);
@@ -293,7 +294,7 @@ static void create_theme(Theme& theme) {
 
     theme.colors = mag::theme::solarized_dark;
 
-    theme.faces.reserve(cz::heap_allocator(), 54);
+    theme.faces.reserve(cz::heap_allocator(), 57);
     theme.faces.push({{}, 17, 0});             // saved and unselected buffer
     theme.faces.push({1, {}, 0});              // unsaved buffer
     theme.faces.push({{}, 0, Face::REVERSE});  // selected buffer
@@ -306,6 +307,10 @@ static void create_theme(Theme& theme) {
 
     theme.faces.push({0, 12, 0});  // window completion normal
     theme.faces.push({0, 7, 0});   // window completion selected item
+
+    theme.faces.push({0, 45, 0});   // line number
+    theme.faces.push({0, {}, 0});   // space after line number
+    theme.faces.push({0, 45, 0});   // line number padding
 
     theme.faces.push({{}, {}, 0});  // Token_Type::DEFAULT
 
