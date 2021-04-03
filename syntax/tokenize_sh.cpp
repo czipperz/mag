@@ -9,10 +9,11 @@
 namespace mag {
 namespace syntax {
 
-enum {
+enum : uint64_t {
     AT_START_OF_STATEMENT,
     NORMAL,
     AFTER_DOLLAR,
+    IN_STRING,
 };
 
 static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* top) {
@@ -44,7 +45,26 @@ static bool is_general(char ch) {
 }
 
 bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
-    uint64_t top = (*state & 3);
+    // We could use 5 bits for the depth but then if the
+    // depth gets too large we risk corrupting the bitfield.
+    uint64_t depth = *state >> 60;
+    uint64_t prev = (*state >> (depth - 1) * 2) & 3;
+    uint64_t top = (*state >> depth * 2) & 3;
+
+#define PUSH(STATE)                            \
+    do {                                       \
+        *state &= ~((uint64_t)3 << depth * 2); \
+        *state |= ((STATE) << depth * 2);      \
+        depth += 1;                            \
+    } while (0)
+
+#define POP()                                   \
+    do {                                        \
+        CZ_DEBUG_ASSERT(depth > 0);             \
+        depth -= 1;                             \
+        prev = (*state >> (depth - 1) * 2) & 3; \
+        top = (*state >> depth * 2) & 3;        \
+    } while (0)
 
     if (!advance_whitespace(iterator, &top)) {
         return false;
@@ -57,6 +77,41 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     char first_ch = iterator->get();
     iterator->advance();
 
+    if (top == IN_STRING || first_ch == '"') {
+        token->type = Token_Type::STRING;
+
+        if (top == IN_STRING && first_ch == '"') {
+            top = NORMAL;
+            goto ret;
+        }
+
+        top = NORMAL;
+
+        while (!iterator->at_eob()) {
+            char ch = iterator->get();
+            if (ch == '"') {
+                iterator->advance();
+                break;
+            }
+
+            if (ch == '\\') {
+                iterator->advance();
+                if (iterator->at_eob()) {
+                    break;
+                }
+            }
+
+            if (ch == '$') {
+                PUSH(IN_STRING);
+                break;
+            }
+
+            iterator->advance();
+        }
+
+        goto ret;
+    }
+
     if (first_ch == '{' || first_ch == '(' || first_ch == '[') {
         token->type = Token_Type::OPEN_PAIR;
         top = NORMAL;
@@ -68,6 +123,9 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     if (first_ch == '}' || first_ch == ')' || first_ch == ']') {
         token->type = Token_Type::CLOSE_PAIR;
         top = NORMAL;
+        if (depth >= 1 && prev == IN_STRING) {
+            POP();
+        }
         goto ret;
     }
 
@@ -75,8 +133,8 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         ((is_separator(first_ch) && first_ch != ';') || first_ch == '$' || first_ch == '#')) {
         token->type = Token_Type::IDENTIFIER;
         top = NORMAL;
-        if (first_ch == ';') {
-            top = AT_START_OF_STATEMENT;
+        if (depth >= 1 && prev == IN_STRING) {
+            POP();
         }
         goto ret;
     }
@@ -110,6 +168,9 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         }
         token->type = Token_Type::IDENTIFIER;
         top = NORMAL;
+        if (depth >= 1 && prev == IN_STRING) {
+            POP();
+        }
         goto ret;
     }
 
@@ -118,6 +179,9 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         if (top == AFTER_DOLLAR) {
             token->type = Token_Type::IDENTIFIER;
             top = NORMAL;
+            if (depth >= 1 && prev == IN_STRING) {
+                POP();
+            }
             goto ret;
         }
 
@@ -223,8 +287,10 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
 ret:
     token->end = iterator->position;
-    *state = 0;
-    *state |= (uint64_t)top;
+    *state &= 0x0FFFFFFFFFFFFFFF;
+    *state |= (depth << 60);
+    *state &= ~((uint64_t)3 << depth * 2);
+    *state |= (top << depth * 2);
     return true;
 }
 
