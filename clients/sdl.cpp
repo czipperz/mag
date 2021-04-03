@@ -634,96 +634,115 @@ static void render(SDL_Window* window,
     render_to_cells(cellss[1], window_cache, rows, cols, editor, client, spqs);
 
     {
-        ZoneScopedN("blit cells");
+        ZoneScopedN("draw cells");
 
         char buffer[2] = {};
 
-        int index = 0;
-        for (int y = 0; y < rows; ++y) {
+#define ONLY_IF_DIFFERENT 0
+
+        for (int y = 0, index = 0; y < rows; ++y) {
             for (int x = 0; x < cols; ++x, ++index) {
-                ZoneScopedN("check cell");
+                ZoneScopedN("draw cell background");
 
                 Cell* new_cell = &cellss[1][index];
-                if (cellss[0][index] != *new_cell) {
-                    Face_Color bg =
-                        get_face_color_or(editor->theme.colors, new_cell->face.background, 0);
-                    Face_Color fg =
-                        get_face_color_or(editor->theme.colors, new_cell->face.foreground, 7);
+#if ONLY_IF_DIFFERENT
+                if (cellss[0][index] == *new_cell) {
+                    continue;
+                }
+#endif
 
-                    SDL_Rect rect;
-                    SDL_Color bgc;
-                    SDL_Color fgc;
+                Face_Color bg = (new_cell->face.flags & Face::REVERSE) ? new_cell->face.foreground
+                                                                       : new_cell->face.background;
+                bg = get_face_color_or(editor->theme.colors, bg,
+                                       (new_cell->face.flags & Face::REVERSE) ? 7 : 0);
 
-                    {
-                        ZoneScopedN("prepare render cell");
+                SDL_Rect rect;
+                rect.x = x * character_width;
+                rect.y = y * character_height;
+                rect.w = character_width;
+                rect.h = character_height;
 
-                        rect.x = x * character_width;
-                        rect.y = y * character_height;
-                        rect.w = character_width;
-                        rect.h = character_height;
+                SDL_Color bgc = make_color(editor->theme.colors, bg);
 
-                        if (new_cell->face.flags & Face::REVERSE) {
-                            cz::swap(fg, bg);
-                        }
+                {
+                    ZoneScopedN("SDL_FillRect");
+                    SDL_FillRect(surface, &rect,
+                                 SDL_MapRGBA(surface->format, bgc.r, bgc.g, bgc.b, bgc.a));
+                }
+            }
+        }
 
-                        bgc = make_color(editor->theme.colors, bg);
-                        fgc = make_color(editor->theme.colors, fg);
-                    }
+        for (int y = 0, index = 0; y < rows; ++y) {
+            for (int x = 0; x < cols; ++x, ++index) {
+                ZoneScopedN("draw cell foreground");
 
-                    {
-                        ZoneScopedN("render cell background");
-                        SDL_FillRect(surface, &rect,
-                                     SDL_MapRGBA(surface->format, bgc.r, bgc.g, bgc.b, bgc.a));
-                    }
+                Cell* new_cell = &cellss[1][index];
+#if ONLY_IF_DIFFERENT
+                if (cellss[0][index] == *new_cell) {
+                    continue;
+                }
+#endif
 
-                    // Completely default text is cached.
-                    bool cache = fg == 7 && new_cell->face.flags == 0;
-                    if (cache) {
-                        SDL_Surface* rendered_char =
-                            surface_cache[(size_t)(unsigned char)new_cell->code];
-                        if (rendered_char) {
-                            blit_surface(surface, rendered_char, &rect);
-                            continue;
-                        }
-                    }
+                Face_Color fg = (new_cell->face.flags & Face::REVERSE) ? new_cell->face.background
+                                                                       : new_cell->face.foreground;
+                fg = get_face_color_or(editor->theme.colors, fg,
+                                       (new_cell->face.flags & Face::REVERSE) ? 0 : 7);
 
-                    buffer[0] = new_cell->code;
+                SDL_Rect rect;
+                rect.x = x * character_width;
+                rect.y = y * character_height;
+                rect.w = character_width;
+                rect.h = character_height;
 
-                    {
-                        ZoneScopedN("TTF_SetFontStyle");
-                        int style = 0;
-                        if (new_cell->face.flags & Face::UNDERSCORE) {
-                            style |= TTF_STYLE_UNDERLINE;
-                        }
-                        if (new_cell->face.flags & Face::BOLD) {
-                            style |= TTF_STYLE_BOLD;
-                        }
-                        if (new_cell->face.flags & Face::ITALICS) {
-                            style |= TTF_STYLE_ITALIC;
-                        }
-                        if (style == 0) {
-                            style = TTF_STYLE_NORMAL;
-                        }
-                        TTF_SetFontStyle(font, style);
-                    }
-
-                    SDL_Surface* rendered_char;
-                    {
-                        ZoneScopedN("TTF_RenderText_Blended");
-                        rendered_char = TTF_RenderText_Blended(font, buffer, fgc);
-                    }
-                    if (!rendered_char) {
-                        fprintf(stderr, "Failed to render text '%s': %s\n", buffer, TTF_GetError());
+                // Completely default text is cached.
+                bool cache = fg == 7 && new_cell->face.flags == 0;
+                if (cache) {
+                    SDL_Surface* rendered_char =
+                        surface_cache[(size_t)(unsigned char)new_cell->code];
+                    if (rendered_char) {
+                        blit_surface(surface, rendered_char, &rect);
                         continue;
                     }
+                }
 
-                    if (cache) {
-                        surface_cache[(size_t)(unsigned char)new_cell->code] = rendered_char;
-                        blit_surface(surface, rendered_char, &rect);
-                    } else {
-                        CZ_DEFER(SDL_FreeSurface(rendered_char));
-                        blit_surface(surface, rendered_char, &rect);
+                SDL_Color fgc = make_color(editor->theme.colors, fg);
+
+                buffer[0] = new_cell->code;
+
+                {
+                    ZoneScopedN("TTF_SetFontStyle");
+                    int style = 0;
+                    if (new_cell->face.flags & Face::UNDERSCORE) {
+                        style |= TTF_STYLE_UNDERLINE;
                     }
+                    if (new_cell->face.flags & Face::BOLD) {
+                        style |= TTF_STYLE_BOLD;
+                    }
+                    if (new_cell->face.flags & Face::ITALICS) {
+                        style |= TTF_STYLE_ITALIC;
+                    }
+                    if (style == 0) {
+                        style = TTF_STYLE_NORMAL;
+                    }
+                    TTF_SetFontStyle(font, style);
+                }
+
+                SDL_Surface* rendered_char;
+                {
+                    ZoneScopedN("TTF_RenderText_Blended");
+                    rendered_char = TTF_RenderText_Blended(font, buffer, fgc);
+                }
+                if (!rendered_char) {
+                    fprintf(stderr, "Failed to render text '%s': %s\n", buffer, TTF_GetError());
+                    continue;
+                }
+
+                if (cache) {
+                    surface_cache[(size_t)(unsigned char)new_cell->code] = rendered_char;
+                    blit_surface(surface, rendered_char, &rect);
+                } else {
+                    CZ_DEFER(SDL_FreeSurface(rendered_char));
+                    blit_surface(surface, rendered_char, &rect);
                 }
             }
         }
