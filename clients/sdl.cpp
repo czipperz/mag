@@ -558,11 +558,17 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
     }
 }
 
+static void blit_surface(SDL_Surface* surface, SDL_Surface* rendered_char, SDL_Rect* rect) {
+    ZoneScopedN("SDL_BlitSurface");
+    SDL_BlitSurface(rendered_char, nullptr, surface, rect);
+}
+
 static void render(SDL_Window* window,
                    SDL_Renderer* renderer,
                    TTF_Font* font,
                    SDL_Texture** texture,
                    SDL_Surface** surface,
+                   SDL_Surface** surface_cache,
                    int* total_rows,
                    int* total_cols,
                    int character_width,
@@ -625,45 +631,30 @@ static void render(SDL_Window* window,
         ZoneScopedN("blit cells");
 
         char buffer[2] = {};
-        buffer[0] = 0;
 
         int index = 0;
         for (int y = 0; y < rows; ++y) {
-            for (int x = 0; x < cols; ++x) {
+            for (int x = 0; x < cols; ++x, ++index) {
                 ZoneScopedN("check cell");
 
                 Cell* new_cell = &cellss[1][index];
                 if (cellss[0][index] != *new_cell) {
+                    Face_Color bg =
+                        get_face_color_or(editor->theme.colors, new_cell->face.background, 0);
+                    Face_Color fg =
+                        get_face_color_or(editor->theme.colors, new_cell->face.foreground, 7);
+
                     SDL_Rect rect;
                     SDL_Color bgc;
                     SDL_Color fgc;
 
                     {
                         ZoneScopedN("prepare render cell");
+
                         rect.x = x * character_width;
                         rect.y = y * character_height;
                         rect.w = character_width;
                         rect.h = character_height;
-
-                        int style = 0;
-                        if (new_cell->face.flags & Face::UNDERSCORE) {
-                            style |= TTF_STYLE_UNDERLINE;
-                        }
-                        if (new_cell->face.flags & Face::BOLD) {
-                            style |= TTF_STYLE_BOLD;
-                        }
-                        if (new_cell->face.flags & Face::ITALICS) {
-                            style |= TTF_STYLE_ITALIC;
-                        }
-                        if (style == 0) {
-                            style = TTF_STYLE_NORMAL;
-                        }
-                        TTF_SetFontStyle(font, style);
-
-                        Face_Color bg =
-                            get_face_color_or(editor->theme.colors, new_cell->face.background, 0);
-                        Face_Color fg =
-                            get_face_color_or(editor->theme.colors, new_cell->face.foreground, 7);
 
                         if (new_cell->face.flags & Face::REVERSE) {
                             cz::swap(fg, bg);
@@ -679,7 +670,35 @@ static void render(SDL_Window* window,
                                      SDL_MapRGBA((*surface)->format, bgc.r, bgc.g, bgc.b, bgc.a));
                     }
 
+                    // Completely default text is cached.
+                    bool cache = bg == 0 && fg == 7 && new_cell->face.flags == 0;
+                    if (cache) {
+                        SDL_Surface* rendered_char = surface_cache[new_cell->code];
+                        if (rendered_char) {
+                            blit_surface(*surface, rendered_char, &rect);
+                            continue;
+                        }
+                    }
+
                     buffer[0] = new_cell->code;
+
+                    {
+                        ZoneScopedN("TTF_SetFontStyle");
+                        int style = 0;
+                        if (new_cell->face.flags & Face::UNDERSCORE) {
+                            style |= TTF_STYLE_UNDERLINE;
+                        }
+                        if (new_cell->face.flags & Face::BOLD) {
+                            style |= TTF_STYLE_BOLD;
+                        }
+                        if (new_cell->face.flags & Face::ITALICS) {
+                            style |= TTF_STYLE_ITALIC;
+                        }
+                        if (style == 0) {
+                            style = TTF_STYLE_NORMAL;
+                        }
+                        TTF_SetFontStyle(font, style);
+                    }
 
                     SDL_Surface* rendered_char;
                     {
@@ -690,14 +709,15 @@ static void render(SDL_Window* window,
                         fprintf(stderr, "Failed to render text '%s': %s\n", buffer, TTF_GetError());
                         continue;
                     }
-                    CZ_DEFER(SDL_FreeSurface(rendered_char));
 
-                    {
-                        ZoneScopedN("SDL_BlitSurface");
-                        SDL_BlitSurface(rendered_char, nullptr, *surface, &rect);
+                    if (cache) {
+                        surface_cache[new_cell->code] = rendered_char;
+                        blit_surface(*surface, rendered_char, &rect);
+                    } else {
+                        CZ_DEFER(SDL_FreeSurface(rendered_char));
+                        blit_surface(*surface, rendered_char, &rect);
                     }
                 }
-                ++index;
             }
         }
     }
@@ -919,6 +939,18 @@ void run(Server* server, Client* client) {
     CZ_DEFER(if (surface) SDL_FreeSurface(surface));
     CZ_DEFER(if (texture) SDL_DestroyTexture(texture));
 
+    SDL_Surface** surface_cache =
+        cz::heap_allocator().alloc_zeroed<SDL_Surface*>((size_t)UCHAR_MAX + 1);
+    CZ_ASSERT(surface_cache);
+    CZ_DEFER({
+        for (size_t i = 0; i <= UCHAR_MAX; ++i) {
+            if (surface_cache[i]) {
+                SDL_FreeSurface(surface_cache[i]);
+            }
+        }
+        cz::heap_allocator().dealloc(surface_cache, (size_t)UCHAR_MAX + 1);
+    });
+
     while (1) {
         ZoneScopedN("sdl main loop");
 
@@ -927,7 +959,7 @@ void run(Server* server, Client* client) {
         client->update_mini_buffer_completion_cache(&server->editor);
         load_mini_buffer_completion_cache(server, client);
 
-        render(window, renderer, font, &texture, &surface, &total_rows, &total_cols,
+        render(window, renderer, font, &texture, &surface, surface_cache, &total_rows, &total_cols,
                character_width, character_height, cellss, &window_cache, &server->editor, client,
                mouse.sp_queries);
 
