@@ -566,8 +566,6 @@ static void blit_surface(SDL_Surface* surface, SDL_Surface* rendered_char, SDL_R
 static void render(SDL_Window* window,
                    SDL_Renderer* renderer,
                    TTF_Font* font,
-                   SDL_Texture** texture,
-                   SDL_Surface** surface,
                    SDL_Surface** surface_cache,
                    int* total_rows,
                    int* total_cols,
@@ -580,6 +578,12 @@ static void render(SDL_Window* window,
                    cz::Slice<Screen_Position_Query> spqs) {
     ZoneScoped;
 
+    SDL_Surface* surface;
+    {
+        ZoneScopedN("SDL_GetWindowSurface");
+        surface = SDL_GetWindowSurface(window);
+    }
+
     int rows, cols;
     {
         ZoneScopedN("detect resize");
@@ -589,19 +593,9 @@ static void render(SDL_Window* window,
         rows = height / character_height;
 
         if (rows != *total_rows || cols != *total_cols) {
-            if (*surface) {
-                SDL_FreeSurface(*surface);
-            }
-            *surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_RGBA32);
-            if (*texture) {
-                SDL_DestroyTexture(*texture);
-            }
-            *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
-                                         SDL_TEXTUREACCESS_STREAMING, width, height);
-
             SDL_Color bgc = make_color(editor->theme.colors, 0);
-            SDL_FillRect(*surface, nullptr,
-                         SDL_MapRGBA((*surface)->format, bgc.r, bgc.g, bgc.b, bgc.a));
+            SDL_FillRect(surface, nullptr,
+                         SDL_MapRGBA(surface->format, bgc.r, bgc.g, bgc.b, bgc.a));
 
             destroy_window_cache(*window_cache);
             *window_cache = nullptr;
@@ -666,16 +660,16 @@ static void render(SDL_Window* window,
 
                     {
                         ZoneScopedN("render cell background");
-                        SDL_FillRect(*surface, &rect,
-                                     SDL_MapRGBA((*surface)->format, bgc.r, bgc.g, bgc.b, bgc.a));
+                        SDL_FillRect(surface, &rect,
+                                     SDL_MapRGBA(surface->format, bgc.r, bgc.g, bgc.b, bgc.a));
                     }
 
                     // Completely default text is cached.
-                    bool cache = bg == 0 && fg == 7 && new_cell->face.flags == 0;
+                    bool cache = fg == 7 && new_cell->face.flags == 0;
                     if (cache) {
                         SDL_Surface* rendered_char = surface_cache[new_cell->code];
                         if (rendered_char) {
-                            blit_surface(*surface, rendered_char, &rect);
+                            blit_surface(surface, rendered_char, &rect);
                             continue;
                         }
                     }
@@ -712,10 +706,10 @@ static void render(SDL_Window* window,
 
                     if (cache) {
                         surface_cache[new_cell->code] = rendered_char;
-                        blit_surface(*surface, rendered_char, &rect);
+                        blit_surface(surface, rendered_char, &rect);
                     } else {
                         CZ_DEFER(SDL_FreeSurface(rendered_char));
-                        blit_surface(*surface, rendered_char, &rect);
+                        blit_surface(surface, rendered_char, &rect);
                     }
                 }
             }
@@ -725,20 +719,8 @@ static void render(SDL_Window* window,
     cz::swap(cellss[0], cellss[1]);
 
     {
-        ZoneScopedN("present");
-        void* pixels;
-        int pitch;
-
-        SDL_LockTexture(*texture, nullptr, &pixels, &pitch);
-        SDL_LockSurface(*surface);
-        CZ_DEBUG_ASSERT(pitch == (*surface)->pitch);
-        memcpy(pixels, (*surface)->pixels, (size_t)(*surface)->h * (*surface)->pitch);
-        SDL_UnlockSurface(*surface);
-        SDL_UnlockTexture(*texture);
-
-        SDL_RenderCopy(renderer, *texture, nullptr, nullptr);
-
-        SDL_RenderPresent(renderer);
+        ZoneScopedN("SDL_UpdateWindowSurface");
+        SDL_UpdateWindowSurface(window);
     }
 }
 
@@ -932,11 +914,6 @@ void run(Server* server, Client* client) {
     Mouse_State mouse = {};
     CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
 
-    SDL_Surface* surface = nullptr;
-    SDL_Texture* texture = nullptr;
-    CZ_DEFER(if (surface) SDL_FreeSurface(surface));
-    CZ_DEFER(if (texture) SDL_DestroyTexture(texture));
-
     SDL_Surface** surface_cache =
         cz::heap_allocator().alloc_zeroed<SDL_Surface*>((size_t)UCHAR_MAX + 1);
     CZ_ASSERT(surface_cache);
@@ -957,9 +934,8 @@ void run(Server* server, Client* client) {
         client->update_mini_buffer_completion_cache(&server->editor);
         load_mini_buffer_completion_cache(server, client);
 
-        render(window, renderer, font, &texture, &surface, surface_cache, &total_rows, &total_cols,
-               character_width, character_height, cellss, &window_cache, &server->editor, client,
-               mouse.sp_queries);
+        render(window, renderer, font, surface_cache, &total_rows, &total_cols, character_width,
+               character_height, cellss, &window_cache, &server->editor, client, mouse.sp_queries);
 
         process_mouse_events(&server->editor, client, &mouse);
 
