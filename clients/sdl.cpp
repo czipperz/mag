@@ -740,8 +740,6 @@ static void render(SDL_Window* window,
 
         SDL_RenderPresent(renderer);
     }
-
-    FrameMark;
 }
 
 static bool get_character_dims(TTF_Font* font, int* character_width, int* character_height) {
@@ -922,8 +920,8 @@ void run(Server* server, Client* client) {
     SDL_StartTextInput();
     CZ_DEFER(SDL_StopTextInput());
 
-    const float MAX_FRAMES = 60.0f;
-    const float FRAME_LENGTH = 1000.0f / MAX_FRAMES;
+    const uint32_t MAX_FRAMES = 60;
+    const uint32_t FRAME_LENGTH = (uint32_t)(1000.0f / (float)MAX_FRAMES);
 
     Clipboard_Context clipboard = {};
     CZ_DEFER(clipboard.value.drop(cz::heap_allocator()));
@@ -984,8 +982,12 @@ void run(Server* server, Client* client) {
         Uint32 elapsed_ticks = frame_end_ticks - frame_start_ticks;
         if (elapsed_ticks < FRAME_LENGTH) {
             ZoneScopedN("SDL_Delay");
-            SDL_Delay((Uint32)floorf(FRAME_LENGTH - elapsed_ticks));
+            uint32_t sleep_time = FRAME_LENGTH - elapsed_ticks;
+            ZoneValue(sleep_time);
+            SDL_Delay(sleep_time);
         }
+
+        FrameMark;
     }
 }
 
