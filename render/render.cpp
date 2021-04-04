@@ -1,6 +1,7 @@
 #include "render.hpp"
 
 #include <math.h>
+#include <stdio.h>
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/sort.hpp>
