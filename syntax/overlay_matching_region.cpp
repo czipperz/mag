@@ -35,7 +35,16 @@ static void overlay_matching_region_start_frame(const Buffer* buffer,
 
     Data* data = (Data*)_data;
 
+    // Only enable if we've selected a region.
     data->enabled = window->show_marks && window->cursors[0].point != window->cursors[0].mark;
+
+    // Disable if the region couldn't match anything else because it is
+    // giant.  Comparing the massive string takes a long time.  This happens
+    // when the user selects the entire file (ie `command_mark_buffer`).
+    if (window->cursors[0].end() - window->cursors[0].start() > buffer->contents.len / 2) {
+        data->enabled = false;
+    }
+
     if (!data->enabled) {
         return;
     }
