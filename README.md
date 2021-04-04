@@ -30,6 +30,8 @@ git submodule update
 ./build-release.sh
 ```
 
+After building, Mag can be ran via `./build/release/mag`.
+
 Required packages: a C++ compiler, ncurses, and sdl.
 
 ### Windows
@@ -47,7 +49,15 @@ Before building you must download the SDL, SDL_ttf, and SDL_image development fi
 in the `SDL`, `TTF`, and `IMG` directories, respectively.  You will also need to install ImageMagick
 as it is used to generate Mag's icons.
 
-Next, open the project as a folder in Visual Studio and click Build -> Build All.
+Next, to build the project you can either use the Visual Studio gui or the Windows build script.
+
+* To use the Visual Studio gui, open the project as a
+  folder in Visual Studio and click Build -> Build All.
+* To use CMake, run the PowerShell build script: `.\build-release.ps1`.  But you must set
+  `$env:VCINSTALLDIR` to the path of the `VC` directory (for example `$env:VCINSTALLDIR =
+  "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC"`).
+
+After building, Mag can be ran via `.\build\release\mag.exe`.
 
 ## Customizing
 The `custom` folder can be customized to fit your needs.  In particular `config.cpp`'s
