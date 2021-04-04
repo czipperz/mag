@@ -1275,7 +1275,7 @@ void command_search_backward(Editor* editor, Command_Source source) {
         data->mini_buffer_change_index = 0;
 
         source.client->show_interactive_dialog(
-            editor, "Search forward: ", no_completion_engine, command_search_forward_callback,
+            editor, "Search backward: ", no_completion_engine, command_search_backward_callback,
             interactive_search_response_callback, interactive_search_cancel, data);
     } else {
         source.client->show_dialog(editor, "Search backward: ", no_completion_engine,
