@@ -32,6 +32,9 @@ void Client::drop() {
 
 void Client::hide_mini_buffer(Editor* editor) {
     restore_selected_buffer();
+    if (_message.response_cancel) {
+        _message.response_cancel(editor, this, _message.response_callback_data);
+    }
     dealloc_message();
     clear_mini_buffer(editor);
 }
@@ -44,6 +47,9 @@ void Client::clear_mini_buffer(Editor* editor) {
 
 void Client::dealloc_message() {
     cz::heap_allocator().dealloc({_message.response_callback_data, 0});
+    _message.response_callback = nullptr;
+    _message.interactive_response_callback = nullptr;
+    _message.response_cancel = nullptr;
     _message.response_callback_data = nullptr;
 }
 
@@ -229,6 +235,17 @@ void Client::show_dialog(Editor* editor,
                          Completion_Engine completion_engine,
                          Message::Response_Callback response_callback,
                          void* response_callback_data) {
+    show_interactive_dialog(editor, prompt, completion_engine, response_callback, nullptr, nullptr,
+                            response_callback_data);
+}
+
+void Client::show_interactive_dialog(Editor* editor,
+                                     cz::Str prompt,
+                                     Completion_Engine completion_engine,
+                                     Message::Response_Callback response_callback,
+                                     Message::Response_Callback interactive_response_callback,
+                                     Message::Response_Cancel response_cancel,
+                                     void* response_callback_data) {
     dealloc_message();
     clear_mini_buffer(editor);
 
@@ -236,6 +253,8 @@ void Client::show_dialog(Editor* editor,
     _message.tag = Message::RESPOND;
     _message.completion_engine = completion_engine;
     _message.response_callback = response_callback;
+    _message.interactive_response_callback = interactive_response_callback;
+    _message.response_cancel = response_cancel;
     _message.response_callback_data = response_callback_data;
     _select_mini_buffer = true;
 

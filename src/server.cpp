@@ -251,12 +251,15 @@ bool Server::slurp_jobs() {
 bool Server::run_synchronous_jobs(Client* client) {
     ZoneScoped;
 
+    bool ran_any_jobs = false;
+
     if (pending_message.len() > 0) {
         client->show_message(&editor, pending_message);
         pending_message.set_len(0);
     }
 
     for (size_t i = 0; i < editor.synchronous_jobs.len();) {
+        ran_any_jobs = true;
         if (editor.synchronous_jobs[i].tick(&editor, client, editor.synchronous_jobs[i].data)) {
             editor.synchronous_jobs.remove(i);
             continue;
@@ -264,7 +267,22 @@ bool Server::run_synchronous_jobs(Client* client) {
         ++i;
     }
 
-    return editor.synchronous_jobs.len() > 0;
+    if (client->_message.interactive_response_callback) {
+        ran_any_jobs = true;
+
+        cz::String mini_buffer_contents = {};
+        CZ_DEFER(mini_buffer_contents.drop(cz::heap_allocator()));
+        {
+            cz::Arc<Buffer_Handle> handle = editor.lookup(client->_mini_buffer->id);
+            WITH_CONST_BUFFER_HANDLE(handle);
+            mini_buffer_contents = buffer->contents.stringify(cz::heap_allocator());
+        }
+
+        client->_message.interactive_response_callback(&editor, client, mini_buffer_contents,
+                                                       client->_message.response_callback_data);
+    }
+
+    return ran_any_jobs;
 }
 
 Client Server::make_client() {

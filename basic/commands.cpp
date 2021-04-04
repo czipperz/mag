@@ -1050,11 +1050,65 @@ void command_cursors_align(Editor* editor, Command_Source source) {
     transaction.commit(buffer, command_cursors_align);
 }
 
+struct Interactive_Search_Data {
+    bool forward;
+    uint64_t cursor_point;
+    uint64_t cursor_mark;
+    uint64_t mini_buffer_change_index;
+};
+
+static void interactive_search_reset(Window_Unified* window, Interactive_Search_Data* data) {
+    window->cursors[0].point = data->cursor_point;
+    window->cursors[0].mark = data->cursor_mark;
+    window->show_marks = false;
+}
+
+static void interactive_search_cancel(Editor* editor, Client* client, void* _data) {
+    Interactive_Search_Data* data = (Interactive_Search_Data*)_data;
+    Window_Unified* window = client->selected_normal_window;
+    interactive_search_reset(window, data);
+}
+
+static void interactive_search_response_callback(Editor* editor,
+                                                 Client* client,
+                                                 cz::Str query,
+                                                 void* _data) {
+    ZoneScoped;
+
+    Interactive_Search_Data* data = (Interactive_Search_Data*)_data;
+
+    // If the mini buffer hasn't changed then we're already at the result.
+    {
+        WITH_CONST_WINDOW_BUFFER(client->_mini_buffer);
+        if (data->mini_buffer_change_index == buffer->changes.len()) {
+            return;
+        }
+
+        data->mini_buffer_change_index = buffer->changes.len();
+    }
+
+    Window_Unified* window = client->selected_normal_window;
+    interactive_search_reset(window, data);
+
+    WITH_CONST_WINDOW_BUFFER(window);
+    cz::Slice<Cursor> cursors = window->cursors;
+    size_t c = 0;
+    SEARCH_QUERY_THEN((data->forward ? search_forward : search_backward), {
+        cursors[0] = new_cursor;
+        window->show_marks = true;
+    });
+}
+
 static void command_search_forward_callback(Editor* editor,
                                             Client* client,
                                             cz::Str query,
-                                            void* data) {
+                                            void* _data) {
     WITH_CONST_SELECTED_BUFFER(client);
+    if (_data) {
+        Interactive_Search_Data* data = (Interactive_Search_Data*)_data;
+        interactive_search_reset(window, data);
+    }
+
     push_jump(window, client, buffer);
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
@@ -1074,6 +1128,17 @@ void command_search_forward(Editor* editor, Command_Source source) {
             bool created;
             SEARCH_SLICE_THEN(search_forward_slice, created, cursors[c] = new_cursor);
         }
+    } else if (window->cursors.len() == 1) {
+        Interactive_Search_Data* data = cz::heap_allocator().alloc<Interactive_Search_Data>();
+        CZ_ASSERT(data);
+        data->forward = true;
+        data->cursor_point = window->cursors[0].point;
+        data->cursor_mark = window->cursors[0].mark;
+        data->mini_buffer_change_index = 0;
+
+        source.client->show_interactive_dialog(
+            editor, "Search forward: ", no_completion_engine, command_search_forward_callback,
+            interactive_search_response_callback, interactive_search_cancel, data);
     } else {
         source.client->show_dialog(editor, "Search forward: ", no_completion_engine,
                                    command_search_forward_callback, nullptr);
@@ -1083,8 +1148,13 @@ void command_search_forward(Editor* editor, Command_Source source) {
 static void command_search_backward_callback(Editor* editor,
                                              Client* client,
                                              cz::Str query,
-                                             void* data) {
+                                             void* _data) {
     WITH_CONST_SELECTED_BUFFER(client);
+    if (_data) {
+        Interactive_Search_Data* data = (Interactive_Search_Data*)_data;
+        interactive_search_reset(window, data);
+    }
+
     push_jump(window, client, buffer);
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
@@ -1104,6 +1174,17 @@ void command_search_backward(Editor* editor, Command_Source source) {
             bool created;
             SEARCH_SLICE_THEN(search_backward_slice, created, cursors[c] = new_cursor);
         }
+    } else if (window->cursors.len() == 1) {
+        Interactive_Search_Data* data = cz::heap_allocator().alloc<Interactive_Search_Data>();
+        CZ_ASSERT(data);
+        data->forward = false;
+        data->cursor_point = window->cursors[0].point;
+        data->cursor_mark = window->cursors[0].mark;
+        data->mini_buffer_change_index = 0;
+
+        source.client->show_interactive_dialog(
+            editor, "Search forward: ", no_completion_engine, command_search_forward_callback,
+            interactive_search_response_callback, interactive_search_cancel, data);
     } else {
         source.client->show_dialog(editor, "Search backward: ", no_completion_engine,
                                    command_search_backward_callback, nullptr);
