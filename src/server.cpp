@@ -482,8 +482,32 @@ struct File_Wrapper {
 static void run_command(Command command, Editor* editor, Command_Source source) {
     try {
         ZoneScoped;
-        TracyFormat(message, len, 1024, "run_command: %s", command.string);
-        TracyMessage(message, len);
+
+#ifdef TRACY_ENABLE
+        {
+            cz::Str prefix = "run_command: ";
+            cz::Str command_string = command.string;
+
+            cz::String message = {};
+            CZ_DEFER(message.drop(cz::heap_allocator()));
+            message.reserve(cz::heap_allocator(),
+                            prefix.len + command_string.len + 3 - 1 +
+                                (1 + stringify_key_max_size) * source.keys.len);
+            message.append(prefix);
+            message.append(command_string);
+            message.append(" (");
+            for (size_t i = 0; i < source.keys.len; ++i) {
+                if (i > 0) {
+                    message.push(' ');
+                }
+                stringify_key(&message, source.keys[i]);
+            }
+            message.append(")");
+
+            TracyMessage(message.buffer(), message.len());
+        }
+#endif
+
         command.function(editor, source);
     } catch (std::exception& ex) {
         source.client->show_message(editor, ex.what());
