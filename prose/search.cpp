@@ -3,6 +3,8 @@
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "movement.hpp"
+#include "overlay.hpp"
+#include "syntax/overlay_highlight_string.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -21,8 +23,15 @@ static void run_ag(Client* client,
     buffer_name.append("ag ");
     buffer_name.append(query);
 
-    run_console_command(client, editor, directory, {args, (size_t)(3 + query_word)}, buffer_name,
-                        "Ag error");
+    cz::Arc<Buffer_Handle> handle;
+    if (run_console_command(client, editor, directory, {args, (size_t)(3 + query_word)},
+                            buffer_name, "Ag error", &handle)) {
+        Buffer* buffer = handle->lock_writing();
+        CZ_DEFER(handle->unlock());
+        buffer->mode.overlays.reserve(cz::heap_allocator(), 1);
+        buffer->mode.overlays.push(syntax::overlay_highlight_string(editor->theme.faces[12], query,
+                                                                    /*case_insensitive=*/false));
+    }
 }
 
 static char* copy_directory(cz::Str buffer_directory) {

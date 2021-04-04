@@ -5,15 +5,22 @@
 #include <cz/process.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
+#include "face.hpp"
 #include "file.hpp"
 #include "message.hpp"
 #include "movement.hpp"
+#include "overlay.hpp"
+#include "syntax/overlay_highlight_string.hpp"
 #include "token.hpp"
 
 namespace mag {
 namespace git {
 
-static void run_git_grep(Client* client, Editor* editor, const char* directory, cz::Str query) {
+static void run_git_grep(Client* client,
+                         Editor* editor,
+                         const char* directory,
+                         cz::Str query,
+                         cz::Str highlight) {
     cz::Str args[] = {"git", "grep", "-n", "--column", "-e", query, "--", ":/"};
 
     cz::String buffer_name = {};
@@ -22,7 +29,16 @@ static void run_git_grep(Client* client, Editor* editor, const char* directory, 
     buffer_name.append("git grep ");
     buffer_name.append(query);
 
-    run_console_command(client, editor, directory, args, buffer_name, "Git grep error");
+    cz::Arc<Buffer_Handle> handle;
+    if (run_console_command(client, editor, directory, args, buffer_name, "Git grep error",
+                            &handle)) {
+        Buffer* buffer = handle->lock_writing();
+        CZ_DEFER(handle->unlock());
+        buffer->mode.overlays.reserve(cz::heap_allocator(), 1);
+        buffer->mode.overlays.push(syntax::overlay_highlight_string(editor->theme.faces[12],
+                                                                    highlight,
+                                                                    /*case_insensitive=*/false));
+    }
 }
 
 static void command_git_grep_callback(Editor* editor, Client* client, cz::Str query, void* data) {
@@ -36,7 +52,7 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
         }
     }
 
-    run_git_grep(client, editor, top_level_path.buffer(), query);
+    run_git_grep(client, editor, top_level_path.buffer(), query, query);
 }
 
 void command_git_grep(Editor* editor, Command_Source source) {
@@ -78,7 +94,8 @@ void command_git_grep_token_at_position(Editor* editor, Command_Source source) {
         query.push('>');
     }
 
-    run_git_grep(source.client, editor, top_level_path.buffer(), query);
+    run_git_grep(source.client, editor, top_level_path.buffer(), query,
+                 query.slice(2, query.len() - 2));
 }
 
 }

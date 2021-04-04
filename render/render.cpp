@@ -590,7 +590,7 @@ static void draw_buffer_contents(Cell* cells,
         }
 
         Face token_face;
-        const size_t type_face_offset = 12;
+        const size_t type_face_offset = 13;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
             if (token.type & Token_Type::CUSTOM) {
                 token_face = Token_Type_::decode(token.type);

@@ -302,7 +302,7 @@ static void create_theme(Theme& theme) {
 
     theme.colors = mag::theme::solarized_dark;
 
-    theme.faces.reserve(cz::heap_allocator(), 57);
+    theme.faces.reserve(cz::heap_allocator(), 58);
     theme.faces.push({{}, 17, 0});             // saved and unselected buffer
     theme.faces.push({1, {}, 0});              // unsaved buffer
     theme.faces.push({{}, 0, Face::REVERSE});  // selected buffer
@@ -319,6 +319,8 @@ static void create_theme(Theme& theme) {
     theme.faces.push({0, 45, 0});  // line number
     theme.faces.push({0, {}, 0});  // space after line number
     theme.faces.push({0, 45, 0});  // line number padding
+
+    theme.faces.push({{}, {}, Face::BOLD});  // search mode result highlight face
 
     theme.faces.push({{}, {}, 0});  // Token_Type::DEFAULT
 
