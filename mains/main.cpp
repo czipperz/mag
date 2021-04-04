@@ -308,6 +308,7 @@ Configuration should be done by editing `custom/config.cpp`.\n\
                 return usage();
             } else {
                 open_arg(&server.editor, &client, arg, &opened_count);
+                server.slurp_jobs();
             }
         }
 
