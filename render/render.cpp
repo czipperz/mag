@@ -502,11 +502,15 @@ static void draw_buffer_contents(Cell* cells,
     cz::String line_number_buffer = {};
     CZ_DEFER(line_number_buffer.drop(cz::heap_allocator()));
     {
-        Contents_Iterator end_position = buffer->contents.iterator_at(iterator.position);
-        compute_visible_end(window, &end_position);
+        Contents_Iterator end_position = iterator;
+        {
+            ++window->rows;
+            CZ_DEFER(--window->rows);
+            compute_visible_end(window, &end_position);
+        }
 
-        size_t line_number_width =
-            log10(buffer->contents.get_line_number(end_position.position) + 1) + 1;
+        size_t end_line_number = buffer->contents.get_line_number(end_position.position) + 1;
+        size_t line_number_width = log10(end_line_number) + 1;
         line_number_buffer.reserve(cz::heap_allocator(), line_number_width + 1);
     }
 
