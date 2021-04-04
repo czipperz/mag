@@ -112,10 +112,21 @@ static size_t find_word_column_goal(cz::Slice<SSOStr> words, size_t word_column_
     return best_goal;
 }
 
+static bool any_patterns_match(Contents_Iterator it, size_t offset, cz::Slice<cz::Str> patterns) {
+    it.advance(offset);
+    for (size_t i = 0; i < patterns.len; ++i) {
+        if (looking_at(it, patterns[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool reformat_at(Buffer* buffer,
                  Contents_Iterator iterator,
                  cz::Str acceptable_start,
-                 cz::Str acceptable_continuation) {
+                 cz::Str acceptable_continuation,
+                 cz::Slice<cz::Str> rejected_patterns) {
     size_t acceptable_continuation_offset = 0;
     for (acceptable_continuation_offset = 0;
          acceptable_continuation_offset < acceptable_continuation.len;
@@ -132,12 +143,16 @@ bool reformat_at(Buffer* buffer,
     bool at_start = false;
     if (looking_at(iterator, acceptable_start)) {
         at_start = true;
+        if (any_patterns_match(iterator, acceptable_start.len, rejected_patterns)) {
+            return false;
+        }
     } else {
         if (iterator.position < acceptable_continuation_offset) {
             return false;
         }
         iterator.retreat(acceptable_continuation_offset);
-        if (!looking_at(iterator, acceptable_continuation)) {
+        if (!looking_at(iterator, acceptable_continuation) ||
+            any_patterns_match(iterator, acceptable_continuation.len, rejected_patterns)) {
             return false;
         }
     }
@@ -160,7 +175,8 @@ bool reformat_at(Buffer* buffer,
                 break;
             }
             iterator.retreat(acceptable_continuation_offset);
-            if (!looking_at(iterator, acceptable_continuation)) {
+            if (!looking_at(iterator, acceptable_continuation) ||
+                any_patterns_match(iterator, acceptable_continuation.len, rejected_patterns)) {
                 break;
             }
         }
@@ -244,7 +260,8 @@ bool reformat_at(Buffer* buffer,
         if (col != column) {
             break;
         }
-        if (!looking_at(iterator, acceptable_continuation)) {
+        if (!looking_at(iterator, acceptable_continuation) ||
+            any_patterns_match(iterator, acceptable_continuation.len, rejected_patterns)) {
             break;
         }
 
