@@ -18,6 +18,7 @@ void Client::init(Buffer_Id selected_buffer_id, Buffer_Id mini_buffer_id, Buffer
 }
 
 void Client::drop() {
+    macro_key_chain.drop(cz::heap_allocator());
     key_chain.drop(cz::heap_allocator());
     jump_chain.drop();
     dealloc_message();

@@ -667,7 +667,7 @@ static bool handle_key_press_insert(cz::Slice<Key> key_chain,
     if (key.modifiers == 0 && ((key.code <= UCHAR_MAX && cz::is_print(key.code)) ||
                                key.code == '\t' || key.code == '\n')) {
         *command = {command_insert_char, "command_insert_char"};
-        *end = start = 1;
+        *end = start + 1;
         return true;
     }
     return false;
@@ -679,21 +679,21 @@ void Server::receive(Client* client, Key key) {
     client->key_chain.reserve(cz::heap_allocator(), 1);
     client->key_chain.push(key);
 
-    cz::Slice<Key> key_chain = client->key_chain;
-    size_t start = 0;
-    while (start < key_chain.len) {
+    while (client->key_chain_offset < client->key_chain.len()) {
         Command command;
         size_t end;
         size_t max_depth = 1;
 
         // Try the different key maps or fall back to trying
         // to convert the key press to inserting text.
-        if (lookup_key_press_completion(key_chain, start, &command, &end, &max_depth, &editor,
-                                        client) ||
-            lookup_key_press_buffer(key_chain, start, &command, &end, &max_depth, &editor,
-                                    client) ||
-            lookup_key_press_global(key_chain, start, &command, &end, &max_depth, &editor) ||
-            handle_key_press_insert(key_chain, start, &command, &end, &max_depth)) {
+        if (lookup_key_press_completion(client->key_chain, client->key_chain_offset, &command, &end,
+                                        &max_depth, &editor, client) ||
+            lookup_key_press_buffer(client->key_chain, client->key_chain_offset, &command, &end,
+                                    &max_depth, &editor, client) ||
+            lookup_key_press_global(client->key_chain, client->key_chain_offset, &command, &end,
+                                    &max_depth, &editor) ||
+            handle_key_press_insert(client->key_chain, client->key_chain_offset, &command, &end,
+                                    &max_depth)) {
             // We need more keys before we can run a command.
             if (command.function == nullptr) {
                 break;
@@ -705,18 +705,28 @@ void Server::receive(Client* client, Key key) {
         // Make the source of the command.
         Command_Source source;
         source.client = client;
-        source.keys = {key_chain.start() + start, end - start};
         source.previous_command = previous_command.function;
+
+        cz::Vector<Key> temp = {};
+        CZ_DEFER(temp.drop(cz::heap_allocator()));
 
         // Update the state variables.
         previous_command = command;
-        start = end;
+        if (client->record_key_presses) {
+            source.keys = {client->key_chain.start() + client->key_chain_offset,
+                           end - client->key_chain_offset};
+            client->key_chain_offset = end;
+        } else {
+            temp.reserve(cz::heap_allocator(), end);
+            temp.append({client->key_chain.start(), end});
+            source.keys = temp;
+            client->key_chain.remove_range(0, end);
+            client->key_chain_offset = 0;
+        }
 
         // Run the command.
         run_command(command, &editor, source);
     }
-
-    client->key_chain.remove_range(0, start);
 }
 
 }

@@ -21,6 +21,10 @@ struct Mouse_Position {
 };
 
 struct Client {
+    bool record_key_presses;
+    size_t key_chain_offset;
+    cz::Vector<Key> macro_key_chain;
+
     cz::Vector<Key> key_chain;
     bool queue_quit;
 

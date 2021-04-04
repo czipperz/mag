@@ -14,6 +14,7 @@
 #include "basic/directory_commands.hpp"
 #include "basic/help_commands.hpp"
 #include "basic/indent_commands.hpp"
+#include "basic/macro_commands.hpp"
 #include "basic/markdown_commands.hpp"
 #include "basic/number_commands.hpp"
 #include "basic/reformat_commands.hpp"
@@ -123,6 +124,10 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-]", command_forward_paragraph);
     BIND(key_map, "A-[", command_backward_paragraph);
+
+    BIND(key_map, "F9", command_start_recording_macro);
+    BIND(key_map, "F10", command_stop_recording_macro);
+    BIND(key_map, "F11", command_run_macro);
 
     BIND(key_map, "C-A-u", command_backward_up_pair);
     BIND(key_map, "C-A-d", command_forward_up_pair);
