@@ -92,12 +92,18 @@ static bool any_changes_after(cz::Slice<const Change> changes, uint64_t position
     return false;
 }
 
-void Token_Cache::update(const Buffer* buffer) {
+bool Token_Cache::update(const Buffer* buffer) {
     ZoneScoped;
 
     cz::Slice<const Change> changes = buffer->changes;
     cz::Slice<const Change> pending_changes = {changes.elems + change_index,
                                                changes.len - change_index};
+
+    // Most of the time there are no changes so do nothing.
+    if (pending_changes.len == 0) {
+        return true;
+    }
+
     cz::Sized_Bit_Array changed_check_points;
     changed_check_points.init(cz::heap_allocator(), check_points.len());
     CZ_DEFER(changed_check_points.drop(cz::heap_allocator()));
@@ -150,7 +156,7 @@ void Token_Cache::update(const Buffer* buffer) {
                                 (unsigned long)i);
                     TracyMessage(message, len);
                     check_points.set_len(i);
-                    return;
+                    return false;
                 }
 
                 while (token.end < end_position) {
@@ -164,7 +170,7 @@ void Token_Cache::update(const Buffer* buffer) {
                     check_points[i].state = state;
                     ++i;
                     if (i == check_points.len()) {
-                        return;
+                        return true;
                     }
                     end_position = check_points[i].position;
                 } else {
@@ -176,6 +182,8 @@ void Token_Cache::update(const Buffer* buffer) {
         token.end = check_points[i].position;
         state = check_points[i].state;
     }
+
+    return true;
 }
 
 void Token_Cache::generate_check_points_until(const Buffer* buffer, uint64_t position) {

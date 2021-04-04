@@ -36,8 +36,9 @@ struct Token_Cache {
     bool find_check_point(uint64_t position, Tokenizer_Check_Point*) const;
     bool find_check_point(uint64_t position, size_t* index) const;
 
-    /// Update the cache based on recent changes
-    void update(const Buffer* buffer);
+    /// Update the cache based on recent changes.  Returns `true` on success, `false`
+    /// if a change has invalidated part of the cache and it must be re-generated.
+    bool update(const Buffer* buffer);
 
     /// Check if a position is covered by a check point.
     bool is_covered(uint64_t position) const;

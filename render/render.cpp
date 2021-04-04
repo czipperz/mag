@@ -128,8 +128,9 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         }
     }
 
+    bool token_cache_was_invalidated = false;
     if (buffer_mut) {
-        buffer_mut->token_cache.update(buffer);
+        token_cache_was_invalidated = !buffer_mut->token_cache.update(buffer);
     }
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
@@ -420,9 +421,10 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
     if (buffer_mut) {
         // Note: we update the token cache at the top of this function.
         CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
+        bool had_no_check_points = buffer->token_cache.check_points.len() == 0;
         buffer_mut->token_cache.generate_check_points_until(buffer, iterator.position);
 
-        if (!buffer->token_cache.is_covered(buffer->contents.len)) {
+        if (token_cache_was_invalidated || had_no_check_points) {
             TracyFormat(message, len, 1024, "Start syntax highlighting: %.*s",
                         (int)buffer->name.len(), buffer->name.buffer());
             TracyMessage(message, len);

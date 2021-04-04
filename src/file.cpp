@@ -648,12 +648,13 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     client->set_selected_buffer(handle->id);
 
     {
-#ifdef TRACY_ENABLE
-        WITH_CONST_BUFFER_HANDLE(handle);
+        WITH_BUFFER_HANDLE(handle);
+        // Mark that we started syntax highlighting.
+        buffer->token_cache.generate_check_points_until(buffer, 0);
+
         TracyFormat(message, len, 1024, "Start syntax highlighting: %.*s", (int)buffer->name.len(),
                     buffer->name.buffer());
         TracyMessage(message, len);
-#endif
     }
 
     editor->add_asynchronous_job(job_syntax_highlight_buffer(handle.clone_downgrade()));
