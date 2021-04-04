@@ -316,9 +316,9 @@ static void create_theme(Theme& theme) {
     theme.faces.push({0, 12, 0});  // window completion normal
     theme.faces.push({0, 7, 0});   // window completion selected item
 
-    theme.faces.push({0, 45, 0});   // line number
-    theme.faces.push({0, {}, 0});   // space after line number
-    theme.faces.push({0, 45, 0});   // line number padding
+    theme.faces.push({0, 45, 0});  // line number
+    theme.faces.push({0, {}, 0});  // space after line number
+    theme.faces.push({0, 45, 0});  // line number padding
 
     theme.faces.push({{}, {}, 0});  // Token_Type::DEFAULT
 
