@@ -35,6 +35,9 @@ void backward_word(Contents_Iterator* iterator);
 void forward_char(Contents_Iterator* iterator);
 void backward_char(Contents_Iterator* iterator);
 
+void forward_paragraph(Contents_Iterator* iterator);
+void backward_paragraph(Contents_Iterator* iterator);
+
 Contents_Iterator start_of_line_position(const Contents& contents, uint64_t lines);
 Contents_Iterator iterator_at_line_column(const Contents& contents, uint64_t line, uint64_t column);
 

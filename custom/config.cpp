@@ -121,6 +121,9 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "LEFT", command_backward_char);
     BIND(key_map, "RIGHT", command_forward_char);
 
+    BIND(key_map, "A-]", command_forward_paragraph);
+    BIND(key_map, "A-[", command_backward_paragraph);
+
     BIND(key_map, "C-A-u", command_backward_up_pair);
     BIND(key_map, "C-A-d", command_forward_up_pair);
     BIND(key_map, "C-A-b", command_backward_token_pair);

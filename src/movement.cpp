@@ -188,6 +188,59 @@ void backward_char(Contents_Iterator* iterator) {
     }
 }
 
+void forward_paragraph(Contents_Iterator* iterator) {
+    start_of_line(iterator);
+    if (iterator->at_eob()) {
+        return;
+    }
+
+    if (iterator->get() == '\n') {
+        while (1) {
+            end_of_line(iterator);
+            forward_char(iterator);
+            if (iterator->at_eob() || iterator->get() != '\n') {
+                break;
+            }
+        }
+    }
+
+    while (1) {
+        end_of_line(iterator);
+        forward_char(iterator);
+        if (iterator->at_eob() || iterator->get() == '\n') {
+            break;
+        }
+    }
+}
+
+void backward_paragraph(Contents_Iterator* iterator) {
+    if (iterator->at_eob()) {
+        backward_char(iterator);
+    }
+    start_of_line(iterator);
+    if (iterator->at_eob()) {
+        return;
+    }
+
+    if (iterator->get() == '\n') {
+        while (1) {
+            backward_char(iterator);
+            start_of_line(iterator);
+            if (iterator->at_bob() || iterator->get() != '\n') {
+                break;
+            }
+        }
+    }
+
+    while (1) {
+        backward_char(iterator);
+        start_of_line(iterator);
+        if (iterator->at_bob() || iterator->get() == '\n') {
+            break;
+        }
+    }
+}
+
 Contents_Iterator start_of_line_position(const Contents& contents, uint64_t line) {
     ZoneScoped;
 

@@ -26,6 +26,9 @@ void command_backward_word(Editor* editor, Command_Source source);
 void command_forward_line(Editor* editor, Command_Source source);
 void command_backward_line(Editor* editor, Command_Source source);
 
+void command_forward_paragraph(Editor* editor, Command_Source source);
+void command_backward_paragraph(Editor* editor, Command_Source source);
+
 void command_end_of_buffer(Editor* editor, Command_Source source);
 void command_start_of_buffer(Editor* editor, Command_Source source);
 

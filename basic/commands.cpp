@@ -106,6 +106,16 @@ void command_backward_line(Editor* editor, Command_Source source) {
     TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(buffer->mode, it); });
 }
 
+void command_forward_paragraph(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    TRANSFORM_POINTS(forward_paragraph);
+}
+
+void command_backward_paragraph(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    TRANSFORM_POINTS(backward_paragraph);
+}
+
 void command_end_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     if (source.previous_command != command_start_of_buffer &&
