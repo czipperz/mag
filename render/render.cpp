@@ -520,7 +520,7 @@ static void draw_buffer_contents(Cell* cells,
         editor->theme.draw_line_numbers && line_number_buffer.cap() + 5 <= window->cols;
     if (draw_line_numbers) {
         int ret = snprintf(line_number_buffer.buffer(), line_number_buffer.cap(), "%*zu",
-                           line_number_buffer.cap() - 1, line_number);
+                           (int)(line_number_buffer.cap() - 1), line_number);
         if (ret > 0) {
             line_number_buffer.set_len(ret);
 
@@ -634,7 +634,7 @@ static void draw_buffer_contents(Cell* cells,
             if (draw_line_numbers) {
                 line_number += 1;
                 int ret = snprintf(line_number_buffer.buffer(), line_number_buffer.cap(), "%*zu",
-                                   line_number_buffer.cap() - 1, line_number);
+                                   (int)(line_number_buffer.cap() - 1), line_number);
                 if (ret > 0) {
                     line_number_buffer.set_len(ret);
 
