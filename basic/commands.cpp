@@ -1147,6 +1147,17 @@ static void command_search_forward_callback(Editor* editor,
 
 void command_search_forward(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
+
+    // If we're already in an interactive search then search inside the normal window.
+    if (source.client->_select_mini_buffer && !window->show_marks &&
+        source.client->_message.interactive_response_callback ==
+            interactive_search_response_callback) {
+        window = source.client->selected_normal_window;
+        // Hide the mini buffer but don't reset the cursor.
+        source.client->_message.response_cancel = nullptr;
+        source.client->hide_mini_buffer(editor);
+    }
+
     if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
         WITH_CONST_WINDOW_BUFFER(window);
@@ -1193,6 +1204,17 @@ static void command_search_backward_callback(Editor* editor,
 
 void command_search_backward(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
+
+    // If we're already in an interactive search then search inside the normal window.
+    if (source.client->_select_mini_buffer && !window->show_marks &&
+        source.client->_message.interactive_response_callback ==
+            interactive_search_response_callback) {
+        window = source.client->selected_normal_window;
+        // Hide the mini buffer but don't reset the cursor.
+        source.client->_message.response_cancel = nullptr;
+        source.client->hide_mini_buffer(editor);
+    }
+
     if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
         WITH_CONST_WINDOW_BUFFER(window);
