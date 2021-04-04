@@ -331,7 +331,8 @@ bool get_token_at_position_no_update(const Buffer* buffer,
         if (has_previous) {
             auto low_priority = [](Token_Type type) {
                 return type == Token_Type::OPEN_PAIR || type == Token_Type::CLOSE_PAIR ||
-                       type == Token_Type::PUNCTUATION || type == Token_Type::DEFAULT;
+                       type == Token_Type::PUNCTUATION || type == Token_Type::DEFAULT ||
+                       type == Token_Type::COMMENT || type == Token_Type::DOC_COMMENT;
             };
             if (!has_token || token->start > position ||
                 (low_priority(token->type) && !low_priority(previous_token.type))) {
