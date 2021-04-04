@@ -191,12 +191,12 @@ bool reformat_at(Buffer* buffer,
     CZ_DEFER(words.drop(cz::heap_allocator()));
     words.reserve(cz::heap_allocator(), 32);
 
+    while (!iterator.at_eob() && cz::is_blank(iterator.get())) {
+        iterator.advance();
+    }
+
     uint64_t end_position = start_position;
     while (1) {
-        while (!iterator.at_eob() && cz::is_space(iterator.get())) {
-            iterator.advance();
-        }
-
         // Parse words on this line.
         while (1) {
             // Parse one word.
@@ -256,6 +256,10 @@ bool reformat_at(Buffer* buffer,
         if (stop_on_empty_lines && !iterator.at_eob() && iterator.get() == '\n') {
             end_position = end_position_backup;
             break;
+        }
+
+        while (!iterator.at_eob() && cz::is_space(iterator.get())) {
+            iterator.advance();
         }
     }
 
