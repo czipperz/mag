@@ -435,6 +435,11 @@ static Key_Map mini_buffer_key_map() {
     BIND(key_map, "\t", command_insert_completion);
     BIND(key_map, "C-j", command_insert_completion_and_submit_mini_buffer);
     BIND(key_map, "\n", command_submit_mini_buffer);
+
+    // These keys just mess up the prompt so unbind them.
+    BIND(key_map, "A-k", command_do_nothing);
+    BIND(key_map, "A-m", command_do_nothing);
+
     return key_map;
 }
 

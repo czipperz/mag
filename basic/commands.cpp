@@ -16,6 +16,8 @@
 namespace mag {
 namespace basic {
 
+void command_do_nothing(Editor* editor, Command_Source source) {}
+
 void command_invalid(Editor* editor, Command_Source source) {
     // Print a message that this key press failed.
     cz::String message = {};
