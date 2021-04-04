@@ -6,6 +6,8 @@
 namespace mag {
 namespace basic {
 
+void command_invalid(Editor* editor, Command_Source source);
+
 void command_toggle_read_only(Editor* editor, Command_Source source);
 void command_toggle_pinned(Editor* editor, Command_Source source);
 

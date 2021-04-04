@@ -16,6 +16,30 @@
 namespace mag {
 namespace basic {
 
+void command_invalid(Editor* editor, Command_Source source) {
+    // Print a message that this key press failed.
+    cz::String message = {};
+    CZ_DEFER(message.drop(cz::heap_allocator()));
+
+    cz::Str prefix;
+    if (source.keys.len == 1) {
+        prefix = "Unbound key:";
+    } else {
+        prefix = "Unbound key chain:";
+    }
+    message.reserve(cz::heap_allocator(),
+                    prefix.len + (1 + stringify_key_max_size) * source.keys.len);
+    message.append(prefix);
+
+    CZ_DEBUG_ASSERT(source.keys.len > 0);
+    for (size_t i = 0; i < source.keys.len; ++i) {
+        message.push(' ');
+        stringify_key(&message, source.keys[i]);
+    }
+
+    source.client->show_message(editor, message);
+}
+
 void command_toggle_read_only(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     buffer->read_only = !buffer->read_only;
