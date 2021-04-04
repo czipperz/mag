@@ -146,7 +146,8 @@ bool run_console_command(Client* client,
                          const char* working_directory,
                          cz::Str script,
                          cz::Str buffer_name,
-                         cz::Str error) {
+                         cz::Str error,
+                         cz::Arc<Buffer_Handle>* handle_out) {
     ZoneScoped;
 
     cz::Option<cz::Str> wd = {};
@@ -160,6 +161,9 @@ bool run_console_command(Client* client,
     }
 
     cz::Arc<Buffer_Handle> handle = editor->create_temp_buffer(buffer_name, wd);
+    if (handle_out) {
+        *handle_out = handle;
+    }
     {
         WITH_BUFFER_HANDLE(handle);
         buffer->contents.append(script);
@@ -208,12 +212,13 @@ bool run_console_command(Client* client,
                          const char* working_directory,
                          cz::Slice<cz::Str> args,
                          cz::Str buffer_name,
-                         cz::Str error) {
+                         cz::Str error,
+                         cz::Arc<Buffer_Handle>* handle_out) {
     cz::String script = {};
     CZ_DEFER(script.drop(cz::heap_allocator()));
     cz::Process::escape_args(args, &script, cz::heap_allocator());
     return run_console_command(client, editor, working_directory, script.buffer(), buffer_name,
-                               error);
+                               error, handle_out);
 }
 
 }

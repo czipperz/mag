@@ -93,13 +93,15 @@ bool run_console_command(Client* client,
                          const char* working_directory,
                          cz::Str script,
                          cz::Str buffer_name,
-                         cz::Str error);
+                         cz::Str error,
+                         cz::Arc<Buffer_Handle>* handle_out = nullptr);
 bool run_console_command(Client* client,
                          Editor* editor,
                          const char* working_directory,
                          cz::Slice<cz::Str> args,
                          cz::Str buffer_name,
-                         cz::Str error);
+                         cz::Str error,
+                         cz::Arc<Buffer_Handle>* handle_out = nullptr);
 
 bool run_console_command_in(Client* client,
                             Editor* editor,
