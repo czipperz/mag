@@ -123,22 +123,23 @@ struct Wildcard_Pattern {
     }
 };
 
-static Wildcard_Pattern parse_spaces_are_wildcards(cz::Str query) {
+static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
     ZoneScoped;
 
     Wildcard_Pattern pattern = {};
 
-    if (query.len > 0) {
-        size_t start = 0;
+    size_t start = 0;
+    size_t end = query.len();
+
+    if (query.len() > 0) {
         if (query[start] == '^') {
             pattern.wild_start = false;
             ++start;
         }
-        while (start < query.len && query[start] == ' ') {
+        while (start < query.len() && query[start] == ' ') {
             ++start;
         }
 
-        size_t end = query.len;
         if (query[end - 1] == '$') {
             pattern.wild_end = false;
             --end;
@@ -148,9 +149,7 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::Str query) {
         }
 
         if (end < start) {
-            query = "";
-        } else {
-            query = query.slice(start, end);
+            start = end = 0;
         }
     }
 
@@ -158,35 +157,41 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::Str query) {
         pattern.pieces.reserve(cz::heap_allocator(), 1);
 
         // A piece ends in either a space, forward slash, or the end of the query.
-        size_t i = 0;
-        for (; i < query.len; ++i) {
+        size_t i = start;
+        for (; i < end; ++i) {
             if (query[i] == ' ') {
                 break;
             }
 
             // Forward slashes break the piece but are still included in the piece.
             if (query[i] == '/') {
-                ++i;
-                break;
+                // `abc/^def` should be parsed as the piece `abc/def`.
+                if (i + 1 < end && query[i + 1] == '^') {
+                    query.remove(i + 1, 1);
+                    --end;
+                } else {
+                    ++i;
+                    break;
+                }
             }
         }
 
         // Add the piece.
-        pattern.pieces.push(query.slice_end(i));
+        pattern.pieces.push(query.slice(start, i));
 
         // If no spaces or forward slashes were found, continue.
-        if (i == query.len) {
+        if (i == end) {
             break;
         }
 
         // Look for the start of the next piece.  Note that spaces are ignored whereas
         // forward slashes are still included in pieces so we don't jump over them.
-        while (i < query.len && query[i] == ' ') {
+        while (i < end && query[i] == ' ') {
             ++i;
         }
 
         // Advance.
-        query = query.slice_start(i);
+        start = i;
     }
 
     return pattern;
@@ -199,7 +204,10 @@ void spaces_are_wildcards_completion_filter(Editor* editor,
                                             bool has_selected_result) {
     ZoneScoped;
 
-    Wildcard_Pattern pattern = parse_spaces_are_wildcards(engine_context->query);
+    cz::String query = engine_context->query.clone(cz::heap_allocator());
+    CZ_DEFER(query.drop(cz::heap_allocator()));
+
+    Wildcard_Pattern pattern = parse_spaces_are_wildcards(query);
     CZ_DEFER(pattern.pieces.drop(cz::heap_allocator()));
 
     context->selected = 0;
