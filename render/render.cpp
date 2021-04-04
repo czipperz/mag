@@ -60,7 +60,7 @@ static bool load_completion_cache(Editor* editor,
         if (x == window->cols) {                                            \
             ADD_NEWLINE({});                                                \
                                                                             \
-            if (editor->theme.draw_line_numbers) {                          \
+            if (draw_line_numbers) {                                        \
                 Face face = editor->theme.faces[11];                        \
                 for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) { \
                     SET_BODY(face, ' ');                                    \
@@ -515,7 +515,9 @@ static void draw_buffer_contents(Cell* cells,
     }
 
     // Draw line number for first line.
-    if (editor->theme.draw_line_numbers) {
+    bool draw_line_numbers =
+        editor->theme.draw_line_numbers && line_number_buffer.cap() + 5 <= window->cols;
+    if (draw_line_numbers) {
         int ret = snprintf(line_number_buffer.buffer(), line_number_buffer.cap(), "%*zu",
                            line_number_buffer.cap() - 1, line_number);
         if (ret > 0) {
@@ -628,7 +630,7 @@ static void draw_buffer_contents(Cell* cells,
             }
 
             // Draw line number.  Note the first line number is drawn before the loop.
-            if (editor->theme.draw_line_numbers) {
+            if (draw_line_numbers) {
                 line_number += 1;
                 int ret = snprintf(line_number_buffer.buffer(), line_number_buffer.cap(), "%*zu",
                                    line_number_buffer.cap() - 1, line_number);
