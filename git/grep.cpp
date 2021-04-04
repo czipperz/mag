@@ -21,7 +21,18 @@ static void run_git_grep(Client* client,
                          const char* directory,
                          cz::Str query,
                          cz::Str highlight) {
-    cz::Str args[] = {"git", "grep", "-n", "--column", "-e", query, "--", ":/"};
+    // We want backslashes in the query to be treated as plain text so we need to escape them.
+    cz::String query_escaped = {};
+    CZ_DEFER(query_escaped.drop(cz::heap_allocator()));
+    query_escaped.reserve(cz::heap_allocator(), query.len + query.count('\\'));
+    for (size_t i = 0; i < query.len; ++i) {
+        if (query[i] == '\\') {
+            query_escaped.push('\\');
+        }
+        query_escaped.push(query[i]);
+    }
+
+    cz::Str args[] = {"git", "grep", "-n", "--column", "-e", query_escaped, "--", ":/"};
 
     cz::String buffer_name = {};
     CZ_DEFER(buffer_name.drop(cz::heap_allocator()));
