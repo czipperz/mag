@@ -104,7 +104,7 @@ read_continue:
 static cz::Result load_directory(Editor* editor,
                                  char* path,
                                  size_t path_len,
-                                 Buffer_Id* buffer_id) {
+                                 cz::Arc<Buffer_Handle>* handle) {
     path[path_len++] = '/';
 
     Buffer buffer = {};
@@ -121,7 +121,7 @@ static cz::Result load_directory(Editor* editor,
         return result;
     }
 
-    *buffer_id = editor->create_buffer(buffer)->id;
+    *handle = editor->create_buffer(buffer);
     return result;
 }
 
@@ -245,11 +245,14 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
     return cz::Result::ok();
 }
 
-static cz::Result load_path(Editor* editor, char* path, size_t path_len, Buffer_Id* buffer_id) {
+static cz::Result load_path(Editor* editor,
+                            char* path,
+                            size_t path_len,
+                            cz::Arc<Buffer_Handle>* handle) {
     // Try reading it as a directory, then if that fails read it as a file.  On
     // linux, opening it as a file will succeed even if it is a directory.  Then
     // reading the file will cause an error.
-    if (load_directory(editor, path, path_len, buffer_id).is_ok()) {
+    if (load_directory(editor, path, path_len, handle).is_ok()) {
         return cz::Result::ok();
     }
 
@@ -267,7 +270,7 @@ static cz::Result load_path(Editor* editor, char* path, size_t path_len, Buffer_
 
     path[path_len] = '\0';
     cz::Result result = load_file(&buffer, path);
-    *buffer_id = editor->create_buffer(buffer)->id;
+    *handle = editor->create_buffer(buffer);
     return result;
 }
 
@@ -635,16 +638,14 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     TracyFormat(message, len, 1024, "open_path: %s", path.buffer());
     TracyMessage(message, len);
 
-    Buffer_Id buffer_id;
     cz::Arc<Buffer_Handle> handle;
     if (find_buffer_by_path(editor, client, path, &handle)) {
-        buffer_id = handle->id;
-    } else if (load_path(editor, path.buffer(), path.len(), &buffer_id).is_err()) {
+    } else if (load_path(editor, path.buffer(), path.len(), &handle).is_err()) {
         client->show_message(editor, "File not found");
         // Still open empty file buffer.
     }
 
-    client->set_selected_buffer(buffer_id);
+    client->set_selected_buffer(handle->id);
 }
 
 bool save_buffer(Buffer* buffer) {
