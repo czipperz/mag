@@ -638,18 +638,16 @@ static void render(SDL_Window* window,
 
         char buffer[2] = {};
 
-#define ONLY_IF_DIFFERENT 0
-
         for (int y = 0, index = 0; y < rows; ++y) {
             for (int x = 0; x < cols; ++x, ++index) {
                 ZoneScopedN("draw cell background");
 
                 Cell* new_cell = &cellss[1][index];
-#if ONLY_IF_DIFFERENT
-                if (cellss[0][index] == *new_cell) {
+                if (cellss[0][index] == *new_cell &&
+                    (x == 0 || cellss[0][index - 1] == cellss[1][index - 1]) &&
+                    (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1])) {
                     continue;
                 }
-#endif
 
                 Face_Color bg = (new_cell->face.flags & Face::REVERSE) ? new_cell->face.foreground
                                                                        : new_cell->face.background;
@@ -677,11 +675,11 @@ static void render(SDL_Window* window,
                 ZoneScopedN("draw cell foreground");
 
                 Cell* new_cell = &cellss[1][index];
-#if ONLY_IF_DIFFERENT
-                if (cellss[0][index] == *new_cell) {
+                if (cellss[0][index] == *new_cell &&
+                    (x == 0 || cellss[0][index - 1] == cellss[1][index - 1]) &&
+                    (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1])) {
                     continue;
                 }
-#endif
 
                 Face_Color fg = (new_cell->face.flags & Face::REVERSE) ? new_cell->face.background
                                                                        : new_cell->face.foreground;
