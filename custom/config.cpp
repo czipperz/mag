@@ -384,10 +384,10 @@ static void create_theme(Theme& theme) {
     theme.decorations.push(syntax::decoration_pinned_indicator());
 
     theme.overlays.reserve(cz::heap_allocator(), 4);
-    theme.overlays.push(syntax::overlay_matching_region({-1, 237, 0}));
-    theme.overlays.push(syntax::overlay_preferred_column({-1, 21, 0}));
-    theme.overlays.push(syntax::overlay_trailing_spaces({-1, 208, 0}));
-    theme.overlays.push(syntax::overlay_incorrect_indent({-1, 208, 0}));
+    theme.overlays.push(syntax::overlay_matching_region({{}, 237, 0}));
+    theme.overlays.push(syntax::overlay_preferred_column({{}, 21, 0}));
+    theme.overlays.push(syntax::overlay_trailing_spaces({{}, 208, 0}));
+    theme.overlays.push(syntax::overlay_incorrect_indent({{}, 208, 0}));
 
     theme.max_completion_results = 5;
     theme.mini_buffer_completion_filter = spaces_are_wildcards_completion_filter;
