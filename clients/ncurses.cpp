@@ -264,8 +264,19 @@ void run(Server* server, Client* client) {
     colors[21] = 1;
     colors[208] = 1;
     colors[237] = 1;
-    for (size_t i = 0; i < server->editor.theme.faces.len(); ++i) {
-        Face* face = &server->editor.theme.faces[i];
+    for (size_t i = 0; i < cz::len(server->editor.theme.special_faces); ++i) {
+        Face* face = &server->editor.theme.special_faces[i];
+        int16_t fg = get_face_color(face->foreground);
+        if (fg >= 0 && fg < COLORS) {
+            colors[fg] = 1;
+        }
+        int16_t bg = get_face_color(face->background);
+        if (bg >= 0 && bg < COLORS) {
+            colors[bg] = 1;
+        }
+    }
+    for (size_t i = 0; i < cz::len(server->editor.theme.token_faces); ++i) {
+        Face* face = &server->editor.theme.token_faces[i];
         int16_t fg = get_face_color(face->foreground);
         if (fg >= 0 && fg < COLORS) {
             colors[fg] = 1;
