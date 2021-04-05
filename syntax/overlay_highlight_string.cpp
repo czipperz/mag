@@ -19,7 +19,7 @@ namespace syntax {
 namespace overlay_highlight_string_impl {
 struct Data {
     bool enabled;
-    cz::Str str;
+    cz::String string;
     Face face;
     bool case_insensitive;
 
@@ -100,23 +100,23 @@ static Face overlay_highlight_string_get_face_and_advance(const Buffer* buffer,
 
         size_t i = 0;
         if (data->case_insensitive) {
-            for (i = 0; i < data->str.len && !iterator.at_eob(); ++i) {
-                if (cz::to_lower(data->str[i]) != cz::to_lower(iterator.get())) {
+            for (i = 0; i < data->string.len() && !iterator.at_eob(); ++i) {
+                if (cz::to_lower(data->string[i]) != cz::to_lower(iterator.get())) {
                     break;
                 }
                 iterator.advance();
             }
         } else {
-            for (i = 0; i < data->str.len && !iterator.at_eob(); ++i) {
-                if (data->str[i] != iterator.get()) {
+            for (i = 0; i < data->string.len() && !iterator.at_eob(); ++i) {
+                if (data->string[i] != iterator.get()) {
                     break;
                 }
                 iterator.advance();
             }
         }
 
-        if (i == data->str.len) {
-            data->countdown_cursor_region = data->str.len;
+        if (i == data->string.len()) {
+            data->countdown_cursor_region = data->string.len();
         }
     }
 
@@ -139,6 +139,7 @@ static void overlay_highlight_string_end_frame(void* data) {}
 
 static void overlay_highlight_string_cleanup(void* _data) {
     Data* data = (Data*)_data;
+    data->string.drop(cz::heap_allocator());
     cz::heap_allocator().dealloc(data);
 }
 
@@ -157,7 +158,7 @@ Overlay overlay_highlight_string(Face face,
     Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
     data->face = face;
-    data->str = str;
+    data->string = str.duplicate(cz::heap_allocator());
     data->case_insensitive = case_insensitive;
     data->token_type = token_type;
     return {&vtable, data};
