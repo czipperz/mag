@@ -601,6 +601,11 @@ bool find_temp_buffer(Editor* editor,
         }
     }
 
+    CZ_DEBUG_ASSERT(name.starts_with("*"));
+    CZ_DEBUG_ASSERT(name.ends_with("*"));
+    name.buffer++;
+    name.len -= 2;
+
     return find_temp_buffer(editor, client, name, directory, handle_out);
 }
 
