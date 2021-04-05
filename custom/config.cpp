@@ -414,8 +414,7 @@ void editor_created_callback(Editor* editor) {
     create_theme(editor->theme);
 }
 
-static Key_Map directory_key_map() {
-    Key_Map key_map = {};
+static void directory_key_map(Key_Map& key_map) {
     BIND(key_map, "\n", command_directory_open_path);
     BIND(key_map, "s", command_directory_run_path);
     BIND(key_map, "d", command_directory_delete_path);
@@ -427,21 +426,17 @@ static Key_Map directory_key_map() {
 
     BIND(key_map, "n", command_forward_line);
     BIND(key_map, "p", command_backward_line);
-    return key_map;
 }
 
-static Key_Map search_key_map() {
-    Key_Map key_map = {};
+static void search_key_map(Key_Map& key_map) {
     BIND(key_map, "\n", command_search_open);
     BIND(key_map, "g", command_search_reload);
 
     BIND(key_map, "n", command_forward_line);
     BIND(key_map, "p", command_backward_line);
-    return key_map;
 }
 
-static Key_Map mini_buffer_key_map() {
-    Key_Map key_map = {};
+static void mini_buffer_key_map(Key_Map& key_map) {
     BIND(key_map, "C-n", command_next_completion);
     BIND(key_map, "C-p", command_previous_completion);
     BIND(key_map, "C-v", command_completion_down_page);
@@ -459,12 +454,9 @@ static Key_Map mini_buffer_key_map() {
     // These keys just mess up the prompt so unbind them.
     BIND(key_map, "A-k", command_do_nothing);
     BIND(key_map, "A-m", command_do_nothing);
-
-    return key_map;
 }
 
-static Key_Map window_completion_key_map() {
-    Key_Map key_map = {};
+static void window_completion_key_map(Key_Map& key_map) {
     BIND(key_map, "C-n", window_completion::command_next_completion);
     BIND(key_map, "C-p", window_completion::command_previous_completion);
     BIND(key_map, "C-v", window_completion::command_completion_down_page);
@@ -474,14 +466,11 @@ static Key_Map window_completion_key_map() {
 
     BIND(key_map, "\n", window_completion::command_finish_completion);
     BIND(key_map, "A-c", window_completion::command_finish_completion);
-    return key_map;
 }
 
-static Key_Map git_edit_key_map() {
-    Key_Map key_map = {};
+static void git_edit_key_map(Key_Map& key_map) {
     BIND(key_map, "C-c C-c", git::command_save_and_quit);
     BIND(key_map, "C-c C-k", git::command_abort_and_quit);
-    return key_map;
 }
 
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
@@ -497,7 +486,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
     buffer->mode.preferred_column = 100;
 
-    buffer->mode.completion_key_map = window_completion_key_map();
+    window_completion_key_map(buffer->mode.completion_key_map);
 
     buffer->mode.next_token = default_next_token;
 
@@ -511,20 +500,20 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
     switch (buffer->type) {
     case Buffer::DIRECTORY:
         buffer->mode.next_token = syntax::directory_next_token;
-        buffer->mode.key_map = directory_key_map();
+        directory_key_map(buffer->mode.key_map);
         break;
 
     case Buffer::TEMPORARY:
         if (buffer->name == "*client mini buffer*") {
             buffer->mode.next_token = syntax::path_next_token;
-            buffer->mode.key_map = mini_buffer_key_map();
+            mini_buffer_key_map(buffer->mode.key_map);
         } else if (buffer->name.contains("*git grep ") || buffer->name.contains("*ag ")) {
             buffer->mode.next_token = syntax::search_next_token;
-            buffer->mode.key_map = search_key_map();
+            search_key_map(buffer->mode.key_map);
         } else if (buffer->name.contains("*build ")) {
             // Build will eventually get its own tokenizer and key map.
             buffer->mode.next_token = syntax::search_next_token;
-            buffer->mode.key_map = search_key_map();
+            search_key_map(buffer->mode.key_map);
         } else if (buffer->name.starts_with("*man ")) {
             buffer->mode.next_token = syntax::process_next_token;
         } else if (buffer->name == "*key map*") {
@@ -631,14 +620,14 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.ends_with(".patch") || buffer->name.ends_with(".diff")) {
             buffer->mode.next_token = syntax::patch_next_token;
             if (buffer->name == "addp-hunk-edit.diff") {
-                buffer->mode.key_map = git_edit_key_map();
+                git_edit_key_map(buffer->mode.key_map);
             }
         } else if (buffer->name == "git-rebase-todo") {
             buffer->mode.next_token = syntax::git_rebase_todo_next_token;
-            buffer->mode.key_map = git_edit_key_map();
+            git_edit_key_map(buffer->mode.key_map);
         } else if (buffer->name == "COMMIT_EDITMSG") {
             buffer->mode.next_token = syntax::git_commit_edit_message_next_token;
-            buffer->mode.key_map = git_edit_key_map();
+            git_edit_key_map(buffer->mode.key_map);
         } else if (buffer->name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
         } else {
