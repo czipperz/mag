@@ -25,7 +25,8 @@ static void run_ag(Client* client,
 
     cz::Arc<Buffer_Handle> handle;
     if (run_console_command(client, editor, directory, {args, (size_t)(3 + query_word)},
-                            buffer_name, "Ag error", &handle)) {
+                            buffer_name, "Ag error",
+                            &handle) == Run_Console_Command_Result::SUCCESS_NEW_BUFFER) {
         Buffer* buffer = handle->lock_writing();
         CZ_DEFER(handle->unlock());
         buffer->mode.overlays.reserve(cz::heap_allocator(), 1);

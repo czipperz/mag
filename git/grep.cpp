@@ -54,7 +54,7 @@ static void run_git_grep(Client* client,
 
     cz::Arc<Buffer_Handle> handle;
     if (run_console_command(client, editor, directory, args, buffer_name, "Git grep error",
-                            &handle)) {
+                            &handle) == Run_Console_Command_Result::SUCCESS_NEW_BUFFER) {
         Buffer* buffer = handle->lock_writing();
         CZ_DEFER(handle->unlock());
         buffer->mode.overlays.reserve(cz::heap_allocator(), 1);
