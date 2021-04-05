@@ -3,11 +3,39 @@
 #include <stdint.h>
 #include <cz/vector.hpp>
 #include "completion.hpp"
+#include "face.hpp"
+#include "token.hpp"
 
 namespace mag {
-struct Face;
 struct Decoration;
 struct Overlay;
+
+namespace Face_Types_ {
+enum Face_Type : uint64_t {
+    DEFAULT_MODE_LINE,
+    UNSAVED_MODE_LINE,
+    SELECTED_MODE_LINE,
+
+    CURSOR,
+    MARKED_REGION,
+
+    MINI_BUFFER_PROMPT,
+    MINI_BUFFER_COMPLETION_SELECTED,
+
+    WINDOW_COMPLETION_NORMAL,
+    WINDOW_COMPLETION_SELECTED,
+
+    LINE_NUMBER,
+    LINE_NUMBER_RIGHT_PADDING,
+    LINE_NUMBER_LEFT_PADDING,
+
+    SEARCH_MODE_RESULT_HIGHLIGHT,
+
+    // Special value representing the number of values in the enum.
+    length,
+};
+}
+using Face_Types_::Face_Type;
 
 struct Theme {
     const char* font_file;
@@ -33,9 +61,12 @@ struct Theme {
     /// `colors` should be `256` elements long.
     uint32_t* colors;
 
-    /// The way different token types should be displayed.  These should
-    /// directly correspond to the token types.
-    cz::Vector<Face> faces;
+    /// The way different things are rendered.
+    Face special_faces[Face_Type::length];
+
+    /// The way different token types should be displayed.
+    /// These should directly correspond to the token types.
+    Face token_faces[Token_Type::length];
 
     cz::Vector<Decoration> decorations;
     cz::Vector<Overlay> overlays;

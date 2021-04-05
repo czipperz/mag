@@ -46,9 +46,9 @@ static void run_git_grep(Client* client,
         Buffer* buffer = handle->lock_writing();
         CZ_DEFER(handle->unlock());
         buffer->mode.overlays.reserve(cz::heap_allocator(), 1);
-        buffer->mode.overlays.push(syntax::overlay_highlight_string(editor->theme.faces[12],
-                                                                    highlight,
-                                                                    /*case_insensitive=*/false));
+        buffer->mode.overlays.push(syntax::overlay_highlight_string(
+            editor->theme.special_faces[Face_Type::SEARCH_MODE_RESULT_HIGHLIGHT], highlight,
+            /*case_insensitive=*/false));
     }
 }
 

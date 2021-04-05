@@ -63,6 +63,9 @@ enum Token_Type : uint64_t {
     SEARCH_FILE_COLUMN,
     SEARCH_RESULT,
 
+    // Special value representing the number of values in the enum.
+    length,
+
     CUSTOM = 0x8000000000000000,
     CUSTOM_FOREGROUND_IS_COLOR = 0x4000000000000000,
     CUSTOM_BACKGROUND_IS_COLOR = 0x2000000000000000,

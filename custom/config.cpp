@@ -302,81 +302,80 @@ static void create_theme(Theme& theme) {
 
     theme.colors = mag::theme::solarized_dark;
 
-    theme.faces.reserve(cz::heap_allocator(), 58);
-    theme.faces.push({{}, 17, 0});             // saved and unselected buffer
-    theme.faces.push({1, {}, 0});              // unsaved buffer
-    theme.faces.push({{}, 0, Face::REVERSE});  // selected buffer
+    theme.special_faces[Face_Type::DEFAULT_MODE_LINE] = {{}, 17, 0};
+    theme.special_faces[Face_Type::UNSAVED_MODE_LINE] = {1, {}, 0};
+    theme.special_faces[Face_Type::SELECTED_MODE_LINE] = {{}, 0, Face::REVERSE};
 
-    theme.faces.push({0, 7, 0});   // cursor
-    theme.faces.push({0, 12, 0});  // marked region
+    theme.special_faces[Face_Type::CURSOR] = {0, 7, 0};
+    theme.special_faces[Face_Type::MARKED_REGION] = {0, 12, 0};
 
-    theme.faces.push({{}, {}, 0});              // mini buffer prompt
-    theme.faces.push({{}, {}, Face::REVERSE});  // mini buffer completion selected item
+    theme.special_faces[Face_Type::MINI_BUFFER_PROMPT] = {{}, {}, 0};
+    theme.special_faces[Face_Type::MINI_BUFFER_COMPLETION_SELECTED] = {{}, {}, Face::REVERSE};
 
-    theme.faces.push({0, 12, 0});  // window completion normal
-    theme.faces.push({0, 7, 0});   // window completion selected item
+    theme.special_faces[Face_Type::WINDOW_COMPLETION_NORMAL] = {0, 12, 0};
+    theme.special_faces[Face_Type::WINDOW_COMPLETION_SELECTED] = {0, 7, 0};
 
-    theme.faces.push({0, 45, 0});  // line number
-    theme.faces.push({0, {}, 0});  // space after line number
-    theme.faces.push({0, 45, 0});  // line number padding
+    theme.special_faces[Face_Type::LINE_NUMBER] = {0, 45, 0};
+    theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING] = {0, {}, 0};
+    theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING] = {0, 45, 0};
 
-    theme.faces.push({{}, {}, Face::BOLD});  // search mode result highlight face
+    theme.special_faces[Face_Type::SEARCH_MODE_RESULT_HIGHLIGHT] = {{}, {}, Face::BOLD};
 
-    theme.faces.push({{}, {}, 0});  // Token_Type::DEFAULT
+    theme.token_faces[Token_Type::DEFAULT] = {{}, {}, 0};
 
-    theme.faces.push({1, {}, 0});    // Token_Type::KEYWORD
-    theme.faces.push({4, {}, 0});    // Token_Type::TYPE
-    theme.faces.push({6, {}, 0});    // Token_Type::PUNCTUATION
-    theme.faces.push({3, {}, 0});    // Token_Type::OPEN_PAIR
-    theme.faces.push({3, {}, 0});    // Token_Type::CLOSE_PAIR
-    theme.faces.push({12, {}, 0});   // Token_Type::COMMENT
-    theme.faces.push({142, {}, 0});  // Token_Type::DOC_COMMENT
-    theme.faces.push({2, {}, 0});    // Token_Type::STRING
-    theme.faces.push({{}, {}, 0});   // Token_Type::IDENTIFIER
-    theme.faces.push({{}, {}, 0});   // Token_Type::NUMBER
+    theme.token_faces[Token_Type::KEYWORD] = {1, {}, 0};
+    theme.token_faces[Token_Type::TYPE] = {4, {}, 0};
+    theme.token_faces[Token_Type::PUNCTUATION] = {6, {}, 0};
+    theme.token_faces[Token_Type::OPEN_PAIR] = {3, {}, 0};
+    theme.token_faces[Token_Type::CLOSE_PAIR] = {3, {}, 0};
+    theme.token_faces[Token_Type::COMMENT] = {12, {}, 0};
+    theme.token_faces[Token_Type::DOC_COMMENT] = {142, {}, 0};
+    theme.token_faces[Token_Type::STRING] = {2, {}, 0};
+    theme.token_faces[Token_Type::IDENTIFIER] = {{}, {}, 0};
+    theme.token_faces[Token_Type::NUMBER] = {{}, {}, 0};
 
-    theme.faces.push({184, {}, 0});  // Token_Type::MERGE_START
-    theme.faces.push({184, {}, 0});  // Token_Type::MERGE_MIDDLE
-    theme.faces.push({184, {}, 0});  // Token_Type::MERGE_END
+    theme.token_faces[Token_Type::MERGE_START] = {184, {}, 0};
+    theme.token_faces[Token_Type::MERGE_MIDDLE] = {184, {}, 0};
+    theme.token_faces[Token_Type::MERGE_END] = {184, {}, 0};
 
-    theme.faces.push({3, {}, 0});  // Token_Type::TITLE
-    theme.faces.push({2, {}, 0});  // Token_Type::CODE
+    theme.token_faces[Token_Type::TITLE] = {3, {}, 0};
+    theme.token_faces[Token_Type::CODE] = {2, {}, 0};
 
-    theme.faces.push({1, {}, 0});    // Token_Type::PATCH_REMOVE
-    theme.faces.push({76, {}, 0});   // Token_Type::PATCH_ADD
-    theme.faces.push({246, {}, 0});  // Token_Type::PATCH_NEUTRAL
-    theme.faces.push({{}, {}, 0});   // Token_Type::PATCH_ANNOTATION
+    theme.token_faces[Token_Type::PATCH_REMOVE] = {1, {}, 0};
+    theme.token_faces[Token_Type::PATCH_ADD] = {76, {}, 0};
+    theme.token_faces[Token_Type::PATCH_NEUTRAL] = {246, {}, 0};
+    theme.token_faces[Token_Type::PATCH_ANNOTATION] = {{}, {}, 0};
 
-    theme.faces.push({1, {}, 0});   // Token_Type::GIT_REBASE_TODO_COMMAND
-    theme.faces.push({3, {}, 0});   // Token_Type::GIT_REBASE_TODO_SHA
-    theme.faces.push({{}, {}, 0});  // Token_Type::GIT_REBASE_TODO_COMMIT_MESSAGE
+    theme.token_faces[Token_Type::GIT_REBASE_TODO_COMMAND] = {1, {}, 0};
+    theme.token_faces[Token_Type::GIT_REBASE_TODO_SHA] = {3, {}, 0};
+    theme.token_faces[Token_Type::GIT_REBASE_TODO_COMMIT_MESSAGE] = {{}, {}, 0};
 
-    theme.faces.push({{}, {}, Face::INVISIBLE});             // Token_Type::PROCESS_ESCAPE_SEQUENCE
-    theme.faces.push({{}, {}, Face::BOLD});                  // Token_Type::PROCESS_BOLD
-    theme.faces.push({{}, {}, Face::ITALICS});               // Token_Type::PROCESS_ITALICS
-    theme.faces.push({{}, {}, Face::BOLD | Face::ITALICS});  // Token_Type::PROCESS_BOLD_ITALICS
+    theme.token_faces[Token_Type::PROCESS_ESCAPE_SEQUENCE] = {{}, {}, Face::INVISIBLE};
+    theme.token_faces[Token_Type::PROCESS_BOLD] = {{}, {}, Face::BOLD};
+    theme.token_faces[Token_Type::PROCESS_ITALICS] = {{}, {}, Face::ITALICS};
+    theme.token_faces[Token_Type::PROCESS_BOLD_ITALICS] = {{}, {}, Face::BOLD | Face::ITALICS};
 
-    theme.faces.push({51, {}, 0});   // Token_Type::CSS_PROPERTY
-    theme.faces.push({{}, {}, 0});   // Token_Type::CSS_ELEMENT_SELECTOR
-    theme.faces.push({228, {}, 0});  // Token_Type::CSS_ID_SELECTOR
-    theme.faces.push({118, {}, 0});  // Token_Type::CSS_CLASS_SELECTOR
-    theme.faces.push({208, {}, 0});  // Token_Type::CSS_PSEUDO_SELECTOR
+    theme.token_faces[Token_Type::CSS_PROPERTY] = {51, {}, 0};
+    theme.token_faces[Token_Type::CSS_ELEMENT_SELECTOR] = {{}, {}, 0};
+    theme.token_faces[Token_Type::CSS_ID_SELECTOR] = {228, {}, 0};
+    theme.token_faces[Token_Type::CSS_CLASS_SELECTOR] = {118, {}, 0};
+    theme.token_faces[Token_Type::CSS_PSEUDO_SELECTOR] = {208, {}, 0};
 
-    theme.faces.push({33, {}, 0});   // Token_Type::HTML_TAG_NAME
-    theme.faces.push({140, {}, 0});  // Token_Type::HTML_ATTRIBUTE_NAME
-    theme.faces.push({4, {}, 0});    // Token_Type::HTML_AMPERSAND_CODE
+    theme.token_faces[Token_Type::HTML_TAG_NAME] = {33, {}, 0};
+    theme.token_faces[Token_Type::HTML_ATTRIBUTE_NAME] = {140, {}, 0};
+    theme.token_faces[Token_Type::HTML_AMPERSAND_CODE] = {4, {}, 0};
 
-    theme.faces.push({34, {}, 0});  // Token_Type::DIRECTORY_COLUMN
-    theme.faces.push({46, {}, 0});  // Token_Type::DIRECTORY_SELECTED_COLUMN
-    theme.faces.push({{}, {}, 0});  // Token_Type::DIRECTORY_FILE_TIME
-    theme.faces.push({51, {}, 0});  // Token_Type::DIRECTORY_FILE_DIRECTORY
-    theme.faces.push({{}, {}, 0});  // Token_Type::DIRECTORY_FILE_NAME
+    theme.token_faces[Token_Type::DIRECTORY_COLUMN] = {34, {}, 0};
+    theme.token_faces[Token_Type::DIRECTORY_SELECTED_COLUMN] = {46, {}, 0};
+    theme.token_faces[Token_Type::DIRECTORY_FILE_TIME] = {{}, {}, 0};
+    theme.token_faces[Token_Type::DIRECTORY_FILE_DIRECTORY] = {51, {}, 0};
+    theme.token_faces[Token_Type::DIRECTORY_FILE_NAME] = {{}, {}, 0};
 
-    theme.faces.push({46, {}, 0});   // Token_Type::SEARCH_COMMAND
-    theme.faces.push({214, {}, 0});  // Token_Type::SEARCH_FILE_NAME
-    theme.faces.push({226, {}, 0});  // Token_Type::SEARCH_FILE_LINE
-    theme.faces.push({226, {}, 0});  // Token_Type::SEARCH_FILE_COLUMN
-    theme.faces.push({{}, {}, 0});   // Token_Type::SEARCH_RESULT
+    theme.token_faces[Token_Type::SEARCH_COMMAND] = {46, {}, 0};
+    theme.token_faces[Token_Type::SEARCH_FILE_NAME] = {214, {}, 0};
+    theme.token_faces[Token_Type::SEARCH_FILE_LINE] = {226, {}, 0};
+    theme.token_faces[Token_Type::SEARCH_FILE_COLUMN] = {226, {}, 0};
+    theme.token_faces[Token_Type::SEARCH_RESULT] = {{}, {}, 0};
 
     theme.decorations.reserve(cz::heap_allocator(), 5);
     theme.decorations.push(syntax::decoration_line_number());

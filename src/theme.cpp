@@ -6,8 +6,6 @@
 namespace mag {
 
 void Theme::drop(cz::Allocator allocator) {
-    faces.drop(allocator);
-
     for (size_t i = 0; i < decorations.len(); ++i) {
         decorations[i].cleanup();
     }

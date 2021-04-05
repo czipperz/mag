@@ -54,25 +54,25 @@ static bool load_completion_cache(Editor* editor,
         }                               \
     } while (0)
 
-#define ADDCH(FACE, CH)                                                     \
-    do {                                                                    \
-        SET_BODY(FACE, CH);                                                 \
-        ++x;                                                                \
-        if (x == window->cols) {                                            \
-            ADD_NEWLINE({});                                                \
-                                                                            \
-            if (draw_line_numbers) {                                        \
-                Face face = editor->theme.faces[11];                        \
-                for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) { \
-                    SET_BODY(face, ' ');                                    \
-                    ++x;                                                    \
-                }                                                           \
-                                                                            \
-                face = editor->theme.faces[10];                             \
-                SET_BODY(face, ' ');                                        \
-                ++x;                                                        \
-            }                                                               \
-        }                                                                   \
+#define ADDCH(FACE, CH)                                                                       \
+    do {                                                                                      \
+        SET_BODY(FACE, CH);                                                                   \
+        ++x;                                                                                  \
+        if (x == window->cols) {                                                              \
+            ADD_NEWLINE({});                                                                  \
+                                                                                              \
+            if (draw_line_numbers) {                                                          \
+                Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING]; \
+                for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {                   \
+                    SET_BODY(face, ' ');                                                      \
+                    ++x;                                                                      \
+                }                                                                             \
+                                                                                              \
+                face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];     \
+                SET_BODY(face, ' ');                                                          \
+                ++x;                                                                          \
+            }                                                                                 \
+        }                                                                                     \
     } while (0)
 
 static void apply_face(Face* face, Face layer) {
@@ -526,14 +526,25 @@ static void draw_buffer_contents(Cell* cells,
         if (ret > 0) {
             line_number_buffer.set_len(ret);
 
-            Face face = editor->theme.faces[9];
-            for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {
+            size_t i = 0;
+            Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
+            for (; i < line_number_buffer.cap() - 1; ++i) {
+                char ch = line_number_buffer[i];
+                if (ch != ' ') {
+                    break;
+                }
+                SET_BODY(face, ch);
+                ++x;
+            }
+
+            face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
+            for (; i < line_number_buffer.cap() - 1; ++i) {
                 char ch = line_number_buffer[i];
                 SET_BODY(face, ch);
                 ++x;
             }
 
-            face = editor->theme.faces[10];
+            face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
             ADDCH(face, ' ');
         }
     }
@@ -571,11 +582,11 @@ static void draw_buffer_contents(Cell* cells,
 
         Face face = {};
         if (has_cursor) {
-            apply_face(&face, editor->theme.faces[3]);
+            apply_face(&face, editor->theme.special_faces[Face_Type::CURSOR]);
         }
 
         if (show_mark) {
-            apply_face(&face, editor->theme.faces[4]);
+            apply_face(&face, editor->theme.special_faces[Face_Type::MARKED_REGION]);
         }
 
         {
@@ -593,15 +604,14 @@ static void draw_buffer_contents(Cell* cells,
         }
 
         Face token_face;
-        const size_t type_face_offset = 13;
         if (has_token && iterator.position >= token.start && iterator.position < token.end) {
             if (token.type & Token_Type::CUSTOM) {
                 token_face = Token_Type_::decode(token.type);
             } else {
-                token_face = editor->theme.faces[token.type + type_face_offset];
+                token_face = editor->theme.token_faces[token.type];
             }
         } else {
-            token_face = editor->theme.faces[Token_Type::DEFAULT + type_face_offset];
+            token_face = editor->theme.token_faces[Token_Type::DEFAULT];
         }
         apply_face(&face, token_face);
 
@@ -640,14 +650,25 @@ static void draw_buffer_contents(Cell* cells,
                 if (ret > 0) {
                     line_number_buffer.set_len(ret);
 
-                    Face face = editor->theme.faces[9];
-                    for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {
+                    size_t i = 0;
+                    Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
+                    for (; i < line_number_buffer.cap() - 1; ++i) {
+                        char ch = line_number_buffer[i];
+                        if (ch != ' ') {
+                            break;
+                        }
+                        SET_BODY(face, ch);
+                        ++x;
+                    }
+
+                    face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
+                    for (; i < line_number_buffer.cap() - 1; ++i) {
                         char ch = line_number_buffer[i];
                         SET_BODY(face, ch);
                         ++x;
                     }
 
-                    face = editor->theme.faces[10];
+                    face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
                     ADDCH(face, ' ');
                 }
             }
@@ -678,7 +699,7 @@ static void draw_buffer_contents(Cell* cells,
     {
         // Draw cursor at end of file.
         Face face = {};
-        apply_face(&face, editor->theme.faces[3]);
+        apply_face(&face, editor->theme.special_faces[Face_Type::CURSOR]);
         for (size_t c = 0; c < cursors.len; ++c) {
             if (cursors[c].point == buffer->contents.len) {
                 SET_BODY(face, ' ');
@@ -711,12 +732,12 @@ static void draw_buffer_decoration(Cell* cells,
 
     Face face = {};
     if (!buffer->is_unchanged()) {
-        apply_face(&face, editor->theme.faces[1]);
+        apply_face(&face, editor->theme.special_faces[Face_Type::UNSAVED_MODE_LINE]);
     }
     if (is_selected_window) {
-        apply_face(&face, editor->theme.faces[2]);
+        apply_face(&face, editor->theme.special_faces[Face_Type::SELECTED_MODE_LINE]);
     }
-    apply_face(&face, editor->theme.faces[0]);
+    apply_face(&face, editor->theme.special_faces[Face_Type::DEFAULT_MODE_LINE]);
 
     cz::AllocatedString string = {};
     string.allocator = cz::heap_allocator();
@@ -833,9 +854,10 @@ static void draw_window_completion(Cell* cells,
         for (size_t r = offset; r < height + offset; ++r) {
             Face face = {};
             if (r == window->completion_cache.filter_context.selected) {
-                apply_face(&face, editor->theme.faces[8]);
+                apply_face(&face,
+                           editor->theme.special_faces[Face_Type::WINDOW_COMPLETION_SELECTED]);
             } else {
-                apply_face(&face, editor->theme.faces[7]);
+                apply_face(&face, editor->theme.special_faces[Face_Type::WINDOW_COMPLETION_NORMAL]);
             }
 
             cz::Str result = window->completion_cache.filter_context.results[r];
@@ -1118,7 +1140,8 @@ void render_to_cells(Cell* cells,
         size_t start_col = 0;
 
         Face minibuffer_prompt_face = {};
-        apply_face(&minibuffer_prompt_face, editor->theme.faces[5]);
+        apply_face(&minibuffer_prompt_face,
+                   editor->theme.special_faces[Face_Type::MINI_BUFFER_PROMPT]);
         {
             WITH_CONST_BUFFER(client->messages_id);
             Contents_Iterator it = buffer->contents.iterator_at(client->_message.start);
@@ -1167,7 +1190,9 @@ void render_to_cells(Cell* cells,
                 {
                     Face face = {};
                     if (r == completion_cache->filter_context.selected) {
-                        apply_face(&face, editor->theme.faces[6]);
+                        apply_face(&face,
+                                   editor->theme
+                                       .special_faces[Face_Type::MINI_BUFFER_COMPLETION_SELECTED]);
                     }
 
                     cz::Str result = completion_cache->filter_context.results[r];
