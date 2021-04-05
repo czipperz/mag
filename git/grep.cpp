@@ -20,25 +20,37 @@ static void run_git_grep(Client* client,
                          Editor* editor,
                          const char* directory,
                          cz::Str query,
-                         cz::Str highlight) {
+                         bool word_match) {
     // We want backslashes in the query to be treated as plain text so we need to escape them.
     cz::String query_escaped = {};
     CZ_DEFER(query_escaped.drop(cz::heap_allocator()));
-    query_escaped.reserve(cz::heap_allocator(), query.len + query.count('\\'));
+    query_escaped.reserve(cz::heap_allocator(), query.len + query.count('\\') + 4 * word_match);
+    if (word_match) {
+        query_escaped.append("\\<");
+    }
     for (size_t i = 0; i < query.len; ++i) {
         if (query[i] == '\\') {
             query_escaped.push('\\');
         }
         query_escaped.push(query[i]);
     }
+    if (word_match) {
+        query_escaped.append("\\>");
+    }
 
     cz::Str args[] = {"git", "grep", "-n", "--column", "-e", query_escaped, "--", ":/"};
 
     cz::String buffer_name = {};
     CZ_DEFER(buffer_name.drop(cz::heap_allocator()));
-    buffer_name.reserve(cz::heap_allocator(), 9 + query.len);
+    buffer_name.reserve(cz::heap_allocator(), 9 + query.len + 4 * word_match);
     buffer_name.append("git grep ");
+    if (word_match) {
+        buffer_name.append("\\<");
+    }
     buffer_name.append(query);
+    if (word_match) {
+        buffer_name.append("\\>");
+    }
 
     cz::Arc<Buffer_Handle> handle;
     if (run_console_command(client, editor, directory, args, buffer_name, "Git grep error",
@@ -47,7 +59,7 @@ static void run_git_grep(Client* client,
         CZ_DEFER(handle->unlock());
         buffer->mode.overlays.reserve(cz::heap_allocator(), 1);
         buffer->mode.overlays.push(syntax::overlay_highlight_string(
-            editor->theme.special_faces[Face_Type::SEARCH_MODE_RESULT_HIGHLIGHT], highlight,
+            editor->theme.special_faces[Face_Type::SEARCH_MODE_RESULT_HIGHLIGHT], query,
             /*case_insensitive=*/false, Token_Type::SEARCH_RESULT));
     }
 }
@@ -63,7 +75,7 @@ static void command_git_grep_callback(Editor* editor, Client* client, cz::Str qu
         }
     }
 
-    run_git_grep(client, editor, top_level_path.buffer(), query, query);
+    run_git_grep(client, editor, top_level_path.buffer(), query, false);
 }
 
 void command_git_grep(Editor* editor, Command_Source source) {
@@ -97,16 +109,11 @@ void command_git_grep_token_at_position(Editor* editor, Command_Source source) {
             return;
         }
 
-        query.reserve(cz::heap_allocator(), token.end - token.start + 4);
-        query.push('\\');
-        query.push('<');
+        query.reserve(cz::heap_allocator(), token.end - token.start);
         buffer->contents.slice_into(iterator, token.end, &query);
-        query.push('\\');
-        query.push('>');
     }
 
-    run_git_grep(source.client, editor, top_level_path.buffer(), query,
-                 query.slice(2, query.len() - 2));
+    run_git_grep(source.client, editor, top_level_path.buffer(), query, true);
 }
 
 }
