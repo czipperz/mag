@@ -39,7 +39,7 @@ const char* const mag_build_directory = CZ_STRINGIFY(MAG_BUILD_DIRECTORY);
 
 void command_dump_key_map(Editor* editor, Command_Source source) {
     cz::Arc<Buffer_Handle> handle;
-    if (!find_temp_buffer(editor, source.client, "*key map*", {mag_build_directory}, &handle)) {
+    if (!find_temp_buffer(editor, source.client, "key map", {mag_build_directory}, &handle)) {
         handle = editor->create_temp_buffer("key map", {mag_build_directory});
     }
 

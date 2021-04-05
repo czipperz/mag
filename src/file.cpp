@@ -609,12 +609,21 @@ bool find_temp_buffer(Editor* editor,
                       cz::Str name,
                       cz::Option<cz::Str> directory,
                       cz::Arc<Buffer_Handle>* handle_out) {
+    cz::String directory_standard = {};
+    CZ_DEFER(directory_standard.drop(cz::heap_allocator()));
+    if (directory.is_present) {
+        directory_standard = standardize_path(cz::heap_allocator(), directory.value);
+        // Use the space for the null terminator to store the trailing forward slash instead.
+        directory_standard.push('/');
+    }
+
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
         cz::Arc<Buffer_Handle> handle = editor->buffers[i];
         WITH_CONST_BUFFER_HANDLE(handle);
 
-        if (buffer->name == name) {
-            if (!directory.is_present || buffer->directory == directory.value) {
+        if (buffer->type == Buffer::TEMPORARY && buffer->name.len() >= 2 &&
+            buffer->name.slice(1, buffer->name.len() - 1) == name) {
+            if (buffer->directory == directory_standard) {
                 *handle_out = handle;
                 return true;
             }

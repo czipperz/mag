@@ -6,6 +6,7 @@
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
+#include "file.hpp"
 
 namespace mag {
 
@@ -160,12 +161,16 @@ bool run_console_command(Client* client,
         push_jump(window, client, buffer);
     }
 
-    cz::Arc<Buffer_Handle> handle = editor->create_temp_buffer(buffer_name, wd);
+    cz::Arc<Buffer_Handle> handle;
+    if (!find_temp_buffer(editor, client, buffer_name, wd, &handle)) {
+        handle = editor->create_temp_buffer(buffer_name, wd);
+    }
     if (handle_out) {
         *handle_out = handle;
     }
     {
         WITH_BUFFER_HANDLE(handle);
+        buffer->contents.remove(0, buffer->contents.len);
         buffer->contents.append(script);
         buffer->contents.append("\n");
     }
