@@ -80,6 +80,7 @@ static bool process_append_job_tick(Asynchronous_Job_Handler*, void* _data) {
             // End of file
             data->std_out.close();
             data->process.join();
+            data->buffer_handle.drop();
             cz::heap_allocator().dealloc(data);
             return true;
         } else {
