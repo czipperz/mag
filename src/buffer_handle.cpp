@@ -30,12 +30,21 @@ void Buffer_Handle::init(Buffer_Id buffer_id, Buffer buffer) {
 
     id = buffer_id;
 
+#ifndef NDEBUG
+    associated_threads = {};
+    associated_threads.reserve(cz::heap_allocator(), 1);
+#endif
+
     this->buffer = buffer;
     this->buffer.init();
 }
 
 void Buffer_Handle::drop() {
     buffer.drop();
+
+#ifndef NDEBUG
+    associated_threads.drop(cz::heap_allocator());
+#endif
 
     mutex.drop();
     waiters_condition.drop();
@@ -44,6 +53,19 @@ void Buffer_Handle::drop() {
     delete context;
 #endif
 }
+
+#ifndef NDEBUG
+static bool already_locked(cz::Slice<uint64_t> associated_threads, size_t* index) {
+    uint64_t value = tracy::GetThreadHandle();
+    for (size_t i = 0; i < associated_threads.len; ++i) {
+        if (associated_threads[i] == value) {
+            *index = i;
+            return true;
+        }
+    }
+    return false;
+}
+#endif
 
 Buffer* Buffer_Handle::lock_writing() {
     ZoneScoped;
@@ -56,6 +78,15 @@ Buffer* Buffer_Handle::lock_writing() {
         mutex.lock();
         CZ_DEFER(mutex.unlock());
 
+#ifndef NDEBUG
+        size_t index;
+        if (already_locked(associated_threads, &index)) {
+            CZ_PANIC(
+                "Buffer_Handle::lock_writing: This thread has already"
+                "locked the Buffer_Handle so we are deadlocking");
+        }
+#endif
+
         ++waiters_count;
         // Wait for exclusive access.
         while (active_state != UNLOCKED) {
@@ -64,6 +95,10 @@ Buffer* Buffer_Handle::lock_writing() {
         --waiters_count;
 
         active_state = LOCKED_WRITING;
+
+#ifndef NDEBUG
+        associated_threads.push(tracy::GetThreadHandle());
+#endif
     }
 
 #ifdef TRACY_ENABLE
@@ -86,6 +121,17 @@ const Buffer* Buffer_Handle::lock_reading() {
         mutex.lock();
         CZ_DEFER(mutex.unlock());
 
+#ifndef NDEBUG
+        if (active_state == LOCKED_WRITING) {
+            size_t index;
+            if (already_locked(associated_threads, &index)) {
+                CZ_PANIC(
+                    "Buffer_Handle::lock_reading: This thread has already"
+                    "locked the Buffer_Handle so we are deadlocking");
+            }
+        }
+#endif
+
         ++waiters_count;
         // Wait until there is no active writer.
         while (active_state == LOCKED_WRITING) {
@@ -104,6 +150,11 @@ const Buffer* Buffer_Handle::lock_reading() {
             CZ_DEBUG_ASSERT(active_state >= READER_0);
             ++active_state;
         }
+
+#ifndef NDEBUG
+        associated_threads.reserve(cz::heap_allocator(), 1);
+        associated_threads.push(tracy::GetThreadHandle());
+#endif
     }
 
 #ifdef TRACY_ENABLE
@@ -238,6 +289,13 @@ void Buffer_Handle::unlock() {
     {
         mutex.lock();
         CZ_DEFER(mutex.unlock());
+
+#ifndef NDEBUG
+        size_t index;
+        if (already_locked(associated_threads, &index)) {
+            associated_threads.remove(index);
+        }
+#endif
 
         CZ_DEBUG_ASSERT(active_state != UNLOCKED);
 

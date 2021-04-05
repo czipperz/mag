@@ -22,6 +22,10 @@ private:
     tracy::SharedLockableCtx* context;
 #endif
 
+#ifndef NDEBUG
+    cz::Vector<uint64_t> associated_threads;
+#endif
+
     Buffer buffer;
 
 public:
