@@ -1418,9 +1418,14 @@ void command_submit_mini_buffer(Editor* editor, Command_Source source) {
     }
 
     source.client->restore_selected_buffer();
-    source.client->_message.response_callback(editor, source.client, mini_buffer_contents,
-                                              source.client->_message.response_callback_data);
+
+    Message message = source.client->_message;
+    CZ_DEFER(cz::heap_allocator().dealloc({message.response_callback_data, 0}));
+    source.client->_message.response_callback_data = nullptr;
     source.client->dealloc_message();
+
+    message.response_callback(editor, source.client, mini_buffer_contents,
+                              message.response_callback_data);
 }
 
 void command_insert_home_directory(Editor* editor, Command_Source source) {
