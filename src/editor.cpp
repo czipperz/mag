@@ -10,6 +10,8 @@
 namespace mag {
 
 cz::Arc<Buffer_Handle> Editor::create_buffer(Buffer buffer) {
+    ZoneScoped;
+
     custom::buffer_created_callback(this, &buffer);
 
     cz::Arc<Buffer_Handle> buffer_handle;
@@ -23,6 +25,8 @@ cz::Arc<Buffer_Handle> Editor::create_buffer(Buffer buffer) {
 }
 
 cz::Arc<Buffer_Handle> Editor::create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir) {
+    ZoneScoped;
+
     Buffer buffer = {};
 
     if (dir.is_present) {
