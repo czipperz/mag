@@ -158,6 +158,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "C-c a", command_cursors_align);
     BIND(key_map, "C-c l", command_create_cursors_lines_in_region);
+    BIND(key_map, "C-c \n", command_remove_cursors_at_empty_lines);
 
     BIND(key_map, "C-c C-w", command_cursors_cut_as_lines);
     BIND(key_map, "C-c A-w", command_cursors_copy_as_lines);

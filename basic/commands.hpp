@@ -82,6 +82,8 @@ void command_create_cursors_lines_in_region(Editor* editor, Command_Source sourc
 
 void command_cursors_align(Editor* editor, Command_Source source);
 
+void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source);
+
 void command_search_forward(Editor* editor, Command_Source source);
 void command_search_backward(Editor* editor, Command_Source source);
 

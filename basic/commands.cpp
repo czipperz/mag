@@ -1120,6 +1120,40 @@ void command_cursors_align(Editor* editor, Command_Source source) {
     transaction.commit(buffer, command_cursors_align);
 }
 
+void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    size_t count_cursors = 0;
+    Contents_Iterator iterator = buffer->contents.start();
+    for (size_t c = 0; c < window->cursors.len(); ++c) {
+        iterator.advance_to(window->cursors[c].point);
+        start_of_line(&iterator);
+        if (!iterator.at_eob() && iterator.get() == '\n') {
+            ++count_cursors;
+        }
+    }
+
+    if (count_cursors == window->cursors.len()) {
+        kill_extra_cursors(window, source.client);
+        return;
+    }
+
+    iterator.go_to(window->cursors[0].point);
+    for (size_t c = 0; c < window->cursors.len();) {
+        iterator.advance_to(window->cursors[c].point);
+        start_of_line(&iterator);
+        if (!iterator.at_eob() && iterator.get() == '\n') {
+            window->cursors.remove(c);
+            continue;
+        }
+        ++c;
+    }
+
+    if (window->cursors.len() == 1) {
+        kill_extra_cursors(window, source.client);
+    }
+}
+
 struct Interactive_Search_Data {
     bool forward;
     uint64_t cursor_point;
