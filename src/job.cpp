@@ -142,13 +142,13 @@ Asynchronous_Job job_process_silent(cz::Process process) {
     return job;
 }
 
-bool run_console_command(Client* client,
-                         Editor* editor,
-                         const char* working_directory,
-                         cz::Str script,
-                         cz::Str buffer_name,
-                         cz::Str error,
-                         cz::Arc<Buffer_Handle>* handle_out) {
+Run_Console_Command_Result run_console_command(Client* client,
+                                               Editor* editor,
+                                               const char* working_directory,
+                                               cz::Str script,
+                                               cz::Str buffer_name,
+                                               cz::Str error,
+                                               cz::Arc<Buffer_Handle>* handle_out) {
     ZoneScoped;
 
     cz::Option<cz::Str> wd = {};
@@ -161,22 +161,32 @@ bool run_console_command(Client* client,
         push_jump(window, client, buffer);
     }
 
+    bool created = false;
     cz::Arc<Buffer_Handle> handle;
     if (!find_temp_buffer(editor, client, buffer_name, wd, &handle)) {
         handle = editor->create_temp_buffer(buffer_name, wd);
+        created = true;
     }
+
     if (handle_out) {
         *handle_out = handle;
     }
+
     {
         WITH_BUFFER_HANDLE(handle);
         buffer->contents.remove(0, buffer->contents.len);
         buffer->contents.append(script);
         buffer->contents.append("\n");
     }
+
     client->set_selected_buffer(handle->id);
 
-    return run_console_command_in(client, editor, handle, working_directory, script, error);
+    if (!run_console_command_in(client, editor, handle, working_directory, script, error)) {
+        return Run_Console_Command_Result::FAILED;
+    }
+
+    return created ? Run_Console_Command_Result::SUCCESS_NEW_BUFFER
+                   : Run_Console_Command_Result::SUCCESS_REUSE_BUFFER;
 }
 
 bool run_console_command_in(Client* client,
@@ -212,13 +222,13 @@ bool run_console_command_in(Client* client,
     return true;
 }
 
-bool run_console_command(Client* client,
-                         Editor* editor,
-                         const char* working_directory,
-                         cz::Slice<cz::Str> args,
-                         cz::Str buffer_name,
-                         cz::Str error,
-                         cz::Arc<Buffer_Handle>* handle_out) {
+Run_Console_Command_Result run_console_command(Client* client,
+                                               Editor* editor,
+                                               const char* working_directory,
+                                               cz::Slice<cz::Str> args,
+                                               cz::Str buffer_name,
+                                               cz::Str error,
+                                               cz::Arc<Buffer_Handle>* handle_out) {
     cz::String script = {};
     CZ_DEFER(script.drop(cz::heap_allocator()));
     cz::Process::escape_args(args, &script, cz::heap_allocator());

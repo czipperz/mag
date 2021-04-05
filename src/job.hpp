@@ -88,20 +88,29 @@ Asynchronous_Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
 /// A job that joins the process when it completes and does nothing until that point.
 Asynchronous_Job job_process_silent(cz::Process process);
 
-bool run_console_command(Client* client,
-                         Editor* editor,
-                         const char* working_directory,
-                         cz::Str script,
-                         cz::Str buffer_name,
-                         cz::Str error,
-                         cz::Arc<Buffer_Handle>* handle_out = nullptr);
-bool run_console_command(Client* client,
-                         Editor* editor,
-                         const char* working_directory,
-                         cz::Slice<cz::Str> args,
-                         cz::Str buffer_name,
-                         cz::Str error,
-                         cz::Arc<Buffer_Handle>* handle_out = nullptr);
+namespace Run_Console_Command_Result_ {
+enum Run_Console_Command_Result {
+    FAILED,
+    SUCCESS_NEW_BUFFER,
+    SUCCESS_REUSE_BUFFER,
+};
+}
+using Run_Console_Command_Result_::Run_Console_Command_Result;
+
+Run_Console_Command_Result run_console_command(Client* client,
+                                               Editor* editor,
+                                               const char* working_directory,
+                                               cz::Str script,
+                                               cz::Str buffer_name,
+                                               cz::Str error,
+                                               cz::Arc<Buffer_Handle>* handle_out = nullptr);
+Run_Console_Command_Result run_console_command(Client* client,
+                                               Editor* editor,
+                                               const char* working_directory,
+                                               cz::Slice<cz::Str> args,
+                                               cz::Str buffer_name,
+                                               cz::Str error,
+                                               cz::Arc<Buffer_Handle>* handle_out = nullptr);
 
 bool run_console_command_in(Client* client,
                             Editor* editor,
