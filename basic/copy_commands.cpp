@@ -29,7 +29,7 @@ static void cut_cursor(Cursor* cursor,
     uint64_t end = cursor->end();
 
     Edit edit;
-    edit.value = buffer->contents.slice(transaction->value_allocator(),
+    edit.value = buffer->contents.slice(editor->copy_buffer.allocator(),
                                         buffer->contents.iterator_at(start), end);
     edit.position = start - *offset;
     *offset += end - start;
@@ -43,13 +43,8 @@ void command_cut(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 
-    uint64_t sum_region_sizes = 0;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        sum_region_sizes += cursors[c].end() - cursors[c].start();
-    }
-
     Transaction transaction;
-    transaction.init(cursors.len, sum_region_sizes);
+    transaction.init(cursors.len, 0);
     CZ_DEFER(transaction.drop());
 
     uint64_t offset = 0;
@@ -214,6 +209,197 @@ void command_copy_selected_region_length(Editor* editor, Command_Source source) 
     }
 
     window->show_marks = false;
+}
+
+static void cut_cursor_as_lines(Cursor* cursor,
+                                Transaction* transaction,
+                                Copy_Chain** copy_chain,
+                                Editor* editor,
+                                uint64_t* offset,
+                                cz::Str string,
+                                uint64_t* string_offset,
+                                Contents_Iterator* iterator,
+                                Client* client) {
+    uint64_t start = cursor->start();
+    uint64_t end = cursor->end();
+
+    Edit edit;
+    edit.value = SSOStr::from_constant(
+        string.slice(*offset + *string_offset, *offset + *string_offset + end - start));
+    edit.position = start - *offset;
+    *offset += end - start;
+    edit.flags = Edit::REMOVE;
+    transaction->push(edit);
+
+    if (end > 0) {
+        iterator->advance_to(end - 1);
+        if (iterator->get() == '\n') {
+            --*string_offset;
+        }
+    }
+
+    save_copy(copy_chain, editor, SSOStr::from_constant(string), client);
+}
+
+static cz::String copy_cursors_as_lines(Editor* editor,
+                                        const Buffer* buffer,
+                                        cz::Slice<Cursor> cursors) {
+    uint64_t sum_region_sizes = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        sum_region_sizes += cursors[c].end() - cursors[c].start();
+    }
+
+    cz::String string = {};
+    string.reserve(editor->copy_buffer.allocator(), sum_region_sizes + cursors.len);
+    Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].start());
+    for (size_t c = 0; c < cursors.len; ++c) {
+        iterator.advance_to(cursors[c].start());
+        buffer->contents.slice_into(iterator, cursors[c].end(), &string);
+        if (!string.ends_with("\n")) {
+            string.push('\n');
+        }
+    }
+    string.realloc(editor->copy_buffer.allocator());
+    return string;
+}
+
+void command_cursors_cut_as_lines(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    Transaction transaction;
+    transaction.init(cursors.len, 0);
+    CZ_DEFER(transaction.drop());
+
+    cz::String string = copy_cursors_as_lines(editor, buffer, cursors);
+
+    uint64_t offset = 0;
+    uint64_t string_offset = 0;
+    Contents_Iterator iterator = buffer->contents.start();
+    if (cursors.len == 1) {
+        cut_cursor_as_lines(&cursors[0], &transaction, &source.client->global_copy_chain, editor,
+                            &offset, string, &string_offset, &iterator, source.client);
+    } else {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            cut_cursor_as_lines(&cursors[c], &transaction, &cursors[c].local_copy_chain, editor,
+                                &offset, string, &string_offset, &iterator, nullptr);
+            ++string_offset;
+        }
+    }
+
+    transaction.commit(buffer);
+
+    window->show_marks = false;
+}
+
+void command_cursors_copy_as_lines(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    cz::String string = copy_cursors_as_lines(editor, buffer, cursors);
+
+    if (cursors.len == 1) {
+        save_copy(&source.client->global_copy_chain, editor, SSOStr::from_constant(string),
+                  source.client);
+    } else {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            save_copy(&cursors[c].local_copy_chain, editor, SSOStr::from_constant(string),
+                      source.client);
+        }
+    }
+
+    window->show_marks = false;
+}
+
+static void run_paste_as_lines(cz::Slice<Cursor> cursors, Buffer* buffer) {
+    // :CopyLeak Probably we will need to copy all the values here.
+    Transaction transaction;
+    transaction.init(cursors.len, 0);
+    CZ_DEFER(transaction.drop());
+
+    Copy_Chain* copy_chain = cursors[0].paste_local;
+    if (!copy_chain) {
+        copy_chain = cursors[0].paste_global;
+    }
+
+    if (!copy_chain) {
+        return;
+    }
+
+    cz::Str value = copy_chain->value.as_str();
+
+    size_t offset = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        const char* newline = value.find('\n');
+        cz::Str line = newline ? value.slice_end(newline) : value;
+
+        Edit edit;
+        // :CopyLeak We sometimes use the value here, but we could also
+        // just copy a bunch of stuff then close the cursors and leak
+        // that memory.
+        edit.value = SSOStr::from_constant(line);
+        edit.position = cursors[c].point + offset;
+        offset += edit.value.len();
+        edit.flags = Edit::INSERT;
+        transaction.push(edit);
+
+        if (!newline) {
+            break;
+        }
+        value = value.slice_start(newline + 1);
+    }
+
+    transaction.commit(buffer);
+}
+
+void command_cursors_paste_as_lines(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    cz::Slice<Cursor> cursors = window->cursors;
+    if (!setup_paste(cursors, source.client->global_copy_chain)) {
+        return;
+    }
+
+    run_paste_as_lines(cursors, buffer);
+}
+
+void command_cursors_paste_previous_as_lines(Editor* editor, Command_Source source) {
+    Window_Unified* window = source.client->selected_window();
+    cz::Slice<Cursor> cursors = window->cursors;
+    if (source.previous_command == command_cursors_paste_as_lines) {
+        if (!setup_paste(cursors, source.client->global_copy_chain)) {
+            return;
+        }
+    }
+
+    if (source.previous_command == command_cursors_paste_as_lines ||
+        source.previous_command == command_cursors_paste_previous_as_lines) {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            Copy_Chain** chain = &cursors[c].paste_local;
+            if (*chain) {
+                *chain = (*chain)->previous;
+                if (!*chain) {
+                    chain = &cursors[c].paste_global;
+                }
+            } else {
+                chain = &cursors[c].paste_global;
+                if (*chain) {
+                    *chain = (*chain)->previous;
+                }
+                if (!*chain) {
+                    return;
+                }
+            }
+        }
+
+        {
+            WITH_WINDOW_BUFFER(window);
+            buffer->undo();
+            window->update_cursors(buffer);
+            run_paste_as_lines(cursors, buffer);
+        }
+    } else {
+        source.client->show_message(editor, "Error: previous command was not paste");
+    }
 }
 
 }
