@@ -53,6 +53,88 @@ static SDL_Color make_color(uint32_t* colors, Face_Color fc) {
     return color;
 }
 
+static SDL_Surface* render_character(TTF_Font* font, char character, uint8_t flags, SDL_Color fgc) {
+    ZoneScoped;
+
+    char buffer[2] = {};
+    buffer[0] = character;
+
+    {
+        ZoneScopedN("TTF_SetFontStyle");
+        int style = 0;
+        if (flags & Face::UNDERSCORE) {
+            style |= TTF_STYLE_UNDERLINE;
+        }
+        if (flags & Face::BOLD) {
+            style |= TTF_STYLE_BOLD;
+        }
+        if (flags & Face::ITALICS) {
+            style |= TTF_STYLE_ITALIC;
+        }
+        TTF_SetFontStyle(font, style);
+    }
+
+    SDL_Surface* rendered_char;
+    {
+        ZoneScopedN("TTF_RenderText_Blended");
+        rendered_char = TTF_RenderText_Blended(font, buffer, fgc);
+    }
+    return rendered_char;
+}
+
+static SDL_Surface* lookup_surface_cache(SDL_Surface**** surface_cache,
+                                         TTF_Font* font,
+                                         uint8_t flags,
+                                         size_t theme_index,
+                                         SDL_Color color,
+                                         unsigned char character) {
+    ZoneScoped;
+
+    if (!surface_cache[flags]) {
+        surface_cache[flags] = cz::heap_allocator().alloc_zeroed<SDL_Surface**>(256);
+    }
+    SDL_Surface*** surface_cache_1 = surface_cache[flags];
+
+    if (!surface_cache_1[theme_index]) {
+        surface_cache_1[theme_index] =
+            cz::heap_allocator().alloc_zeroed<SDL_Surface*>((size_t)UCHAR_MAX + 1);
+    }
+    SDL_Surface** surface_cache_2 = surface_cache_1[theme_index];
+
+    if (!surface_cache_2[character]) {
+        surface_cache_2[character] = render_character(font, character, flags, color);
+    }
+    return surface_cache_2[character];
+}
+
+void drop_surface_cache(SDL_Surface**** surface_cache) {
+    ZoneScoped;
+
+    for (uint8_t flags = 0; flags < 8; ++flags) {
+        if (!surface_cache[flags]) {
+            continue;
+        }
+
+        for (size_t theme_index = 0; theme_index < 256; ++theme_index) {
+            if (!surface_cache[flags][theme_index]) {
+                continue;
+            }
+
+            for (size_t character = 0; character <= UCHAR_MAX; ++character) {
+                if (!surface_cache[flags][theme_index][character]) {
+                    continue;
+                }
+
+                SDL_FreeSurface(surface_cache[flags][theme_index][character]);
+            }
+
+            cz::heap_allocator().dealloc(surface_cache[flags][theme_index], (size_t)UCHAR_MAX + 1);
+        }
+
+        cz::heap_allocator().dealloc(surface_cache[flags], 256);
+    }
+}
+
 static Face_Color get_face_color_or(uint32_t* colors, Face_Color fc, int16_t deflt) {
     // int16_t max_colors = sizeof(colors) / sizeof(colors[0]);
     int16_t max_colors = 256;
@@ -578,7 +660,7 @@ static void blit_surface(SDL_Surface* surface, SDL_Surface* rendered_char, SDL_R
 static void render(SDL_Window* window,
                    SDL_Renderer* renderer,
                    TTF_Font* font,
-                   SDL_Surface** surface_cache,
+                   SDL_Surface**** surface_cache,
                    int* total_rows,
                    int* total_cols,
                    int character_width,
@@ -636,18 +718,16 @@ static void render(SDL_Window* window,
     {
         ZoneScopedN("draw cells");
 
-        char buffer[2] = {};
-
         for (int y = 0, index = 0; y < rows; ++y) {
             for (int x = 0; x < cols; ++x, ++index) {
-                ZoneScopedN("draw cell background");
-
                 Cell* new_cell = &cellss[1][index];
                 if (cellss[0][index] == *new_cell &&
                     (x == 0 || cellss[0][index - 1] == cellss[1][index - 1]) &&
                     (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1])) {
                     continue;
                 }
+
+                ZoneScopedN("draw cell background");
 
                 Face_Color bg = (new_cell->face.flags & Face::REVERSE) ? new_cell->face.foreground
                                                                        : new_cell->face.background;
@@ -672,14 +752,14 @@ static void render(SDL_Window* window,
 
         for (int y = 0, index = 0; y < rows; ++y) {
             for (int x = 0; x < cols; ++x, ++index) {
-                ZoneScopedN("draw cell foreground");
-
                 Cell* new_cell = &cellss[1][index];
                 if (cellss[0][index] == *new_cell &&
                     (x == 0 || cellss[0][index - 1] == cellss[1][index - 1]) &&
                     (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1])) {
                     continue;
                 }
+
+                ZoneScopedN("draw cell foreground");
 
                 Face_Color fg = (new_cell->face.flags & Face::REVERSE) ? new_cell->face.background
                                                                        : new_cell->face.foreground;
@@ -692,56 +772,25 @@ static void render(SDL_Window* window,
                 rect.w = character_width;
                 rect.h = character_height;
 
-                // Completely default text is cached.
-                bool cache = fg == 7 && new_cell->face.flags == 0;
-                if (cache) {
-                    SDL_Surface* rendered_char =
-                        surface_cache[(size_t)(unsigned char)new_cell->code];
-                    if (rendered_char) {
-                        blit_surface(surface, rendered_char, &rect);
-                        continue;
-                    }
-                }
-
                 SDL_Color fgc = make_color(editor->theme.colors, fg);
 
-                buffer[0] = new_cell->code;
-
-                {
-                    ZoneScopedN("TTF_SetFontStyle");
-                    int style = 0;
-                    if (new_cell->face.flags & Face::UNDERSCORE) {
-                        style |= TTF_STYLE_UNDERLINE;
-                    }
-                    if (new_cell->face.flags & Face::BOLD) {
-                        style |= TTF_STYLE_BOLD;
-                    }
-                    if (new_cell->face.flags & Face::ITALICS) {
-                        style |= TTF_STYLE_ITALIC;
-                    }
-                    if (style == 0) {
-                        style = TTF_STYLE_NORMAL;
-                    }
-                    TTF_SetFontStyle(font, style);
-                }
-
+                // We only cache themed colors.
                 SDL_Surface* rendered_char;
-                {
-                    ZoneScopedN("TTF_RenderText_Blended");
-                    rendered_char = TTF_RenderText_Blended(font, buffer, fgc);
+                if (fg.is_themed) {
+                    rendered_char = lookup_surface_cache(surface_cache, font, new_cell->face.flags,
+                                                         fg.x.theme_index, fgc, new_cell->code);
+                } else {
+                    rendered_char =
+                        render_character(font, new_cell->code, new_cell->face.flags, fgc);
                 }
+
                 if (!rendered_char) {
-                    fprintf(stderr, "Failed to render text '%s': %s\n", buffer, TTF_GetError());
+                    fprintf(stderr, "Failed to render text '%c': %s\n", new_cell->code,
+                            TTF_GetError());
                     continue;
                 }
 
-                if (cache) {
-                    surface_cache[(size_t)(unsigned char)new_cell->code] = rendered_char;
-                    blit_surface(surface, rendered_char, &rect);
-                } else {
-                    CZ_DEFER(SDL_FreeSurface(rendered_char));
-                    blit_surface(surface, rendered_char, &rect);
-                }
+                blit_surface(surface, rendered_char, &rect);
             }
         }
     }
@@ -944,17 +993,9 @@ void run(Server* server, Client* client) {
     Mouse_State mouse = {};
     CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
 
-    SDL_Surface** surface_cache =
-        cz::heap_allocator().alloc_zeroed<SDL_Surface*>((size_t)UCHAR_MAX + 1);
-    CZ_ASSERT(surface_cache);
-    CZ_DEFER({
-        for (size_t i = 0; i <= UCHAR_MAX; ++i) {
-            if (surface_cache[i]) {
-                SDL_FreeSurface(surface_cache[i]);
-            }
-        }
-        cz::heap_allocator().dealloc(surface_cache, (size_t)UCHAR_MAX + 1);
-    });
+    // SDL_Surface* surface_cache[Face::flags(8)][fg.theme_index(256)][char(UCHAR_MAX + 1)]
+    SDL_Surface*** surface_cache[8] = {};
+    CZ_DEFER(drop_surface_cache(surface_cache));
 
     while (1) {
         ZoneScopedN("sdl main loop");
