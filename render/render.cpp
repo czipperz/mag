@@ -152,20 +152,22 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         if (window->start_position != window_cache->v.unified.visible_start) {
             // The start position variable was updated in a
             // command so we recalculate the end position.
-            Contents_Iterator visible_end_iterator =
-                buffer->contents.iterator_at(window->start_position);
-            compute_visible_end(window, &visible_end_iterator);
             window_cache->v.unified.visible_start = window->start_position;
-            window_cache->v.unified.visible_end = visible_end_iterator.position;
 
             window_cache->v.unified.animation.slam_on_the_breaks = false;
         }
 
         // Ensure the cursor is visible
         uint64_t selected_cursor_position = window->cursors[0].point;
+
         Contents_Iterator second_visible_line_iterator = iterator;
         end_of_line(&second_visible_line_iterator);
         forward_char(&second_visible_line_iterator);
+
+        Contents_Iterator visible_end_iterator =
+            buffer->contents.iterator_at(window->start_position);
+        compute_visible_end(window, &visible_end_iterator);
+
         if (iterator.position != 0 &&
             selected_cursor_position <= second_visible_line_iterator.position) {
             // We are above the second visible line and thus readjust
@@ -180,7 +182,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 cache_window_unified_position(window, window_cache, iterator.position, buffer);
                 window_cache->v.unified.animation.slam_on_the_breaks = false;
             }
-        } else if (selected_cursor_position > window_cache->v.unified.visible_end) {
+        } else if (selected_cursor_position > visible_end_iterator.position) {
             // We are below the "visible" section of the buffer ie on the last line or beyond
             // the last line.
             iterator = buffer->contents.iterator_at(selected_cursor_position);
