@@ -31,7 +31,7 @@ static void run_ag(Client* client,
         buffer->mode.overlays.reserve(cz::heap_allocator(), 1);
         buffer->mode.overlays.push(syntax::overlay_highlight_string(
             editor->theme.special_faces[Face_Type::SEARCH_MODE_RESULT_HIGHLIGHT], query,
-            /*case_insensitive=*/false));
+            /*case_insensitive=*/false, Token_Type::SEARCH_RESULT));
     }
 }
 
