@@ -43,6 +43,7 @@
 #include "syntax/decoration_line_number.hpp"
 #include "syntax/decoration_pinned_indicator.hpp"
 #include "syntax/decoration_read_only_indicator.hpp"
+#include "syntax/overlay_highlight_string.hpp"
 #include "syntax/overlay_incorrect_indent.hpp"
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
@@ -384,11 +385,15 @@ static void create_theme(Theme& theme) {
     theme.decorations.push(syntax::decoration_read_only_indicator());
     theme.decorations.push(syntax::decoration_pinned_indicator());
 
-    theme.overlays.reserve(cz::heap_allocator(), 4);
+    theme.overlays.reserve(cz::heap_allocator(), 6);
     theme.overlays.push(syntax::overlay_matching_region({{}, 237, 0}));
     theme.overlays.push(syntax::overlay_preferred_column({{}, 21, 0}));
     theme.overlays.push(syntax::overlay_trailing_spaces({{}, 208, 0}));
     theme.overlays.push(syntax::overlay_incorrect_indent({{}, 208, 0}));
+    theme.overlays.push(
+        syntax::overlay_highlight_string({{}, {}, Face::BOLD}, "TODO", false, Token_Type::COMMENT));
+    theme.overlays.push(syntax::overlay_highlight_string({{}, {}, Face::BOLD}, "TODO", false,
+                                                         Token_Type::DOC_COMMENT));
 
     theme.max_completion_results = 5;
     theme.mini_buffer_completion_filter = spaces_are_wildcards_completion_filter;
