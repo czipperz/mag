@@ -38,6 +38,8 @@ static uint64_t count_lines(cz::Str str) {
 }
 
 static void bucket_remove(cz::Slice<char>* bucket, uint64_t* lines, uint64_t start, uint64_t len) {
+    ZoneScoped;
+
     uint64_t count = count_lines({bucket->elems + start, len});
     CZ_DEBUG_ASSERT(*lines >= count);
     *lines -= count;
@@ -51,6 +53,8 @@ static void bucket_insert(cz::Slice<char>* bucket,
                           uint64_t* lines,
                           uint64_t position,
                           cz::Str str) {
+    ZoneScoped;
+
     *lines += count_lines(str);
 
     memmove(bucket->elems + position + str.len, bucket->elems + position, bucket->len - position);
@@ -59,11 +63,15 @@ static void bucket_insert(cz::Slice<char>* bucket,
 }
 
 static void bucket_append(cz::Slice<char>* bucket, cz::Str str) {
+    ZoneScoped;
+
     memcpy(bucket->elems + bucket->len, str.buffer, str.len);
     bucket->len += str.len;
 }
 
 static void bucket_append(cz::Slice<char>* bucket, uint64_t* lines, cz::Str str) {
+    ZoneScoped;
+
     *lines += count_lines(str);
     memcpy(bucket->elems + bucket->len, str.buffer, str.len);
     bucket->len += str.len;
