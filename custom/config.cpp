@@ -499,6 +499,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
     switch (buffer->type) {
     case Buffer::DIRECTORY:
+        // When we can't render a time stamp we pad with spaces.
+        buffer->mode.use_tabs = false;
+
         buffer->mode.next_token = syntax::directory_next_token;
         directory_key_map(buffer->mode.key_map);
         break;
@@ -519,6 +522,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name == "*key map*") {
             BIND(buffer->mode.key_map, "\n", command_go_to_key_map_binding);
         } else if (buffer->name == "*splash page*") {
+            // The splash page uses tabs for alignment.
             buffer->mode.use_tabs = false;
         }
         break;
