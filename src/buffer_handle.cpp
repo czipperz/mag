@@ -171,7 +171,7 @@ const Buffer* Buffer_Handle::try_lock_reading() {
 
     const Buffer* result = nullptr;
 
-    do {
+    {
         mutex.lock();
         CZ_DEFER(mutex.unlock());
 
@@ -196,7 +196,11 @@ const Buffer* Buffer_Handle::try_lock_reading() {
             ++active_state;
         }
 
-    } while (0);
+#ifndef NDEBUG
+        associated_threads.reserve(cz::heap_allocator(), 1);
+        associated_threads.push(tracy::GetThreadHandle());
+#endif
+    }
 
     result = &buffer;
 
