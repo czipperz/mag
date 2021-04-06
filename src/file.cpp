@@ -105,7 +105,9 @@ static cz::Result load_directory(Editor* editor,
                                  char* path,
                                  size_t path_len,
                                  cz::Arc<Buffer_Handle>* handle) {
-    path[path_len++] = '/';
+    if (path_len == 0 || path[path_len - 1] != '/') {
+        path[path_len++] = '/';
+    }
 
     Buffer buffer = {};
     buffer.type = Buffer::DIRECTORY;
@@ -375,13 +377,18 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     cz::path::make_absolute(user_path_nt, cz::heap_allocator(), &path);
+#ifdef _WIN32
+    if (path.len() > 3 && path[path.len() - 1] == '/') {
+        path.pop();
+    }
+#endif
     if (path[path.len() - 1] == '/') {
         path.pop();
     }
     path.null_terminate();
 
     cz::String result = {};
-    result.reserve(allocator, path.len());
+    result.reserve(allocator, path.len() + 1);
 
 #ifdef _WIN32
     // Todo: support symbolic links on Windows.
@@ -389,12 +396,12 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     // Append drive as uppercase.
     CZ_ASSERT(cz::is_alpha(path[0]));
     CZ_ASSERT(path[1] == ':');
-    CZ_ASSERT(path[2] == '/');
+    CZ_ASSERT(path.len() == 2 || path[2] == '/');
     result.push(cz::to_upper(path[0]));
     result.push(':');
 
     // Only append the forward slash now if there are no components.
-    if (path.len() == 3) {
+    if (path.len() <= 3) {
         result.push('/');
     }
 
@@ -405,7 +412,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
         while (start < path.len() && path[start] == '/') {
             ++start;
         }
-        if (start == path.len()) {
+        if (start >= path.len()) {
             break;
         }
 
