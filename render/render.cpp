@@ -688,7 +688,7 @@ static void draw_buffer_contents(Cell* cells,
         } else if (ch == '\t') {
             size_t end_x = x + buffer->mode.tab_width;
             end_x -= end_x % buffer->mode.tab_width;
-            while (x < end_x) {
+            for (size_t i = x; i < end_x; ++i) {
                 ADDCH(face, ' ');
             }
         } else if (cz::is_print(ch)) {
