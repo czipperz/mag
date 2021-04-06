@@ -88,6 +88,9 @@ struct Run_Jobs {
                 }
 
                 if (data->stop) {
+                    if (started) {
+                        FrameMarkEnd("job thread");
+                    }
                     return;
                 }
 
