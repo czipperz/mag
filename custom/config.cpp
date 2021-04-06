@@ -587,7 +587,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    buffer->name.ends_with(".zsh") || buffer->name == ".bashrc" ||
                    buffer->name == ".zshrc" || buffer->name == "Makefile" ||
                    // Powershell isn't really a shell script but it pretty much works.
-                   buffer->name.ends_with(".ps1")) {
+                   buffer->name.ends_with(".ps1") ||
+                   // Perl isn't really a shell script but it pretty much works.
+                   buffer->name.ends_with(".pl")) {
             if (buffer->name == "Makefile") {
                 // Makefiles must use tabs so set that up automatically.
                 buffer->mode.tab_width = buffer->mode.indent_width;
