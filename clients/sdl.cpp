@@ -678,6 +678,7 @@ static void render(SDL_Window* window,
         surface = SDL_GetWindowSurface(window);
     }
 
+    bool force_redraw = false;
     int rows, cols;
     {
         ZoneScopedN("detect resize");
@@ -687,6 +688,8 @@ static void render(SDL_Window* window,
         rows = height / character_height;
 
         if (rows != *total_rows || cols != *total_cols) {
+            force_redraw = true;
+
             SDL_Color bgc = make_color(editor->theme.colors, 0);
             SDL_FillRect(surface, nullptr,
                          SDL_MapRGBA(surface->format, bgc.r, bgc.g, bgc.b, bgc.a));
@@ -721,7 +724,7 @@ static void render(SDL_Window* window,
         for (int y = 0, index = 0; y < rows; ++y) {
             for (int x = 0; x < cols; ++x, ++index) {
                 Cell* new_cell = &cellss[1][index];
-                if (cellss[0][index] == *new_cell &&
+                if (!force_redraw && cellss[0][index] == *new_cell &&
                     (x == 0 || cellss[0][index - 1] == cellss[1][index - 1]) &&
                     (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1])) {
                     continue;
@@ -753,7 +756,7 @@ static void render(SDL_Window* window,
         for (int y = 0, index = 0; y < rows; ++y) {
             for (int x = 0; x < cols; ++x, ++index) {
                 Cell* new_cell = &cellss[1][index];
-                if (cellss[0][index] == *new_cell &&
+                if (!force_redraw && cellss[0][index] == *new_cell &&
                     (x == 0 || cellss[0][index - 1] == cellss[1][index - 1]) &&
                     (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1])) {
                     continue;
