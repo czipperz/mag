@@ -91,7 +91,6 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                                                           Window_Unified* window,
                                                           cz::Arc<Buffer_Handle> handle,
                                                           const Buffer* buffer,
-                                                          Buffer* buffer_mut,
                                                           Window_Cache* window_cache) {
     ZoneScoped;
 
@@ -129,8 +128,11 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         }
     }
 
+    // Lock in write mode if the token cache is out of date.
+    Buffer* buffer_mut = nullptr;
     bool token_cache_was_invalidated = false;
-    if (buffer_mut) {
+    if (buffer->changes.len() != buffer->token_cache.change_index) {
+        buffer_mut = handle->increase_reading_to_writing();
         token_cache_was_invalidated = !buffer_mut->token_cache.update(buffer);
     }
 
@@ -421,18 +423,29 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         window->start_position = iterator.position;
     }
 
+    // If we moved into an area that isn't covered then we need to generate check points.
+    if (!buffer_mut && !buffer->token_cache.is_covered(iterator.position)) {
+        buffer_mut = handle->increase_reading_to_writing();
+    }
+
     if (buffer_mut) {
         // Note: we update the token cache at the top of this function.
         CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
+
+        // Cover the visible region with check points.
         bool had_no_check_points = buffer->token_cache.check_points.len() == 0;
         buffer_mut->token_cache.generate_check_points_until(buffer, iterator.position);
 
         if (token_cache_was_invalidated || had_no_check_points) {
+            // Start asynchronous syntax highlighting.
             TracyFormat(message, len, 1024, "Start syntax highlighting: %.*s",
                         (int)buffer->name.len(), buffer->name.buffer());
             TracyMessage(message, len);
             editor->add_asynchronous_job(job_syntax_highlight_buffer(handle.clone_downgrade()));
         }
+
+        // Unlock writing.
+        handle->reduce_writing_to_reading();
     }
 
     return iterator;
@@ -900,17 +913,8 @@ static void draw_buffer(Cell* cells,
 
     WITH_CONST_BUFFER(window->id);
 
-    Buffer* buffer_mut = nullptr;
-    if (buffer->changes.len() != buffer->token_cache.change_index) {
-        buffer_mut = handle->increase_reading_to_writing();
-    }
-
-    Contents_Iterator iterator = update_cursors_and_run_animation(editor, client, window, handle,
-                                                                  buffer, buffer_mut, window_cache);
-
-    if (buffer_mut) {
-        handle->reduce_writing_to_reading();
-    }
+    Contents_Iterator iterator =
+        update_cursors_and_run_animation(editor, client, window, handle, buffer, window_cache);
 
     size_t cursor_pos_y, cursor_pos_x;
     draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
@@ -1149,11 +1153,11 @@ void render_to_cells(Cell* cells,
         if (client->_message.tag > Message::SHOW) {
             start_col = x;
             Window_Unified* window = client->mini_buffer_window();
-            WITH_WINDOW_BUFFER(window);
+            WITH_CONST_WINDOW_BUFFER(window);
             window->rows = mini_buffer_height;
             window->cols = total_cols - start_col;
-            Contents_Iterator iterator = update_cursors_and_run_animation(
-                editor, client, window, handle, buffer, buffer, nullptr);
+            Contents_Iterator iterator =
+                update_cursors_and_run_animation(editor, client, window, handle, buffer, nullptr);
             size_t cursor_pos_y, cursor_pos_x;
             draw_buffer_contents(cells, nullptr, total_cols, editor, client, buffer, window,
                                  start_row, start_col, {}, &cursor_pos_y, &cursor_pos_x, iterator);
