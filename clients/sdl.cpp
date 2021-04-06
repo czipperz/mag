@@ -661,6 +661,8 @@ static void render(SDL_Window* window,
                    SDL_Renderer* renderer,
                    TTF_Font* font,
                    SDL_Surface**** surface_cache,
+                   int* old_width,
+                   int* old_height,
                    int* total_rows,
                    int* total_cols,
                    int character_width,
@@ -687,8 +689,10 @@ static void render(SDL_Window* window,
         cols = width / character_width;
         rows = height / character_height;
 
-        if (rows != *total_rows || cols != *total_cols) {
+        if (width != *old_width || height != *old_height) {
             force_redraw = true;
+            *old_width = width;
+            *old_height = height;
 
             SDL_Color bgc = make_color(editor->theme.colors, 0);
             SDL_FillRect(surface, nullptr,
@@ -963,6 +967,8 @@ void run(Server* server, Client* client) {
     }
     CZ_DEFER(TTF_CloseFont(font));
 
+    int old_width = 0;
+    int old_height = 0;
     int total_rows = 0;
     int total_cols = 0;
 
@@ -1008,8 +1014,9 @@ void run(Server* server, Client* client) {
         client->update_mini_buffer_completion_cache(&server->editor);
         load_mini_buffer_completion_cache(server, client);
 
-        render(window, renderer, font, surface_cache, &total_rows, &total_cols, character_width,
-               character_height, cellss, &window_cache, &server->editor, client, mouse.sp_queries);
+        render(window, renderer, font, surface_cache, &old_width, &old_height, &total_rows,
+               &total_cols, character_width, character_height, cellss, &window_cache,
+               &server->editor, client, mouse.sp_queries);
 
         process_mouse_events(&server->editor, client, &mouse);
 
