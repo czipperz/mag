@@ -214,7 +214,9 @@ void command_forward_up_pair(Editor* editor, Command_Source source) {
 void forward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
     Token token;
     uint64_t state;
+    Contents_Iterator backup = *iterator;
     if (!get_token_after_position(buffer, iterator, &state, &token)) {
+        *iterator = backup;
         return;
     }
 
@@ -239,7 +241,9 @@ void command_forward_token_pair(Editor* editor, Command_Source source) {
 void backward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
     Token token;
     uint64_t state;
+    Contents_Iterator backup = *iterator;
     if (!get_token_before_position(buffer, iterator, &state, &token)) {
+        *iterator = backup;
         return;
     }
 
