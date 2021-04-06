@@ -885,8 +885,7 @@ static void draw_buffer(Cell* cells,
                         bool is_selected_window,
                         size_t start_row,
                         size_t start_col,
-                        cz::Slice<Screen_Position_Query> spqs,
-                        bool reloaded) {
+                        cz::Slice<Screen_Position_Query> spqs) {
     ZoneScoped;
 
     for (size_t spqsi = 0; spqsi < spqs.len; ++spqsi) {
@@ -902,8 +901,7 @@ static void draw_buffer(Cell* cells,
     WITH_CONST_BUFFER(window->id);
 
     Buffer* buffer_mut = nullptr;
-    if (reloaded ||
-        (window_cache && window_cache->v.unified.change_index != buffer->changes.len())) {
+    if (buffer->changes.len() != buffer->token_cache.change_index) {
         buffer_mut = handle->increase_reading_to_writing();
     }
 
@@ -946,7 +944,6 @@ static void draw_window(Cell* cells,
 
         --window->rows;
 
-        bool reloaded = true;
         if (!*window_cache) {
             *window_cache = cz::heap_allocator().alloc<Window_Cache>();
             CZ_ASSERT(*window_cache);
@@ -956,12 +953,10 @@ static void draw_window(Cell* cells,
             cache_window_unified_create(editor, *window_cache, window);
         } else if ((*window_cache)->v.unified.id != window->id) {
             cache_window_unified_create(editor, *window_cache, window);
-        } else {
-            reloaded = false;
         }
 
         draw_buffer(cells, *window_cache, total_cols, editor, client, window,
-                    window == selected_window, start_row, start_col, spqs, reloaded);
+                    window == selected_window, start_row, start_col, spqs);
         break;
     }
 
