@@ -90,16 +90,16 @@ static SDL_Surface* lookup_surface_cache(SDL_Surface**** surface_cache,
                                          unsigned char character) {
     ZoneScoped;
 
-    if (!surface_cache[flags]) {
-        surface_cache[flags] = cz::heap_allocator().alloc_zeroed<SDL_Surface**>(256);
+    if (!surface_cache[theme_index]) {
+        surface_cache[theme_index] = cz::heap_allocator().alloc_zeroed<SDL_Surface**>(8);
     }
-    SDL_Surface*** surface_cache_1 = surface_cache[flags];
+    SDL_Surface*** surface_cache_1 = surface_cache[theme_index];
 
-    if (!surface_cache_1[theme_index]) {
-        surface_cache_1[theme_index] =
+    if (!surface_cache_1[flags]) {
+        surface_cache_1[flags] =
             cz::heap_allocator().alloc_zeroed<SDL_Surface*>((size_t)UCHAR_MAX + 1);
     }
-    SDL_Surface** surface_cache_2 = surface_cache_1[theme_index];
+    SDL_Surface** surface_cache_2 = surface_cache_1[flags];
 
     if (!surface_cache_2[character]) {
         surface_cache_2[character] = render_character(font, character, flags, color);
@@ -110,28 +110,28 @@ static SDL_Surface* lookup_surface_cache(SDL_Surface**** surface_cache,
 void drop_surface_cache(SDL_Surface**** surface_cache) {
     ZoneScoped;
 
-    for (uint8_t flags = 0; flags < 8; ++flags) {
-        if (!surface_cache[flags]) {
+    for (size_t theme_index = 0; theme_index < 256; ++theme_index) {
+        if (!surface_cache[theme_index]) {
             continue;
         }
 
-        for (size_t theme_index = 0; theme_index < 256; ++theme_index) {
-            if (!surface_cache[flags][theme_index]) {
+        for (uint8_t flags = 0; flags < 8; ++flags) {
+            if (!surface_cache[theme_index][flags]) {
                 continue;
             }
 
             for (size_t character = 0; character <= UCHAR_MAX; ++character) {
-                if (!surface_cache[flags][theme_index][character]) {
+                if (!surface_cache[theme_index][flags][character]) {
                     continue;
                 }
 
-                SDL_FreeSurface(surface_cache[flags][theme_index][character]);
+                SDL_FreeSurface(surface_cache[theme_index][flags][character]);
             }
 
-            cz::heap_allocator().dealloc(surface_cache[flags][theme_index], (size_t)UCHAR_MAX + 1);
+            cz::heap_allocator().dealloc(surface_cache[theme_index][flags], (size_t)UCHAR_MAX + 1);
         }
 
-        cz::heap_allocator().dealloc(surface_cache[flags], 256);
+        cz::heap_allocator().dealloc(surface_cache[theme_index], 8);
     }
 }
 
@@ -1002,8 +1002,8 @@ void run(Server* server, Client* client) {
     Mouse_State mouse = {};
     CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
 
-    // SDL_Surface* surface_cache[Face::flags(8)][fg.theme_index(256)][char(UCHAR_MAX + 1)]
-    SDL_Surface*** surface_cache[8] = {};
+    // SDL_Surface* surface_cache[fg.theme_index(256)][Face::flags(8)][char(UCHAR_MAX + 1)]
+    SDL_Surface*** surface_cache[256] = {};
     CZ_DEFER(drop_surface_cache(surface_cache));
 
     while (1) {
