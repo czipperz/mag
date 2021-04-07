@@ -13,6 +13,7 @@ namespace syntax {
 enum : uint64_t {
     AT_START_OF_STATEMENT,
     NORMAL,
+    IN_CURLY_VAR,
     AFTER_DOLLAR,
     IN_STRING,
 };
@@ -51,13 +52,13 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     // We could use 5 bits for the depth but then if the
     // depth gets too large we risk corrupting the bitfield.
     uint64_t depth = *state >> 60;
-    uint64_t prev = (*state >> (depth - 1) * 2) & 3;
-    uint64_t top = (*state >> depth * 2) & 3;
+    uint64_t prev = (*state >> (depth - 1) * 3) & 7;
+    uint64_t top = (*state >> depth * 3) & 7;
 
 #define PUSH(STATE)                            \
     do {                                       \
-        *state &= ~((uint64_t)3 << depth * 2); \
-        *state |= ((STATE) << depth * 2);      \
+        *state &= ~((uint64_t)7 << depth * 3); \
+        *state |= ((STATE) << depth * 3);      \
         depth += 1;                            \
     } while (0)
 
@@ -65,8 +66,8 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     do {                                        \
         CZ_DEBUG_ASSERT(depth > 0);             \
         depth -= 1;                             \
-        prev = (*state >> (depth - 1) * 2) & 3; \
-        top = (*state >> depth * 2) & 3;        \
+        prev = (*state >> (depth - 1) * 3) & 7; \
+        top = (*state >> depth * 3) & 7;        \
     } while (0)
 
     if (!advance_whitespace(iterator, &top)) {
@@ -112,6 +113,20 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             iterator->advance();
         }
 
+        goto ret;
+    }
+
+    if (top == AFTER_DOLLAR && first_ch == '{') {
+        token->type = Token_Type::OPEN_PAIR;
+        top = IN_CURLY_VAR;
+        goto ret;
+    }
+    if (top == IN_CURLY_VAR && first_ch == '}') {
+        token->type = Token_Type::CLOSE_PAIR;
+        top = NORMAL;
+        if (depth >= 1 && prev == IN_STRING) {
+            POP();
+        }
         goto ret;
     }
 
@@ -249,7 +264,11 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         } else {
             token->type = Token_Type::DEFAULT;
         }
-        top = NORMAL;
+
+        if (top != IN_CURLY_VAR) {
+            top = NORMAL;
+        }
+
         goto ret;
     }
 
@@ -266,7 +285,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
-    if (first_ch == '#') {
+    if (first_ch == '#' && top != IN_CURLY_VAR) {
         while (!iterator->at_eob()) {
             if (iterator->get() == '\n') {
                 iterator->advance();
@@ -279,21 +298,23 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
-    if (first_ch == '$') {
+    if (first_ch == '$' && top != IN_CURLY_VAR) {
         top = AFTER_DOLLAR;
         token->type = Token_Type::PUNCTUATION;
         goto ret;
     }
 
     token->type = Token_Type::DEFAULT;
-    top = NORMAL;
+    if (top != IN_CURLY_VAR) {
+        top = NORMAL;
+    }
 
 ret:
     token->end = iterator->position;
     *state &= 0x0FFFFFFFFFFFFFFF;
     *state |= (depth << 60);
-    *state &= ~((uint64_t)3 << depth * 2);
-    *state |= (top << depth * 2);
+    *state &= ~((uint64_t)7 << depth * 3);
+    *state |= (top << depth * 3);
     return true;
 }
 
