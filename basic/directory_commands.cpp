@@ -353,23 +353,25 @@ static void command_directory_copy_path_callback(Editor* editor,
                                                  void*) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
-
-    WITH_SELECTED_BUFFER(client);
-    if (!get_path(buffer, &path, window->cursors[0].point)) {
-        client->show_message(editor, "Cursor not on a valid path");
-        return;
-    }
-
     cz::String new_path = {};
-    if (cz::path::is_absolute(query)) {
-        new_path = query.duplicate_null_terminate(cz::heap_allocator());
-    } else {
-        new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
-        new_path.append(buffer->directory);
-        new_path.append(query);
-        new_path.null_terminate();
-    }
     CZ_DEFER(new_path.drop(cz::heap_allocator()));
+
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        if (!get_path(buffer, &path, window->cursors[0].point)) {
+            client->show_message(editor, "Cursor not on a valid path");
+            return;
+        }
+
+        if (cz::path::is_absolute(query)) {
+            new_path = query.duplicate_null_terminate(cz::heap_allocator());
+        } else {
+            new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
+            new_path.append(buffer->directory);
+            new_path.append(query);
+            new_path.null_terminate();
+        }
+    }
 
     if (cz::file::is_directory(new_path.buffer())) {
         cz::Option<cz::Str> name = cz::path::name_component(path);
@@ -399,23 +401,25 @@ static void command_directory_rename_path_callback(Editor* editor,
                                                    void*) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
-
-    WITH_SELECTED_BUFFER(client);
-    if (!get_path(buffer, &path, window->cursors[0].point)) {
-        client->show_message(editor, "Cursor not on a valid path");
-        return;
-    }
-
-    cz::String new_path;
-    if (cz::path::is_absolute(query)) {
-        new_path = query.duplicate_null_terminate(cz::heap_allocator());
-    } else {
-        new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
-        new_path.append(buffer->directory);
-        new_path.append(query);
-        new_path.null_terminate();
-    }
+    cz::String new_path = {};
     CZ_DEFER(new_path.drop(cz::heap_allocator()));
+
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        if (!get_path(buffer, &path, window->cursors[0].point)) {
+            client->show_message(editor, "Cursor not on a valid path");
+            return;
+        }
+
+        if (cz::path::is_absolute(query)) {
+            new_path = query.duplicate_null_terminate(cz::heap_allocator());
+        } else {
+            new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
+            new_path.append(buffer->directory);
+            new_path.append(query);
+            new_path.null_terminate();
+        }
+    }
 
     if (rename(path.buffer(), new_path.buffer()) != 0) {
         client->show_message(editor, "Couldn't rename path");
