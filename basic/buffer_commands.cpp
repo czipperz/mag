@@ -44,11 +44,15 @@ void fill_mini_buffer_with_selected_window_directory(Editor* editor, Client* cli
         default_value.push('/');
     }
 
+    fill_mini_buffer_with(editor, client, default_value);
+}
+
+void fill_mini_buffer_with(Editor* editor, Client* client, cz::Str default_value) {
     Window_Unified* window = client->mini_buffer_window();
     WITH_WINDOW_BUFFER(window);
 
     Transaction transaction;
-    transaction.init(1, default_value.len());
+    transaction.init(1, default_value.len);
     CZ_DEFER(transaction.drop());
 
     Edit edit;
