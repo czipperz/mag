@@ -389,10 +389,20 @@ static void command_directory_copy_path_callback(Editor* editor,
 }
 
 void command_directory_copy_path(Editor* editor, Command_Source source) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        if (!get_path(buffer, &path, window->cursors[0].point)) {
+            source.client->show_message(editor, "Cursor not on a valid path");
+            return;
+        }
+    }
+
     source.client->show_dialog(editor, "Copy file to: ", file_completion_engine,
                                command_directory_copy_path_callback, nullptr);
 
-    fill_mini_buffer_with_selected_window_directory(editor, source.client);
+    fill_mini_buffer_with(editor, source.client, path);
 }
 
 static void command_directory_rename_path_callback(Editor* editor,
@@ -428,10 +438,20 @@ static void command_directory_rename_path_callback(Editor* editor,
 }
 
 void command_directory_rename_path(Editor* editor, Command_Source source) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        if (!get_path(buffer, &path, window->cursors[0].point)) {
+            source.client->show_message(editor, "Cursor not on a valid path");
+            return;
+        }
+    }
+
     source.client->show_dialog(editor, "Rename file to: ", file_completion_engine,
                                command_directory_rename_path_callback, nullptr);
 
-    fill_mini_buffer_with_selected_window_directory(editor, source.client);
+    fill_mini_buffer_with(editor, source.client, path);
 }
 
 void command_directory_open_path(Editor* editor, Command_Source source) {
