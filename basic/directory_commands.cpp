@@ -431,6 +431,15 @@ static void command_directory_rename_path_callback(Editor* editor,
         }
     }
 
+    if (cz::file::is_directory(new_path.buffer())) {
+        cz::Option<cz::Str> name = cz::path::name_component(path);
+        if (name.is_present) {
+            new_path.reserve(cz::heap_allocator(), name.value.len + 1);
+            new_path.append(name.value);
+            new_path.null_terminate();
+        }
+    }
+
     if (rename(path.buffer(), new_path.buffer()) != 0) {
         client->show_message(editor, "Couldn't rename path");
         return;
