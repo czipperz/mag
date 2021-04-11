@@ -96,15 +96,15 @@ static void create_key_map(Key_Map& key_map) {
     ZoneScoped;
 
     BIND(key_map, "F1", command_dump_key_map);
-    BIND(key_map, "A-x", command_run_command_by_name);
+    BIND(key_map, "C-x", command_run_command_by_name);
 
     BIND(key_map, "C-SPACE", command_set_mark);
-    BIND(key_map, "C-x C-x", command_swap_mark_point);
+    BIND(key_map, "A-x A-x", command_swap_mark_point);
 
     BIND(key_map, "C-w", command_cut);
     BIND(key_map, "A-w", command_copy);
-    BIND(key_map, "C-y", command_paste);
-    BIND(key_map, "A-y", command_paste_previous);
+    BIND(key_map, "A-y", command_paste);
+    BIND(key_map, "C-y", command_paste_previous);
     BIND(key_map, "C-INSERT", command_copy);
     BIND(key_map, "S-INSERT", command_paste);
 
@@ -113,10 +113,10 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-f", command_forward_word);
     BIND(key_map, "A-b", command_backward_word);
 
-    BIND(key_map, "C-n", command_forward_line);
-    BIND(key_map, "C-p", command_backward_line);
-    BIND(key_map, "A-n", command_shift_line_forward);
-    BIND(key_map, "A-p", command_shift_line_backward);
+    BIND(key_map, "A-n", command_forward_line);
+    BIND(key_map, "A-p", command_backward_line);
+    BIND(key_map, "C-n", command_shift_line_forward);
+    BIND(key_map, "C-p", command_shift_line_backward);
 
     BIND(key_map, "UP", command_backward_line);
     BIND(key_map, "DOWN", command_forward_line);
@@ -145,48 +145,48 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-A-n", command_create_cursor_forward);
     BIND(key_map, "C-A-p", command_create_cursor_backward);
 
-    BIND(key_map, "C-c C-c", command_create_all_cursors_matching_token_or_search);
-    BIND(key_map, "C-c C-A-n", command_create_cursors_to_end_search);
-    BIND(key_map, "C-c C-A-p", command_create_cursors_to_start_search);
+    BIND(key_map, "A-c A-c", command_create_all_cursors_matching_token_or_search);
+    BIND(key_map, "A-c C-A-n", command_create_cursors_to_end_search);
+    BIND(key_map, "A-c C-A-p", command_create_cursors_to_start_search);
 
-    BIND(key_map, "C-c /", command_create_cursors_last_change);
-    BIND(key_map, "C-c _", command_create_cursors_last_change);
-    BIND(key_map, "C-c C-/", command_create_cursors_undo);
-    BIND(key_map, "C-c C-_", command_create_cursors_undo);
-    BIND(key_map, "C-c A-/", command_create_cursors_redo);
-    BIND(key_map, "C-c A-_", command_create_cursors_redo);
+    BIND(key_map, "A-c /", command_create_cursors_last_change);
+    BIND(key_map, "A-c _", command_create_cursors_last_change);
+    BIND(key_map, "A-c A-/", command_create_cursors_undo);
+    BIND(key_map, "A-c A-_", command_create_cursors_undo);
+    BIND(key_map, "A-c C-/", command_create_cursors_redo);
+    BIND(key_map, "A-c C-_", command_create_cursors_redo);
 
-    BIND(key_map, "C-c a", command_cursors_align);
-    BIND(key_map, "C-c l", command_create_cursors_lines_in_region);
-    BIND(key_map, "C-c \n", command_remove_cursors_at_empty_lines);
+    BIND(key_map, "A-c a", command_cursors_align);
+    BIND(key_map, "A-c l", command_create_cursors_lines_in_region);
+    BIND(key_map, "A-c \n", command_remove_cursors_at_empty_lines);
 
-    BIND(key_map, "C-c C-w", command_cursors_cut_as_lines);
-    BIND(key_map, "C-c A-w", command_cursors_copy_as_lines);
-    BIND(key_map, "C-c C-y", command_cursors_paste_as_lines);
-    BIND(key_map, "C-c A-y", command_cursors_paste_previous_as_lines);
+    BIND(key_map, "A-c C-w", command_cursors_cut_as_lines);
+    BIND(key_map, "A-c A-w", command_cursors_copy_as_lines);
+    BIND(key_map, "A-c A-y", command_cursors_paste_as_lines);
+    BIND(key_map, "A-c C-y", command_cursors_paste_previous_as_lines);
 
-    BIND(key_map, "C-c #", command_insert_numbers);
-    BIND(key_map, "C-c +", command_prompt_increase_numbers);
-    BIND(key_map, "C-c -", command_copy_selected_region_length);
+    BIND(key_map, "A-c #", command_insert_numbers);
+    BIND(key_map, "A-c +", command_prompt_increase_numbers);
+    BIND(key_map, "A-c -", command_copy_selected_region_length);
 
     BIND(key_map, "A-<", command_start_of_buffer);
     BIND(key_map, "C-HOME", command_start_of_buffer);
     BIND(key_map, "A->", command_end_of_buffer);
     BIND(key_map, "C-END", command_end_of_buffer);
 
-    BIND(key_map, "C-x C-p", command_pop_jump);
+    BIND(key_map, "A-x A-p", command_pop_jump);
     BIND(key_map, "A-LEFT", command_pop_jump);
     BIND(key_map, "MOUSE4", command_pop_jump);
-    BIND(key_map, "C-x C-n", command_unpop_jump);
+    BIND(key_map, "A-x A-n", command_unpop_jump);
     BIND(key_map, "A-RIGHT", command_unpop_jump);
     BIND(key_map, "MOUSE5", command_unpop_jump);
-    BIND(key_map, "C-x C-SPACE", command_push_jump);
+    BIND(key_map, "A-x C-SPACE", command_push_jump);
 
-    BIND(key_map, "C-e", command_end_of_line);
+    BIND(key_map, "A-e", command_end_of_line);
     BIND(key_map, "END", command_end_of_line);
-    BIND(key_map, "C-a", command_start_of_line);
+    BIND(key_map, "A-a", command_start_of_line);
     BIND(key_map, "HOME", command_start_of_line);
-    BIND(key_map, "A-a", command_start_of_line_text);
+    BIND(key_map, "C-a", command_start_of_line_text);
 
     BIND(key_map, "A-r", command_search_forward);
     BIND(key_map, "C-r", command_search_backward);
@@ -199,8 +199,8 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-DELETE", command_delete_forward_word);
     BIND(key_map, "A-d", command_delete_forward_word);
 
-    BIND(key_map, "C-k", command_delete_line);
-    BIND(key_map, "A-k", command_duplicate_line);
+    BIND(key_map, "A-k", command_delete_line);
+    BIND(key_map, "C-k", command_duplicate_line);
     BIND(key_map, "C-A-k", command_delete_end_of_line);
 
     BIND(key_map, "C-t", command_transpose_characters);
@@ -217,10 +217,10 @@ static void create_key_map(Key_Map& key_map) {
     // specific key maps so that the reformat works for comments.
     BIND(key_map, "A-h", command_reformat_paragraph);
 
-    BIND(key_map, "C-/", command_undo);
-    BIND(key_map, "C-_", command_undo);
-    BIND(key_map, "A-/", command_redo);
-    BIND(key_map, "A-_", command_redo);
+    BIND(key_map, "A-/", command_undo);
+    BIND(key_map, "A-_", command_undo);
+    BIND(key_map, "C-/", command_redo);
+    BIND(key_map, "C-_", command_redo);
 
     BIND(key_map, "C-g", command_stop_action);
 
@@ -228,34 +228,35 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-o", command_cycle_window);
     BIND(key_map, "A-O", command_reverse_cycle_window);
     BIND(key_map, "C-s", command_save_file);
+    BIND(key_map, "A-s", command_save_file);
 
-    BIND(key_map, "C-x C-c", command_quit);
+    BIND(key_map, "A-x A-c", command_quit);
 
-    BIND(key_map, "C-x 1", command_one_window_except_pinned);
-    BIND(key_map, "C-x C-1", command_one_window);
-    BIND(key_map, "C-x 2", command_split_window_horizontal);
-    BIND(key_map, "C-x 3", command_split_window_vertical);
-    BIND(key_map, "C-x 4", command_split_increase_ratio);
-    BIND(key_map, "C-x 5", command_split_decrease_ratio);
-    BIND(key_map, "C-x A-4", command_split_reset_ratio);
-    BIND(key_map, "C-x A-5", command_split_reset_ratio);
-    BIND(key_map, "C-x 0", command_close_window);
+    BIND(key_map, "A-x 1", command_one_window_except_pinned);
+    BIND(key_map, "A-x A-1", command_one_window);
+    BIND(key_map, "A-x 2", command_split_window_horizontal);
+    BIND(key_map, "A-x 3", command_split_window_vertical);
+    BIND(key_map, "A-x 4", command_split_increase_ratio);
+    BIND(key_map, "A-x 5", command_split_decrease_ratio);
+    BIND(key_map, "A-x A-4", command_split_reset_ratio);
+    BIND(key_map, "A-x A-5", command_split_reset_ratio);
+    BIND(key_map, "A-x 0", command_close_window);
 
-    BIND(key_map, "C-x h", command_mark_buffer);
+    BIND(key_map, "A-x h", command_mark_buffer);
 
-    BIND(key_map, "C-x b", command_switch_buffer);
-    BIND(key_map, "C-x k", command_kill_buffer);
+    BIND(key_map, "A-x b", command_switch_buffer);
+    BIND(key_map, "A-x k", command_kill_buffer);
 
-    BIND(key_map, "C-x C-d", command_apply_diff);
+    BIND(key_map, "A-x C-d", command_apply_diff);
 
-    BIND(key_map, "C-x q", command_toggle_read_only);
-    BIND(key_map, "C-x C-q", command_toggle_pinned);
-    BIND(key_map, "C-x A-q", command_toggle_draw_line_numbers);
+    BIND(key_map, "A-x q", command_toggle_read_only);
+    BIND(key_map, "A-x C-q", command_toggle_pinned);
+    BIND(key_map, "A-x A-q", command_toggle_draw_line_numbers);
 
-    BIND(key_map, "C-x u", command_uppercase_letter);
-    BIND(key_map, "C-x l", command_lowercase_letter);
-    BIND(key_map, "C-x C-u", command_uppercase_region);
-    BIND(key_map, "C-x C-l", command_lowercase_region);
+    BIND(key_map, "A-x u", command_uppercase_letter);
+    BIND(key_map, "A-x l", command_lowercase_letter);
+    BIND(key_map, "A-x A-u", command_uppercase_region);
+    BIND(key_map, "A-x A-l", command_lowercase_region);
 
     man::path_to_autocomplete_man_page =
         "/home/czipperz/find-man-page/build/release/autocomplete-man-page";
@@ -280,11 +281,11 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-g A-t", gnu_global::command_lookup_at_point);
     BIND(key_map, "A-g t", gnu_global::command_lookup_prompt);
-    BIND(key_map, "A-c", gnu_global::command_complete_at_point);
+    BIND(key_map, "C-c", gnu_global::command_complete_at_point);
     BIND(key_map, "MOUSE3", gnu_global::command_move_mouse_and_lookup_at_point);
 
-    BIND(key_map, "A-l", command_goto_center_of_window);
-    BIND(key_map, "C-l", command_center_in_window);
+    BIND(key_map, "C-l", command_goto_center_of_window);
+    BIND(key_map, "A-l", command_center_in_window);
 
     BIND(key_map, "A-v", command_up_page);
     BIND(key_map, "PAGE_UP", command_up_page);
@@ -437,22 +438,22 @@ static void search_key_map(Key_Map& key_map) {
 }
 
 static void mini_buffer_key_map(Key_Map& key_map) {
-    BIND(key_map, "C-n", command_next_completion);
-    BIND(key_map, "C-p", command_previous_completion);
+    BIND(key_map, "A-n", command_next_completion);
+    BIND(key_map, "A-p", command_previous_completion);
     BIND(key_map, "C-v", command_completion_down_page);
     BIND(key_map, "A-v", command_completion_up_page);
     BIND(key_map, "A-<", command_first_completion);
     BIND(key_map, "A->", command_last_completion);
 
-    BIND(key_map, "C-l", command_path_up_directory);
+    BIND(key_map, "A-l", command_path_up_directory);
 
     BIND(key_map, "A-i", command_insert_completion);
     BIND(key_map, "\t", command_insert_completion);
-    BIND(key_map, "C-j", command_insert_completion_and_submit_mini_buffer);
+    BIND(key_map, "A-j", command_insert_completion_and_submit_mini_buffer);
     BIND(key_map, "\n", command_submit_mini_buffer);
 
     // These keys just mess up the prompt so unbind them.
-    BIND(key_map, "A-k", command_do_nothing);
+    BIND(key_map, "C-k", command_do_nothing);
     BIND(key_map, "A-m", command_do_nothing);
 }
 
@@ -469,8 +470,8 @@ static void window_completion_key_map(Key_Map& key_map) {
 }
 
 static void git_edit_key_map(Key_Map& key_map) {
-    BIND(key_map, "C-c C-c", git::command_save_and_quit);
-    BIND(key_map, "C-c C-k", git::command_abort_and_quit);
+    BIND(key_map, "A-c A-c", git::command_save_and_quit);
+    BIND(key_map, "A-c A-k", git::command_abort_and_quit);
 }
 
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
@@ -536,7 +537,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->name.ends_with(".cpp") || buffer->name.ends_with(".hpp") ||
             buffer->name.ends_with(".glsl")) {
             buffer->mode.next_token = syntax::cpp_next_token;
-            BIND(buffer->mode.key_map, "C-x C-f", clang_format::command_clang_format_buffer);
+            BIND(buffer->mode.key_map, "A-x A-f", clang_format::command_clang_format_buffer);
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
 
