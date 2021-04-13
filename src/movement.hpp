@@ -9,6 +9,7 @@ struct Contents_Iterator;
 struct Contents;
 struct Token;
 struct Mode;
+struct Window;
 
 void start_of_line(Contents_Iterator* iterator);
 void end_of_line(Contents_Iterator* iterator);
@@ -17,6 +18,12 @@ void start_of_line_text(Contents_Iterator* iterator);
 
 void forward_through_whitespace(Contents_Iterator* iterator);
 void backward_through_whitespace(Contents_Iterator* iterator);
+
+/// Visible lines are either wrapped at `window->cols` or terminated by a newline.
+void start_of_visible_line(const Window*, const Mode&, Contents_Iterator*);
+void end_of_visible_line(const Window*, const Mode&, Contents_Iterator*);
+void forward_visible_line(const Mode&, Contents_Iterator*, uint64_t cols, uint64_t rows = 1);
+void backward_visible_line(const Mode&, Contents_Iterator*, uint64_t cols, uint64_t rows = 1);
 
 uint64_t count_visual_columns(const Mode& mode,
                               Contents_Iterator start,

@@ -139,7 +139,7 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
     } else if (iterator.position > old_point) {
         Contents_Iterator ve = iterator;
         ve.retreat_to(window->start_position);
-        compute_visible_end(window, &ve);
+        forward_visible_line(buffer->mode, &ve, window->cols, window->rows - 1);
         if (iterator.position < ve.position) {
             center_in_window(window, iterator);
         } else {

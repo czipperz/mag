@@ -8,7 +8,7 @@
 #include "overlay.hpp"
 #include "theme.hpp"
 #include "token.hpp"
-#include "visible_region.hpp"
+#include "movement.hpp"
 #include "window.hpp"
 
 namespace mag {
@@ -81,7 +81,7 @@ static void overlay_matching_tokens_start_frame(const Buffer* buffer,
     }
 
     Contents_Iterator visible_end_iterator = iterator;
-    compute_visible_end(window, &visible_end_iterator);
+    forward_visible_line(buffer->mode, &visible_end_iterator, window->cols, window->rows - 1);
     if (window->start_position < iterator.position ||
         visible_end_iterator.position < window->start_position) {
         return;

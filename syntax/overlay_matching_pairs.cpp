@@ -11,7 +11,7 @@
 #include "overlay.hpp"
 #include "theme.hpp"
 #include "token.hpp"
-#include "visible_region.hpp"
+#include "movement.hpp"
 #include "window.hpp"
 
 namespace mag {
@@ -65,7 +65,7 @@ static void overlay_matching_pairs_start_frame(const Buffer* buffer,
     data->points.set_len(0);
 
     Contents_Iterator end_iterator = start_position_iterator;
-    compute_visible_end(window, &end_iterator);
+    forward_visible_line(buffer->mode, &end_iterator, window->cols, window->rows - 1);
 
     // Note: we update the token cache in the render loop.
     CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());

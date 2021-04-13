@@ -6,6 +6,7 @@
 #include "contents.hpp"
 #include "mode.hpp"
 #include "token.hpp"
+#include "window.hpp"
 
 namespace mag {
 
@@ -51,6 +52,84 @@ void backward_through_whitespace(Contents_Iterator* iterator) {
 void start_of_line_text(Contents_Iterator* iterator) {
     start_of_line(iterator);
     forward_through_whitespace(iterator);
+}
+
+void start_of_visible_line(const Window* window, const Mode& mode, Contents_Iterator* iterator) {
+    uint64_t column = get_visual_column(mode, *iterator);
+    go_to_visual_column(mode, iterator, column - (column % window->cols));
+}
+
+void end_of_visible_line(const Window* window, const Mode& mode, Contents_Iterator* iterator) {
+    uint64_t column = get_visual_column(mode, *iterator);
+    go_to_visual_column(mode, iterator, column - (column % window->cols) + (window->cols - 1));
+}
+
+void forward_visible_line(const Mode& mode,
+                          Contents_Iterator* iterator,
+                          uint64_t cols,
+                          uint64_t rows) {
+    Contents_Iterator start = *iterator;
+    start_of_line(&start);
+    Contents_Iterator end = *iterator;
+    end_of_line(&end);
+
+    uint64_t column = count_visual_columns(mode, start, iterator->position);
+    uint64_t line_width = count_visual_columns(mode, start, end.position);
+
+    while (rows-- > 0) {
+        // If we have to go to the next line and there is no next line then stop.
+        if (column + cols > line_width && end.at_eob()) {
+            break;
+        }
+
+        column += cols;
+        if (column > line_width) {
+            column = column % cols;
+
+            *iterator = end;
+            iterator->advance();
+            start = *iterator;
+            end = *iterator;
+            end_of_line(&end);
+            line_width = count_visual_columns(mode, start, end.position);
+        }
+    }
+
+    go_to_visual_column(mode, iterator, column);
+}
+
+void backward_visible_line(const Mode& mode,
+                           Contents_Iterator* iterator,
+                           uint64_t cols,
+                           uint64_t rows) {
+    Contents_Iterator start = *iterator;
+    start_of_line(&start);
+    Contents_Iterator end = *iterator;
+    end_of_line(&end);
+
+    uint64_t column = count_visual_columns(mode, start, iterator->position);
+
+    while (rows-- > 0) {
+        if (column >= cols) {
+            column -= cols;
+        } else {
+            *iterator = start;
+            if (iterator->at_bob()) {
+                break;
+            }
+
+            iterator->retreat();
+
+            start = *iterator;
+            start_of_line(&start);
+            end = *iterator;
+
+            uint64_t line_width = count_visual_columns(mode, start, iterator->position);
+            column = line_width - line_width % cols + column % cols;
+        }
+    }
+
+    go_to_visual_column(mode, iterator, column);
 }
 
 uint64_t count_visual_columns(const Mode& mode,

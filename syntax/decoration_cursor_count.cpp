@@ -28,11 +28,7 @@ static bool decoration_cursor_count_append(const Buffer* buffer,
 
     Contents_Iterator visible_start = buffer->contents.iterator_at(window->start_position);
     Contents_Iterator visible_end = visible_start;
-    {
-        window->rows += 1;
-        CZ_DEFER(window->rows -= 1);
-        compute_visible_end(window, &visible_end);
-    }
+    forward_visible_line(buffer->mode, &visible_end, window->cols, window->rows);
 
     size_t visible = 0;
     for (size_t i = 0; i < window->cursors.len(); ++i) {

@@ -168,7 +168,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
 
         Contents_Iterator visible_end_iterator =
             buffer->contents.iterator_at(window->start_position);
-        compute_visible_end(window, &visible_end_iterator);
+        forward_visible_line(buffer->mode, &visible_end_iterator, window->cols, window->rows - 2);
 
         if (iterator.position != 0 &&
             selected_cursor_position <= second_visible_line_iterator.position) {
@@ -188,11 +188,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             // We are below the "visible" section of the buffer ie on the last line or beyond
             // the last line.
             iterator = buffer->contents.iterator_at(selected_cursor_position);
-            {
-                --window->rows;
-                CZ_DEFER(++window->rows);
-                compute_visible_start(window, &iterator);
-            }
+            start_of_line(&iterator);
+            backward_visible_line(buffer->mode, &iterator, window->cols, window->rows - 2);
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
 
             window_cache->v.unified.animation.slam_on_the_breaks = false;
@@ -205,11 +202,9 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 // without bumping the primary cursor off.
                 Contents_Iterator start_iterator =
                     buffer->contents.iterator_at(window->cursors[c].point);
-                {
-                    --window->rows;
-                    CZ_DEFER(++window->rows);
-                    compute_visible_start(window, &start_iterator);
-                }
+                start_of_line(&start_iterator);
+                backward_visible_line(buffer->mode, &start_iterator, window->cols,
+                                      window->rows - 1);
 
                 Contents_Iterator test_iterator = start_iterator;
                 end_of_line(&test_iterator);
@@ -286,7 +281,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 // If we're within one page and over half way there then start breaking.
                 Contents_Iterator end_iterator = iterator;
                 end_iterator.retreat_to(window->start_position);
-                compute_visible_end(window, &end_iterator);
+                forward_visible_line(buffer->mode, &end_iterator, window->cols, window->rows - 1);
 
                 // Tokenization happens from the top of the file to the bottom.  So if we want to
                 // move from the bottom to the top and the bottom isn't tokenized then we would
@@ -358,7 +353,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 // If we're within one page and over half way there then start breaking.
                 Contents_Iterator start_iterator = iterator;
                 start_iterator.advance_to(window->start_position);
-                compute_visible_start(window, &start_iterator);
+                backward_visible_line(buffer->mode, &start_iterator, window->cols,
+                                      window->rows - 1);
 
                 bool force_break = false;
                 float speed_loop_speed = speed_start;
@@ -519,11 +515,7 @@ static void draw_buffer_contents(Cell* cells,
     CZ_DEFER(line_number_buffer.drop(cz::heap_allocator()));
     {
         Contents_Iterator end_position = iterator;
-        {
-            ++window->rows;
-            CZ_DEFER(--window->rows);
-            compute_visible_end(window, &end_position);
-        }
+        forward_visible_line(buffer->mode, &end_position, window->cols, window->rows);
 
         size_t end_line_number = buffer->contents.get_line_number(end_position.position) + 1;
         size_t line_number_width = log10(end_line_number) + 1;
