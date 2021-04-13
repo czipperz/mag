@@ -686,8 +686,15 @@ static void draw_buffer_contents(Cell* cells,
                 }
             }
         } else if (ch == '\t') {
+            size_t line_number_offset = 0;
+            if (draw_line_numbers) {
+                line_number_offset = line_number_buffer.cap();
+            }
+
             size_t end_x = x + buffer->mode.tab_width;
+            end_x -= line_number_offset;
             end_x -= end_x % buffer->mode.tab_width;
+            end_x += line_number_offset;
             for (size_t i = x; i < end_x; ++i) {
                 ADDCH(face, ' ');
             }
