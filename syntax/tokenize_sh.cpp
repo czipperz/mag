@@ -14,8 +14,12 @@ enum : uint64_t {
     AT_START_OF_STATEMENT,
     NORMAL,
     IN_CURLY_VAR,
-    AFTER_DOLLAR,
     IN_STRING,
+};
+
+enum : uint64_t {
+    TRANSIENT_NORMAL,
+    TRANSIENT_AFTER_DOLLAR,
 };
 
 static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* top) {
@@ -49,25 +53,29 @@ static bool is_general(char ch) {
 bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     ZoneScoped;
 
-    // We could use 5 bits for the depth but then if the
-    // depth gets too large we risk corrupting the bitfield.
+    // 63-60    59-58     57-48       47-0
+    // depth  transient  reserved  state stack
     uint64_t depth = *state >> 60;
+    uint64_t transient = (*state >> 58) & 3;
     uint64_t prev = (*state >> (depth - 1) * 3) & 7;
     uint64_t top = (*state >> depth * 3) & 7;
+    // The transient state is reset if not handled manually to prevent weird states.
+    uint64_t new_transient = TRANSIENT_NORMAL;
 
-#define PUSH(STATE)                            \
+#define PUSH()                                 \
     do {                                       \
         *state &= ~((uint64_t)7 << depth * 3); \
-        *state |= ((STATE) << depth * 3);      \
+        *state |= (top << depth * 3);          \
         depth += 1;                            \
+        prev = top;                            \
     } while (0)
 
 #define POP()                                   \
     do {                                        \
         CZ_DEBUG_ASSERT(depth > 0);             \
         depth -= 1;                             \
+        top = prev;                             \
         prev = (*state >> (depth - 1) * 3) & 7; \
-        top = (*state >> depth * 3) & 7;        \
     } while (0)
 
     if (!advance_whitespace(iterator, &top)) {
@@ -79,10 +87,14 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     Contents_Iterator start = *iterator;
 
     char first_ch = iterator->get();
-    iterator->advance();
 
-    if (top == IN_STRING || first_ch == '"') {
+    if ((transient != TRANSIENT_AFTER_DOLLAR || first_ch == '"') &&
+        ((top == IN_STRING || first_ch == '"') && first_ch != '$')) {
         token->type = Token_Type::STRING;
+
+        if (first_ch == '"') {
+            iterator->advance();
+        }
 
         if (top == IN_STRING && first_ch == '"') {
             top = NORMAL;
@@ -106,7 +118,8 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             }
 
             if (ch == '$') {
-                PUSH(IN_STRING);
+                top = IN_STRING;
+                // Note: we are stopping before the $ so we don't need to set the transient.
                 break;
             }
 
@@ -116,9 +129,15 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
-    if (top == AFTER_DOLLAR && first_ch == '{') {
+    iterator->advance();
+
+    if (transient == TRANSIENT_AFTER_DOLLAR && first_ch == '{') {
         token->type = Token_Type::OPEN_PAIR;
+        if (top == IN_STRING) {
+            PUSH();
+        }
         top = IN_CURLY_VAR;
+        new_transient = TRANSIENT_AFTER_DOLLAR;
         goto ret;
     }
     if (top == IN_CURLY_VAR && first_ch == '}') {
@@ -132,11 +151,11 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     if (first_ch == '{' || first_ch == '(' || first_ch == '[') {
         token->type = Token_Type::OPEN_PAIR;
-        if (top != IN_CURLY_VAR) {
-            top = NORMAL;
-        }
         if (first_ch == '(') {
+            PUSH();
             top = AT_START_OF_STATEMENT;
+        } else if (top != IN_CURLY_VAR) {
+            top = NORMAL;
         }
         goto ret;
     }
@@ -145,19 +164,15 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         if (top != IN_CURLY_VAR) {
             top = NORMAL;
         }
-        if (first_ch == ')' && depth >= 1 && prev == IN_STRING) {
+        if (first_ch == ')' && depth >= 1) {
             POP();
         }
         goto ret;
     }
 
-    if (top == AFTER_DOLLAR &&
+    if (transient == TRANSIENT_AFTER_DOLLAR &&
         ((is_separator(first_ch) && first_ch != ';') || first_ch == '$' || first_ch == '#')) {
         token->type = Token_Type::IDENTIFIER;
-        top = NORMAL;
-        if (depth >= 1 && prev == IN_STRING) {
-            POP();
-        }
         goto ret;
     }
 
@@ -181,7 +196,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
-    if (top == AFTER_DOLLAR && (cz::is_alnum(first_ch) || first_ch == '_')) {
+    if (transient == TRANSIENT_AFTER_DOLLAR && (cz::is_alnum(first_ch) || first_ch == '_')) {
         while (!iterator->at_eob()) {
             if (!cz::is_alnum(iterator->get()) && iterator->get() != '_') {
                 break;
@@ -189,21 +204,13 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             iterator->advance();
         }
         token->type = Token_Type::IDENTIFIER;
-        top = NORMAL;
-        if (depth >= 1 && prev == IN_STRING) {
-            POP();
-        }
         goto ret;
     }
 
     if (is_general(first_ch)) {
         // Handle one-char variables specially like `$@` and `$*`.
-        if (top == AFTER_DOLLAR) {
+        if (transient == TRANSIENT_AFTER_DOLLAR && first_ch != '\\') {
             token->type = Token_Type::IDENTIFIER;
-            top = NORMAL;
-            if (depth >= 1 && prev == IN_STRING) {
-                POP();
-            }
             goto ret;
         }
 
@@ -244,9 +251,11 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             token->type = Token_Type::OPEN_PAIR;
             top = AT_START_OF_STATEMENT;
             goto ret;
+        } else if (top == AT_START_OF_STATEMENT && matches(start, iterator->position, "for")) {
+            token->type = Token_Type::KEYWORD;
+            new_transient = TRANSIENT_AFTER_DOLLAR;
         } else if (top == AT_START_OF_STATEMENT &&
                    (matches(start, iterator->position, "else") ||
-                    matches(start, iterator->position, "for") ||
                     matches(start, iterator->position, "select") ||
                     matches(start, iterator->position, "continue") ||
                     matches(start, iterator->position, "break") ||
@@ -269,7 +278,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             token->type = Token_Type::DEFAULT;
         }
 
-        if (top != IN_CURLY_VAR) {
+        if (top == AT_START_OF_STATEMENT) {
             top = NORMAL;
         }
 
@@ -303,8 +312,11 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     }
 
     if (first_ch == '$' && top != IN_CURLY_VAR) {
-        top = AFTER_DOLLAR;
         token->type = Token_Type::PUNCTUATION;
+        new_transient = TRANSIENT_AFTER_DOLLAR;
+        if (top == AT_START_OF_STATEMENT) {
+            top = NORMAL;
+        }
         goto ret;
     }
 
@@ -317,6 +329,8 @@ ret:
     token->end = iterator->position;
     *state &= 0x0FFFFFFFFFFFFFFF;
     *state |= (depth << 60);
+    *state &= 0xF3FFFFFFFFFFFFFF;
+    *state |= (new_transient << 58);
     *state &= ~((uint64_t)7 << depth * 3);
     *state |= (top << depth * 3);
     return true;
