@@ -53,7 +53,12 @@ static SDL_Color make_color(uint32_t* colors, Face_Color fc) {
     return color;
 }
 
-static SDL_Surface* render_character(TTF_Font* font, char character, uint8_t flags, SDL_Color fgc) {
+static SDL_Surface* render_character(TTF_Font* font,
+                                     char character,
+                                     uint8_t underscore,
+                                     uint8_t bold,
+                                     uint8_t italics,
+                                     SDL_Color fgc) {
     ZoneScoped;
 
     char buffer[2] = {};
@@ -62,13 +67,13 @@ static SDL_Surface* render_character(TTF_Font* font, char character, uint8_t fla
     {
         ZoneScopedN("TTF_SetFontStyle");
         int style = 0;
-        if (flags & Face::UNDERSCORE) {
+        if (underscore) {
             style |= TTF_STYLE_UNDERLINE;
         }
-        if (flags & Face::BOLD) {
+        if (bold) {
             style |= TTF_STYLE_BOLD;
         }
-        if (flags & Face::ITALICS) {
+        if (italics) {
             style |= TTF_STYLE_ITALIC;
         }
         TTF_SetFontStyle(font, style);
@@ -84,7 +89,9 @@ static SDL_Surface* render_character(TTF_Font* font, char character, uint8_t fla
 
 static SDL_Surface* lookup_surface_cache(SDL_Surface**** surface_cache,
                                          TTF_Font* font,
-                                         uint8_t flags,
+                                         uint8_t underscore,
+                                         uint8_t bold,
+                                         uint8_t italics,
                                          size_t theme_index,
                                          SDL_Color color,
                                          unsigned char character) {
@@ -95,6 +102,7 @@ static SDL_Surface* lookup_surface_cache(SDL_Surface**** surface_cache,
     }
     SDL_Surface*** surface_cache_1 = surface_cache[theme_index];
 
+    uint8_t flags = underscore | (bold << 1) | (italics << 2);
     if (!surface_cache_1[flags]) {
         surface_cache_1[flags] =
             cz::heap_allocator().alloc_zeroed<SDL_Surface*>((size_t)UCHAR_MAX + 1);
@@ -102,7 +110,8 @@ static SDL_Surface* lookup_surface_cache(SDL_Surface**** surface_cache,
     SDL_Surface** surface_cache_2 = surface_cache_1[flags];
 
     if (!surface_cache_2[character]) {
-        surface_cache_2[character] = render_character(font, character, flags, color);
+        surface_cache_2[character] =
+            render_character(font, character, underscore, bold, italics, color);
     }
     return surface_cache_2[character];
 }
@@ -784,11 +793,16 @@ static void render(SDL_Window* window,
                 // We only cache themed colors.
                 SDL_Surface* rendered_char;
                 if (fg.is_themed) {
-                    rendered_char = lookup_surface_cache(surface_cache, font, new_cell->face.flags,
-                                                         fg.x.theme_index, fgc, new_cell->code);
+                    rendered_char = lookup_surface_cache(
+                        surface_cache, font, !!(new_cell->face.flags & Face::UNDERSCORE),
+                        !!(new_cell->face.flags & Face::BOLD),
+                        !!(new_cell->face.flags & Face::ITALICS), fg.x.theme_index, fgc,
+                        new_cell->code);
                 } else {
-                    rendered_char =
-                        render_character(font, new_cell->code, new_cell->face.flags, fgc);
+                    rendered_char = render_character(font, new_cell->code,
+                                                     !!(new_cell->face.flags & Face::UNDERSCORE),
+                                                     !!(new_cell->face.flags & Face::BOLD),
+                                                     !!(new_cell->face.flags & Face::ITALICS), fgc);
                 }
 
                 if (!rendered_char) {
