@@ -25,7 +25,7 @@ static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* top) {
         }
 
         char ch = iterator->get();
-        if (ch == '\n') {
+        if (ch == '\n' && !*top == IN_STRING) {
             *top = AT_START_OF_STATEMENT;
         }
         if (!cz::is_space(ch)) {
@@ -141,7 +141,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     if (first_ch == '}' || first_ch == ')' || first_ch == ']') {
         token->type = Token_Type::CLOSE_PAIR;
         top = NORMAL;
-        if (depth >= 1 && prev == IN_STRING) {
+        if (first_ch == ')' && depth >= 1 && prev == IN_STRING) {
             POP();
         }
         goto ret;
