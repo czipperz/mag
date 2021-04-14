@@ -5,10 +5,10 @@
 #include <Tracy.hpp>
 #include <cz/heap.hpp>
 #include "buffer.hpp"
+#include "movement.hpp"
 #include "overlay.hpp"
 #include "theme.hpp"
 #include "token.hpp"
-#include "movement.hpp"
 #include "window.hpp"
 
 namespace mag {
@@ -45,7 +45,9 @@ using namespace overlay_matching_tokens_impl;
 static void set_token_matches(Data* data) {
     data->token_matches = false;
 
-    if (data->token.end - data->token.start != data->cursor_token_length) {
+    if ((data->token.type == Token_Type::DEFAULT) !=
+            (data->cursor_token_type == Token_Type::DEFAULT) ||
+        data->token.end - data->token.start != data->cursor_token_length) {
         return;
     }
 

@@ -318,7 +318,8 @@ int find_backward_matching_token(Buffer* buffer,
 
         Contents_Iterator test_it = token_iterator;
         test_it.retreat_to(token.start);
-        if (matches(token_to_match_iterator, token_to_match.end, test_it, token.end)) {
+        if ((token.type == Token_Type::DEFAULT) == (token_to_match.type == Token_Type::DEFAULT) &&
+            matches(token_to_match_iterator, token_to_match.end, test_it, token.end)) {
             found_token_this_loop = true;
             *matching_token = token;
         }
@@ -378,7 +379,9 @@ int find_forward_matching_token(Buffer* buffer,
         if (token.end > end_position) {
             Contents_Iterator test_it = token_iterator;
             test_it.retreat_to(token.start);
-            if (matches(token_to_match_iterator, token_to_match.end, test_it, token.end)) {
+            if ((token.type == Token_Type::DEFAULT) ==
+                    (token_to_match.type == Token_Type::DEFAULT) &&
+                matches(token_to_match_iterator, token_to_match.end, test_it, token.end)) {
                 *matching_token = token;
                 return 1;
             }
