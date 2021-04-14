@@ -29,7 +29,7 @@ static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* top) {
         }
 
         char ch = iterator->get();
-        if (ch == '\n' && !*top == IN_STRING) {
+        if (ch == '\n' && *top != IN_STRING) {
             *top = AT_START_OF_STATEMENT;
         }
         if (!cz::is_space(ch)) {
