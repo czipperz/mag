@@ -258,23 +258,23 @@ Mag: A customizable text editor.             gg\n\
 Main key bindings:\n\
 \n\
 C-g     Stop action          C-o     Open file\n\
-C-h     View key bindings    A-x     Run command by name\n\
-A-o     Go to other window   C-x b   Switch to open buffer\n\
-C-x 3   Split vertically     C-x 2   Split horizontally\n\
-C-/     Undo                 A-/     Redo\n\
+F1      View key bindings    C-x     Run command by name\n\
+A-o     Go to other window   A-x b   Switch to open buffer\n\
+A-x 3   Split vertically     A-x 2   Split horizontally\n\
+A-/     Undo                 C-/     Redo\n\
 \n\
-C-n     Move down line       C-A-n   Create cursor down (line or search)\n\
-C-p     Move up line         C-A-p   Create cursor up (line or search)\n\
+A-n     Move down line       C-A-n   Create cursor down (line or search)\n\
+A-p     Move up line         C-A-p   Create cursor up (line or search)\n\
 A-q     Down matching token  C-q     Create cursor next matching token\n\
 A-j     Up matching token    C-j     Create cursor previous matching token\n\
 A-r     Search forward       C-r     Search reverse\n\
 \n\
 C-SPACE Select region        TAB     Increase indent level\n\
-A-w     Copy region          C-y     Paste (A-y to cycle paste)\n\
+A-w     Copy region          A-y     Paste (C-y to cycle paste)\n\
 \n\
 Key binding prefixes:\n\
-C-x     Editor state commands\n\
-C-c     Cursor commands\n\
+A-x     Editor state commands\n\
+A-c     Cursor commands\n\
 A-g     Project or directory commands\n\
 \n\
 Configuration should be done by editing `custom/config.cpp`.\n\
