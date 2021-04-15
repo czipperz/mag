@@ -176,8 +176,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
-    if (is_separator(first_ch)) {
-        top = NORMAL;
+    if (is_separator(first_ch) && top != IN_CURLY_VAR) {
         if (first_ch == ';' || first_ch == '|') {
             top = AT_START_OF_STATEMENT;
         }
