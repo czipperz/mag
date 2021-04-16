@@ -133,6 +133,7 @@ static void run_paste(cz::Slice<Cursor> cursors, Buffer* buffer) {
 
 void command_paste(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+    source.client->update_global_copy_chain();
     cz::Slice<Cursor> cursors = window->cursors;
     if (!setup_paste(cursors, source.client->global_copy_chain)) {
         return;
@@ -354,6 +355,7 @@ static void run_paste_as_lines(cz::Slice<Cursor> cursors, Buffer* buffer) {
 
 void command_cursors_paste_as_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+    source.client->update_global_copy_chain();
     cz::Slice<Cursor> cursors = window->cursors;
     if (!setup_paste(cursors, source.client->global_copy_chain)) {
         return;

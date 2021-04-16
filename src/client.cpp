@@ -7,6 +7,10 @@
 
 namespace mag {
 
+int Client::update_global_copy_chain() {
+    return update_global_copy_chain_func(&global_copy_chain, update_global_copy_chain_data);
+}
+
 void Client::init(Buffer_Id selected_buffer_id, Buffer_Id mini_buffer_id, Buffer_Id messages_id) {
     selected_normal_window = Window_Unified::create(selected_buffer_id);
     window = selected_normal_window;

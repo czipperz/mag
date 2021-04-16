@@ -37,6 +37,10 @@ struct Client {
         return system_copy_text_func(system_copy_text_data, text);
     }
 
+    int (*update_global_copy_chain_func)(Copy_Chain** copy_chain, void* data);
+    void* update_global_copy_chain_data;
+    int update_global_copy_chain();
+
     Mouse_Position mouse;
 
     cz::Vector<Window_Unified*> _offscreen_windows;

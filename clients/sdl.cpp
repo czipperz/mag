@@ -849,21 +849,21 @@ struct Clipboard_Context {
     cz::String value;
 };
 
-static void process_clipboard_updates(Server* server,
-                                      Client* client,
-                                      Clipboard_Context* clipboard) {
+static int process_clipboard_updates(Editor* editor,
+                                     Copy_Chain** global_copy_chain,
+                                     Clipboard_Context* clipboard) {
     ZoneScoped;
 
     char* clipboard_currently_cstr = SDL_GetClipboardText();
     if (!clipboard_currently_cstr) {
-        return;
+        return -1;
     }
 
     CZ_DEFER(SDL_free(clipboard_currently_cstr));
     cz::Str clipboard_currently = clipboard_currently_cstr;
 
     if (clipboard_currently == "") {
-        return;
+        return -1;
     }
 
 #ifdef _WIN32
@@ -873,12 +873,23 @@ static void process_clipboard_updates(Server* server,
     if (clipboard->value != clipboard_currently) {
         set_clipboard_variable(&clipboard->value, clipboard_currently);
 
-        Copy_Chain* chain = server->editor.copy_buffer.allocator().alloc<Copy_Chain>();
-        chain->value =
-            SSOStr::as_duplicate(server->editor.copy_buffer.allocator(), clipboard->value);
-        chain->previous = client->global_copy_chain;
-        client->global_copy_chain = chain;
+        Copy_Chain* chain = editor->copy_buffer.allocator().alloc<Copy_Chain>();
+        chain->value = SSOStr::as_duplicate(editor->copy_buffer.allocator(), clipboard->value);
+        chain->previous = *global_copy_chain;
+        *global_copy_chain = chain;
     }
+
+    return 0;
+}
+
+struct Update_Global_Copy_Chain_Data {
+    Editor* editor;
+    Clipboard_Context clipboard;
+};
+
+static int sdl_update_global_copy_chain(Copy_Chain** global_copy_chain, void* _data) {
+    Update_Global_Copy_Chain_Data* data = (Update_Global_Copy_Chain_Data*)_data;
+    return process_clipboard_updates(data->editor, global_copy_chain, &data->clipboard);
 }
 
 static int sdl_copy(void* data, cz::Str text) {
@@ -1007,11 +1018,14 @@ void run(Server* server, Client* client) {
     const uint32_t MAX_FRAMES = 60;
     const uint32_t FRAME_LENGTH = (uint32_t)(1000.0f / (float)MAX_FRAMES);
 
-    Clipboard_Context clipboard = {};
-    CZ_DEFER(clipboard.value.drop(cz::heap_allocator()));
+    Update_Global_Copy_Chain_Data ugccd = {};
+    ugccd.editor = &server->editor;
+    CZ_DEFER(ugccd.clipboard.value.drop(cz::heap_allocator()));
 
     client->system_copy_text_func = sdl_copy;
-    client->system_copy_text_data = &clipboard;
+    client->system_copy_text_data = &ugccd.clipboard;
+    client->update_global_copy_chain_func = sdl_update_global_copy_chain;
+    client->update_global_copy_chain_data = &ugccd;
 
     Mouse_State mouse = {};
     CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
@@ -1040,8 +1054,6 @@ void run(Server* server, Client* client) {
         process_events(server, client, &mouse, character_width, character_height);
 
         process_scroll(server, client, &mouse.scroll);
-
-        process_clipboard_updates(server, client, &clipboard);
 
         process_buffer_external_updates(&server->editor, client, client->window);
 

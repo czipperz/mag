@@ -243,6 +243,9 @@ static void process_key_presses(Server* server, Client* client, int ch) {
 static int ncurses_copy(void*, cz::Str) {
     return 0;
 }
+static int ncurses_update_global_copy_chain(Copy_Chain**, void*) {
+    return 0;
+}
 
 void run(Server* server, Client* client) {
     ZoneScoped;
@@ -324,6 +327,8 @@ void run(Server* server, Client* client) {
 
     client->system_copy_text_func = ncurses_copy;
     client->system_copy_text_data = nullptr;
+    client->update_global_copy_chain_func = ncurses_update_global_copy_chain;
+    client->update_global_copy_chain_data = nullptr;
 
     nodelay(stdscr, TRUE);
 
