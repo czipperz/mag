@@ -18,8 +18,14 @@ static bool decoration_line_number_append(const Buffer* buffer,
                                           Window_Unified* window,
                                           cz::AllocatedString* string,
                                           void* _data) {
-    uint64_t line = buffer->contents.get_line_number(window->cursors[0].point);
-    write(string_writer(string), 'L', line + 1);
+    if (window->show_marks) {
+        uint64_t start = buffer->contents.get_line_number(window->cursors[0].start());
+        uint64_t end = buffer->contents.get_line_number(window->cursors[0].end());
+        write(string_writer(string), 'L', start + 1, '-', end + 1);
+    } else {
+        uint64_t line = buffer->contents.get_line_number(window->cursors[0].point);
+        write(string_writer(string), 'L', line + 1);
+    }
     return true;
 }
 
