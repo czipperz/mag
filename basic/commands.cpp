@@ -174,6 +174,11 @@ void command_start_of_line_text(Editor* editor, Command_Source source) {
     TRANSFORM_POINTS(start_of_line_text);
 }
 
+void command_end_of_line_text(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    TRANSFORM_POINTS(end_of_line_text);
+}
+
 void command_delete_backward_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

@@ -187,6 +187,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-a", command_start_of_line);
     BIND(key_map, "HOME", command_start_of_line);
     BIND(key_map, "C-a", command_start_of_line_text);
+    BIND(key_map, "C-e", command_end_of_line_text);
 
     BIND(key_map, "A-r", command_search_forward);
     BIND(key_map, "C-r", command_search_backward);

@@ -54,6 +54,11 @@ void start_of_line_text(Contents_Iterator* iterator) {
     forward_through_whitespace(iterator);
 }
 
+void end_of_line_text(Contents_Iterator* iterator) {
+    end_of_line(iterator);
+    backward_through_whitespace(iterator);
+}
+
 void start_of_visible_line(const Window* window, const Mode& mode, Contents_Iterator* iterator) {
     uint64_t column = get_visual_column(mode, *iterator);
     go_to_visual_column(mode, iterator, column - (column % window->cols));

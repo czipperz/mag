@@ -39,6 +39,7 @@ void command_pop_jump(Editor* editor, Command_Source source);
 void command_end_of_line(Editor* editor, Command_Source source);
 void command_start_of_line(Editor* editor, Command_Source source);
 
+void command_end_of_line_text(Editor* editor, Command_Source source);
 void command_start_of_line_text(Editor* editor, Command_Source source);
 
 void command_delete_backward_char(Editor* editor, Command_Source source);

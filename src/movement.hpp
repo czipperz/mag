@@ -15,6 +15,7 @@ void start_of_line(Contents_Iterator* iterator);
 void end_of_line(Contents_Iterator* iterator);
 
 void start_of_line_text(Contents_Iterator* iterator);
+void end_of_line_text(Contents_Iterator* iterator);
 
 void forward_through_whitespace(Contents_Iterator* iterator);
 void backward_through_whitespace(Contents_Iterator* iterator);
