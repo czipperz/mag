@@ -47,18 +47,18 @@ bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* fil
 }
 
 static cz::Result load_file(Buffer* buffer, const char* path) {
-    cz::Input_File file;
-    if (!file.open(path)) {
-        return {1};
-    }
-    CZ_DEFER(file.close());
-
     // If we're on Windows, set the default to use carriage returns.
 #ifdef _WIN32
     buffer->use_carriage_returns = true;
 #else
     buffer->use_carriage_returns = false;
 #endif
+
+    cz::Input_File file;
+    if (!file.open(path)) {
+        return {1};
+    }
+    CZ_DEFER(file.close());
 
     cz::Carriage_Return_Carry carry;
     char buf[1024];
