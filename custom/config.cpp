@@ -386,14 +386,14 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::SEARCH_FILE_COLUMN] = {226, {}, 0};
     theme.token_faces[Token_Type::SEARCH_RESULT] = {{}, {}, 0};
 
-    theme.decorations.reserve(cz::heap_allocator(), 5);
+    theme.decorations.reserve(5);
     theme.decorations.push(syntax::decoration_line_number());
     theme.decorations.push(syntax::decoration_column_number());
     theme.decorations.push(syntax::decoration_cursor_count());
     theme.decorations.push(syntax::decoration_read_only_indicator());
     theme.decorations.push(syntax::decoration_pinned_indicator());
 
-    theme.overlays.reserve(cz::heap_allocator(), 6);
+    theme.overlays.reserve(6);
     theme.overlays.push(syntax::overlay_matching_region({{}, 237, 0}));
     theme.overlays.push(syntax::overlay_preferred_column({{}, 21, 0}));
     theme.overlays.push(syntax::overlay_trailing_spaces({{}, 208, 0}));
@@ -531,7 +531,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         break;
 
     case Buffer::FILE:
-        buffer->mode.decorations.reserve(cz::heap_allocator(), 1);
+        buffer->mode.decorations.reserve(1);
         buffer->mode.decorations.push(syntax::decoration_line_ending_indicator());
 
         if (buffer->name.ends_with(".c") || buffer->name.ends_with(".h") ||
@@ -545,7 +545,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".md")) {
@@ -559,7 +559,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                 Token_Type::CSS_PROPERTY, Token_Type::CSS_ELEMENT_SELECTOR,
                 Token_Type::CSS_ID_SELECTOR, Token_Type::CSS_CLASS_SELECTOR,
                 Token_Type::CSS_PSEUDO_SELECTOR};
-            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".html")) {
@@ -567,7 +567,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
                                                Token_Type::HTML_ATTRIBUTE_NAME};
-            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".js")) {
@@ -577,7 +577,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".go")) {
@@ -587,7 +587,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".sh") || buffer->name.ends_with(".bash") ||
@@ -607,7 +607,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".py") || buffer->name.ends_with(".gpy")) {
@@ -615,7 +615,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name == "CMakeLists.txt") {
@@ -623,7 +623,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (buffer->name.ends_with(".patch") || buffer->name.ends_with(".diff")) {
@@ -644,7 +644,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(cz::heap_allocator(), 2);
+            buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         }

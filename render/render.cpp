@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
+#include <cz/format.hpp>
 #include <cz/sort.hpp>
 #include "command_macros.hpp"
 #include "decoration.hpp"
@@ -751,25 +752,21 @@ static void draw_buffer_decoration(Cell* cells,
     }
     apply_face(&face, editor->theme.special_faces[Face_Type::DEFAULT_MODE_LINE]);
 
-    cz::AllocatedString string = {};
-    string.allocator = cz::heap_allocator();
+    cz::Heap_String string = {};
     CZ_DEFER(string.drop());
     string.reserve(1024);
-    buffer->render_name(string.allocator, &string);
+    buffer->render_name(cz::heap_allocator(), &string);
 
-    string.reserve(1);
-    string.push(' ');
+    cz::append(&string, ' ');
 
     for (size_t i = 0; i < editor->theme.decorations.len(); ++i) {
-        if (editor->theme.decorations[i].append(buffer, window, &string)) {
-            string.reserve(1);
-            string.push(' ');
+        if (editor->theme.decorations[i].append(buffer, window, cz::heap_allocator(), &string)) {
+            cz::append(&string, ' ');
         }
     }
     for (size_t i = 0; i < buffer->mode.decorations.len(); ++i) {
-        if (buffer->mode.decorations[i].append(buffer, window, &string)) {
-            string.reserve(1);
-            string.push(' ');
+        if (buffer->mode.decorations[i].append(buffer, window, cz::heap_allocator(), &string)) {
+            cz::append(&string, ' ');
         }
     }
 
@@ -1056,7 +1053,7 @@ static bool load_completion_cache(Editor* editor,
         completion_cache->filter_context.selected = 0;
         completion_cache->filter_context.results.set_len(0);
         completion_cache->filter_context.results.reserve(
-            cz::heap_allocator(), completion_cache->engine_context.results.len());
+            completion_cache->engine_context.results.len());
         completion_filter(editor, &completion_cache->filter_context,
                           &completion_cache->engine_context, selected_result, has_selected_result);
     }

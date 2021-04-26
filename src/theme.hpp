@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <cz/vector.hpp>
+#include <cz/heap_vector.hpp>
 #include "completion.hpp"
 #include "face.hpp"
 #include "token.hpp"
@@ -68,8 +68,8 @@ struct Theme {
     /// These should directly correspond to the token types.
     Face token_faces[Token_Type::length];
 
-    cz::Vector<Decoration> decorations;
-    cz::Vector<Overlay> overlays;
+    cz::Heap_Vector<Decoration> decorations;
+    cz::Heap_Vector<Overlay> overlays;
 
     size_t max_completion_results;
 
@@ -83,7 +83,7 @@ struct Theme {
     /// If true then draw line numbers.
     bool draw_line_numbers = false;
 
-    void drop(cz::Allocator allocator);
+    void drop();
 };
 
 }

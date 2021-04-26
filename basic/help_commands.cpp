@@ -84,7 +84,7 @@ static bool command_completion_engine(Editor* editor,
 
     context->results_buffer_array.clear();
     context->results.set_len(0);
-    context->results.reserve(cz::heap_allocator(), 128);
+    context->results.reserve(128);
     context->results_buffer_array.allocator();
 
     get_command_names(&context->results, context->results_buffer_array.allocator(),

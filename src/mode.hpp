@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <cz/slice.hpp>
+#include <cz/heap_vector.hpp>
 #include "key_map.hpp"
 
 namespace mag {
@@ -19,8 +20,8 @@ struct Mode {
                        Token* token /* out */,
                        uint64_t* state /* in/out */);
 
-    cz::Vector<Decoration> decorations;
-    cz::Vector<Overlay> overlays;
+    cz::Heap_Vector<Decoration> decorations;
+    cz::Heap_Vector<Overlay> overlays;
 
     /// The number of columns in a level of indentation.
     ///

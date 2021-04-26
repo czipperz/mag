@@ -21,14 +21,14 @@ void Completion_Filter_Context::drop() {
     if (cleanup) {
         cleanup(data);
     }
-    results.drop(cz::heap_allocator());
+    results.drop();
 }
 
 void Completion_Engine_Context::drop() {
     if (cleanup) {
         cleanup(data);
     }
-    results.drop(cz::heap_allocator());
+    results.drop();
     results_buffer_array.drop();
     query.drop(cz::heap_allocator());
 }
@@ -212,7 +212,7 @@ void spaces_are_wildcards_completion_filter(Editor* editor,
 
     context->selected = 0;
     context->results.set_len(0);
-    context->results.reserve(cz::heap_allocator(), engine_context->results.len());
+    context->results.reserve(engine_context->results.len());
     for (size_t i = 0; i < engine_context->results.len(); ++i) {
         cz::Str result = engine_context->results[i];
         if (pattern.matches(result)) {
@@ -321,7 +321,7 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
         }
         CZ_DEFER(iterator.destroy());
         while (!iterator.done()) {
-            context->results.reserve(cz::heap_allocator(), 1);
+            context->results.reserve(1);
             cz::String file = {};
             file.reserve(context->results_buffer_array.allocator(),
                          prefix.len + iterator.file().len + 1);
@@ -355,7 +355,7 @@ bool buffer_completion_engine(Editor* editor,
 
     context->results_buffer_array.clear();
     context->results.set_len(0);
-    context->results.reserve(cz::heap_allocator(), editor->buffers.len());
+    context->results.reserve(editor->buffers.len());
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
         Buffer_Handle* handle = editor->buffers[i].get();
         WITH_CONST_BUFFER_HANDLE(handle);
@@ -423,7 +423,7 @@ bool run_command_for_completion_results(Completion_Engine_Context* context,
                     break;
                 }
 
-                context->results.reserve(cz::heap_allocator(), 1);
+                context->results.reserve(1);
                 context->results.push(result);
                 result = {};
                 offset += rlen;

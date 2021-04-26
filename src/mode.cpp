@@ -13,12 +13,12 @@ void Mode::drop() {
     for (size_t i = 0; i < decorations.len(); ++i) {
         decorations[i].cleanup();
     }
-    decorations.drop(cz::heap_allocator());
+    decorations.drop();
 
     for (size_t i = 0; i < overlays.len(); ++i) {
         overlays[i].cleanup();
     }
-    overlays.drop(cz::heap_allocator());
+    overlays.drop();
 }
 
 }

@@ -2,7 +2,7 @@
 
 #include <cz/buffer_array.hpp>
 #include <cz/string.hpp>
-#include <cz/vector.hpp>
+#include <cz/heap_vector.hpp>
 
 namespace cz {
 struct Process_Options;
@@ -12,7 +12,7 @@ namespace mag {
 struct Editor;
 
 struct Completion_Filter_Context {
-    cz::Vector<cz::Str> results;
+    cz::Heap_Vector<cz::Str> results;
     size_t selected;
 
     void* data;
@@ -26,7 +26,7 @@ struct Completion_Engine_Context {
     cz::String query;
 
     cz::Buffer_Array results_buffer_array;
-    cz::Vector<cz::Str> results;
+    cz::Heap_Vector<cz::Str> results;
 
     void* data;
     void (*cleanup)(void* data);

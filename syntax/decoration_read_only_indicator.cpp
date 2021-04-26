@@ -2,9 +2,9 @@
 
 #include <stdlib.h>
 #include <Tracy.hpp>
+#include <cz/format.hpp>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
-#include <cz/write.hpp>
 #include "buffer.hpp"
 #include "decoration.hpp"
 #include "window.hpp"
@@ -14,12 +14,13 @@ namespace syntax {
 
 static bool decoration_read_only_indicator_append(const Buffer* buffer,
                                                   Window_Unified* window,
-                                                  cz::AllocatedString* string,
+                                                  cz::Allocator allocator,
+                                                  cz::String* string,
                                                   void* _data) {
     ZoneScoped;
 
     if (buffer->read_only) {
-        write(string_writer(string), "Read Only");
+        cz::append(allocator, string, "Read Only");
         return true;
     }
     return false;

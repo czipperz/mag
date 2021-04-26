@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <Tracy.hpp>
 #include <algorithm>
+#include <cz/format.hpp>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
-#include <cz/write.hpp>
 #include "buffer.hpp"
 #include "decoration.hpp"
 #include "movement.hpp"
@@ -16,7 +16,8 @@ namespace syntax {
 
 static bool decoration_column_number_append(const Buffer* buffer,
                                             Window_Unified* window,
-                                            cz::AllocatedString* string,
+                                            cz::Allocator allocator,
+                                            cz::String* string,
                                             void* _data) {
     ZoneScoped;
 
@@ -25,7 +26,7 @@ static bool decoration_column_number_append(const Buffer* buffer,
     Contents_Iterator line_start = iterator;
     start_of_line(&line_start);
 
-    write(string_writer(string), "C", iterator.position - line_start.position + 1);
+    cz::append(allocator, string, "C", iterator.position - line_start.position + 1);
 
     return true;
 }

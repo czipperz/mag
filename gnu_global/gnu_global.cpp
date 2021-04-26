@@ -6,9 +6,9 @@
 #include <command_macros.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
+#include <cz/format.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
-#include <cz/write.hpp>
 #include <file.hpp>
 #include <limits>
 #include <movement.hpp>
@@ -170,14 +170,11 @@ static bool tag_completion_engine(Editor* editor,
     Tag_Completion_Engine_Data* data = (Tag_Completion_Engine_Data*)context->data;
 
     context->results.set_len(0);
-    context->results.reserve(cz::heap_allocator(), data->tags.len());
+    context->results.reserve(data->tags.len());
 
     for (size_t i = 0; i < data->tags.len(); ++i) {
-        cz::AllocatedString string = {};
-        string.allocator = context->results_buffer_array.allocator();
-        cz::write(cz::string_writer(&string), data->tags[i].file_name, ':', data->tags[i].line);
-        string.realloc();
-
+        cz::Allocator allocator = context->results_buffer_array.allocator();
+        cz::String string = cz::format(allocator, data->tags[i].file_name, ':', data->tags[i].line);
         context->results.push(string);
     }
 

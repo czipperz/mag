@@ -5,16 +5,16 @@
 
 namespace mag {
 
-void Theme::drop(cz::Allocator allocator) {
+void Theme::drop() {
     for (size_t i = 0; i < decorations.len(); ++i) {
         decorations[i].cleanup();
     }
-    decorations.drop(allocator);
+    decorations.drop();
 
     for (size_t i = 0; i < overlays.len(); ++i) {
         overlays[i].cleanup();
     }
-    overlays.drop(allocator);
+    overlays.drop();
 }
 
 }

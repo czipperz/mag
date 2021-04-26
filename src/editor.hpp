@@ -39,7 +39,7 @@ struct Editor {
 
         key_map.drop();
         key_remap.drop();
-        theme.drop(cz::heap_allocator());
+        theme.drop();
         copy_buffer.drop();
 
         for (size_t i = 0; i < pending_jobs.len(); ++i) {
