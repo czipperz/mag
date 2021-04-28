@@ -582,7 +582,8 @@ static void draw_buffer_contents(Cell* cells,
 
 #if 0
         if (iterator.index == 0) {
-            ADDCH(A_NORMAL, '\'');
+            Face face = {};
+            ADDCH(face, '\'');
         }
 #endif
 
