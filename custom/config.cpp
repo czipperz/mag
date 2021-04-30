@@ -253,6 +253,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-x q", command_toggle_read_only);
     BIND(key_map, "A-x C-q", command_toggle_pinned);
     BIND(key_map, "A-x A-q", command_toggle_draw_line_numbers);
+    BIND(key_map, "A-x C-A-q", command_toggle_line_feed);
 
     BIND(key_map, "A-x u", command_uppercase_letter);
     BIND(key_map, "A-x l", command_lowercase_letter);

@@ -56,6 +56,11 @@ void command_toggle_draw_line_numbers(Editor* editor, Command_Source source) {
     editor->theme.draw_line_numbers = !editor->theme.draw_line_numbers;
 }
 
+void command_toggle_line_feed(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    buffer->use_carriage_returns = !buffer->use_carriage_returns;
+}
+
 void command_set_mark(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;
