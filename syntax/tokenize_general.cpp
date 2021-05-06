@@ -37,7 +37,7 @@ bool general_next_token(Contents_Iterator* iterator, Token* token, uint64_t* sta
         goto ret;
     }
 
-    if (first_ch == '"' || first_ch == '\'') {
+    if (first_ch == '\'') {
         while (!iterator->at_eob()) {
             if (iterator->get() == first_ch) {
                 iterator->advance();
