@@ -538,6 +538,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         if (buffer->name.ends_with(".c") || buffer->name.ends_with(".h") ||
             buffer->name.ends_with(".cc") || buffer->name.ends_with(".hh") ||
             buffer->name.ends_with(".cpp") || buffer->name.ends_with(".hpp") ||
+            buffer->name.ends_with(".cxx") || buffer->name.ends_with(".hxx") ||
             buffer->name.ends_with(".glsl")) {
             buffer->mode.next_token = syntax::cpp_next_token;
             BIND(buffer->mode.key_map, "A-x A-f", clang_format::command_clang_format_buffer);
