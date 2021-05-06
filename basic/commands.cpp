@@ -1223,7 +1223,10 @@ static void command_search_forward_callback(Editor* editor,
         interactive_search_reset(window, data);
     }
 
-    push_jump(window, client, buffer);
+    if (window->cursors.len() == 1) {
+        push_jump(window, client, buffer);
+    }
+
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_forward, {
@@ -1287,7 +1290,10 @@ static void command_search_backward_callback(Editor* editor,
         interactive_search_reset(window, data);
     }
 
-    push_jump(window, client, buffer);
+    if (window->cursors.len() == 1) {
+        push_jump(window, client, buffer);
+    }
+
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_backward, {
