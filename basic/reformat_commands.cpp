@@ -80,7 +80,7 @@ static size_t judge_word_column_goal_score(cz::Slice<SSOStr> words,
 
     // Duplicate the code from end of line above as we need to add the score for the last line of
     // the comment.
-    if (current_column <= word_column_limit) {
+    if (current_column <= word_column_goal) {
         score += (word_column_limit - current_column) * (word_column_limit - current_column);
 
         *max_column_length = std::max(*max_column_length, current_column);
