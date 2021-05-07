@@ -442,7 +442,9 @@ static void search_key_map(Key_Map& key_map) {
 
 static void mini_buffer_key_map(Key_Map& key_map) {
     BIND(key_map, "A-n", command_next_completion);
+    BIND(key_map, "DOWN", command_next_completion);
     BIND(key_map, "A-p", command_previous_completion);
+    BIND(key_map, "UP", command_previous_completion);
     BIND(key_map, "C-v", command_completion_down_page);
     BIND(key_map, "A-v", command_completion_up_page);
     BIND(key_map, "A-<", command_first_completion);
