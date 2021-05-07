@@ -704,7 +704,7 @@ static cz::Option<uint64_t> search_forward(Contents_Iterator start_it,
         }
 
         start_it.advance();
-        do {
+        while (!start_it.at_eob()) {
             auto bucket = start_it.contents->buckets[start_it.bucket];
             cz::Str str = cz::Str{bucket.elems, bucket.len}.slice_start(start_it.index);
             const char* ptr;
@@ -735,7 +735,7 @@ static cz::Option<uint64_t> search_forward(Contents_Iterator start_it,
             } else {
                 start_it.advance(str.len);
             }
-        } while (!start_it.at_eob());
+        }
     }
 
     return {};
