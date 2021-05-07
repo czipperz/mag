@@ -1239,24 +1239,39 @@ static void command_search_forward_callback(Editor* editor,
 void command_search_forward(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_normal_window;
 
+    // If we have no results we want to keep the prompt but reverse the direction.
+    bool no_results = false;
+
     // If we're already in an interactive search then search inside the normal window.
     if (source.client->_select_mini_buffer && !source.client->_mini_buffer->show_marks &&
         source.client->_message.interactive_response_callback ==
             interactive_search_response_callback) {
         {
             WITH_CONST_WINDOW_BUFFER(source.client->_mini_buffer);
+
+            if (!window->show_marks) {
+                no_results = true;
+            }
+
             // If we have an empty prompt and start searching then we want to reprompt.
             if (buffer->contents.len == 0) {
                 window->show_marks = false;
             }
         }
 
-        // Hide the mini buffer but don't reset the cursor.
-        source.client->_message.response_cancel = nullptr;
-        source.client->hide_mini_buffer(editor);
+        if (!no_results) {
+            // Hide the mini buffer but don't reset the cursor.
+            source.client->_message.response_cancel = nullptr;
+            source.client->hide_mini_buffer(editor);
+        }
     }
 
-    if (window->show_marks) {
+    if (no_results) {
+        auto data = (Interactive_Search_Data*)source.client->_message.response_callback_data;
+        data->forward = true;
+        data->mini_buffer_change_index = 0;
+        source.client->set_prompt_text(editor, "Search forward: ");
+    } else if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
         WITH_CONST_WINDOW_BUFFER(window);
         for (size_t c = 0; c < cursors.len; ++c) {
@@ -1306,24 +1321,39 @@ static void command_search_backward_callback(Editor* editor,
 void command_search_backward(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_normal_window;
 
+    // If we have no results we want to keep the prompt but reverse the direction.
+    bool no_results = false;
+
     // If we're already in an interactive search then search inside the normal window.
     if (source.client->_select_mini_buffer && !source.client->_mini_buffer->show_marks &&
         source.client->_message.interactive_response_callback ==
             interactive_search_response_callback) {
         {
             WITH_CONST_WINDOW_BUFFER(source.client->_mini_buffer);
+
+            if (!window->show_marks) {
+                no_results = true;
+            }
+
             // If we have an empty prompt and start searching then we want to reprompt.
             if (buffer->contents.len == 0) {
                 window->show_marks = false;
             }
         }
 
-        // Hide the mini buffer but don't reset the cursor.
-        source.client->_message.response_cancel = nullptr;
-        source.client->hide_mini_buffer(editor);
+        if (!no_results) {
+            // Hide the mini buffer but don't reset the cursor.
+            source.client->_message.response_cancel = nullptr;
+            source.client->hide_mini_buffer(editor);
+        }
     }
 
-    if (window->show_marks) {
+    if (no_results) {
+        auto data = (Interactive_Search_Data*)source.client->_message.response_callback_data;
+        data->forward = false;
+        data->mini_buffer_change_index = 0;
+        source.client->set_prompt_text(editor, "Search backward: ");
+    } else if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
         WITH_CONST_WINDOW_BUFFER(window);
         for (size_t c = 0; c < cursors.len; ++c) {
