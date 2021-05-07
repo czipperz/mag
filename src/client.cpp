@@ -181,28 +181,26 @@ void Client::replace_window(Window* o, Window* n) {
     n->cols = o->cols;
 }
 
-void Client::show_message(Editor* editor, cz::Str text) {
-    uint64_t start, end;
-    {
-        WITH_BUFFER(messages_id);
+void Client::set_prompt_text(Editor* editor, cz::Str text) {
+    WITH_BUFFER(messages_id);
 
-        cz::Date date = cz::time_t_to_date_local(time(nullptr));
-        char date_string[32];
-        snprintf(date_string, sizeof(date_string), "%04d/%02d/%02d %02d:%02d:%02d: ", date.year,
-                 date.month, date.day_of_month, date.hour, date.minute, date.second);
-        buffer->contents.append(date_string);
-
-        start = buffer->contents.len;
-        end = buffer->contents.len + text.len;
-
-        buffer->contents.append(text);
-        buffer->contents.append("\n");
-    }
+    cz::Date date = cz::time_t_to_date_local(time(nullptr));
+    char date_string[32];
+    snprintf(date_string, sizeof(date_string), "%04d/%02d/%02d %02d:%02d:%02d: ", date.year,
+             date.month, date.day_of_month, date.hour, date.minute, date.second);
+    buffer->contents.append(date_string);
 
     _message_time = std::chrono::system_clock::now();
+    _message.start = buffer->contents.len;
+    _message.end = buffer->contents.len + text.len;
+
+    buffer->contents.append(text);
+    buffer->contents.append("\n");
+}
+
+void Client::show_message(Editor* editor, cz::Str text) {
     _message = {};
-    _message.start = start;
-    _message.end = end;
+    set_prompt_text(editor, text);
     _message.tag = Message::SHOW;
     _select_mini_buffer = false;
 }

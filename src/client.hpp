@@ -82,6 +82,9 @@ struct Client {
 
     void replace_window(Window* o, Window* n);
 
+    /// Set the prompt's text without changing the callbacks.
+    void set_prompt_text(Editor* editor, cz::Str text);
+
     /// Show a message to the user.
     void show_message(Editor* editor, cz::Str text);
 
