@@ -40,7 +40,7 @@ static Face overlay_preferred_column_get_face_and_advance(const Buffer* buffer,
     } else {
         uint64_t offset = 1;
         if (ch == '\t') {
-            offset = buffer->mode.tab_width;
+            offset = buffer->mode.tab_width - (data->column % buffer->mode.tab_width);
         }
         if (data->column <= buffer->mode.preferred_column &&
             data->column + offset > buffer->mode.preferred_column) {
