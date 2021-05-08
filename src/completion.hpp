@@ -31,7 +31,7 @@ struct Completion_Engine_Context {
     void* data;
     void (*cleanup)(void* data);
 
-    void init() { results_buffer_array.create(); }
+    void init() { results_buffer_array.init(); }
     void drop();
 };
 

@@ -172,7 +172,7 @@ static void sort_files(cz::Slice<cz::Str> files,
 
 cz::Result reload_directory_buffer(Buffer* buffer) {
     cz::Buffer_Array buffer_array;
-    buffer_array.create();
+    buffer_array.init();
     CZ_DEFER(buffer_array.drop());
 
     cz::Vector<cz::Str> files = {};
@@ -292,7 +292,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
         if (user_home_path) {
             cz::Str home = user_home_path;
             user_path_nt.reserve(cz::heap_allocator(), home.len);
-            user_path_nt.remove(0, 1);
+            user_path_nt.remove(0);
             user_path_nt.insert(0, home);
             user_path_nt.null_terminate();
         }
@@ -339,7 +339,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
                     buffer.set_len(res);
 
                     // Remove the "\\?\" prefix.
-                    buffer.remove(0, 4);
+                    buffer.remove_many(0, 4);
 
                     cz::path::convert_to_forward_slashes(buffer.buffer(), buffer.len());
 

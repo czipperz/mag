@@ -70,7 +70,7 @@ static bool get_file_to_open(const Buffer* buffer,
     path->append(buffer->directory);
     buffer->contents.slice_into(relative_start, relative_end.position, path);
     if (cz::path::is_absolute(path->slice_start(buffer->directory.len()))) {
-        path->remove(0, buffer->directory.len());
+        path->remove_range(0, buffer->directory.len());
     }
     return true;
 }

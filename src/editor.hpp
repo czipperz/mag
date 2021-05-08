@@ -29,7 +29,7 @@ struct Editor {
     cz::Vector<Asynchronous_Job> pending_jobs;
     cz::Vector<Synchronous_Job> synchronous_jobs;
 
-    void create() { copy_buffer.create(); }
+    void create() { copy_buffer.init(); }
 
     void drop() {
         for (size_t i = 0; i < buffers.len(); ++i) {

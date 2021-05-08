@@ -167,7 +167,7 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
             if (query[i] == '/') {
                 // `abc/^def` should be parsed as the piece `abc/def`.
                 if (i + 1 < end && query[i + 1] == '^') {
-                    query.remove(i + 1, 1);
+                    query.remove(i + 1);
                     --end;
                 } else {
                     ++i;
@@ -315,11 +315,11 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
     data->has_file_time = cz::get_file_time(data->directory.buffer(), &data->file_time);
 
     do {
-        cz::fs::DirectoryIterator iterator(cz::heap_allocator());
-        if (iterator.create(data->directory.buffer()).is_err()) {
+        cz::fs::Directory_Iterator iterator;
+        if (iterator.init(cz::heap_allocator(), data->directory.buffer()).is_err()) {
             break;
         }
-        CZ_DEFER(iterator.destroy());
+        CZ_DEFER(iterator.drop(cz::heap_allocator()));
         while (!iterator.done()) {
             context->results.reserve(1);
             cz::String file = {};
@@ -333,7 +333,7 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
             }
             context->results.push(file);
 
-            auto result = iterator.advance();
+            auto result = iterator.advance(cz::heap_allocator());
             if (result.is_err()) {
                 break;
             }

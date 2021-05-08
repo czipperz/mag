@@ -197,7 +197,7 @@ bool reformat_at(Buffer* buffer,
     Contents_Iterator start = iterator;
 
     cz::Buffer_Array buffer_array;
-    buffer_array.create();
+    buffer_array.init();
     CZ_DEFER(buffer_array.drop());
 
     size_t words_len_sum = 0;

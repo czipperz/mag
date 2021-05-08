@@ -181,8 +181,8 @@ static cz::Result for_each_file(cz::String* path,
     if (cz::file::is_directory(path->buffer())) {
         CZ_TRY(directory_start_callback(path->buffer()));
 
-        cz::fs::DirectoryIterator iterator(cz::heap_allocator());
-        CZ_TRY(iterator.create(path->buffer()));
+        cz::fs::Directory_Iterator iterator;
+        CZ_TRY(iterator.init(cz::heap_allocator(), path->buffer()));
 
         while (!iterator.done()) {
             cz::Str file = iterator.file();
@@ -200,19 +200,19 @@ static cz::Result for_each_file(cz::String* path,
 
             if (result.is_err()) {
                 // ignore errors in destruction
-                iterator.destroy();
+                iterator.drop(cz::heap_allocator());
                 return result;
             }
 
-            result = iterator.advance();
+            result = iterator.advance(cz::heap_allocator());
             if (result.is_err()) {
                 // ignore errors in destruction
-                iterator.destroy();
+                iterator.drop(cz::heap_allocator());
                 return result;
             }
         }
 
-        CZ_TRY(iterator.destroy());
+        CZ_TRY(iterator.drop(cz::heap_allocator()));
 
         path->null_terminate();
         return directory_end_callback(path->buffer());

@@ -16,7 +16,7 @@ static bool replace_if_contains(cz::String& path, cz::Str search, cz::Str replac
 
     size_t index = position - path.buffer();
     path.reserve_total(cz::heap_allocator(), path.len() - search.len + replacement.len);
-    path.remove(index, search.len);
+    path.remove_many(index, search.len);
     path.insert(index, replacement);
     return true;
 }
