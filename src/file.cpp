@@ -8,9 +8,8 @@
 #include <cz/bit_array.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
+#include <cz/directory.hpp>
 #include <cz/file.hpp>
-#include <cz/fs/directory.hpp>
-#include <cz/fs/read_to_string.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
 #include <cz/sort.hpp>
@@ -178,8 +177,8 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
     cz::Vector<cz::Str> files = {};
     CZ_DEFER(files.drop(cz::heap_allocator()));
 
-    CZ_TRY(cz::fs::files(cz::heap_allocator(), buffer_array.allocator(), buffer->directory.buffer(),
-                         &files));
+    CZ_TRY(cz::files(cz::heap_allocator(), buffer_array.allocator(), buffer->directory.buffer(),
+                     &files));
 
     cz::File_Time* file_times = cz::heap_allocator().alloc<cz::File_Time>(files.len());
     CZ_ASSERT(file_times);

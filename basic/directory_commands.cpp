@@ -2,8 +2,9 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <cz/directory.hpp>
 #include <cz/file.hpp>
-#include <cz/fs/directory.hpp>
+#include <cz/heap_string.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
 #include <cz/result.hpp>
@@ -181,14 +182,15 @@ static cz::Result for_each_file(cz::String* path,
     if (cz::file::is_directory(path->buffer())) {
         CZ_TRY(directory_start_callback(path->buffer()));
 
-        cz::fs::Directory_Iterator iterator;
-        CZ_TRY(iterator.init(cz::heap_allocator(), path->buffer()));
+        cz::Heap_String file = {};
+        CZ_DEFER(file.drop());
+
+        cz::Directory_Iterator iterator;
+        CZ_TRY(iterator.init(path->buffer(), cz::heap_allocator(), &file));
 
         while (!iterator.done()) {
-            cz::Str file = iterator.file();
-
             size_t len = path->len();
-            path->reserve(cz::heap_allocator(), file.len + 2);
+            path->reserve(cz::heap_allocator(), file.len() + 2);
             path->push('/');
             path->append(file);
             path->null_terminate();
@@ -200,19 +202,19 @@ static cz::Result for_each_file(cz::String* path,
 
             if (result.is_err()) {
                 // ignore errors in destruction
-                iterator.drop(cz::heap_allocator());
+                iterator.drop();
                 return result;
             }
 
-            result = iterator.advance(cz::heap_allocator());
+            result = iterator.advance(cz::heap_allocator(), &file);
             if (result.is_err()) {
                 // ignore errors in destruction
-                iterator.drop(cz::heap_allocator());
+                iterator.drop();
                 return result;
             }
         }
 
-        CZ_TRY(iterator.drop(cz::heap_allocator()));
+        CZ_TRY(iterator.drop());
 
         path->null_terminate();
         return directory_end_callback(path->buffer());

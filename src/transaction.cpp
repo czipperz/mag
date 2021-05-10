@@ -17,27 +17,18 @@ void Transaction::drop() {
     cz::heap_allocator().dealloc({memory, 0});
 }
 
-static void* transaction_alloc(void* data, cz::AllocInfo new_info) {
+static void* transaction_realloc(void* data, cz::MemSlice old_mem, cz::AllocInfo new_info) {
+    CZ_ASSERT(!old_mem.buffer);
+    CZ_ASSERT(new_info.alignment == 1);
+
     Transaction* transaction = (Transaction*)data;
-    CZ_DEBUG_ASSERT(new_info.alignment == 1);
     void* result = (char*)transaction->memory + transaction->value_offset;
     transaction->value_offset += new_info.size;
     return result;
 }
 
-static void transaction_dealloc(void* data, cz::MemSlice old_mem) {
-    CZ_PANIC("");
-}
-
-static void* transaction_realloc(void* data, cz::MemSlice old_mem, cz::AllocInfo new_info) {
-    CZ_PANIC("");
-}
-
-static const cz::Allocator::VTable allocator_vtable = {transaction_alloc, transaction_dealloc,
-                                                       transaction_realloc};
-
 cz::Allocator Transaction::value_allocator() {
-    return {&allocator_vtable, this};
+    return {transaction_realloc, this};
 }
 
 void Transaction::push(Edit edit) {

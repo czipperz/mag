@@ -3,9 +3,10 @@
 #include <Tracy.hpp>
 #include <algorithm>
 #include <cz/defer.hpp>
+#include <cz/directory.hpp>
 #include <cz/file.hpp>
-#include <cz/fs/directory.hpp>
 #include <cz/heap.hpp>
+#include <cz/heap_string.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
 #include <cz/sort.hpp>
@@ -315,25 +316,27 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
     data->has_file_time = cz::get_file_time(data->directory.buffer(), &data->file_time);
 
     do {
-        cz::fs::Directory_Iterator iterator;
-        if (iterator.init(cz::heap_allocator(), data->directory.buffer()).is_err()) {
+        cz::Heap_String file2 = {};
+        CZ_DEFER(file2.drop());
+
+        cz::Directory_Iterator iterator;
+        if (iterator.init(data->directory.buffer(), cz::heap_allocator(), &file2).is_err()) {
             break;
         }
-        CZ_DEFER(iterator.drop(cz::heap_allocator()));
+        CZ_DEFER(iterator.drop());
+
         while (!iterator.done()) {
             context->results.reserve(1);
             cz::String file = {};
-            file.reserve(context->results_buffer_array.allocator(),
-                         prefix.len + iterator.file().len + 1);
+            file.reserve(context->results_buffer_array.allocator(), prefix.len + file2.len() + 1);
             file.append(prefix);
-            file.append(iterator.file());
-            file.null_terminate();
+            file.append(file2);
             if (cz::file::is_directory(file.buffer())) {
                 file.push('/');
             }
             context->results.push(file);
 
-            auto result = iterator.advance(cz::heap_allocator());
+            cz::Result result = iterator.advance(cz::heap_allocator(), &file2);
             if (result.is_err()) {
                 break;
             }
