@@ -336,6 +336,7 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
             }
             context->results.push(file);
 
+            file2.set_len(0);
             cz::Result result = iterator.advance(cz::heap_allocator(), &file2);
             if (result.is_err()) {
                 break;
