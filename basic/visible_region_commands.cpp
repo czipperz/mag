@@ -37,7 +37,7 @@ void command_up_page(Editor* editor, Command_Source source) {
     window->start_position = it.position;
 
     // Go to the start of 1 row from the end of the visible region.
-    forward_visible_line(buffer->mode, &it, window->cols, window->rows - 1);
+    forward_visible_line(buffer->mode, &it, window->cols, window->rows - 2);
 
     window->cursors[0].point = it.position;
 }
@@ -46,7 +46,7 @@ void command_down_page(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     kill_extra_cursors(window, source.client);
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
-    forward_visible_line(buffer->mode, &it, window->cols, window->rows - 2);
+    forward_visible_line(buffer->mode, &it, window->cols, window->rows - 1);
     window->start_position = it.position;
 
     // We move forward one line to prevent the start position from being overridden
