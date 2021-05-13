@@ -357,15 +357,8 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     {
         char* ptr = realpath(user_path_nt.buffer(), nullptr);
         if (ptr) {
-            // If we're using the heap allocator then we don't
-            // need to reallocate since realpath uses malloc.
-            if (allocator.vtable->alloc == cz::heap_allocator_alloc) {
-                size_t len = strlen(ptr);
-                return {ptr, len, len + 1};
-            } else {
-                CZ_DEFER(free(ptr));
-                return cz::Str{ptr}.duplicate_null_terminate(allocator);
-            }
+            CZ_DEFER(free(ptr));
+            return cz::Str{ptr}.duplicate_null_terminate(allocator);
         }
     }
 #endif
