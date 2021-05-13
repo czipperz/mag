@@ -1189,6 +1189,8 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             normal_state = IN_EXPR;
         } else if (normal_state == AFTER_FOR && first_char == '(') {
             normal_state = START_OF_STATEMENT;
+        } else if (normal_state == IN_VARIABLE_TYPE && first_char == ')') {
+            normal_state = IN_EXPR;  // End of cast expression.
         } else if (normal_state == AFTER_VARIABLE_DECLARATION && first_char == '(') {
             normal_state = START_OF_PARAMETER;
         } else if (normal_state == AFTER_VARIABLE_DECLARATION && first_char == '=') {
