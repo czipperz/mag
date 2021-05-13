@@ -266,9 +266,12 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                     matches(start, iterator->position, "mv") ||
                     matches(start, iterator->position, "cp") ||
                     matches(start, iterator->position, "test") ||
-                    matches(start, iterator->position, "echo") ||
-                    matches(start, iterator->position, "export"))) {
+                    matches(start, iterator->position, "echo"))) {
             token->type = Token_Type::KEYWORD;
+        } else if (top == AT_START_OF_STATEMENT && matches(start, iterator->position, "export")) {
+            token->type = Token_Type::KEYWORD;
+            // Keep start of statement as the top.
+            goto ret;
         } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "fi") ||
                                                     matches(start, iterator->position, "done") ||
                                                     matches(start, iterator->position, "esac"))) {
