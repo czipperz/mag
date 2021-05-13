@@ -331,6 +331,7 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
             file.reserve(context->results_buffer_array.allocator(), prefix.len + file2.len() + 1);
             file.append(prefix);
             file.append(file2);
+            file.null_terminate();
             if (cz::file::is_directory(file.buffer())) {
                 file.push('/');
             }
