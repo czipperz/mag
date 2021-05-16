@@ -8,10 +8,10 @@
 #include <cz/sort.hpp>
 #include <cz/vector.hpp>
 #include "buffer.hpp"
+#include "movement.hpp"
 #include "overlay.hpp"
 #include "theme.hpp"
 #include "token.hpp"
-#include "movement.hpp"
 #include "window.hpp"
 
 namespace mag {
@@ -99,6 +99,12 @@ static void overlay_matching_pairs_start_frame(const Buffer* buffer,
     for (size_t c = 0; c < cursors.len; ++c) {
         size_t token_index;
         if (binary_search(tokens, cursors[c].point, &token_index)) {
+            data->points.reserve(cz::heap_allocator(),
+                                 tokens[token_index].end - tokens[token_index].start);
+            for (uint64_t pos = tokens[token_index].start; pos < tokens[token_index].end; ++pos) {
+                data->points.push(pos);
+            }
+
             size_t depth = 1;
             if (tokens[token_index].type == Token_Type::OPEN_PAIR) {
                 for (size_t i = token_index + 1; i < tokens.len(); ++i) {
