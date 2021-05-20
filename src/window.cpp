@@ -116,7 +116,7 @@ void Window_Unified::finish_completion(Buffer* buffer) {
     cz::Str value = context->results[context->selected];
 
     Transaction transaction;
-    transaction.init(do_remove + 1, (do_remove ? token.end - token.start : 0) + value.len);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     if (do_remove) {
@@ -133,7 +133,7 @@ void Window_Unified::finish_completion(Buffer* buffer) {
     insert.flags = Edit::INSERT;
     transaction.push(insert);
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void Window_Unified::abort_completion() {

@@ -11,12 +11,11 @@ namespace mag {
 void insert(Buffer* buffer, Window_Unified* window, SSOStr value, Command_Function committer) {
     window->update_cursors(buffer);
 
-    cz::Slice<Cursor> cursors = window->cursors;
-
     Transaction transaction;
-    transaction.init(cursors.len, 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
+    cz::Slice<Cursor> cursors = window->cursors;
     for (size_t i = 0; i < cursors.len; ++i) {
         Edit edit;
         edit.value = value;
@@ -25,7 +24,7 @@ void insert(Buffer* buffer, Window_Unified* window, SSOStr value, Command_Functi
         transaction.push(edit);
     }
 
-    transaction.commit(buffer, committer);
+    transaction.commit(committer);
 }
 
 void insert_char(Buffer* buffer, Window_Unified* window, char code, Command_Function committer) {

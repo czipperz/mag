@@ -344,8 +344,8 @@ bool reformat_at(Buffer* buffer,
     }
 
     Transaction transaction;
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
-    transaction.init(2, end.position - start.position + new_region.len());
 
     Edit remove;
     remove.value = buffer->contents.slice(transaction.value_allocator(), start, end.position);
@@ -359,7 +359,7 @@ bool reformat_at(Buffer* buffer,
     insert.flags = Edit::INSERT;
     transaction.push(insert);
 
-    transaction.commit(buffer);
+    transaction.commit();
     return true;
 }
 

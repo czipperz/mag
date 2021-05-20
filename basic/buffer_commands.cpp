@@ -52,7 +52,7 @@ void fill_mini_buffer_with(Editor* editor, Client* client, cz::Str default_value
     WITH_WINDOW_BUFFER(window);
 
     Transaction transaction;
-    transaction.init(1, default_value.len);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     Edit edit;
@@ -61,7 +61,7 @@ void fill_mini_buffer_with(Editor* editor, Client* client, cz::Str default_value
     edit.flags = Edit::INSERT;
     transaction.push(edit);
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_save_file(Editor* editor, Command_Source source) {

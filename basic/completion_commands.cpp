@@ -26,13 +26,10 @@ void command_insert_completion(Editor* editor, Command_Source source) {
     }
 
     Transaction transaction;
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     bool removing = common_base < query.len;
-    bool inserting = common_base < value.len;
-
-    transaction.init(removing + inserting, query.len + value.len - 2 * common_base);
-
     if (removing) {
         Edit remove;
         remove.value =
@@ -41,6 +38,8 @@ void command_insert_completion(Editor* editor, Command_Source source) {
         remove.flags = Edit::REMOVE;
         transaction.push(remove);
     }
+
+    bool inserting = common_base < value.len;
     if (inserting) {
         Edit insert;
         insert.value =
@@ -50,7 +49,7 @@ void command_insert_completion(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_insert_completion_and_submit_mini_buffer(Editor* editor, Command_Source source) {

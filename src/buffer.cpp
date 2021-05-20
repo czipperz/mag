@@ -31,24 +31,15 @@ static void initialize_file_time(Buffer* buffer) {
 
 void Buffer::init() {
     initialize_file_time(this);
+    commit_buffer_array.init();
 }
 
 void Buffer::drop() {
     directory.drop(cz::heap_allocator());
     name.drop(cz::heap_allocator());
 
+    commit_buffer_array.drop();
     commits.drop(cz::heap_allocator());
-
-    cz::Sized_Bit_Array dropped;
-    dropped.init(cz::heap_allocator(), _commit_id_counter);
-    CZ_DEFER(dropped.drop(cz::heap_allocator()));
-    for (size_t i = 0; i < changes.len(); ++i) {
-        if (!dropped.get(changes[i].commit.id.value)) {
-            changes[i].commit.drop();
-            dropped.set(changes[i].commit.id.value);
-        }
-    }
-
     changes.drop(cz::heap_allocator());
 
     contents.drop();
@@ -202,7 +193,7 @@ cz::Str clear_buffer(Buffer* buffer) {
     }
 
     Transaction transaction;
-    transaction.init(1, (size_t)buffer->contents.len);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     Edit edit;
@@ -214,7 +205,7 @@ cz::Str clear_buffer(Buffer* buffer) {
 
     cz::Str buffer_contents = transaction.last_edit_value();
 
-    transaction.commit(buffer);
+    transaction.commit();
 
     return buffer_contents;
 }

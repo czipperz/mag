@@ -11,67 +11,14 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
     // forward.
 
     WITH_SELECTED_BUFFER(source.client);
-    cz::Slice<Cursor> cursors = window->cursors;
-
-    uint64_t sum_line_lengths = 0;
-    size_t num_edits = cursors.len * 2;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        // `start_next` is the start of the line we are going to delete (next line).
-        Contents_Iterator start_next;
-        if (window->show_marks) {
-            start_next = buffer->contents.iterator_at(cursors[c].end());
-
-            // Special case: when selecting a region that ends at the start of a line, pretend
-            // we instead ended at the end of the previous line.  This allows the user to go to
-            // the beginning of a line, set the mark, walk down a few lines, and then shift the
-            // region.
-            if (!start_next.at_eob() && cursors[c].point != cursors[c].mark) {
-                Contents_Iterator it = start_next;
-                it.retreat();
-                if (it.get() == '\n') {
-                    start_next = it;
-                }
-            }
-        } else {
-            start_next = buffer->contents.iterator_at(cursors[c].point);
-        }
-
-        end_of_line(&start_next);
-        forward_char(&start_next);
-        if (start_next.at_eob()) {
-            num_edits -= 2;
-            continue;
-        }
-
-        // `end_next` is the end of the line we are going to delete (next line).
-        Contents_Iterator end_next = start_next;
-        end_of_line(&end_next);
-
-        // Check to see if we can merge with the next edit (at the next cursor).
-        if (c + 1 < cursors.len) {
-            uint64_t next_cursor_position;
-            if (window->show_marks) {
-                next_cursor_position = cursors[c + 1].start();
-            } else {
-                next_cursor_position = cursors[c + 1].point;
-            }
-
-            if (next_cursor_position <= end_next.position) {
-                // The edits overlap so we do merge.
-                num_edits -= 2;
-                continue;
-            }
-        }
-
-        sum_line_lengths += end_next.position - start_next.position;
-    }
 
     Transaction transaction;
-    transaction.init(num_edits, (size_t)sum_line_lengths + num_edits);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     bool override_start = false;
     Contents_Iterator start;
+    cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         // `start_next` is the start of the line we are going to delete (next line).
         Contents_Iterator start_next;
@@ -166,7 +113,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_shift_line_backward(Editor* editor, Command_Source source) {
@@ -174,56 +121,14 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
     // forward.
 
     WITH_SELECTED_BUFFER(source.client);
-    cz::Slice<Cursor> cursors = window->cursors;
-
-    uint64_t sum_line_lengths = 0;
-    size_t num_edits = cursors.len * 2;
-    for (size_t c = cursors.len; c-- > 0;) {
-        // `end_prev` is the end of the line we are going to delete (previous line).
-        Contents_Iterator end_prev;
-        if (window->show_marks) {
-            end_prev = buffer->contents.iterator_at(cursors[c].start());
-        } else {
-            end_prev = buffer->contents.iterator_at(cursors[c].point);
-        }
-
-        start_of_line(&end_prev);
-        backward_char(&end_prev);
-        if (end_prev.at_bob()) {
-            num_edits -= 2;
-            continue;
-        }
-
-        // `start_prev` is the start of the line we are going to delete (previous line).
-        Contents_Iterator start_prev = end_prev;
-        start_of_line(&start_prev);
-
-        // Check to see if we can merge with the next edit (at the previous cursor).
-        if (c >= 1) {
-            uint64_t next_cursor_position;
-            if (window->show_marks) {
-                next_cursor_position = cursors[c - 1].end();
-            } else {
-                next_cursor_position = cursors[c - 1].point;
-            }
-
-            if (next_cursor_position >= start_prev.position) {
-                // The edits overlap so we do merge.
-                num_edits -= 2;
-                continue;
-            }
-        }
-
-        // Add the length of the line to be deleted (previous line).
-        sum_line_lengths += end_prev.position - start_prev.position;
-    }
 
     Transaction transaction;
-    transaction.init(num_edits, (size_t)sum_line_lengths + num_edits);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     bool override_end = false;
     Contents_Iterator end;
+    cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = cursors.len; c-- > 0;) {
         // `end_prev` is the end of the line we are going to delete (previous line).
         Contents_Iterator end_prev;
@@ -262,7 +167,6 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         start_of_line(&end_prev);
         backward_char(&end_prev);
         if (end_prev.at_bob()) {
-            num_edits -= 2;
             continue;
         }
 
@@ -319,7 +223,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         transaction.push(remove);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 }

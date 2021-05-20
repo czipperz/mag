@@ -13,7 +13,7 @@ void command_uppercase_letter(Editor* editor, Command_Source source) {
 
     cz::Slice<Cursor> cursors = window->cursors;
     Transaction transaction;
-    transaction.init(cursors.len * 2, 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     for (size_t c = 0; c < cursors.len; ++c) {
@@ -33,7 +33,7 @@ void command_uppercase_letter(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_lowercase_letter(Editor* editor, Command_Source source) {
@@ -41,7 +41,7 @@ void command_lowercase_letter(Editor* editor, Command_Source source) {
 
     cz::Slice<Cursor> cursors = window->cursors;
     Transaction transaction;
-    transaction.init(cursors.len * 2, 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     for (size_t c = 0; c < cursors.len; ++c) {
@@ -61,7 +61,7 @@ void command_lowercase_letter(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_uppercase_region(Editor* editor, Command_Source source) {
@@ -72,16 +72,11 @@ void command_uppercase_region(Editor* editor, Command_Source source) {
 
     WITH_WINDOW_BUFFER(window);
 
-    cz::Slice<Cursor> cursors = window->cursors;
-    uint64_t sum_region_sizes = 0;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        sum_region_sizes += cursors[c].end() - cursors[c].start();
-    }
-
     Transaction transaction;
-    transaction.init(window->cursors.len() * 2, sum_region_sizes * 2);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
+    cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         Contents_Iterator start = buffer->contents.iterator_at(cursors[c].start());
         uint64_t end = cursors[c].end();
@@ -104,7 +99,7 @@ void command_uppercase_region(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 
     window->show_marks = false;
 }
@@ -117,16 +112,11 @@ void command_lowercase_region(Editor* editor, Command_Source source) {
 
     WITH_WINDOW_BUFFER(window);
 
-    cz::Slice<Cursor> cursors = window->cursors;
-    uint64_t sum_region_sizes = 0;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        sum_region_sizes += cursors[c].end() - cursors[c].start();
-    }
-
     Transaction transaction;
-    transaction.init(window->cursors.len() * 2, sum_region_sizes * 2);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
+    cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         Contents_Iterator start = buffer->contents.iterator_at(cursors[c].start());
         uint64_t end = cursors[c].end();
@@ -149,7 +139,7 @@ void command_lowercase_region(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 
     window->show_marks = false;
 }

@@ -361,7 +361,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
 
         if (merge_tab > 0) {
             Transaction transaction;
-            transaction.init(cursors.len + merge_tab, buffer->mode.tab_width);
+            transaction.init(buffer);
             CZ_DEFER(transaction.drop());
 
             char* buf = (char*)transaction.value_allocator().alloc({buffer->mode.tab_width - 1, 1});
@@ -428,7 +428,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
             }
 
             // Don't merge edits around tab replacement.
-            transaction.commit(buffer, nullptr);
+            transaction.commit();
             return;
         }
     }
@@ -443,7 +443,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
             // We don't need to update cursors here because insertion doesn't care.
 
             Transaction transaction;
-            transaction.init(commit.edits.len, 0);
+            transaction.init(buffer);
             CZ_DEFER(transaction.drop());
 
             for (size_t e = 0; e < commit.edits.len; ++e) {
@@ -459,7 +459,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
                 transaction.push(edit);
             }
 
-            transaction.commit(buffer, command_insert_char);
+            transaction.commit(command_insert_char);
 
             return;
         }

@@ -6,48 +6,40 @@
 
 namespace mag {
 
-void Transaction::init(size_t num_edits, size_t total_edit_values) {
-    // Note: format tied to buffer.cpp:reload_buffer_from_file() (static function)
-    edit_offset = 0;
-    value_offset = num_edits * sizeof(Edit);
-    memory = cz::heap_allocator().alloc<char>(value_offset + total_edit_values);
+void Transaction::init(Buffer* buffer_) {
+    edits = {};
+    buffer = buffer_;
+    save_point = buffer->commit_buffer_array.save();
+    committed = false;
 }
 
 void Transaction::drop() {
-    cz::heap_allocator().dealloc({memory, 0});
-}
-
-static void* transaction_realloc(void* data, cz::MemSlice old_mem, cz::AllocInfo new_info) {
-    CZ_ASSERT(!old_mem.buffer);
-    CZ_ASSERT(new_info.alignment == 1);
-
-    Transaction* transaction = (Transaction*)data;
-    void* result = (char*)transaction->memory + transaction->value_offset;
-    transaction->value_offset += new_info.size;
-    return result;
+    if (!committed) {
+        edits.drop(cz::heap_allocator());
+        buffer->commit_buffer_array.restore(save_point);
+    }
 }
 
 cz::Allocator Transaction::value_allocator() {
-    return {transaction_realloc, this};
+    return buffer->commit_buffer_array.allocator();
 }
 
 void Transaction::push(Edit edit) {
-    memcpy((char*)memory + edit_offset, &edit, sizeof(Edit));
-    edit_offset += sizeof(Edit);
+    edits.reserve(cz::heap_allocator(), 1);
+    edits.push(edit);
 }
 
 cz::Str Transaction::last_edit_value() const {
-    void* ptr = (char*)memory + edit_offset - sizeof(Edit);
-    return ((Edit*)ptr)->value.as_str();
+    return edits.last().value.as_str();
 }
 
-void Transaction::commit(Buffer* buffer, Command_Function committer) {
+void Transaction::commit(Command_Function committer) {
     // Only commit if edits were made.
-    if (edit_offset > 0) {
+    if (edits.len() > 0) {
         Commit commit;
-        commit.edits = {(Edit*)memory, edit_offset / sizeof(Edit)};
+        commit.edits = edits;
         if (buffer->commit(commit, committer)) {
-            memory = nullptr;
+            committed = true;
         }
     }
 }

@@ -67,24 +67,12 @@ static uint64_t find_indent_width(Buffer* buffer, Contents_Iterator it) {
 void command_insert_newline_indent(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    cz::Slice<Cursor> cursors = window->cursors;
-
-    uint64_t alloc_space = cursors.len;  // 1 newline per cursor
-    for (size_t i = 0; i < cursors.len; ++i) {
-        Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
-        forward_through_whitespace(&it);
-        uint64_t end = it.position;
-        backward_through_whitespace(&it);
-        alloc_space += end - it.position;
-
-        alloc_space += find_indent_width(buffer, it);
-    }
-
     Transaction transaction;
-    transaction.init(cursors.len * 2, alloc_space);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     int64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
     for (size_t i = 0; i < cursors.len; ++i) {
         Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
         forward_through_whitespace(&it);
@@ -116,7 +104,7 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
         offset += insert.value.len() - remove.value.len();
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 static bool at_empty_line(Contents_Iterator iterator) {
@@ -165,68 +153,13 @@ static Invalid_Indent_Data detect_invalid_indent(const Mode& mode, Contents_Iter
 }
 
 static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent_offset) {
-    cz::Slice<Cursor> cursors = window->cursors;
-
-    uint64_t edits = 0;
-    uint64_t alloc_len = 0;
-
-    Contents_Iterator iterator = buffer->contents.start();
-    for (size_t i = 0; i < cursors.len; ++i) {
-        iterator.advance_to(cursors[i].point);
-        if (cursors.len > 1 && at_empty_line(iterator)) {
-            continue;
-        }
-
-        start_of_line(&iterator);
-
-        Invalid_Indent_Data data = detect_invalid_indent(buffer->mode, iterator);
-
-        uint64_t new_columns = data.columns;
-        if (indent_offset > 0) {
-            new_columns += indent_offset;
-            if (cursors.len == 1) {
-                new_columns -= new_columns % buffer->mode.indent_width;
-            }
-        } else if ((uint64_t)-indent_offset > new_columns) {
-            new_columns = 0;
-        } else if (cursors.len == 1 && new_columns % buffer->mode.indent_width > 0) {
-            new_columns -= new_columns % buffer->mode.indent_width;
-        } else {
-            new_columns += indent_offset;
-        }
-        uint64_t new_tabs, new_spaces;
-        analyze_indent(buffer->mode, new_columns, &new_tabs, &new_spaces);
-
-        if (data.invalid) {
-            edits += 2;
-            alloc_len += data.tabs + data.spaces;
-            alloc_len += new_tabs + new_spaces;
-        } else {
-            bool adding = false, removing = false;
-            if (data.spaces > new_spaces) {
-                removing = true;
-                alloc_len += data.spaces - new_spaces;
-            } else if (data.spaces < new_spaces) {
-                adding = true;
-                alloc_len += new_spaces - data.spaces;
-            }
-            if (data.tabs > new_tabs) {
-                removing = true;
-                alloc_len += data.tabs - new_tabs;
-            } else if (data.tabs < new_tabs) {
-                adding = true;
-                alloc_len += new_tabs - data.tabs;
-            }
-            edits += adding + removing;
-        }
-    }
-
     Transaction transaction;
-    transaction.init(edits, alloc_len);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
-    iterator = buffer->contents.start();
+    Contents_Iterator iterator = buffer->contents.start();
     int64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
         if (cursors.len > 1 && at_empty_line(iterator)) {
@@ -333,7 +266,7 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
         }
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_increase_indent(Editor* editor, Command_Source source) {
@@ -348,27 +281,12 @@ void command_decrease_indent(Editor* editor, Command_Source source) {
 void command_delete_whitespace(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    cz::Slice<Cursor> cursors = window->cursors;
-
-    uint64_t count = 0;
-    size_t edits = 0;
-    for (size_t i = 0; i < cursors.len; ++i) {
-        Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
-        forward_through_whitespace(&it);
-        uint64_t end = it.position;
-        backward_through_whitespace(&it);
-        uint64_t local_count = end - it.position;
-        if (local_count > 0) {
-            ++edits;
-        }
-        count += local_count;
-    }
-
     Transaction transaction;
-    transaction.init(edits, count);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
     for (size_t i = 0; i < cursors.len; ++i) {
         Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
         forward_through_whitespace(&it);
@@ -393,38 +311,18 @@ void command_delete_whitespace(Editor* editor, Command_Source source) {
         offset += count;
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_merge_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    cz::Slice<Cursor> cursors = window->cursors;
-
-    uint64_t count = 0;
-    size_t edits = 0;
-    for (size_t i = 0; i < cursors.len; ++i) {
-        Contents_Iterator start = buffer->contents.iterator_at(cursors[i].point);
-        end_of_line(&start);
-
-        if (start.at_eob()) {
-            continue;
-        }
-
-        Contents_Iterator end = start;
-        backward_through_whitespace(&start);
-        forward_char(&end);
-        forward_through_whitespace(&end);
-
-        count += end.position - start.position;
-        ++edits;
-    }
-
     Transaction transaction;
-    transaction.init(edits * 2, count);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
     for (size_t i = 0; i < cursors.len; ++i) {
         Contents_Iterator start = buffer->contents.iterator_at(cursors[i].point);
         end_of_line(&start);
@@ -454,7 +352,7 @@ void command_merge_lines(Editor* editor, Command_Source source) {
         --offset;
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 }

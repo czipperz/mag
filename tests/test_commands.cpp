@@ -29,7 +29,7 @@ using namespace mag::basic;
 static void insert_default_contents(Editor* editor, Client* client, cz::Str contents) {
     WITH_SELECTED_BUFFER(client);
     Transaction transaction;
-    transaction.init(window->cursors.len(), 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     SSOStr value;
@@ -43,7 +43,7 @@ static void insert_default_contents(Editor* editor, Client* client, cz::Str cont
         transaction.push(edit);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 #define STRINGIFY_BUFFER()                                                  \

@@ -41,12 +41,12 @@ static void cut_cursor(Cursor* cursor,
 
 void command_cut(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
-    transaction.init(cursors.len, 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
+    cz::Slice<Cursor> cursors = window->cursors;
     uint64_t offset = 0;
     if (cursors.len == 1) {
         cut_cursor(&cursors[0], &transaction, &source.client->global_copy_chain, editor, buffer,
@@ -58,7 +58,7 @@ void command_cut(Editor* editor, Command_Source source) {
         }
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 
     window->show_marks = false;
 }
@@ -105,7 +105,7 @@ static bool setup_paste(cz::Slice<Cursor> cursors, Copy_Chain* global_copy_chain
 static void run_paste(cz::Slice<Cursor> cursors, Buffer* buffer) {
     // :CopyLeak Probably we will need to copy all the values here.
     Transaction transaction;
-    transaction.init(cursors.len, 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     size_t offset = 0;
@@ -128,7 +128,7 @@ static void run_paste(cz::Slice<Cursor> cursors, Buffer* buffer) {
         }
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_paste(Editor* editor, Command_Source source) {
@@ -266,12 +266,12 @@ static cz::String copy_cursors_as_lines(Editor* editor,
 
 void command_cursors_cut_as_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
-    transaction.init(cursors.len, 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
+    cz::Slice<Cursor> cursors = window->cursors;
     cz::String string = copy_cursors_as_lines(editor, buffer, cursors);
 
     uint64_t offset = 0;
@@ -288,7 +288,7 @@ void command_cursors_cut_as_lines(Editor* editor, Command_Source source) {
         }
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 
     window->show_marks = false;
 }
@@ -315,7 +315,7 @@ void command_cursors_copy_as_lines(Editor* editor, Command_Source source) {
 static void run_paste_as_lines(cz::Slice<Cursor> cursors, Buffer* buffer) {
     // :CopyLeak Probably we will need to copy all the values here.
     Transaction transaction;
-    transaction.init(cursors.len, 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     Copy_Chain* copy_chain = cursors[0].paste_local;
@@ -350,7 +350,7 @@ static void run_paste_as_lines(cz::Slice<Cursor> cursors, Buffer* buffer) {
         value = value.slice_start(newline + 1);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_cursors_paste_as_lines(Editor* editor, Command_Source source) {

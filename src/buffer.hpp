@@ -54,6 +54,9 @@ struct Buffer {
     /// For example the scratch and mini buffer are `TEMPORARY` buffers but not `read_only`.
     bool read_only;
 
+    /// Storage for commit data.
+    cz::Buffer_Array commit_buffer_array;
+
     /// All commits being tracked right now.  Note that those after `commit_index` have been undone.
     cz::Vector<Commit> commits;
 

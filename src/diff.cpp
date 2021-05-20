@@ -225,15 +225,8 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
         return ret;
     }
 
-    size_t edit_total_len = 0;
-    for (size_t i = 0; i < edits.len(); ++i) {
-        if (!edits[i].value.is_short()) {
-            edit_total_len += edits[i].value.len();
-        }
-    }
-
     Transaction transaction;
-    transaction.init(edits.len(), edit_total_len);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     for (size_t i = edits.len(); i-- > 0;) {
@@ -243,7 +236,7 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
         transaction.push(edit);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
     return 0;
 }
 

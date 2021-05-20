@@ -39,31 +39,10 @@ void command_comment(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction = {};
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
+
     if (window->show_marks) {
-        size_t edits = 0;
-        for (size_t c = 0; c < cursors.len; ++c) {
-            Contents_Iterator start = buffer->contents.iterator_at(cursors[c].start());
-            Contents_Iterator end = start;
-            end.advance_to(cursors[c].end());
-
-            if (is_block(start, end)) {
-                edits += 2;
-            } else {
-                while (start.position < end.position) {
-                    edits += 1;
-
-                    end_of_line(&start);
-                    if (start.position >= end.position) {
-                        break;
-                    }
-                    start.advance();
-                }
-            }
-        }
-
-        transaction.init(edits, 0);
-
         uint64_t offset = 0;
         for (size_t c = 0; c < cursors.len; ++c) {
             Contents_Iterator start = buffer->contents.iterator_at(cursors[c].start());
@@ -153,8 +132,6 @@ void command_comment(Editor* editor, Command_Source source) {
             }
         }
     } else {
-        transaction.init(cursors.len, 0);
-
         SSOStr value = SSOStr::from_constant("// ");
 
         uint64_t offset = 0;
@@ -171,7 +148,7 @@ void command_comment(Editor* editor, Command_Source source) {
         }
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_reformat_comment(Editor* editor, Command_Source source) {

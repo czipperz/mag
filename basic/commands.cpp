@@ -208,7 +208,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
     int64_t offset = 0;
     if (tabs > 0 && buffer->mode.tab_width > 1) {
         Transaction transaction;
-        transaction.init(cursors.len + tabs, buffer->mode.tab_width - 1);
+        transaction.init(buffer);
         CZ_DEFER(transaction.drop());
 
         char* buf = (char*)transaction.value_allocator().alloc({buffer->mode.tab_width - 1, 1});
@@ -251,7 +251,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
         }
 
         // Don't merge edits around tab replacement.
-        transaction.commit(buffer, nullptr);
+        transaction.commit();
         return;
     }
 
@@ -268,7 +268,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
             window->update_cursors(buffer);
 
             Transaction transaction;
-            transaction.init(commit.edits.len, 0);
+            transaction.init(buffer);
             CZ_DEFER(transaction.drop());
 
             uint64_t offset = 1;
@@ -296,7 +296,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
                 transaction.push(edit);
             }
 
-            transaction.commit(buffer, command_delete_backward_char);
+            transaction.commit(command_delete_backward_char);
             return;
         }
     }
@@ -320,7 +320,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
             window->update_cursors(buffer);
 
             Transaction transaction;
-            transaction.init(commit.edits.len, 0);
+            transaction.init(buffer);
             CZ_DEFER(transaction.drop());
             for (size_t e = 0; e < commit.edits.len; ++e) {
                 CZ_DEBUG_ASSERT(commit.edits[e].value.is_short());
@@ -341,7 +341,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
                 edit.flags = Edit::REMOVE_AFTER_POSITION;
                 transaction.push(edit);
             }
-            transaction.commit(buffer, command_delete_forward_char);
+            transaction.commit(command_delete_forward_char);
             return;
         }
     }
@@ -363,7 +363,7 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
     Transaction transaction;
-    transaction.init(2 * cursors.len, 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     for (size_t c = 0; c < cursors.len; ++c) {
@@ -385,7 +385,7 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
         transaction.push(insert_before);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_open_line(Editor* editor, Command_Source source) {
@@ -404,27 +404,8 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 
-    uint64_t sum_region_sizes = 0;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator start;
-        Contents_Iterator end;
-        if (window->show_marks) {
-            start = buffer->contents.iterator_at(cursors[c].start());
-            end = buffer->contents.iterator_at(cursors[c].end());
-            if (end.position > start.position) {
-                end.retreat();
-            }
-        } else {
-            start = buffer->contents.iterator_at(cursors[c].point);
-            end = start;
-        }
-        start_of_line(&start);
-        end_of_line(&end);
-        sum_region_sizes += end.position - start.position;
-    }
-
     Transaction transaction;
-    transaction.init(cursors.len, sum_region_sizes + cursors.len);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     uint64_t offset = 0;
@@ -458,25 +439,15 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_delete_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 
-    uint64_t sum_region_sizes = 0;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
-        Contents_Iterator end = start;
-        start_of_line(&start);
-        end_of_line(&end);
-        forward_char(&end);
-        sum_region_sizes += end.position - start.position;
-    }
-
     Transaction transaction;
-    transaction.init(cursors.len, sum_region_sizes);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     uint64_t offset = 0;
@@ -496,23 +467,15 @@ void command_delete_line(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_delete_end_of_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 
-    uint64_t sum_region_sizes = 0;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
-        Contents_Iterator end = start;
-        end_of_line(&end);
-        sum_region_sizes += end.position - start.position;
-    }
-
     Transaction transaction;
-    transaction.init(cursors.len, sum_region_sizes);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     uint64_t offset = 0;
@@ -530,7 +493,7 @@ void command_delete_end_of_line(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_undo(Editor* editor, Command_Source source) {
@@ -1098,7 +1061,7 @@ void command_cursors_align(Editor* editor, Command_Source source) {
     }
 
     Transaction transaction;
-    transaction.init(cursors.len - 1, max_column - min_column);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     char* buf = (char*)transaction.value_allocator().alloc({max_column - min_column, 1});
@@ -1127,7 +1090,7 @@ void command_cursors_align(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
-    transaction.commit(buffer, command_cursors_align);
+    transaction.commit(command_cursors_align);
 }
 
 void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source) {
@@ -1444,7 +1407,7 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
     }
 
     Transaction transaction;
-    transaction.init(1, buffer->contents.len - start.position);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     Edit edit;
@@ -1453,7 +1416,7 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
     edit.flags = Edit::REMOVE;
     transaction.push(edit);
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_mark_buffer(Editor* editor, Command_Source source) {
@@ -1511,7 +1474,8 @@ void command_insert_home_directory(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
-    transaction.init(cursors.len, str.len + extra);
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
 
     char* buf = (char*)transaction.value_allocator().alloc({str.len + extra, 1});
     memcpy(buf, str.buffer, str.len);
@@ -1533,7 +1497,7 @@ void command_insert_home_directory(Editor* editor, Command_Source source) {
         offset += str.len;
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 }

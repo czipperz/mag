@@ -265,8 +265,7 @@ void Client::show_interactive_dialog(Editor* editor,
 }
 
 void Client::fill_mini_buffer_with_selected_region(Editor* editor) {
-    Transaction transaction = {};
-    CZ_DEFER(transaction.drop());
+    SSOStr value;
 
     {
         Window_Unified* window = selected_normal_window;
@@ -277,19 +276,24 @@ void Client::fill_mini_buffer_with_selected_region(Editor* editor) {
 
         uint64_t start = window->cursors[0].start();
         uint64_t end = window->cursors[0].end();
-        transaction.init(1, end - start);
-
-        Edit edit;
-        edit.value = buffer->contents.slice(transaction.value_allocator(),
-                                            buffer->contents.iterator_at(start), end);
-        edit.position = 0;
-        edit.flags = Edit::INSERT;
-        transaction.push(edit);
+        value =
+            buffer->contents.slice(cz::heap_allocator(), buffer->contents.iterator_at(start), end);
     }
 
     {
         WITH_WINDOW_BUFFER(mini_buffer_window());
-        transaction.commit(buffer);
+
+        Transaction transaction = {};
+        transaction.init(buffer);
+        CZ_DEFER(transaction.drop());
+
+        Edit edit;
+        edit.value = value;
+        edit.position = 0;
+        edit.flags = Edit::INSERT;
+        transaction.push(edit);
+
+        transaction.commit();
     }
 }
 

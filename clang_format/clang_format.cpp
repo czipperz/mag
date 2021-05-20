@@ -156,12 +156,11 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
     size_t total_len = 0;
     parse_replacements(&replacements, output_xml, &total_len, error_line);
 
-    Transaction transaction;
-    transaction.init(2 * replacements.len(), total_len);
-    CZ_DEFER(transaction.drop());
+    WITH_BUFFER_HANDLE(handle);
 
-    Buffer* buffer = handle->lock_writing();
-    CZ_DEFER(handle->unlock());
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
 
     cz::Slice<const Change> changes = {buffer->changes.start() + change_index,
                                        buffer->changes.len() - change_index};
@@ -201,7 +200,7 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
         offset += repl->text.len - repl->length;
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 
     if (error_line->len == 0) {
         save_buffer(buffer);

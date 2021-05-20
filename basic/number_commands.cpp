@@ -21,7 +21,7 @@ void command_insert_numbers(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
-    transaction.init(cursors.len, 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     uint64_t offset = 0;
@@ -40,14 +40,14 @@ void command_insert_numbers(Editor* editor, Command_Source source) {
         offset += len;
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 static void change_numbers(Buffer* buffer, Window_Unified* window, int difference) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
-    transaction.init(cursors.len * 2, 0);
+    transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
     int64_t offset = 0;
@@ -109,7 +109,7 @@ static void change_numbers(Buffer* buffer, Window_Unified* window, int differenc
         offset -= j;
     }
 
-    transaction.commit(buffer);
+    transaction.commit();
 }
 
 void command_increment_numbers(Editor* editor, Command_Source source) {

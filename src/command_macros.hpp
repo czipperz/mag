@@ -20,7 +20,7 @@
     cz::Arc<Buffer_Handle> handle = editor->lookup(BUFFER_ID); \
     WITH_BUFFER_HANDLE(handle)
 
-#define WITH_BUFFER_HANDLE(HANDLE)           \
+#define WITH_BUFFER_HANDLE(HANDLE)             \
     Buffer* buffer = (HANDLE)->lock_writing(); \
     CZ_DEFER((HANDLE)->unlock())
 
@@ -37,7 +37,7 @@
     cz::Arc<Buffer_Handle> handle = editor->lookup(BUFFER_ID); \
     WITH_CONST_BUFFER_HANDLE(handle)
 
-#define WITH_CONST_BUFFER_HANDLE(HANDLE)           \
+#define WITH_CONST_BUFFER_HANDLE(HANDLE)             \
     const Buffer* buffer = (HANDLE)->lock_reading(); \
     CZ_DEFER((HANDLE)->unlock())
 
@@ -53,20 +53,12 @@
 
 #define DELETE_BACKWARD(FUNC, COMMITTER)                                                        \
     do {                                                                                        \
-        cz::Slice<Cursor> cursors = window->cursors;                                            \
-        uint64_t sum_regions = 0;                                                               \
-        for (size_t c = 0; c < cursors.len; ++c) {                                              \
-            Contents_Iterator end = buffer->contents.iterator_at(cursors[c].point);             \
-            Contents_Iterator start = end;                                                      \
-            FUNC(&start);                                                                       \
-            sum_regions += end.position - start.position;                                       \
-        }                                                                                       \
-                                                                                                \
         Transaction transaction;                                                                \
-        transaction.init(cursors.len, (size_t)sum_regions);                                     \
+        transaction.init(buffer);                                                               \
         CZ_DEFER(transaction.drop());                                                           \
                                                                                                 \
-        uint64_t total = 0;                                                                     \
+        cz::Slice<Cursor> cursors = window->cursors;                                            \
+        uint64_t offset = 0;                                                                    \
         for (size_t c = 0; c < cursors.len; ++c) {                                              \
             Contents_Iterator end = buffer->contents.iterator_at(cursors[c].point);             \
             Contents_Iterator start = end;                                                      \
@@ -75,31 +67,23 @@
                 Edit edit;                                                                      \
                 edit.value =                                                                    \
                     buffer->contents.slice(transaction.value_allocator(), start, end.position); \
-                edit.position = start.position - total;                                         \
-                total += end.position - start.position;                                         \
+                edit.position = start.position - offset;                                        \
+                offset += end.position - start.position;                                        \
                 edit.flags = Edit::REMOVE;                                                      \
                 transaction.push(edit);                                                         \
             }                                                                                   \
         }                                                                                       \
                                                                                                 \
-        transaction.commit(buffer, COMMITTER);                                                  \
+        transaction.commit(COMMITTER);                                                          \
     } while (0)
 
 #define DELETE_FORWARD(FUNC, COMMITTER)                                                         \
     do {                                                                                        \
-        cz::Slice<Cursor> cursors = window->cursors;                                            \
-        uint64_t sum_regions = 0;                                                               \
-        for (size_t c = 0; c < cursors.len; ++c) {                                              \
-            Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);           \
-            Contents_Iterator end = start;                                                      \
-            FUNC(&end);                                                                         \
-            sum_regions += end.position - start.position;                                       \
-        }                                                                                       \
-                                                                                                \
         Transaction transaction;                                                                \
-        transaction.init(cursors.len, (size_t)sum_regions);                                     \
+        transaction.init(buffer);                                                               \
         CZ_DEFER(transaction.drop());                                                           \
                                                                                                 \
+        cz::Slice<Cursor> cursors = window->cursors;                                            \
         uint64_t total = 0;                                                                     \
         for (size_t c = 0; c < cursors.len; ++c) {                                              \
             Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);           \
@@ -116,5 +100,5 @@
             }                                                                                   \
         }                                                                                       \
                                                                                                 \
-        transaction.commit(buffer, COMMITTER);                                                  \
+        transaction.commit(COMMITTER);                                                          \
     } while (0)
