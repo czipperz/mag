@@ -133,6 +133,10 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "S-DOWN", region_movement::command_forward_line);
     BIND(key_map, "S-LEFT", region_movement::command_backward_char);
     BIND(key_map, "S-RIGHT", region_movement::command_forward_char);
+    BIND(key_map, "C-LEFT", command_backward_word);
+    BIND(key_map, "C-RIGHT", command_forward_word);
+    BIND(key_map, "C-S-LEFT", region_movement::command_backward_word);
+    BIND(key_map, "C-S-RIGHT", region_movement::command_forward_word);
 
     BIND(key_map, "A-]", command_forward_paragraph);
     BIND(key_map, "A-[", command_backward_paragraph);
