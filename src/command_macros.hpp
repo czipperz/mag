@@ -21,8 +21,8 @@
     WITH_BUFFER_HANDLE(handle)
 
 #define WITH_BUFFER_HANDLE(HANDLE)           \
-    Buffer* buffer = HANDLE->lock_writing(); \
-    CZ_DEFER(HANDLE->unlock())
+    Buffer* buffer = (HANDLE)->lock_writing(); \
+    CZ_DEFER((HANDLE)->unlock())
 
 #define WITH_CONST_SELECTED_BUFFER(CLIENT)                \
     Window_Unified* window = (CLIENT)->selected_window(); \
@@ -38,8 +38,8 @@
     WITH_CONST_BUFFER_HANDLE(handle)
 
 #define WITH_CONST_BUFFER_HANDLE(HANDLE)           \
-    const Buffer* buffer = HANDLE->lock_reading(); \
-    CZ_DEFER(HANDLE->unlock())
+    const Buffer* buffer = (HANDLE)->lock_reading(); \
+    CZ_DEFER((HANDLE)->unlock())
 
 #define TRANSFORM_POINTS(FUNC)                                                           \
     do {                                                                                 \
