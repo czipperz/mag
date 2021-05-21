@@ -4,6 +4,7 @@
 #include <cz/char_type.hpp>
 #include "buffer.hpp"
 #include "contents.hpp"
+#include "match.hpp"
 #include "mode.hpp"
 #include "token.hpp"
 #include "window.hpp"
@@ -11,24 +12,13 @@
 namespace mag {
 
 void start_of_line(Contents_Iterator* iterator) {
-    ZoneScoped;
-
-    do {
-        if (iterator->at_bob()) {
-            return;
-        }
-
-        iterator->retreat();
-    } while (iterator->get() != '\n');
-
-    iterator->advance();
+    if (rfind(iterator, '\n')) {
+        iterator->advance();
+    }
 }
 
 void end_of_line(Contents_Iterator* iterator) {
-    ZoneScoped;
-    while (!iterator->at_eob() && iterator->get() != '\n') {
-        iterator->advance();
-    }
+    find(iterator, '\n');
 }
 
 void forward_through_whitespace(Contents_Iterator* iterator) {
