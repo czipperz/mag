@@ -14,6 +14,10 @@ bool looking_at_no_bounds_check(Contents_Iterator it, cz::Str query);
 /// Tests if the buffer at `it` matches `query`.
 bool looking_at(Contents_Iterator it, cz::Str query);
 
+/// Tests if the buffer at `it` matches `query`.
+/// Ignores case differences if `case_insensitive == true`.
+bool looking_at_cased(Contents_Iterator it, cz::Str query, bool case_insensitive);
+
 /// Tests if the region from `start` to `end` matches `query`.
 bool matches(Contents_Iterator start, uint64_t end, cz::Str query);
 
@@ -25,5 +29,12 @@ bool matches(Contents_Iterator start,
              uint64_t end,
              Contents_Iterator query_start,
              uint64_t query_end);
+
+/// Tests if the region from `start` to `end` matches `query`.
+/// Ignores case differences if `case_insensitive == true`.
+bool matches_cased(Contents_Iterator start,
+                   uint64_t end,
+                   Contents_Iterator query,
+                   bool case_insensitive);
 
 }

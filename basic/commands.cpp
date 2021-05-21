@@ -9,6 +9,7 @@
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "insert.hpp"
+#include "match.hpp"
 #include "movement.hpp"
 #include "transaction.hpp"
 #include "visible_region.hpp"
@@ -665,25 +666,7 @@ static cz::Option<uint64_t> search_forward(Contents_Iterator start_it,
                                            cz::Str query,
                                            bool case_insensitive) {
     while (start_it.position + query.len <= start_it.contents->len) {
-        Contents_Iterator it = start_it;
-        size_t q;
-        if (case_insensitive) {
-            for (q = 0; q < query.len; ++q) {
-                if (cz::to_lower(it.get()) != cz::to_lower(query[q])) {
-                    break;
-                }
-                it.advance();
-            }
-        } else {
-            for (q = 0; q < query.len; ++q) {
-                if (it.get() != query[q]) {
-                    break;
-                }
-                it.advance();
-            }
-        }
-
-        if (q == query.len) {
+        if (looking_at_cased(start_it, query, case_insensitive)) {
             return start_it.position;
         }
 
@@ -806,25 +789,7 @@ static cz::Option<uint64_t> search_backward(Contents_Iterator start_it,
     }
 
     while (1) {
-        Contents_Iterator it = start_it;
-        size_t q;
-        if (search_case_insensitive) {
-            for (q = 0; q < query.len; ++q) {
-                if (cz::to_lower(it.get()) != cz::to_lower(query[q])) {
-                    break;
-                }
-                it.advance();
-            }
-        } else {
-            for (q = 0; q < query.len; ++q) {
-                if (it.get() != query[q]) {
-                    break;
-                }
-                it.advance();
-            }
-        }
-
-        if (q == query.len) {
+        if (looking_at_cased(start_it, query, search_case_insensitive)) {
             return start_it.position;
         }
 

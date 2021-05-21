@@ -6,6 +6,7 @@
 #include "buffer.hpp"
 #include "contents.hpp"
 #include "face.hpp"
+#include "match.hpp"
 #include "overlay.hpp"
 #include "token.hpp"
 #include "token_cache.hpp"
@@ -98,24 +99,7 @@ static Face overlay_highlight_string_get_face_and_advance(const Buffer* buffer,
             }
         }
 
-        size_t i = 0;
-        if (data->case_insensitive) {
-            for (i = 0; i < data->string.len() && !iterator.at_eob(); ++i) {
-                if (cz::to_lower(data->string[i]) != cz::to_lower(iterator.get())) {
-                    break;
-                }
-                iterator.advance();
-            }
-        } else {
-            for (i = 0; i < data->string.len() && !iterator.at_eob(); ++i) {
-                if (data->string[i] != iterator.get()) {
-                    break;
-                }
-                iterator.advance();
-            }
-        }
-
-        if (i == data->string.len()) {
+        if (looking_at_cased(iterator, data->string, data->case_insensitive)) {
             data->countdown_cursor_region = data->string.len();
         }
     }
