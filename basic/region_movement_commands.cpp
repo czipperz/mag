@@ -21,7 +21,18 @@ static void set_marks(Window_Unified* window) {
 
 static void show_marks_temporarily(Window_Unified* window) {
     if (!window->show_marks) {
-        window->show_marks = 2;
+        // If all the regions are empty then don't do anything.
+        cz::Slice<Cursor> cursors = window->cursors;
+        size_t c;
+        for (c = 0; c < cursors.len; ++c) {
+            if (cursors[c].mark != cursors[c].point) {
+                break;
+            }
+        }
+
+        if (c < cursors.len) {
+            window->show_marks = 2;
+        }
     }
 }
 
