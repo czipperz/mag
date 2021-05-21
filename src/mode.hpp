@@ -61,6 +61,9 @@ struct Mode {
     /// Controls whether search commands stemming from this buffer will be case sensitive.
     bool search_case_insensitive = true;
 
+    /// Used for debugging.
+    bool render_bucket_boundaries = false;
+
     void drop();
 };
 

@@ -580,13 +580,11 @@ static void draw_buffer_contents(Cell* cells,
             }
         }
 
-#if 0
-        if (iterator.index == 0) {
+        if (buffer->mode.render_bucket_boundaries && iterator.index == 0) {
             Face face = {};
             face.background = {1};
             ADDCH(face, '\'');
         }
-#endif
 
         Face face = {};
         if (has_cursor) {
