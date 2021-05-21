@@ -673,37 +673,8 @@ static cz::Option<uint64_t> search_forward(Contents_Iterator start_it,
         }
 
         start_it.advance();
-        while (!start_it.at_eob()) {
-            auto bucket = start_it.contents->buckets[start_it.bucket];
-            cz::Str str = cz::Str{bucket.elems, bucket.len}.slice_start(start_it.index);
-            const char* ptr;
-            if (case_insensitive && cz::is_alpha(query[0])) {
-                const char* ptr2;
-                if (cz::is_lower(query[0])) {
-                    ptr = str.find(query[0]);
-                    ptr2 = str.find(cz::to_upper(query[0]));
-                } else {
-                    ptr = str.find(cz::to_lower(query[0]));
-                    ptr2 = str.find(query[0]);
-                }
-
-                if (!ptr) {
-                    // No lower case result so use the upper case result.
-                    ptr = ptr2;
-                } else if (ptr2 && ptr > ptr2) {
-                    // The upper case result is before the lower case result.
-                    ptr = ptr2;
-                }
-            } else {
-                ptr = str.find(query[0]);
-            }
-
-            if (ptr) {
-                start_it.advance(ptr - str.buffer);
-                break;
-            } else {
-                start_it.advance(str.len);
-            }
+        if (!find_cased(&start_it, query[0], case_insensitive)) {
+            break;
         }
     }
 
@@ -795,10 +766,9 @@ static cz::Option<uint64_t> search_backward(Contents_Iterator start_it,
             return start_it.position;
         }
 
-        if (start_it.at_bob()) {
+        if (!rfind_cased(&start_it, query[0], search_case_insensitive)) {
             break;
         }
-        start_it.retreat();
     }
 
     return {};

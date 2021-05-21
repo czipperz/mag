@@ -113,4 +113,128 @@ bool matches_cased(Contents_Iterator it,
     return true;
 }
 
+bool find(Contents_Iterator* it, char ch) {
+    ZoneScoped;
+
+    while (1) {
+        if (it->at_eob()) {
+            return false;
+        }
+
+        auto bucket = it->contents->buckets[it->bucket];
+        cz::Str str = cz::Str{bucket.elems, bucket.len}.slice_start(it->index);
+        const char* ptr = str.find(ch);
+
+        if (ptr) {
+            it->advance(ptr - str.buffer);
+            return true;
+        } else {
+            it->advance(str.len);
+        }
+    }
+}
+
+bool rfind(Contents_Iterator* it, char ch) {
+    ZoneScoped;
+
+    while (1) {
+        auto bucket = it->contents->buckets[it->bucket];
+        cz::Str str = cz::Str{bucket.elems, bucket.len}.slice_end(it->index);
+        const char* ptr = str.rfind(ch);
+
+        if (ptr) {
+            it->index = ptr - str.buffer;
+            it->position -= str.end() - ptr;
+            return true;
+        } else {
+            if (it->bucket == 0) {
+                it->position -= it->index;
+                it->index = 0;
+                return false;
+            }
+
+            --it->bucket;
+            it->index = it->contents->buckets[it->bucket].len;
+            it->position -= str.len;
+        }
+    }
+}
+
+bool find_cased(Contents_Iterator* it, char ch, bool case_insensitive) {
+    if (!case_insensitive || !cz::is_alpha(ch)) {
+        return find(it, ch);
+    }
+
+    ZoneScoped;
+
+    char lower = cz::to_lower(ch);
+    char upper = cz::to_upper(ch);
+
+    while (1) {
+        if (it->at_eob()) {
+            return false;
+        }
+
+        auto bucket = it->contents->buckets[it->bucket];
+        cz::Str str = cz::Str{bucket.elems, bucket.len}.slice_start(it->index);
+        const char* ptr = str.find(lower);
+        const char* ptr2 = str.find(upper);
+        if (!ptr) {
+            // No lower case result.
+            ptr = ptr2;
+        } else if (ptr2 && ptr > ptr2) {
+            // The upper case result is closer than the lower case result.
+            ptr = ptr2;
+        }
+
+        if (ptr) {
+            it->advance(ptr - str.buffer);
+            return true;
+        } else {
+            it->advance(str.len);
+        }
+    }
+}
+
+bool rfind_cased(Contents_Iterator* it, char ch, bool case_insensitive) {
+    if (!case_insensitive || !cz::is_alpha(ch)) {
+        return rfind(it, ch);
+    }
+
+    ZoneScoped;
+
+    char lower = cz::to_lower(ch);
+    char upper = cz::to_upper(ch);
+
+    while (1) {
+        auto bucket = it->contents->buckets[it->bucket];
+        cz::Str str = cz::Str{bucket.elems, bucket.len}.slice_end(it->index);
+        const char* ptr = str.rfind(lower);
+        const char* ptr2 = str.rfind(upper);
+        if (!ptr) {
+            // No lower case result.
+            ptr = ptr2;
+        } else if (ptr2 && ptr < ptr2) {
+            // The upper case result is closer than the lower case result.
+            ptr = ptr2;
+        }
+
+        if (ptr) {
+            it->index = ptr - str.buffer;
+            it->position -= str.end() - ptr;
+            return true;
+        } else {
+            if (it->bucket == 0) {
+                it->position -= it->index;
+                it->index = 0;
+                return false;
+            }
+
+            --it->bucket;
+            it->index = it->contents->buckets[it->bucket].len;
+            it->position -= str.len;
+        }
+    }
+}
+
 }

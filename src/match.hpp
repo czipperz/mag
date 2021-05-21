@@ -37,4 +37,14 @@ bool matches_cased(Contents_Iterator start,
                    Contents_Iterator query,
                    bool case_insensitive);
 
+/// Find a character at or after the point `it`.  On failure puts `it` at eob and returns `false`.
+bool find(Contents_Iterator* it, char ch);
+/// Find a character before the point `it`.  On failure puts `it` at sob and returns `false`.
+bool rfind(Contents_Iterator* it, char ch);
+
+/// Same as the functions above except if `case_insensitive == true`, in which case it will look
+/// for either `cz::to_lower(ch)` or `cz::to_upper(ch)`, returning the nearest one to `it`.
+bool find_cased(Contents_Iterator* it, char ch, bool case_insensitive);
+bool rfind_cased(Contents_Iterator* it, char ch, bool case_insensitive);
+
 }
