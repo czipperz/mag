@@ -137,6 +137,14 @@ bool find(Contents_Iterator* it, char ch) {
 bool rfind(Contents_Iterator* it, char ch) {
     ZoneScoped;
 
+    if (it->bucket == it->contents->buckets.len()) {
+        if (it->bucket == 0) {
+            return false;
+        }
+
+        goto retreat;
+    }
+
     while (1) {
         auto bucket = it->contents->buckets[it->bucket];
         cz::Str str = cz::Str{bucket.elems, bucket.len}.slice_end(it->index);
@@ -153,9 +161,10 @@ bool rfind(Contents_Iterator* it, char ch) {
                 return false;
             }
 
+            it->position -= str.len;
+        retreat:
             --it->bucket;
             it->index = it->contents->buckets[it->bucket].len;
-            it->position -= str.len;
         }
     }
 }
