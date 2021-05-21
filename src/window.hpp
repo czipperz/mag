@@ -34,7 +34,16 @@ struct Window_Unified : Window {
 
     size_t change_index;
     cz::Vector<Cursor> cursors;
-    bool show_marks;
+
+    /// `show_marks` can be set to `false`, `true`, or `2`, meaning Notepad mode.
+    ///
+    /// In Notepad, instead of explicitly starting to select text (ie `command_set_mark`), you
+    /// implicitly start a selection by adding a shift modifier to keys (ex `S-RIGHT`).  The first
+    /// non-shift-modified key clears the selection.  If this is `true` then we are emulating that
+    /// behavior; commands should check this by calling `clear_show_marks_temporarily`.
+    ///
+    /// Committing to the `Buffer` will clear this automatically.
+    uint8_t show_marks;
 
     Completion_Cache completion_cache;
     bool completing;
@@ -57,6 +66,12 @@ struct Window_Unified : Window {
 
     void finish_completion(Buffer*);
     void abort_completion();
+
+    void clear_show_marks_temporarily() {
+        if (show_marks == 2) {
+            show_marks = false;
+        }
+    }
 };
 
 struct Window_Split : Window {

@@ -321,6 +321,14 @@ static void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     char code = source.keys[0].code;
 
+    // If temporarily showing marks then first delete the region then
+    // type.  This makes 2 edits so you can redo inbetween these edits.
+    if (window->show_marks == 2) {
+        delete_regions(buffer, window);
+        insert_char(buffer, window, code, command_insert_char);
+        return;
+    }
+
     // Merge spaces into tabs.
     if (buffer->mode.use_tabs && code == ' ' && buffer->mode.tab_width > 0) {
         // See if there are any cursors we want to merge at.

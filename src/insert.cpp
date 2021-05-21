@@ -31,4 +31,27 @@ void insert_char(Buffer* buffer, Window_Unified* window, char code, Command_Func
     insert(buffer, window, SSOStr::from_char(code), committer);
 }
 
+void delete_regions(Buffer* buffer, Window_Unified* window, Command_Function committer) {
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        uint64_t start = cursors[i].start();
+        uint64_t end = cursors[i].end();
+
+        Edit edit;
+        edit.value = buffer->contents.slice(transaction.value_allocator(),
+                                            buffer->contents.iterator_at(start), end);
+        edit.position = start - offset;
+        offset += end - start;
+        edit.flags = Edit::REMOVE;
+        transaction.push(edit);
+    }
+
+    transaction.commit(committer);
+}
+
 }

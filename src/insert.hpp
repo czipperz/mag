@@ -16,4 +16,6 @@ void insert_char(Buffer* buffer,
                  char code,
                  Command_Function committer = nullptr);
 
+void delete_regions(Buffer* buffer, Window_Unified* window, Command_Function committer = nullptr);
+
 }

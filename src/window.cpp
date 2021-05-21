@@ -54,9 +54,15 @@ Window_Unified* Window_Unified::clone() {
 void Window_Unified::update_cursors(const Buffer* buffer) {
     ZoneScoped;
 
+    cz::Slice<const Change> new_changes = buffer->changes.slice_start(change_index);
+
+    if (new_changes.len == 0) {
+        return;
+    }
+
+    clear_show_marks_temporarily();
+
     cz::Slice<Cursor> cursors = this->cursors;
-    cz::Slice<const Change> new_changes = {buffer->changes.elems() + change_index,
-                                           buffer->changes.len() - change_index};
     for (size_t c = 0; c < cursors.len; ++c) {
         position_after_changes(new_changes, &cursors[c].point);
         position_after_changes(new_changes, &cursors[c].mark);

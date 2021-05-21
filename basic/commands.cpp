@@ -83,46 +83,55 @@ void command_swap_mark_point(Editor* editor, Command_Source source) {
 
 void command_forward_char(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(forward_char);
 }
 
 void command_backward_char(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(backward_char);
 }
 
 void command_forward_word(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(forward_word);
 }
 
 void command_backward_word(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(backward_word);
 }
 
 void command_forward_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS([&](Contents_Iterator* it) { forward_line(buffer->mode, it); });
 }
 
 void command_backward_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(buffer->mode, it); });
 }
 
 void command_forward_paragraph(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(forward_paragraph);
 }
 
 void command_backward_paragraph(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(backward_paragraph);
 }
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     if (source.previous_command != command_start_of_buffer &&
         source.previous_command != command_end_of_buffer) {
         push_jump(window, source.client, buffer);
@@ -132,6 +141,7 @@ void command_end_of_buffer(Editor* editor, Command_Source source) {
 
 void command_start_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     if (source.previous_command != command_start_of_buffer &&
         source.previous_command != command_end_of_buffer) {
         push_jump(window, source.client, buffer);
@@ -166,28 +176,39 @@ void command_pop_jump(Editor* editor, Command_Source source) {
 
 void command_end_of_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(end_of_line);
 }
 
 void command_start_of_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(start_of_line);
 }
 
 void command_start_of_line_text(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(start_of_line_text);
 }
 
 void command_end_of_line_text(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(end_of_line_text);
 }
 
 void command_delete_backward_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    // See if there are any cusrors that are going to delete tabs.
+    // If temporarily showing marks then just delete the region instead.
+    if (window->show_marks == 2) {
+        delete_regions(buffer, window);
+        window->show_marks = false;
+        return;
+    }
+
+    // See if there are any cursors that are going to delete tabs.
     cz::Slice<Cursor> cursors = window->cursors;
     Contents_Iterator it = buffer->contents.start();
     size_t tabs = 0;
