@@ -37,9 +37,13 @@ bool matches_cased(Contents_Iterator start,
                    Contents_Iterator query,
                    bool case_insensitive);
 
-/// Find a character at or after the point `it`.  On failure puts `it` at eob and returns `false`.
+/// Find a character at or after the point `it`.
+/// On success puts `it` at the start of the character.
+/// On failure puts `it` at eob and returns `false`.
 bool find(Contents_Iterator* it, char ch);
-/// Find a character before the point `it`.  On failure puts `it` at sob and returns `false`.
+/// Find a character before the point `it`.
+/// On success puts `it` at the start of the character.
+/// On failure puts `it` at sob and returns `false`.
 bool rfind(Contents_Iterator* it, char ch);
 
 /// Same as the functions above except if `case_insensitive == true`, in which case it will look
@@ -48,9 +52,11 @@ bool find_cased(Contents_Iterator* it, char ch, bool case_insensitive);
 bool rfind_cased(Contents_Iterator* it, char ch, bool case_insensitive);
 
 /// Find `query` at or after the point `it` (will not overlap).
+/// On success puts `it` at the start of the match.
 /// On failure puts `it` at eob and returns `false`.
 bool search_forward(Contents_Iterator* it, cz::Str query);
 /// Find `query` starting before the point `it` (the end may be after `it`).
+/// On success puts `it` at the start of the match.
 /// On failure puts `it` at sob and returns `false`.
 bool search_backward(Contents_Iterator* it, cz::Str query);
 
