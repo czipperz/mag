@@ -783,7 +783,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 }
 
                 token->end = iterator->position;
-                token->type = Token_Type::CODE;
+                token->type = Token_Type::OPEN_PAIR;
                 goto done;
             } else {
             comment_normal:
@@ -813,7 +813,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 LOAD_COMBINED_STATE(*state_combined);
 
                 comment_state = COMMENT_MIDDLE_OF_LINE;
-                token->type = Token_Type::CODE;
+                token->type = Token_Type::CLOSE_PAIR;
                 goto done;
             }
             break;
