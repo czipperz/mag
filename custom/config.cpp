@@ -53,19 +53,19 @@
 #include "syntax/overlay_trailing_spaces.hpp"
 #include "syntax/tokenize_cmake.hpp"
 #include "syntax/tokenize_color_test.hpp"
-#include "syntax/tokenize_cpp.hpp"
+#include "syntax/tokenize_cplusplus.hpp"
 #include "syntax/tokenize_css.hpp"
 #include "syntax/tokenize_directory.hpp"
 #include "syntax/tokenize_general.hpp"
 #include "syntax/tokenize_go.hpp"
 #include "syntax/tokenize_html.hpp"
-#include "syntax/tokenize_js.hpp"
-#include "syntax/tokenize_md.hpp"
+#include "syntax/tokenize_javascript.hpp"
+#include "syntax/tokenize_markdown.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "syntax/tokenize_process.hpp"
 #include "syntax/tokenize_python.hpp"
 #include "syntax/tokenize_search.hpp"
-#include "syntax/tokenize_sh.hpp"
+#include "syntax/tokenize_shell_script.hpp"
 
 namespace mag {
 namespace custom {

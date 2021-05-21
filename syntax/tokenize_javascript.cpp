@@ -1,4 +1,4 @@
-#include "tokenize_js.hpp"
+#include "tokenize_javascript.hpp"
 
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
