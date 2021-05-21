@@ -277,7 +277,8 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
         return;
     }
 
-    if (buffer->check_last_committer(command_delete_backward_char, window->cursors)) {
+    if (source.previous_command == command_delete_backward_char &&
+        buffer->check_last_committer(command_delete_backward_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
         Commit commit = buffer->commits[buffer->commit_index - 1];
         CZ_DEBUG_ASSERT(commit.edits.len > 0);
@@ -329,7 +330,8 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
 void command_delete_forward_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    if (buffer->check_last_committer(command_delete_forward_char, window->cursors)) {
+    if (source.previous_command == command_delete_forward_char &&
+        buffer->check_last_committer(command_delete_forward_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
         Commit commit = buffer->commits[buffer->commit_index - 1];
         CZ_DEBUG_ASSERT(commit.edits.len > 0);
