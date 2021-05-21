@@ -137,13 +137,11 @@ bool python_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
     }
 
     if (first_ch == '#') {
-        while (!iterator->at_eob()) {
-            if (iterator->get() == '\n') {
-                iterator->advance();
-                break;
-            }
+        // line comment
+        if (find(iterator, '\n')) {
             iterator->advance();
         }
+
         token->type = Token_Type::COMMENT;
         goto ret;
     }

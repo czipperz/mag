@@ -5,6 +5,7 @@
 #include "common.hpp"
 #include "contents.hpp"
 #include "face.hpp"
+#include "match.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -38,17 +39,9 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
                 if (!it.at_eob() && it.get() == '-') {
                     *iterator = it;
 
-                    char prev[2] = {0, 0};
-                    while (!iterator->at_eob()) {
-                        char ch = iterator->get();
-                        if (prev[0] == '-' && prev[1] == '-' && ch == '>') {
-                            iterator->advance();
-                            break;
-                        }
-
-                        prev[0] = prev[1];
-                        prev[1] = ch;
-                        iterator->advance();
+                    // block comment
+                    if (search_forward(iterator, "-->")) {
+                        iterator->advance(3);
                     }
 
                     token->type = Token_Type::COMMENT;

@@ -108,16 +108,8 @@ bool go_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     if (first_ch == '/' && !iterator->at_eob() && iterator->get() == '*') {
         // block comment
-        char prev = 0;
-        while (!iterator->at_eob()) {
-            char ch = iterator->get();
-            if (prev == '*' && ch == '/') {
-                iterator->advance();
-                break;
-            }
-
-            prev = ch;
-            iterator->advance();
+        if (search_forward(iterator, "*/")) {
+            iterator->advance(2);
         }
 
         token->type = Token_Type::COMMENT;
@@ -126,12 +118,7 @@ bool go_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     if (first_ch == '/' && !iterator->at_eob() && iterator->get() == '/') {
         // line comment
-        while (!iterator->at_eob()) {
-            if (iterator->get() == '\n') {
-                iterator->advance();
-                break;
-            }
-
+        if (find(iterator, '\n')) {
             iterator->advance();
         }
 

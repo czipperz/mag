@@ -288,11 +288,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     }
 
     if (first_ch == '\'') {
-        while (!iterator->at_eob()) {
-            if (iterator->get() == '\'') {
-                iterator->advance();
-                break;
-            }
+        if (find(iterator, '\'')) {
             iterator->advance();
         }
         token->type = Token_Type::STRING;
@@ -301,11 +297,8 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     }
 
     if (first_ch == '#' && top != IN_CURLY_VAR) {
-        while (!iterator->at_eob()) {
-            if (iterator->get() == '\n') {
-                iterator->advance();
-                break;
-            }
+        // line comment
+        if (find(iterator, '\n')) {
             iterator->advance();
         }
         token->type = Token_Type::COMMENT;

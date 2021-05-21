@@ -5,6 +5,7 @@
 #include "common.hpp"
 #include "contents.hpp"
 #include "face.hpp"
+#include "match.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -57,17 +58,9 @@ bool css_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) 
     iterator->advance();
 
     if (first_ch == '/' && !iterator->at_eob() && iterator->get() == '*') {
-        iterator->advance();
-        char prev = 0;
-        while (!iterator->at_eob()) {
-            char ch = iterator->get();
-            if (prev == '*' && ch == '/') {
-                iterator->advance();
-                break;
-            }
-
-            prev = ch;
-            iterator->advance();
+        // block comment
+        if (search_forward(iterator, "*/")) {
+            iterator->advance(2);
         }
 
         token->type = Token_Type::COMMENT;
