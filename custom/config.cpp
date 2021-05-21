@@ -147,10 +147,14 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "F10", command_stop_recording_macro);
     BIND(key_map, "F11", command_run_macro);
 
-    BIND(key_map, "C-A-u", command_backward_up_pair);
-    BIND(key_map, "C-A-d", command_forward_up_pair);
+    BIND(key_map, "C-A-u", command_backward_up_token_pair);
+    BIND(key_map, "C-A-d", command_forward_up_token_pair);
     BIND(key_map, "C-A-b", command_backward_token_pair);
     BIND(key_map, "C-A-f", command_forward_token_pair);
+    BIND(key_map, "C-A-U", region_movement::command_backward_up_token_pair);
+    BIND(key_map, "C-A-D", region_movement::command_forward_up_token_pair);
+    BIND(key_map, "C-A-B", region_movement::command_backward_token_pair);
+    BIND(key_map, "C-A-F", region_movement::command_forward_token_pair);
 
     BIND(key_map, "A-j", command_backward_matching_token);
     BIND(key_map, "A-q", command_forward_matching_token);

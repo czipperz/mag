@@ -4,6 +4,7 @@
 #include "command_macros.hpp"
 #include "commands.hpp"
 #include "movement.hpp"
+#include "token_movement_commands.hpp"
 
 namespace mag {
 namespace basic {
@@ -98,6 +99,28 @@ void command_start_of_buffer(Editor* editor, Command_Source source) {
 void command_end_of_buffer(Editor* editor, Command_Source source) {
     set_marks(source.client->selected_window());
     basic::command_end_of_buffer(editor, source);
+    show_marks_temporarily(source.client->selected_window());
+}
+
+void command_forward_token_pair(Editor* editor, Command_Source source) {
+    set_marks(source.client->selected_window());
+    basic::command_forward_token_pair(editor, source);
+    show_marks_temporarily(source.client->selected_window());
+}
+void command_backward_token_pair(Editor* editor, Command_Source source) {
+    set_marks(source.client->selected_window());
+    basic::command_backward_token_pair(editor, source);
+    show_marks_temporarily(source.client->selected_window());
+}
+
+void command_forward_up_token_pair(Editor* editor, Command_Source source) {
+    set_marks(source.client->selected_window());
+    basic::command_forward_up_token_pair(editor, source);
+    show_marks_temporarily(source.client->selected_window());
+}
+void command_backward_up_token_pair(Editor* editor, Command_Source source) {
+    set_marks(source.client->selected_window());
+    basic::command_backward_up_token_pair(editor, source);
     show_marks_temporarily(source.client->selected_window());
 }
 

@@ -27,6 +27,12 @@ void command_end_of_line_text(Editor* editor, Command_Source source);
 void command_start_of_buffer(Editor* editor, Command_Source source);
 void command_end_of_buffer(Editor* editor, Command_Source source);
 
+void command_forward_token_pair(Editor* editor, Command_Source source);
+void command_backward_token_pair(Editor* editor, Command_Source source);
+
+void command_forward_up_token_pair(Editor* editor, Command_Source source);
+void command_backward_up_token_pair(Editor* editor, Command_Source source);
+
 }
 }
 }

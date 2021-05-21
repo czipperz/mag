@@ -37,7 +37,7 @@ static void tokenize_recording_pairs(Tokenizer_Check_Point check_point,
     }
 }
 
-void backward_up_pair(Buffer* buffer, Contents_Iterator* cursor) {
+void backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
     uint64_t end_position = cursor->position;
     Contents_Iterator token_iterator = *cursor;
 
@@ -153,7 +153,7 @@ static bool get_token_before_position(Buffer* buffer,
     }
 }
 
-void forward_up_pair(Buffer* buffer, Contents_Iterator* cursor) {
+void forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
     Contents_Iterator token_iterator = *cursor;
 
     Token token;
@@ -187,24 +187,26 @@ static void sort_cursors(cz::Slice<Cursor> cursors) {
              [](const Cursor* left, const Cursor* right) { return left->point < right->point; });
 }
 
-void command_backward_up_pair(Editor* editor, Command_Source source) {
+void command_backward_up_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
 
     for (size_t cursor_index = window->cursors.len(); cursor_index-- > 0;) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
-        backward_up_pair(buffer, &it);
+        backward_up_token_pair(buffer, &it);
         window->cursors[cursor_index].point = it.position;
     }
 
     sort_cursors(window->cursors);
 }
 
-void command_forward_up_pair(Editor* editor, Command_Source source) {
+void command_forward_up_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
 
     for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
-        forward_up_pair(buffer, &it);
+        forward_up_token_pair(buffer, &it);
         window->cursors[cursor_index].point = it.position;
     }
 
@@ -223,12 +225,14 @@ void forward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
     CZ_DEBUG_ASSERT(token.end == iterator->position);
 
     if (token.type == Token_Type::OPEN_PAIR) {
-        forward_up_pair(buffer, iterator);
+        forward_up_token_pair(buffer, iterator);
     }
 }
 
 void command_forward_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
+
     for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
         forward_token_pair(buffer, &it);
@@ -250,12 +254,14 @@ void backward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
     iterator->retreat_to(token.start);
 
     if (token.type == Token_Type::CLOSE_PAIR) {
-        backward_up_pair(buffer, iterator);
+        backward_up_token_pair(buffer, iterator);
     }
 }
 
 void command_backward_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
+
     for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
         backward_token_pair(buffer, &it);
