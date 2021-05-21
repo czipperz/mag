@@ -50,7 +50,7 @@ static void overlay_highlight_string_start_frame(const Buffer* buffer,
         Token token;
         token.end = it.position;
 
-        while (token.end < iterator.position) {
+        while (token.end <= iterator.position) {
             if (!buffer->mode.next_token(&it, &token, &state)) {
                 data->enabled = false;
                 return;
@@ -81,7 +81,7 @@ static Face overlay_highlight_string_get_face_and_advance(const Buffer* buffer,
 
     if (data->countdown_cursor_region == 0) {
         if (data->token_type != Token_Type::length) {
-            while (data->token_token.end < iterator.position) {
+            while (data->token_token.end <= iterator.position) {
                 if (!buffer->mode.next_token(&data->token_it, &data->token_token,
                                              &data->token_state)) {
                     data->enabled = false;
