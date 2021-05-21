@@ -37,6 +37,15 @@ bool general_next_token(Contents_Iterator* iterator, Token* token, uint64_t* sta
         goto ret;
     }
 
+    if (cz::is_digit(first_ch)) {
+        while (!iterator->at_eob() && cz::is_alnum(iterator->get())) {
+            iterator->advance();
+        }
+
+        token->type = Token_Type::NUMBER;
+        goto ret;
+    }
+
     if (first_ch == '"') {
         while (!iterator->at_eob()) {
             if (iterator->get() == first_ch) {
