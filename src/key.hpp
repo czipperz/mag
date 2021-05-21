@@ -31,6 +31,7 @@ enum Key_Code : uint16_t {
     END,
     PAGE_UP,
     PAGE_DOWN,
+    ESCAPE,
 
     // Arrow keys
     UP,

@@ -42,6 +42,8 @@ bool Key::parse(Key* key, cz::Str description) {
         key->code = Key_Code::PAGE_UP;
     } else if (d == "PAGE_DOWN") {
         key->code = Key_Code::PAGE_DOWN;
+    } else if (d == "ESCAPE") {
+        key->code = Key_Code::ESCAPE;
     } else if (d == "UP") {
         key->code = Key_Code::UP;
     } else if (d == "DOWN") {
@@ -117,6 +119,7 @@ void stringify_key(cz::String* prefix, Key key) {
         }
     }
 
+    /// @AddKeyCode
     switch (key.code) {
 #define CASE(CONDITION, STRING) \
     case CONDITION:             \
@@ -131,6 +134,7 @@ void stringify_key(cz::String* prefix, Key key) {
         KEY_CODE_CASE(END);
         KEY_CODE_CASE(PAGE_UP);
         KEY_CODE_CASE(PAGE_DOWN);
+        KEY_CODE_CASE(ESCAPE);
 
         KEY_CODE_CASE(UP);
         KEY_CODE_CASE(DOWN);

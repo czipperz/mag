@@ -386,6 +386,7 @@ static void process_event(Server* server,
             KEY_CASE(END, Key_Code::END);
             KEY_CASE(PAGEUP, Key_Code::PAGE_UP);
             KEY_CASE(PAGEDOWN, Key_Code::PAGE_DOWN);
+            KEY_CASE(ESCAPE, Key_Code::ESCAPE);
             KEY_CASE(RETURN, '\n');
             KEY_CASE(TAB, '\t');
             KEY_CASE(UP, Key_Code::UP);

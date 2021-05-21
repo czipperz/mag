@@ -253,6 +253,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-_", command_redo);
 
     BIND(key_map, "C-g", command_stop_action);
+    BIND(key_map, "ESCAPE", command_stop_action);
 
     BIND(key_map, "C-o", command_open_file);
     BIND(key_map, "A-o", command_cycle_window);
