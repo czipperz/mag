@@ -237,4 +237,108 @@ bool rfind_cased(Contents_Iterator* it, char ch, bool case_insensitive) {
     }
 }
 
+bool search_forward(Contents_Iterator* it, cz::Str query) {
+    ZoneScoped;
+
+    if (query.len == 0) {
+        return true;
+    }
+
+    while (it->position + query.len <= it->contents->len) {
+        if (looking_at(*it, query)) {
+            return true;
+        }
+
+        it->advance();
+        if (!find(it, query[0])) {
+            break;
+        }
+    }
+
+    return false;
+}
+
+bool search_forward_cased(Contents_Iterator* it, cz::Str query, bool case_insensitive) {
+    if (!case_insensitive) {
+        return search_forward(it, query);
+    }
+
+    ZoneScoped;
+
+    if (query.len == 0) {
+        return true;
+    }
+
+    while (it->position + query.len <= it->contents->len) {
+        if (looking_at_cased(*it, query, case_insensitive)) {
+            return true;
+        }
+
+        it->advance();
+        if (!find_cased(it, query[0], case_insensitive)) {
+            break;
+        }
+    }
+
+    return false;
+}
+
+bool search_backward(Contents_Iterator* it, cz::Str query) {
+    ZoneScoped;
+
+    if (query.len > it->contents->len) {
+        return false;
+    }
+    if (query.len == 0) {
+        return true;
+    }
+
+    if (it->contents->len - query.len < it->position) {
+        it->retreat_to(it->contents->len - query.len);
+    }
+
+    while (1) {
+        if (looking_at(*it, query)) {
+            return true;
+        }
+
+        if (!rfind(it, query[0])) {
+            break;
+        }
+    }
+
+    return false;
+}
+
+bool search_backward_cased(Contents_Iterator* it, cz::Str query, bool case_insensitive) {
+    if (!case_insensitive) {
+        return search_backward(it, query);
+    }
+
+    ZoneScoped;
+
+    if (query.len > it->contents->len) {
+        return false;
+    }
+    if (query.len == 0) {
+        return true;
+    }
+
+    if (it->contents->len - query.len < it->position) {
+        it->retreat_to(it->contents->len - query.len);
+    }
+
+    while (1) {
+        if (looking_at_cased(*it, query, case_insensitive)) {
+            return true;
+        }
+
+        if (!rfind_cased(it, query[0], case_insensitive)) {
+            break;
+        }
+    }
+
+    return false;
+}
+
 }
