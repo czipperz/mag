@@ -6,6 +6,7 @@
 #include "contents.hpp"
 #include "face.hpp"
 #include "match.hpp"
+#include "movement.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -70,13 +71,7 @@ bool cmake_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
     }
 
     if (first_ch == '#') {
-        while (!iterator->at_eob()) {
-            if (iterator->get() == '\n') {
-                iterator->advance();
-                break;
-            }
-            iterator->advance();
-        }
+        end_of_line(iterator);
         token->type = Token_Type::COMMENT;
         goto ret;
     }

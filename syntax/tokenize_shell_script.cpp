@@ -5,6 +5,7 @@
 #include "contents.hpp"
 #include "face.hpp"
 #include "match.hpp"
+#include "movement.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -298,9 +299,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     if (first_ch == '#' && top != IN_CURLY_VAR) {
         // line comment
-        if (find(iterator, '\n')) {
-            iterator->advance();
-        }
+        end_of_line(iterator);
         token->type = Token_Type::COMMENT;
         top = AT_START_OF_STATEMENT;
         goto ret;

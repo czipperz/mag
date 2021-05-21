@@ -6,6 +6,7 @@
 #include "contents.hpp"
 #include "face.hpp"
 #include "match.hpp"
+#include "movement.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -129,10 +130,7 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     if (first_ch == '/' && !iterator->at_eob() && iterator->get() == '/') {
         // line comment
-        if (find(iterator, '\n')) {
-            iterator->advance();
-        }
-
+        end_of_line(iterator);
         token->type = Token_Type::COMMENT;
         goto ret;
     }
