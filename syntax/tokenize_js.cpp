@@ -271,6 +271,15 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
+    if (cz::is_digit(first_ch)) {
+        while (!iterator->at_eob() && cz::is_alnum(iterator->get())) {
+            iterator->advance();
+        }
+
+        token->type = Token_Type::NUMBER;
+        goto ret;
+    }
+
     token->type = Token_Type::DEFAULT;
 
 ret:
