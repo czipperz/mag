@@ -16,10 +16,14 @@ Test_Runner::Test_Runner() {
 
     client = server.make_client();
 
+    set_tokenizer(syntax::general_next_token);
+}
+
+void Test_Runner::set_tokenizer(bool (*tokenizer)(Contents_Iterator*, Token*, uint64_t*)) {
     Window_Unified* window = client.selected_window();
     Editor* editor = &server.editor;
     WITH_WINDOW_BUFFER(window);
-    buffer->mode.next_token = syntax::general_next_token;
+    buffer->mode.next_token = tokenizer;
 }
 
 Test_Runner::~Test_Runner() {

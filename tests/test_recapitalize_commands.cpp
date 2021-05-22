@@ -101,4 +101,86 @@ TEST_CASE("command_recapitalize_token_to parse edge cases") {
         tr.run(command_recapitalize_token_to_snake);
         CHECK(tr.stringify() == "component_file|");
     }
+    SECTION("empty file") {
+        Test_Runner tr;
+        tr.setup("|");
+        tr.run(command_recapitalize_token_to_snake);
+        CHECK(tr.stringify() == "|");
+    }
+}
+
+TEST_CASE("command_recapitalize_token_to underscores at start and end are ignored") {
+    SECTION("bunch of underscores in a row") {
+        Test_Runner tr;
+        tr.setup("___|");
+        tr.run(command_recapitalize_token_to_snake);
+        CHECK(tr.stringify() == "___|");
+    }
+
+    SECTION("underscores start") {
+        Test_Runner tr;
+        tr.setup("___testRunner|");
+        tr.run(command_recapitalize_token_to_snake);
+        CHECK(tr.stringify() == "___test_runner|");
+    }
+    SECTION("underscores end") {
+        Test_Runner tr;
+        tr.setup("testRunner___|");
+        tr.run(command_recapitalize_token_to_snake);
+        CHECK(tr.stringify() == "test_runner___|");
+    }
+}
+
+static bool entire_buffer_as_identifier(Contents_Iterator* iterator, Token* token, uint64_t*) {
+    if (iterator->at_eob()) {
+        return false;
+    }
+
+    token->type = Token_Type::IDENTIFIER;
+    token->start = iterator->position;
+    iterator->advance_to(iterator->contents->len);
+    token->end = iterator->position;
+    return true;
+}
+
+TEST_CASE("command_recapitalize_token_to dashes at start and end are ignored") {
+    Test_Runner tr;
+    tr.set_tokenizer(entire_buffer_as_identifier);
+
+    SECTION("bunch of dashes in a row") {
+        tr.setup("---|");
+        tr.run(command_recapitalize_token_to_snake);
+        CHECK(tr.stringify() == "---|");
+    }
+
+    SECTION("dashes start") {
+        tr.setup("---testRunner|");
+        tr.run(command_recapitalize_token_to_snake);
+        CHECK(tr.stringify() == "---test_runner|");
+    }
+    SECTION("dashes end") {
+        tr.setup("testRunner---|");
+        tr.run(command_recapitalize_token_to_snake);
+        CHECK(tr.stringify() == "test_runner---|");
+    }
+}
+
+static bool entire_buffer_as_type(Contents_Iterator* iterator, Token* token, uint64_t*) {
+    if (iterator->at_eob()) {
+        return false;
+    }
+
+    token->type = Token_Type::TYPE;
+    token->start = iterator->position;
+    iterator->advance_to(iterator->contents->len);
+    token->end = iterator->position;
+    return true;
+}
+
+TEST_CASE("command_recapitalize_token_to allows type tokens") {
+    Test_Runner tr;
+    tr.set_tokenizer(entire_buffer_as_type);
+    tr.setup("Word1Word2|");
+    tr.run(command_recapitalize_token_to_snake);
+    CHECK(tr.stringify() == "word1_word2|");
 }

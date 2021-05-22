@@ -176,6 +176,10 @@ static bool parse_components_separator(cz::Str in,
 }
 
 void parse_components(cz::Str in, cz::Allocator allocator, cz::Vector<cz::Str>* out) {
+    if (in.len == 0) {
+        return;
+    }
+
     if (parse_components_separator(in, allocator, out, '_')) {
         // Found snake string.
         return;
@@ -231,7 +235,34 @@ void parse_components(cz::Str in, cz::Allocator allocator, cz::Vector<cz::Str>* 
     }
 }
 
+static void strip(cz::Str* in, cz::Str* prefix, cz::Str* suffix) {
+    size_t prefix_end = 0;
+    for (; prefix_end < in->len; ++prefix_end) {
+        if ((*in)[prefix_end] != '_' && (*in)[prefix_end] != '-') {
+            break;
+        }
+    }
+
+    *prefix = in->slice_end(prefix_end);
+    *in = in->slice_start(prefix_end);
+
+    size_t suffix_start = in->len;
+    for (; suffix_start-- > 0;) {
+        if ((*in)[suffix_start] != '_' && (*in)[suffix_start] != '-') {
+            break;
+        }
+    }
+    ++suffix_start;
+
+    *suffix = in->slice_start(suffix_start);
+    *in = in->slice_end(suffix_start);
+}
+
 void to_camel(cz::Str in, cz::Allocator allocator, cz::String* out) {
+    cz::Str prefix, suffix;
+    strip(&in, &prefix, &suffix);
+    cz::append(allocator, out, prefix);
+
     cz::Heap_Vector<cz::Str> components = {};
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
@@ -249,8 +280,14 @@ void to_camel(cz::Str in, cz::Allocator allocator, cz::String* out) {
             out->push(cz::to_lower(component[j]));
         }
     }
+
+    cz::append(allocator, out, suffix);
 }
 void to_pascal(cz::Str in, cz::Allocator allocator, cz::String* out) {
+    cz::Str prefix, suffix;
+    strip(&in, &prefix, &suffix);
+    cz::append(allocator, out, prefix);
+
     cz::Heap_Vector<cz::Str> components = {};
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
@@ -263,8 +300,14 @@ void to_pascal(cz::Str in, cz::Allocator allocator, cz::String* out) {
             out->push(cz::to_lower(component[j]));
         }
     }
+
+    cz::append(allocator, out, suffix);
 }
 void to_snake(cz::Str in, cz::Allocator allocator, cz::String* out) {
+    cz::Str prefix, suffix;
+    strip(&in, &prefix, &suffix);
+    cz::append(allocator, out, prefix);
+
     cz::Heap_Vector<cz::Str> components = {};
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
@@ -280,8 +323,14 @@ void to_snake(cz::Str in, cz::Allocator allocator, cz::String* out) {
             out->push(cz::to_lower(component[j]));
         }
     }
+
+    cz::append(allocator, out, suffix);
 }
 void to_usnake(cz::Str in, cz::Allocator allocator, cz::String* out) {
+    cz::Str prefix, suffix;
+    strip(&in, &prefix, &suffix);
+    cz::append(allocator, out, prefix);
+
     cz::Heap_Vector<cz::Str> components = {};
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
@@ -298,8 +347,14 @@ void to_usnake(cz::Str in, cz::Allocator allocator, cz::String* out) {
             out->push(cz::to_lower(component[j]));
         }
     }
+
+    cz::append(allocator, out, suffix);
 }
 void to_ssnake(cz::Str in, cz::Allocator allocator, cz::String* out) {
+    cz::Str prefix, suffix;
+    strip(&in, &prefix, &suffix);
+    cz::append(allocator, out, prefix);
+
     cz::Heap_Vector<cz::Str> components = {};
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
@@ -315,8 +370,14 @@ void to_ssnake(cz::Str in, cz::Allocator allocator, cz::String* out) {
             out->push(cz::to_upper(component[j]));
         }
     }
+
+    cz::append(allocator, out, suffix);
 }
 void to_kebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
+    cz::Str prefix, suffix;
+    strip(&in, &prefix, &suffix);
+    cz::append(allocator, out, prefix);
+
     cz::Heap_Vector<cz::Str> components = {};
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
@@ -332,8 +393,14 @@ void to_kebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
             out->push(cz::to_lower(component[j]));
         }
     }
+
+    cz::append(allocator, out, suffix);
 }
 void to_ukebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
+    cz::Str prefix, suffix;
+    strip(&in, &prefix, &suffix);
+    cz::append(allocator, out, prefix);
+
     cz::Heap_Vector<cz::Str> components = {};
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
@@ -350,8 +417,14 @@ void to_ukebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
             out->push(cz::to_lower(component[j]));
         }
     }
+
+    cz::append(allocator, out, suffix);
 }
 void to_skebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
+    cz::Str prefix, suffix;
+    strip(&in, &prefix, &suffix);
+    cz::append(allocator, out, prefix);
+
     cz::Heap_Vector<cz::Str> components = {};
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
@@ -367,6 +440,8 @@ void to_skebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
             out->push(cz::to_upper(component[j]));
         }
     }
+
+    cz::append(allocator, out, suffix);
 }
 
 void command_recapitalize_token_to(Editor* editor,
@@ -388,7 +463,7 @@ void command_recapitalize_token_to(Editor* editor,
             continue;
         }
 
-        if (token.type != Token_Type::IDENTIFIER) {
+        if (token.type != Token_Type::IDENTIFIER && token.type != Token_Type::TYPE) {
             continue;
         }
 
