@@ -50,8 +50,11 @@ void to_skebab(cz::Str in, cz::Allocator allocator, cz::String* out);
 
 /// Generic command wrapper.
 void command_recapitalize_token_to(Editor* editor,
-                                   Command_Source source,
+                                   Client* client,
                                    void (*convert)(cz::Str, cz::Allocator, cz::String*));
+
+/// Prompt for the output format.
+void command_recapitalize_token_prompt(Editor* editor, Command_Source source);
 
 /// These commands replace the current token.
 void command_recapitalize_token_to_camel(Editor* editor, Command_Source source);

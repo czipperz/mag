@@ -3,6 +3,7 @@
 #include <cz/char_type.hpp>
 #include <cz/format.hpp>
 #include <cz/heap_vector.hpp>
+#include "buffer_commands.hpp"
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "movement.hpp"
@@ -445,9 +446,9 @@ void to_skebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
 }
 
 void command_recapitalize_token_to(Editor* editor,
-                                   Command_Source source,
+                                   Client* client,
                                    void (*convert)(cz::Str, cz::Allocator, cz::String*)) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_SELECTED_BUFFER(client);
 
     Transaction transaction;
     transaction.init(buffer);
@@ -493,29 +494,85 @@ void command_recapitalize_token_to(Editor* editor,
     transaction.commit();
 }
 
+static void command_recapitalize_token_prompt_callback(Editor* editor,
+                                                       Client* client,
+                                                       cz::Str mini_buffer_contents,
+                                                       void*) {
+    void (*convert)(cz::Str, cz::Allocator, cz::String*);
+    if (mini_buffer_contents.starts_with("(c")) {
+        convert = to_camel;
+    } else if (mini_buffer_contents.starts_with("(p") || mini_buffer_contents.starts_with("(C")) {
+        convert = to_pascal;
+    } else if (mini_buffer_contents.starts_with("(s") || mini_buffer_contents.starts_with("(_")) {
+        convert = to_snake;
+    } else if (mini_buffer_contents.starts_with("(SS")) {
+        convert = to_ssnake;
+    } else if (mini_buffer_contents.starts_with("(S")) {
+        convert = to_usnake;
+    } else if (mini_buffer_contents.starts_with("(k") || mini_buffer_contents.starts_with("(-")) {
+        convert = to_kebab;
+    } else if (mini_buffer_contents.starts_with("(KK")) {
+        convert = to_skebab;
+    } else if (mini_buffer_contents.starts_with("(K")) {
+        convert = to_ukebab;
+    } else {
+        return;
+    }
+
+    command_recapitalize_token_to(editor, client, convert);
+}
+
+static bool recapitalize_to_completion_engine(Editor* editor,
+                                              Completion_Engine_Context* context,
+                                              bool is_initial_frame) {
+    if (context->results.len() > 0) {
+        // We never change the results so ignore input changes.
+        return false;
+    }
+
+    context->results.reserve(10);
+    context->results.push("(c) camelCase");
+    context->results.push("(p) (C) PascalCase");
+    context->results.push("(s) (_) snake_case");
+    context->results.push("(S) Upper_Snake_Case");
+    context->results.push("(SS) SCREAMING_SNAKE_CASE");
+    context->results.push("(k) (-) kebab-case");
+    context->results.push("(K) Upper-Kebab-Case");
+    context->results.push("(KK) SCREAMING-KEBAB-CASE");
+    return true;
+}
+
+void command_recapitalize_token_prompt(Editor* editor, Command_Source source) {
+    source.client->show_dialog(editor,
+                               "Recapitalize to format: ", recapitalize_to_completion_engine,
+                               command_recapitalize_token_prompt_callback, nullptr);
+
+    fill_mini_buffer_with(editor, source.client, "(");
+}
+
 void command_recapitalize_token_to_camel(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source, to_camel);
+    return command_recapitalize_token_to(editor, source.client, to_camel);
 }
 void command_recapitalize_token_to_pascal(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source, to_pascal);
+    return command_recapitalize_token_to(editor, source.client, to_pascal);
 }
 void command_recapitalize_token_to_snake(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source, to_snake);
+    return command_recapitalize_token_to(editor, source.client, to_snake);
 }
 void command_recapitalize_token_to_usnake(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source, to_usnake);
+    return command_recapitalize_token_to(editor, source.client, to_usnake);
 }
 void command_recapitalize_token_to_ssnake(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source, to_ssnake);
+    return command_recapitalize_token_to(editor, source.client, to_ssnake);
 }
 void command_recapitalize_token_to_kebab(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source, to_kebab);
+    return command_recapitalize_token_to(editor, source.client, to_kebab);
 }
 void command_recapitalize_token_to_ukebab(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source, to_ukebab);
+    return command_recapitalize_token_to(editor, source.client, to_ukebab);
 }
 void command_recapitalize_token_to_skebab(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source, to_skebab);
+    return command_recapitalize_token_to(editor, source.client, to_skebab);
 }
 
 }

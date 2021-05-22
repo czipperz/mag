@@ -291,6 +291,17 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-x A-u", command_uppercase_region);
     BIND(key_map, "A-x A-l", command_lowercase_region);
 
+    BIND(key_map, "A-x A-t", command_recapitalize_token_prompt);
+    BIND(key_map, "A-x t c", command_recapitalize_token_to_camel);
+    BIND(key_map, "A-x t C", command_recapitalize_token_to_camel);
+    BIND(key_map, "A-x t p", command_recapitalize_token_to_pascal);
+    BIND(key_map, "A-x t s", command_recapitalize_token_to_snake);
+    BIND(key_map, "A-x t S", command_recapitalize_token_to_usnake);
+    BIND(key_map, "A-x t A-s", command_recapitalize_token_to_ssnake);
+    BIND(key_map, "A-x t k", command_recapitalize_token_to_kebab);
+    BIND(key_map, "A-x t K", command_recapitalize_token_to_ukebab);
+    BIND(key_map, "A-x t A-k", command_recapitalize_token_to_skebab);
+
     man::path_to_autocomplete_man_page =
         "/home/czipperz/find-man-page/build/release/autocomplete-man-page";
     man::path_to_load_man_page = "/home/czipperz/find-man-page/build/release/load-man-page";
