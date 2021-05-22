@@ -160,9 +160,21 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
     Contents_Iterator iterator = buffer->contents.start();
     int64_t offset = 0;
     cz::Slice<Cursor> cursors = window->cursors;
+
+    // Special case for when all lines are empty we want to indent all of them.
+    size_t empty_count = 0;
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
-        if (cursors.len > 1 && at_empty_line(iterator)) {
+        if (at_empty_line(iterator)) {
+            ++empty_count;
+        }
+    }
+    bool always_indent = empty_count == cursors.len;
+
+    iterator = buffer->contents.start();
+    for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+        if (!always_indent && cursors.len > 1 && at_empty_line(iterator)) {
             continue;
         }
 
