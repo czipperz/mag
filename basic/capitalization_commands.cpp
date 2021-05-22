@@ -471,7 +471,7 @@ void command_recapitalize_token_to(Editor* editor,
 
         Edit remove;
         remove.value = buffer->contents.slice(transaction.value_allocator(), it, token.end);
-        remove.position = it.position - offset;
+        remove.position = it.position + offset;
         remove.flags = Edit::REMOVE;
         transaction.push(remove);
 
@@ -483,7 +483,7 @@ void command_recapitalize_token_to(Editor* editor,
         if (insert.value.is_short()) {
             replacement.drop(transaction.value_allocator());
         }
-        insert.position = it.position - offset;
+        insert.position = it.position + offset;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
 

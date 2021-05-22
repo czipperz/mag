@@ -184,3 +184,10 @@ TEST_CASE("command_recapitalize_token_to allows type tokens") {
     tr.run(command_recapitalize_token_to_snake);
     CHECK(tr.stringify() == "word1_word2|");
 }
+
+TEST_CASE("command_recapitalize_token_to multiple cursors") {
+    Test_Runner tr;
+    tr.setup("Word1_Word2| Word3_Word4|");
+    tr.run(command_recapitalize_token_to_camel);
+    CHECK(tr.stringify() == "word1Word2| word3Word4|");
+}
