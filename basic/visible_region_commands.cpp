@@ -86,7 +86,7 @@ static void scroll_up(Editor* editor, Command_Source source, size_t num) {
 
     window->start_position = it.position;
 
-    forward_visible_line(buffer->mode, &it, window->cols, window->rows - 1);
+    forward_visible_line(buffer->mode, &it, window->cols, window->rows - 2);
     if (window->cursors[0].point > it.position) {
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = it.position;
