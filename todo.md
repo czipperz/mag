@@ -5,7 +5,6 @@
 * Autocomplete
   - While typing in normal buffers
     + file names
-    + identifiers
 
 * Screen based movement
   - Move cursor to top and bottom of screen
@@ -16,7 +15,6 @@
 * Edit server
 
 * Multi cursors
-  - When creating a cursor, try to fit it on the screen
   - Cycle selected cursor
 
 * Eliminate copy leak bug
