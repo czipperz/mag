@@ -376,40 +376,62 @@ bool no_completion_engine(Editor*, Completion_Engine_Context*, bool) {
     return false;
 }
 
-bool run_command_for_completion_results(Completion_Engine_Context* context,
-                                        cz::Slice<cz::Str> args,
-                                        cz::Process_Options options,
-                                        bool force_reload) {
+struct Run_Command_For_Completion_Results_Data {
+    cz::Process process;
+    cz::Input_File stdout_read;
+    cz::String result;
+    cz::Carriage_Return_Carry carry;
+};
+
+void Run_Command_For_Completion_Results::drop() {
+    if (!pimpl) {
+        return;
+    }
+
+    Run_Command_For_Completion_Results_Data* data = (Run_Command_For_Completion_Results_Data*)pimpl;
+    data->stdout_read.close();
+    data->process.kill();
+    cz::heap_allocator().dealloc(data);
+}
+
+bool Run_Command_For_Completion_Results::iterate(Completion_Engine_Context* context,
+                                                 cz::Slice<cz::Str> args,
+                                                 cz::Process_Options options,
+                                                 bool force_reload) {
     ZoneScoped;
 
-    if (!force_reload && context->results.len() > 0) {
+    if (!force_reload && context->results.len() > 0 && !pimpl) {
         return false;
     }
 
-    cz::Process process;
-    cz::Input_File stdout_read;
+    Run_Command_For_Completion_Results_Data* data = (Run_Command_For_Completion_Results_Data*)pimpl;
+    if (!pimpl) {
+        data = cz::heap_allocator().alloc<Run_Command_For_Completion_Results_Data>();
+        *data = {};
 
-    {
-        if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
+        if (!create_process_output_pipe(&options.std_out, &data->stdout_read)) {
+            cz::heap_allocator().dealloc(data);
             return false;
         }
         CZ_DEFER(options.std_out.close());
+        data->stdout_read.set_non_blocking();
 
-        if (!process.launch_program(args, &options)) {
-            stdout_read.close();
+        if (!data->process.launch_program(args, &options)) {
+            data->stdout_read.close();
+            cz::heap_allocator().dealloc(data);
             return false;
         }
-    }
-    CZ_DEFER(stdout_read.close());
 
-    context->results_buffer_array.clear();
-    context->results.set_len(0);
+        pimpl = data;
+
+        context->results_buffer_array.clear();
+        context->results.set_len(0);
+    }
 
     char buffer[1024];
-    cz::String result = {};
-    cz::Carriage_Return_Carry carry;
+    bool done = false;
     while (1) {
-        int64_t len = stdout_read.read_text(buffer, sizeof(buffer), &carry);
+        int64_t len = data->stdout_read.read_text(buffer, sizeof(buffer), &data->carry);
         if (len > 0) {
             for (size_t offset = 0; offset < (size_t)len; ++offset) {
                 const char* end = cz::Str{buffer + offset, len - offset}.find('\n');
@@ -421,24 +443,30 @@ bool run_command_for_completion_results(Completion_Engine_Context* context,
                     rlen = len - offset;
                 }
 
-                result.reserve(context->results_buffer_array.allocator(), rlen);
-                result.append({buffer + offset, rlen});
+                data->result.reserve(context->results_buffer_array.allocator(), rlen);
+                data->result.append({buffer + offset, rlen});
 
                 if (!end) {
                     break;
                 }
 
                 context->results.reserve(1);
-                context->results.push(result);
-                result = {};
+                context->results.push(data->result);
+                data->result = {};
                 offset += rlen;
             }
         } else {
+            done = len == 0;
             break;
         }
     }
 
-    process.join();
+    if (done) {
+        data->stdout_read.close();
+        data->process.join();
+        cz::heap_allocator().dealloc(data);
+        pimpl = nullptr;
+    }
 
     cz::sort(context->results);
     return true;

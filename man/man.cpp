@@ -17,8 +17,9 @@ const char* path_to_load_man_page;
 
 static bool man_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
     cz::Str args[] = {path_to_autocomplete_man_page, ""};
+    Run_Command_For_Completion_Results* runner = (Run_Command_For_Completion_Results*)context->data;
     cz::Process_Options options;
-    return run_command_for_completion_results(context, args, options);
+    return runner->iterate(context, args, options);
 }
 
 static void command_man_response(Editor* editor, Client* client, cz::Str page, void* data) {
@@ -66,6 +67,16 @@ static void command_man_response(Editor* editor, Client* client, cz::Str page, v
 void command_man(Editor* editor, Command_Source source) {
     source.client->show_dialog(editor, "Man: ", man_completion_engine, command_man_response,
                                nullptr);
+
+    auto data = cz::heap_allocator().alloc<Run_Command_For_Completion_Results>();
+    *data = {};
+    source.client->mini_buffer_completion_cache.engine_context.data = data;
+
+    source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* _data) {
+        auto data = (Run_Command_For_Completion_Results*)_data;
+        data->drop();
+        cz::heap_allocator().dealloc(data);
+    };
 }
 
 }

@@ -10,13 +10,20 @@
 namespace mag {
 namespace git {
 
+struct Git_Find_File_Completion_Engine_Data {
+    const char* working_directory;
+    Run_Command_For_Completion_Results runner;
+};
+
 static bool git_find_file_completion_engine(Editor*,
                                             Completion_Engine_Context* context,
                                             bool is_initial_frame) {
     cz::Str args[] = {"git", "ls-files"};
+    Git_Find_File_Completion_Engine_Data* data =
+        (Git_Find_File_Completion_Engine_Data*)context->data;
     cz::Process_Options options;
-    options.working_directory = (char*)context->data;
-    return run_command_for_completion_results(context, args, options, is_initial_frame);
+    options.working_directory = data->working_directory;
+    return data->runner.iterate(context, args, options, is_initial_frame);
 }
 
 static void command_git_find_file_response(Editor* editor,
@@ -51,10 +58,19 @@ void command_git_find_file(Editor* editor, Command_Source source) {
 
     source.client->show_dialog(editor, "Git Find File: ", git_find_file_completion_engine,
                                command_git_find_file_response, directory);
-    source.client->mini_buffer_completion_cache.engine_context.data = directory;
-    // Don't deallocate the directory in the completion engine context because
-    // we deallocate when the dialog is closed by passing it to show_dialog.
-    source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void*) {};
+
+    auto data = cz::heap_allocator().alloc<Git_Find_File_Completion_Engine_Data>();
+    *data = {};
+    data->working_directory = directory;
+    source.client->mini_buffer_completion_cache.engine_context.data = data;
+
+    source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* _data) {
+        Git_Find_File_Completion_Engine_Data* data = (Git_Find_File_Completion_Engine_Data*)_data;
+        // Don't deallocate the directory in the completion engine context because
+        // we deallocate when the dialog is closed by passing it to show_dialog.
+        data->runner.drop();
+        cz::heap_allocator().dealloc(data);
+    };
 }
 
 }

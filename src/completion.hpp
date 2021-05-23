@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cz/buffer_array.hpp>
-#include <cz/string.hpp>
 #include <cz/heap_vector.hpp>
+#include <cz/string.hpp>
 
 namespace cz {
 struct Process_Options;
@@ -63,10 +63,17 @@ void spaces_are_wildcards_completion_filter(Editor* editor,
                                             cz::Str selected_result,
                                             bool has_selected_result);
 
-bool run_command_for_completion_results(Completion_Engine_Context* context,
-                                        cz::Slice<cz::Str> args,
-                                        cz::Process_Options options,
-                                        bool force_reload = false);
+/// Runs a command and loads each line as a result.
+struct Run_Command_For_Completion_Results {
+    void* pimpl;
+
+    bool iterate(Completion_Engine_Context* context,
+                 cz::Slice<cz::Str> args,
+                 cz::Process_Options options,
+                 bool force_reload = false);
+
+    void drop();
+};
 
 struct Completion_Cache {
     Completion_Engine engine;

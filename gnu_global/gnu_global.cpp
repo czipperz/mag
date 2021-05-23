@@ -39,11 +39,17 @@ static bool parse_number(cz::Str str, T* number) {
     return true;
 }
 
+struct Completion_Engine_Data {
+    char* working_directory;
+    Run_Command_For_Completion_Results runner;
+};
+
 bool completion_engine(Editor* editor, Completion_Engine_Context* context, bool is_initial_frame) {
     cz::Str args[] = {"global", "-c", context->query};
+    Completion_Engine_Data* data = (Completion_Engine_Data*)context->data;
     cz::Process_Options options;
-    options.working_directory = (const char*)context->data;
-    return run_command_for_completion_results(context, args, options, is_initial_frame);
+    options.working_directory = data->working_directory;
+    return data->runner.iterate(context, args, options, is_initial_frame);
 }
 
 const char* lookup(const char* directory,
@@ -320,7 +326,7 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
 
     char* directory;
     {
-        WITH_CONST_SELECTED_BUFFER(source.client);
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
 
         directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer();
     }
@@ -329,11 +335,23 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
                                command_lookup_prompt_callback, nullptr);
 
     // If data wasn't cleared by show_dialog then it needs to be cleaned up now.
-    cz::heap_allocator().dealloc(
-        {source.client->mini_buffer_completion_cache.engine_context.data, 0});
-    source.client->mini_buffer_completion_cache.engine_context.data = directory;
-    source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* directory) {
-        cz::heap_allocator().dealloc({directory, 0});
+    auto data =
+        (Completion_Engine_Data*)source.client->mini_buffer_completion_cache.engine_context.data;
+    if (data) {
+        CZ_DEBUG_ASSERT(source.client->mini_buffer_completion_cache.engine_context.cleanup);
+        source.client->mini_buffer_completion_cache.engine_context.cleanup(data);
+    }
+
+    data = cz::heap_allocator().alloc<Completion_Engine_Data>();
+    *data = {};
+    data->working_directory = directory;
+
+    source.client->mini_buffer_completion_cache.engine_context.data = data;
+    source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* _data) {
+        auto data = (Completion_Engine_Data*)_data;
+        cz::heap_allocator().dealloc({data->working_directory, 0});
+        data->runner.drop();
+        cz::heap_allocator().dealloc(data);
     };
 
     source.client->fill_mini_buffer_with_selected_region(editor);
