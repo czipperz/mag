@@ -156,6 +156,7 @@ bool Token_Cache::update(const Buffer* buffer) {
                                 (unsigned long)i);
                     TracyMessage(message, len);
                     check_points.set_len(i);
+                    ran_to_end = false;
                     return false;
                 }
 
