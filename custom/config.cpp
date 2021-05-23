@@ -118,19 +118,19 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-F", region_movement::command_forward_word);
     BIND(key_map, "A-B", region_movement::command_backward_word);
 
-    BIND(key_map, "A-n", command_forward_line);
-    BIND(key_map, "A-p", command_backward_line);
-    BIND(key_map, "A-N", region_movement::command_forward_line);
-    BIND(key_map, "A-P", region_movement::command_backward_line);
+    BIND(key_map, "A-n", command_forward_line_single_cursor_visual);
+    BIND(key_map, "A-p", command_backward_line_single_cursor_visual);
+    BIND(key_map, "A-N", region_movement::command_forward_line_single_cursor_visual);
+    BIND(key_map, "A-P", region_movement::command_backward_line_single_cursor_visual);
     BIND(key_map, "C-n", command_shift_line_forward);
     BIND(key_map, "C-p", command_shift_line_backward);
 
-    BIND(key_map, "UP", command_backward_line);
-    BIND(key_map, "DOWN", command_forward_line);
+    BIND(key_map, "UP", command_backward_line_single_cursor_visual);
+    BIND(key_map, "DOWN", command_forward_line_single_cursor_visual);
     BIND(key_map, "LEFT", command_backward_char);
     BIND(key_map, "RIGHT", command_forward_char);
-    BIND(key_map, "S-UP", region_movement::command_backward_line);
-    BIND(key_map, "S-DOWN", region_movement::command_forward_line);
+    BIND(key_map, "S-UP", region_movement::command_backward_line_single_cursor_visual);
+    BIND(key_map, "S-DOWN", region_movement::command_forward_line_single_cursor_visual);
     BIND(key_map, "S-LEFT", region_movement::command_backward_char);
     BIND(key_map, "S-RIGHT", region_movement::command_forward_char);
     BIND(key_map, "C-LEFT", command_backward_word);

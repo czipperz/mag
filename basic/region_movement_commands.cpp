@@ -80,6 +80,17 @@ void command_backward_line(Editor* editor, Command_Source source) {
     show_marks_temporarily(source.client->selected_window());
 }
 
+void command_forward_line_single_cursor_visual(Editor* editor, Command_Source source) {
+    set_marks(source.client->selected_window());
+    basic::command_forward_line_single_cursor_visual(editor, source);
+    show_marks_temporarily(source.client->selected_window());
+}
+void command_backward_line_single_cursor_visual(Editor* editor, Command_Source source) {
+    set_marks(source.client->selected_window());
+    basic::command_backward_line_single_cursor_visual(editor, source);
+    show_marks_temporarily(source.client->selected_window());
+}
+
 void command_start_of_line(Editor* editor, Command_Source source) {
     set_marks(source.client->selected_window());
     basic::command_start_of_line(editor, source);

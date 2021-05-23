@@ -123,6 +123,28 @@ void command_backward_line(Editor* editor, Command_Source source) {
     TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(buffer->mode, it); });
 }
 
+void command_forward_line_single_cursor_visual(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
+    if (window->cursors.len() == 1 && !window->show_marks) {
+        TRANSFORM_POINTS(
+            [&](Contents_Iterator* it) { forward_visible_line(buffer->mode, it, window->cols); });
+    } else {
+        TRANSFORM_POINTS([&](Contents_Iterator* it) { forward_line(buffer->mode, it); });
+    }
+}
+
+void command_backward_line_single_cursor_visual(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
+    if (window->cursors.len() == 1 && !window->show_marks) {
+        TRANSFORM_POINTS(
+            [&](Contents_Iterator* it) { backward_visible_line(buffer->mode, it, window->cols); });
+    } else {
+        TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(buffer->mode, it); });
+    }
+}
+
 void command_forward_paragraph(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
