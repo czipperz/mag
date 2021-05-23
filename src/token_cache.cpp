@@ -237,6 +237,12 @@ bool Token_Cache::next_check_point(const Buffer* buffer,
 }
 
 bool Token_Cache::is_covered(uint64_t position) const {
+    // If the tokenizer crashes halfway through then we
+    // consider points after the crash to be covered.
+    if (ran_to_end) {
+        return true;
+    }
+
     uint64_t cpp = 0;
     if (check_points.len() > 0) {
         cpp = check_points.last().position;
