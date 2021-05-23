@@ -198,11 +198,9 @@ void Token_Cache::generate_check_points_until(const Buffer* buffer, uint64_t pos
         state = 0;
         iterator = buffer->contents.start();
 
-        Tokenizer_Check_Point check_point;
-        check_point.position = iterator.position;
-        check_point.state = state;
+        // Put an empty check point at the start.
         check_points.reserve(cz::heap_allocator(), 1);
-        check_points.push(check_point);
+        check_points.push({});
     }
 
     while (iterator.position <= position) {
