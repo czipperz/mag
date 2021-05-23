@@ -8,6 +8,7 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/mutex.hpp>
+#include <cz/semaphore.hpp>
 #include "basic/commands.hpp"
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -19,6 +20,7 @@
 namespace mag {
 
 struct Run_Jobs_Data {
+    cz::Semaphore added_asynchronous_job_signal;
     cz::Mutex mutex;
     cz::Vector<Asynchronous_Job> jobs;
     cz::Vector<Synchronous_Job> pending_jobs;
@@ -140,7 +142,7 @@ struct Run_Jobs {
                 }
 
                 ZoneScopedN("job thread sleeping");
-                std::this_thread::sleep_for(std::chrono::milliseconds(3));
+                data->added_asynchronous_job_signal.acquire();
             }
         }
     }
@@ -150,6 +152,7 @@ void Server::init() {
     auto data = cz::heap_allocator().alloc<Run_Jobs_Data>();
     job_data_ = data;
 
+    data->added_asynchronous_job_signal.init(0);
     data->mutex.init();
     data->jobs = {};
     data->pending_jobs = {};
@@ -191,9 +194,13 @@ void Server::drop() {
         data->stop = true;
     }
 
+    // If the other thread is stalled on the semaphore then release it.
+    data->added_asynchronous_job_signal.release();
+
     job_thread->join();
     delete job_thread;
 
+    data->added_asynchronous_job_signal.drop();
     data->mutex.drop();
 
     for (size_t i = 0; i < data->jobs.len(); ++i) {
@@ -241,6 +248,9 @@ bool Server::slurp_jobs() {
 
     data->jobs.reserve(cz::heap_allocator(), editor.pending_jobs.len());
     data->jobs.append(editor.pending_jobs);
+    if (editor.pending_jobs.len() > 0) {
+        data->added_asynchronous_job_signal.release();
+    }
     editor.pending_jobs.set_len(0);
 
     editor.synchronous_jobs.reserve(cz::heap_allocator(), data->pending_jobs.len());
