@@ -27,14 +27,7 @@ static cz::Slice<char> bucket_alloc() {
 
 static uint64_t count_lines(cz::Str str) {
     ZoneScoped;
-
-    uint64_t lines = 0;
-    for (size_t i = 0; i < str.len; ++i) {
-        if (str[i] == '\n') {
-            ++lines;
-        }
-    }
-    return lines;
+    return str.count('\n');
 }
 
 static void bucket_remove(cz::Slice<char>* bucket, uint64_t* lines, uint64_t start, uint64_t len) {
