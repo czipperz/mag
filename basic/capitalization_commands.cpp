@@ -464,20 +464,24 @@ void command_recapitalize_token_to(Editor* editor,
             continue;
         }
 
-        if (token.type != Token_Type::IDENTIFIER && token.type != Token_Type::TYPE) {
+        it.go_to(token.start);
+
+        SSOStr original = buffer->contents.slice(transaction.value_allocator(), it, token.end);
+
+        cz::String replacement = {};
+        convert(original.as_str(), transaction.value_allocator(), &replacement);
+
+        if (replacement == original.as_str()) {
+            replacement.drop(transaction.value_allocator());
+            original.drop(transaction.value_allocator());
             continue;
         }
 
-        it.go_to(token.start);
-
         Edit remove;
-        remove.value = buffer->contents.slice(transaction.value_allocator(), it, token.end);
+        remove.value = original;
         remove.position = it.position + offset;
         remove.flags = Edit::REMOVE;
         transaction.push(remove);
-
-        cz::String replacement = {};
-        convert(remove.value.as_str(), transaction.value_allocator(), &replacement);
 
         Edit insert;
         insert.value = SSOStr::from_constant(replacement);
