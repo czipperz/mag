@@ -24,11 +24,11 @@ static void show_message_job_kill(void* _data) {
     data->message.drop(cz::heap_allocator());
 }
 
-static bool show_message_job_tick(Editor* editor, Client* client, void* _data) {
+static Job_Tick_Result show_message_job_tick(Editor* editor, Client* client, void* _data) {
     Show_Message_Job_Data* data = (Show_Message_Job_Data*)_data;
     client->show_message(editor, data->message);
     data->message.drop(cz::heap_allocator());
-    return true;
+    return Job_Tick_Result::FINISHED;
 }
 
 void Asynchronous_Job_Handler::show_message(cz::Str message) {
@@ -58,7 +58,7 @@ static void process_append_job_kill(void* _data) {
     cz::heap_allocator().dealloc(data);
 }
 
-static bool process_append_job_tick(Asynchronous_Job_Handler*, void* _data) {
+static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler*, void* _data) {
     ZoneScoped;
 
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
@@ -69,7 +69,7 @@ static bool process_append_job_tick(Asynchronous_Job_Handler*, void* _data) {
             cz::Arc<Buffer_Handle> handle;
             if (!data->buffer_handle.upgrade(&handle)) {
                 process_append_job_kill(data);
-                return true;
+                return Job_Tick_Result::FINISHED;
             }
             CZ_DEFER(handle.drop());
 
@@ -82,15 +82,15 @@ static bool process_append_job_tick(Asynchronous_Job_Handler*, void* _data) {
             data->process.join();
             data->buffer_handle.drop();
             cz::heap_allocator().dealloc(data);
-            return true;
+            return Job_Tick_Result::FINISHED;
         } else {
             // Nothing to read right now
-            return false;
+            return reads > 0 ? Job_Tick_Result::MADE_PROGRESS : Job_Tick_Result::STALLED;
         }
     }
 
     // Let another job run.
-    return false;
+    return Job_Tick_Result::MADE_PROGRESS;
 }
 
 Asynchronous_Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
@@ -120,14 +120,14 @@ static void process_silent_job_kill(void* _data) {
     cz::heap_allocator().dealloc(data);
 }
 
-static bool process_silent_job_tick(Asynchronous_Job_Handler*, void* _data) {
+static Job_Tick_Result process_silent_job_tick(Asynchronous_Job_Handler*, void* _data) {
     Process_Silent_Job_Data* data = (Process_Silent_Job_Data*)_data;
     int ret;
     if (data->process.try_join(&ret)) {
         cz::heap_allocator().dealloc(data);
-        return true;
+        return Job_Tick_Result::FINISHED;
     } else {
-        return false;
+        return Job_Tick_Result::STALLED;
     }
 }
 

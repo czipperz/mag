@@ -34,6 +34,19 @@ public:
     void show_message(cz::Str message);
 };
 
+namespace Job_Tick_Result_ {
+/// The result of a `tick` call on a job.
+enum Job_Tick_Result {
+    /// The job has finished.  It will be removed from the job list.
+    FINISHED,
+    /// The job has made some progress.  It will be re-scheduled to do more work.
+    MADE_PROGRESS,
+    /// The job has not made progress.  If all jobs are stalled the job thread will sleep.
+    STALLED,
+};
+}
+using Job_Tick_Result_::Job_Tick_Result;
+
 /// An `Asynchronous_Job` represents a task to be performed in the background.
 ///
 /// It is thread safe to use a `Buffer` by storing it as a `cz::Arc_Weak<Buffer_Handle>` (don't
@@ -46,15 +59,13 @@ public:
 /// To spawn an `Asynchronous_Job` use `Editor::add_asynchronous_job`.
 /// See `job_process_append` for example code.
 struct Asynchronous_Job {
-    /// Run one tick of the job.  Returns `true` iff the job has halted.
-    ///
-    /// When the job has halted, `tick` will no longer be invoked.
-    bool (*tick)(Asynchronous_Job_Handler*, void* data);
+    /// Run one tick of the job.
+    Job_Tick_Result (*tick)(Asynchronous_Job_Handler*, void* data);
 
     /// Cleanup the job because it is forcibly no longer going to be ran.
     ///
-    /// This is invoked when the editor closed.  This is not invoked when the
-    /// tasks halts (`tick` returns `true`), because often times you want
+    /// This is invoked when the editor closed.  This is not invoked when the task
+    /// finishes (`tick` returns `Job_Tick_Result::FINISHED`), because often times you want
     /// different cleanup behavior on a successful exit than an unsuccessful exit.
     void (*kill)(void* data);
 
@@ -66,15 +77,13 @@ struct Asynchronous_Job {
 /// A synchronous job can be spawned either by `Editor::add_synchronous_job` or by
 /// an asynchronous job calling `Asynchronous_Job_Handler::add_synchronous_job`.
 struct Synchronous_Job {
-    /// Run one tick of the job.  Returns `true` iff the job has halted.
-    ///
-    /// When the job has halted, `tick` will no longer be invoked.
-    bool (*tick)(Editor* editor, Client* client, void* data);
+    /// Run one tick of the job.
+    Job_Tick_Result (*tick)(Editor* editor, Client* client, void* data);
 
     /// Cleanup the job because it is forcibly no longer going to be ran.
     ///
-    /// This is invoked when the editor closed.  This is not invoked when the
-    /// tasks halts (`tick` returns `true`), because often times you want
+    /// This is invoked when the editor closed.  This is not invoked when the task
+    /// finishes (`tick` returns `Job_Tick_Result::FINISHED`), because often times you want
     /// different cleanup behavior on a successful exit than an unsuccessful exit.
     void (*kill)(void* data);
 

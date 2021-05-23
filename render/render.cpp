@@ -189,7 +189,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             // We are below the "visible" section of the buffer ie on the last line or beyond
             // the last line.
             iterator = buffer->contents.iterator_at(selected_cursor_position);
-            start_of_line(&iterator);
+            start_of_visible_line(window, buffer->mode, &iterator);
             backward_visible_line(buffer->mode, &iterator, window->cols, window->rows - 2);
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
 
@@ -203,7 +203,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 // without bumping the primary cursor off.
                 Contents_Iterator start_iterator =
                     buffer->contents.iterator_at(window->cursors[c].point);
-                start_of_line(&start_iterator);
+                start_of_visible_line(window, buffer->mode, &start_iterator);
                 backward_visible_line(buffer->mode, &start_iterator, window->cols,
                                       window->rows - 1);
 

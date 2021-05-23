@@ -216,7 +216,7 @@ struct Clang_Format_Job_Data {
     cz::String output_xml;
 };
 
-static bool clang_format_job_tick(Asynchronous_Job_Handler* handler, void* _data) {
+static Job_Tick_Result clang_format_job_tick(Asynchronous_Job_Handler* handler, void* _data) {
     ZoneScoped;
 
     Clang_Format_Job_Data* data = (Clang_Format_Job_Data*)_data;
@@ -254,15 +254,15 @@ static bool clang_format_job_tick(Asynchronous_Job_Handler* handler, void* _data
 
             data->output_xml.drop(cz::heap_allocator());
             cz::heap_allocator().dealloc(data);
-            return true;
+            return Job_Tick_Result::FINISHED;
         } else {
             // Nothing to read right now
-            return false;
+            return reads > 0 ? Job_Tick_Result::MADE_PROGRESS : Job_Tick_Result::STALLED;
         }
     }
 
     // Let another job run.
-    return false;
+    return Job_Tick_Result::MADE_PROGRESS;
 }
 
 static void clang_format_job_kill(void* _data) {

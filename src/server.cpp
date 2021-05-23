@@ -51,12 +51,13 @@ struct Run_Jobs {
         cz::String queue_message = {};
         CZ_DEFER(queue_message.drop(cz::heap_allocator()));
 
+        bool ran_previous_job = false;
+        size_t job_index = 0;
         bool started = false;
 
         bool remove = false;
+        bool made_progress = false;
         while (1) {
-            size_t i = 0;
-
             Asynchronous_Job job;
             {
                 ZoneScopedN("job thread find job");
@@ -82,11 +83,12 @@ struct Run_Jobs {
                 }
 
                 if (remove) {
-                    data->jobs.remove(i);
-                    if (i > 0) {
-                        --i;
-                    }
+                    data->jobs.remove(job_index);
                     remove = false;
+                } else {
+                    if (ran_previous_job) {
+                        ++job_index;
+                    }
                 }
 
                 if (data->stop) {
@@ -101,16 +103,23 @@ struct Run_Jobs {
                 handler.pending_jobs.set_len(0);
 
                 if (data->jobs.len() == 0) {
-                    i = 0;
-                    goto sleep;
+                    job_index = 0;
+                    ran_previous_job = false;
+                    made_progress = false;
+                    goto wait_for_more_jobs;
                 }
 
-                if (i == data->jobs.len()) {
-                    i = 0;
+                if (job_index == data->jobs.len()) {
+                    job_index = 0;
+                    ran_previous_job = false;
+                    if (!made_progress) {
+                        goto sleep;
+                    }
+                    made_progress = false;
                 }
 
-                job = data->jobs[i];
-                ++i;
+                job = data->jobs[job_index];
+                ran_previous_job = true;
             }
 
             if (!started) {
@@ -121,8 +130,11 @@ struct Run_Jobs {
             {
                 ZoneScopedN("job thread run job");
                 try {
-                    if (job.tick(&handler, job.data)) {
+                    Job_Tick_Result result = job.tick(&handler, job.data);
+                    if (result == Job_Tick_Result::FINISHED) {
                         remove = true;
+                    } else if (result == Job_Tick_Result::MADE_PROGRESS) {
+                        made_progress = true;
                     }
                 } catch (std::exception& ex) {
                     cz::Str prefix = "Job failed with message: ";
@@ -135,14 +147,20 @@ struct Run_Jobs {
             }
 
             if (false) {
-            sleep:
+            wait_for_more_jobs:
                 if (started) {
                     FrameMarkEnd("job thread");
                     started = false;
                 }
 
-                ZoneScopedN("job thread sleeping");
+                ZoneScopedN("job thread waiting for more jobs");
                 data->added_asynchronous_job_signal.acquire();
+            }
+
+            if (false) {
+            sleep:
+                ZoneScopedN("job thread sleep");
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
         }
     }
@@ -274,7 +292,9 @@ bool Server::run_synchronous_jobs(Client* client) {
 
     for (size_t i = 0; i < editor.synchronous_jobs.len();) {
         ran_any_jobs = true;
-        if (editor.synchronous_jobs[i].tick(&editor, client, editor.synchronous_jobs[i].data)) {
+        Synchronous_Job job = editor.synchronous_jobs[i];
+        Job_Tick_Result result = job.tick(&editor, client, job.data);
+        if (result == Job_Tick_Result::FINISHED) {
             editor.synchronous_jobs.remove(i);
             continue;
         }

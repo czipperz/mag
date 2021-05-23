@@ -261,7 +261,7 @@ static void job_syntax_highlight_buffer_kill(void* _data) {
     cz::heap_allocator().dealloc(data);
 }
 
-static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _data) {
+static Job_Tick_Result job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _data) {
     ZoneScoped;
 
     Job_Syntax_Highlight_Buffer_Data* data = (Job_Syntax_Highlight_Buffer_Data*)_data;
@@ -269,7 +269,7 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
     cz::Arc<Buffer_Handle> handle;
     if (!data->handle.upgrade(&handle)) {
         job_syntax_highlight_buffer_kill(_data);
-        return true;
+        return Job_Tick_Result::FINISHED;
     }
     CZ_DEFER(handle.drop());
 
@@ -278,7 +278,7 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
 
     const Buffer* buffer = handle->try_lock_reading();
     if (!buffer) {
-        return false;
+        return Job_Tick_Result::STALLED;
     }
     CZ_DEFER(handle->unlock());
 
@@ -289,7 +289,7 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
 
         if (buffer->token_cache.is_covered(buffer->contents.len)) {
             job_syntax_highlight_buffer_kill(_data);
-            return true;
+            return Job_Tick_Result::FINISHED;
         }
 
         clone = buffer->token_cache.clone();
@@ -326,7 +326,7 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
 
         // Someone else pre-empted us and added a bunch of check points.
         if (clone.check_points.len() < buffer_mut->token_cache.check_points.len()) {
-            return false;
+            return Job_Tick_Result::MADE_PROGRESS;
         }
 
         // Update again since we could've been pre-empted before we relocked.
@@ -338,7 +338,7 @@ static bool job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler*, void* _d
     if (stop) {
         job_syntax_highlight_buffer_kill(_data);
     }
-    return stop;
+    return stop ? Job_Tick_Result::FINISHED : Job_Tick_Result::MADE_PROGRESS;
 }
 
 Asynchronous_Job job_syntax_highlight_buffer(cz::Arc_Weak<Buffer_Handle> handle) {
