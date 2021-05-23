@@ -191,3 +191,17 @@ TEST_CASE("command_recapitalize_token_to multiple cursors") {
     tr.run(command_recapitalize_token_to_camel);
     CHECK(tr.stringify() == "word1Word2| word3Word4|");
 }
+
+TEST_CASE("command_recapitalize_token_to cursor moved to end of word") {
+    Test_Runner tr;
+    tr.setup("Wor|d1_Word2");
+    tr.run(command_recapitalize_token_to_camel);
+    CHECK(tr.stringify() == "word1Word2|");
+}
+
+TEST_CASE("command_recapitalize_token_to random tokens does nothing") {
+    Test_Runner tr;
+    tr.setup("{| |} <|<");
+    tr.run(command_recapitalize_token_to_snake);
+    CHECK(tr.stringify() == "{| |} <|<");
+}

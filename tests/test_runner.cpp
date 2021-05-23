@@ -89,6 +89,12 @@ cz::String Test_Runner::stringify() {
         output.push('|');
     }
 
+    while (!it.at_eob()) {
+        output.reserve(allocator(), 1);
+        output.push(it.get());
+        it.advance();
+    }
+
     return output;
 }
 
