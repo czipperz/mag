@@ -288,8 +288,8 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-x u", command_uppercase_letter);
     BIND(key_map, "A-x l", command_lowercase_letter);
-    BIND(key_map, "A-x A-u", command_uppercase_region);
-    BIND(key_map, "A-x A-l", command_lowercase_region);
+    BIND(key_map, "A-x A-u", command_uppercase_region_or_word);
+    BIND(key_map, "A-x A-l", command_lowercase_region_or_word);
 
     BIND(key_map, "A-x A-t", command_recapitalize_token_prompt);
     BIND(key_map, "A-x t c", command_recapitalize_token_to_camel);

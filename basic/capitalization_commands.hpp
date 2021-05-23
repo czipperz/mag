@@ -9,8 +9,8 @@ namespace basic {
 void command_uppercase_letter(Editor* editor, Command_Source source);
 void command_lowercase_letter(Editor* editor, Command_Source source);
 
-void command_uppercase_region(Editor* editor, Command_Source source);
-void command_lowercase_region(Editor* editor, Command_Source source);
+void command_uppercase_region_or_word(Editor* editor, Command_Source source);
+void command_lowercase_region_or_word(Editor* editor, Command_Source source);
 
 /// Recapitalization commands get the current token and then reformat it as the specified case.
 ///

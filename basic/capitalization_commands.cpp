@@ -69,13 +69,8 @@ void command_lowercase_letter(Editor* editor, Command_Source source) {
     transaction.commit();
 }
 
-void command_uppercase_region(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_window();
-    if (!window->show_marks) {
-        return;
-    }
-
-    WITH_WINDOW_BUFFER(window);
+void command_uppercase_region_or_word(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
 
     Transaction transaction;
     transaction.init(buffer);
@@ -83,8 +78,18 @@ void command_uppercase_region(Editor* editor, Command_Source source) {
 
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].start());
-        uint64_t end = cursors[c].end();
+        Contents_Iterator start;
+        uint64_t end;
+
+        if (window->show_marks) {
+            start = buffer->contents.iterator_at(cursors[c].start());
+            end = cursors[c].end();
+        } else {
+            start = buffer->contents.iterator_at(cursors[c].point);
+            Contents_Iterator end_it = start;
+            forward_word(&end_it);
+            end = end_it.position;
+        }
 
         Edit remove;
         remove.value = buffer->contents.slice(transaction.value_allocator(), start, end);
@@ -109,13 +114,8 @@ void command_uppercase_region(Editor* editor, Command_Source source) {
     window->show_marks = false;
 }
 
-void command_lowercase_region(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_window();
-    if (!window->show_marks) {
-        return;
-    }
-
-    WITH_WINDOW_BUFFER(window);
+void command_lowercase_region_or_word(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
 
     Transaction transaction;
     transaction.init(buffer);
@@ -123,8 +123,18 @@ void command_lowercase_region(Editor* editor, Command_Source source) {
 
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
-        Contents_Iterator start = buffer->contents.iterator_at(cursors[c].start());
-        uint64_t end = cursors[c].end();
+        Contents_Iterator start;
+        uint64_t end;
+
+        if (window->show_marks) {
+            start = buffer->contents.iterator_at(cursors[c].start());
+            end = cursors[c].end();
+        } else {
+            start = buffer->contents.iterator_at(cursors[c].point);
+            Contents_Iterator end_it = start;
+            forward_word(&end_it);
+            end = end_it.position;
+        }
 
         Edit remove;
         remove.value = buffer->contents.slice(transaction.value_allocator(), start, end);
