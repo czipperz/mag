@@ -77,6 +77,12 @@ void forward_visible_line(const Mode& mode,
             break;
         }
 
+        // Last row is shorter than `column` columns wide.  Stop at the end of this column.
+        if (rows == 0 && column < line_width - line_width % cols && column + cols >= line_width) {
+            *iterator = end;
+            return;
+        }
+
         column += cols;
         if (column > line_width) {
             column = column % cols;
