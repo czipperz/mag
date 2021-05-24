@@ -19,7 +19,7 @@ struct Test_Runner {
     Test_Runner& operator=(const Test_Runner&) = delete;
 
     /// Set a custom tokenizer.
-    void Test_Runner::set_tokenizer(bool (*tokenizer)(Contents_Iterator*, Token*, uint64_t*));
+    void set_tokenizer(bool (*tokenizer)(Contents_Iterator*, Token*, uint64_t*));
 
     /// `input` should have `|` to represent cursors;
     /// other characters will be inserted into the buffer.

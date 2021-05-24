@@ -142,7 +142,8 @@ bool rfind(Contents_Iterator* it, char ch) {
             return false;
         }
 
-        goto retreat;
+        --it->bucket;
+        it->index = it->contents->buckets[it->bucket].len;
     }
 
     while (1) {
@@ -162,7 +163,6 @@ bool rfind(Contents_Iterator* it, char ch) {
             }
 
             it->position -= str.len;
-        retreat:
             --it->bucket;
             it->index = it->contents->buckets[it->bucket].len;
         }
