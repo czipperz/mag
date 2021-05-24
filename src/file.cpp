@@ -1,6 +1,7 @@
 #define __STDC_WANT_LIB_EXT1__ 1
 #include "file.hpp"
 
+#include <stdio.h>
 #include <time.h>
 #include <Tracy.hpp>
 #include <algorithm>
