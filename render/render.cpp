@@ -196,6 +196,27 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             window_cache->v.unified.animation.slam_on_the_breaks = false;
         }
 
+        if (window->show_marks && window->cursors[0].mark > visible_end_iterator.position) {
+            // The mark is below the "visible" section of the buffer but
+            // the point isn't.  Test if we can put both on the screen.
+            Contents_Iterator start_iterator =
+                buffer->contents.iterator_at(window->cursors[0].mark);
+            start_of_visible_line(window, buffer->mode, &start_iterator);
+            backward_visible_line(buffer->mode, &start_iterator, window->cols, window->rows - 1);
+
+            // Don't adjust to mark if the cursor would be pushed off screen.
+            Contents_Iterator test_iterator = start_iterator;
+            end_of_line(&test_iterator);
+            forward_char(&test_iterator);
+
+            if (window->cursors[0].point >= test_iterator.position &&
+                start_iterator.position > iterator.position) {
+                iterator = start_iterator;
+                cache_window_unified_position(window, window_cache, iterator.position, buffer);
+                window_cache->v.unified.animation.slam_on_the_breaks = false;
+            }
+        }
+
         // Test if we can fit any of the newly created cursors on the screen.
         if (window->cursors.len() > window_cache->v.unified.cursor_count) {
             for (size_t c = window->cursors.len(); c-- > window_cache->v.unified.cursor_count;) {
@@ -207,6 +228,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 backward_visible_line(buffer->mode, &start_iterator, window->cols,
                                       window->rows - 1);
 
+                // Don't adjust to this cursor if the selected cursor would be pushed off screen.
                 Contents_Iterator test_iterator = start_iterator;
                 end_of_line(&test_iterator);
                 forward_char(&test_iterator);
