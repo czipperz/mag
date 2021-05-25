@@ -151,12 +151,16 @@ uint64_t count_visual_columns(const Mode& mode,
 }
 
 uint64_t get_visual_column(const Mode& mode, Contents_Iterator iterator) {
+    ZoneScoped;
+
     uint64_t end = iterator.position;
     start_of_line(&iterator);
     return count_visual_columns(mode, iterator, end);
 }
 
 void go_to_visual_column(const Mode& mode, Contents_Iterator* iterator, uint64_t column) {
+    ZoneScoped;
+
     start_of_line(iterator);
 
     uint64_t current = 0;
