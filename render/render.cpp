@@ -87,6 +87,34 @@ static void apply_face(Face* face, Face layer) {
     }
 }
 
+static bool try_to_make_visible(Window_Unified* window,
+                                Window_Cache* window_cache,
+                                const Buffer* buffer,
+                                Contents_Iterator* iterator,
+                                uint64_t must_be_on_screen,
+                                uint64_t goal) {
+    // The mark is below the "visible" section of the buffer but
+    // the point isn't.  Test if we can put both on the screen.
+    Contents_Iterator start_iterator = buffer->contents.iterator_at(goal);
+    start_of_visible_line(window, buffer->mode, &start_iterator);
+    backward_visible_line(buffer->mode, &start_iterator, window->cols, window->rows - 1);
+
+    // Don't adjust to mark if the cursor would be pushed off screen.
+    Contents_Iterator test_iterator = start_iterator;
+    end_of_line(&test_iterator);
+    forward_char(&test_iterator);
+
+    if (must_be_on_screen >= test_iterator.position &&
+        start_iterator.position > iterator->position) {
+        *iterator = start_iterator;
+        cache_window_unified_position(window, window_cache, iterator->position, buffer);
+        window_cache->v.unified.animation.slam_on_the_breaks = false;
+        return true;
+    }
+
+    return false;
+}
+
 static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                                                           Client* client,
                                                           Window_Unified* window,
@@ -196,48 +224,24 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             window_cache->v.unified.animation.slam_on_the_breaks = false;
         }
 
+        // Try to make the mark shown.
         if (window->show_marks && window->cursors[0].mark > visible_end_iterator.position) {
-            // The mark is below the "visible" section of the buffer but
-            // the point isn't.  Test if we can put both on the screen.
-            Contents_Iterator start_iterator =
-                buffer->contents.iterator_at(window->cursors[0].mark);
-            start_of_visible_line(window, buffer->mode, &start_iterator);
-            backward_visible_line(buffer->mode, &start_iterator, window->cols, window->rows - 1);
-
-            // Don't adjust to mark if the cursor would be pushed off screen.
-            Contents_Iterator test_iterator = start_iterator;
-            end_of_line(&test_iterator);
-            forward_char(&test_iterator);
-
-            if (window->cursors[0].point >= test_iterator.position &&
-                start_iterator.position > iterator.position) {
-                iterator = start_iterator;
-                cache_window_unified_position(window, window_cache, iterator.position, buffer);
-                window_cache->v.unified.animation.slam_on_the_breaks = false;
-            }
+            try_to_make_visible(window, window_cache, buffer, &iterator, selected_cursor_position,
+                                window->cursors[0].mark);
         }
 
         // Test if we can fit any of the newly created cursors on the screen.
         if (window->cursors.len() > window_cache->v.unified.cursor_count) {
             for (size_t c = window->cursors.len(); c-- > window_cache->v.unified.cursor_count;) {
-                // Test if we can put this cursor on the screen
-                // without bumping the primary cursor off.
-                Contents_Iterator start_iterator =
-                    buffer->contents.iterator_at(window->cursors[c].point);
-                start_of_visible_line(window, buffer->mode, &start_iterator);
-                backward_visible_line(buffer->mode, &start_iterator, window->cols,
-                                      window->rows - 1);
+                if (try_to_make_visible(window, window_cache, buffer, &iterator,
+                                        selected_cursor_position, window->cursors[c].point)) {
+                    // Fitting the point worked.  Try to also fit the mark.
+                    if (window->show_marks && window->cursors[c].mark > window->cursors[c].point) {
+                        try_to_make_visible(window, window_cache, buffer, &iterator,
+                                            selected_cursor_position, window->cursors[c].mark);
+                    }
 
-                // Don't adjust to this cursor if the selected cursor would be pushed off screen.
-                Contents_Iterator test_iterator = start_iterator;
-                end_of_line(&test_iterator);
-                forward_char(&test_iterator);
-
-                if (window->cursors[0].point >= test_iterator.position &&
-                    start_iterator.position > iterator.position) {
-                    iterator = start_iterator;
-                    cache_window_unified_position(window, window_cache, iterator.position, buffer);
-                    window_cache->v.unified.animation.slam_on_the_breaks = false;
+                    // If we made this one visible then all the ones before it are automatically.
                     break;
                 }
             }
