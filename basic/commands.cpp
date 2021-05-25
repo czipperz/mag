@@ -67,6 +67,11 @@ void command_toggle_render_bucket_boundaries(Editor* editor, Command_Source sour
     buffer->mode.render_bucket_boundaries = !buffer->mode.render_bucket_boundaries;
 }
 
+void command_toggle_use_tabs(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    buffer->mode.use_tabs = !buffer->mode.use_tabs;
+}
+
 void command_set_mark(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;
