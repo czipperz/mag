@@ -21,19 +21,9 @@ void command_goto_center_of_window(Editor* editor, Command_Source source) {
 void command_up_page(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     kill_extra_cursors(window, source.client);
+
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     backward_visible_line(buffer->mode, &it, window->cols, window->rows - 1);
-
-    // We are dealing with an absolutely massive line.  Go up
-    // one line and put the cursor at the top of the screen.
-    if (it.position == window->start_position && it.position > 0) {
-        backward_char(&it);
-        start_of_line(&it);
-        window->start_position = it.position;
-        window->cursors[0].point = it.position;
-        return;
-    }
-
     window->start_position = it.position;
 
     // Go to the start of 1 row from the end of the visible region.
@@ -45,6 +35,7 @@ void command_up_page(Editor* editor, Command_Source source) {
 void command_down_page(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     kill_extra_cursors(window, source.client);
+
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     forward_visible_line(buffer->mode, &it, window->cols, window->rows - 1);
     window->start_position = it.position;
@@ -53,7 +44,7 @@ void command_down_page(Editor* editor, Command_Source source) {
     // in the rendering process.  But if we're at the start of the buffer then
     // going forward one line because looks weird and won't be overridden anyway.
     if (!it.at_bob()) {
-        forward_line(buffer->mode, &it);
+        forward_visible_line(buffer->mode, &it, window->cols);
     }
 
     window->cursors[0].point = it.position;
@@ -63,10 +54,7 @@ static void scroll_down(Editor* editor, Command_Source source, size_t num) {
     WITH_SELECTED_BUFFER(source.client);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
-    for (size_t i = 0; i < num; ++i) {
-        forward_line(buffer->mode, &it);
-    }
-
+    forward_visible_line(buffer->mode, &it, window->cols, num);
     window->start_position = it.position;
 
     forward_line(buffer->mode, &it);
@@ -80,10 +68,7 @@ static void scroll_up(Editor* editor, Command_Source source, size_t num) {
     WITH_SELECTED_BUFFER(source.client);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
-    for (size_t i = 0; i < num; ++i) {
-        backward_line(buffer->mode, &it);
-    }
-
+    backward_visible_line(buffer->mode, &it, window->cols, num);
     window->start_position = it.position;
 
     forward_visible_line(buffer->mode, &it, window->cols, window->rows - 2);

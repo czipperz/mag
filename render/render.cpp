@@ -166,17 +166,14 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
     }
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
-    start_of_line(&iterator);
+    start_of_visible_line(window, buffer->mode, &iterator);
     if (window_cache) {
         ZoneScopedN("update window cache");
 
         if (buffer->changes.len() != window_cache->v.unified.change_index) {
-            position_after_changes({buffer->changes.start() + window_cache->v.unified.change_index,
-                                    buffer->changes.len() - window_cache->v.unified.change_index},
-                                   &window_cache->v.unified.animation.visible_start);
-            position_after_changes({buffer->changes.start() + window_cache->v.unified.change_index,
-                                    buffer->changes.len() - window_cache->v.unified.change_index},
-                                   &window_cache->v.unified.visible_start);
+            auto changes = buffer->changes.slice_start(window_cache->v.unified.change_index);
+            position_after_changes(changes, &window_cache->v.unified.animation.visible_start);
+            position_after_changes(changes, &window_cache->v.unified.visible_start);
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
         }
 
@@ -191,10 +188,12 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         // Ensure the cursor is visible
         uint64_t selected_cursor_position = window->cursors[0].point;
 
+        // Calculate the minimum cursor boundary.
         Contents_Iterator second_visible_line_iterator = iterator;
-        end_of_line(&second_visible_line_iterator);
+        end_of_visible_line(window, buffer->mode, &second_visible_line_iterator);
         forward_char(&second_visible_line_iterator);
 
+        // Calculate the maximum cursor bouundary.
         Contents_Iterator visible_end_iterator =
             buffer->contents.iterator_at(window->start_position);
         forward_visible_line(buffer->mode, &visible_end_iterator, window->cols, window->rows - 2);
@@ -203,9 +202,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             selected_cursor_position <= second_visible_line_iterator.position) {
             // We are above the second visible line and thus readjust
             iterator = buffer->contents.iterator_at(selected_cursor_position);
-            start_of_line(&iterator);
-            backward_char(&iterator);
-            start_of_line(&iterator);
+            start_of_visible_line(window, buffer->mode, &iterator);
+            backward_visible_line(buffer->mode, &iterator, window->cols, 1);
 
             // Don't readjust if the line above us is absolutely massive
             // because we just get caught in a loop going up and down.
