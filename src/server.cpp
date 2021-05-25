@@ -60,7 +60,6 @@ struct Run_Jobs {
         cz::String queue_message = {};
         CZ_DEFER(queue_message.drop(cz::heap_allocator()));
 
-        bool ran_previous_job = false;
         size_t job_index = 0;
         bool started = false;
 
@@ -94,10 +93,6 @@ struct Run_Jobs {
                 if (remove) {
                     data->jobs.remove(job_index);
                     remove = false;
-                } else {
-                    if (ran_previous_job) {
-                        ++job_index;
-                    }
                 }
 
                 if (data->stop) {
@@ -120,14 +115,12 @@ struct Run_Jobs {
 
                 if (data->jobs.len() == 0) {
                     job_index = 0;
-                    ran_previous_job = false;
                     made_progress = false;
                     goto wait_for_more_jobs;
                 }
 
                 if (job_index == data->jobs.len()) {
                     job_index = 0;
-                    ran_previous_job = false;
                     if (!made_progress) {
                         goto sleep;
                     }
@@ -135,7 +128,6 @@ struct Run_Jobs {
                 }
 
                 job = data->jobs[job_index];
-                ran_previous_job = true;
             }
 
             if (!started) {
@@ -159,6 +151,12 @@ struct Run_Jobs {
                     queue_message.append(prefix);
                     queue_message.append(message);
                     remove = true;
+                }
+
+                // Go to the next job.  If we remove then the next job will
+                // be shifted into our position so there's nothing to do.
+                if (!remove) {
+                    ++job_index;
                 }
             }
 
