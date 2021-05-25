@@ -645,11 +645,12 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.ends_with(".sh") || buffer->name.ends_with(".bash") ||
                    buffer->name.ends_with(".zsh") || buffer->name == ".bashrc" ||
                    buffer->name == ".zshrc" || buffer->name == "Makefile" ||
+                   buffer->name == ".gitconfig" ||
                    // Powershell isn't really a shell script but it pretty much works.
                    buffer->name.ends_with(".ps1") ||
                    // Perl isn't really a shell script but it pretty much works.
                    buffer->name.ends_with(".pl")) {
-            if (buffer->name == "Makefile") {
+            if (buffer->name == "Makefile" || buffer->name == ".gitconfig") {
                 // Makefiles must use tabs so set that up automatically.
                 buffer->mode.tab_width = buffer->mode.indent_width;
                 buffer->mode.use_tabs = true;
