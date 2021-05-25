@@ -16,12 +16,14 @@ struct Client;
 struct Editor;
 struct Run_Jobs;
 
+struct Asynchronous_Job;
 struct Synchronous_Job;
 
 /// Allows for `Asynchronous_Job`s to interact with the editor's state in controlled ways.
 struct Asynchronous_Job_Handler {
 private:
-    cz::Vector<Synchronous_Job> pending_jobs;
+    cz::Vector<Synchronous_Job> pending_synchronous_jobs;
+    cz::Vector<Asynchronous_Job> pending_asynchronous_jobs;
     friend struct Run_Jobs;
 
 public:
@@ -29,6 +31,9 @@ public:
     /// `Editor` and `Client` making it much more powerful.  However, because
     /// it runs in the main thread, it is more expensive.
     void add_synchronous_job(Synchronous_Job);
+
+    /// Spawn another asynchronous job.
+    void add_asynchronous_job(Asynchronous_Job);
 
     /// Show a message to the user.
     void show_message(cz::Str message);

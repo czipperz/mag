@@ -40,12 +40,21 @@ struct Run_Jobs {
         ZoneScoped;
 
         Asynchronous_Job_Handler handler = {};
-        handler.pending_jobs.reserve(cz::heap_allocator(), 2);
+        handler.pending_synchronous_jobs.reserve(cz::heap_allocator(), 2);
         CZ_DEFER({
-            for (size_t i = 0; i < handler.pending_jobs.len(); ++i) {
-                handler.pending_jobs[i].kill(handler.pending_jobs[i].data);
+            for (size_t i = 0; i < handler.pending_synchronous_jobs.len(); ++i) {
+                handler.pending_synchronous_jobs[i].kill(handler.pending_synchronous_jobs[i].data);
             }
-            handler.pending_jobs.drop(cz::heap_allocator());
+            handler.pending_synchronous_jobs.drop(cz::heap_allocator());
+        });
+
+        handler.pending_asynchronous_jobs.reserve(cz::heap_allocator(), 2);
+        CZ_DEFER({
+            for (size_t i = 0; i < handler.pending_asynchronous_jobs.len(); ++i) {
+                handler.pending_asynchronous_jobs[i].kill(
+                    handler.pending_asynchronous_jobs[i].data);
+            }
+            handler.pending_asynchronous_jobs.drop(cz::heap_allocator());
         });
 
         cz::String queue_message = {};
@@ -98,9 +107,16 @@ struct Run_Jobs {
                     return;
                 }
 
-                data->pending_jobs.reserve(cz::heap_allocator(), handler.pending_jobs.len());
-                data->pending_jobs.append(handler.pending_jobs);
-                handler.pending_jobs.set_len(0);
+                // Send synchronous jobs to the Editor.
+                data->pending_jobs.reserve(cz::heap_allocator(),
+                                           handler.pending_synchronous_jobs.len());
+                data->pending_jobs.append(handler.pending_synchronous_jobs);
+                handler.pending_synchronous_jobs.set_len(0);
+
+                // Add asynchronous jobs to the list.
+                data->jobs.reserve(cz::heap_allocator(), handler.pending_asynchronous_jobs.len());
+                data->jobs.append(handler.pending_asynchronous_jobs);
+                handler.pending_asynchronous_jobs.set_len(0);
 
                 if (data->jobs.len() == 0) {
                     job_index = 0;

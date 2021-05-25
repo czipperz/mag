@@ -11,8 +11,13 @@
 namespace mag {
 
 void Asynchronous_Job_Handler::add_synchronous_job(Synchronous_Job job) {
-    pending_jobs.reserve(cz::heap_allocator(), 1);
-    pending_jobs.push(job);
+    pending_synchronous_jobs.reserve(cz::heap_allocator(), 1);
+    pending_synchronous_jobs.push(job);
+}
+
+void Asynchronous_Job_Handler::add_asynchronous_job(Asynchronous_Job job) {
+    pending_asynchronous_jobs.reserve(cz::heap_allocator(), 1);
+    pending_asynchronous_jobs.push(job);
 }
 
 struct Show_Message_Job_Data {
