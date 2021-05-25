@@ -564,7 +564,7 @@ void command_undo(Editor* editor, Command_Source source) {
         Contents_Iterator iterator = buffer->contents.iterator_at(position);
         if (!is_visible(window, buffer->mode, iterator)) {
             window->cursors[0].point = position;
-            center_in_window(window, iterator);
+            center_in_window(window, buffer->mode, iterator);
         }
     }
 }
@@ -581,7 +581,7 @@ void command_redo(Editor* editor, Command_Source source) {
         Contents_Iterator iterator = buffer->contents.iterator_at(position);
         if (!is_visible(window, buffer->mode, iterator)) {
             window->cursors[0].point = position;
-            center_in_window(window, iterator);
+            center_in_window(window, buffer->mode, iterator);
         }
     }
 }
@@ -1303,7 +1303,7 @@ static void command_goto_line_callback(Editor* editor, Client* client, cz::Str s
 
     Contents_Iterator iterator = start_of_line_position(buffer->contents, lines);
     window->cursors[0].point = iterator.position;
-    center_in_window(window, iterator);
+    center_in_window(window, buffer->mode, iterator);
 }
 
 static void command_goto_position_callback(Editor* editor,
@@ -1319,7 +1319,7 @@ static void command_goto_position_callback(Editor* editor,
     Contents_Iterator iterator =
         buffer->contents.iterator_at(cz::min(position, buffer->contents.len));
     window->cursors[0].point = iterator.position;
-    center_in_window(window, iterator);
+    center_in_window(window, buffer->mode, iterator);
 }
 
 void command_goto_line(Editor* editor, Command_Source source) {

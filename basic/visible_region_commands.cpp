@@ -10,7 +10,7 @@ namespace basic {
 
 void command_center_in_window(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    center_in_window(window, buffer->contents.iterator_at(window->cursors[0].point));
+    center_in_window(window, buffer->mode, buffer->contents.iterator_at(window->cursors[0].point));
 }
 
 void command_goto_center_of_window(Editor* editor, Command_Source source) {

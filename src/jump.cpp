@@ -41,7 +41,7 @@ void goto_jump(Editor* editor, Client* client, Jump* jump) {
     window->cursors[0].mark = window->cursors[0].point;
 
     WITH_WINDOW_BUFFER(window);
-    center_in_window(window, buffer->contents.iterator_at(jump->position));
+    center_in_window(window, buffer->mode, buffer->contents.iterator_at(jump->position));
 }
 
 }

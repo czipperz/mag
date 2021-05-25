@@ -6,7 +6,7 @@
 
 namespace mag {
 
-void center_in_window(Window_Unified* window, Contents_Iterator iterator) {
+void center_in_window(Window_Unified* window, const Mode& mode, Contents_Iterator iterator) {
     backward_char(&iterator);
 
     size_t row = 0;
@@ -16,8 +16,7 @@ void center_in_window(Window_Unified* window, Contents_Iterator iterator) {
         if (iterator.get() == '\n') {
             ++row;
             if (row >= target_rows) {
-                start_of_line(&iterator);
-                // forward_line(buffer->mode, &iterator);
+                start_of_visible_line(window, mode, &iterator);
                 break;
             }
             col = 0;
@@ -27,8 +26,7 @@ void center_in_window(Window_Unified* window, Contents_Iterator iterator) {
                 col -= window->cols;
                 ++row;
                 if (row >= target_rows) {
-                    start_of_line(&iterator);
-                    // forward_line(buffer->mode, &iterator);
+                    start_of_visible_line(window, mode, &iterator);
                     break;
                 }
             }

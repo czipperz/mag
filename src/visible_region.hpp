@@ -7,7 +7,7 @@ struct Contents_Iterator;
 struct Mode;
 
 /// Adjust the window such that the iterator is at the center.
-void center_in_window(Window_Unified* window, Contents_Iterator iterator);
+void center_in_window(Window_Unified* window, const Mode& mode, Contents_Iterator iterator);
 
 /// Get an iterator to the center of the window.
 Contents_Iterator center_of_window(Window_Unified* window, const Contents* contents);
