@@ -342,6 +342,10 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "SCROLL_UP", command_scroll_up);
     BIND(key_map, "SCROLL_DOWN_ONE", command_scroll_down_one);
     BIND(key_map, "SCROLL_UP_ONE", command_scroll_up_one);
+
+    BIND(key_map, "C--", command_decrease_font_size);
+    // Note that C-_ == C-S--.  Maybe this should be C-+ instead?
+    BIND(key_map, "C-_", command_increase_font_size);
 }
 
 static void create_theme(Theme& theme) {

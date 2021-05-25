@@ -103,5 +103,8 @@ void command_submit_mini_buffer(Editor* editor, Command_Source source);
 
 void command_insert_home_directory(Editor* editor, Command_Source source);
 
+void command_increase_font_size(Editor* editor, Command_Source source);
+void command_decrease_font_size(Editor* editor, Command_Source source);
+
 }
 }

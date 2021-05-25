@@ -1439,5 +1439,15 @@ void command_insert_home_directory(Editor* editor, Command_Source source) {
     transaction.commit();
 }
 
+void command_increase_font_size(Editor* editor, Command_Source source) {
+    editor->theme.font_size += 2;
+}
+
+void command_decrease_font_size(Editor* editor, Command_Source source) {
+    if (editor->theme.font_size >= 2) {
+        editor->theme.font_size -= 2;
+    }
+}
+
 }
 }

@@ -681,7 +681,8 @@ static void render(SDL_Window* window,
                    Window_Cache** window_cache,
                    Editor* editor,
                    Client* client,
-                   cz::Slice<Screen_Position_Query> spqs) {
+                   cz::Slice<Screen_Position_Query> spqs,
+                   bool force_redraw) {
     ZoneScoped;
 
     SDL_Surface* surface;
@@ -690,7 +691,6 @@ static void render(SDL_Window* window,
         surface = SDL_GetWindowSurface(window);
     }
 
-    bool force_redraw = false;
     int rows, cols;
     {
         ZoneScopedN("detect resize");
@@ -699,7 +699,7 @@ static void render(SDL_Window* window,
         cols = width / character_width;
         rows = height / character_height;
 
-        if (width != *old_width || height != *old_height) {
+        if (force_redraw || width != *old_width || height != *old_height) {
             force_redraw = true;
             *old_width = width;
             *old_height = height;
@@ -932,6 +932,44 @@ void setIcon(SDL_Window* sdlWindow) {
 #endif
 }
 
+static bool load_font(cz::String* font_file,
+                      uint32_t* font_size,
+                      TTF_Font** font,
+                      int* character_width,
+                      int* character_height,
+                      SDL_Surface**** surface_cache,
+                      cz::Str new_font_file,
+                      uint32_t new_font_size) {
+    // Set font config variables even if we fail to load the font
+    // so we don't keep looping over and over trying to load it.
+    font_file->reserve(cz::heap_allocator(), new_font_file.len + 1);
+    font_file->append(new_font_file);
+    font_file->null_terminate();
+    *font_size = new_font_size;
+
+    // Load the font.
+    TTF_Font* new_font = TTF_OpenFont(font_file->buffer(), *font_size);
+    if (!new_font) {
+        fprintf(stderr, "Failed to open the font file '%s': %s\n", font_file->buffer(),
+                SDL_GetError());
+        return false;
+    }
+
+    if (!get_character_dims(new_font, character_width, character_height)) {
+        TTF_CloseFont(new_font);
+        return false;
+    }
+
+    if (*font) {
+        TTF_CloseFont(*font);
+    }
+    *font = new_font;
+
+    drop_surface_cache(surface_cache);
+    memset(surface_cache, 0, 256 * sizeof(*surface_cache));
+    return true;
+}
+
 void run(Server* server, Client* client) {
     ZoneScoped;
 
@@ -985,13 +1023,24 @@ void run(Server* server, Client* client) {
     }
     CZ_DEFER(SDL_DestroyRenderer(renderer));
 
-    TTF_Font* font = TTF_OpenFont(server->editor.theme.font_file, server->editor.theme.font_size);
-    if (!font) {
-        fprintf(stderr, "Failed to open the font file '%s': %s\n", server->editor.theme.font_file,
-                SDL_GetError());
+    // All the font variables.
+    cz::String font_file = {};
+    uint32_t font_size = 0;
+    TTF_Font* font = nullptr;
+    CZ_DEFER(if (font) TTF_CloseFont(font));
+
+    int character_width;
+    int character_height;
+
+    // SDL_Surface* surface_cache[fg.theme_index(256)][Face::flags(8)][char(UCHAR_MAX + 1)]
+    SDL_Surface*** surface_cache[256] = {};
+    CZ_DEFER(drop_surface_cache(surface_cache));
+
+    // Load the font.
+    if (!load_font(&font_file, &font_size, &font, &character_width, &character_height,
+                   surface_cache, server->editor.theme.font_file, server->editor.theme.font_size)) {
         return;
     }
-    CZ_DEFER(TTF_CloseFont(font));
 
     int old_width = 0;
     int old_height = 0;
@@ -1006,12 +1055,6 @@ void run(Server* server, Client* client) {
 
     Window_Cache* window_cache = nullptr;
     CZ_DEFER(destroy_window_cache(window_cache));
-
-    int character_width;
-    int character_height;
-    if (!get_character_dims(font, &character_width, &character_height)) {
-        return;
-    }
 
     SDL_StartTextInput();
     CZ_DEFER(SDL_StopTextInput());
@@ -1031,21 +1074,33 @@ void run(Server* server, Client* client) {
     Mouse_State mouse = {};
     CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
 
-    // SDL_Surface* surface_cache[fg.theme_index(256)][Face::flags(8)][char(UCHAR_MAX + 1)]
-    SDL_Surface*** surface_cache[256] = {};
-    CZ_DEFER(drop_surface_cache(surface_cache));
-
     while (1) {
         ZoneScopedN("sdl main loop");
 
         Uint32 frame_start_ticks = SDL_GetTicks();
+
+        bool force_redraw = false;
+
+        // If the font info was updated then reload the font.
+        cz::Str new_font_file = server->editor.theme.font_file;
+        if (font_file != new_font_file || font_size != server->editor.theme.font_size) {
+            font_file.set_len(0);
+
+            // If loading the font fails then we print a message inside `load_font()` and continue.
+            if (load_font(&font_file, &font_size, &font, &character_width, &character_height,
+                          surface_cache, server->editor.theme.font_file,
+                          server->editor.theme.font_size)) {
+                // Redraw the screen with the new font info.
+                force_redraw = true;
+            }
+        }
 
         client->update_mini_buffer_completion_cache(&server->editor);
         load_mini_buffer_completion_cache(server, client);
 
         render(window, renderer, font, surface_cache, &old_width, &old_height, &total_rows,
                &total_cols, character_width, character_height, cellss, &window_cache,
-               &server->editor, client, mouse.sp_queries);
+               &server->editor, client, mouse.sp_queries, force_redraw);
 
         process_mouse_events(&server->editor, client, &mouse);
 
