@@ -189,36 +189,31 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         uint64_t selected_cursor_position = window->cursors[0].point;
 
         // Calculate the minimum cursor boundary.
-        Contents_Iterator second_visible_line_iterator = iterator;
-        end_of_visible_line(window, buffer->mode, &second_visible_line_iterator);
-        forward_char(&second_visible_line_iterator);
+        Contents_Iterator visible_start_iterator = iterator;
+        end_of_visible_line(window, buffer->mode, &visible_start_iterator);
+        forward_char(&visible_start_iterator);
 
         // Calculate the maximum cursor bouundary.
-        Contents_Iterator visible_end_iterator =
-            buffer->contents.iterator_at(window->start_position);
+        Contents_Iterator visible_end_iterator = iterator;
         forward_visible_line(buffer->mode, &visible_end_iterator, window->cols, window->rows - 2);
 
-        if (iterator.position != 0 &&
-            selected_cursor_position <= second_visible_line_iterator.position) {
-            // We are above the second visible line and thus readjust
+        // Make sure the selected cursor is shown.
+        if (selected_cursor_position < visible_start_iterator.position ||
+            selected_cursor_position > visible_end_iterator.position) {
+            // For the line the cursor is on.
             iterator = buffer->contents.iterator_at(selected_cursor_position);
             start_of_visible_line(window, buffer->mode, &iterator);
-            backward_visible_line(buffer->mode, &iterator, window->cols, 1);
 
-            // Don't readjust if the line above us is absolutely massive
-            // because we just get caught in a loop going up and down.
-            if (selected_cursor_position - iterator.position < (window->rows - 2) * window->cols) {
-                cache_window_unified_position(window, window_cache, iterator.position, buffer);
-                window_cache->v.unified.animation.slam_on_the_breaks = false;
+            if (selected_cursor_position < visible_start_iterator.position) {
+                // Scroll up such that the cursor is in bounds.
+                backward_visible_line(buffer->mode, &iterator, window->cols, 1);
+            } else {
+                // Scroll down such that the cursor is in bounds.
+                backward_visible_line(buffer->mode, &iterator, window->cols, window->rows - 2);
             }
-        } else if (selected_cursor_position > visible_end_iterator.position) {
-            // We are below the "visible" section of the buffer ie on the last line or beyond
-            // the last line.
-            iterator = buffer->contents.iterator_at(selected_cursor_position);
-            start_of_visible_line(window, buffer->mode, &iterator);
-            backward_visible_line(buffer->mode, &iterator, window->cols, window->rows - 2);
-            cache_window_unified_position(window, window_cache, iterator.position, buffer);
 
+            // Save the scroll.
+            cache_window_unified_position(window, window_cache, iterator.position, buffer);
             window_cache->v.unified.animation.slam_on_the_breaks = false;
         }
 
@@ -228,7 +223,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                                 window->cursors[0].mark);
         }
 
-        // Test if we can fit any of the newly created cursors on the screen.
+        // Try to fit the newly created cursors on the screen.
         if (window->cursors.len() > window_cache->v.unified.cursor_count) {
             for (size_t c = window->cursors.len(); c-- > window_cache->v.unified.cursor_count;) {
                 if (try_to_make_visible(window, window_cache, buffer, &iterator,
@@ -323,21 +318,12 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 if (!window_cache->v.unified.animation.slam_on_the_breaks &&
                     (force_teleport || iterator.position <= end_iterator.position ||
                      window_cache->v.unified.animation.speed <= -(float)window->rows)) {
-                    size_t lines = 0;
-                    Contents_Iterator it = iterator;
-                    it.retreat_to(window->start_position);
-                    while (it.position < end_iterator.position) {
-                        end_of_line(&it);
-                        forward_char(&it);
-                        ++lines;
-                    }
-
                     float distance = 0;
                     while (1) {
                         speed_loop_speed *= speed_multiplier;
                         speed_loop_speed += speed_increment;
                         distance += ceilf(speed_loop_speed);
-                        if (distance >= lines) {
+                        if (distance >= window->rows) {
                             break;
                         }
                     }
@@ -353,7 +339,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                     // Go line by line.
                     for (float i = -speed_lines_to_shift; i > 0; --i) {
                         backward_char(&iterator);
-                        start_of_line(&iterator);
+                        start_of_visible_line(window, buffer->mode, &iterator);
                     }
                 } else {
                     // Teleport almost all the way there and start breaking.
@@ -386,21 +372,12 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 if (!window_cache->v.unified.animation.slam_on_the_breaks &&
                     (iterator.position >= start_iterator.position ||
                      window_cache->v.unified.animation.speed >= (float)window->rows)) {
-                    size_t lines = 1;
-                    Contents_Iterator it = iterator;
-                    it.advance_to(window->start_position);
-                    while (it.position > start_iterator.position) {
-                        backward_char(&it);
-                        start_of_line(&it);
-                        ++lines;
-                    }
-
                     float distance = 0;
                     while (1) {
                         speed_loop_speed *= speed_multiplier;
                         speed_loop_speed += speed_increment;
                         distance += ceilf(speed_loop_speed);
-                        if (distance >= lines) {
+                        if (distance >= window->rows) {
                             break;
                         }
                     }
@@ -416,7 +393,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                      window_cache->v.unified.animation.speed < (float)window->rows)) {
                     // Go line by line.
                     for (float i = speed_lines_to_shift; i > 0; --i) {
-                        end_of_line(&iterator);
+                        end_of_visible_line(window, buffer->mode, &iterator);
                         forward_char(&iterator);
                     }
                 } else {
