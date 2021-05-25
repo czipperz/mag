@@ -57,7 +57,7 @@ static void scroll_down(Editor* editor, Command_Source source, size_t num) {
     forward_visible_line(buffer->mode, &it, window->cols, num);
     window->start_position = it.position;
 
-    forward_line(buffer->mode, &it);
+    forward_visible_line(buffer->mode, &it, window->cols);
     if (window->cursors[0].point < it.position) {
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = it.position;
