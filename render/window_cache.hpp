@@ -15,6 +15,7 @@ struct Window_Unified_Cache {
     size_t change_index;
     uint64_t visible_start;
     size_t cursor_count;
+    uint64_t first_cursor_mark;
 
     // Animate when the visible region shifts.
     struct {

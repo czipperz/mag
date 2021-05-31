@@ -185,6 +185,9 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             window_cache->v.unified.animation.slam_on_the_breaks = false;
         }
 
+        // Before we do any changes check if the mark has changed.
+        bool mark_changed = window->cursors[0].mark != window_cache->v.unified.first_cursor_mark;
+
         // Ensure the cursor is visible
         uint64_t selected_cursor_position = window->cursors[0].point;
 
@@ -217,8 +220,9 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             window_cache->v.unified.animation.slam_on_the_breaks = false;
         }
 
-        // Try to make the mark shown.
-        if (window->show_marks && window->cursors[0].mark > visible_end_iterator.position) {
+        // Try to make the mark shown only if it has changed.
+        if (mark_changed && window->show_marks) {
+            window_cache->v.unified.first_cursor_mark = window->cursors[0].mark;
             try_to_make_visible(window, window_cache, buffer, &iterator, selected_cursor_position,
                                 window->cursors[0].mark);
         }

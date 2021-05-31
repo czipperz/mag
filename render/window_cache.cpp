@@ -38,6 +38,7 @@ void cache_window_unified_position(Window_Unified* window,
     window_cache->v.unified.visible_start = start_position;
     window->start_position = start_position;
     window_cache->v.unified.change_index = buffer->changes.len();
+    window_cache->v.unified.first_cursor_mark = window->cursors[0].mark;
 }
 
 void cache_window_unified_create(Editor* editor,
@@ -47,9 +48,9 @@ void cache_window_unified_create(Editor* editor,
 
     WITH_CONST_WINDOW_BUFFER(window);
     window_cache->tag = Window::UNIFIED;
+    window_cache->v.unified = {};
     window_cache->v.unified.id = window->id;
     window_cache->v.unified.cursor_count = window->cursors.len();
-    window_cache->v.unified.animation = {};
     window_cache->v.unified.animation.visible_start = window->start_position;
     cache_window_unified_position(window, window_cache, window->start_position, buffer);
 }
