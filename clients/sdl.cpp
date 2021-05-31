@@ -732,6 +732,8 @@ static void render(SDL_Window* window,
 
     render_to_cells(cellss[1], window_cache, rows, cols, editor, client, spqs);
 
+    bool any_changes = false;
+
     {
         ZoneScopedN("draw cells");
 
@@ -743,6 +745,8 @@ static void render(SDL_Window* window,
                     (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1])) {
                     continue;
                 }
+
+                any_changes = true;
 
                 ZoneScopedN("draw cell background");
 
@@ -817,9 +821,9 @@ static void render(SDL_Window* window,
         }
     }
 
-    cz::swap(cellss[0], cellss[1]);
+    if (any_changes) {
+        cz::swap(cellss[0], cellss[1]);
 
-    {
         ZoneScopedN("SDL_UpdateWindowSurface");
         SDL_UpdateWindowSurface(window);
     }
