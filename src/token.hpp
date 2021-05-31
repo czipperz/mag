@@ -63,6 +63,9 @@ enum Token_Type : uint64_t {
     SEARCH_FILE_COLUMN,
     SEARCH_RESULT,
 
+    SPLASH_LOGO,
+    SPLASH_KEY_BIND,
+
     // Special value representing the number of values in the enum.
     length,
 

@@ -66,6 +66,7 @@
 #include "syntax/tokenize_python.hpp"
 #include "syntax/tokenize_search.hpp"
 #include "syntax/tokenize_shell_script.hpp"
+#include "syntax/tokenize_splash.hpp"
 
 namespace mag {
 namespace custom {
@@ -436,6 +437,9 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::SEARCH_FILE_COLUMN] = {226, {}, 0};
     theme.token_faces[Token_Type::SEARCH_RESULT] = {{}, {}, 0};
 
+    theme.token_faces[Token_Type::SPLASH_LOGO] = {46, {}, 0};
+    theme.token_faces[Token_Type::SPLASH_KEY_BIND] = {213, {}, 0};
+
     theme.decorations.reserve(5);
     theme.decorations.push(syntax::decoration_line_number());
     theme.decorations.push(syntax::decoration_column_number());
@@ -579,6 +583,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name == "*splash page*") {
             // The splash page uses tabs for alignment.
             buffer->mode.use_tabs = false;
+            buffer->mode.next_token = syntax::splash_next_token;
         }
         break;
 
