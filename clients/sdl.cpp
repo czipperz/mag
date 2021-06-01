@@ -198,7 +198,8 @@ static void process_event(Server* server,
                           Mouse_State* mouse,
                           int character_width,
                           int character_height,
-                          bool* force_redraw) {
+                          bool* force_redraw,
+                          bool* minimized) {
     ZoneScoped;
 
     switch (event.type) {
@@ -228,8 +229,15 @@ static void process_event(Server* server,
         break;
 
     case SDL_WINDOWEVENT: {
-        if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+        volatile int x;
+        switch (event.window.event) {
+        case SDL_WINDOWEVENT_SIZE_CHANGED:
+        case SDL_WINDOWEVENT_EXPOSED:
             *force_redraw = true;
+            break;
+        case SDL_WINDOWEVENT_MINIMIZED:
+            *minimized = true;
+            break;
         }
         break;
     }
@@ -494,13 +502,14 @@ static void process_events(Server* server,
                            Mouse_State* mouse,
                            int character_width,
                            int character_height,
-                           bool* force_redraw) {
+                           bool* force_redraw,
+                           bool* minimized) {
     ZoneScoped;
 
     SDL_Event event;
     while (poll_event(&event)) {
-        process_event(server, client, event, mouse, character_width, character_height,
-                      force_redraw);
+        process_event(server, client, event, mouse, character_width, character_height, force_redraw,
+                      minimized);
         if (client->queue_quit) {
             return;
         }
@@ -1125,6 +1134,7 @@ void run(Server* server, Client* client) {
     CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
 
     bool force_redraw = false;
+    bool minimized = false;
 
     while (1) {
         ZoneScopedN("sdl main loop");
@@ -1153,6 +1163,9 @@ void run(Server* server, Client* client) {
                &total_cols, character_width, character_height, cellss, &window_cache,
                &server->editor, client, mouse.sp_queries, force_redraw, &redrew_this_time);
 
+        if (force_redraw || redrew_this_time) {
+            minimized = false;
+        }
         force_redraw = false;
 
         process_mouse_events(&server->editor, client, &mouse);
@@ -1160,7 +1173,8 @@ void run(Server* server, Client* client) {
         server->slurp_jobs();
         server->run_synchronous_jobs(client);
 
-        process_events(server, client, &mouse, character_width, character_height, &force_redraw);
+        process_events(server, client, &mouse, character_width, character_height, &force_redraw,
+                       &minimized);
 
         process_scroll(server, client, &mouse.scroll);
 
@@ -1178,23 +1192,35 @@ void run(Server* server, Client* client) {
             // Record that we redrew.
             redrew_last = frame_end_ticks;
             redrew = true;
-        } else if (redrew_last + 600000 < frame_end_ticks) {
-            // If 10 minutes have elapsed then lower the frame rate to 1 fps.
+        } else if (force_redraw) {
+            // If we must redraw then don't delay.
+        } else if (minimized || redrew_last + 600000 < frame_end_ticks) {
+            // If we are minimized or if 10 minutes have elapsed then lower the frame rate to 1 fps.
             frame_length = (uint32_t)(1000.0f / 1.0f);
-        } else if (redrew_last + 10000 < frame_end_ticks) {
-            // If ten seconds have elapsed then lower the frame rate to 8 fps.
+        } else if (redrew_last + 1000 < frame_end_ticks) {
+            // If one second has elapsed then lower the frame rate to 8 fps.
             frame_length = (uint32_t)(1000.0f / 8.0f);
         }
 
         uint32_t elapsed_ticks = frame_end_ticks - frame_start_ticks;
         if (elapsed_ticks < frame_length) {
-            ZoneScopedN("SDL_Delay");
-            uint32_t sleep_time = frame_length - elapsed_ticks;
-            ZoneValue(sleep_time);
+            SDL_Event event;
+            int result;
 
             server->set_async_locked(false);
-            SDL_Delay(sleep_time);
+            {
+                ZoneScopedN("SDL_WaitEventTimeout");
+                uint32_t sleep_time = frame_length - elapsed_ticks;
+                ZoneValue(sleep_time);
+
+                result = SDL_WaitEventTimeout(&event, sleep_time);
+            }
             server->set_async_locked(true);
+
+            if (result) {
+                process_event(server, client, event, &mouse, character_width, character_height,
+                              &force_redraw, &minimized);
+            }
         }
 
         FrameMark;
