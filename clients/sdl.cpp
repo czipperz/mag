@@ -197,7 +197,8 @@ static void process_event(Server* server,
                           SDL_Event event,
                           Mouse_State* mouse,
                           int character_width,
-                          int character_height) {
+                          int character_height,
+                          bool* force_redraw) {
     ZoneScoped;
 
     switch (event.type) {
@@ -225,6 +226,13 @@ static void process_event(Server* server,
                event.edit.start, event.edit.length);
 
         break;
+
+    case SDL_WINDOWEVENT: {
+        if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+            *force_redraw = true;
+        }
+        break;
+    }
 
     case SDL_DROPFILE: {
         size_t len = strlen(event.drop.file);
@@ -485,12 +493,14 @@ static void process_events(Server* server,
                            Client* client,
                            Mouse_State* mouse,
                            int character_width,
-                           int character_height) {
+                           int character_height,
+                           bool* force_redraw) {
     ZoneScoped;
 
     SDL_Event event;
     while (poll_event(&event)) {
-        process_event(server, client, event, mouse, character_width, character_height);
+        process_event(server, client, event, mouse, character_width, character_height,
+                      force_redraw);
         if (client->queue_quit) {
             return;
         }
@@ -1114,12 +1124,12 @@ void run(Server* server, Client* client) {
     Mouse_State mouse = {};
     CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
 
+    bool force_redraw = false;
+
     while (1) {
         ZoneScopedN("sdl main loop");
 
         uint32_t frame_start_ticks = SDL_GetTicks();
-
-        bool force_redraw = false;
 
         // If the font info was updated then reload the font.
         cz::Str new_font_file = server->editor.theme.font_file;
@@ -1143,12 +1153,14 @@ void run(Server* server, Client* client) {
                &total_cols, character_width, character_height, cellss, &window_cache,
                &server->editor, client, mouse.sp_queries, force_redraw, &redrew_this_time);
 
+        force_redraw = false;
+
         process_mouse_events(&server->editor, client, &mouse);
 
         server->slurp_jobs();
         server->run_synchronous_jobs(client);
 
-        process_events(server, client, &mouse, character_width, character_height);
+        process_events(server, client, &mouse, character_width, character_height, &force_redraw);
 
         process_scroll(server, client, &mouse.scroll);
 
