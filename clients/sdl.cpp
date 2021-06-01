@@ -904,6 +904,8 @@ static int sdl_copy(void* data, cz::Str text) {
 }
 
 void set_icon(SDL_Window* sdl_window) {
+    ZoneScoped;
+
 #ifdef _WIN32
     SDL_SysWMinfo wminfo;
     SDL_VERSION(&wminfo.version);
@@ -944,6 +946,8 @@ static bool load_font(cz::String* font_file,
                       SDL_Surface**** surface_cache,
                       cz::Str new_font_file,
                       uint32_t new_font_size) {
+    ZoneScoped;
+
     // Set font config variables even if we fail to load the font
     // so we don't keep looping over and over trying to load it.
     font_file->reserve(cz::heap_allocator(), new_font_file.len + 1);
@@ -980,20 +984,34 @@ void run(Server* server, Client* client) {
     server->set_async_locked(false);
     // @Unlocked No usage of server or client can be made in this region!!!
 
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    int result;
+
+    {
+        ZoneScopedN("SDL_Init");
+        result = SDL_Init(SDL_INIT_VIDEO);
+    }
+    if (result != 0) {
         fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());
         return;
     }
     CZ_DEFER(SDL_Quit());
 
-    if (TTF_Init() != 0) {
+    {
+        ZoneScopedN("TTF_Init");
+        result = TTF_Init();
+    }
+    if (result != 0) {
         fprintf(stderr, "Failed to initialize TTF: %s\n", TTF_GetError());
         return;
     }
     CZ_DEFER(TTF_Quit());
 
     int img_init_flags = IMG_INIT_PNG;
-    if (IMG_Init(img_init_flags) != img_init_flags) {
+    {
+        ZoneScopedN("IMG_Init");
+        result = IMG_Init(img_init_flags);
+    }
+    if (result != img_init_flags) {
         fprintf(stderr, "Failed to initialize IMG: %s\n", IMG_GetError());
         return;
     }
@@ -1003,9 +1021,13 @@ void run(Server* server, Client* client) {
 #ifndef NDEBUG
     window_name = "Mag [DEBUG]";
 #endif
-    SDL_Window* window =
-        SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 800,
-                         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+
+    SDL_Window* window;
+    {
+        ZoneScopedN("SDL_CreateWindow");
+        window = SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                  800, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    }
     if (!window) {
         fprintf(stderr, "Failed to create a window: %s\n", SDL_GetError());
         return;
@@ -1014,16 +1036,19 @@ void run(Server* server, Client* client) {
 
     set_icon(window);
 
-    SDL_Renderer* renderer =
-        SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    // Retry with less requirements if it doesn't work the first time around.
-    if (!renderer) {
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Renderer* renderer;
+    {
+        ZoneScopedN("SDL_CreateRenderer");
+        renderer =
+            SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+        // Retry with less requirements if it doesn't work the first time around.
+        if (!renderer) {
+            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+        }
+        if (!renderer) {
+            renderer = SDL_CreateRenderer(window, -1, 0);
+        }
     }
-    if (!renderer) {
-        renderer = SDL_CreateRenderer(window, -1, 0);
-    }
-
     if (!renderer) {
         fprintf(stderr, "Failed to create a renderer: %s\n", SDL_GetError());
         return;
