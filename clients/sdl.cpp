@@ -903,11 +903,11 @@ static int sdl_copy(void* data, cz::Str text) {
     return SDL_SetClipboardText(clipboard->value.buffer());
 }
 
-void setIcon(SDL_Window* sdlWindow) {
+void set_icon(SDL_Window* sdl_window) {
 #ifdef _WIN32
     SDL_SysWMinfo wminfo;
     SDL_VERSION(&wminfo.version);
-    if (SDL_GetWindowWMInfo(sdlWindow, &wminfo) == 1) {
+    if (SDL_GetWindowWMInfo(sdl_window, &wminfo) == 1) {
         HWND hwnd = wminfo.info.win.window;
 
         HINSTANCE handle = ::GetModuleHandle(nullptr);
@@ -930,7 +930,7 @@ void setIcon(SDL_Window* sdlWindow) {
 
     SDL_Surface* icon = IMG_Load(logo.buffer());
     if (icon) {
-        SDL_SetWindowIcon(sdlWindow, icon);
+        SDL_SetWindowIcon(sdl_window, icon);
         SDL_FreeSurface(icon);
     }
 #endif
@@ -1012,7 +1012,7 @@ void run(Server* server, Client* client) {
     }
     CZ_DEFER(SDL_DestroyWindow(window));
 
-    setIcon(window);
+    set_icon(window);
 
     SDL_Renderer* renderer =
         SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
