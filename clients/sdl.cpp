@@ -1035,6 +1035,7 @@ void run(Server* server, Client* client) {
 
     // All the font variables.
     cz::String font_file = {};
+    CZ_DEFER(font_file.drop(cz::heap_allocator()));
     uint32_t font_size = 0;
     TTF_Font* font = nullptr;
     CZ_DEFER(if (font) TTF_CloseFont(font));
