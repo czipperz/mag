@@ -14,6 +14,7 @@ struct Buffer_Id;
 struct Buffer_Handle;
 struct Client;
 struct Editor;
+struct Server;
 struct Run_Jobs;
 
 struct Asynchronous_Job;
@@ -25,6 +26,7 @@ private:
     cz::Vector<Synchronous_Job> pending_synchronous_jobs;
     cz::Vector<Asynchronous_Job> pending_asynchronous_jobs;
     friend struct Run_Jobs;
+    void* async_context;
 
 public:
     /// Spawn a synchronous job.  A synchronous job is allowed to use the
@@ -37,6 +39,10 @@ public:
 
     /// Show a message to the user.
     void show_message(cz::Str message);
+
+    /// If the main thread is sleeping, we can do synchronous operations asynchronously.
+    bool try_sync_lock(Server**, Client**);
+    void sync_unlock();
 };
 
 namespace Job_Tick_Result_ {

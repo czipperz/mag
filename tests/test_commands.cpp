@@ -21,6 +21,7 @@ using namespace mag::basic;
     editor->create_buffer(test_buffer);                                   \
                                                                           \
     Client client = server.make_client();                                 \
+    server.setup_async_context(&client);                                  \
     Command_Source source;                                                \
     source.client = &client;                                              \
     source.keys = {0, 0};                                                 \

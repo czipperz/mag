@@ -20,6 +20,8 @@
 #include "command_macros.hpp"
 #include "config.hpp"
 #include "editor.hpp"
+#include "movement.hpp"
+#include "server.hpp"
 #include "tracy_format.hpp"
 
 #ifdef _WIN32
@@ -101,29 +103,25 @@ read_continue:
     }
 }
 
-static cz::Result load_directory(Editor* editor,
-                                 char* path,
-                                 size_t path_len,
-                                 cz::Arc<Buffer_Handle>* handle) {
+static cz::Result load_directory(Buffer* buffer, char* path, size_t path_len) {
     if (path_len == 0 || path[path_len - 1] != '/') {
         path[path_len++] = '/';
     }
 
-    Buffer buffer = {};
-    buffer.type = Buffer::DIRECTORY;
-    buffer.directory = cz::Str(path, path_len).duplicate_null_terminate(cz::heap_allocator());
-    buffer.name = cz::Str(".").duplicate(cz::heap_allocator());
-    buffer.read_only = true;
+    *buffer = {};
+    buffer->type = Buffer::DIRECTORY;
+    buffer->directory = cz::Str(path, path_len).duplicate_null_terminate(cz::heap_allocator());
+    buffer->name = cz::Str(".").duplicate(cz::heap_allocator());
+    buffer->read_only = true;
 
-    cz::Result result = reload_directory_buffer(&buffer);
+    cz::Result result = reload_directory_buffer(buffer);
+
     if (result.is_err()) {
-        buffer.contents.drop();
-        buffer.name.drop(cz::heap_allocator());
-        buffer.directory.drop(cz::heap_allocator());
-        return result;
+        buffer->contents.drop();
+        buffer->name.drop(cz::heap_allocator());
+        buffer->directory.drop(cz::heap_allocator());
     }
 
-    *handle = editor->create_buffer(buffer);
     return result;
 }
 
@@ -247,31 +245,150 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
     return cz::Result::ok();
 }
 
+cz::Result load_path_in_buffer(Buffer* buffer, char* path, size_t path_len) {
+    // Try reading it as a directory, then if that fails read it as a file.  On
+    // linux, opening it as a file will succeed even if it is a directory.  Then
+    // reading the file will cause an error.
+    if (load_directory(buffer, path, path_len).is_ok()) {
+        return cz::Result::ok();
+    }
+
+    *buffer = {};
+    buffer->type = Buffer::FILE;
+    const char* end_dir = cz::Str(path, path_len).rfind('/');
+    if (end_dir) {
+        ++end_dir;
+        buffer->directory =
+            cz::Str(path, end_dir - path).duplicate_null_terminate(cz::heap_allocator());
+        buffer->name = cz::Str(end_dir, path + path_len - end_dir).duplicate(cz::heap_allocator());
+    } else {
+        buffer->name = cz::Str(path, path_len).duplicate(cz::heap_allocator());
+    }
+
+    path[path_len] = '\0';
+    return load_file(buffer, path);
+}
+
+static void start_syntax_highlighting(Editor* editor, cz::Arc<Buffer_Handle> handle) {
+    {
+        WITH_BUFFER_HANDLE(handle);
+        // Mark that we started syntax highlighting.
+        buffer->token_cache.generate_check_points_until(buffer, 0);
+
+        TracyFormat(message, len, 1024, "Start syntax highlighting: %.*s", (int)buffer->name.len(),
+                    buffer->name.buffer());
+        TracyMessage(message, len);
+    }
+
+    editor->add_asynchronous_job(job_syntax_highlight_buffer(handle.clone_downgrade()));
+}
+
+struct Finish_Open_File_Sync_Data {
+    Buffer buffer;
+    uint64_t position;
+};
+
+static void finish_open_file(Editor* editor,
+                             Client* client,
+                             const Buffer& buffer,
+                             uint64_t position) {
+    cz::Arc<Buffer_Handle> handle = editor->create_buffer(buffer);
+    client->set_selected_buffer(handle->id);
+    client->selected_normal_window->cursors[0].point = position;
+
+    start_syntax_highlighting(editor, handle);
+}
+
+static Job_Tick_Result finish_open_file_sync_job_tick(Editor* editor, Client* client, void* _data) {
+    ZoneScoped;
+
+    Finish_Open_File_Sync_Data* data = (Finish_Open_File_Sync_Data*)_data;
+
+    finish_open_file(editor, client, data->buffer, data->position);
+
+    cz::heap_allocator().dealloc(data);
+    return Job_Tick_Result::FINISHED;
+}
+
+static void finish_open_file_sync_job_kill(void* _data) {
+    Finish_Open_File_Sync_Data* data = (Finish_Open_File_Sync_Data*)_data;
+    data->buffer.drop();
+    cz::heap_allocator().dealloc(data);
+}
+
+static Synchronous_Job job_finish_open_file_sync(Buffer buffer, uint64_t position) {
+    Finish_Open_File_Sync_Data* data = cz::heap_allocator().alloc<Finish_Open_File_Sync_Data>();
+    data->buffer = buffer;
+    data->position = position;
+
+    Synchronous_Job job;
+    job.data = data;
+    job.tick = finish_open_file_sync_job_tick;
+    job.kill = finish_open_file_sync_job_kill;
+    return job;
+}
+
+struct Open_File_Async_Data {
+    cz::String path;  // heap allocated
+    uint64_t line;
+    uint64_t column;
+};
+
+static void open_file_job_kill(void* _data) {
+    Open_File_Async_Data* data = (Open_File_Async_Data*)_data;
+    data->path.drop(cz::heap_allocator());
+    cz::heap_allocator().dealloc(data);
+}
+
+static Job_Tick_Result open_file_job_tick(Asynchronous_Job_Handler* handler, void* _data) {
+    ZoneScoped;
+
+    Open_File_Async_Data* data = (Open_File_Async_Data*)_data;
+
+    Buffer buffer;
+    cz::Result result = load_path_in_buffer(&buffer, data->path.buffer(), data->path.len());
+    if (result.is_err()) {
+        handler->show_message("File not found");
+    }
+
+    uint64_t position = iterator_at_line_column(buffer.contents, data->line, data->column).position;
+
+    // Finish by loading the buffer synchronously.
+    Server* server;
+    Client* client;
+    if (handler->try_sync_lock(&server, &client)) {
+        CZ_DEFER(handler->sync_unlock());
+        finish_open_file(&server->editor, client, buffer, position);
+        server->slurp_jobs();
+    } else {
+        handler->add_synchronous_job(job_finish_open_file_sync(buffer, position));
+    }
+
+    open_file_job_kill(data);
+    return Job_Tick_Result::FINISHED;
+}
+
+Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column) {
+    CZ_DEBUG_ASSERT(path.len() > 0);
+
+    Open_File_Async_Data* data = cz::heap_allocator().alloc<Open_File_Async_Data>();
+    data->path = path;
+    data->line = line;
+    data->column = column;
+
+    Asynchronous_Job job;
+    job.data = data;
+    job.tick = open_file_job_tick;
+    job.kill = open_file_job_kill;
+    return job;
+}
+
 static cz::Result load_path(Editor* editor,
                             char* path,
                             size_t path_len,
                             cz::Arc<Buffer_Handle>* handle) {
-    // Try reading it as a directory, then if that fails read it as a file.  On
-    // linux, opening it as a file will succeed even if it is a directory.  Then
-    // reading the file will cause an error.
-    if (load_directory(editor, path, path_len, handle).is_ok()) {
-        return cz::Result::ok();
-    }
-
-    Buffer buffer = {};
-    buffer.type = Buffer::FILE;
-    const char* end_dir = cz::Str(path, path_len).rfind('/');
-    if (end_dir) {
-        ++end_dir;
-        buffer.directory =
-            cz::Str(path, end_dir - path).duplicate_null_terminate(cz::heap_allocator());
-        buffer.name = cz::Str(end_dir, path + path_len - end_dir).duplicate(cz::heap_allocator());
-    } else {
-        buffer.name = cz::Str(path, path_len).duplicate(cz::heap_allocator());
-    }
-
-    path[path_len] = '\0';
-    cz::Result result = load_file(&buffer, path);
+    Buffer buffer;
+    cz::Result result = load_path_in_buffer(&buffer, path, path_len);
     *handle = editor->create_buffer(buffer);
     return result;
 }
@@ -661,17 +778,7 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
 
     client->set_selected_buffer(handle->id);
 
-    {
-        WITH_BUFFER_HANDLE(handle);
-        // Mark that we started syntax highlighting.
-        buffer->token_cache.generate_check_points_until(buffer, 0);
-
-        TracyFormat(message, len, 1024, "Start syntax highlighting: %.*s", (int)buffer->name.len(),
-                    buffer->name.buffer());
-        TracyMessage(message, len);
-    }
-
-    editor->add_asynchronous_job(job_syntax_highlight_buffer(handle.clone_downgrade()));
+    start_syntax_highlighting(editor, handle);
 }
 
 bool save_buffer(Buffer* buffer) {

@@ -32,6 +32,14 @@ struct Server {
 
     bool slurp_jobs();
     bool run_synchronous_jobs(Client* client);
+
+    void setup_async_context(Client* client);
+    /// At various times the main thread will never be using the `Server`
+    /// or `Client` so it is safe to use them from the job thread.
+    ///
+    /// The two main times are when the ui is starting, which is a bunch of system
+    /// calls that take nearly a second, and when we are sleeping between threads.
+    void set_async_locked(bool locked);
 };
 
 }

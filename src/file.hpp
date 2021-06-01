@@ -20,6 +20,7 @@ struct Editor;
 struct Client;
 struct Contents;
 struct Buffer_Id;
+struct Asynchronous_Job;
 
 bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* file_time);
 
@@ -29,6 +30,14 @@ cz::Result reload_directory_buffer(Buffer* buffer);
 ///
 /// The `user_path` does *not* need to be standardized as `open_file` will handle that.
 void open_file(Editor* editor, Client* client, cz::Str user_path);
+
+/// Create an asynchronous job that opens a file at the specified line and column.
+///
+/// `path` must be a heap-allocated string that is at least 1
+/// character long.  This passes ownership of the string to the job.
+///
+/// Before calling this function you must check that the file hasn't already been opened.
+Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column);
 
 bool save_buffer(Buffer* buffer);
 

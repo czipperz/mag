@@ -50,14 +50,37 @@ Available clients:\n"
     return 1;
 }
 
-static void open_file_tiling(Editor* editor, Client* client, cz::Str arg, uint32_t* opened_count) {
+static void open_file_tiling(Editor* editor,
+                             Client* client,
+                             cz::Str arg,
+                             uint32_t* opened_count,
+                             uint64_t line,
+                             uint64_t column) {
+    if (arg.len == 0) {
+        client->show_message(editor, "File path must not be empty");
+        return;
+    }
+
+    // Split the window.
     if (*opened_count > 0) {
         basic::split_window(
             client, (*opened_count % 2 == 1) ? Window::VERTICAL_SPLIT : Window::HORIZONTAL_SPLIT);
     }
     ++*opened_count;
 
-    open_file(editor, client, arg);
+    // Test if we've already opened the file.
+    cz::String path = standardize_path(cz::heap_allocator(), arg);
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    cz::Arc<Buffer_Handle> handle;
+    if (find_buffer_by_path(editor, client, path, &handle)) {
+        // We already opened it so now we just set the buffer of the current window.
+        client->set_selected_buffer(handle->id);
+    }
+
+    // Open the file asynchronously.
+    cz::String path2 = path;
+    path = {};
+    editor->add_asynchronous_job(job_open_file(path2, line, column));
 }
 
 /// Decode the argument as one of FILE, FILE:LINE, FILE:LINE:COLUMN and then open it.
@@ -67,7 +90,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     // If the file exists then immediately open it.
     if (cz::file::does_file_exist(arg.buffer)) {
     open:
-        open_file_tiling(editor, client, arg, opened_count);
+        open_file_tiling(editor, client, arg, opened_count, 0, 0);
         return;
     }
 
@@ -91,7 +114,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
 
     if (cz::file::does_file_exist(path.buffer())) {
         // Argument is of form FILE:LINE.
-        open_file_tiling(editor, client, path, opened_count);
+        open_file_tiling(editor, client, path, opened_count, line, 0);
 
         WITH_SELECTED_BUFFER(client);
         Contents_Iterator it = start_of_line_position(buffer->contents, line);
@@ -124,7 +147,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
 
     if (cz::file::does_file_exist(path.buffer())) {
         // Argument is of form FILE:LINE:COLUMN.
-        open_file_tiling(editor, client, path, opened_count);
+        open_file_tiling(editor, client, path, opened_count, line, column);
 
         WITH_SELECTED_BUFFER(client);
         Contents_Iterator it = iterator_at_line_column(buffer->contents, line, column);
@@ -293,6 +316,8 @@ A-g     Project or directory commands\n\
 
         Client client = server.make_client();
         CZ_DEFER(client.drop());
+
+        server.setup_async_context(&client);
 
         uint32_t opened_count = 0;
         int chosen_client = 1;

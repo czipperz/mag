@@ -977,6 +977,9 @@ static bool load_font(cz::String* font_file,
 void run(Server* server, Client* client) {
     ZoneScoped;
 
+    server->set_async_locked(false);
+    // @Unlocked No usage of server or client can be made in this region!!!
+
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());
         return;
@@ -1026,6 +1029,9 @@ void run(Server* server, Client* client) {
         return;
     }
     CZ_DEFER(SDL_DestroyRenderer(renderer));
+
+    // @Unlocked End of region
+    server->set_async_locked(true);
 
     // All the font variables.
     cz::String font_file = {};

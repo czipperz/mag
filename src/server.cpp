@@ -19,6 +19,13 @@
 
 namespace mag {
 
+struct Async_Context {
+    cz::Mutex mutex;
+    bool permitted;
+    Server* server;
+    Client* client;
+};
+
 struct Run_Jobs_Data {
     cz::Semaphore added_asynchronous_job_signal;
     cz::Mutex mutex;
@@ -27,10 +34,30 @@ struct Run_Jobs_Data {
     cz::String message;
     bool stop;
 
-#ifdef TRACY_ENABLE
-    tracy::SharedLockableCtx* mutex_context;
-#endif
+    Async_Context async_context;
 };
+
+bool Asynchronous_Job_Handler::try_sync_lock(Server** server, Client** client) {
+    Async_Context* ctx = (Async_Context*)async_context;
+
+    if (!ctx->mutex.try_lock()) {
+        return false;
+    }
+
+    if (!ctx->permitted) {
+        ctx->mutex.unlock();
+        return false;
+    }
+
+    *server = ctx->server;
+    *client = ctx->client;
+    return true;
+}
+
+void Asynchronous_Job_Handler::sync_unlock() {
+    Async_Context* ctx = (Async_Context*)async_context;
+    ctx->mutex.unlock();
+}
 
 struct Run_Jobs {
     Run_Jobs_Data* data;
@@ -40,6 +67,8 @@ struct Run_Jobs {
         ZoneScoped;
 
         Asynchronous_Job_Handler handler = {};
+        handler.async_context = &data->async_context;
+
         handler.pending_synchronous_jobs.reserve(cz::heap_allocator(), 2);
         CZ_DEFER({
             for (size_t i = 0; i < handler.pending_synchronous_jobs.len(); ++i) {
@@ -70,19 +99,7 @@ struct Run_Jobs {
             {
                 ZoneScopedN("job thread find job");
 
-#ifdef TRACY_ENABLE
-                const auto run_after = data->mutex_context->BeforeLock();
-#endif
                 data->mutex.lock();
-#ifdef TRACY_ENABLE
-                if (run_after) {
-                    data->mutex_context->AfterLock();
-                }
-#endif
-
-#ifdef TRACY_ENABLE
-                CZ_DEFER(data->mutex_context->AfterUnlock());
-#endif
                 CZ_DEFER(data->mutex.unlock());
 
                 if (queue_message.len() != 0) {
@@ -180,24 +197,33 @@ struct Run_Jobs {
     }
 };
 
+void Server::setup_async_context(Client* client) {
+    auto data = (Run_Jobs_Data*)job_data_;
+    data->async_context.mutex.lock();
+    CZ_DEFER(data->async_context.mutex.unlock());
+
+    data->async_context.server = this;
+    data->async_context.client = client;
+}
+
+void Server::set_async_locked(bool locked) {
+    auto data = (Run_Jobs_Data*)job_data_;
+    data->async_context.mutex.lock();
+    CZ_DEFER(data->async_context.mutex.unlock());
+
+    data->async_context.permitted = !locked;
+}
+
 void Server::init() {
     auto data = cz::heap_allocator().alloc<Run_Jobs_Data>();
     job_data_ = data;
 
+    *data = {};
     data->added_asynchronous_job_signal.init(0);
     data->mutex.init();
-    data->jobs = {};
-    data->pending_jobs = {};
-    data->message = {};
-    data->stop = false;
 
-#ifdef TRACY_ENABLE
-    data->mutex_context = new tracy::SharedLockableCtx([]() -> const tracy::SourceLocationData* {
-        static constexpr tracy::SourceLocationData srcloc{nullptr, "mag::Server", __FILE__,
-                                                          __LINE__, 0};
-        return &srcloc;
-    }());
-#endif
+    data->async_context.mutex.init();
+    data->async_context.permitted = false;
 
     job_thread = new std::thread(Run_Jobs{data});
 
@@ -208,19 +234,7 @@ void Server::drop() {
     auto data = (Run_Jobs_Data*)job_data_;
 
     {
-#ifdef TRACY_ENABLE
-        const auto run_after = data->mutex_context->BeforeLock();
-#endif
         data->mutex.lock();
-#ifdef TRACY_ENABLE
-        if (run_after) {
-            data->mutex_context->AfterLock();
-        }
-#endif
-
-#ifdef TRACY_ENABLE
-        CZ_DEFER(data->mutex_context->AfterUnlock());
-#endif
         CZ_DEFER(data->mutex.unlock());
 
         data->stop = true;
@@ -247,9 +261,7 @@ void Server::drop() {
 
     data->message.drop(cz::heap_allocator());
 
-#ifdef TRACY_ENABLE
-    delete data->mutex_context;
-#endif
+    data->async_context.mutex.drop();
 
     cz::heap_allocator().dealloc(data);
 
@@ -263,19 +275,7 @@ bool Server::slurp_jobs() {
 
     auto data = (Run_Jobs_Data*)job_data_;
 
-#ifdef TRACY_ENABLE
-    const auto run_after = data->mutex_context->BeforeLock();
-#endif
     data->mutex.lock();
-#ifdef TRACY_ENABLE
-    if (run_after) {
-        data->mutex_context->AfterLock();
-    }
-#endif
-
-#ifdef TRACY_ENABLE
-    CZ_DEFER(data->mutex_context->AfterUnlock());
-#endif
     CZ_DEFER(data->mutex.unlock());
 
     data->jobs.reserve(cz::heap_allocator(), editor.pending_jobs.len());

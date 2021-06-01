@@ -15,6 +15,7 @@ Test_Runner::Test_Runner() {
     server.editor.create_buffer(test_buffer);
 
     client = server.make_client();
+    server.setup_async_context(&client);
 
     set_tokenizer(syntax::general_next_token);
 }
