@@ -1166,6 +1166,9 @@ void run(Server* server, Client* client) {
             // Record that we redrew.
             redrew_last = frame_end_ticks;
             redrew = true;
+        } else if (redrew_last + 600000 < frame_end_ticks) {
+            // If 10 minutes have elapsed then lower the frame rate to 1 fps.
+            frame_length = (uint32_t)(1000.0f / 1.0f);
         } else if (redrew_last + 10000 < frame_end_ticks) {
             // If ten seconds have elapsed then lower the frame rate to 8 fps.
             frame_length = (uint32_t)(1000.0f / 8.0f);
