@@ -1134,7 +1134,10 @@ void run(Server* server, Client* client) {
             ZoneScopedN("SDL_Delay");
             uint32_t sleep_time = FRAME_LENGTH - elapsed_ticks;
             ZoneValue(sleep_time);
+
+            server->set_async_locked(false);
             SDL_Delay(sleep_time);
+            server->set_async_locked(true);
         }
 
         FrameMark;
