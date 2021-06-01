@@ -682,7 +682,8 @@ static void render(SDL_Window* window,
                    Editor* editor,
                    Client* client,
                    cz::Slice<Screen_Position_Query> spqs,
-                   bool force_redraw) {
+                   bool force_redraw,
+                   bool* redrew) {
     ZoneScoped;
 
     SDL_Surface* surface;
@@ -826,6 +827,8 @@ static void render(SDL_Window* window,
 
         ZoneScopedN("SDL_UpdateWindowSurface");
         SDL_UpdateWindowSurface(window);
+
+        *redrew = true;
     }
 }
 
@@ -1095,8 +1098,9 @@ void run(Server* server, Client* client) {
     SDL_StartTextInput();
     CZ_DEFER(SDL_StopTextInput());
 
-    const uint32_t MAX_FRAMES = 60;
-    const uint32_t FRAME_LENGTH = (uint32_t)(1000.0f / (float)MAX_FRAMES);
+    // If no redraws have happened in a long time then increase the frame length.
+    uint32_t redrew_last;
+    bool redrew = false;
 
     Update_Global_Copy_Chain_Data ugccd = {};
     ugccd.editor = &server->editor;
@@ -1113,7 +1117,7 @@ void run(Server* server, Client* client) {
     while (1) {
         ZoneScopedN("sdl main loop");
 
-        Uint32 frame_start_ticks = SDL_GetTicks();
+        uint32_t frame_start_ticks = SDL_GetTicks();
 
         bool force_redraw = false;
 
@@ -1134,9 +1138,10 @@ void run(Server* server, Client* client) {
         client->update_mini_buffer_completion_cache(&server->editor);
         load_mini_buffer_completion_cache(server, client);
 
+        bool redrew_this_time = false;
         render(window, renderer, font, surface_cache, &old_width, &old_height, &total_rows,
                &total_cols, character_width, character_height, cellss, &window_cache,
-               &server->editor, client, mouse.sp_queries, force_redraw);
+               &server->editor, client, mouse.sp_queries, force_redraw, &redrew_this_time);
 
         process_mouse_events(&server->editor, client, &mouse);
 
@@ -1153,11 +1158,23 @@ void run(Server* server, Client* client) {
             break;
         }
 
-        Uint32 frame_end_ticks = SDL_GetTicks();
-        Uint32 elapsed_ticks = frame_end_ticks - frame_start_ticks;
-        if (elapsed_ticks < FRAME_LENGTH) {
+        uint32_t frame_end_ticks = SDL_GetTicks();
+
+        // 60 fps is default.
+        uint32_t frame_length = (uint32_t)(1000.0f / 60.0f);
+        if (redrew_this_time) {
+            // Record that we redrew.
+            redrew_last = frame_end_ticks;
+            redrew = true;
+        } else if (redrew_last + 10000 < frame_end_ticks) {
+            // If ten seconds have elapsed then lower the frame rate to 8 fps.
+            frame_length = (uint32_t)(1000.0f / 8.0f);
+        }
+
+        uint32_t elapsed_ticks = frame_end_ticks - frame_start_ticks;
+        if (elapsed_ticks < frame_length) {
             ZoneScopedN("SDL_Delay");
-            uint32_t sleep_time = FRAME_LENGTH - elapsed_ticks;
+            uint32_t sleep_time = frame_length - elapsed_ticks;
             ZoneValue(sleep_time);
 
             server->set_async_locked(false);
