@@ -229,7 +229,6 @@ static void process_event(Server* server,
         break;
 
     case SDL_WINDOWEVENT: {
-        volatile int x;
         switch (event.window.event) {
         case SDL_WINDOWEVENT_SIZE_CHANGED:
         case SDL_WINDOWEVENT_EXPOSED:
