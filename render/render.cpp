@@ -96,13 +96,12 @@ static bool try_to_make_visible(Window_Unified* window,
     // The mark is below the "visible" section of the buffer but
     // the point isn't.  Test if we can put both on the screen.
     Contents_Iterator start_iterator = buffer->contents.iterator_at(goal);
-    start_of_visible_line(window, buffer->mode, &start_iterator);
     backward_visible_line(buffer->mode, &start_iterator, window->cols, window->rows - 1);
+    start_of_visible_line(window, buffer->mode, &start_iterator);
 
     // Don't adjust to mark if the cursor would be pushed off screen.
     Contents_Iterator test_iterator = start_iterator;
-    end_of_line(&test_iterator);
-    forward_char(&test_iterator);
+    backward_visible_line(buffer->mode, &test_iterator, window->cols, 1);
 
     if (must_be_on_screen >= test_iterator.position &&
         start_iterator.position > iterator->position) {
@@ -206,7 +205,6 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
             selected_cursor_position > visible_end_iterator.position) {
             // For the line the cursor is on.
             iterator.go_to(selected_cursor_position);
-            start_of_visible_line(window, buffer->mode, &iterator);
 
             if (selected_cursor_position < visible_start_iterator.position) {
                 // Scroll up such that the cursor is in bounds.
@@ -215,6 +213,9 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                 // Scroll down such that the cursor is in bounds.
                 backward_visible_line(buffer->mode, &iterator, window->cols, window->rows - 2);
             }
+
+            // Then go to the start of that line.
+            start_of_visible_line(window, buffer->mode, &iterator);
 
             // Save the scroll.
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
