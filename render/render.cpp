@@ -201,7 +201,8 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         forward_visible_line(buffer->mode, &visible_end_iterator, window->cols, window->rows - 2);
 
         // Make sure the selected cursor is shown.
-        if (selected_cursor_position < visible_start_iterator.position ||
+        if ((selected_cursor_position < visible_start_iterator.position &&
+             iterator.position != 0) ||
             selected_cursor_position > visible_end_iterator.position) {
             // For the line the cursor is on.
             iterator.go_to(selected_cursor_position);
