@@ -72,6 +72,10 @@ void command_toggle_use_tabs(Editor* editor, Command_Source source) {
     buffer->mode.use_tabs = !buffer->mode.use_tabs;
 }
 
+void command_toggle_animated_scrolling(Editor* editor, Command_Source source) {
+    editor->theme.allow_animated_scrolling = !editor->theme.allow_animated_scrolling;
+}
+
 void command_set_mark(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;

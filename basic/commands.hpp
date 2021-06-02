@@ -15,6 +15,7 @@ void command_toggle_draw_line_numbers(Editor* editor, Command_Source source);
 void command_toggle_line_feed(Editor* editor, Command_Source source);
 void command_toggle_render_bucket_boundaries(Editor* editor, Command_Source source);
 void command_toggle_use_tabs(Editor* editor, Command_Source source);
+void command_toggle_animated_scrolling(Editor* editor, Command_Source source);
 
 void command_set_mark(Editor* editor, Command_Source source);
 void command_swap_mark_point(Editor* editor, Command_Source source);
