@@ -115,6 +115,14 @@ static bool try_to_make_visible(Window_Unified* window,
     return false;
 }
 
+static size_t subtract_bounded(size_t left, size_t right) {
+    if (left < right) {
+        return 0;
+    } else {
+        return left - right;
+    }
+}
+
 static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* editor,
                                                                    Client* client,
                                                                    Window_Unified* window,
@@ -192,13 +200,21 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         // Ensure the cursor is visible
         uint64_t selected_cursor_position = window->cursors[0].point;
 
+        // If we have a window with very few rows then we will flail up and
+        // down unless we bound `scroll_outside` by the number of rows.
+        size_t scroll_outside = editor->theme.scroll_outside_visual_rows;
+        if (window->rows < scroll_outside * 2) {
+            scroll_outside = window->rows / 2;
+        }
+
         // Calculate the minimum cursor boundary.
         Contents_Iterator visible_start_iterator = iterator;
-        forward_visible_line(buffer->mode, &visible_start_iterator, window->cols, 1);
+        forward_visible_line(buffer->mode, &visible_start_iterator, window->cols, scroll_outside);
 
-        // Calculate the maximum cursor bouundary.
+        // Calculate the maximum cursor boundary.
         Contents_Iterator visible_end_iterator = iterator;
-        forward_visible_line(buffer->mode, &visible_end_iterator, window->cols, window->rows - 2);
+        forward_visible_line(buffer->mode, &visible_end_iterator, window->cols,
+                             window->rows - (scroll_outside + 1));
 
         // Make sure the selected cursor is shown.
         if ((selected_cursor_position < visible_start_iterator.position &&
@@ -209,10 +225,11 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
             if (selected_cursor_position < visible_start_iterator.position) {
                 // Scroll up such that the cursor is in bounds.
-                backward_visible_line(buffer->mode, &iterator, window->cols, 1);
+                backward_visible_line(buffer->mode, &iterator, window->cols, scroll_outside);
             } else {
                 // Scroll down such that the cursor is in bounds.
-                backward_visible_line(buffer->mode, &iterator, window->cols, window->rows - 2);
+                backward_visible_line(buffer->mode, &iterator, window->cols,
+                                      window->rows - (scroll_outside + 1));
             }
 
             // Then go to the start of that line.

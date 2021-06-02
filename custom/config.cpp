@@ -467,7 +467,9 @@ static void create_theme(Theme& theme) {
     theme.mouse_scroll_rows = 4;
 
     theme.draw_line_numbers = false;
+
     theme.allow_animated_scrolling = true;
+    theme.scroll_outside_visual_rows = 3;
 }
 
 void editor_created_callback(Editor* editor) {

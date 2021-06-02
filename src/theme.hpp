@@ -86,6 +86,10 @@ struct Theme {
     /// If true then scrolling within the same file will be animated.
     bool allow_animated_scrolling = true;
 
+    /// If the point is within this many rows of the top or
+    /// bottom of the `Window` then the `Window` scrolls.
+    size_t scroll_outside_visual_rows = 1;
+
     void drop();
 };
 
