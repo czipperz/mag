@@ -1118,8 +1118,7 @@ void run(Server* server, Client* client) {
     CZ_DEFER(SDL_StopTextInput());
 
     // If no redraws have happened in a long time then increase the frame length.
-    uint32_t redrew_last;
-    bool redrew = false;
+    uint32_t redrew_last = 0;
 
     Update_Global_Copy_Chain_Data ugccd = {};
     ugccd.editor = &server->editor;
@@ -1134,13 +1133,12 @@ void run(Server* server, Client* client) {
     CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
 
     bool minimized = false;
+    bool force_redraw = false;
 
     while (1) {
         ZoneScopedN("sdl main loop");
 
         uint32_t frame_start_ticks = SDL_GetTicks();
-
-        bool force_redraw = false;
 
         bool any_asynchronous_jobs = server->slurp_jobs();
         bool any_synchronous_jobs = server->run_synchronous_jobs(client);
@@ -1193,9 +1191,6 @@ void run(Server* server, Client* client) {
         if (redrew_this_time) {
             // Record that we redrew.
             redrew_last = frame_end_ticks;
-            redrew = true;
-        } else if (force_redraw) {
-            // If we must redraw then don't delay.
         } else if (minimized || (no_jobs && redrew_last + 600000 < frame_end_ticks)) {
             // If we are minimized or if 10 minutes have elapsed with no
             // jobs still running then lower the frame rate to 1 fps.
