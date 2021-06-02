@@ -194,8 +194,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // Calculate the minimum cursor boundary.
         Contents_Iterator visible_start_iterator = iterator;
-        end_of_visible_line(window, buffer->mode, &visible_start_iterator);
-        forward_char(&visible_start_iterator);
+        forward_visible_line(buffer->mode, &visible_start_iterator, window->cols, 1);
 
         // Calculate the maximum cursor bouundary.
         Contents_Iterator visible_end_iterator = iterator;
@@ -205,7 +204,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         if (selected_cursor_position < visible_start_iterator.position ||
             selected_cursor_position > visible_end_iterator.position) {
             // For the line the cursor is on.
-            iterator = buffer->contents.iterator_at(selected_cursor_position);
+            iterator.go_to(selected_cursor_position);
             start_of_visible_line(window, buffer->mode, &iterator);
 
             if (selected_cursor_position < visible_start_iterator.position) {
