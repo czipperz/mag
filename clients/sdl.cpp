@@ -1133,13 +1133,31 @@ void run(Server* server, Client* client) {
     Mouse_State mouse = {};
     CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
 
-    bool force_redraw = false;
     bool minimized = false;
 
     while (1) {
         ZoneScopedN("sdl main loop");
 
         uint32_t frame_start_ticks = SDL_GetTicks();
+
+        bool force_redraw = false;
+
+        process_mouse_events(&server->editor, client, &mouse);
+
+        bool any_asynchronous_jobs = server->slurp_jobs();
+        bool any_synchronous_jobs = server->run_synchronous_jobs(client);
+        bool no_jobs = !(any_asynchronous_jobs || any_synchronous_jobs);
+
+        process_events(server, client, &mouse, character_width, character_height, &force_redraw,
+                       &minimized);
+
+        process_scroll(server, client, &mouse.scroll);
+
+        process_buffer_external_updates(&server->editor, client, client->window);
+
+        if (client->queue_quit) {
+            break;
+        }
 
         // If the font info was updated then reload the font.
         cz::Str new_font_file = server->editor.theme.font_file;
@@ -1168,22 +1186,6 @@ void run(Server* server, Client* client) {
         }
         force_redraw = false;
 
-        process_mouse_events(&server->editor, client, &mouse);
-
-        server->slurp_jobs();
-        server->run_synchronous_jobs(client);
-
-        process_events(server, client, &mouse, character_width, character_height, &force_redraw,
-                       &minimized);
-
-        process_scroll(server, client, &mouse.scroll);
-
-        process_buffer_external_updates(&server->editor, client, client->window);
-
-        if (client->queue_quit) {
-            break;
-        }
-
         uint32_t frame_end_ticks = SDL_GetTicks();
 
         // 60 fps is default.
@@ -1194,8 +1196,9 @@ void run(Server* server, Client* client) {
             redrew = true;
         } else if (force_redraw) {
             // If we must redraw then don't delay.
-        } else if (minimized || redrew_last + 600000 < frame_end_ticks) {
-            // If we are minimized or if 10 minutes have elapsed then lower the frame rate to 1 fps.
+        } else if (minimized || (no_jobs && redrew_last + 600000 < frame_end_ticks)) {
+            // If we are minimized or if 10 minutes have elapsed with no
+            // jobs still running then lower the frame rate to 1 fps.
             frame_length = (uint32_t)(1000.0f / 1.0f);
         } else if (redrew_last + 1000 < frame_end_ticks) {
             // If one second has elapsed then lower the frame rate to 8 fps.
