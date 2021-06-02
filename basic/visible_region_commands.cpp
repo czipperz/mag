@@ -72,7 +72,9 @@ static void scroll_down(Editor* editor, Command_Source source, size_t num) {
     forward_visible_line(buffer->mode, &it, window->cols, num);
     window->start_position = it.position;
 
-    forward_visible_line(buffer->mode, &it, window->cols);
+    size_t scroll_outside =
+        get_scroll_outside(window->rows, editor->theme.scroll_outside_visual_rows);
+    forward_visible_line(buffer->mode, &it, window->cols, scroll_outside);
     if (window->cursors[0].point < it.position) {
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = it.position;
@@ -86,7 +88,9 @@ static void scroll_up(Editor* editor, Command_Source source, size_t num) {
     backward_visible_line(buffer->mode, &it, window->cols, num);
     window->start_position = it.position;
 
-    forward_visible_line(buffer->mode, &it, window->cols, window->rows - 2);
+    size_t scroll_outside =
+        get_scroll_outside(window->rows, editor->theme.scroll_outside_visual_rows);
+    forward_visible_line(buffer->mode, &it, window->cols, window->rows - scroll_outside - 1);
     if (window->cursors[0].point > it.position) {
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = it.position;
