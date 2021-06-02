@@ -1259,6 +1259,7 @@ void render_to_cells(Cell* cells,
                                  buffer, window, start_row, start_col, {}, &cursor_pos_y,
                                  &cursor_pos_x, iterator);
         } else {
+            y = 0;
             for (; x < total_cols; ++x) {
                 SET_IND({}, ' ');
             }
