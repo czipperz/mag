@@ -56,7 +56,7 @@ static void insert(Contents* contents, uint64_t position, cz::Str str) {
 
 static void remove(Contents* contents, uint64_t position, cz::Str str) {
     CZ_ASSERT(position + str.len <= contents->len);
-    CZ_DEBUG_ASSERT(looking_at(contents->iterator_at(position), str));
+    CZ_ASSERT(looking_at(contents->iterator_at(position), str));
     contents->remove(position, str.len);
 }
 
