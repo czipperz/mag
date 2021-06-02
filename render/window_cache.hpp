@@ -22,7 +22,7 @@ struct Window_Unified_Cache {
         float speed;
         uint64_t visible_start;
         bool slam_on_the_breaks;
-    } animation;
+    } animated_scrolling;
 };
 
 struct Window_Cache {

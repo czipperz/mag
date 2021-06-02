@@ -108,19 +108,19 @@ static bool try_to_make_visible(Window_Unified* window,
         start_iterator.position > iterator->position) {
         *iterator = start_iterator;
         cache_window_unified_position(window, window_cache, iterator->position, buffer);
-        window_cache->v.unified.animation.slam_on_the_breaks = false;
+        window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
         return true;
     }
 
     return false;
 }
 
-static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
-                                                          Client* client,
-                                                          Window_Unified* window,
-                                                          cz::Arc<Buffer_Handle> handle,
-                                                          const Buffer* buffer,
-                                                          Window_Cache* window_cache) {
+static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* editor,
+                                                                   Client* client,
+                                                                   Window_Unified* window,
+                                                                   cz::Arc<Buffer_Handle> handle,
+                                                                   const Buffer* buffer,
+                                                                   Window_Cache* window_cache) {
     ZoneScoped;
 
     window->update_cursors(buffer);
@@ -172,7 +172,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
 
         if (buffer->changes.len() != window_cache->v.unified.change_index) {
             auto changes = buffer->changes.slice_start(window_cache->v.unified.change_index);
-            position_after_changes(changes, &window_cache->v.unified.animation.visible_start);
+            position_after_changes(changes,
+                                   &window_cache->v.unified.animated_scrolling.visible_start);
             position_after_changes(changes, &window_cache->v.unified.visible_start);
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
         }
@@ -182,7 +183,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
             // command so we recalculate the end position.
             window_cache->v.unified.visible_start = window->start_position;
 
-            window_cache->v.unified.animation.slam_on_the_breaks = false;
+            window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
         }
 
         // Before we do any changes check if the mark has changed.
@@ -217,7 +218,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
 
             // Save the scroll.
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
-            window_cache->v.unified.animation.slam_on_the_breaks = false;
+            window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
         }
 
         // Try to make the mark shown only if it has changed.
@@ -245,6 +246,7 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         }
         window_cache->v.unified.cursor_count = window->cursors.len();
 
+        // Constants for animated scrolling speed.
         float speed_start = 0.5f;
         float speed_increment = 0.5f;
         float speed_multiplier = 1.4f;
@@ -252,56 +254,56 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
         // When accelerating we preincrement the speed.  So when we break we need to
         // postdecrement the speed.  The way we do this is by storing the original
         // speed and then overriding it if we are accelerating with the new speed.
-        float speed_lines_to_shift = window_cache->v.unified.animation.speed;
+        float speed_lines_to_shift = window_cache->v.unified.animated_scrolling.speed;
 
-        // Setup animation.
-        if (window_cache->v.unified.animation.slam_on_the_breaks) {
-            if (window_cache->v.unified.animation.speed > 0) {
-                window_cache->v.unified.animation.speed -= speed_increment;
-                window_cache->v.unified.animation.speed /= speed_multiplier;
-                window_cache->v.unified.animation.speed =
-                    std::max(window_cache->v.unified.animation.speed, 1.0f);
+        // Setup animated scrolling.
+        if (window_cache->v.unified.animated_scrolling.slam_on_the_breaks) {
+            if (window_cache->v.unified.animated_scrolling.speed > 0) {
+                window_cache->v.unified.animated_scrolling.speed -= speed_increment;
+                window_cache->v.unified.animated_scrolling.speed /= speed_multiplier;
+                window_cache->v.unified.animated_scrolling.speed =
+                    std::max(window_cache->v.unified.animated_scrolling.speed, 1.0f);
             } else {
-                window_cache->v.unified.animation.speed += speed_increment;
-                window_cache->v.unified.animation.speed /= speed_multiplier;
-                window_cache->v.unified.animation.speed =
-                    std::min(window_cache->v.unified.animation.speed, -1.0f);
+                window_cache->v.unified.animated_scrolling.speed += speed_increment;
+                window_cache->v.unified.animated_scrolling.speed /= speed_multiplier;
+                window_cache->v.unified.animated_scrolling.speed =
+                    std::min(window_cache->v.unified.animated_scrolling.speed, -1.0f);
             }
-        } else if (window_cache->v.unified.animation.visible_start < iterator.position) {
-            if (window_cache->v.unified.animation.speed <= 0) {
-                window_cache->v.unified.animation.speed = speed_start;
+        } else if (window_cache->v.unified.animated_scrolling.visible_start < iterator.position) {
+            if (window_cache->v.unified.animated_scrolling.speed <= 0) {
+                window_cache->v.unified.animated_scrolling.speed = speed_start;
             }
-            window_cache->v.unified.animation.speed *= speed_multiplier;
-            window_cache->v.unified.animation.speed += speed_increment;
-            if (window_cache->v.unified.animation.speed > (float)window->rows) {
-                window_cache->v.unified.animation.speed = (float)window->rows;
+            window_cache->v.unified.animated_scrolling.speed *= speed_multiplier;
+            window_cache->v.unified.animated_scrolling.speed += speed_increment;
+            if (window_cache->v.unified.animated_scrolling.speed > (float)window->rows) {
+                window_cache->v.unified.animated_scrolling.speed = (float)window->rows;
             }
-            speed_lines_to_shift = window_cache->v.unified.animation.speed;
-        } else if (window_cache->v.unified.animation.visible_start > iterator.position) {
-            if (window_cache->v.unified.animation.speed >= 0) {
-                window_cache->v.unified.animation.speed = -speed_start;
+            speed_lines_to_shift = window_cache->v.unified.animated_scrolling.speed;
+        } else if (window_cache->v.unified.animated_scrolling.visible_start > iterator.position) {
+            if (window_cache->v.unified.animated_scrolling.speed >= 0) {
+                window_cache->v.unified.animated_scrolling.speed = -speed_start;
             }
-            window_cache->v.unified.animation.speed *= speed_multiplier;
-            window_cache->v.unified.animation.speed -= speed_increment;
-            if (window_cache->v.unified.animation.speed < -(float)window->rows) {
-                window_cache->v.unified.animation.speed = -(float)window->rows;
+            window_cache->v.unified.animated_scrolling.speed *= speed_multiplier;
+            window_cache->v.unified.animated_scrolling.speed -= speed_increment;
+            if (window_cache->v.unified.animated_scrolling.speed < -(float)window->rows) {
+                window_cache->v.unified.animated_scrolling.speed = -(float)window->rows;
             }
-            speed_lines_to_shift = window_cache->v.unified.animation.speed;
+            speed_lines_to_shift = window_cache->v.unified.animated_scrolling.speed;
         }
 
-        // Run animations.
-        if (window_cache->v.unified.animation.speed != 0) {
-            ZoneScopedN("run animation");
+        // Scroll window based on animated scrolling state.
+        if (window_cache->v.unified.animated_scrolling.speed != 0) {
+            ZoneScopedN("run animated_scrolling");
 
             // If we are out of bounds because the user directly modified the `Contents`
             // without making a `Change` then go back into bounds so we don't crash.
-            if (window_cache->v.unified.animation.visible_start > buffer->contents.len) {
-                window_cache->v.unified.animation.visible_start = buffer->contents.len;
+            if (window_cache->v.unified.animated_scrolling.visible_start > buffer->contents.len) {
+                window_cache->v.unified.animated_scrolling.visible_start = buffer->contents.len;
             }
 
-            iterator.go_to(window_cache->v.unified.animation.visible_start);
+            iterator.go_to(window_cache->v.unified.animated_scrolling.visible_start);
 
-            if (window_cache->v.unified.animation.speed < 0) {
+            if (window_cache->v.unified.animated_scrolling.speed < 0) {
                 // If we're within one page and over half way there then start breaking.
                 Contents_Iterator end_iterator = iterator;
                 end_iterator.retreat_to(window->start_position);
@@ -312,16 +314,17 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 // stall the editor.  So jump to one page from the end and animate from there.
                 bool force_teleport = false;
                 if (!buffer->token_cache.is_covered(
-                        window_cache->v.unified.animation.visible_start)) {
+                        window_cache->v.unified.animated_scrolling.visible_start)) {
                     force_teleport = true;
-                    window_cache->v.unified.animation.visible_start = end_iterator.position;
+                    window_cache->v.unified.animated_scrolling.visible_start =
+                        end_iterator.position;
                 }
 
                 bool force_break = false;
                 float speed_loop_speed = speed_start;
-                if (!window_cache->v.unified.animation.slam_on_the_breaks &&
+                if (!window_cache->v.unified.animated_scrolling.slam_on_the_breaks &&
                     (force_teleport || iterator.position <= end_iterator.position ||
-                     window_cache->v.unified.animation.speed <= -(float)window->rows)) {
+                     window_cache->v.unified.animated_scrolling.speed <= -(float)window->rows)) {
                     float distance = 0;
                     while (1) {
                         speed_loop_speed *= speed_multiplier;
@@ -332,14 +335,15 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                         }
                     }
 
-                    force_break = speed_loop_speed <= -window_cache->v.unified.animation.speed;
+                    force_break =
+                        speed_loop_speed <= -window_cache->v.unified.animated_scrolling.speed;
                 }
 
                 // If we are already breaking or are moving too
                 // slow to teleport, then move line by line.
-                if (window_cache->v.unified.animation.slam_on_the_breaks ||
+                if (window_cache->v.unified.animated_scrolling.slam_on_the_breaks ||
                     (!force_break && !force_teleport &&
-                     window_cache->v.unified.animation.speed > -(float)window->rows)) {
+                     window_cache->v.unified.animated_scrolling.speed > -(float)window->rows)) {
                     // Go line by line.
                     for (float i = -speed_lines_to_shift; i > 0; --i) {
                         backward_char(&iterator);
@@ -347,8 +351,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                     }
                 } else {
                     // Teleport almost all the way there and start breaking.
-                    window_cache->v.unified.animation.slam_on_the_breaks = true;
-                    window_cache->v.unified.animation.speed = -speed_loop_speed;
+                    window_cache->v.unified.animated_scrolling.slam_on_the_breaks = true;
+                    window_cache->v.unified.animated_scrolling.speed = -speed_loop_speed;
 
                     if (end_iterator.position >= iterator.position) {
                         end_iterator.retreat_to(window->start_position);
@@ -359,12 +363,12 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 CZ_DEBUG_ASSERT(window->start_position == window_cache->v.unified.visible_start);
                 if (window_cache->v.unified.visible_start >= iterator.position) {
                     iterator.advance_to(window_cache->v.unified.visible_start);
-                    window_cache->v.unified.animation.speed = 0;
-                    window_cache->v.unified.animation.slam_on_the_breaks = false;
+                    window_cache->v.unified.animated_scrolling.speed = 0;
+                    window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
                 }
             }
 
-            if (window_cache->v.unified.animation.speed > 0) {
+            if (window_cache->v.unified.animated_scrolling.speed > 0) {
                 // If we're within one page and over half way there then start breaking.
                 Contents_Iterator start_iterator = iterator;
                 start_iterator.advance_to(window->start_position);
@@ -373,9 +377,9 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
 
                 bool force_break = false;
                 float speed_loop_speed = speed_start;
-                if (!window_cache->v.unified.animation.slam_on_the_breaks &&
+                if (!window_cache->v.unified.animated_scrolling.slam_on_the_breaks &&
                     (iterator.position >= start_iterator.position ||
-                     window_cache->v.unified.animation.speed >= (float)window->rows)) {
+                     window_cache->v.unified.animated_scrolling.speed >= (float)window->rows)) {
                     float distance = 0;
                     while (1) {
                         speed_loop_speed *= speed_multiplier;
@@ -386,15 +390,16 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                         }
                     }
 
-                    force_break = speed_loop_speed <= window_cache->v.unified.animation.speed;
+                    force_break =
+                        speed_loop_speed <= window_cache->v.unified.animated_scrolling.speed;
                 }
 
                 // If we are already breaking, haven't tokenized to leap all the way without
                 // stalling, or are moving too slow to teleport, then move line by line.
-                if (window_cache->v.unified.animation.slam_on_the_breaks ||
+                if (window_cache->v.unified.animated_scrolling.slam_on_the_breaks ||
                     !buffer->token_cache.is_covered(window->start_position) ||
                     (!force_break &&
-                     window_cache->v.unified.animation.speed < (float)window->rows)) {
+                     window_cache->v.unified.animated_scrolling.speed < (float)window->rows)) {
                     // Go line by line.
                     for (float i = speed_lines_to_shift; i > 0; --i) {
                         end_of_visible_line(window, buffer->mode, &iterator);
@@ -402,8 +407,8 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                     }
                 } else {
                     // Teleport almost all the way there and start breaking.
-                    window_cache->v.unified.animation.slam_on_the_breaks = true;
-                    window_cache->v.unified.animation.speed = speed_loop_speed;
+                    window_cache->v.unified.animated_scrolling.slam_on_the_breaks = true;
+                    window_cache->v.unified.animated_scrolling.speed = speed_loop_speed;
 
                     if (start_iterator.position <= iterator.position) {
                         start_iterator.advance_to(window->start_position);
@@ -414,12 +419,12 @@ static Contents_Iterator update_cursors_and_run_animation(Editor* editor,
                 CZ_DEBUG_ASSERT(window->start_position == window_cache->v.unified.visible_start);
                 if (window_cache->v.unified.visible_start <= iterator.position) {
                     iterator.retreat_to(window_cache->v.unified.visible_start);
-                    window_cache->v.unified.animation.speed = 0;
-                    window_cache->v.unified.animation.slam_on_the_breaks = false;
+                    window_cache->v.unified.animated_scrolling.speed = 0;
+                    window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
                 }
             }
 
-            window_cache->v.unified.animation.visible_start = iterator.position;
+            window_cache->v.unified.animated_scrolling.visible_start = iterator.position;
         }
     } else {
         window->start_position = iterator.position;
@@ -474,7 +479,8 @@ static void draw_buffer_contents(Cell* cells,
     Token token = {};
     uint64_t state = 0;
     bool has_token = true;
-    // Note: we run `buffer->token_cache.update(buffer)` in update_cursors_and_run_animation.
+    // Note: we run `buffer->token_cache.update(buffer)` in
+    // update_cursors_and_run_animated_scrolling.
     CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
     {
         Tokenizer_Check_Point check_point;
@@ -914,8 +920,8 @@ static void draw_buffer(Cell* cells,
 
     WITH_CONST_BUFFER(window->id);
 
-    Contents_Iterator iterator =
-        update_cursors_and_run_animation(editor, client, window, handle, buffer, window_cache);
+    Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
+        editor, client, window, handle, buffer, window_cache);
 
     size_t cursor_pos_y, cursor_pos_x;
     draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
@@ -1157,8 +1163,8 @@ void render_to_cells(Cell* cells,
             WITH_CONST_WINDOW_BUFFER(window);
             window->rows = mini_buffer_height;
             window->cols = total_cols - start_col;
-            Contents_Iterator iterator =
-                update_cursors_and_run_animation(editor, client, window, handle, buffer, nullptr);
+            Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
+                editor, client, window, handle, buffer, nullptr);
             size_t cursor_pos_y, cursor_pos_x;
             draw_buffer_contents(cells, nullptr, total_cols, editor, client, buffer, window,
                                  start_row, start_col, {}, &cursor_pos_y, &cursor_pos_x, iterator);
