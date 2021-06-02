@@ -246,185 +246,197 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         }
         window_cache->v.unified.cursor_count = window->cursors.len();
 
-        // Constants for animated scrolling speed.
-        float speed_start = 0.5f;
-        float speed_increment = 0.5f;
-        float speed_multiplier = 1.4f;
+        // If we allow animated scrolling then run the code to process it.  Otherwise we
+        // just jump directly to the desired starting point (`iterator.position`).
+        if (editor->theme.allow_animated_scrolling) {
+            // Constants for animated scrolling speed.
+            float speed_start = 0.5f;
+            float speed_increment = 0.5f;
+            float speed_multiplier = 1.4f;
 
-        // When accelerating we preincrement the speed.  So when we break we need to
-        // postdecrement the speed.  The way we do this is by storing the original
-        // speed and then overriding it if we are accelerating with the new speed.
-        float speed_lines_to_shift = window_cache->v.unified.animated_scrolling.speed;
+            // When accelerating we preincrement the speed.  So when we break we need to
+            // postdecrement the speed.  The way we do this is by storing the original
+            // speed and then overriding it if we are accelerating with the new speed.
+            float speed_lines_to_shift = window_cache->v.unified.animated_scrolling.speed;
 
-        // Setup animated scrolling.
-        if (window_cache->v.unified.animated_scrolling.slam_on_the_breaks) {
-            if (window_cache->v.unified.animated_scrolling.speed > 0) {
-                window_cache->v.unified.animated_scrolling.speed -= speed_increment;
-                window_cache->v.unified.animated_scrolling.speed /= speed_multiplier;
-                window_cache->v.unified.animated_scrolling.speed =
-                    std::max(window_cache->v.unified.animated_scrolling.speed, 1.0f);
-            } else {
+            // Setup animated scrolling.
+            if (window_cache->v.unified.animated_scrolling.slam_on_the_breaks) {
+                if (window_cache->v.unified.animated_scrolling.speed > 0) {
+                    window_cache->v.unified.animated_scrolling.speed -= speed_increment;
+                    window_cache->v.unified.animated_scrolling.speed /= speed_multiplier;
+                    window_cache->v.unified.animated_scrolling.speed =
+                        std::max(window_cache->v.unified.animated_scrolling.speed, 1.0f);
+                } else {
+                    window_cache->v.unified.animated_scrolling.speed += speed_increment;
+                    window_cache->v.unified.animated_scrolling.speed /= speed_multiplier;
+                    window_cache->v.unified.animated_scrolling.speed =
+                        std::min(window_cache->v.unified.animated_scrolling.speed, -1.0f);
+                }
+            } else if (window_cache->v.unified.animated_scrolling.visible_start <
+                       iterator.position) {
+                if (window_cache->v.unified.animated_scrolling.speed <= 0) {
+                    window_cache->v.unified.animated_scrolling.speed = speed_start;
+                }
+                window_cache->v.unified.animated_scrolling.speed *= speed_multiplier;
                 window_cache->v.unified.animated_scrolling.speed += speed_increment;
-                window_cache->v.unified.animated_scrolling.speed /= speed_multiplier;
-                window_cache->v.unified.animated_scrolling.speed =
-                    std::min(window_cache->v.unified.animated_scrolling.speed, -1.0f);
-            }
-        } else if (window_cache->v.unified.animated_scrolling.visible_start < iterator.position) {
-            if (window_cache->v.unified.animated_scrolling.speed <= 0) {
-                window_cache->v.unified.animated_scrolling.speed = speed_start;
-            }
-            window_cache->v.unified.animated_scrolling.speed *= speed_multiplier;
-            window_cache->v.unified.animated_scrolling.speed += speed_increment;
-            if (window_cache->v.unified.animated_scrolling.speed > (float)window->rows) {
-                window_cache->v.unified.animated_scrolling.speed = (float)window->rows;
-            }
-            speed_lines_to_shift = window_cache->v.unified.animated_scrolling.speed;
-        } else if (window_cache->v.unified.animated_scrolling.visible_start > iterator.position) {
-            if (window_cache->v.unified.animated_scrolling.speed >= 0) {
-                window_cache->v.unified.animated_scrolling.speed = -speed_start;
-            }
-            window_cache->v.unified.animated_scrolling.speed *= speed_multiplier;
-            window_cache->v.unified.animated_scrolling.speed -= speed_increment;
-            if (window_cache->v.unified.animated_scrolling.speed < -(float)window->rows) {
-                window_cache->v.unified.animated_scrolling.speed = -(float)window->rows;
-            }
-            speed_lines_to_shift = window_cache->v.unified.animated_scrolling.speed;
-        }
-
-        // Scroll window based on animated scrolling state.
-        if (window_cache->v.unified.animated_scrolling.speed != 0) {
-            ZoneScopedN("run animated_scrolling");
-
-            // If we are out of bounds because the user directly modified the `Contents`
-            // without making a `Change` then go back into bounds so we don't crash.
-            if (window_cache->v.unified.animated_scrolling.visible_start > buffer->contents.len) {
-                window_cache->v.unified.animated_scrolling.visible_start = buffer->contents.len;
+                if (window_cache->v.unified.animated_scrolling.speed > (float)window->rows) {
+                    window_cache->v.unified.animated_scrolling.speed = (float)window->rows;
+                }
+                speed_lines_to_shift = window_cache->v.unified.animated_scrolling.speed;
+            } else if (window_cache->v.unified.animated_scrolling.visible_start >
+                       iterator.position) {
+                if (window_cache->v.unified.animated_scrolling.speed >= 0) {
+                    window_cache->v.unified.animated_scrolling.speed = -speed_start;
+                }
+                window_cache->v.unified.animated_scrolling.speed *= speed_multiplier;
+                window_cache->v.unified.animated_scrolling.speed -= speed_increment;
+                if (window_cache->v.unified.animated_scrolling.speed < -(float)window->rows) {
+                    window_cache->v.unified.animated_scrolling.speed = -(float)window->rows;
+                }
+                speed_lines_to_shift = window_cache->v.unified.animated_scrolling.speed;
             }
 
-            iterator.go_to(window_cache->v.unified.animated_scrolling.visible_start);
+            // Scroll window based on animated scrolling state.
+            if (window_cache->v.unified.animated_scrolling.speed != 0) {
+                ZoneScopedN("run animated_scrolling");
 
-            if (window_cache->v.unified.animated_scrolling.speed < 0) {
-                // If we're within one page and over half way there then start breaking.
-                Contents_Iterator end_iterator = iterator;
-                end_iterator.retreat_to(window->start_position);
-                forward_visible_line(buffer->mode, &end_iterator, window->cols, window->rows - 1);
-
-                // Tokenization happens from the top of the file to the bottom.  So if we want to
-                // move from the bottom to the top and the bottom isn't tokenized then we would
-                // stall the editor.  So jump to one page from the end and animate from there.
-                bool force_teleport = false;
-                if (!buffer->token_cache.is_covered(
-                        window_cache->v.unified.animated_scrolling.visible_start)) {
-                    force_teleport = true;
-                    window_cache->v.unified.animated_scrolling.visible_start =
-                        end_iterator.position;
+                // If we are out of bounds because the user directly modified the `Contents`
+                // without making a `Change` then go back into bounds so we don't crash.
+                if (window_cache->v.unified.animated_scrolling.visible_start >
+                    buffer->contents.len) {
+                    window_cache->v.unified.animated_scrolling.visible_start = buffer->contents.len;
                 }
 
-                bool force_break = false;
-                float speed_loop_speed = speed_start;
-                if (!window_cache->v.unified.animated_scrolling.slam_on_the_breaks &&
-                    (force_teleport || iterator.position <= end_iterator.position ||
-                     window_cache->v.unified.animated_scrolling.speed <= -(float)window->rows)) {
-                    float distance = 0;
-                    while (1) {
-                        speed_loop_speed *= speed_multiplier;
-                        speed_loop_speed += speed_increment;
-                        distance += ceilf(speed_loop_speed);
-                        if (distance >= window->rows) {
-                            break;
+                iterator.go_to(window_cache->v.unified.animated_scrolling.visible_start);
+
+                if (window_cache->v.unified.animated_scrolling.speed < 0) {
+                    // If we're within one page and over half way there then start breaking.
+                    Contents_Iterator end_iterator = iterator;
+                    end_iterator.retreat_to(window->start_position);
+                    forward_visible_line(buffer->mode, &end_iterator, window->cols,
+                                         window->rows - 1);
+
+                    // Tokenization happens from the top of the file to the bottom.  So if we want
+                    // to move from the bottom to the top and the bottom isn't tokenized then we
+                    // would stall the editor.  So jump to one page from the end and animate from
+                    // there.
+                    bool force_teleport = false;
+                    if (!buffer->token_cache.is_covered(
+                            window_cache->v.unified.animated_scrolling.visible_start)) {
+                        force_teleport = true;
+                        window_cache->v.unified.animated_scrolling.visible_start =
+                            end_iterator.position;
+                    }
+
+                    bool force_break = false;
+                    float speed_loop_speed = speed_start;
+                    if (!window_cache->v.unified.animated_scrolling.slam_on_the_breaks &&
+                        (force_teleport || iterator.position <= end_iterator.position ||
+                         window_cache->v.unified.animated_scrolling.speed <=
+                             -(float)window->rows)) {
+                        float distance = 0;
+                        while (1) {
+                            speed_loop_speed *= speed_multiplier;
+                            speed_loop_speed += speed_increment;
+                            distance += ceilf(speed_loop_speed);
+                            if (distance >= window->rows) {
+                                break;
+                            }
                         }
+
+                        force_break =
+                            speed_loop_speed <= -window_cache->v.unified.animated_scrolling.speed;
                     }
 
-                    force_break =
-                        speed_loop_speed <= -window_cache->v.unified.animated_scrolling.speed;
-                }
-
-                // If we are already breaking or are moving too
-                // slow to teleport, then move line by line.
-                if (window_cache->v.unified.animated_scrolling.slam_on_the_breaks ||
-                    (!force_break && !force_teleport &&
-                     window_cache->v.unified.animated_scrolling.speed > -(float)window->rows)) {
-                    // Go line by line.
-                    for (float i = -speed_lines_to_shift; i > 0; --i) {
-                        backward_char(&iterator);
-                        start_of_visible_line(window, buffer->mode, &iterator);
-                    }
-                } else {
-                    // Teleport almost all the way there and start breaking.
-                    window_cache->v.unified.animated_scrolling.slam_on_the_breaks = true;
-                    window_cache->v.unified.animated_scrolling.speed = -speed_loop_speed;
-
-                    if (end_iterator.position >= iterator.position) {
-                        end_iterator.retreat_to(window->start_position);
-                    }
-                    iterator = end_iterator;
-                }
-
-                CZ_DEBUG_ASSERT(window->start_position == window_cache->v.unified.visible_start);
-                if (window_cache->v.unified.visible_start >= iterator.position) {
-                    iterator.advance_to(window_cache->v.unified.visible_start);
-                    window_cache->v.unified.animated_scrolling.speed = 0;
-                    window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
-                }
-            }
-
-            if (window_cache->v.unified.animated_scrolling.speed > 0) {
-                // If we're within one page and over half way there then start breaking.
-                Contents_Iterator start_iterator = iterator;
-                start_iterator.advance_to(window->start_position);
-                backward_visible_line(buffer->mode, &start_iterator, window->cols,
-                                      window->rows - 1);
-
-                bool force_break = false;
-                float speed_loop_speed = speed_start;
-                if (!window_cache->v.unified.animated_scrolling.slam_on_the_breaks &&
-                    (iterator.position >= start_iterator.position ||
-                     window_cache->v.unified.animated_scrolling.speed >= (float)window->rows)) {
-                    float distance = 0;
-                    while (1) {
-                        speed_loop_speed *= speed_multiplier;
-                        speed_loop_speed += speed_increment;
-                        distance += ceilf(speed_loop_speed);
-                        if (distance >= window->rows) {
-                            break;
+                    // If we are already breaking or are moving too
+                    // slow to teleport, then move line by line.
+                    if (window_cache->v.unified.animated_scrolling.slam_on_the_breaks ||
+                        (!force_break && !force_teleport &&
+                         window_cache->v.unified.animated_scrolling.speed > -(float)window->rows)) {
+                        // Go line by line.
+                        for (float i = -speed_lines_to_shift; i > 0; --i) {
+                            backward_char(&iterator);
+                            start_of_visible_line(window, buffer->mode, &iterator);
                         }
+                    } else {
+                        // Teleport almost all the way there and start breaking.
+                        window_cache->v.unified.animated_scrolling.slam_on_the_breaks = true;
+                        window_cache->v.unified.animated_scrolling.speed = -speed_loop_speed;
+
+                        if (end_iterator.position >= iterator.position) {
+                            end_iterator.retreat_to(window->start_position);
+                        }
+                        iterator = end_iterator;
                     }
 
-                    force_break =
-                        speed_loop_speed <= window_cache->v.unified.animated_scrolling.speed;
-                }
-
-                // If we are already breaking, haven't tokenized to leap all the way without
-                // stalling, or are moving too slow to teleport, then move line by line.
-                if (window_cache->v.unified.animated_scrolling.slam_on_the_breaks ||
-                    !buffer->token_cache.is_covered(window->start_position) ||
-                    (!force_break &&
-                     window_cache->v.unified.animated_scrolling.speed < (float)window->rows)) {
-                    // Go line by line.
-                    for (float i = speed_lines_to_shift; i > 0; --i) {
-                        end_of_visible_line(window, buffer->mode, &iterator);
-                        forward_char(&iterator);
+                    CZ_DEBUG_ASSERT(window->start_position ==
+                                    window_cache->v.unified.visible_start);
+                    if (window_cache->v.unified.visible_start >= iterator.position) {
+                        iterator.advance_to(window_cache->v.unified.visible_start);
+                        window_cache->v.unified.animated_scrolling.speed = 0;
+                        window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
                     }
-                } else {
-                    // Teleport almost all the way there and start breaking.
-                    window_cache->v.unified.animated_scrolling.slam_on_the_breaks = true;
-                    window_cache->v.unified.animated_scrolling.speed = speed_loop_speed;
+                }
 
-                    if (start_iterator.position <= iterator.position) {
-                        start_iterator.advance_to(window->start_position);
+                if (window_cache->v.unified.animated_scrolling.speed > 0) {
+                    // If we're within one page and over half way there then start breaking.
+                    Contents_Iterator start_iterator = iterator;
+                    start_iterator.advance_to(window->start_position);
+                    backward_visible_line(buffer->mode, &start_iterator, window->cols,
+                                          window->rows - 1);
+
+                    bool force_break = false;
+                    float speed_loop_speed = speed_start;
+                    if (!window_cache->v.unified.animated_scrolling.slam_on_the_breaks &&
+                        (iterator.position >= start_iterator.position ||
+                         window_cache->v.unified.animated_scrolling.speed >= (float)window->rows)) {
+                        float distance = 0;
+                        while (1) {
+                            speed_loop_speed *= speed_multiplier;
+                            speed_loop_speed += speed_increment;
+                            distance += ceilf(speed_loop_speed);
+                            if (distance >= window->rows) {
+                                break;
+                            }
+                        }
+
+                        force_break =
+                            speed_loop_speed <= window_cache->v.unified.animated_scrolling.speed;
                     }
-                    iterator = start_iterator;
+
+                    // If we are already breaking, haven't tokenized to leap all the way without
+                    // stalling, or are moving too slow to teleport, then move line by line.
+                    if (window_cache->v.unified.animated_scrolling.slam_on_the_breaks ||
+                        !buffer->token_cache.is_covered(window->start_position) ||
+                        (!force_break &&
+                         window_cache->v.unified.animated_scrolling.speed < (float)window->rows)) {
+                        // Go line by line.
+                        for (float i = speed_lines_to_shift; i > 0; --i) {
+                            end_of_visible_line(window, buffer->mode, &iterator);
+                            forward_char(&iterator);
+                        }
+                    } else {
+                        // Teleport almost all the way there and start breaking.
+                        window_cache->v.unified.animated_scrolling.slam_on_the_breaks = true;
+                        window_cache->v.unified.animated_scrolling.speed = speed_loop_speed;
+
+                        if (start_iterator.position <= iterator.position) {
+                            start_iterator.advance_to(window->start_position);
+                        }
+                        iterator = start_iterator;
+                    }
+
+                    CZ_DEBUG_ASSERT(window->start_position ==
+                                    window_cache->v.unified.visible_start);
+                    if (window_cache->v.unified.visible_start <= iterator.position) {
+                        iterator.retreat_to(window_cache->v.unified.visible_start);
+                        window_cache->v.unified.animated_scrolling.speed = 0;
+                        window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
+                    }
                 }
 
-                CZ_DEBUG_ASSERT(window->start_position == window_cache->v.unified.visible_start);
-                if (window_cache->v.unified.visible_start <= iterator.position) {
-                    iterator.retreat_to(window_cache->v.unified.visible_start);
-                    window_cache->v.unified.animated_scrolling.speed = 0;
-                    window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
-                }
+                window_cache->v.unified.animated_scrolling.visible_start = iterator.position;
             }
-
-            window_cache->v.unified.animated_scrolling.visible_start = iterator.position;
         }
     } else {
         window->start_position = iterator.position;

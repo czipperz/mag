@@ -462,6 +462,9 @@ static void create_theme(Theme& theme) {
     theme.window_completion_filter = prefix_completion_filter;
 
     theme.mouse_scroll_rows = 4;
+
+    theme.draw_line_numbers = false;
+    theme.allow_animated_scrolling = true;
 }
 
 void editor_created_callback(Editor* editor) {

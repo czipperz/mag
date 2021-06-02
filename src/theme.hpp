@@ -83,6 +83,9 @@ struct Theme {
     /// If true then draw line numbers.
     bool draw_line_numbers = false;
 
+    /// If true then scrolling within the same file will be animated.
+    bool allow_animated_scrolling = true;
+
     void drop();
 };
 
