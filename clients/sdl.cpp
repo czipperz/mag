@@ -1176,9 +1176,6 @@ void run(Server* server, Client* client) {
                &total_cols, character_width, character_height, cellss, &window_cache,
                &server->editor, client, mouse.sp_queries, force_redraw, &redrew_this_time);
 
-        if (force_redraw || redrew_this_time) {
-            minimized = false;
-        }
         force_redraw = false;
 
         process_mouse_events(&server->editor, client, &mouse);
