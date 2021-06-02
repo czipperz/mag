@@ -20,6 +20,7 @@ void process_buffer_external_updates(Editor* editor, Client* client, Window* win
 
 void render_to_cells(Cell* cells,
                      Window_Cache** window_cache,
+                     Window_Cache** mini_buffer_window_cache,
                      size_t total_rows,
                      size_t total_cols,
                      Editor* editor,

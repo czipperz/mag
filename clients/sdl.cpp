@@ -697,6 +697,7 @@ static void render(SDL_Window* window,
                    int character_height,
                    Cell** cellss,
                    Window_Cache** window_cache,
+                   Window_Cache** mini_buffer_window_cache,
                    Editor* editor,
                    Client* client,
                    cz::Slice<Screen_Position_Query> spqs,
@@ -729,6 +730,8 @@ static void render(SDL_Window* window,
 
             destroy_window_cache(*window_cache);
             *window_cache = nullptr;
+            destroy_window_cache(*mini_buffer_window_cache);
+            *mini_buffer_window_cache = nullptr;
 
             cz::heap_allocator().dealloc(cellss[0], *total_rows * *total_cols);
             cz::heap_allocator().dealloc(cellss[1], *total_rows * *total_cols);
@@ -749,7 +752,8 @@ static void render(SDL_Window* window,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, rows, cols, editor, client, spqs);
+    render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client,
+                    spqs);
 
     bool any_changes = false;
 
@@ -1112,6 +1116,8 @@ void run(Server* server, Client* client) {
 
     Window_Cache* window_cache = nullptr;
     CZ_DEFER(destroy_window_cache(window_cache));
+    Window_Cache* mini_buffer_window_cache = nullptr;
+    CZ_DEFER(destroy_window_cache(mini_buffer_window_cache));
 
     SDL_StartTextInput();
     CZ_DEFER(SDL_StopTextInput());
@@ -1174,7 +1180,8 @@ void run(Server* server, Client* client) {
         bool redrew_this_time = false;
         render(window, renderer, font, surface_cache, &old_width, &old_height, &total_rows,
                &total_cols, character_width, character_height, cellss, &window_cache,
-               &server->editor, client, mouse.sp_queries, force_redraw, &redrew_this_time);
+               &mini_buffer_window_cache, &server->editor, client, mouse.sp_queries, force_redraw,
+               &redrew_this_time);
 
         force_redraw = false;
 

@@ -84,6 +84,7 @@ static void render(int* total_rows,
                    int* total_cols,
                    Cell** cellss,
                    Window_Cache** window_cache,
+                   Window_Cache** mini_buffer_window_cache,
                    Editor* editor,
                    Client* client,
                    int16_t* colors,
@@ -120,7 +121,8 @@ static void render(int* total_rows,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, rows, cols, editor, client, {});
+    render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client,
+                    {});
 
     bool any = false;
     {
@@ -324,6 +326,8 @@ void run(Server* server, Client* client) {
 
     Window_Cache* window_cache = nullptr;
     CZ_DEFER(destroy_window_cache(window_cache));
+    Window_Cache* mini_buffer_window_cache = nullptr;
+    CZ_DEFER(destroy_window_cache(mini_buffer_window_cache));
 
     client->system_copy_text_func = ncurses_copy;
     client->system_copy_text_data = nullptr;
@@ -338,8 +342,8 @@ void run(Server* server, Client* client) {
         client->update_mini_buffer_completion_cache(&server->editor);
         load_mini_buffer_completion_cache(server, client);
 
-        render(&total_rows, &total_cols, cellss, &window_cache, &server->editor, client, colors,
-               used_colors);
+        render(&total_rows, &total_cols, cellss, &window_cache, &mini_buffer_window_cache,
+               &server->editor, client, colors, used_colors);
 
         bool has_jobs = false;
         has_jobs |= server->slurp_jobs();

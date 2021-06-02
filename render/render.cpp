@@ -202,8 +202,9 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // If we have a window with very few rows then we will flail up and
         // down unless we bound `scroll_outside` by the number of rows.
-        size_t scroll_outside =
-            get_scroll_outside(window->rows, editor->theme.scroll_outside_visual_rows);
+        size_t scroll_outside = get_scroll_outside(
+            window->rows,
+            client->_mini_buffer == window ? 0 : editor->theme.scroll_outside_visual_rows);
 
         // Calculate the minimum cursor boundary.
         Contents_Iterator visible_start_iterator = iterator;
@@ -974,6 +975,21 @@ static void draw_buffer(Cell* cells,
                            cursor_pos_y, cursor_pos_x);
 }
 
+static void setup_unified_window_cache(Editor* editor,
+                                       Window_Unified* window,
+                                       Window_Cache** window_cache) {
+    if (!*window_cache) {
+        *window_cache = cz::heap_allocator().alloc<Window_Cache>();
+        CZ_ASSERT(*window_cache);
+        cache_window_unified_create(editor, *window_cache, window);
+    } else if ((*window_cache)->tag != window->tag) {
+        destroy_window_cache_children(*window_cache);
+        cache_window_unified_create(editor, *window_cache, window);
+    } else if ((*window_cache)->v.unified.id != window->id) {
+        cache_window_unified_create(editor, *window_cache, window);
+    }
+}
+
 static void draw_window(Cell* cells,
                         Window_Cache** window_cache,
                         size_t total_cols,
@@ -997,16 +1013,7 @@ static void draw_window(Cell* cells,
 
         --window->rows;
 
-        if (!*window_cache) {
-            *window_cache = cz::heap_allocator().alloc<Window_Cache>();
-            CZ_ASSERT(*window_cache);
-            cache_window_unified_create(editor, *window_cache, window);
-        } else if ((*window_cache)->tag != window->tag) {
-            destroy_window_cache_children(*window_cache);
-            cache_window_unified_create(editor, *window_cache, window);
-        } else if ((*window_cache)->v.unified.id != window->id) {
-            cache_window_unified_create(editor, *window_cache, window);
-        }
+        setup_unified_window_cache(editor, window, window_cache);
 
         draw_buffer(cells, *window_cache, total_cols, editor, client, window,
                     window == selected_window, start_row, start_col, spqs);
@@ -1154,6 +1161,7 @@ void process_buffer_external_updates(Editor* editor, Client* client, Window* win
 
 void render_to_cells(Cell* cells,
                      Window_Cache** window_cache,
+                     Window_Cache** mini_buffer_window_cache,
                      size_t total_rows,
                      size_t total_cols,
                      Editor* editor,
@@ -1211,6 +1219,8 @@ void render_to_cells(Cell* cells,
             }
 
             window->rows = mini_buffer_height;
+
+            setup_unified_window_cache(editor, window, mini_buffer_window_cache);
         }
 
         size_t y = 0;
@@ -1243,10 +1253,11 @@ void render_to_cells(Cell* cells,
             start_col = x;
 
             Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
-                editor, client, window, handle, buffer, nullptr);
+                editor, client, window, handle, buffer, *mini_buffer_window_cache);
             size_t cursor_pos_y, cursor_pos_x;
-            draw_buffer_contents(cells, nullptr, total_cols, editor, client, buffer, window,
-                                 start_row, start_col, {}, &cursor_pos_y, &cursor_pos_x, iterator);
+            draw_buffer_contents(cells, *mini_buffer_window_cache, total_cols, editor, client,
+                                 buffer, window, start_row, start_col, {}, &cursor_pos_y,
+                                 &cursor_pos_x, iterator);
         } else {
             for (; x < total_cols; ++x) {
                 SET_IND({}, ' ');
