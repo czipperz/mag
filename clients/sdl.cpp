@@ -1142,8 +1142,6 @@ void run(Server* server, Client* client) {
 
         bool force_redraw = false;
 
-        process_mouse_events(&server->editor, client, &mouse);
-
         bool any_asynchronous_jobs = server->slurp_jobs();
         bool any_synchronous_jobs = server->run_synchronous_jobs(client);
         bool no_jobs = !(any_asynchronous_jobs || any_synchronous_jobs);
@@ -1185,6 +1183,8 @@ void run(Server* server, Client* client) {
             minimized = false;
         }
         force_redraw = false;
+
+        process_mouse_events(&server->editor, client, &mouse);
 
         uint32_t frame_end_ticks = SDL_GetTicks();
 
