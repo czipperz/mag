@@ -230,6 +230,22 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                                       window->rows - (scroll_outside + 1));
             }
 
+            if (editor->theme.scroll_jump_half_page_when_outside_visible_region) {
+                if (selected_cursor_position < visible_start_iterator.position) {
+                    Contents_Iterator it = visible_start_iterator;
+                    backward_visible_line(buffer->mode, &it, window->cols, window->rows / 2);
+                    if (it.position < iterator.position) {
+                        iterator = it;
+                    }
+                } else {
+                    Contents_Iterator it = visible_start_iterator;
+                    forward_visible_line(buffer->mode, &it, window->cols, window->rows / 2);
+                    if (it.position > iterator.position) {
+                        iterator = it;
+                    }
+                }
+            }
+
             // Then go to the start of that line.
             start_of_visible_line(window, buffer->mode, &iterator);
 

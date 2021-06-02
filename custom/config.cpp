@@ -470,6 +470,7 @@ static void create_theme(Theme& theme) {
 
     theme.allow_animated_scrolling = true;
     theme.scroll_outside_visual_rows = 3;
+    theme.scroll_jump_half_page_when_outside_visible_region = false;
 }
 
 void editor_created_callback(Editor* editor) {

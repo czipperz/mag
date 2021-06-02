@@ -90,6 +90,9 @@ struct Theme {
     /// bottom of the `Window` then the `Window` scrolls.
     size_t scroll_outside_visual_rows = 1;
 
+    /// If true then scrolls at least half a page when the cursor exits the visible region.
+    bool scroll_jump_half_page_when_outside_visible_region = false;
+
     void drop();
 };
 
