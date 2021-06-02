@@ -71,7 +71,7 @@ struct Theme {
     cz::Heap_Vector<Decoration> decorations;
     cz::Heap_Vector<Overlay> overlays;
 
-    size_t max_completion_results;
+    size_t max_completion_results = 5;
 
     Completion_Filter mini_buffer_completion_filter;
     Completion_Filter window_completion_filter;
@@ -84,11 +84,11 @@ struct Theme {
     bool draw_line_numbers = false;
 
     /// If true then scrolling within the same file will be animated.
-    bool allow_animated_scrolling = true;
+    bool allow_animated_scrolling = false;
 
     /// If the point is within this many rows of the top or
     /// bottom of the `Window` then the `Window` scrolls.
-    size_t scroll_outside_visual_rows = 1;
+    size_t scroll_outside_visual_rows = 0;
 
     /// If true then scrolls at least half a page when the cursor exits the visible region.
     bool scroll_jump_half_page_when_outside_visible_region = false;
