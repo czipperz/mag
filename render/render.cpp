@@ -1182,6 +1182,37 @@ void render_to_cells(Cell* cells,
             }
         }
 
+        Window_Unified* window = client->mini_buffer_window();
+        WITH_CONST_WINDOW_BUFFER(window);
+
+        size_t message_width =
+            std::min(client->_message.end - client->_message.start, window->cols);
+        window->rows = 1;
+        window->cols = total_cols - message_width;
+
+        // We want to draw the mini buffer as small as possible.
+        // TODO: draw message on multiple lines if it is too long.
+        if (client->_message.tag > Message::SHOW) {
+            Contents_Iterator it = buffer->contents.start();
+
+            // Eat the first line.
+            end_of_visible_line(window, buffer->mode, &it);
+            forward_char(&it);
+
+            for (; mini_buffer_height < editor->theme.mini_buffer_max_height;
+                 ++mini_buffer_height) {
+                // If there is no subsequent line then stop.
+                uint64_t backup = it.position;
+                end_of_visible_line(window, buffer->mode, &it);
+                forward_char(&it);
+                if (it.position == backup) {
+                    break;
+                }
+            }
+
+            window->rows = mini_buffer_height;
+        }
+
         size_t y = 0;
         size_t x = 0;
         size_t start_row = total_rows - mini_buffer_height - results_height;
@@ -1193,18 +1224,24 @@ void render_to_cells(Cell* cells,
         {
             WITH_CONST_BUFFER(client->messages_id);
             Contents_Iterator it = buffer->contents.iterator_at(client->_message.start);
-            for (; it.position < client->_message.end && y < 1; it.advance()) {
+            // TODO: handle multi line mini buffer message
+            for (; x < message_width; it.advance()) {
                 SET_IND(minibuffer_prompt_face, it.get());
                 ++x;
             }
         }
 
+        // Clear the other lines below the message.
+        for (y = 1; y < window->rows; ++y) {
+            // TODO: handle multi line mini buffer message
+            for (x = 0; x < message_width; ++x) {
+                SET_IND(minibuffer_prompt_face, ' ');
+            }
+        }
+
         if (client->_message.tag > Message::SHOW) {
             start_col = x;
-            Window_Unified* window = client->mini_buffer_window();
-            WITH_CONST_WINDOW_BUFFER(window);
-            window->rows = mini_buffer_height;
-            window->cols = total_cols - start_col;
+
             Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
                 editor, client, window, handle, buffer, nullptr);
             size_t cursor_pos_y, cursor_pos_x;

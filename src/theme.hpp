@@ -72,6 +72,7 @@ struct Theme {
     cz::Heap_Vector<Overlay> overlays;
 
     size_t max_completion_results = 5;
+    size_t mini_buffer_max_height = 1;
 
     Completion_Filter mini_buffer_completion_filter;
     Completion_Filter window_completion_filter;

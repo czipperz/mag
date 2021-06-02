@@ -461,6 +461,7 @@ static void create_theme(Theme& theme) {
                                                          Token_Type::DOC_COMMENT));
 
     theme.max_completion_results = 5;
+    theme.mini_buffer_max_height = 5;
     theme.mini_buffer_completion_filter = spaces_are_wildcards_completion_filter;
     theme.window_completion_filter = prefix_completion_filter;
 
