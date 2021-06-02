@@ -108,5 +108,7 @@ void command_insert_home_directory(Editor* editor, Command_Source source);
 void command_increase_font_size(Editor* editor, Command_Source source);
 void command_decrease_font_size(Editor* editor, Command_Source source);
 
+void command_show_date_of_build(Editor* editor, Command_Source source);
+
 }
 }

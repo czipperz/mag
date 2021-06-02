@@ -289,6 +289,8 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-x \t", command_toggle_use_tabs);
     BIND(key_map, "A-x C-r", command_toggle_animated_scrolling);
 
+    BIND(key_map, "A-x v", command_show_date_of_build);
+
     BIND(key_map, "A-x u", command_uppercase_letter);
     BIND(key_map, "A-x l", command_lowercase_letter);
     BIND(key_map, "A-x A-u", command_uppercase_region_or_word);
