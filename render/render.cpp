@@ -59,6 +59,7 @@ static bool load_completion_cache(Editor* editor,
     do {                                                                                      \
         SET_BODY(FACE, CH);                                                                   \
         ++x;                                                                                  \
+        ++column;                                                                             \
         if (x == window->cols) {                                                              \
             ADD_NEWLINE({});                                                                  \
                                                                                               \
@@ -488,6 +489,7 @@ static void draw_buffer_contents(Cell* cells,
 
     size_t y = 0;
     size_t x = 0;
+    size_t column = get_visual_column(buffer->mode, iterator);
 
     Token token = {};
     uint64_t state = 0;
@@ -654,6 +656,7 @@ static void draw_buffer_contents(Cell* cells,
         if (ch == '\n') {
             SET_BODY(face, ' ');
             ++x;
+            ++column;
 
             // Draw newline padding with faces from overlays
             {
@@ -669,6 +672,7 @@ static void draw_buffer_contents(Cell* cells,
                     Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
                     apply_face(&face, overlay_face);
                 }
+                column = 0;
                 ADD_NEWLINE(face);
             }
 
@@ -699,20 +703,14 @@ static void draw_buffer_contents(Cell* cells,
                     }
 
                     face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
-                    ADDCH(face, ' ');
+                    SET_BODY(face, ' ');
+                    ++x;
                 }
             }
         } else if (ch == '\t') {
-            size_t line_number_offset = 0;
-            if (draw_line_numbers) {
-                line_number_offset = line_number_buffer.cap();
-            }
-
-            size_t end_x = x + buffer->mode.tab_width;
-            end_x -= line_number_offset;
-            end_x -= end_x % buffer->mode.tab_width;
-            end_x += line_number_offset;
-            for (size_t i = x; i < end_x; ++i) {
+            size_t end_column = column + buffer->mode.tab_width;
+            end_column -= end_column % buffer->mode.tab_width;
+            for (size_t i = column; i < end_column; ++i) {
                 ADDCH(face, ' ');
             }
         } else if (cz::is_print(ch)) {
