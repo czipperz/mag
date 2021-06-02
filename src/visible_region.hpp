@@ -15,4 +15,7 @@ Contents_Iterator center_of_window(Window_Unified* window, const Contents* conte
 /// Test if the iterator is inside the visible region of the window.
 bool is_visible(const Window_Unified* window, const Mode& mode, Contents_Iterator iterator);
 
+/// The scroll outside for a particular window is limited by the number of rows in the window.
+size_t get_scroll_outside(size_t rows, size_t scroll_outside);
+
 }

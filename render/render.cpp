@@ -202,10 +202,8 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // If we have a window with very few rows then we will flail up and
         // down unless we bound `scroll_outside` by the number of rows.
-        size_t scroll_outside = editor->theme.scroll_outside_visual_rows;
-        if (window->rows < scroll_outside * 2) {
-            scroll_outside = window->rows / 2;
-        }
+        size_t scroll_outside =
+            get_scroll_outside(window->rows, editor->theme.scroll_outside_visual_rows);
 
         // Calculate the minimum cursor boundary.
         Contents_Iterator visible_start_iterator = iterator;
