@@ -166,7 +166,17 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
     }
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
-    start_of_visible_line(window, buffer->mode, &iterator);
+    {
+        // Do `start_of_visible_line` except handle the case where
+        // we are just a few columns short of the next visible line.
+        uint64_t column = get_visual_column(buffer->mode, iterator);
+
+        // If we delete more than 1/3 of the width then just go to the previous line.
+        column += window->cols / 3;
+
+        go_to_visual_column(buffer->mode, &iterator, column - (column % window->cols));
+    }
+
     if (window_cache) {
         ZoneScopedN("update window cache");
 
