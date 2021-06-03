@@ -42,6 +42,7 @@ struct Contents {
     uint64_t get_line_number(uint64_t position) const;
 
     inline Contents_Iterator start() const;
+    inline Contents_Iterator end() const;
 };
 
 struct Contents_Iterator {
@@ -93,6 +94,15 @@ struct Contents_Iterator {
 inline Contents_Iterator Contents::start() const {
     Contents_Iterator it = {};
     it.contents = this;
+    return it;
+}
+
+inline Contents_Iterator Contents::end() const {
+    Contents_Iterator it = {};
+    it.contents = this;
+    it.position = len;
+    it.bucket = buckets.len();
+    it.index = 0;
     return it;
 }
 
