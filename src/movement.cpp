@@ -50,12 +50,16 @@ void end_of_line_text(Contents_Iterator* iterator) {
 }
 
 void start_of_visible_line(const Window* window, const Mode& mode, Contents_Iterator* iterator) {
-    uint64_t column = get_visual_column(mode, *iterator);
+    uint64_t end = iterator->position;
+    start_of_line(iterator);
+    uint64_t column = count_visual_columns(mode, *iterator, end);
     go_to_visual_column(mode, iterator, column - (column % window->cols));
 }
 
 void end_of_visible_line(const Window* window, const Mode& mode, Contents_Iterator* iterator) {
-    uint64_t column = get_visual_column(mode, *iterator);
+    uint64_t end = iterator->position;
+    start_of_line(iterator);
+    uint64_t column = count_visual_columns(mode, *iterator, end);
     go_to_visual_column(mode, iterator, column - (column % window->cols) + (window->cols - 1));
 }
 
@@ -137,6 +141,8 @@ uint64_t count_visual_columns(const Mode& mode,
                               Contents_Iterator iterator,
                               uint64_t end,
                               uint64_t column) {
+    ZoneScoped;
+
     while (iterator.position < end) {
         if (iterator.get() == '\t') {
             column += mode.tab_width;
