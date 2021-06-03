@@ -51,6 +51,11 @@ bool splash_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
             hit = true;
         }
 
+        if (looking_at(*iterator, "F1")) {
+            iterator->advance();
+            hit = true;
+        }
+
         if (hit) {
             // Eat the character (ie * in C-*), special casing SPACE.
             if (looking_at(*iterator, "SPACE")) {
@@ -76,6 +81,16 @@ bool splash_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
             }
 
             token->type = Token_Type::SPLASH_KEY_BIND;
+            goto ret;
+        }
+
+        if (first_ch == '`') {
+            iterator->advance();
+            if (find(iterator, '`')) {
+                iterator->advance();
+            }
+
+            token->type = Token_Type::CODE;
             goto ret;
         }
     }
