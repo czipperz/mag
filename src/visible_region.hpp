@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 namespace mag {
 struct Window_Unified;
 struct Contents;

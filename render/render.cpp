@@ -115,14 +115,6 @@ static bool try_to_make_visible(Window_Unified* window,
     return false;
 }
 
-static size_t subtract_bounded(size_t left, size_t right) {
-    if (left < right) {
-        return 0;
-    } else {
-        return left - right;
-    }
-}
-
 static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* editor,
                                                                    Client* client,
                                                                    Window_Unified* window,
