@@ -573,9 +573,12 @@ static void draw_buffer_contents(Cell* cells,
         line_number_buffer.reserve(cz::heap_allocator(), line_number_width + 1);
     }
 
+    // Enable drawing line numbers for non-mini buffer
+    // windows if they are enabled and fit on the screen.
+    bool draw_line_numbers = client->_mini_buffer != window && editor->theme.draw_line_numbers &&
+                             line_number_buffer.cap() + 5 <= window->cols;
+
     // Draw line number for first line.
-    bool draw_line_numbers =
-        editor->theme.draw_line_numbers && line_number_buffer.cap() + 5 <= window->cols;
     if (draw_line_numbers) {
         int ret = snprintf(line_number_buffer.buffer(), line_number_buffer.cap(), "%*zu",
                            (int)(line_number_buffer.cap() - 1), line_number);
