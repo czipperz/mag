@@ -357,6 +357,8 @@ uint64_t Contents::get_line_number(uint64_t pos) const {
 Contents_Iterator Contents::iterator_at(uint64_t pos) const {
     ZoneScoped;
 
+    CZ_DEBUG_ASSERT(pos <= len);
+
     Contents_Iterator it;
     it.contents = this;
     it.position = pos;
@@ -369,6 +371,8 @@ Contents_Iterator Contents::iterator_at(uint64_t pos) const {
         }
         pos -= buckets[i].len;
     }
+
+    CZ_DEBUG_ASSERT(pos == 0);
 
     it.bucket = buckets.len();
     it.index = 0;
