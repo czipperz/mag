@@ -30,6 +30,7 @@ Window_Unified* Window_Unified::create(Buffer_Id buffer_id) {
     window->cursors = {};
     window->cursors.reserve(cz::heap_allocator(), 1);
     window->cursors.push({});
+    window->selected_cursor = 0;
     window->show_marks = false;
 
     window->completion_cache = {};  // not sure if this is really necessary
@@ -45,6 +46,7 @@ Window_Unified* Window_Unified::clone() {
     CZ_ASSERT(window);
     *window = *this;
     window->cursors = this->cursors.clone(cz::heap_allocator());
+    window->selected_cursor = this->selected_cursor;
     window->completion_cache = {};
     window->completion_cache.init();
     window->completing = false;
@@ -187,14 +189,21 @@ void Window_Split::drop_non_recursive(Window_Split* window) {
 
 void kill_extra_cursors(Window_Unified* window, Client* client) {
     // :CopyLeak we don't deallocate here
+    Cursor cursor = window->cursors[window->selected_cursor];
     window->cursors.set_len(1);
-    Copy_Chain* copy_chain = window->cursors[0].local_copy_chain;
-    if (copy_chain) {
+    window->cursors[0] = cursor;
+    window->selected_cursor = 0;
+
+    if (window->cursors[0].local_copy_chain) {
+        // Put the local copy chain on top of the global one.
+        Copy_Chain* copy_chain = window->cursors[0].local_copy_chain;
         while (copy_chain->previous) {
             copy_chain = copy_chain->previous;
         }
         copy_chain->previous = client->global_copy_chain;
-        client->global_copy_chain = copy_chain;
+
+        // Set the global copy chain to the top.
+        client->global_copy_chain = window->cursors[0].local_copy_chain;
         window->cursors[0].local_copy_chain = nullptr;
     }
 }

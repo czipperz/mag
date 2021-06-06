@@ -34,6 +34,7 @@ struct Window_Unified : Window {
 
     size_t change_index;
     cz::Vector<Cursor> cursors;
+    size_t selected_cursor;
 
     /// `show_marks` can be set to `false`, `true`, or `2`, meaning Notepad mode.
     ///

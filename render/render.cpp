@@ -144,6 +144,9 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         window->cursors[0].point = window->cursors[0].mark = buffer->contents.len;
     }
 
+    // Check that the selected cursor is in bounds.
+    CZ_DEBUG_ASSERT(window->selected_cursor < window->cursors.len());
+
     // Delete cursors at the same point.
     for (size_t i = 0; i + 1 < window->cursors.len();) {
         if (window->cursors[i].point == window->cursors[i + 1].point) {
@@ -151,11 +154,17 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                 kill_extra_cursors(window, client);
             } else {
                 window->cursors.remove(i + 1);
+                if (window->selected_cursor > i) {
+                    --window->selected_cursor;
+                }
             }
         } else {
             ++i;
         }
     }
+
+    // Double check that the selected cursor is in bounds.
+    CZ_DEBUG_ASSERT(window->selected_cursor < window->cursors.len());
 
     // Lock in write mode if the token cache is out of date.
     Buffer* buffer_mut = nullptr;
@@ -197,10 +206,11 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         }
 
         // Before we do any changes check if the mark has changed.
-        bool mark_changed = window->cursors[0].mark != window_cache->v.unified.first_cursor_mark;
+        bool mark_changed = window->cursors[window->selected_cursor].mark !=
+                            window_cache->v.unified.first_cursor_mark;
 
         // Ensure the cursor is visible
-        uint64_t selected_cursor_position = window->cursors[0].point;
+        uint64_t selected_cursor_position = window->cursors[window->selected_cursor].point;
 
         // If we have a window with very few rows then we will flail up and
         // down unless we bound `scroll_outside` by the number of rows.
@@ -259,9 +269,10 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // Try to make the mark shown only if it has changed.
         if (mark_changed && window->show_marks) {
-            window_cache->v.unified.first_cursor_mark = window->cursors[0].mark;
+            window_cache->v.unified.first_cursor_mark =
+                window->cursors[window->selected_cursor].mark;
             try_to_make_visible(window, window_cache, buffer, &iterator, selected_cursor_position,
-                                window->cursors[0].mark);
+                                window->cursors[window->selected_cursor].mark);
         }
 
         // Try to fit the newly created cursors on the screen.

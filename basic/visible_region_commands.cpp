@@ -8,14 +8,20 @@
 namespace mag {
 namespace basic {
 
+void center_selected_cursor(Window_Unified* window, Buffer* buffer) {
+    center_in_window(window, buffer->mode,
+                     buffer->contents.iterator_at(window->cursors[window->selected_cursor].point));
+}
+
 void command_center_in_window(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    center_in_window(window, buffer->mode, buffer->contents.iterator_at(window->cursors[0].point));
+    center_selected_cursor(window, buffer);
 }
 
 void command_goto_center_of_window(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    window->cursors[0].point = center_of_window(window, &buffer->contents).position;
+    window->cursors[window->selected_cursor].point =
+        center_of_window(window, &buffer->contents).position;
 }
 
 static size_t subtract_bounded(size_t left, size_t right) {
@@ -28,7 +34,16 @@ static size_t subtract_bounded(size_t left, size_t right) {
 
 void command_up_page(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    kill_extra_cursors(window, source.client);
+
+    if (window->cursors.len() > 1) {
+        if (window->selected_cursor == 0) {
+            window->selected_cursor = window->cursors.len();
+        }
+        --window->selected_cursor;
+
+        center_selected_cursor(window, buffer);
+        return;
+    }
 
     size_t scroll_outside =
         get_scroll_outside(window->rows, editor->theme.scroll_outside_visual_rows);
@@ -46,7 +61,16 @@ void command_up_page(Editor* editor, Command_Source source) {
 
 void command_down_page(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    kill_extra_cursors(window, source.client);
+
+    if (window->cursors.len() > 1) {
+        ++window->selected_cursor;
+        if (window->selected_cursor == window->cursors.len()) {
+            window->selected_cursor = 0;
+        }
+
+        center_selected_cursor(window, buffer);
+        return;
+    }
 
     size_t scroll_outside =
         get_scroll_outside(window->rows, editor->theme.scroll_outside_visual_rows);
