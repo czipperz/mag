@@ -11,6 +11,7 @@
 #include "insert.hpp"
 #include "match.hpp"
 #include "movement.hpp"
+#include "region_movement_commands.hpp"
 #include "transaction.hpp"
 #include "visible_region.hpp"
 
@@ -168,9 +169,12 @@ void command_backward_paragraph(Editor* editor, Command_Source source) {
 
 void command_end_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    kill_extra_cursors(window, source.client);
     window->clear_show_marks_temporarily();
     if (source.previous_command != command_start_of_buffer &&
-        source.previous_command != command_end_of_buffer) {
+        source.previous_command != command_end_of_buffer &&
+        source.previous_command != region_movement::command_start_of_buffer &&
+        source.previous_command != region_movement::command_end_of_buffer) {
         push_jump(window, source.client, buffer);
     }
     window->cursors[0].point = buffer->contents.len;
@@ -178,9 +182,12 @@ void command_end_of_buffer(Editor* editor, Command_Source source) {
 
 void command_start_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    kill_extra_cursors(window, source.client);
     window->clear_show_marks_temporarily();
     if (source.previous_command != command_start_of_buffer &&
-        source.previous_command != command_end_of_buffer) {
+        source.previous_command != command_end_of_buffer &&
+        source.previous_command != region_movement::command_start_of_buffer &&
+        source.previous_command != region_movement::command_end_of_buffer) {
         push_jump(window, source.client, buffer);
     }
     window->cursors[0].point = 0;
