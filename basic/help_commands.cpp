@@ -23,6 +23,10 @@ static void add_key_map(Contents* contents, cz::String* prefix, const Key_Map& k
 
         if (binding.is_command) {
             contents->append(*prefix);
+            // Align with column 20 by adding spaces to 19 and then a mandatory space.
+            for (size_t i = prefix->len(); i < 19; ++i) {
+                contents->append(" ");
+            }
             contents->append(" ");
             contents->append(binding.v.command.string);
             contents->append("\n");
