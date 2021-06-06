@@ -2,6 +2,7 @@
 
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include <cz/heap_vector.hpp>
 #include <cz/process.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -21,24 +22,18 @@ static void run_git_grep(Client* client,
                          const char* directory,
                          cz::Str query,
                          bool word_match) {
-    // We want backslashes in the query to be treated as plain text so we need to escape them.
-    cz::String query_escaped = {};
-    CZ_DEFER(query_escaped.drop(cz::heap_allocator()));
-    query_escaped.reserve(cz::heap_allocator(), query.len + query.count('\\') + 4 * word_match);
-    if (word_match) {
-        query_escaped.append("\\<");
-    }
-    for (size_t i = 0; i < query.len; ++i) {
-        if (query[i] == '\\') {
-            query_escaped.push('\\');
-        }
-        query_escaped.push(query[i]);
-    }
-    if (word_match) {
-        query_escaped.append("\\>");
-    }
+    cz::Heap_Vector<cz::Str> args = {};
+    CZ_DEFER(args.drop());
+    {
+        cz::Str defargs[] = {
+            "git", "grep", "--line-number", "--column", "--fixed-strings", "-e", query, "--", ":/"};
+        args.reserve(cz::len(defargs) + word_match);
+        args.append(defargs);
 
-    cz::Str args[] = {"git", "grep", "-n", "--column", "-e", query_escaped, "--", ":/"};
+        if (word_match) {
+            args.insert(4, "--word-regexp");
+        }
+    }
 
     cz::String buffer_name = {};
     CZ_DEFER(buffer_name.drop(cz::heap_allocator()));
