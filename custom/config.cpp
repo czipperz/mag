@@ -600,7 +600,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name == "*splash page*") {
             // The splash page uses spaces for alignment.
             buffer->mode.use_tabs = false;
-            buffer->mode.preferred_column = 100;
+            buffer->mode.preferred_column = -1;
             buffer->mode.next_token = syntax::splash_next_token;
         }
         break;
