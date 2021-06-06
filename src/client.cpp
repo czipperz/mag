@@ -177,8 +177,7 @@ void Client::replace_window(Window* o, Window* n) {
         n->parent = nullptr;
     }
 
-    n->rows = o->rows;
-    n->cols = o->cols;
+    n->set_size(o->rows, o->cols);
 }
 
 void Client::set_prompt_text(Editor* editor, cz::Str text) {

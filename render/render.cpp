@@ -1040,19 +1040,12 @@ static void draw_window(Cell* cells,
                         Window* selected_window,
                         size_t start_row,
                         size_t start_col,
-                        size_t count_rows,
-                        size_t count_cols,
                         cz::Slice<Screen_Position_Query> spqs) {
     ZoneScoped;
-
-    w->rows = count_rows;
-    w->cols = count_cols;
 
     switch (w->tag) {
     case Window::UNIFIED: {
         Window_Unified* window = (Window_Unified*)w;
-
-        --window->rows;
 
         setup_unified_window_cache(editor, window, window_cache);
 
@@ -1077,41 +1070,28 @@ static void draw_window(Cell* cells,
         }
 
         if (window->tag == Window::VERTICAL_SPLIT) {
-            size_t left_cols = (count_cols - 1) * window->split_ratio;
-            size_t right_cols = count_cols - left_cols - 1;
-
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, client,
-                        window->first, selected_window, start_row, start_col, count_rows, left_cols,
-                        spqs);
+                        window->first, selected_window, start_row, start_col, spqs);
 
             {
-                size_t x = left_cols;
-                for (size_t y = 0; y < count_rows; ++y) {
+                size_t x = window->first->cols;
+                for (size_t y = 0; y < window->rows; ++y) {
                     SET_IND({}, '|');
                 }
             }
 
             draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, client,
                         window->second, selected_window, start_row,
-                        start_col + count_cols - right_cols, count_rows, right_cols, spqs);
+                        start_col + window->cols - window->second->cols, spqs);
         } else {
-            size_t top_rows = (count_rows - 1) * window->split_ratio;
-            size_t bottom_rows = count_rows - top_rows - 1;
-
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, client,
-                        window->first, selected_window, start_row, start_col, top_rows, count_cols,
-                        spqs);
+                        window->first, selected_window, start_row, start_col, spqs);
 
-            {
-                size_t y = top_rows;
-                for (size_t x = 0; x < count_cols; ++x) {
-                    SET_IND({}, '-');
-                }
-            }
+            // No separator as the window title acts as it.
 
             draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, client,
-                        window->second, selected_window, start_row + count_rows - bottom_rows,
-                        start_col, bottom_rows, count_cols, spqs);
+                        window->second, selected_window,
+                        start_row + window->rows - window->second->rows, start_col, spqs);
         }
         break;
     }
@@ -1352,8 +1332,9 @@ void render_to_cells(Cell* cells,
         total_rows = start_row;
     }
 
+    client->window->set_size(total_rows, total_cols);
     draw_window(cells, window_cache, total_cols, editor, client, client->window,
-                client->selected_normal_window, 0, 0, total_rows, total_cols, spqs);
+                client->selected_normal_window, 0, 0, spqs);
 }
 
 }

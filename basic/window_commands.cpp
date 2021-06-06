@@ -59,9 +59,11 @@ static Window* trickle_up(Client* client, Window* w, Window* selected_window) {
 
         Window_Split::drop_non_recursive(window);
         if (first) {
+            first->set_size(window->rows, window->cols);
             return first;
         }
         if (second) {
+            second->set_size(window->rows, window->cols);
             return second;
         }
         return nullptr;
@@ -99,16 +101,6 @@ Window_Split* split_window(Client* client, Window::Tag tag) {
     Window_Unified* top = client->selected_normal_window;
     Window_Unified* bottom = top->clone();
 
-    if (tag == Window::HORIZONTAL_SPLIT) {
-        size_t nr = (bottom->rows - 1) / 2;
-        top->rows = nr;
-        bottom->rows -= nr + 1;
-    } else {
-        size_t nr = (bottom->cols - 1) / 2;
-        top->cols = nr;
-        bottom->cols -= nr + 1;
-    }
-
     Window_Split* parent = Window_Split::create(tag, top, bottom);
 
     client->replace_window(top, parent);
@@ -135,6 +127,7 @@ void command_split_increase_ratio(Editor* editor, Command_Source source) {
         return;
     }
     split->split_ratio = cz::min(split->split_ratio + 0.1f, 0.9f);
+    split->set_children_size();
 }
 
 void command_split_decrease_ratio(Editor* editor, Command_Source source) {
@@ -143,6 +136,7 @@ void command_split_decrease_ratio(Editor* editor, Command_Source source) {
         return;
     }
     split->split_ratio = cz::max(split->split_ratio - 0.1f, 0.1f);
+    split->set_children_size();
 }
 
 void command_split_reset_ratio(Editor* editor, Command_Source source) {
@@ -151,6 +145,7 @@ void command_split_reset_ratio(Editor* editor, Command_Source source) {
         return;
     }
     split->split_ratio = 0.5f;
+    split->set_children_size();
 }
 
 Window_Unified* window_first(Window* window) {

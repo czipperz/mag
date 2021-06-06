@@ -78,6 +78,7 @@ bool is_visible(const Window_Unified* window, const Mode& mode, Contents_Iterato
 }
 
 size_t get_scroll_outside(size_t rows, size_t scroll_outside) {
+    --rows;
     if (rows < scroll_outside * 2) {
         scroll_outside = rows / 2;
     }

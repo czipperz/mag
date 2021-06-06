@@ -319,6 +319,11 @@ A-g     Project or directory commands\n\
 
         server.setup_async_context(&client);
 
+        // 2021-06-06: the SDL window opens with this size so we just encode that now.
+        // This prevents `open_arg` from panicking when it tries to split the window
+        // and allows opening a file at a specific line to center it moderately well.
+        client.window->set_size(38, 88);
+
         uint32_t opened_count = 0;
         int chosen_client = 1;
         for (int i = 1; i < argc; ++i) {

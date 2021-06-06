@@ -26,6 +26,9 @@ struct Window {
     } tag;
 
     static void drop_(Window* window);
+
+    /// Set the size of this window and its children if it has any.
+    void set_size(size_t rows, size_t cols);
 };
 
 struct Window_Unified : Window {
@@ -84,6 +87,9 @@ struct Window_Split : Window {
 
     static Window_Split* create(Window::Tag tag, Window* first, Window* second);
     static void drop_non_recursive(Window_Split* window);
+
+    /// Set the size of the children of this window based on the size of this window.
+    void set_children_size();
 };
 
 struct Client;

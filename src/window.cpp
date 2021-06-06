@@ -173,14 +173,51 @@ Window_Split* Window_Split::create(Window::Tag tag, Window* first, Window* secon
     Window_Split* window = cz::heap_allocator().alloc<Window_Split>();
     CZ_ASSERT(window);
     window->parent = nullptr;
-    window->rows = first->rows + second->rows + 1;
-    window->cols = first->cols + second->cols + 1;
     window->tag = tag;
 
     window->first = first;
     window->second = second;
     window->split_ratio = 0.5f;
     return window;
+}
+
+void Window::set_size(size_t _rows, size_t _cols) {
+    CZ_ASSERT(_rows >= 1);
+    CZ_ASSERT(_cols >= 1);
+
+    rows = _rows;
+    cols = _cols;
+
+    // No children to update.
+    if (tag == Window::UNIFIED) {
+        // Remove row for title bar.
+        --rows;
+        return;
+    }
+
+    Window_Split* split = (Window_Split*)this;
+    split->set_children_size();
+}
+
+void Window_Split::set_children_size() {
+    if (tag == Window::VERTICAL_SPLIT) {
+        CZ_ASSERT(cols >= 1);
+
+        // Lose a column due to the separator (|).
+        size_t avail_cols = cols - 1;
+        size_t left_cols = avail_cols * split_ratio;
+        size_t right_cols = avail_cols - left_cols;
+
+        first->set_size(rows, left_cols);
+        second->set_size(rows, right_cols);
+    } else {
+        size_t avail_rows = rows;
+        size_t top_rows = avail_rows * split_ratio;
+        size_t bottom_rows = avail_rows - top_rows;
+
+        first->set_size(top_rows, cols);
+        second->set_size(bottom_rows, cols);
+    }
 }
 
 void Window_Split::drop_non_recursive(Window_Split* window) {
