@@ -60,6 +60,7 @@
 #include "syntax/tokenize_go.hpp"
 #include "syntax/tokenize_html.hpp"
 #include "syntax/tokenize_javascript.hpp"
+#include "syntax/tokenize_key_map.hpp"
 #include "syntax/tokenize_markdown.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "syntax/tokenize_process.hpp"
@@ -591,9 +592,13 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.starts_with("*man ")) {
             buffer->mode.next_token = syntax::process_next_token;
         } else if (buffer->name == "*key map*") {
+            // The key map page uses spaces for alignment.
+            buffer->mode.use_tabs = false;
+            buffer->mode.preferred_column = -1;
+            buffer->mode.next_token = syntax::key_map_next_token;
             BIND(buffer->mode.key_map, "\n", command_go_to_key_map_binding);
         } else if (buffer->name == "*splash page*") {
-            // The splash page uses tabs for alignment.
+            // The splash page uses spaces for alignment.
             buffer->mode.use_tabs = false;
             buffer->mode.preferred_column = 100;
             buffer->mode.next_token = syntax::splash_next_token;
