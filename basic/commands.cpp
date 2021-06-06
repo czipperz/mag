@@ -771,6 +771,10 @@ void command_create_cursor_forward_search(Editor* editor, Command_Source source)
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_search(buffer, window);
     show_created_messages(editor, source.client, created);
+
+    if (created == 1 && window->selected_cursor + 1 == window->cursors.len() - 1) {
+        ++window->selected_cursor;
+    }
 }
 
 static bool search_backward_slice(const Buffer* buffer, Contents_Iterator* start, uint64_t end) {
@@ -806,6 +810,10 @@ void command_create_cursor_backward_search(Editor* editor, Command_Source source
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
     show_created_messages(editor, source.client, created);
+
+    if (created == 1 && window->selected_cursor > 0) {
+        ++window->selected_cursor;
+    }
 }
 
 void command_create_cursor_forward(Editor* editor, Command_Source source) {
@@ -817,6 +825,10 @@ void command_create_cursor_forward(Editor* editor, Command_Source source) {
         created = create_cursor_forward_line(editor, buffer, window);
     }
     show_created_messages(editor, source.client, created);
+
+    if (created == 1 && window->selected_cursor + 1 == window->cursors.len() - 1) {
+        ++window->selected_cursor;
+    }
 }
 
 void command_create_cursor_backward(Editor* editor, Command_Source source) {
@@ -828,6 +840,10 @@ void command_create_cursor_backward(Editor* editor, Command_Source source) {
         created = create_cursor_backward_line(editor, buffer, window);
     }
     show_created_messages(editor, source.client, created);
+
+    if (created == 1 && window->selected_cursor > 0) {
+        ++window->selected_cursor;
+    }
 }
 
 void command_create_cursors_all_search(Editor* editor, Command_Source source) {
@@ -835,7 +851,9 @@ void command_create_cursors_all_search(Editor* editor, Command_Source source) {
     int created = create_cursor_backward_search(buffer, window);
     if (created >= 0) {
         if (created > 0) {
+            ++window->selected_cursor;
             while (create_cursor_backward_search(buffer, window) == 1) {
+                ++window->selected_cursor;
             }
         }
         if (create_cursor_forward_search(buffer, window) == 1) {
@@ -862,7 +880,9 @@ void command_create_cursors_to_start_search(Editor* editor, Command_Source sourc
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
     if (created == 1) {
+        ++window->selected_cursor;
         while (create_cursor_backward_search(buffer, window) == 1) {
+            ++window->selected_cursor;
         }
     }
     show_created_messages(editor, source.client, created);

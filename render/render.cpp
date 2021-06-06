@@ -92,18 +92,22 @@ static bool try_to_make_visible(Window_Unified* window,
                                 Window_Cache* window_cache,
                                 const Buffer* buffer,
                                 Contents_Iterator* iterator,
+                                size_t scroll_outside,
                                 uint64_t must_be_on_screen,
                                 uint64_t goal) {
-    // The mark is below the "visible" section of the buffer but
-    // the point isn't.  Test if we can put both on the screen.
+    // Get the start of the visible region if we put the
+    // cursor within scroll_outside lines of the end.
     Contents_Iterator start_iterator = buffer->contents.iterator_at(goal);
-    backward_visible_line(buffer->mode, &start_iterator, window->cols, window->rows - 1);
+    backward_visible_line(buffer->mode, &start_iterator, window->cols,
+                          window->rows - scroll_outside - 1);
     start_of_visible_line(window, buffer->mode, &start_iterator);
 
-    // Don't adjust to mark if the cursor would be pushed off screen.
+    // But the cursor must be within scroll_outside of the new top.
     Contents_Iterator test_iterator = start_iterator;
-    backward_visible_line(buffer->mode, &test_iterator, window->cols, 1);
+    forward_visible_line(buffer->mode, &test_iterator, window->cols, scroll_outside);
 
+    // The cursor must be on the screen and the screen must be moving down for us to reposition.
+    // If the screen would move up then we already would've fit the cursor to the screen.
     if (must_be_on_screen >= test_iterator.position &&
         start_iterator.position > iterator->position) {
         *iterator = start_iterator;
@@ -207,7 +211,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // Before we do any changes check if the mark has changed.
         bool mark_changed = window->cursors[window->selected_cursor].mark !=
-                            window_cache->v.unified.first_cursor_mark;
+                            window_cache->v.unified.selected_cursor_mark;
 
         // Ensure the cursor is visible
         uint64_t selected_cursor_position = window->cursors[window->selected_cursor].point;
@@ -269,20 +273,21 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // Try to make the mark shown only if it has changed.
         if (mark_changed && window->show_marks) {
-            window_cache->v.unified.first_cursor_mark =
+            window_cache->v.unified.selected_cursor_mark =
                 window->cursors[window->selected_cursor].mark;
-            try_to_make_visible(window, window_cache, buffer, &iterator, selected_cursor_position,
+            try_to_make_visible(window, window_cache, buffer, &iterator, scroll_outside,
+                                selected_cursor_position,
                                 window->cursors[window->selected_cursor].mark);
         }
 
         // Try to fit the newly created cursors on the screen.
         if (window->cursors.len() > window_cache->v.unified.cursor_count) {
             for (size_t c = window->cursors.len(); c-- > window_cache->v.unified.cursor_count;) {
-                if (try_to_make_visible(window, window_cache, buffer, &iterator,
+                if (try_to_make_visible(window, window_cache, buffer, &iterator, scroll_outside,
                                         selected_cursor_position, window->cursors[c].point)) {
                     // Fitting the point worked.  Try to also fit the mark.
                     if (window->show_marks && window->cursors[c].mark > window->cursors[c].point) {
-                        try_to_make_visible(window, window_cache, buffer, &iterator,
+                        try_to_make_visible(window, window_cache, buffer, &iterator, scroll_outside,
                                             selected_cursor_position, window->cursors[c].mark);
                     }
 
