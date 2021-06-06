@@ -369,8 +369,10 @@ static void create_theme(Theme& theme) {
     theme.special_faces[Face_Type::UNSAVED_MODE_LINE] = {1, {}, 0};
     theme.special_faces[Face_Type::SELECTED_MODE_LINE] = {{}, 0, Face::REVERSE};
 
-    theme.special_faces[Face_Type::CURSOR] = {0, 7, 0};
-    theme.special_faces[Face_Type::MARKED_REGION] = {0, 12, 0};
+    theme.special_faces[Face_Type::SELECTED_CURSOR] = {0, 159, 0};
+    theme.special_faces[Face_Type::SELECTED_REGION] = {0, 39, 0};
+    theme.special_faces[Face_Type::OTHER_CURSOR] = {0, 255, 0};
+    theme.special_faces[Face_Type::OTHER_REGION] = {0, 247, 0};
 
     theme.special_faces[Face_Type::MINI_BUFFER_PROMPT] = {{}, {}, 0};
     theme.special_faces[Face_Type::MINI_BUFFER_COMPLETION_SELECTED] = {{}, {}, Face::REVERSE};

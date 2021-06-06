@@ -552,12 +552,16 @@ static void draw_buffer_contents(Cell* cells,
 
     cz::Slice<Cursor> cursors = window->cursors;
 
-    int show_mark = 0;
+    int mark_depth = 0;
+    int selected_mark_depth = 0;
     // Initialize show_mark to number of regions at start of visible region.
     if (window->show_marks) {
         for (size_t c = 0; c < cursors.len; ++c) {
             if (iterator.position > cursors[c].start() && iterator.position < cursors[c].end()) {
-                ++show_mark;
+                ++mark_depth;
+                if (c == window->selected_cursor) {
+                    ++selected_mark_depth;
+                }
             }
         }
     }
@@ -635,19 +639,27 @@ static void draw_buffer_contents(Cell* cells,
             has_token = buffer->mode.next_token(&token_iterator, &token, &state);
         }
 
+        bool has_selected_cursor = false;
         bool has_cursor = false;
         for (size_t c = 0; c < cursors.len; ++c) {
             if (window->show_marks) {
                 if (iterator.position == cursors[c].start()) {
-                    ++show_mark;
+                    ++mark_depth;
+                    if (c == window->selected_cursor) {
+                        ++selected_mark_depth;
+                    }
                 }
                 if (iterator.position == cursors[c].end()) {
-                    --show_mark;
+                    --mark_depth;
+                    if (c == window->selected_cursor) {
+                        --selected_mark_depth;
+                    }
                 }
             }
             if (iterator.position == cursors[c].point) {
                 has_cursor = true;
-                if (c == 0) {
+                if (c == window->selected_cursor) {
+                    has_selected_cursor = true;
                     *cursor_pos_y = y;
                     *cursor_pos_x = x;
                 }
@@ -662,11 +674,19 @@ static void draw_buffer_contents(Cell* cells,
 
         Face face = {};
         if (has_cursor) {
-            apply_face(&face, editor->theme.special_faces[Face_Type::CURSOR]);
+            if (has_selected_cursor) {
+                apply_face(&face, editor->theme.special_faces[Face_Type::SELECTED_CURSOR]);
+            } else {
+                apply_face(&face, editor->theme.special_faces[Face_Type::OTHER_CURSOR]);
+            }
         }
 
-        if (show_mark) {
-            apply_face(&face, editor->theme.special_faces[Face_Type::MARKED_REGION]);
+        if (mark_depth > 0) {
+            if (selected_mark_depth > 0) {
+                apply_face(&face, editor->theme.special_faces[Face_Type::SELECTED_REGION]);
+            } else {
+                apply_face(&face, editor->theme.special_faces[Face_Type::OTHER_REGION]);
+            }
         }
 
         {
@@ -779,19 +799,19 @@ static void draw_buffer_contents(Cell* cells,
         }
     }
 
-    {
-        // Draw cursor at end of file.
+    // Draw cursor at end of file.
+    if (cursors.last().point == buffer->contents.len) {
         Face face = {};
-        apply_face(&face, editor->theme.special_faces[Face_Type::CURSOR]);
-        for (size_t c = 0; c < cursors.len; ++c) {
-            if (cursors[c].point == buffer->contents.len) {
-                SET_BODY(face, ' ');
-                ++x;
-                break;
-            }
+        if (cursors.len - 1 == window->selected_cursor) {
+            apply_face(&face, editor->theme.special_faces[Face_Type::SELECTED_CURSOR]);
+        } else {
+            apply_face(&face, editor->theme.special_faces[Face_Type::OTHER_CURSOR]);
         }
+        SET_BODY(face, ' ');
+        ++x;
     }
 
+    // Clear the rest of the window.
     for (; y < window->rows; ++y) {
         for (; x < window->cols; ++x) {
             SET_BODY({}, ' ');
