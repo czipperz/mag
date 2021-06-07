@@ -16,8 +16,8 @@ struct Window_Split;
 struct Window {
     Window_Split* parent;
 
-    size_t rows;
-    size_t cols;
+    size_t total_rows;
+    size_t total_cols;
 
     enum Tag {
         UNIFIED,
@@ -28,7 +28,7 @@ struct Window {
     static void drop_(Window* window);
 
     /// Set the size of this window and its children if it has any.
-    void set_size(size_t rows, size_t cols);
+    void set_size(size_t total_rows, size_t total_cols);
 };
 
 struct Window_Unified : Window {
@@ -76,6 +76,9 @@ struct Window_Unified : Window {
             show_marks = false;
         }
     }
+
+    size_t rows() const { return total_rows - 1; }
+    size_t cols() const { return total_cols; }
 };
 
 struct Window_Split : Window {

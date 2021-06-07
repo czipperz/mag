@@ -59,11 +59,11 @@ static Window* trickle_up(Client* client, Window* w, Window* selected_window) {
 
         Window_Split::drop_non_recursive(window);
         if (first) {
-            first->set_size(window->rows, window->cols);
+            first->set_size(window->total_rows, window->total_cols);
             return first;
         }
         if (second) {
-            second->set_size(window->rows, window->cols);
+            second->set_size(window->total_rows, window->total_cols);
             return second;
         }
         return nullptr;

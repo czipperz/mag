@@ -19,8 +19,8 @@ Window_Unified* Window_Unified::create(Buffer_Id buffer_id) {
     Window_Unified* window = cz::heap_allocator().alloc<Window_Unified>();
     CZ_ASSERT(window);
     window->parent = nullptr;
-    window->rows = 0;
-    window->cols = 0;
+    window->total_rows = 0;
+    window->total_cols = 0;
     window->tag = Window::UNIFIED;
 
     window->id = buffer_id;
@@ -181,17 +181,15 @@ Window_Split* Window_Split::create(Window::Tag tag, Window* first, Window* secon
     return window;
 }
 
-void Window::set_size(size_t _rows, size_t _cols) {
-    CZ_ASSERT(_rows >= 1);
-    CZ_ASSERT(_cols >= 1);
+void Window::set_size(size_t _total_rows, size_t _total_cols) {
+    CZ_ASSERT(_total_rows >= 1);
+    CZ_ASSERT(_total_cols >= 1);
 
-    rows = _rows;
-    cols = _cols;
+    total_rows = _total_rows;
+    total_cols = _total_cols;
 
     // No children to update.
     if (tag == Window::UNIFIED) {
-        // Remove row for title bar.
-        --rows;
         return;
     }
 
@@ -201,22 +199,22 @@ void Window::set_size(size_t _rows, size_t _cols) {
 
 void Window_Split::set_children_size() {
     if (tag == Window::VERTICAL_SPLIT) {
-        CZ_ASSERT(cols >= 1);
+        CZ_ASSERT(total_cols >= 1);
 
         // Lose a column due to the separator (|).
-        size_t avail_cols = cols - 1;
+        size_t avail_cols = total_cols - 1;
         size_t left_cols = avail_cols * split_ratio;
         size_t right_cols = avail_cols - left_cols;
 
-        first->set_size(rows, left_cols);
-        second->set_size(rows, right_cols);
+        first->set_size(total_rows, left_cols);
+        second->set_size(total_rows, right_cols);
     } else {
-        size_t avail_rows = rows;
+        size_t avail_rows = total_rows;
         size_t top_rows = avail_rows * split_ratio;
         size_t bottom_rows = avail_rows - top_rows;
 
-        first->set_size(top_rows, cols);
-        second->set_size(bottom_rows, cols);
+        first->set_size(top_rows, total_cols);
+        second->set_size(bottom_rows, total_cols);
     }
 }
 
@@ -251,8 +249,8 @@ Contents_Iterator nearest_character(const Window_Unified* window,
                                     uint32_t column) {
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
 
-    row = std::min(row, (uint32_t)window->rows - 1);
-    column = std::min(column, (uint32_t)window->cols - 1);
+    row = std::min(row, (uint32_t)window->rows() - 1);
+    column = std::min(column, (uint32_t)window->cols() - 1);
 
     uint32_t it_row = 0;
     uint32_t it_column = 0;
@@ -267,7 +265,7 @@ Contents_Iterator nearest_character(const Window_Unified* window,
         iterator.advance();
 
         // Every character is rendered at one width.
-        if (it_column == window->cols + 1) {
+        if (it_column == window->cols() + 1) {
             ++it_row;
             it_column = 0;
             if (it_row == row) {

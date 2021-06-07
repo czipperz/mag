@@ -49,25 +49,29 @@ void end_of_line_text(Contents_Iterator* iterator) {
     backward_through_whitespace(iterator);
 }
 
-void start_of_visible_line(const Window* window, const Mode& mode, Contents_Iterator* iterator) {
+void start_of_visible_line(const Window_Unified* window,
+                           const Mode& mode,
+                           Contents_Iterator* iterator) {
     uint64_t end = iterator->position;
     start_of_line(iterator);
     uint64_t column = count_visual_columns(mode, *iterator, end);
-    go_to_visual_column(mode, iterator, column - (column % window->cols));
+    go_to_visual_column(mode, iterator, column - (column % window->cols()));
 }
 
-void end_of_visible_line(const Window* window, const Mode& mode, Contents_Iterator* iterator) {
+void end_of_visible_line(const Window_Unified* window,
+                         const Mode& mode,
+                         Contents_Iterator* iterator) {
     uint64_t end = iterator->position;
     start_of_line(iterator);
     uint64_t column = count_visual_columns(mode, *iterator, end);
-    go_to_visual_column(mode, iterator, column - (column % window->cols) + (window->cols - 1));
+    go_to_visual_column(mode, iterator, column - (column % window->cols()) + (window->cols() - 1));
 }
 
-void forward_visible_line(const Window* window,
+void forward_visible_line(const Window_Unified* window,
                           const Mode& mode,
                           Contents_Iterator* iterator,
                           uint64_t rows) {
-    uint64_t cols = window->cols;
+    uint64_t cols = window->cols();
 
     Contents_Iterator start = *iterator;
     start_of_line(&start);
@@ -105,11 +109,11 @@ void forward_visible_line(const Window* window,
     go_to_visual_column(mode, iterator, column);
 }
 
-void backward_visible_line(const Window* window,
+void backward_visible_line(const Window_Unified* window,
                            const Mode& mode,
                            Contents_Iterator* iterator,
                            uint64_t rows) {
-    uint64_t cols = window->cols;
+    uint64_t cols = window->cols();
 
     Contents_Iterator start = *iterator;
     start_of_line(&start);

@@ -65,7 +65,7 @@ static void overlay_matching_pairs_start_frame(const Buffer* buffer,
     data->points.set_len(0);
 
     Contents_Iterator end_iterator = start_position_iterator;
-    forward_visible_line(window, buffer->mode, &end_iterator, window->rows - 1);
+    forward_visible_line(window, buffer->mode, &end_iterator, window->rows() - 1);
 
     // Note: we update the token cache in the render loop.
     CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());

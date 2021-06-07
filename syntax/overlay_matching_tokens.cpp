@@ -84,8 +84,8 @@ static void overlay_matching_tokens_start_frame(const Buffer* buffer,
 
     Contents_Iterator visible_start_iterator = iterator;
     Contents_Iterator visible_end_iterator = iterator;
-    forward_visible_line(window, buffer->mode, &visible_end_iterator, window->rows - 1);
-    backward_visible_line(window, buffer->mode, &visible_start_iterator, window->rows - 1);
+    forward_visible_line(window, buffer->mode, &visible_end_iterator, window->rows() - 1);
+    backward_visible_line(window, buffer->mode, &visible_start_iterator, window->rows() - 1);
     if (window->start_position < visible_start_iterator.position ||
         visible_end_iterator.position < window->start_position) {
         return;
