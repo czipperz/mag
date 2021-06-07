@@ -60,26 +60,10 @@ static void open_file_tiling(Editor* editor,
         return;
     }
 
-    // Split the window.
-    if (*opened_count > 0) {
-        split_window(
-            client, (*opened_count % 2 == 1) ? Window::VERTICAL_SPLIT : Window::HORIZONTAL_SPLIT);
-    }
-    ++*opened_count;
-
-    // Test if we've already opened the file.
-    cz::String path = standardize_path(cz::heap_allocator(), arg);
-    CZ_DEFER(path.drop(cz::heap_allocator()));
-    cz::Arc<Buffer_Handle> handle;
-    if (find_buffer_by_path(editor, client, path, &handle)) {
-        // We already opened it so now we just set the buffer of the current window.
-        client->set_selected_buffer(handle->id);
-    }
-
     // Open the file asynchronously.
-    cz::String path2 = path;
-    path = {};
-    editor->add_asynchronous_job(job_open_file(path2, line, column));
+    cz::String path = standardize_path(cz::heap_allocator(), arg);
+    editor->add_asynchronous_job(job_open_file(path, line, column, *opened_count));
+    ++*opened_count;
 }
 
 /// Decode the argument as one of FILE, FILE:LINE, FILE:LINE:COLUMN and then open it.

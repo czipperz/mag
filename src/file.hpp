@@ -37,7 +37,7 @@ void open_file(Editor* editor, Client* client, cz::Str user_path);
 /// character long.  This passes ownership of the string to the job.
 ///
 /// Before calling this function you must check that the file hasn't already been opened.
-Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column);
+Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column, size_t index);
 
 bool save_buffer(Buffer* buffer);
 

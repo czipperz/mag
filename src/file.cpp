@@ -286,13 +286,20 @@ static void start_syntax_highlighting(Editor* editor, cz::Arc<Buffer_Handle> han
 struct Finish_Open_File_Sync_Data {
     Buffer buffer;
     uint64_t position;
+    size_t index;
 };
 
 static void finish_open_file(Editor* editor,
                              Client* client,
                              const Buffer& buffer,
-                             uint64_t position) {
+                             uint64_t position,
+                             size_t index) {
     cz::Arc<Buffer_Handle> handle = editor->create_buffer(buffer);
+
+    if (index > 0) {
+        split_window(client, index % 2 == 0 ? Window::HORIZONTAL_SPLIT : Window::VERTICAL_SPLIT);
+    }
+
     client->set_selected_buffer(handle->id);
     client->selected_normal_window->cursors[0].point = position;
 
@@ -304,7 +311,7 @@ static Job_Tick_Result finish_open_file_sync_job_tick(Editor* editor, Client* cl
 
     Finish_Open_File_Sync_Data* data = (Finish_Open_File_Sync_Data*)_data;
 
-    finish_open_file(editor, client, data->buffer, data->position);
+    finish_open_file(editor, client, data->buffer, data->position, data->index);
 
     cz::heap_allocator().dealloc(data);
     return Job_Tick_Result::FINISHED;
@@ -316,10 +323,11 @@ static void finish_open_file_sync_job_kill(void* _data) {
     cz::heap_allocator().dealloc(data);
 }
 
-static Synchronous_Job job_finish_open_file_sync(Buffer buffer, uint64_t position) {
+static Synchronous_Job job_finish_open_file_sync(Buffer buffer, uint64_t position, size_t index) {
     Finish_Open_File_Sync_Data* data = cz::heap_allocator().alloc<Finish_Open_File_Sync_Data>();
     data->buffer = buffer;
     data->position = position;
+    data->index = index;
 
     Synchronous_Job job;
     job.data = data;
@@ -332,6 +340,7 @@ struct Open_File_Async_Data {
     cz::String path;  // heap allocated
     uint64_t line;
     uint64_t column;
+    size_t index;
 };
 
 static void open_file_job_kill(void* _data) {
@@ -358,23 +367,24 @@ static Job_Tick_Result open_file_job_tick(Asynchronous_Job_Handler* handler, voi
     Client* client;
     if (handler->try_sync_lock(&server, &client)) {
         CZ_DEFER(handler->sync_unlock());
-        finish_open_file(&server->editor, client, buffer, position);
+        finish_open_file(&server->editor, client, buffer, position, data->index);
         server->slurp_jobs();
     } else {
-        handler->add_synchronous_job(job_finish_open_file_sync(buffer, position));
+        handler->add_synchronous_job(job_finish_open_file_sync(buffer, position, data->index));
     }
 
     open_file_job_kill(data);
     return Job_Tick_Result::FINISHED;
 }
 
-Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column) {
+Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column, size_t index) {
     CZ_DEBUG_ASSERT(path.len() > 0);
 
     Open_File_Async_Data* data = cz::heap_allocator().alloc<Open_File_Async_Data>();
     data->path = path;
     data->line = line;
     data->column = column;
+    data->index = index;
 
     Asynchronous_Job job;
     job.data = data;
