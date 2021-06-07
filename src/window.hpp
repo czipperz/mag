@@ -34,6 +34,7 @@ struct Window {
 struct Window_Unified : Window {
     Buffer_Id id;
     uint64_t start_position;
+    uint64_t column_offset;
 
     size_t change_index;
     cz::Vector<Cursor> cursors;

@@ -60,28 +60,26 @@ static bool load_completion_cache(Editor* editor,
 
 #define ADDCH(FACE, CH)                                                                           \
     do {                                                                                          \
-        if (!buffer->mode.wrap_long_lines && x >= window->cols()) {                               \
-            /* Cut off long line. */                                                              \
-            ++x;                                                                                  \
-            ++column;                                                                             \
-        } else {                                                                                  \
+        /* If we are between the start and end column then render. */                             \
+        if (column >= window->column_offset && column < window->column_offset + window->cols()) { \
             SET_BODY(FACE, CH);                                                                   \
             ++x;                                                                                  \
-            ++column;                                                                             \
-            if (buffer->mode.wrap_long_lines && x == window->cols()) {                            \
-                ADD_NEWLINE({});                                                                  \
+        }                                                                                         \
+        ++column;                                                                                 \
                                                                                                   \
-                if (draw_line_numbers) {                                                          \
-                    Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING]; \
-                    for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {                   \
-                        SET_BODY(face, ' ');                                                      \
-                        ++x;                                                                      \
-                    }                                                                             \
+        if (buffer->mode.wrap_long_lines && x == window->cols()) {                                \
+            ADD_NEWLINE({});                                                                      \
                                                                                                   \
-                    face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];     \
+            if (draw_line_numbers) {                                                              \
+                Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];     \
+                for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {                       \
                     SET_BODY(face, ' ');                                                          \
                     ++x;                                                                          \
                 }                                                                                 \
+                                                                                                  \
+                face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];         \
+                SET_BODY(face, ' ');                                                              \
+                ++x;                                                                              \
             }                                                                                     \
         }                                                                                         \
     } while (0)
@@ -278,6 +276,29 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
             // Save the scroll.
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
             window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
+        }
+
+        if (buffer->mode.wrap_long_lines) {
+            // If wrapping is enabled then we don't horizontally scroll.
+            window->column_offset = 0;
+        } else {
+            // Adjust the `column_offset` such that the cursor is in bounds.
+            uint64_t column = get_visual_column(
+                buffer->mode, buffer->contents.iterator_at(selected_cursor_position));
+            uint64_t column_grace = 10;
+            uint64_t column_side = 10;
+            if (column + 1 + column_side > window->column_offset + window->cols()) {
+                // Scroll right.
+                window->column_offset = column + 1 - window->cols() + column_grace;
+            } else if (column < window->column_offset + column_side) {
+                // Scroll left.
+                window->column_offset = column;
+                if (window->column_offset < column_grace) {
+                    window->column_offset = 0;
+                } else {
+                    window->column_offset -= column_grace;
+                }
+            }
         }
 
         // Try to make the mark shown only if it has changed.
@@ -643,7 +664,8 @@ static void draw_buffer_contents(Cell* cells,
             }
 
             face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
-            ADDCH(face, ' ');
+            SET_BODY(face, ' ');
+            ++x;
         }
     }
 

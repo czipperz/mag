@@ -25,6 +25,7 @@ Window_Unified* Window_Unified::create(Buffer_Id buffer_id) {
 
     window->id = buffer_id;
     window->start_position = 0;
+    window->column_offset = 0;
 
     window->change_index = 0;
     window->cursors = {};
