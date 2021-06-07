@@ -98,13 +98,13 @@ static bool try_to_make_visible(Window_Unified* window,
     // Get the start of the visible region if we put the
     // cursor within scroll_outside lines of the end.
     Contents_Iterator start_iterator = buffer->contents.iterator_at(goal);
-    backward_visible_line(buffer->mode, &start_iterator, window->cols,
+    backward_visible_line(window, buffer->mode, &start_iterator,
                           window->rows - scroll_outside - 1);
     start_of_visible_line(window, buffer->mode, &start_iterator);
 
     // But the cursor must be within scroll_outside of the new top.
     Contents_Iterator test_iterator = start_iterator;
-    forward_visible_line(buffer->mode, &test_iterator, window->cols, scroll_outside);
+    forward_visible_line(window, buffer->mode, &test_iterator, scroll_outside);
 
     // The cursor must be on the screen and the screen must be moving down for us to reposition.
     // If the screen would move up then we already would've fit the cursor to the screen.
@@ -224,11 +224,11 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // Calculate the minimum cursor boundary.
         Contents_Iterator visible_start_iterator = iterator;
-        forward_visible_line(buffer->mode, &visible_start_iterator, window->cols, scroll_outside);
+        forward_visible_line(window, buffer->mode, &visible_start_iterator, scroll_outside);
 
         // Calculate the maximum cursor boundary.
         Contents_Iterator visible_end_iterator = iterator;
-        forward_visible_line(buffer->mode, &visible_end_iterator, window->cols,
+        forward_visible_line(window, buffer->mode, &visible_end_iterator,
                              window->rows - (scroll_outside + 1));
 
         // Make sure the selected cursor is shown.
@@ -240,23 +240,23 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
             if (selected_cursor_position < visible_start_iterator.position) {
                 // Scroll up such that the cursor is in bounds.
-                backward_visible_line(buffer->mode, &iterator, window->cols, scroll_outside);
+                backward_visible_line(window, buffer->mode, &iterator, scroll_outside);
             } else {
                 // Scroll down such that the cursor is in bounds.
-                backward_visible_line(buffer->mode, &iterator, window->cols,
+                backward_visible_line(window, buffer->mode, &iterator,
                                       window->rows - (scroll_outside + 1));
             }
 
             if (editor->theme.scroll_jump_half_page_when_outside_visible_region) {
                 if (selected_cursor_position < visible_start_iterator.position) {
                     Contents_Iterator it = visible_start_iterator;
-                    backward_visible_line(buffer->mode, &it, window->cols, window->rows / 2);
+                    backward_visible_line(window, buffer->mode, &it, window->rows / 2);
                     if (it.position < iterator.position) {
                         iterator = it;
                     }
                 } else {
                     Contents_Iterator it = visible_start_iterator;
-                    forward_visible_line(buffer->mode, &it, window->cols, window->rows / 2);
+                    forward_visible_line(window, buffer->mode, &it, window->rows / 2);
                     if (it.position > iterator.position) {
                         iterator = it;
                     }
@@ -365,7 +365,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                     // If we're within one page and over half way there then start breaking.
                     Contents_Iterator end_iterator = iterator;
                     end_iterator.retreat_to(window->start_position);
-                    forward_visible_line(buffer->mode, &end_iterator, window->cols,
+                    forward_visible_line(window, buffer->mode, &end_iterator,
                                          window->rows - 1);
 
                     // Tokenization happens from the top of the file to the bottom.  So if we want
@@ -434,7 +434,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                     // If we're within one page and over half way there then start breaking.
                     Contents_Iterator start_iterator = iterator;
                     start_iterator.advance_to(window->start_position);
-                    backward_visible_line(buffer->mode, &start_iterator, window->cols,
+                    backward_visible_line(window, buffer->mode, &start_iterator,
                                           window->rows - 1);
 
                     bool force_break = false;
@@ -596,7 +596,7 @@ static void draw_buffer_contents(Cell* cells,
     CZ_DEFER(line_number_buffer.drop(cz::heap_allocator()));
     {
         Contents_Iterator end_position = iterator;
-        forward_visible_line(buffer->mode, &end_position, window->cols, window->rows);
+        forward_visible_line(window, buffer->mode, &end_position, window->rows);
 
         size_t end_line_number = buffer->contents.get_line_number(end_position.position) + 1;
         size_t line_number_width = log10(end_line_number) + 1;

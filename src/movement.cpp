@@ -63,10 +63,12 @@ void end_of_visible_line(const Window* window, const Mode& mode, Contents_Iterat
     go_to_visual_column(mode, iterator, column - (column % window->cols) + (window->cols - 1));
 }
 
-void forward_visible_line(const Mode& mode,
+void forward_visible_line(const Window* window,
+                          const Mode& mode,
                           Contents_Iterator* iterator,
-                          uint64_t cols,
                           uint64_t rows) {
+    uint64_t cols = window->cols;
+
     Contents_Iterator start = *iterator;
     start_of_line(&start);
     Contents_Iterator end = *iterator;
@@ -103,10 +105,12 @@ void forward_visible_line(const Mode& mode,
     go_to_visual_column(mode, iterator, column);
 }
 
-void backward_visible_line(const Mode& mode,
+void backward_visible_line(const Window* window,
+                           const Mode& mode,
                            Contents_Iterator* iterator,
-                           uint64_t cols,
                            uint64_t rows) {
+    uint64_t cols = window->cols;
+
     Contents_Iterator start = *iterator;
     start_of_line(&start);
     Contents_Iterator end = *iterator;

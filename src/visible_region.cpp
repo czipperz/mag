@@ -73,7 +73,7 @@ bool is_visible(const Window_Unified* window, const Mode& mode, Contents_Iterato
     // Go to start position
     end.retreat_to(window->start_position);
     // Then advance to end of visible region
-    forward_visible_line(mode, &end, window->cols, window->rows);
+    forward_visible_line(window, mode, &end, window->rows);
     return iterator.position < end.position;
 }
 
