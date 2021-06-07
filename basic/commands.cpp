@@ -1103,6 +1103,28 @@ void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source
     }
 }
 
+void command_remove_selected_cursor(Editor* editor, Command_Source source) {
+    Window_Unified* window = source.client->selected_window();
+
+    // No cursor to kill.
+    if (window->cursors.len() == 1) {
+        return;
+    }
+
+    // When going down to 1 cursor we need to call `kill_extra_cursors` to cleanup various settings.
+    if (window->cursors.len() == 2) {
+        window->selected_cursor = 1 - window->selected_cursor;
+        kill_extra_cursors(window, source.client);
+        return;
+    }
+
+    // Remove the selected cursor and make sure it is still in bounds.
+    window->cursors.remove(window->selected_cursor);
+    if (window->selected_cursor == window->cursors.len()) {
+        --window->selected_cursor;
+    }
+}
+
 struct Interactive_Search_Data {
     bool forward;
     uint64_t cursor_point;
