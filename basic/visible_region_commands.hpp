@@ -7,7 +7,7 @@
 namespace mag {
 namespace basic {
 
-void center_selected_cursor(Window_Unified* window, Buffer* buffer);
+void center_selected_cursor(Window_Unified* window, const Buffer* buffer);
 
 void command_center_in_window(Editor* editor, Command_Source source);
 void command_goto_center_of_window(Editor* editor, Command_Source source);

@@ -8,18 +8,18 @@
 namespace mag {
 namespace basic {
 
-void center_selected_cursor(Window_Unified* window, Buffer* buffer) {
+void center_selected_cursor(Window_Unified* window, const Buffer* buffer) {
     center_in_window(window, buffer->mode,
                      buffer->contents.iterator_at(window->cursors[window->selected_cursor].point));
 }
 
 void command_center_in_window(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     center_selected_cursor(window, buffer);
 }
 
 void command_goto_center_of_window(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     window->cursors[window->selected_cursor].point =
         center_of_window(window, buffer->mode, &buffer->contents).position;
 }
@@ -33,7 +33,7 @@ static size_t subtract_bounded(size_t left, size_t right) {
 }
 
 void command_up_page(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
 
     if (window->cursors.len() > 1) {
         if (window->selected_cursor == 0) {
@@ -60,7 +60,7 @@ void command_up_page(Editor* editor, Command_Source source) {
 }
 
 void command_down_page(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
 
     if (window->cursors.len() > 1) {
         ++window->selected_cursor;
@@ -90,7 +90,7 @@ void command_down_page(Editor* editor, Command_Source source) {
 }
 
 static void scroll_down(Editor* editor, Command_Source source, size_t num) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     forward_visual_line(window, buffer->mode, &it, num);
@@ -106,7 +106,7 @@ static void scroll_down(Editor* editor, Command_Source source, size_t num) {
 }
 
 static void scroll_up(Editor* editor, Command_Source source, size_t num) {
-    WITH_SELECTED_BUFFER(source.client);
+    WITH_CONST_SELECTED_BUFFER(source.client);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     backward_visual_line(window, buffer->mode, &it, num);
