@@ -83,6 +83,10 @@ struct Theme {
     /// Used in `command_scroll_down` and `command_scroll_up`.
     uint32_t mouse_scroll_rows = 4;
 
+    /// The number of columns a mouse scroll event should move.
+    /// Used in `command_scroll_left` and `command_scroll_right`.
+    uint32_t mouse_scroll_cols = 4;
+
     /// If true then draw line numbers.
     bool draw_line_numbers = false;
 
@@ -95,6 +99,10 @@ struct Theme {
 
     /// If true then scrolls at least half a page when the cursor exits the visible region.
     bool scroll_jump_half_page_when_outside_visible_region = false;
+
+    /// If `wrap_long_lines` is enabled and the point is within this many columns of
+    /// the left or right side of the `Window` then the `Window` scrolls horizontally.
+    size_t scroll_outside_visual_columns = 0;
 
     void drop();
 };

@@ -162,6 +162,16 @@ void backward_visual_line(const Window_Unified* window,
     go_to_visual_column(mode, iterator, column);
 }
 
+uint64_t char_visual_columns(const Mode& mode, char ch, uint64_t column) {
+    if (ch == '\t') {
+        column += mode.tab_width;
+        column -= column % mode.tab_width;
+    } else {
+        column++;
+    }
+    return column;
+}
+
 uint64_t count_visual_columns(const Mode& mode,
                               Contents_Iterator iterator,
                               uint64_t end,
@@ -169,12 +179,7 @@ uint64_t count_visual_columns(const Mode& mode,
     ZoneScoped;
 
     while (iterator.position < end) {
-        if (iterator.get() == '\t') {
-            column += mode.tab_width;
-            column -= column % mode.tab_width;
-        } else {
-            column++;
-        }
+        column = char_visual_columns(mode, iterator.get(), column);
         iterator.advance();
     }
 

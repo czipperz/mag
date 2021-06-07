@@ -349,6 +349,8 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "SCROLL_UP", command_scroll_up);
     BIND(key_map, "SCROLL_DOWN_ONE", command_scroll_down_one);
     BIND(key_map, "SCROLL_UP_ONE", command_scroll_up_one);
+    BIND(key_map, "SCROLL_LEFT", command_scroll_left);
+    BIND(key_map, "SCROLL_RIGHT", command_scroll_right);
 
     BIND(key_map, "C--", command_decrease_font_size);
     // Note that C-_ == C-S--.  Maybe this should be C-+ instead?
@@ -470,12 +472,15 @@ static void create_theme(Theme& theme) {
     theme.window_completion_filter = prefix_completion_filter;
 
     theme.mouse_scroll_rows = 4;
+    theme.mouse_scroll_cols = 10;
 
     theme.draw_line_numbers = false;
 
     theme.allow_animated_scrolling = true;
     theme.scroll_outside_visual_rows = 3;
     theme.scroll_jump_half_page_when_outside_visible_region = false;
+
+    theme.scroll_outside_visual_columns = 10;
 }
 
 void editor_created_callback(Editor* editor) {

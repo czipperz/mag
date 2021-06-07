@@ -135,5 +135,96 @@ void command_scroll_up_one(Editor* editor, Command_Source source) {
     scroll_up(editor, source, 1);
 }
 
+static void scroll_left(Editor* editor, Command_Source source, size_t num) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    if (window->column_offset < num) {
+        window->column_offset = 0;
+    } else {
+        window->column_offset -= num;
+    }
+
+    uint64_t starting_position = window->cursors[window->selected_cursor].point;
+    Contents_Iterator it = buffer->contents.iterator_at(starting_position);
+    uint64_t column = get_visual_column(buffer->mode, it);
+    uint64_t scroll_outside = editor->theme.scroll_outside_visual_columns;
+
+    // If we will have to scroll right to fit the cursor then move the cursor left.
+    if (column + 2 + scroll_outside > window->column_offset + window->cols()) {
+        column = 0;
+
+        start_of_line(&it);
+        while (!it.at_eob()) {
+            char ch = it.get();
+            if (ch == '\n') {
+                CZ_PANIC("unimplemented");
+            }
+
+            column = char_visual_columns(buffer->mode, ch, column);
+            it.advance();
+            if (column + 2 + scroll_outside > window->column_offset + window->cols()) {
+                break;
+            }
+        }
+
+        // Edge case with short buffer.
+        if (it.position == starting_position) {
+            return;
+        }
+
+        kill_extra_cursors(window, source.client);
+        window->cursors[0].point = it.position;
+    }
+}
+
+static void scroll_right(Editor* editor, Command_Source source, size_t num) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    // Scroll right.
+    window->column_offset += num;
+
+    uint64_t starting_position = window->cursors[window->selected_cursor].point;
+    Contents_Iterator it = buffer->contents.iterator_at(starting_position);
+    uint64_t column = get_visual_column(buffer->mode, it);
+    uint64_t scroll_outside = editor->theme.scroll_outside_visual_columns;
+
+    // If we will have to scroll left to fit the cursor then move the cursor right.
+    if (column < window->column_offset + scroll_outside) {
+        while (!it.at_eob()) {
+            char ch = it.get();
+            if (ch == '\n') {
+                // Scroll left such that cursor is on screen.
+                if (column < scroll_outside) {
+                    window->column_offset = 0;
+                } else {
+                    window->column_offset = column - scroll_outside;
+                }
+                return;
+            }
+
+            column = char_visual_columns(buffer->mode, ch, column);
+            it.advance();
+            if (column >= window->column_offset + scroll_outside) {
+                break;
+            }
+        }
+
+        // Edge case with short buffer.
+        if (it.position == starting_position) {
+            return;
+        }
+
+        kill_extra_cursors(window, source.client);
+        window->cursors[0].point = it.position;
+    }
+}
+
+void command_scroll_left(Editor* editor, Command_Source source) {
+    scroll_left(editor, source, editor->theme.mouse_scroll_cols);
+}
+void command_scroll_right(Editor* editor, Command_Source source) {
+    scroll_right(editor, source, editor->theme.mouse_scroll_cols);
+}
+
 }
 }
