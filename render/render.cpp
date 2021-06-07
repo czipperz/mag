@@ -58,30 +58,31 @@ static bool load_completion_cache(Editor* editor,
         }                                 \
     } while (0)
 
-#define ADDCH(FACE, CH)                                                                           \
-    do {                                                                                          \
-        /* If we are between the start and end column then render. */                             \
-        if (column >= window->column_offset && column < window->column_offset + window->cols()) { \
-            SET_BODY(FACE, CH);                                                                   \
-            ++x;                                                                                  \
-        }                                                                                         \
-        ++column;                                                                                 \
-                                                                                                  \
-        if (buffer->mode.wrap_long_lines && x == window->cols()) {                                \
-            ADD_NEWLINE({});                                                                      \
-                                                                                                  \
-            if (draw_line_numbers) {                                                              \
-                Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];     \
-                for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {                       \
-                    SET_BODY(face, ' ');                                                          \
-                    ++x;                                                                          \
-                }                                                                                 \
-                                                                                                  \
-                face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];         \
-                SET_BODY(face, ' ');                                                              \
-                ++x;                                                                              \
-            }                                                                                     \
-        }                                                                                         \
+#define ADDCH(FACE, CH)                                                                          \
+    do {                                                                                         \
+        /* If we are between the start and end column then render. */                            \
+        if (buffer->mode.wrap_long_lines || (column >= window->column_offset &&                  \
+                                             column < window->column_offset + window->cols())) { \
+            SET_BODY(FACE, CH);                                                                  \
+            ++x;                                                                                 \
+        }                                                                                        \
+        ++column;                                                                                \
+                                                                                                 \
+        if (buffer->mode.wrap_long_lines && x == window->cols()) {                               \
+            ADD_NEWLINE({});                                                                     \
+                                                                                                 \
+            if (draw_line_numbers) {                                                             \
+                Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];    \
+                for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {                      \
+                    SET_BODY(face, ' ');                                                         \
+                    ++x;                                                                         \
+                }                                                                                \
+                                                                                                 \
+                face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];        \
+                SET_BODY(face, ' ');                                                             \
+                ++x;                                                                             \
+            }                                                                                    \
+        }                                                                                        \
     } while (0)
 
 static void apply_face(Face* face, Face layer) {
