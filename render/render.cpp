@@ -99,7 +99,7 @@ static bool try_to_make_visible(Window_Unified* window,
     // cursor within scroll_outside lines of the end.
     Contents_Iterator start_iterator = buffer->contents.iterator_at(goal);
     backward_visual_line(window, buffer->mode, &start_iterator,
-                          window->rows() - scroll_outside - 1);
+                         window->rows() - scroll_outside - 1);
     start_of_visual_line(window, buffer->mode, &start_iterator);
 
     // But the cursor must be within scroll_outside of the new top.
@@ -229,7 +229,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         // Calculate the maximum cursor boundary.
         Contents_Iterator visible_end_iterator = iterator;
         forward_visual_line(window, buffer->mode, &visible_end_iterator,
-                             window->rows() - (scroll_outside + 1));
+                            window->rows() - (scroll_outside + 1));
 
         // Make sure the selected cursor is shown.
         if ((selected_cursor_position < visible_start_iterator.position &&
@@ -244,7 +244,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
             } else {
                 // Scroll down such that the cursor is in bounds.
                 backward_visual_line(window, buffer->mode, &iterator,
-                                      window->rows() - (scroll_outside + 1));
+                                     window->rows() - (scroll_outside + 1));
             }
 
             if (editor->theme.scroll_jump_half_page_when_outside_visible_region) {
@@ -434,8 +434,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                     // If we're within one page and over half way there then start breaking.
                     Contents_Iterator start_iterator = iterator;
                     start_iterator.advance_to(window->start_position);
-                    backward_visual_line(window, buffer->mode, &start_iterator,
-                                          window->rows() - 1);
+                    backward_visual_line(window, buffer->mode, &start_iterator, window->rows() - 1);
 
                     bool force_break = false;
                     float speed_loop_speed = speed_start;
