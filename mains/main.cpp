@@ -8,7 +8,6 @@
 #include <cz/path.hpp>
 #include <cz/str.hpp>
 #include <cz/working_directory.hpp>
-#include "basic/window_commands.hpp"
 #include "client.hpp"
 #include "command.hpp"
 #include "command_macros.hpp"
@@ -63,7 +62,7 @@ static void open_file_tiling(Editor* editor,
 
     // Split the window.
     if (*opened_count > 0) {
-        basic::split_window(
+        split_window(
             client, (*opened_count % 2 == 1) ? Window::VERTICAL_SPLIT : Window::HORIZONTAL_SPLIT);
     }
     ++*opened_count;

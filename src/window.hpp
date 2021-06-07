@@ -100,4 +100,12 @@ Contents_Iterator nearest_character(const Window_Unified* window,
                                     uint32_t row,
                                     uint32_t column);
 
+Window_Unified* window_first(Window* window);
+Window_Unified* window_last(Window* window);
+
+void cycle_window(Client* client);
+void reverse_cycle_window(Client* client);
+
+Window_Split* split_window(Client* client, Window::Tag tag);
+
 }
