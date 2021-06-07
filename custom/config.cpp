@@ -290,6 +290,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-x r", command_toggle_render_bucket_boundaries);
     BIND(key_map, "A-x \t", command_toggle_use_tabs);
     BIND(key_map, "A-x C-r", command_toggle_animated_scrolling);
+    BIND(key_map, "A-x A-r", command_toggle_wrap_long_lines);
 
     BIND(key_map, "A-x v", command_show_date_of_build);
 
