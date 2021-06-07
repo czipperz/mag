@@ -145,7 +145,7 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
     } else if (iterator.position > old_point) {
         Contents_Iterator ve = iterator;
         ve.retreat_to(window->start_position);
-        forward_visible_line(window, buffer->mode, &ve, window->rows() - 1);
+        forward_visual_line(window, buffer->mode, &ve, window->rows() - 1);
         if (iterator.position < ve.position) {
             center_in_window(window, buffer->mode, iterator);
         } else {

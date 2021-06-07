@@ -16,7 +16,7 @@ void center_in_window(Window_Unified* window, const Mode& mode, Contents_Iterato
         if (iterator.get() == '\n') {
             ++row;
             if (row >= target_rows) {
-                start_of_visible_line(window, mode, &iterator);
+                start_of_visual_line(window, mode, &iterator);
                 break;
             }
             col = 0;
@@ -26,7 +26,7 @@ void center_in_window(Window_Unified* window, const Mode& mode, Contents_Iterato
                 col -= window->cols();
                 ++row;
                 if (row >= target_rows) {
-                    start_of_visible_line(window, mode, &iterator);
+                    start_of_visual_line(window, mode, &iterator);
                     break;
                 }
             }
@@ -73,7 +73,7 @@ bool is_visible(const Window_Unified* window, const Mode& mode, Contents_Iterato
     // Go to start position
     end.retreat_to(window->start_position);
     // Then advance to end of visible region
-    forward_visible_line(window, mode, &end, window->rows());
+    forward_visual_line(window, mode, &end, window->rows());
     return iterator.position < end.position;
 }
 

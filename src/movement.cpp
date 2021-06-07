@@ -49,7 +49,7 @@ void end_of_line_text(Contents_Iterator* iterator) {
     backward_through_whitespace(iterator);
 }
 
-void start_of_visible_line(const Window_Unified* window,
+void start_of_visual_line(const Window_Unified* window,
                            const Mode& mode,
                            Contents_Iterator* iterator) {
     uint64_t end = iterator->position;
@@ -58,7 +58,7 @@ void start_of_visible_line(const Window_Unified* window,
     go_to_visual_column(mode, iterator, column - (column % window->cols()));
 }
 
-void end_of_visible_line(const Window_Unified* window,
+void end_of_visual_line(const Window_Unified* window,
                          const Mode& mode,
                          Contents_Iterator* iterator) {
     uint64_t end = iterator->position;
@@ -67,7 +67,7 @@ void end_of_visible_line(const Window_Unified* window,
     go_to_visual_column(mode, iterator, column - (column % window->cols()) + (window->cols() - 1));
 }
 
-void forward_visible_line(const Window_Unified* window,
+void forward_visual_line(const Window_Unified* window,
                           const Mode& mode,
                           Contents_Iterator* iterator,
                           uint64_t rows) {
@@ -109,7 +109,7 @@ void forward_visible_line(const Window_Unified* window,
     go_to_visual_column(mode, iterator, column);
 }
 
-void backward_visible_line(const Window_Unified* window,
+void backward_visual_line(const Window_Unified* window,
                            const Mode& mode,
                            Contents_Iterator* iterator,
                            uint64_t rows) {

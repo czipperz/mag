@@ -21,13 +21,13 @@ void forward_through_whitespace(Contents_Iterator* iterator);
 void backward_through_whitespace(Contents_Iterator* iterator);
 
 /// Visible lines are either wrapped at `window->cols()` or terminated by a newline.
-void start_of_visible_line(const Window_Unified*, const Mode&, Contents_Iterator*);
-void end_of_visible_line(const Window_Unified*, const Mode&, Contents_Iterator*);
-void forward_visible_line(const Window_Unified*,
+void start_of_visual_line(const Window_Unified*, const Mode&, Contents_Iterator*);
+void end_of_visual_line(const Window_Unified*, const Mode&, Contents_Iterator*);
+void forward_visual_line(const Window_Unified*,
                           const Mode&,
                           Contents_Iterator*,
                           uint64_t rows = 1);
-void backward_visible_line(const Window_Unified*,
+void backward_visual_line(const Window_Unified*,
                            const Mode&,
                            Contents_Iterator*,
                            uint64_t rows = 1);
