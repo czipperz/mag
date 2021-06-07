@@ -16,6 +16,8 @@ enum : uint64_t {
     NORMAL,
     IN_CURLY_VAR,
     IN_STRING,
+
+    IN_BACKTICK_MASK = 4,
 };
 
 enum : uint64_t {
@@ -90,7 +92,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     char first_ch = iterator->get();
 
     if ((transient != TRANSIENT_AFTER_DOLLAR || first_ch == '"') &&
-        ((top == IN_STRING || first_ch == '"') && first_ch != '$')) {
+        ((top == IN_STRING || first_ch == '"') && (first_ch != '$' && first_ch != '`'))) {
         token->type = Token_Type::STRING;
 
         if (first_ch == '"') {
@@ -124,6 +126,13 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                 break;
             }
 
+            if (ch == '`') {
+                top = IN_STRING;
+                // Note: '`' itself is handled separately; this is
+                // just the part of the string leading up to the '`'.
+                break;
+            }
+
             iterator->advance();
         }
 
@@ -146,6 +155,24 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         top = NORMAL;
         if (depth >= 1 && prev == IN_STRING) {
             POP();
+        }
+        goto ret;
+    }
+
+    // Handle backtick by adding a mask to the previous state.
+    if (first_ch == '`') {
+        if (depth >= 1 && (prev & IN_BACKTICK_MASK) && top != IN_STRING) {
+            token->type = Token_Type::CLOSE_PAIR;
+            POP();
+            top &= ~IN_BACKTICK_MASK;
+            if (top == AT_START_OF_STATEMENT) {
+                top = NORMAL;
+            }
+        } else {
+            token->type = Token_Type::OPEN_PAIR;
+            top |= IN_BACKTICK_MASK;
+            PUSH();
+            top = AT_START_OF_STATEMENT;
         }
         goto ret;
     }
