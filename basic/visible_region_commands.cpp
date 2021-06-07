@@ -21,7 +21,7 @@ void command_center_in_window(Editor* editor, Command_Source source) {
 void command_goto_center_of_window(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     window->cursors[window->selected_cursor].point =
-        center_of_window(window, &buffer->contents).position;
+        center_of_window(window, buffer->mode, &buffer->contents).position;
 }
 
 static size_t subtract_bounded(size_t left, size_t right) {
@@ -54,7 +54,7 @@ void command_up_page(Editor* editor, Command_Source source) {
 
     // Go to the start of 1 row from the end of the visible region.
     forward_visual_line(window, buffer->mode, &it,
-                         subtract_bounded(window->rows(), scroll_outside + 1));
+                        subtract_bounded(window->rows(), scroll_outside + 1));
 
     window->cursors[0].point = it.position;
 }

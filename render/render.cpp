@@ -33,6 +33,9 @@ static bool load_completion_cache(Editor* editor,
 
 #define SET_BODY(FACE, CH)                                                                \
     do {                                                                                  \
+        CZ_DEBUG_ASSERT(y < window->rows());                                              \
+        CZ_DEBUG_ASSERT(x < window->cols());                                              \
+                                                                                          \
         SET_IND(FACE, CH);                                                                \
                                                                                           \
         for (size_t spqsi = 0; spqsi < spqs.len; ++spqsi) {                               \
@@ -55,26 +58,32 @@ static bool load_completion_cache(Editor* editor,
         }                                 \
     } while (0)
 
-#define ADDCH(FACE, CH)                                                                       \
-    do {                                                                                      \
-        SET_BODY(FACE, CH);                                                                   \
-        ++x;                                                                                  \
-        ++column;                                                                             \
-        if (x == window->cols()) {                                                            \
-            ADD_NEWLINE({});                                                                  \
-                                                                                              \
-            if (draw_line_numbers) {                                                          \
-                Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING]; \
-                for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {                   \
-                    SET_BODY(face, ' ');                                                      \
-                    ++x;                                                                      \
-                }                                                                             \
-                                                                                              \
-                face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];     \
-                SET_BODY(face, ' ');                                                          \
-                ++x;                                                                          \
-            }                                                                                 \
-        }                                                                                     \
+#define ADDCH(FACE, CH)                                                                           \
+    do {                                                                                          \
+        if (!buffer->mode.wrap_long_lines && x >= window->cols()) {                               \
+            /* Cut off long line. */                                                              \
+            ++x;                                                                                  \
+            ++column;                                                                             \
+        } else {                                                                                  \
+            SET_BODY(FACE, CH);                                                                   \
+            ++x;                                                                                  \
+            ++column;                                                                             \
+            if (buffer->mode.wrap_long_lines && x == window->cols()) {                            \
+                ADD_NEWLINE({});                                                                  \
+                                                                                                  \
+                if (draw_line_numbers) {                                                          \
+                    Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING]; \
+                    for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {                   \
+                        SET_BODY(face, ' ');                                                      \
+                        ++x;                                                                      \
+                    }                                                                             \
+                                                                                                  \
+                    face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];     \
+                    SET_BODY(face, ' ');                                                          \
+                    ++x;                                                                          \
+                }                                                                                 \
+            }                                                                                     \
+        }                                                                                         \
     } while (0)
 
 static void apply_face(Face* face, Face layer) {
@@ -727,7 +736,9 @@ static void draw_buffer_contents(Cell* cells,
 
         char ch = iterator.get();
         if (ch == '\n') {
-            SET_BODY(face, ' ');
+            if (x < window->cols()) {
+                SET_BODY(face, ' ');
+            }
             ++x;
             ++column;
 
@@ -812,7 +823,10 @@ static void draw_buffer_contents(Cell* cells,
         } else {
             apply_face(&face, editor->theme.special_faces[Face_Type::OTHER_CURSOR]);
         }
-        SET_BODY(face, ' ');
+
+        if (x < window->cols()) {
+            SET_BODY(face, ' ');
+        }
         ++x;
     }
 

@@ -559,6 +559,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
     buffer->mode.preferred_column = 100;
 
+    buffer->mode.wrap_long_lines = false;
+
     window_completion_key_map(buffer->mode.completion_key_map);
 
     buffer->mode.next_token = default_next_token;

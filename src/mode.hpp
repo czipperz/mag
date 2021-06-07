@@ -55,6 +55,9 @@ struct Mode {
     /// Stores the preferred max line length.
     uint64_t preferred_column = 100;
 
+    /// If `true`, then long lines will be displayed as multiple visual lines.
+    bool wrap_long_lines = true;
+
     /// Increase the level of indentation on the line after an open pair automatically.
     bool indent_after_open_pair = false;
 

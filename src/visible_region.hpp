@@ -12,7 +12,9 @@ struct Mode;
 void center_in_window(Window_Unified* window, const Mode& mode, Contents_Iterator iterator);
 
 /// Get an iterator to the center of the window.
-Contents_Iterator center_of_window(Window_Unified* window, const Contents* contents);
+Contents_Iterator center_of_window(Window_Unified* window,
+                                   const Mode& mode,
+                                   const Contents* contents);
 
 /// Test if the iterator is inside the visible region of the window.
 bool is_visible(const Window_Unified* window, const Mode& mode, Contents_Iterator iterator);

@@ -50,8 +50,13 @@ void end_of_line_text(Contents_Iterator* iterator) {
 }
 
 void start_of_visual_line(const Window_Unified* window,
-                           const Mode& mode,
-                           Contents_Iterator* iterator) {
+                          const Mode& mode,
+                          Contents_Iterator* iterator) {
+    if (!mode.wrap_long_lines) {
+        start_of_line(iterator);
+        return;
+    }
+
     uint64_t end = iterator->position;
     start_of_line(iterator);
     uint64_t column = count_visual_columns(mode, *iterator, end);
@@ -59,8 +64,13 @@ void start_of_visual_line(const Window_Unified* window,
 }
 
 void end_of_visual_line(const Window_Unified* window,
-                         const Mode& mode,
-                         Contents_Iterator* iterator) {
+                        const Mode& mode,
+                        Contents_Iterator* iterator) {
+    if (!mode.wrap_long_lines) {
+        end_of_line(iterator);
+        return;
+    }
+
     uint64_t end = iterator->position;
     start_of_line(iterator);
     uint64_t column = count_visual_columns(mode, *iterator, end);
@@ -68,9 +78,14 @@ void end_of_visual_line(const Window_Unified* window,
 }
 
 void forward_visual_line(const Window_Unified* window,
-                          const Mode& mode,
-                          Contents_Iterator* iterator,
-                          uint64_t rows) {
+                         const Mode& mode,
+                         Contents_Iterator* iterator,
+                         uint64_t rows) {
+    if (!mode.wrap_long_lines) {
+        forward_line(mode, iterator, rows);
+        return;
+    }
+
     uint64_t cols = window->cols();
 
     Contents_Iterator start = *iterator;
@@ -110,9 +125,14 @@ void forward_visual_line(const Window_Unified* window,
 }
 
 void backward_visual_line(const Window_Unified* window,
-                           const Mode& mode,
-                           Contents_Iterator* iterator,
-                           uint64_t rows) {
+                          const Mode& mode,
+                          Contents_Iterator* iterator,
+                          uint64_t rows) {
+    if (!mode.wrap_long_lines) {
+        backward_line(mode, iterator, rows);
+        return;
+    }
+
     uint64_t cols = window->cols();
 
     Contents_Iterator start = *iterator;
@@ -208,34 +228,36 @@ void analyze_indent(const Mode& mode, uint64_t columns, uint64_t* num_tabs, uint
     }
 }
 
-void forward_line(const Mode& mode, Contents_Iterator* iterator) {
+void forward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines) {
     uint64_t column = get_visual_column(mode, *iterator);
 
-    Contents_Iterator backup = *iterator;
-    end_of_line(iterator);
+    for (uint64_t i = 0; i < lines; ++i) {
+        Contents_Iterator backup = *iterator;
+        end_of_line(iterator);
 
-    if (iterator->at_eob()) {
-        *iterator = backup;
-        return;
+        if (iterator->at_eob()) {
+            *iterator = backup;
+            break;
+        }
+
+        iterator->advance();
     }
-
-    iterator->advance();
 
     go_to_visual_column(mode, iterator, column);
 }
 
-void backward_line(const Mode& mode, Contents_Iterator* iterator) {
+void backward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines) {
     uint64_t column = get_visual_column(mode, *iterator);
 
-    Contents_Iterator backup = *iterator;
-    start_of_line(iterator);
+    for (uint64_t i = 0; i < lines; ++i) {
+        start_of_line(iterator);
 
-    if (iterator->at_bob()) {
-        *iterator = backup;
-        return;
+        if (iterator->at_bob()) {
+            break;
+        }
+
+        iterator->retreat();
     }
-
-    iterator->retreat();
 
     go_to_visual_column(mode, iterator, column);
 }
