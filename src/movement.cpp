@@ -117,8 +117,6 @@ void backward_visual_line(const Window_Unified* window,
 
     Contents_Iterator start = *iterator;
     start_of_line(&start);
-    Contents_Iterator end = *iterator;
-    end_of_line(&end);
 
     uint64_t column = count_visual_columns(mode, start, iterator->position);
 
@@ -135,7 +133,6 @@ void backward_visual_line(const Window_Unified* window,
 
             start = *iterator;
             start_of_line(&start);
-            end = *iterator;
 
             uint64_t line_width = count_visual_columns(mode, start, iterator->position);
             column = line_width - line_width % cols + column % cols;
