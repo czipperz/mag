@@ -91,7 +91,7 @@ static void overlay_matching_tokens_start_frame(const Buffer* buffer,
         return;
     }
 
-    uint64_t cursor_point = window->cursors[0].point;
+    uint64_t cursor_point = window->cursors[window->selected_cursor].point;
 
     // The token cache is updated in the main render loop.
     CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());

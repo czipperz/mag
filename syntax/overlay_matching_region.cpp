@@ -36,13 +36,15 @@ static void overlay_matching_region_start_frame(const Buffer* buffer,
 
     Data* data = (Data*)_data;
 
+    Cursor cursor = window->cursors[window->selected_cursor];
+
     // Only enable if we've selected a region.
-    data->enabled = window->show_marks && window->cursors[0].point != window->cursors[0].mark;
+    data->enabled = window->show_marks && cursor.point != cursor.mark;
 
     // Disable if the region couldn't match anything else because it is
     // giant.  Comparing the massive string takes a long time.  This happens
     // when the user selects the entire file (ie `command_mark_buffer`).
-    if (window->cursors[0].end() - window->cursors[0].start() > buffer->contents.len / 2) {
+    if (cursor.end() - cursor.start() > buffer->contents.len / 2) {
         data->enabled = false;
     }
 
@@ -54,8 +56,8 @@ static void overlay_matching_region_start_frame(const Buffer* buffer,
     if (data->start_marked_region.at_eob()) {
         data->enabled = false;
     } else {
-        if (window->cursors[0].start() >= data->start_marked_region.position) {
-            data->start_marked_region.advance_to(window->cursors[0].start());
+        if (cursor.start() >= data->start_marked_region.position) {
+            data->start_marked_region.advance_to(cursor.start());
         } else {
             data->enabled = false;
         }
@@ -80,7 +82,7 @@ static Face overlay_matching_region_get_face_and_advance(const Buffer* buffer,
     }
 
     if (data->countdown_cursor_region == 0) {
-        uint64_t end_marked_region = window->cursors[0].end();
+        uint64_t end_marked_region = window->cursors[window->selected_cursor].end();
         if (matches_cased(data->start_marked_region, end_marked_region, iterator,
                           buffer->mode.search_case_insensitive)) {
             data->countdown_cursor_region = end_marked_region - data->start_marked_region.position;
