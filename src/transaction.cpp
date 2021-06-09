@@ -14,8 +14,8 @@ void Transaction::init(Buffer* buffer_) {
 }
 
 void Transaction::drop() {
+    edits.drop(cz::heap_allocator());
     if (!committed) {
-        edits.drop(cz::heap_allocator());
         buffer->commit_buffer_array.restore(save_point);
     }
 }
@@ -37,7 +37,7 @@ void Transaction::commit(Command_Function committer) {
     // Only commit if edits were made.
     if (edits.len() > 0) {
         Commit commit;
-        commit.edits = edits;
+        commit.edits = edits.clone(buffer->commit_buffer_array.allocator());
         if (buffer->commit(commit, committer)) {
             committed = true;
         }
