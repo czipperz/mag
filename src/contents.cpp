@@ -9,7 +9,7 @@
 
 namespace mag {
 
-#define CONTENTS_BUCKET_MAX_SIZE 512
+#define CONTENTS_BUCKET_MAX_SIZE 4096
 #define CONTENTS_BUCKET_DESIRED_LEN (CONTENTS_BUCKET_MAX_SIZE * 3 / 4)
 
 void Contents::drop() {
