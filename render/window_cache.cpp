@@ -38,7 +38,7 @@ void cache_window_unified_position(Window_Unified* window,
     window_cache->v.unified.visible_start = start_position;
     window->start_position = start_position;
     window_cache->v.unified.change_index = buffer->changes.len();
-    window_cache->v.unified.selected_cursor_mark = window->cursors[0].mark;
+    window_cache->v.unified.selected_cursor_mark = window->cursors[window->selected_cursor].mark;
 }
 
 void cache_window_unified_create(Editor* editor,

@@ -161,7 +161,8 @@ void command_go_to_key_map_binding(Editor* editor, Command_Source source) {
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
 
-        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+        Contents_Iterator it =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
         end_of_line(&it);
         Contents_Iterator end = it;
 

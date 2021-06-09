@@ -137,8 +137,8 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
     kill_extra_cursors(window, client);
 
     Contents_Iterator iterator = start_of_line_position(buffer->contents, tag.line);
-    uint64_t old_point = window->cursors[0].point;
-    window->cursors[0].point = iterator.position;
+    uint64_t old_point = window->cursors[window->selected_cursor].point;
+    window->cursors[window->selected_cursor].point = iterator.position;
 
     if (iterator.position < window->start_position) {
         window->start_position = iterator.position;
@@ -268,7 +268,8 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
 
-        Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+        Contents_Iterator iterator =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
         Token token;
         if (!get_token_at_position(buffer, &iterator, &token)) {
             source.client->show_message(editor, "Cursor is not positioned at a token");
@@ -362,7 +363,8 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
 
     WITH_SELECTED_BUFFER(source.client);
 
-    Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+    Contents_Iterator iterator =
+        buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
     Token token;
     if (!get_token_at_position(buffer, &iterator, &token)) {
         source.client->show_message(editor, "Cursor is not positioned at a token");

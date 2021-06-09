@@ -90,6 +90,7 @@ static void open_file_and_goto_position(Editor* editor,
     open_file(editor, client, path);
 
     WITH_CONST_SELECTED_BUFFER(client);
+    kill_extra_cursors(window, client);
     Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
     window->cursors[0].point = iterator.position;
     center_in_window(window, buffer->mode, iterator);
@@ -130,8 +131,9 @@ void command_search_open(Editor* editor, Command_Source source) {
     bool found;
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        found = get_file_to_open(buffer, buffer->contents.iterator_at(window->cursors[0].point),
-                                 &path, &line, &column);
+        found = get_file_to_open(
+            buffer, buffer->contents.iterator_at(window->cursors[window->selected_cursor].point),
+            &path, &line, &column);
     }
     if (!found) {
         return;
@@ -157,9 +159,10 @@ void command_search_open_next(Editor* editor, Command_Source source) {
             return;
         }
 
-        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+        Contents_Iterator it =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
         forward_line(buffer->mode, &it);
-        window->cursors[0].point = it.position;
+        window->cursors[window->selected_cursor].point = it.position;
 
         found = get_file_to_open(buffer, it, &path, &line, &column);
     }
@@ -188,9 +191,10 @@ void command_search_open_previous(Editor* editor, Command_Source source) {
             return;
         }
 
-        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+        Contents_Iterator it =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
         backward_line(buffer->mode, &it);
-        window->cursors[0].point = it.position;
+        window->cursors[window->selected_cursor].point = it.position;
 
         found = get_file_to_open(buffer, it, &path, &line, &column);
     }

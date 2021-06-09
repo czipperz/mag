@@ -95,7 +95,7 @@ void Window_Unified::update_completion_cache(const Buffer* buffer) {
     CZ_DEBUG_ASSERT(completing);
 
     if (completion_cache.update(buffer->changes.len())) {
-        Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);
+        Contents_Iterator iterator = buffer->contents.iterator_at(cursors[selected_cursor].point);
         Token token;
         if (!get_token_at_position_no_update(buffer, &iterator, &token)) {
             abort_completion();
@@ -118,7 +118,7 @@ void Window_Unified::finish_completion(Buffer* buffer) {
     }
 
     // Todo: multi cursors?
-    Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);
+    Contents_Iterator iterator = buffer->contents.iterator_at(cursors[selected_cursor].point);
     Token token;
     bool do_remove = get_token_at_position(buffer, &iterator, &token);
 

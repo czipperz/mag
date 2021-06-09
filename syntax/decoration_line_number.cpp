@@ -19,12 +19,13 @@ static bool decoration_line_number_append(const Buffer* buffer,
                                           cz::Allocator allocator,
                                           cz::String* string,
                                           void* _data) {
+    Cursor cursor = window->cursors[window->selected_cursor];
     if (window->show_marks) {
-        uint64_t start = buffer->contents.get_line_number(window->cursors[0].start());
-        uint64_t end = buffer->contents.get_line_number(window->cursors[0].end());
+        uint64_t start = buffer->contents.get_line_number(cursor.start());
+        uint64_t end = buffer->contents.get_line_number(cursor.end());
         cz::append(allocator, string, 'L', start + 1, '-', end + 1);
     } else {
-        uint64_t line = buffer->contents.get_line_number(window->cursors[0].point);
+        uint64_t line = buffer->contents.get_line_number(cursor.point);
         cz::append(allocator, string, 'L', line + 1);
     }
     return true;

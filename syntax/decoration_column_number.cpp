@@ -21,7 +21,8 @@ static bool decoration_column_number_append(const Buffer* buffer,
                                             void* _data) {
     ZoneScoped;
 
-    Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+    Contents_Iterator iterator =
+        buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
 
     Contents_Iterator line_start = iterator;
     start_of_line(&line_start);

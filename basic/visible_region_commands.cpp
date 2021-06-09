@@ -99,7 +99,7 @@ static void scroll_down(Editor* editor, Command_Source source, size_t num) {
     size_t scroll_outside =
         get_scroll_outside(window->rows(), editor->theme.scroll_outside_visual_rows);
     forward_visual_line(window, buffer->mode, &it, scroll_outside);
-    if (window->cursors[0].point < it.position) {
+    if (window->cursors[window->selected_cursor].point < it.position) {
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = it.position;
     }
@@ -115,7 +115,7 @@ static void scroll_up(Editor* editor, Command_Source source, size_t num) {
     size_t scroll_outside =
         get_scroll_outside(window->rows(), editor->theme.scroll_outside_visual_rows);
     forward_visual_line(window, buffer->mode, &it, window->rows() - scroll_outside - 1);
-    if (window->cursors[0].point > it.position) {
+    if (window->cursors[window->selected_cursor].point > it.position) {
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = it.position;
     }

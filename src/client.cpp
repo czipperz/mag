@@ -273,8 +273,8 @@ void Client::fill_mini_buffer_with_selected_region(Editor* editor) {
             return;
         }
 
-        uint64_t start = window->cursors[0].start();
-        uint64_t end = window->cursors[0].end();
+        uint64_t start = window->cursors[window->selected_cursor].start();
+        uint64_t end = window->cursors[window->selected_cursor].end();
         value =
             buffer->contents.slice(cz::heap_allocator(), buffer->contents.iterator_at(start), end);
     }

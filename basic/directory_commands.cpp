@@ -65,7 +65,8 @@ static void get_selected_entry(Window_Unified* window,
     // :DirectorySortFormat
     const size_t offset = 22;
 
-    Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+    Contents_Iterator it =
+        buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
     start_of_line(&it);
 
     *has_entry = it.position + offset < buffer->contents.len;
@@ -265,7 +266,7 @@ static void command_directory_delete_path_callback(Editor* editor, Client* clien
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     WITH_SELECTED_BUFFER(client);
-    if (!get_path(buffer, &path, window->cursors[0].point)) {
+    if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
         client->show_message(editor, "Cursor not on a valid path");
         return;
     }
@@ -360,7 +361,7 @@ static void command_directory_copy_path_callback(Editor* editor,
 
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (!get_path(buffer, &path, window->cursors[0].point)) {
+        if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
             client->show_message(editor, "Cursor not on a valid path");
             return;
         }
@@ -398,7 +399,7 @@ void command_directory_copy_path(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        if (!get_path(buffer, &path, window->cursors[0].point)) {
+        if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
             source.client->show_message(editor, "Cursor not on a valid path");
             return;
         }
@@ -421,7 +422,7 @@ static void command_directory_rename_path_callback(Editor* editor,
 
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (!get_path(buffer, &path, window->cursors[0].point)) {
+        if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
             client->show_message(editor, "Cursor not on a valid path");
             return;
         }
@@ -459,7 +460,7 @@ void command_directory_rename_path(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        if (!get_path(buffer, &path, window->cursors[0].point)) {
+        if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
             source.client->show_message(editor, "Cursor not on a valid path");
             return;
         }
@@ -477,7 +478,7 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
 
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        if (!get_path(buffer, &path, window->cursors[0].point)) {
+        if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
             return;
         }
         push_jump(window, source.client, buffer);
@@ -497,7 +498,7 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
         directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
-        if (!get_path(buffer, &path, window->cursors[0].point)) {
+        if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
             return;
         }
     }

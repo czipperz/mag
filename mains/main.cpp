@@ -98,11 +98,6 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     if (cz::file::does_file_exist(path.buffer())) {
         // Argument is of form FILE:LINE.
         open_file_tiling(editor, client, path, opened_count, line, 0);
-
-        WITH_SELECTED_BUFFER(client);
-        Contents_Iterator it = start_of_line_position(buffer->contents, line);
-        window->cursors[0].point = it.position;
-        window->cursors[0].mark = window->cursors[0].point;
         return;
     }
 
@@ -131,11 +126,6 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     if (cz::file::does_file_exist(path.buffer())) {
         // Argument is of form FILE:LINE:COLUMN.
         open_file_tiling(editor, client, path, opened_count, line, column);
-
-        WITH_SELECTED_BUFFER(client);
-        Contents_Iterator it = iterator_at_line_column(buffer->contents, line, column);
-        window->cursors[0].point = it.position;
-        window->cursors[0].mark = window->cursors[0].point;
         return;
     }
 
