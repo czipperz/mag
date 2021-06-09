@@ -20,12 +20,6 @@ void Token_Cache::drop() {
     check_points.drop(cz::heap_allocator());
 }
 
-Token_Cache Token_Cache::clone() const {
-    Token_Cache cache = *this;
-    cache.check_points = cache.check_points.clone(cz::heap_allocator());
-    return cache;
-}
-
 void Token_Cache::reset() {
     change_index = 0;
     check_points.set_len(0);
@@ -253,11 +247,13 @@ bool Token_Cache::is_covered(uint64_t position) const {
 
 struct Job_Syntax_Highlight_Buffer_Data {
     cz::Arc_Weak<Buffer_Handle> handle;
+    Token_Cache token_cache;
 };
 
 static void job_syntax_highlight_buffer_kill(void* _data) {
     Job_Syntax_Highlight_Buffer_Data* data = (Job_Syntax_Highlight_Buffer_Data*)_data;
     data->handle.drop();
+    data->token_cache.drop();
     cz::heap_allocator().dealloc(data);
 }
 
@@ -272,9 +268,6 @@ static Job_Tick_Result job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler
         return Job_Tick_Result::FINISHED;
     }
     CZ_DEFER(handle.drop());
-
-    Token_Cache clone = {};
-    CZ_DEFER(clone.drop());
 
     const Buffer* buffer = handle->try_lock_reading();
     if (!buffer) {
@@ -292,8 +285,17 @@ static Job_Tick_Result job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler
             return Job_Tick_Result::FINISHED;
         }
 
-        clone = buffer->token_cache.clone();
-        clone.update(buffer);
+        if (data->token_cache.check_points.len() != buffer->token_cache.check_points.len() ||
+            data->token_cache.change_index != buffer->token_cache.change_index) {
+            data->token_cache.change_index = buffer->token_cache.change_index;
+            data->token_cache.check_points.set_len(0);
+            data->token_cache.check_points.reserve(cz::heap_allocator(),
+                                                   buffer->token_cache.check_points.len());
+            data->token_cache.check_points.append(buffer->token_cache.check_points);
+            data->token_cache.ran_to_end = buffer->token_cache.ran_to_end;
+        }
+
+        data->token_cache.update(buffer);
 
         uint64_t state;
         Contents_Iterator iterator;
@@ -308,7 +310,7 @@ static Job_Tick_Result job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler
 
         auto time_start = std::chrono::steady_clock::now();
         while (1) {
-            if (!clone.next_check_point(buffer, &iterator, &state)) {
+            if (!data->token_cache.next_check_point(buffer, &iterator, &state)) {
                 stop = true;
                 break;
             }
@@ -325,14 +327,16 @@ static Job_Tick_Result job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler
         ZoneScopedN("job_syntax_highlight_buffer_tick record results");
 
         // Someone else pre-empted us and added a bunch of check points.
-        if (clone.check_points.len() < buffer_mut->token_cache.check_points.len()) {
+        if (data->token_cache.check_points.len() < buffer_mut->token_cache.check_points.len()) {
             return Job_Tick_Result::MADE_PROGRESS;
         }
 
         // Update again since we could've been pre-empted before we relocked.
-        clone.update(buffer_mut);
+        if (!data->token_cache.update(buffer_mut)) {
+            return Job_Tick_Result::MADE_PROGRESS;
+        }
 
-        std::swap(buffer_mut->token_cache, clone);
+        std::swap(buffer_mut->token_cache, data->token_cache);
     }
 
     if (stop) {
@@ -346,6 +350,7 @@ Asynchronous_Job job_syntax_highlight_buffer(cz::Arc_Weak<Buffer_Handle> handle)
     Job_Syntax_Highlight_Buffer_Data* data =
         cz::heap_allocator().alloc<Job_Syntax_Highlight_Buffer_Data>();
     CZ_ASSERT(data);
+    *data = {};
     data->handle = handle;
 
     Asynchronous_Job job;

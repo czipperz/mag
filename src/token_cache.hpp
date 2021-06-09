@@ -23,9 +23,6 @@ struct Token_Cache {
     /// Destroy the token cache.
     void drop();
 
-    /// Duplicate the token cache.
-    Token_Cache clone() const;
-
     /// Reset to the initial state.
     ///
     /// Use this when you are editing the buffer's contents directly.
