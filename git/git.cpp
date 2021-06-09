@@ -1,7 +1,9 @@
 #include "git.hpp"
 
 #include <cz/defer.hpp>
+#include <cz/file.hpp>
 #include <cz/heap.hpp>
+#include <cz/path.hpp>
 #include <cz/process.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -18,40 +20,37 @@ bool get_git_top_level(Editor* editor,
                        const char* dir_cstr,
                        cz::Allocator allocator,
                        cz::String* top_level_path) {
-    cz::Input_File std_out_read;
-    CZ_DEFER(std_out_read.close());
-
-    cz::Process process;
-    {
-        cz::Process_Options options;
-        options.working_directory = dir_cstr;
-
-        if (!create_process_output_pipe(&options.std_out, &std_out_read)) {
-            client->show_message(editor, "Error: I/O operation failed");
-            return false;
-        }
-        options.std_err = options.std_out;
-        CZ_DEFER(options.std_out.close());
-
-        cz::Str rev_parse_args[] = {"git", "rev-parse", "--show-toplevel"};
-        if (!process.launch_program(rev_parse_args, &options)) {
-            client->show_message(editor, "No git repository found");
-            return false;
-        }
-    }
-
-    read_to_string(std_out_read, allocator, top_level_path);
-
-    int return_value = process.join();
-    if (return_value != 0) {
-        client->show_message(editor, "No git repository found");
+    if (cz::path::make_absolute(dir_cstr, allocator, top_level_path).is_err()) {
+        client->show_message(editor, "Failed to get working directory");
         return false;
     }
 
-    CZ_DEBUG_ASSERT((*top_level_path)[top_level_path->len() - 1] == '\n');
-    top_level_path->pop();
-    top_level_path->null_terminate();
-    return true;
+    // Use the null terminator slot to put a trailing `/` if needed.
+    if (!top_level_path->ends_with('/')) {
+        top_level_path->push('/');
+    }
+
+    top_level_path->reserve(allocator, 5);
+
+    while (1) {
+        size_t old_len = top_level_path->len();
+        top_level_path->append(".git");
+        top_level_path->null_terminate();
+
+        if (cz::file::does_file_exist(top_level_path->buffer())) {
+            top_level_path->set_len(old_len - 1);
+            top_level_path->null_terminate();
+            return true;
+        }
+
+        cz::Option<cz::Str> dir =
+            cz::path::directory_component(top_level_path->slice_end(old_len - 1));
+        if (!dir.is_present) {
+            return false;
+        }
+
+        top_level_path->set_len(dir.value.len);
+    }
 }
 
 void command_save_and_quit(Editor* editor, Command_Source source) {
