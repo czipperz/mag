@@ -307,8 +307,9 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                     window->column_offset = column + 1 - window->cols() + column_grace;
                 }
             } else if (column < window->column_offset + column_grace) {
-                // Scroll left.
-                if (column < column_grace) {
+                // Scroll left.  If we are within the grace or within half a screen
+                // width of the destination of the left border then just go there.
+                if (column < column_grace || column < window->cols() / 2) {
                     window->column_offset = 0;
                 } else {
                     window->column_offset = column - column_grace;
