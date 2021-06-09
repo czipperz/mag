@@ -11,6 +11,7 @@
 #include "commit.hpp"
 #include "contents.hpp"
 #include "mode.hpp"
+#include "ssostr.hpp"
 #include "token_cache.hpp"
 
 namespace mag {
@@ -131,6 +132,6 @@ struct Buffer {
     void render_name(cz::Allocator allocator, cz::String* string) const;
 };
 
-cz::Str clear_buffer(Buffer* buffer);
+SSOStr clear_buffer(Buffer* buffer);
 
 }

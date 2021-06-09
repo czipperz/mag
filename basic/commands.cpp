@@ -1431,7 +1431,7 @@ void command_mark_buffer(Editor* editor, Command_Source source) {
 }
 
 void command_submit_mini_buffer(Editor* editor, Command_Source source) {
-    cz::Str mini_buffer_contents;
+    SSOStr mini_buffer_contents;
     {
         Window_Unified* window = source.client->mini_buffer_window();
         WITH_WINDOW_BUFFER(window);
@@ -1440,7 +1440,7 @@ void command_submit_mini_buffer(Editor* editor, Command_Source source) {
 
     {
         WITH_BUFFER(source.client->messages_id);
-        buffer->contents.insert(source.client->_message.end, mini_buffer_contents);
+        buffer->contents.insert(source.client->_message.end, mini_buffer_contents.as_str());
     }
 
     source.client->restore_selected_buffer();
@@ -1450,7 +1450,7 @@ void command_submit_mini_buffer(Editor* editor, Command_Source source) {
     source.client->_message.response_callback_data = nullptr;
     source.client->dealloc_message();
 
-    message.response_callback(editor, source.client, mini_buffer_contents,
+    message.response_callback(editor, source.client, mini_buffer_contents.as_str(),
                               message.response_callback_data);
 }
 

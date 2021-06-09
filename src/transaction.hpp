@@ -2,9 +2,9 @@
 
 #include <cz/allocator.hpp>
 #include <cz/buffer_array.hpp>
-#include <cz/str.hpp>
 #include <cz/vector.hpp>
 #include "command.hpp"
+#include "ssostr.hpp"
 
 namespace mag {
 
@@ -29,7 +29,7 @@ struct Transaction {
     cz::Allocator value_allocator();
 
     void push(Edit edit);
-    cz::Str last_edit_value() const;
+    SSOStr last_edit_value() const;
 
     /// Commit the changes to the buffer.
     void commit(Command_Function committer = nullptr);

@@ -29,8 +29,8 @@ void Transaction::push(Edit edit) {
     edits.push(edit);
 }
 
-cz::Str Transaction::last_edit_value() const {
-    return edits.last().value.as_str();
+SSOStr Transaction::last_edit_value() const {
+    return edits.last().value;
 }
 
 void Transaction::commit(Command_Function committer) {

@@ -193,7 +193,7 @@ void Buffer::mark_saved() {
     initialize_file_time(this);
 }
 
-cz::Str clear_buffer(Buffer* buffer) {
+SSOStr clear_buffer(Buffer* buffer) {
     if (buffer->contents.len == 0) {
         return {};
     }
@@ -209,7 +209,7 @@ cz::Str clear_buffer(Buffer* buffer) {
     edit.flags = Edit::REMOVE;
     transaction.push(edit);
 
-    cz::Str buffer_contents = transaction.last_edit_value();
+    SSOStr buffer_contents = transaction.last_edit_value();
 
     transaction.commit();
 
