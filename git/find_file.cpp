@@ -47,7 +47,7 @@ void command_git_find_file(Editor* editor, Command_Source source) {
     cz::String top_level_path = {};
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
         if (!get_git_top_level(editor, source.client, buffer->directory.buffer(),
                                cz::heap_allocator(), &top_level_path)) {
             return;
