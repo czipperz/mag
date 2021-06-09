@@ -83,6 +83,8 @@ static void unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
 }
 
 bool Buffer::undo() {
+    ZoneScoped;
+
     if (read_only || commit_index == 0) {
         return false;
     }
@@ -103,6 +105,8 @@ bool Buffer::undo() {
 }
 
 bool Buffer::redo() {
+    ZoneScoped;
+
     if (read_only || commit_index == commits.len()) {
         return false;
     }
@@ -123,6 +127,8 @@ bool Buffer::redo() {
 }
 
 bool Buffer::commit(Commit commit, Command_Function committer) {
+    ZoneScoped;
+
     if (read_only) {
         return false;
     }

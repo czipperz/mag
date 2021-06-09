@@ -9,6 +9,8 @@
 namespace mag {
 
 void insert(Buffer* buffer, Window_Unified* window, SSOStr value, Command_Function committer) {
+    ZoneScoped;
+
     window->update_cursors(buffer);
 
     Transaction transaction;
@@ -32,6 +34,8 @@ void insert_char(Buffer* buffer, Window_Unified* window, char code, Command_Func
 }
 
 void delete_regions(Buffer* buffer, Window_Unified* window, Command_Function committer) {
+    ZoneScoped;
+
     Transaction transaction;
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
