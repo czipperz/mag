@@ -361,22 +361,41 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
 void command_complete_at_point(Editor* editor, Command_Source source) {
     ZoneScoped;
 
-    WITH_SELECTED_BUFFER(source.client);
+    char* directory;
+    {
+        WITH_SELECTED_BUFFER(source.client);
 
-    Contents_Iterator iterator =
-        buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-    Token token;
-    if (!get_token_at_position(buffer, &iterator, &token)) {
-        source.client->show_message(editor, "Cursor is not positioned at a token");
-        return;
+        Contents_Iterator iterator =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+        Token token;
+        if (!get_token_at_position(buffer, &iterator, &token)) {
+            source.client->show_message(editor, "Cursor is not positioned at a token");
+            return;
+        }
+
+        directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer();
     }
 
-    char* directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer();
+    Window_Unified* window = source.client->selected_window();
+
+    // If data wasn't cleared by show_dialog then it needs to be cleaned up now.
+    auto data = (Completion_Engine_Data*)window->completion_cache.engine_context.data;
+    if (data) {
+        CZ_DEBUG_ASSERT(window->completion_cache.engine_context.cleanup);
+        window->completion_cache.engine_context.cleanup(data);
+    }
+
+    data = cz::heap_allocator().alloc<Completion_Engine_Data>();
+    *data = {};
+    data->working_directory = directory;
 
     window->start_completion(completion_engine);
-    window->completion_cache.engine_context.data = directory;
-    window->completion_cache.engine_context.cleanup = [](void* directory) {
-        cz::heap_allocator().dealloc({directory, 0});
+    window->completion_cache.engine_context.data = data;
+    window->completion_cache.engine_context.cleanup = [](void* _data) {
+        auto data = (Completion_Engine_Data*)_data;
+        cz::heap_allocator().dealloc({data->working_directory, 0});
+        data->runner.drop();
+        cz::heap_allocator().dealloc(data);
     };
 }
 
