@@ -589,6 +589,11 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         break;
 
     case Buffer::TEMPORARY:
+        // Temporary files pretty much never use tabs and also shouldn't
+        // have a max column limit.  They're temporary after all!
+        buffer->mode.use_tabs = false;
+        buffer->mode.preferred_column = -1;
+
         if (buffer->name == "*client mini buffer*") {
             buffer->mode.next_token = syntax::path_next_token;
             mini_buffer_key_map(buffer->mode.key_map);
@@ -602,15 +607,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.starts_with("*man ")) {
             buffer->mode.next_token = syntax::process_next_token;
         } else if (buffer->name == "*key map*") {
-            // The key map page uses spaces for alignment.
-            buffer->mode.use_tabs = false;
-            buffer->mode.preferred_column = -1;
             buffer->mode.next_token = syntax::key_map_next_token;
             BIND(buffer->mode.key_map, "\n", command_go_to_key_map_binding);
         } else if (buffer->name == "*splash page*") {
-            // The splash page uses spaces for alignment.
-            buffer->mode.use_tabs = false;
-            buffer->mode.preferred_column = -1;
             buffer->mode.next_token = syntax::splash_next_token;
         }
         break;
