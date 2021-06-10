@@ -523,7 +523,8 @@ static void mini_buffer_key_map(Key_Map& key_map) {
     BIND(key_map, "A-<", command_first_completion);
     BIND(key_map, "A->", command_last_completion);
 
-    BIND(key_map, "A-l", command_path_up_directory);
+    BIND(key_map, "A-u", command_path_up_directory);
+    BIND(key_map, "C-BACKSPACE", command_path_up_directory);
 
     BIND(key_map, "A-i", command_insert_completion);
     BIND(key_map, "\t", command_insert_completion);
