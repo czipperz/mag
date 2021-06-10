@@ -945,15 +945,15 @@ static void draw_window_completion(Cell* cells,
         return;
     }
 
-    load_completion_cache(editor, &window->completion_cache,
-                          editor->theme.window_completion_filter);
-    if (window->completion_cache.filter_context.results.len() == 0) {
+    bool engine_change = load_completion_cache(editor, &window->completion_cache,
+                                               editor->theme.window_completion_filter);
+    if (!engine_change && window->completion_cache.filter_context.results.len() == 0) {
         client->show_message(editor, "No completion results");
         window->abort_completion();
         return;
     }
 
-    if (window->completion_cache.state == Completion_Cache::LOADED) {
+    if (window->completion_cache.state == Completion_Cache::LOADED || engine_change) {
         // todo: deduplicate with the code to draw mini buffer completion cache
         size_t height = window->completion_cache.filter_context.results.len();
         if (height > editor->theme.max_completion_results) {
