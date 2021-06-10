@@ -177,10 +177,7 @@ void command_end_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     kill_extra_cursors(window, source.client);
     window->clear_show_marks_temporarily();
-    if (source.previous_command != command_start_of_buffer &&
-        source.previous_command != command_end_of_buffer &&
-        source.previous_command != region_movement::command_start_of_buffer &&
-        source.previous_command != region_movement::command_end_of_buffer) {
+    if (window->cursors[0].point != 0 && window->cursors[0].point != buffer->contents.len) {
         push_jump(window, source.client, buffer);
     }
     window->cursors[0].point = buffer->contents.len;
@@ -190,10 +187,7 @@ void command_start_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     kill_extra_cursors(window, source.client);
     window->clear_show_marks_temporarily();
-    if (source.previous_command != command_start_of_buffer &&
-        source.previous_command != command_end_of_buffer &&
-        source.previous_command != region_movement::command_start_of_buffer &&
-        source.previous_command != region_movement::command_end_of_buffer) {
+    if (window->cursors[0].point != 0 && window->cursors[0].point != buffer->contents.len) {
         push_jump(window, source.client, buffer);
     }
     window->cursors[0].point = 0;
@@ -1358,7 +1352,10 @@ static void command_goto_line_callback(Editor* editor, Client* client, cz::Str s
     parse_number(str, &lines);
 
     WITH_CONST_SELECTED_BUFFER(client);
-    push_jump(window, client, buffer);
+    if (window->cursors.len() > 1 ||
+        (window->cursors[0].point != 0 && window->cursors[0].point != buffer->contents.len)) {
+        push_jump(window, client, buffer);
+    }
 
     Contents_Iterator iterator = start_of_line_position(buffer->contents, lines);
     window->cursors[0].point = iterator.position;
@@ -1373,7 +1370,10 @@ static void command_goto_position_callback(Editor* editor,
     parse_number(str, &position);
 
     WITH_CONST_SELECTED_BUFFER(client);
-    push_jump(window, client, buffer);
+    if (window->cursors.len() > 1 ||
+        (window->cursors[0].point != 0 && window->cursors[0].point != buffer->contents.len)) {
+        push_jump(window, client, buffer);
+    }
 
     Contents_Iterator iterator =
         buffer->contents.iterator_at(cz::min(position, buffer->contents.len));
@@ -1424,7 +1424,10 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
 
 void command_mark_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
-    push_jump(window, source.client, buffer);
+    if (window->cursors.len() > 1 ||
+        (window->cursors[0].point != 0 && window->cursors[0].point != buffer->contents.len)) {
+        push_jump(window, source.client, buffer);
+    }
     window->show_marks = true;
     window->cursors[0].mark = 0;
     window->cursors[0].point = buffer->contents.len;
