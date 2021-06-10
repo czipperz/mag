@@ -43,13 +43,10 @@ bool get_git_top_level(Editor* editor,
             return true;
         }
 
-        cz::Option<cz::Str> dir =
-            cz::path::directory_component(top_level_path->slice_end(old_len - 1));
-        if (!dir.is_present) {
+        top_level_path->set_len(old_len - 1);
+        if (!cz::path::pop_name(top_level_path)) {
             return false;
         }
-
-        top_level_path->set_len(dir.value.len);
     }
 }
 

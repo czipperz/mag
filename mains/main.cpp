@@ -210,10 +210,8 @@ int mag_main(int argc, char** argv) {
 
         cz::String program_dir_ = cz::Str(program_name).duplicate(cz::heap_allocator());
         CZ_DEFER(program_dir_.drop(cz::heap_allocator()));
-        cz::path::convert_to_forward_slashes(program_dir_.buffer(), program_dir_.len());
-        auto program_dir_2 = cz::path::directory_component(program_dir_);
-        if (program_dir_2.is_present) {
-            program_dir_.set_len(program_dir_2.value.len);
+        cz::path::convert_to_forward_slashes(&program_dir_);
+        if (cz::path::pop_name(&program_dir_)) {
             program_dir_.null_terminate();
             program_dir = program_dir_.buffer();
         } else {

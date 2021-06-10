@@ -377,13 +377,13 @@ static void command_directory_copy_path_callback(Editor* editor,
     }
 
     if (cz::file::is_directory(new_path.buffer())) {
-        cz::Option<cz::Str> name = cz::path::name_component(path);
-        if (name.is_present) {
-            new_path.reserve(cz::heap_allocator(), name.value.len + 2);
+        cz::Str name;
+        if (cz::path::name_component(path, &name)) {
+            new_path.reserve(cz::heap_allocator(), name.len + 2);
             if (!new_path.ends_with("/")) {
                 new_path.push('/');
             }
-            new_path.append(name.value);
+            new_path.append(name);
             new_path.null_terminate();
         }
     }
@@ -438,13 +438,13 @@ static void command_directory_rename_path_callback(Editor* editor,
     }
 
     if (cz::file::is_directory(new_path.buffer())) {
-        cz::Option<cz::Str> name = cz::path::name_component(path);
-        if (name.is_present) {
-            new_path.reserve(cz::heap_allocator(), name.value.len + 2);
+        cz::Str name;
+        if (cz::path::name_component(path, &name)) {
+            new_path.reserve(cz::heap_allocator(), name.len + 2);
             if (!new_path.ends_with("/")) {
                 new_path.push('/');
             }
-            new_path.append(name.value);
+            new_path.append(name);
             new_path.null_terminate();
         }
     }
