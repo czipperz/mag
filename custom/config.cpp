@@ -370,9 +370,9 @@ static void create_theme(Theme& theme) {
 
     theme.colors = mag::theme::solarized_dark;
 
-    theme.special_faces[Face_Type::DEFAULT_MODE_LINE] = {{}, 17, 0};
-    theme.special_faces[Face_Type::UNSAVED_MODE_LINE] = {1, {}, 0};
-    theme.special_faces[Face_Type::SELECTED_MODE_LINE] = {{}, 0, Face::REVERSE};
+    theme.special_faces[Face_Type::DEFAULT_MODE_LINE] = {0, 7, 0};
+    theme.special_faces[Face_Type::UNSAVED_MODE_LINE] = {160, {}, 0};
+    theme.special_faces[Face_Type::SELECTED_MODE_LINE] = {39, 0, Face::REVERSE};
 
     theme.special_faces[Face_Type::SELECTED_CURSOR] = {0, 159, 0};
     theme.special_faces[Face_Type::SELECTED_REGION] = {0, 39, 0};
@@ -380,7 +380,7 @@ static void create_theme(Theme& theme) {
     theme.special_faces[Face_Type::OTHER_REGION] = {0, 247, 0};
 
     theme.special_faces[Face_Type::MINI_BUFFER_PROMPT] = {{}, {}, 0};
-    theme.special_faces[Face_Type::MINI_BUFFER_COMPLETION_SELECTED] = {{}, {}, Face::REVERSE};
+    theme.special_faces[Face_Type::MINI_BUFFER_COMPLETION_SELECTED] = {0, 39, 0};
 
     theme.special_faces[Face_Type::WINDOW_COMPLETION_NORMAL] = {0, 12, 0};
     theme.special_faces[Face_Type::WINDOW_COMPLETION_SELECTED] = {0, 7, 0};
