@@ -614,15 +614,24 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         }
         break;
 
-    case Buffer::FILE:
+    case Buffer::FILE: {
         buffer->mode.decorations.reserve(1);
         buffer->mode.decorations.push(syntax::decoration_line_ending_indicator());
 
-        if (buffer->name.ends_with(".c") || buffer->name.ends_with(".h") ||
-            buffer->name.ends_with(".cc") || buffer->name.ends_with(".hh") ||
-            buffer->name.ends_with(".cpp") || buffer->name.ends_with(".hpp") ||
-            buffer->name.ends_with(".cxx") || buffer->name.ends_with(".hxx") ||
-            buffer->name.ends_with(".glsl")) {
+        cz::Str name = buffer->name;
+
+        // Treat `#test.c#` as `test.c`.
+        if (name.len > 2 && name.starts_with('#') && name.ends_with('#')) {
+            name = name.slice(1, name.len - 1);
+        }
+        // Treat `test.c~` as `test.c`.
+        if (name.ends_with('~')) {
+            name = name.slice_end(name.len - 1);
+        }
+
+        if (name.ends_with(".c") || name.ends_with(".h") || name.ends_with(".cc") ||
+            name.ends_with(".hh") || name.ends_with(".cpp") || name.ends_with(".hpp") ||
+            name.ends_with(".cxx") || name.ends_with(".hxx") || name.ends_with(".glsl")) {
             buffer->mode.next_token = syntax::cpp_next_token;
             BIND(buffer->mode.key_map, "A-x A-f", clang_format::command_clang_format_buffer);
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
@@ -633,10 +642,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (buffer->name.ends_with(".md")) {
+        } else if (name.ends_with(".md")) {
             buffer->mode.next_token = syntax::md_next_token;
             BIND(buffer->mode.key_map, "A-h", markdown::command_reformat_paragraph);
-        } else if (buffer->name.ends_with(".css")) {
+        } else if (name.ends_with(".css")) {
             buffer->mode.next_token = syntax::css_next_token;
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment_block_only);
 
@@ -647,7 +656,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (buffer->name.ends_with(".html")) {
+        } else if (name.ends_with(".html")) {
             buffer->mode.next_token = syntax::html_next_token;
 
             static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
@@ -655,7 +664,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (buffer->name.ends_with(".js")) {
+        } else if (name.ends_with(".js")) {
             buffer->mode.next_token = syntax::js_next_token;
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
@@ -665,7 +674,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (buffer->name.ends_with(".go")) {
+        } else if (name.ends_with(".go")) {
             buffer->mode.next_token = syntax::go_next_token;
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
@@ -675,15 +684,14 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (buffer->name.ends_with(".sh") || buffer->name.ends_with(".bash") ||
-                   buffer->name.ends_with(".zsh") || buffer->name == ".bashrc" ||
-                   buffer->name == ".zshrc" || buffer->name == "Makefile" ||
-                   buffer->name == ".gitconfig" ||
+        } else if (name.ends_with(".sh") || name.ends_with(".bash") || name.ends_with(".zsh") ||
+                   name == ".bashrc" || name == ".zshrc" || name == "Makefile" ||
+                   name == ".gitconfig" ||
                    // Powershell isn't really a shell script but it pretty much works.
-                   buffer->name.ends_with(".ps1") ||
+                   name.ends_with(".ps1") ||
                    // Perl isn't really a shell script but it pretty much works.
-                   buffer->name.ends_with(".pl")) {
-            if (buffer->name == "Makefile" || buffer->name == ".gitconfig") {
+                   name.ends_with(".pl")) {
+            if (name == "Makefile" || name == ".gitconfig") {
                 // Makefiles must use tabs so set that up automatically.
                 buffer->mode.tab_width = buffer->mode.indent_width;
                 buffer->mode.use_tabs = true;
@@ -696,7 +704,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (buffer->name.ends_with(".py") || buffer->name.ends_with(".gpy")) {
+        } else if (name.ends_with(".py") || name.ends_with(".gpy")) {
             buffer->mode.next_token = syntax::python_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
 
@@ -704,7 +712,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (buffer->name == "CMakeLists.txt") {
+        } else if (name == "CMakeLists.txt") {
             buffer->mode.next_token = syntax::cmake_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
 
@@ -712,18 +720,18 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (buffer->name.ends_with(".patch") || buffer->name.ends_with(".diff")) {
+        } else if (name.ends_with(".patch") || name.ends_with(".diff")) {
             buffer->mode.next_token = syntax::patch_next_token;
-            if (buffer->name == "addp-hunk-edit.diff") {
+            if (name == "addp-hunk-edit.diff") {
                 git_edit_key_map(buffer->mode.key_map);
             }
-        } else if (buffer->name == "git-rebase-todo") {
+        } else if (name == "git-rebase-todo") {
             buffer->mode.next_token = syntax::git_rebase_todo_next_token;
             git_edit_key_map(buffer->mode.key_map);
-        } else if (buffer->name == "COMMIT_EDITMSG") {
+        } else if (name == "COMMIT_EDITMSG") {
             buffer->mode.next_token = syntax::git_commit_edit_message_next_token;
             git_edit_key_map(buffer->mode.key_map);
-        } else if (buffer->name == "color test") {
+        } else if (name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
         } else {
             buffer->mode.next_token = syntax::general_next_token;
@@ -735,6 +743,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         }
         break;
+    }
     }
 }
 
