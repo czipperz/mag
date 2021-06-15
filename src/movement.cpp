@@ -166,6 +166,17 @@ uint64_t char_visual_columns(const Mode& mode, char ch, uint64_t column) {
     if (ch == '\t') {
         column += mode.tab_width;
         column -= column % mode.tab_width;
+    } else if (!cz::is_print(ch)) {
+        char uch = ch;
+        // We format non-printable characters as `\[%d;`.
+        column += 3;
+        if (uch >= 100) {
+            column += 3;
+        } else if (uch >= 10) {
+            column += 2;
+        } else {
+            column += 1;
+        }
     } else {
         column++;
     }
