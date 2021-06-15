@@ -841,14 +841,15 @@ static void draw_buffer_contents(Cell* cells,
             ADDCH(face, '\\');
             ADDCH(face, '[');
             bool already = false;
-            if ((ch / 100) % 10) {
-                ADDCH(face, (ch / 100) % 10 + '0');
+            unsigned uch = ch;
+            if ((uch / 100) % 10) {
+                ADDCH(face, (uch / 100) % 10 + '0');
                 already = true;
             }
-            if ((ch / 10) % 10 || already) {
-                ADDCH(face, (ch / 10) % 10 + '0');
+            if ((uch / 10) % 10 || already) {
+                ADDCH(face, (uch / 10) % 10 + '0');
             }
-            ADDCH(face, ch % 10 + '0');
+            ADDCH(face, uch % 10 + '0');
             ADDCH(face, ';');
         }
     }
