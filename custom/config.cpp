@@ -320,10 +320,10 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-g A-g", command_goto_line);
     BIND(key_map, "A-g g", command_goto_position);
 
-    BIND(key_map, "A-g n", command_search_open_next);
-    BIND(key_map, "A-g p", command_search_open_previous);
-    BIND(key_map, "A-g A-n", command_search_open_next);
-    BIND(key_map, "A-g A-p", command_search_open_previous);
+    BIND(key_map, "A-g n", command_search_continue_next);
+    BIND(key_map, "A-g p", command_search_continue_previous);
+    BIND(key_map, "A-g A-n", command_search_continue_next);
+    BIND(key_map, "A-g A-p", command_search_continue_previous);
 
     BIND(key_map, "A-g a", prose::command_alternate);
 
@@ -506,11 +506,12 @@ static void directory_key_map(Key_Map& key_map) {
 }
 
 static void search_key_map(Key_Map& key_map) {
-    BIND(key_map, "\n", command_search_open);
+    BIND(key_map, "\n", command_search_open_selected);
     BIND(key_map, "g", command_search_reload);
 
-    BIND(key_map, "n", command_forward_line);
-    BIND(key_map, "p", command_backward_line);
+    BIND(key_map, "o", command_search_open_selected_no_swap);
+    BIND(key_map, "n", command_search_open_next_no_swap);
+    BIND(key_map, "p", command_search_open_previous_no_swap);
 }
 
 static void mini_buffer_key_map(Key_Map& key_map) {

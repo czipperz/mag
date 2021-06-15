@@ -85,15 +85,19 @@ static void open_file_and_goto_position(Editor* editor,
         split->split_ratio = 0.75f;
     }
 
-    cycle_window(client);
+    reverse_cycle_window(client);
 
     open_file(editor, client, path);
 
-    WITH_CONST_SELECTED_BUFFER(client);
-    kill_extra_cursors(window, client);
-    Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
-    window->cursors[0].point = iterator.position;
-    center_in_window(window, buffer->mode, iterator);
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        kill_extra_cursors(window, client);
+        Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
+        window->cursors[0].point = iterator.position;
+        center_in_window(window, buffer->mode, iterator);
+    }
+
+    cycle_window(client);
 }
 
 void command_search_reload(Editor* editor, Command_Source source) {
@@ -122,7 +126,7 @@ void command_search_reload(Editor* editor, Command_Source source) {
                            script.as_str(), "Failed to rerun script");
 }
 
-void command_search_open(Editor* editor, Command_Source source) {
+static void search_open_selected_no_swap(Editor* editor, Client* client) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     uint64_t line = 0;
@@ -130,7 +134,7 @@ void command_search_open(Editor* editor, Command_Source source) {
 
     bool found;
     {
-        WITH_CONST_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(client);
         found = get_file_to_open(
             buffer, buffer->contents.iterator_at(window->cursors[window->selected_cursor].point),
             &path, &line, &column);
@@ -139,23 +143,35 @@ void command_search_open(Editor* editor, Command_Source source) {
         return;
     }
 
-    open_file_and_goto_position(editor, source.client, path, line, column);
+    open_file_and_goto_position(editor, client, path, line, column);
 }
 
-void command_search_open_next(Editor* editor, Command_Source source) {
+void command_search_open_selected_no_swap(Editor* editor, Command_Source source) {
+    search_open_selected_no_swap(editor, source.client);
+}
+
+void command_search_open_selected(Editor* editor, Command_Source source) {
+    search_open_selected_no_swap(editor, source.client);
+    reverse_cycle_window(source.client);
+}
+
+void command_search_continue_selected(Editor* editor, Command_Source source) {
+    cycle_window(source.client);
+    search_open_selected_no_swap(editor, source.client);
+    reverse_cycle_window(source.client);
+}
+
+static void search_open_next_no_swap(Editor* editor, Client* client) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     uint64_t line = 0;
     uint64_t column = 0;
 
-    reverse_cycle_window(source.client);
-
     bool found;
     {
-        WITH_CONST_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(client);
         if (buffer->mode.next_token != syntax::search_next_token) {
-            cycle_window(source.client);
-            source.client->show_message(editor, "Error: trying to parse buffer not in search mode");
+            client->show_message(editor, "Error: trying to parse buffer not in search mode");
             return;
         }
 
@@ -167,27 +183,38 @@ void command_search_open_next(Editor* editor, Command_Source source) {
         found = get_file_to_open(buffer, it, &path, &line, &column);
     }
     if (!found) {
-        cycle_window(source.client);
         return;
     }
 
-    open_file_and_goto_position(editor, source.client, path, line, column);
+    open_file_and_goto_position(editor, client, path, line, column);
 }
 
-void command_search_open_previous(Editor* editor, Command_Source source) {
+void command_search_open_next_no_swap(Editor* editor, Command_Source source) {
+    search_open_next_no_swap(editor, source.client);
+}
+
+void command_search_open_next(Editor* editor, Command_Source source) {
+    search_open_next_no_swap(editor, source.client);
+    reverse_cycle_window(source.client);
+}
+
+void command_search_continue_next(Editor* editor, Command_Source source) {
+    cycle_window(source.client);
+    search_open_next_no_swap(editor, source.client);
+    reverse_cycle_window(source.client);
+}
+
+static void search_open_previous_no_swap(Editor* editor, Client* client) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     uint64_t line = 0;
     uint64_t column = 0;
 
-    reverse_cycle_window(source.client);
-
     bool found;
     {
-        WITH_CONST_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(client);
         if (buffer->mode.next_token != syntax::search_next_token) {
-            cycle_window(source.client);
-            source.client->show_message(editor, "Error: trying to parse buffer not in search mode");
+            client->show_message(editor, "Error: trying to parse buffer not in search mode");
             return;
         }
 
@@ -199,11 +226,25 @@ void command_search_open_previous(Editor* editor, Command_Source source) {
         found = get_file_to_open(buffer, it, &path, &line, &column);
     }
     if (!found) {
-        cycle_window(source.client);
         return;
     }
 
-    open_file_and_goto_position(editor, source.client, path, line, column);
+    open_file_and_goto_position(editor, client, path, line, column);
+}
+
+void command_search_open_previous_no_swap(Editor* editor, Command_Source source) {
+    search_open_previous_no_swap(editor, source.client);
+}
+
+void command_search_open_previous(Editor* editor, Command_Source source) {
+    search_open_previous_no_swap(editor, source.client);
+    reverse_cycle_window(source.client);
+}
+
+void command_search_continue_previous(Editor* editor, Command_Source source) {
+    cycle_window(source.client);
+    search_open_previous_no_swap(editor, source.client);
+    reverse_cycle_window(source.client);
 }
 
 }
