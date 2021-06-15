@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cz/str.hpp>
+
 namespace mag {
 
 extern char* program_name;
-extern const char* program_dir;
+extern cz::Str program_dir;
 
 }

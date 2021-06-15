@@ -944,14 +944,10 @@ void set_icon(SDL_Window* sdl_window) {
         }
     }
 #else
-    auto prog_name = cz::path::directory_component(program_name);
-    if (!prog_name.is_present) {
-        prog_name.value = "";
-    }
     cz::String logo = {};
-    logo.reserve(cz::heap_allocator(), prog_name.value.len + 8 + 1);
+    logo.reserve(cz::heap_allocator(), program_dir.len + 8 + 1);
     CZ_DEFER(logo.drop(cz::heap_allocator()));
-    logo.append(prog_name.value);
+    logo.append(program_dir);
     logo.append("logo.png");
     logo.null_terminate();
 

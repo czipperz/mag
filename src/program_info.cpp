@@ -3,6 +3,6 @@
 namespace mag {
 
 char* program_name;
-const char* program_dir;
+cz::Str program_dir;
 
 }
