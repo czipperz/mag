@@ -14,7 +14,13 @@ void center_selected_cursor(Window_Unified* window, const Buffer* buffer) {
 }
 
 void command_center_in_window(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
+    // If we have a one line mini buffer then we want to center the normal window 100% of the time.
+    Window_Unified* window = source.client->selected_normal_window;
+    if (source.client->_select_mini_buffer && source.client->_mini_buffer->rows() > 1) {
+        window = source.client->_mini_buffer;
+    }
+
+    WITH_CONST_WINDOW_BUFFER(window);
     center_selected_cursor(window, buffer);
 }
 
