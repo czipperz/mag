@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <algorithm>
 #include <cz/directory.hpp>
 #include <cz/file.hpp>
 #include <cz/heap_string.hpp>
@@ -69,6 +70,12 @@ static void get_selected_entry(Window_Unified* window,
         buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
     start_of_line(&it);
 
+    // The first line is the title bar.
+    if (it.position == 0) {
+        *has_entry = false;
+        return;
+    }
+
     *has_entry = it.position + offset < buffer->contents.len;
     if (*has_entry) {
         it.advance(offset);
@@ -94,26 +101,28 @@ static void reload_directory_window(Editor* editor,
 
     kill_extra_cursors(window, client);
 
-    Contents_Iterator second_line_iterator = buffer->contents.start();
-    forward_line(buffer->mode, &second_line_iterator);
+    uint64_t cursor_position = 0;
 
     if (has_entry) {
-        Contents_Iterator it = second_line_iterator;
+        Contents_Iterator it = buffer->contents.start();
         while (it.position + offset < buffer->contents.len) {
             it.advance(offset);
             Contents_Iterator eol = it;
             end_of_line(&eol);
             if (matches(it, eol.position, selected)) {
-                second_line_iterator = it;
+                cursor_position = it.position;
                 break;
             }
 
             end_of_line(&it);
             forward_char(&it);
         }
+    } else {
+        // There are 26 columns on the first line in the shortest configuration.
+        cursor_position = std::min(window->cursors[0].point, (uint64_t)26);
     }
 
-    window->cursors[0].point = window->cursors[0].mark = second_line_iterator.position;
+    window->cursors[0].point = window->cursors[0].mark = cursor_position;
 }
 
 void command_directory_reload(Editor* editor, Command_Source source) {
