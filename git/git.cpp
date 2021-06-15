@@ -20,6 +20,11 @@ bool get_git_top_level(Editor* editor,
                        const char* dir_cstr,
                        cz::Allocator allocator,
                        cz::String* top_level_path) {
+    // Use the current working directory if none is provided.
+    if (!dir_cstr) {
+        dir_cstr = ".";
+    }
+
     if (cz::path::make_absolute(dir_cstr, allocator, top_level_path).is_err()) {
         client->show_message(editor, "Failed to get working directory");
         return false;
