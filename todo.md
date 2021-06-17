@@ -14,9 +14,6 @@
 * Run compile
 * Edit server
 
-* Multi cursors
-  - Cycle selected cursor
-
 * Eliminate copy leak bug
   - Deallocate other cursors' copies
 
