@@ -1520,5 +1520,69 @@ void command_show_date_of_build(Editor* editor, Command_Source source) {
     source.client->show_message(editor, "Date of build: " __DATE__ " " __TIME__);
 }
 
+void command_comment_hash(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    if (window->show_marks) {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            Contents_Iterator it = buffer->contents.iterator_at(cursors[c].start());
+            uint64_t min_column = -1;
+
+            // Find the minimum visual column for each line in the region.
+            start_of_line(&it);
+            do {
+                Contents_Iterator sol = it;
+                forward_through_whitespace(&it);
+                uint64_t column = count_visual_columns(buffer->mode, sol, it.position);
+                if (column < min_column) {
+                    min_column = column;
+                }
+
+                end_of_line(&it);
+                forward_char(&it);
+            } while (it.position < cursors[c].end());
+
+            // Insert `# ` at the minimum visual column for each line in the region.
+            it.retreat_to(cursors[c].start());
+            start_of_line(&it);
+            do {
+                go_to_visual_column(buffer->mode, &it, min_column);
+
+                Edit insert;
+                insert.value = SSOStr::from_constant("# ");
+                insert.position = it.position + offset;
+                insert.flags = Edit::INSERT;
+                transaction.push(insert);
+                offset += 2;
+
+                end_of_line(&it);
+                forward_char(&it);
+            } while (it.position < cursors[c].end());
+        }
+    } else {
+        Contents_Iterator it = buffer->contents.iterator_at(cursors[0].point);
+        for (size_t c = 0; c < cursors.len; ++c) {
+            it.advance_to(cursors[c].point);
+            start_of_line_text(&it);
+
+            Edit insert;
+            insert.value = SSOStr::from_constant("# ");
+            insert.position = it.position + offset;
+            insert.flags = Edit::INSERT;
+            transaction.push(insert);
+            offset += 2;
+        }
+    }
+
+    transaction.commit();
+}
+
 }
 }

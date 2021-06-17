@@ -13,6 +13,7 @@
 #include "basic/diff_commands.hpp"
 #include "basic/directory_commands.hpp"
 #include "basic/help_commands.hpp"
+#include "basic/html_commands.hpp"
 #include "basic/indent_commands.hpp"
 #include "basic/macro_commands.hpp"
 #include "basic/markdown_commands.hpp"
@@ -660,6 +661,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".html")) {
             buffer->mode.next_token = syntax::html_next_token;
+            BIND(buffer->mode.key_map, "A-;", html::command_comment);
 
             static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
                                                Token_Type::HTML_ATTRIBUTE_NAME};
@@ -701,6 +703,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             buffer->mode.next_token = syntax::sh_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
+            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -709,6 +712,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (name.ends_with(".py") || name.ends_with(".gpy")) {
             buffer->mode.next_token = syntax::python_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
+            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -717,6 +721,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (name == "CMakeLists.txt") {
             buffer->mode.next_token = syntax::cmake_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
+            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -729,9 +734,11 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             }
         } else if (name == "git-rebase-todo") {
             buffer->mode.next_token = syntax::git_rebase_todo_next_token;
+            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             git_edit_key_map(buffer->mode.key_map);
         } else if (name == "COMMIT_EDITMSG") {
             buffer->mode.next_token = syntax::git_commit_edit_message_next_token;
+            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             git_edit_key_map(buffer->mode.key_map);
         } else if (name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
