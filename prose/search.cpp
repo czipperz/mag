@@ -17,23 +17,10 @@ static void run_ag(Client* client,
                    const char* directory,
                    cz::Str query,
                    bool query_word) {
-    // Escape a starting `-` because there isn't a way to escape it with an argument to ag.
-    cz::Heap_String query_escaped = {};
-    CZ_DEFER(query_escaped.drop());
-    if (query.starts_with("-")) {
-        query_escaped.reserve(query.len + 1);
-        query_escaped.push('\\');
-        query_escaped.append(query);
-    } else {
-        query_escaped.reserve(query.len);
-        query_escaped.append(query);
-    }
-
     cz::Heap_Vector<cz::Str> args = {};
     CZ_DEFER(args.drop());
     {
-        cz::Str defargs[] = {"ag", "--column", "--fixed-strings", "--case-sensitive",
-                             query_escaped};
+        cz::Str defargs[] = {"ag", "--column", "--fixed-strings", "--case-sensitive", "--", query};
         args.reserve(cz::len(defargs) + query_word);
         args.append(defargs);
 
