@@ -2,6 +2,7 @@
 
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
+#include <cz/find_file.hpp>
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
@@ -30,29 +31,7 @@ bool get_git_top_level(Editor* editor,
         return false;
     }
 
-    // Use the null terminator slot to put a trailing `/` if needed.
-    if (!top_level_path->ends_with('/')) {
-        top_level_path->push('/');
-    }
-
-    top_level_path->reserve(allocator, 5);
-
-    while (1) {
-        size_t old_len = top_level_path->len();
-        top_level_path->append(".git");
-        top_level_path->null_terminate();
-
-        if (cz::file::does_file_exist(top_level_path->buffer())) {
-            top_level_path->set_len(old_len - 1);
-            top_level_path->null_terminate();
-            return true;
-        }
-
-        top_level_path->set_len(old_len - 1);
-        if (!cz::path::pop_name(top_level_path)) {
-            return false;
-        }
-    }
+    return cz::find_dir_with_file_up(allocator, top_level_path, ".git");
 }
 
 void command_save_and_quit(Editor* editor, Command_Source source) {
