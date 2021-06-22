@@ -8,6 +8,7 @@
 #include <syntax/tokenize_search.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
+#include "match.hpp"
 #include "movement.hpp"
 #include "visible_region.hpp"
 #include "window_commands.hpp"
@@ -16,15 +17,7 @@ namespace mag {
 namespace basic {
 
 static bool eat_until_colon(Contents_Iterator* iterator) {
-    while (1) {
-        if (iterator->at_eob()) {
-            return false;
-        }
-        if (iterator->get() == ':') {
-            return true;
-        }
-        iterator->advance();
-    }
+    return find(iterator, ':');
 }
 
 static bool parse_number(Contents_Iterator* iterator, uint64_t* num) {
