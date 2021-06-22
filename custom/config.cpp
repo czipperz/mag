@@ -683,6 +683,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
 
+            // Go uses tabs for alignment.
+            buffer->mode.tab_width = buffer->mode.indent_width;
+            buffer->mode.use_tabs = true;
+
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
