@@ -639,6 +639,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-x A-f", clang_format::command_clang_format_buffer);
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
+            BIND(buffer->mode.key_map, "A-x *", cpp::command_make_indirect);
+            BIND(buffer->mode.key_map, "A-x &", cpp::command_make_direct);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};

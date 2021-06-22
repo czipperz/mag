@@ -191,5 +191,193 @@ void command_reformat_comment_block_only(Editor* editor, Command_Source source) 
     }
 }
 
+static void change_indirection(Buffer* buffer, cz::Slice<Cursor> cursors, bool increase) {
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    Contents_Iterator iterator = buffer->contents.start();
+    for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+
+        // Go to start of token.
+        bool before_start = false;
+        Contents_Iterator start = iterator;
+        backward_char(&start);
+        while (!start.at_bob()) {
+            char ch = start.get();
+            if (ch == '_' || cz::is_alnum(ch)) {
+                start.retreat();
+            } else {
+                before_start = true;
+                break;
+            }
+        }
+
+        // Go to the end of the token.
+        Contents_Iterator end = iterator;
+        while (!end.at_eob()) {
+            char ch = end.get();
+            if (ch == '_' || cz::is_alnum(ch)) {
+                end.advance();
+            } else {
+                break;
+            }
+        }
+
+        if (looking_at(end, ".")) {
+            if (increase) {
+                // `a.b` becomes `a->b`.
+                Edit remove_dot;
+                remove_dot.value = SSOStr::from_char('.');
+                remove_dot.position = end.position + offset;
+                remove_dot.flags = Edit::REMOVE_AFTER_POSITION;
+                transaction.push(remove_dot);
+
+                Edit insert_arrow;
+                insert_arrow.value = SSOStr::from_constant("->");
+                insert_arrow.position = end.position + offset;
+                insert_arrow.flags = Edit::INSERT_AFTER_POSITION;
+                transaction.push(insert_arrow);
+
+                offset += 1;
+            } else {
+                // `a.b` becomes `(&a).b`.
+                Edit insert_start;
+                insert_start.value = SSOStr::from_constant("(&");
+                insert_start.position = start.position + before_start + offset;
+                offset += 2;
+                insert_start.flags = Edit::INSERT;
+                transaction.push(insert_start);
+
+                Edit insert_end;
+                insert_end.value = SSOStr::from_char(')');
+                insert_end.position = end.position + offset;
+                offset += 1;
+                insert_end.flags = Edit::INSERT_AFTER_POSITION;
+                transaction.push(insert_end);
+            }
+        } else if (looking_at(end, "->")) {
+            if (increase) {
+                // `a->b` becomes `(*a)->b`.
+                Edit insert_start;
+                insert_start.value = SSOStr::from_constant("(*");
+                insert_start.position = start.position + before_start + offset;
+                offset += 2;
+                insert_start.flags = Edit::INSERT;
+                transaction.push(insert_start);
+
+                Edit insert_end;
+                insert_end.value = SSOStr::from_char(')');
+                insert_end.position = end.position + offset;
+                offset += 1;
+                insert_end.flags = Edit::INSERT_AFTER_POSITION;
+                transaction.push(insert_end);
+            } else {
+                // `a->b` becomes `a.b`.
+                Edit remove_arrow;
+                remove_arrow.value = SSOStr::from_constant("->");
+                remove_arrow.position = end.position + offset;
+                remove_arrow.flags = Edit::REMOVE_AFTER_POSITION;
+                transaction.push(remove_arrow);
+
+                Edit insert_dot;
+                insert_dot.value = SSOStr::from_char('.');
+                insert_dot.position = end.position + offset;
+                insert_dot.flags = Edit::INSERT_AFTER_POSITION;
+                transaction.push(insert_dot);
+
+                offset -= 1;
+            }
+        } else {
+            if (increase) {
+                if (start.get() == '&') {
+                    // `&a` -> `a`.
+                    Edit remove_ampersand;
+                    remove_ampersand.value = SSOStr::from_char('&');
+                    remove_ampersand.position = start.position + offset;
+                    offset -= 1;
+                    remove_ampersand.flags = Edit::REMOVE;
+                    transaction.push(remove_ampersand);
+                    continue;
+                }
+
+                // `(*a)->b` becomes `(**a)->b` or `a + b` becomes `*a + b`.
+                Edit insert_star;
+                insert_star.value = SSOStr::from_char('*');
+                insert_star.position = start.position + before_start + offset;
+                offset += 1;
+                insert_star.flags = Edit::INSERT;
+                transaction.push(insert_star);
+            } else {
+                // `(*a)->b` becomes `a->b`, `*a + b` becomes `a + b`, and `a + b` becomes `&a + b`.
+                if (start.get() != '*') {
+                    // `a + b` becomes `&a + b` or `&a + b` becomes `&&a + b`.
+                    Edit insert_ampersand;
+                    insert_ampersand.value = SSOStr::from_char('&');
+                    insert_ampersand.position = start.position + before_start + offset;
+                    offset += 1;
+                    insert_ampersand.flags = Edit::INSERT;
+                    transaction.push(insert_ampersand);
+                    continue;
+                }
+
+                Contents_Iterator start2 = start;
+                if (start2.at_bob()) {
+                // `*a + b` becomes `a + b`.
+                just_remove_star:
+                    Edit remove_star;
+                    remove_star.value = SSOStr::from_char('*');
+                    remove_star.position = start.position + offset;
+                    offset -= 1;
+                    remove_star.flags = Edit::REMOVE;
+                    transaction.push(remove_star);
+                    continue;
+                }
+
+                start2.retreat();
+                if (start2.get() != '(') {
+                    // `**a` becomes `*a` or `x = *a` becomes `x = a`.
+                    goto just_remove_star;
+                }
+
+                if (end.at_eob() || end.get() != ')') {
+                    // `(*a + b)` becomes `(a + b)`
+                    goto just_remove_star;
+                }
+
+                // `(*a)` becomes `a`.
+                Edit remove_start;
+                remove_start.value = SSOStr::from_constant("(*");
+                remove_start.position = start2.position + offset;
+                offset -= 2;
+                remove_start.flags = Edit::REMOVE;
+                transaction.push(remove_start);
+
+                Edit remove_end;
+                remove_end.value = SSOStr::from_char(')');
+                remove_end.position = end.position + offset;
+                offset -= 1;
+                remove_end.flags = Edit::REMOVE_AFTER_POSITION;
+                transaction.push(remove_end);
+                continue;
+            }
+        }
+    }
+
+    transaction.commit();
+}
+
+void command_make_direct(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    change_indirection(buffer, window->cursors, false);
+}
+
+void command_make_indirect(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    change_indirection(buffer, window->cursors, true);
+}
+
 }
 }
