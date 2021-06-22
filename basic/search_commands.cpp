@@ -52,6 +52,10 @@ static bool get_file_to_open(const Buffer* buffer,
                              uint64_t* line,
                              uint64_t* column) {
     start_of_line(&relative_start);
+    if (relative_start.position == 0) {
+        return false;
+    }
+
     Contents_Iterator relative_end = relative_start;
     if (!eat_until_colon(&relative_end)) {
         return false;
