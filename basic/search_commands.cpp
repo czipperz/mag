@@ -80,7 +80,8 @@ static void open_file_and_goto_position(Editor* editor,
                                         cz::Str path,
                                         uint64_t line,
                                         uint64_t column) {
-    if (client->window == client->selected_normal_window) {
+    if (!client->selected_normal_window->parent ||
+        client->selected_normal_window != client->selected_normal_window->parent->second) {
         Window_Split* split = split_window(client, Window::HORIZONTAL_SPLIT);
         split->split_ratio = 0.75f;
     }
