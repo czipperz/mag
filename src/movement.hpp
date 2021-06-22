@@ -62,4 +62,8 @@ bool get_token_at_position_no_update(const Buffer* buffer,
                                      Contents_Iterator* iterator,
                                      Token* token);
 
+bool at_start_of_line(Contents_Iterator iterator);
+bool at_end_of_line(Contents_Iterator iterator);
+bool at_empty_line(Contents_Iterator iterator);
+
 }

@@ -492,4 +492,16 @@ bool get_token_at_position_no_update(const Buffer* buffer,
     }
 }
 
+bool at_start_of_line(Contents_Iterator iterator) {
+    return iterator.at_bob() || (iterator.retreat(), iterator.get() == '\n');
+}
+
+bool at_end_of_line(Contents_Iterator iterator) {
+    return iterator.at_eob() || iterator.get() == '\n';
+}
+
+bool at_empty_line(Contents_Iterator iterator) {
+    return at_start_of_line(iterator) && at_end_of_line(iterator);
+}
+
 }

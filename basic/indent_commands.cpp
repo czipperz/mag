@@ -107,11 +107,6 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
     transaction.commit();
 }
 
-static bool at_empty_line(Contents_Iterator iterator) {
-    return (iterator.at_eob() || iterator.get() == '\n') &&
-           (iterator.at_bob() || (iterator.retreat(), iterator.get() == '\n'));
-}
-
 struct Invalid_Indent_Data {
     bool invalid;
     uint64_t tabs, spaces;
