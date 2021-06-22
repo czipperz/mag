@@ -1393,21 +1393,17 @@ void command_goto_position(Editor* editor, Command_Source source) {
 
 void command_path_up_directory(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    Contents_Iterator start = buffer->contents.iterator_at(buffer->contents.len);
-    if (start.at_bob()) {
+
+    if (buffer->contents.len == 0) {
         return;
     }
+
+    Contents_Iterator start = buffer->contents.iterator_at(buffer->contents.len);
     start.retreat();
-    while (1) {
-        if (start.at_bob()) {
-            break;
-        }
-        start.retreat();
-        if (start.get() == '/') {
-            start.advance();
-            break;
-        }
+    if (!rfind(&start, '/')) {
+        return;
     }
+    start.advance();
 
     Transaction transaction;
     transaction.init(buffer);
