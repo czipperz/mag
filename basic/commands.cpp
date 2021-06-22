@@ -1075,8 +1075,7 @@ void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source
     Contents_Iterator iterator = buffer->contents.start();
     for (size_t c = 0; c < window->cursors.len(); ++c) {
         iterator.advance_to(window->cursors[c].point);
-        start_of_line(&iterator);
-        if (!iterator.at_eob() && iterator.get() == '\n') {
+        if (at_empty_line(iterator)) {
             ++count_cursors;
         }
     }
@@ -1089,8 +1088,7 @@ void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source
     iterator.go_to(window->cursors[0].point);
     for (size_t c = 0; c < window->cursors.len();) {
         iterator.advance_to(window->cursors[c].point);
-        start_of_line(&iterator);
-        if (!iterator.at_eob() && iterator.get() == '\n') {
+        if (at_empty_line(iterator)) {
             window->cursors.remove(c);
             continue;
         }

@@ -166,7 +166,7 @@ bool reformat_at(Buffer* buffer,
         backward_char(&iterator);
         start_of_line_text(&iterator);
 
-        if (stop_on_empty_lines && !iterator.at_eob() && iterator.get() == '\n') {
+        if (stop_on_empty_lines && at_end_of_line(iterator)) {
             break;
         } else if (looking_at(iterator, acceptable_start)) {
             at_start = true;
@@ -243,7 +243,7 @@ bool reformat_at(Buffer* buffer,
             }
 
             // End of line.
-            if (iterator.at_eob() || iterator.get() == '\n') {
+            if (at_end_of_line(iterator)) {
                 break;
             }
         }
@@ -270,7 +270,7 @@ bool reformat_at(Buffer* buffer,
 
         iterator.advance(acceptable_continuation.len);
 
-        if (stop_on_empty_lines && !iterator.at_eob() && iterator.get() == '\n') {
+        if (stop_on_empty_lines && at_end_of_line(iterator)) {
             end_position = end_position_backup;
             break;
         }
