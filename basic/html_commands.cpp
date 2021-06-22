@@ -124,7 +124,7 @@ void command_comment(Editor* editor, Command_Source source) {
             Edit insert_start;
             insert_start.value = SSOStr::from_constant("<!-- ");
             insert_start.position = it.position + offset;
-            insert_start.flags = Edit::INSERT_AFTER_POSITION;
+            insert_start.flags = Edit::INSERT;
             transaction.push(insert_start);
             offset += 5;
 
