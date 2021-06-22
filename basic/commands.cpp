@@ -1558,7 +1558,7 @@ void command_comment_hash(Editor* editor, Command_Source source) {
                 Edit insert;
                 insert.value = SSOStr::from_constant("# ");
                 insert.position = it.position + offset;
-                insert.flags = Edit::INSERT;
+                insert.flags = Edit::INSERT_AFTER_POSITION;
                 transaction.push(insert);
                 offset += 2;
 
