@@ -94,7 +94,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             [](Editor* editor, Client* client, cz::Str str, void*) {
                 WITH_SELECTED_BUFFER(client);
                 uint32_t value;
-                if (cz::parse(str, &value) <= 0) {
+                if (cz::parse(str, &value) <= 0 || value == 0) {
                     client->show_message(editor, "Invalid indent width");
                     return;
                 }
@@ -107,7 +107,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             [](Editor* editor, Client* client, cz::Str str, void*) {
                 WITH_SELECTED_BUFFER(client);
                 uint32_t value;
-                if (cz::parse(str, &value) <= 0) {
+                if (cz::parse(str, &value) <= 0 || value == 0) {
                     client->show_message(editor, "Invalid tab width");
                     return;
                 }
