@@ -33,7 +33,7 @@ struct Buffer {
     /// If this is a directory, it is `"."`.
     /// If this is a temporary buffer, it can be an arbitrary string.
     cz::String name;
-    enum {
+    enum Type {
         FILE,
         DIRECTORY,
         TEMPORARY,

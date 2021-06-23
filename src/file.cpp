@@ -672,15 +672,8 @@ bool find_buffer_by_path(Editor* editor,
 
     cz::Str directory;
     cz::Str name;
-    const char* ptr = cz::Str(path.buffer, path.len).rfind('/');
-    if (ptr) {
-        ptr++;
-        directory = {path.buffer, size_t(ptr - path.buffer)};
-        name = {ptr, size_t(path.end() - ptr)};
-    } else {
-        directory = {};
-        name = path;
-    }
+    Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
+    CZ_ASSERT(type != Buffer::TEMPORARY);
 
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
         cz::Arc<Buffer_Handle> handle = editor->buffers[i];
@@ -710,26 +703,46 @@ bool find_buffer_by_path(Editor* editor,
     return false;
 }
 
+Buffer::Type parse_rendered_buffer_name(cz::Str path, cz::Str* name, cz::Str* directory) {
+    if (path.starts_with('*')) {
+        const char* ptr = path.find("* (");
+        if (ptr) {
+            *name = path.slice_end(ptr + 1);
+            *directory = path.slice(ptr + 3, path.len - 1);
+        } else {
+            *name = path;
+            *directory = {};
+        }
+
+        CZ_ASSERT(name->starts_with('*'));
+        CZ_ASSERT(name->ends_with('*'));
+
+        return Buffer::TEMPORARY;
+    } else {
+        const char* ptr = path.rfind('/');
+        CZ_ASSERT(ptr);
+
+        *name = path.slice_start(ptr + 1);
+        *directory = path.slice_end(ptr + 1);
+
+        if (*name == ".") {
+            return Buffer::DIRECTORY;
+        } else {
+            return Buffer::FILE;
+        }
+    }
+}
+
 bool find_temp_buffer(Editor* editor,
                       Client* client,
                       cz::Str path,
                       cz::Arc<Buffer_Handle>* handle_out) {
     cz::Str name;
-    cz::Str directory = {};
-    const char* ptr = path.find("* (");
-    if (ptr) {
-        name = {path.buffer, size_t(ptr + 1 - path.buffer)};
-        cz::Str dir = {ptr + 3, size_t(path.end() - (ptr + 3) - 1)};
-        directory = {dir};
-    } else {
-        name = path;
-        if (name.ends_with("* ")) {
-            name.len--;
-        }
-    }
+    cz::Str directory;
 
-    CZ_DEBUG_ASSERT(name.starts_with("*"));
-    CZ_DEBUG_ASSERT(name.ends_with("*"));
+    Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
+    CZ_ASSERT(type == Buffer::TEMPORARY);
+
     name.buffer++;
     name.len -= 2;
 
