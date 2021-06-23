@@ -93,8 +93,8 @@ static void command_switch_buffer_callback(Editor* editor,
         return;
     }
 
-cont:
     {
+    cont:
         WITH_CONST_SELECTED_BUFFER(client);
         push_jump(window, client, buffer);
     }
@@ -197,6 +197,47 @@ void command_kill_buffer(Editor* editor, Command_Source source) {
     *buffer_id = source.client->selected_window()->id;
     source.client->show_dialog(editor, "Buffer to kill: ", buffer_completion_engine,
                                command_kill_buffer_callback, buffer_id);
+}
+
+static void command_rename_buffer_callback(Editor* editor, Client* client, cz::Str path, void* data) {
+    Buffer_Id* buffer_id = (Buffer_Id*)data;
+    CZ_DEFER(cz::heap_allocator().dealloc(buffer_id));
+
+    cz::Str name;
+    cz::Str directory;
+    parse_rendered_buffer_name(path, &name, &directory);
+
+    cz::String name_clone = name.duplicate(cz::heap_allocator());
+    CZ_DEFER(name_clone.drop(cz::heap_allocator()));
+    cz::String directory_clone = directory.duplicate(cz::heap_allocator());
+    CZ_DEFER(directory_clone.drop(cz::heap_allocator()));
+
+    WITH_BUFFER(*buffer_id);
+    std::swap(buffer->name, name_clone);
+    std::swap(buffer->directory, directory_clone);
+}
+
+void command_rename_buffer(Editor* editor, Command_Source source) {
+    Buffer_Id* buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
+    CZ_ASSERT(buffer_id);
+    *buffer_id = source.client->selected_window()->id;
+
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_BUFFER(*buffer_id);
+        if (buffer->type == Buffer::TEMPORARY) {
+            source.client->show_dialog(editor, "Rename buffer to: ", no_completion_engine,
+                                       command_rename_buffer_callback, buffer_id);
+        } else {
+            source.client->show_dialog(editor, "Rename buffer to: ", file_completion_engine,
+                                       command_rename_buffer_callback, buffer_id);
+        }
+
+        buffer->render_name(cz::heap_allocator(), &path);
+    }
+
+    fill_mini_buffer_with(editor, source.client, path);
 }
 
 }
