@@ -3,6 +3,7 @@
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/option.hpp>
+#include <cz/parse.hpp>
 #include <cz/path.hpp>
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
@@ -79,6 +80,77 @@ void command_toggle_animated_scrolling(Editor* editor, Command_Source source) {
 }
 
 void command_toggle_wrap_long_lines(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
+}
+
+static void command_configure_callback(Editor* editor, Client* client, cz::Str query, void* _data) {
+    WITH_SELECTED_BUFFER(client);
+    if (query == "animated scrolling") {
+        editor->theme.allow_animated_scrolling = !editor->theme.allow_animated_scrolling;
+    } else if (query == "buffer indent width") {
+        client->show_dialog(
+            editor, "Set indent width to: ", no_completion_engine,
+            [](Editor* editor, Client* client, cz::Str str, void*) {
+                WITH_SELECTED_BUFFER(client);
+                uint32_t value = buffer->mode.indent_width;
+                cz::parse(str, &value);
+                buffer->mode.indent_width = value;
+            },
+            nullptr);
+    } else if (query == "buffer tab width") {
+        client->show_dialog(
+            editor, "Set tab width to: ", no_completion_engine,
+            [](Editor* editor, Client* client, cz::Str str, void*) {
+                WITH_SELECTED_BUFFER(client);
+                uint32_t value = buffer->mode.tab_width;
+                cz::parse(str, &value);
+                buffer->mode.tab_width = value;
+            },
+            nullptr);
+    } else if (query == "buffer use tabs") {
+        buffer->mode.use_tabs = !buffer->mode.use_tabs;
+    } else if (query == "buffer line feed crlf") {
+        buffer->use_carriage_returns = !buffer->use_carriage_returns;
+    } else if (query == "buffer pinned") {
+        window->pinned = !window->pinned;
+    } else if (query == "buffer read only") {
+        buffer->read_only = !buffer->read_only;
+    } else if (query == "buffer render bucket boundaries") {
+        buffer->mode.render_bucket_boundaries = !buffer->mode.render_bucket_boundaries;
+    } else if (query == "buffer wrap long lines") {
+        buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
+    } else if (query == "draw line numbers") {
+        editor->theme.draw_line_numbers = !editor->theme.draw_line_numbers;
+    } else {
+        client->show_message(editor, "Invalid configuration variable");
+    }
+}
+
+static bool configurations_completion_engine(Editor* editor,
+                                             Completion_Engine_Context* context,
+                                             bool is_initial_frame) {
+    if (context->results.len() != 0) {
+        return false;
+    }
+
+    context->results.reserve(10);
+    context->results.push("buffer indent width");
+    context->results.push("buffer tab width");
+    context->results.push("buffer use tabs");
+    context->results.push("buffer line feed crlf");
+    context->results.push("buffer pinned");
+    context->results.push("buffer read only");
+    context->results.push("buffer render bucket boundaries");
+    context->results.push("animated scrolling");
+    context->results.push("buffer wrap long lines");
+    context->results.push("draw line numbers");
+}
+
+void command_configure(Editor* editor, Command_Source source) {
+    source.client->show_dialog(editor,
+                               "Configuration to change: ", configurations_completion_engine,
+                               command_configure_callback, nullptr);
     WITH_SELECTED_BUFFER(source.client);
     buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
 }
