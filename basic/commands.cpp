@@ -93,8 +93,11 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             editor, "Set indent width to: ", no_completion_engine,
             [](Editor* editor, Client* client, cz::Str str, void*) {
                 WITH_SELECTED_BUFFER(client);
-                uint32_t value = buffer->mode.indent_width;
-                cz::parse(str, &value);
+                uint32_t value;
+                if (cz::parse(str, &value) <= 0) {
+                    client->show_message(editor, "Invalid indent width");
+                    return;
+                }
                 buffer->mode.indent_width = value;
             },
             nullptr);
@@ -103,13 +106,21 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             editor, "Set tab width to: ", no_completion_engine,
             [](Editor* editor, Client* client, cz::Str str, void*) {
                 WITH_SELECTED_BUFFER(client);
-                uint32_t value = buffer->mode.tab_width;
-                cz::parse(str, &value);
+                uint32_t value;
+                if (cz::parse(str, &value) <= 0) {
+                    client->show_message(editor, "Invalid tab width");
+                    return;
+                }
                 buffer->mode.tab_width = value;
             },
             nullptr);
     } else if (query == "buffer use tabs") {
         buffer->mode.use_tabs = !buffer->mode.use_tabs;
+        if (buffer->mode.use_tabs) {
+            client->show_message(editor, "Buffer now uses tabs");
+        } else {
+            client->show_message(editor, "Buffer now does not use tabs");
+        }
     } else if (query == "buffer line feed crlf") {
         buffer->use_carriage_returns = !buffer->use_carriage_returns;
     } else if (query == "buffer pinned") {
