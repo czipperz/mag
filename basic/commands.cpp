@@ -1264,7 +1264,8 @@ static void command_search_forward_callback(Editor* editor,
         interactive_search_reset(window, data);
     }
 
-    if (window->cursors.len() == 1) {
+    if (window->cursors.len() == 1 && window->cursors[0].point != 0 &&
+        window->cursors[0].point != buffer->contents.len) {
         push_jump(window, client, buffer);
     }
 
@@ -1346,7 +1347,8 @@ static void command_search_backward_callback(Editor* editor,
         interactive_search_reset(window, data);
     }
 
-    if (window->cursors.len() == 1) {
+    if (window->cursors.len() == 1 && window->cursors[0].point != 0 &&
+        window->cursors[0].point != buffer->contents.len) {
         push_jump(window, client, buffer);
     }
 
