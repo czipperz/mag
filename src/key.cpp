@@ -28,6 +28,10 @@ bool Key::parse(Key* key, cz::Str description) {
     cz::Str d = description.slice_start(i);
     if (d == "SPACE") {
         key->code = ' ';
+    } else if (d == "TAB") {
+        key->code = '\t';
+    } else if (d == "ENTER") {
+        key->code = '\n';
     } else if (d == "BACKSPACE") {
         key->code = Key_Code::BACKSPACE;
     } else if (d == "INSERT") {
