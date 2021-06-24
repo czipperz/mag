@@ -673,7 +673,6 @@ bool find_buffer_by_path(Editor* editor,
     cz::Str directory;
     cz::Str name;
     Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
-    CZ_ASSERT(type != Buffer::TEMPORARY);
 
     for (size_t i = 0; i < editor->buffers.len(); ++i) {
         cz::Arc<Buffer_Handle> handle = editor->buffers[i];
@@ -681,7 +680,7 @@ bool find_buffer_by_path(Editor* editor,
         {
             WITH_CONST_BUFFER_HANDLE(handle);
 
-            if (buffer->directory == directory && buffer->name == name) {
+            if (buffer->type == type && buffer->directory == directory && buffer->name == name) {
                 goto ret;
             }
 
