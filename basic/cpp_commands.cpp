@@ -93,6 +93,7 @@ void command_comment(Editor* editor, Command_Source source) {
                 // indentation on the lines (start_offset).
                 uint64_t start_offset = 0;
                 bool set_offset = false;
+                bool any_differences = false;
                 for (Contents_Iterator s2 = start; s2.position < end.position;) {
                     // If we're not at an empty line then count the indentation.
                     if (s2.get() != '\n') {
@@ -101,6 +102,9 @@ void command_comment(Editor* editor, Command_Source source) {
                             char ch = s2.get();
                             // Reached end of indentation.
                             if (!cz::is_space(ch)) {
+                                if (set_offset && column != start_offset) {
+                                    any_differences = true;
+                                }
                                 break;
                             }
 
@@ -109,6 +113,7 @@ void command_comment(Editor* editor, Command_Source source) {
                             // may happen if we hit a tab.  If so then we may want to
                             // use the column before the tab as the start_offset.
                             if (set_offset && after > start_offset) {
+                                any_differences = true;
                                 break;
                             }
                             column = after;
@@ -127,7 +132,7 @@ void command_comment(Editor* editor, Command_Source source) {
                 }
 
                 // Align backward to the tab boundary if tabs are used.
-                if (set_offset && buffer->mode.use_tabs) {
+                if (any_differences && set_offset && buffer->mode.use_tabs) {
                     start_offset -= (start_offset % buffer->mode.tab_width);
                 }
 
