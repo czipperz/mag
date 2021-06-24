@@ -1268,8 +1268,7 @@ void render_to_cells(Cell* cells,
         Window_Unified* window = client->mini_buffer_window();
         WITH_CONST_WINDOW_BUFFER(window);
 
-        size_t message_width =
-            std::min(client->_message.end - client->_message.start, window->cols());
+        size_t message_width = std::min(client->_message.end - client->_message.start, total_cols);
         // Add 1 for the title bar even though the mini buffer doesn't have a title bar.
         window->total_rows = 1 + mini_buffer_height;
         window->total_cols = total_cols - message_width;
