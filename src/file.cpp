@@ -611,18 +611,20 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
 
             // Store the result in path.
             temp_path.set_len(res);
+
             if (cz::path::is_absolute(temp_path)) {
-                temp_path.null_terminate();
+                // Discard the directory of the symlink and since it is an absolute path.
                 std::swap(temp_path, path);
             } else {
-                path.reserve(cz::heap_allocator(), 4 + temp_path.len());
+                // Expand the symlink from the directory it is in.
+                path.reserve(cz::heap_allocator(), temp_path.len() + 5);
                 path.append("/../");
                 path.append(temp_path);
-                size_t len = path.len();
-                cz::path::flatten(path.buffer(), &len);
-                path.set_len(len);
-                path.null_terminate();
             }
+
+            // The symlink may use relative paths so flatten it out now.
+            cz::path::flatten(&path);
+            path.null_terminate();
 
             // Prevent infinite loops by stopping after a set count.
             if (dereference_count == max_dereferences) {
