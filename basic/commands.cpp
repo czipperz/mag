@@ -8,6 +8,7 @@
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
 #include "command_macros.hpp"
+#include "comment.hpp"
 #include "file.hpp"
 #include "insert.hpp"
 #include "match.hpp"
@@ -1611,40 +1612,10 @@ void command_comment_hash(Editor* editor, Command_Source source) {
 
     uint64_t offset = 0;
     if (window->show_marks) {
+        Contents_Iterator start = buffer->contents.start();
         for (size_t c = 0; c < cursors.len; ++c) {
-            Contents_Iterator it = buffer->contents.iterator_at(cursors[c].start());
-            uint64_t min_column = -1;
-
-            // Find the minimum visual column for each line in the region.
-            start_of_line(&it);
-            do {
-                Contents_Iterator sol = it;
-                forward_through_whitespace(&it);
-                uint64_t column = count_visual_columns(buffer->mode, sol, it.position);
-                if (column < min_column) {
-                    min_column = column;
-                }
-
-                end_of_line(&it);
-                forward_char(&it);
-            } while (it.position < cursors[c].end());
-
-            // Insert `# ` at the minimum visual column for each line in the region.
-            it.retreat_to(cursors[c].start());
-            start_of_line(&it);
-            do {
-                go_to_visual_column(buffer->mode, &it, min_column);
-
-                Edit insert;
-                insert.value = SSOStr::from_constant("# ");
-                insert.position = it.position + offset;
-                insert.flags = Edit::INSERT_AFTER_POSITION;
-                transaction.push(insert);
-                offset += 2;
-
-                end_of_line(&it);
-                forward_char(&it);
-            } while (it.position < cursors[c].end());
+            start.go_to(cursors[c].start());
+            insert_line_comments(&transaction, buffer->mode, start, cursors[c].end(), "#", "# ");
         }
     } else {
         Contents_Iterator it = buffer->contents.iterator_at(cursors[0].point);
