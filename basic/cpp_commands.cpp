@@ -91,29 +91,79 @@ void command_comment(Editor* editor, Command_Source source) {
                 // We want the line comments to line up even if the lines being commented have
                 // different amounts of indentation.  So we first find the minimum amount of
                 // indentation on the lines (start_offset).
-                Contents_Iterator s2 = start;
                 uint64_t start_offset = 0;
                 bool set_offset = false;
-                while (s2.position < end.position) {
-                    uint64_t p = s2.position;
-                    forward_through_whitespace(&s2);
-                    if (!set_offset || s2.position - p < start_offset) {
-                        start_offset = s2.position - p;
-                        set_offset = true;
+                for (Contents_Iterator s2 = start; s2.position < end.position;) {
+                    // If we're not at an empty line then count the indentation.
+                    if (s2.get() != '\n') {
+                        uint64_t column = 0;
+                        for (;; s2.advance()) {
+                            char ch = s2.get();
+                            // Reached end of indentation.
+                            if (!cz::is_space(ch)) {
+                                break;
+                            }
+
+                            uint64_t after = char_visual_columns(buffer->mode, ch, column);
+                            // This line is more indented than the previous line; this
+                            // may happen if we hit a tab.  If so then we may want to
+                            // use the column before the tab as the start_offset.
+                            if (set_offset && after > start_offset) {
+                                break;
+                            }
+                            column = after;
+                        }
+
+                        // If there is no previous line or we are less indented than the previous
+                        // line then we should indent the entire block at our indentation.
+                        if (!set_offset || column < start_offset) {
+                            set_offset = true;
+                            start_offset = column;
+                        }
                     }
 
                     end_of_line(&s2);
-                    if (s2.position >= end.position) {
-                        break;
-                    }
-                    s2.advance();
+                    forward_char(&s2);
+                }
+
+                // Align backward to the tab boundary if tabs are used.
+                if (set_offset && buffer->mode.use_tabs) {
+                    start_offset -= (start_offset % buffer->mode.tab_width);
                 }
 
                 while (start.position < end.position) {
-                    if (set_offset) {
-                        start.advance(start_offset);
-                    } else {
-                        forward_through_whitespace(&start);
+                    if (start.get() == '\n') {
+                        if (set_offset) {
+                            uint64_t tabs, spaces;
+                            analyze_indent(buffer->mode, start_offset, &tabs, &spaces);
+
+                            cz::String string = {};
+                            string.reserve(transaction.value_allocator(), tabs + spaces + 2);
+                            string.push_many('\t', tabs);
+                            string.push_many(' ', spaces);
+                            string.append("//");
+
+                            Edit insert_indent;
+                            insert_indent.value = SSOStr::from_constant(string);
+                            insert_indent.position = start.position + offset;
+                            offset += string.len();
+                            insert_indent.flags = Edit::INSERT_AFTER_POSITION;
+                            transaction.push(insert_indent);
+
+                            if (insert_indent.value.is_short()) {
+                                string.drop(transaction.value_allocator());
+                            }
+                        } else {
+                            Edit insert;
+                            insert.value = SSOStr::from_constant("//");
+                            insert.position = start.position + offset;
+                            offset += 2;
+                            insert.flags = Edit::INSERT_AFTER_POSITION;
+                            transaction.push(insert);
+                        }
+                        goto cont;
+                    } else if (set_offset) {
+                        go_to_visual_column(buffer->mode, &start, start_offset);
                     }
 
                     Edit edit;
@@ -123,11 +173,9 @@ void command_comment(Editor* editor, Command_Source source) {
                     edit.flags = Edit::INSERT_AFTER_POSITION;
                     transaction.push(edit);
 
+                cont:
                     end_of_line(&start);
-                    if (start.position >= end.position) {
-                        break;
-                    }
-                    start.advance();
+                    forward_char(&start);
                 }
             }
         }
