@@ -346,7 +346,13 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // If we allow animated scrolling then run the code to process it.  Otherwise we
         // just jump directly to the desired starting point (`iterator.position`).
-        if (editor->theme.allow_animated_scrolling) {
+        if (!editor->theme.allow_animated_scrolling) {
+            // If the user toggles on animated scrolling we should pretend
+            // we've already animated scrolling to the current position.
+            window_cache->v.unified.animated_scrolling.speed = 0;
+            window_cache->v.unified.animated_scrolling.visible_start = window->start_position;
+            window_cache->v.unified.animated_scrolling.slam_on_the_breaks = false;
+        } else {
             // Constants for animated scrolling speed.
             float speed_start = 0.5f;
             float speed_increment = 0.5f;
