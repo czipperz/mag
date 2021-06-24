@@ -156,6 +156,7 @@ static bool configurations_completion_engine(Editor* editor,
     context->results.push("animated scrolling");
     context->results.push("buffer wrap long lines");
     context->results.push("draw line numbers");
+    return true;
 }
 
 void command_configure(Editor* editor, Command_Source source) {
