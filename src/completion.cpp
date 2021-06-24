@@ -316,30 +316,40 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
     data->has_file_time = cz::get_file_time(data->directory.buffer(), &data->file_time);
 
     do {
-        cz::Heap_String file2 = {};
-        CZ_DEFER(file2.drop());
+        cz::Heap_String file = {};
+        CZ_DEFER(file.drop());
+        cz::Heap_String query = {};
+        CZ_DEFER(query.drop());
+        query.reserve(data->directory.len());
+        query.append(data->directory);
 
         cz::Directory_Iterator iterator;
-        if (iterator.init(data->directory.buffer(), cz::heap_allocator(), &file2).is_err()) {
+        if (iterator.init(data->directory.buffer(), cz::heap_allocator(), &file).is_err()) {
             break;
         }
         CZ_DEFER(iterator.drop());
 
         while (!iterator.done()) {
-            context->results.reserve(1);
-            cz::String file = {};
-            file.reserve(context->results_buffer_array.allocator(), prefix.len + file2.len() + 1);
-            file.append(prefix);
-            file.append(file2);
-            file.null_terminate();
-            if (cz::file::is_directory(file.buffer())) {
-                file.push('/');
-            }
-            context->results.push(file);
+            query.reserve(file.len() + 1);
+            query.append(file);
+            query.null_terminate();
+            bool add_slash = cz::file::is_directory(query.buffer());
+            query.set_len(data->directory.len());
 
-            file2.set_len(0);
-            cz::Result result = iterator.advance(cz::heap_allocator(), &file2);
-            if (result.is_err()) {
+            cz::String result = {};
+            result.reserve(context->results_buffer_array.allocator(),
+                           prefix.len + file.len() + add_slash);
+            result.append(prefix);
+            result.append(file);
+            if (add_slash) {
+                result.push('/');
+            }
+
+            context->results.reserve(1);
+            context->results.push(result);
+
+            file.set_len(0);
+            if (iterator.advance(cz::heap_allocator(), &file).is_err()) {
                 break;
             }
         }
