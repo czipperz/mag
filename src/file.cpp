@@ -430,7 +430,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     // links are often broken.  Example usage is `mag <(git diff)` will open
     // `/proc/self/fd/%d` with the result of the subcommand (`git diff`).
     if (user_path_nt.starts_with("/proc/")) {
-        cz::path::convert_to_forward_slashes(user_path_nt.buffer(), user_path_nt.len());
+        cz::path::convert_to_forward_slashes(&user_path_nt);
 
         cz::String path = {};
         cz::path::make_absolute(user_path_nt, allocator, &path);
@@ -468,7 +468,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
                     // Remove the "\\?\" prefix.
                     buffer.remove_many(0, 4);
 
-                    cz::path::convert_to_forward_slashes(buffer.buffer(), buffer.len());
+                    cz::path::convert_to_forward_slashes(&buffer);
 
                     buffer.null_terminate();
                     return buffer;
@@ -492,7 +492,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
 #endif
 
     // Fallback to doing it ourselves.
-    cz::path::convert_to_forward_slashes(user_path_nt.buffer(), user_path_nt.len());
+    cz::path::convert_to_forward_slashes(&user_path_nt);
 
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));

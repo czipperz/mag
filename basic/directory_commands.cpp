@@ -517,7 +517,7 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
         options.working_directory = directory.buffer();
 
 #ifdef _WIN32
-        cz::path::convert_to_back_slashes(path.buffer(), path.len());
+        cz::path::convert_to_back_slashes(&path);
         cz::Str args[] = {"cmd", "/C", "start", path};
 #else
         cz::Str args[] = {path};
