@@ -126,6 +126,19 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
         buffer->use_carriage_returns = !buffer->use_carriage_returns;
     } else if (query == "buffer pinned") {
         window->pinned = !window->pinned;
+    } else if (query == "buffer preferred column") {
+        client->show_dialog(
+            editor, "Set preferred column to: ", no_completion_engine,
+            [](Editor* editor, Client* client, cz::Str str, void*) {
+                WITH_SELECTED_BUFFER(client);
+                uint32_t value;
+                if (cz::parse(str, &value) <= 0 || value == 0) {
+                    client->show_message(editor, "Invalid preferred column");
+                    return;
+                }
+                buffer->mode.preferred_column = value;
+            },
+            nullptr);
     } else if (query == "buffer read only") {
         buffer->read_only = !buffer->read_only;
     } else if (query == "buffer render bucket boundaries") {
@@ -152,10 +165,11 @@ static bool configurations_completion_engine(Editor* editor,
     context->results.push("buffer use tabs");
     context->results.push("buffer line feed crlf");
     context->results.push("buffer pinned");
+    context->results.push("buffer preferred column");
     context->results.push("buffer read only");
     context->results.push("buffer render bucket boundaries");
-    context->results.push("animated scrolling");
     context->results.push("buffer wrap long lines");
+    context->results.push("animated scrolling");
     context->results.push("draw line numbers");
     return true;
 }
