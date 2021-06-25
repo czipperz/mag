@@ -57,9 +57,11 @@ bool splash_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
         }
 
         if (hit) {
-            // Eat the character (ie * in C-*), special casing SPACE.
-            if (looking_at(*iterator, "SPACE")) {
+            // Eat the character (ie * in C-*), special casing some keywords.
+            if (looking_at(*iterator, "SPACE") || looking_at(*iterator, "RIGHT")) {
                 iterator->advance(5);
+            } else if (looking_at(*iterator, "LEFT")) {
+                iterator->advance(4);
             } else {
                 iterator->advance();
             }

@@ -260,6 +260,7 @@ Configuration should be done by editing `custom/config.cpp`.\n\
 \n\
 Main key bindings:\n\
 C-o     Open file            C-g     Stop action (cancel prompt, delete cursors, stop selecting region)\n\
+C-s     Save file            A-LEFT  Backward navigation    (Use A-RIGHT to go forward)\n\
 \n\
 A-o     Go to other window   A-x b   Switch to open buffer\n\
 A-x 3   Split vertically     A-x 2   Split horizontally\n\
