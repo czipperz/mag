@@ -1,0 +1,36 @@
+Mag Tutorial 1
+==============
+
+Mag is a text editor.  It is WSIWYG (What You See Is What You Get) meaning if you
+type some letters they will be inserted into the file at the point of your cursor.
+
+In this tutorial we will go over some basic movement key bindings.
+
+Key bindings are expressed as a series of modifiers and then a key.
+C- means hold Control, A- means hold Alt, and S- means hold Shift.
+For example, C-a can be pressed by holding the Control key down and pressing the "a" key.
+
+A-n (next line) will move your cursor down one line.
+A-p (previous line) will move your cursor up one line.
+
+Try moving the cursor to this line by pressing A-n
+and insert some text on this blank line:
+
+
+
+You can hit A-/ to undo and C-/ to redo.
+
+Many key bindings from Notepad work here too
+such as the arrow keys, shift to select text, etc.
+
+You can move the cursor left and right
+using C-f (forward char) and C-b (backward char).
+
+Try moving down and inserting text inbetween the arrows.
+>>>  <<<
+
+
+Go to tutorial 2:
+C-o 2-editing.mag_tutorial ENTER
+
+That is, press C-o, type 2-editing.mag_tutorial, then press ENTER.

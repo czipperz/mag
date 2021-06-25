@@ -1,0 +1,58 @@
+Mag Tutorial 3
+==============
+
+In this tutorial we'll look at the two most used movement mechanisms:
+search-based movement and token-based movement.
+
+We'll also look at the concept of using multiple cursors to edit even faster!
+
+
+# Search-based movement
+
+To search for something press A-r (search forward),
+type your query, then press ENTER.
+
+Search for "Problem 1".  Press A-r to go to the next result.
+
+"Problem 1"
+Now go back to the first result pressing C-r (search backward).
+
+Since A-r doubles as both starting to search forward and
+going to the next result, if you select a region and then
+press A-r it will go to the next instance of that text.
+
+Select this text: "Problem 1" and hit A-r and C-r to demo this.
+
+
+# Multiple cursors
+
+Multiple cursors allow for you to edit multiple points in a file at once.
+
+Put your cursor at the start of this line then press C-A-n.
+This will cause you to also have a cursor at the start of this line.
+Try moving around and making some edits.
+Note that each cursor does these actions.
+Press C-g (stop action) to exit multiple cursor mode.
+
+
+## Example
+
+If you are selecting a region, C-A-n will create a
+cursor at the next instance of the selected region.
+
+Here is a little code segment.  Use this feature
+to rename the variable "hist" to "history".
+
+
+int hist = random();
+if (hist > 0)
+    hist = sqrt(3.0f) * log2(hist);
+printf("the buddhist man has history value: %d", hist);
+
+
+Note that when you do this you accidentally select the "hist" in "buddhist"
+and in "history".  In the next tutorial we'll learn about another feature,
+token movement commands, that will allow us to avoid these sort of problems.
+
+Go to the next tutorial via:
+C-o 4-tokens.c ENTER

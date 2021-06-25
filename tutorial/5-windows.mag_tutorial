@@ -1,0 +1,41 @@
+Mag Tutorial 5
+==============
+
+So far we have covered basic ways to interact with a buffer.
+Now we'll introduce some new terminology: a window.
+
+Right now there is only one window and it is full screen.  Try pressing
+A-x 2 (horizontal split).  This will split your window into two.  Try
+moving the cursor around and then switching windows with A-x o (other
+window).  Note that the cursors are now in different locations.  You can
+even scroll with C-v (down page) and A-v (up page) or the mouse wheel
+and you will see that it is acts independently of the other window.
+
+Press A-x 0 to close the selected window.
+Press A-x 1 to close all other windows.
+
+If you edit the buffer you will observe that both windows
+see those changes.  So a buffer represents a file whereas
+a window is a view of the buffer (including cursors).
+
+
+All the buffers we've seen so far represent files.  But there
+are two other forms: directory buffers and temporary buffers.
+
+Try opening this directory in a new window by pressing A-x 2 C-o ENTER.  Then
+open a file in that directory by moving the cursor to it and pressing ENTER.
+
+Now try searching for some text in this directory using Ag, the Silver
+Searcher.  While selecting the other window, press A-g r Tutorial ENTER.
+You can open different results by the same way as in a directory.
+
+
+There's a bunch of search-related key bindings that allow for you to
+quickly go between different results.  I don't think there's a good
+way for me to cover them all here but I've written some
+documentation in `basic/search_commands.hpp`.  Cross referencing the
+commands listed there with their bindings in `custom/config.cpp`
+should allow you to learn new commands by trying them out.
+
+Note that A-r and C-r and related commands are also
+called search commands which is a little confusing.

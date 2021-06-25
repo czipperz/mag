@@ -1,0 +1,36 @@
+Mag Tutorial 2
+==============
+
+In this tutorial we will go over some basic editing key bindings.
+
+I have a series of problems that you should use your knowledge
+of movement and editing to make the two lines match.
+
+You should edit the second line.
+
+Problem 1: This should be easy :).
+>>> Insert some text.
+>>>
+
+Problem 2: Try C-d (delete forward char) and A-d (delete forward word).
+>>> The lazy fox jumped.
+>>> The laxzy fox jumped xxx.
+
+Problem 3: This time do the same thing except use the text selection feature.
+           Press C-SPACE to start selecting.  Press C-w to cut.
+>>> The text.
+>>> The text to select.
+
+Problem 4: Use A-y to paste the section you cut in the previous problem.
+>>> The text to select.
+>>> The text.
+
+Problem 5: Press A-k to delete a line and C-k to clone a line.
+>>> Expected text that is easy to clone but harder to type!
+>>> Random text.
+
+
+Go to tutorial 3:
+C-o 3-search.mag_tutorial ENTER
+
+That is, press C-o, type 3-search.mag_tutorial, then press ENTER.
