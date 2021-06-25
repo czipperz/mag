@@ -550,6 +550,13 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
     for (size_t spqi = 0; spqi < spqs.len; ++spqi) {
         Screen_Position_Query spq = spqs[spqi];
         if (spq.data == MOUSE_MOVE) {
+            // We need to recalculate the visual position if any changes happen to the window
+            // structure.  But programming that is a little complicated whereas just
+            // re-calculating the mouse position every frame is really easy and is super cheap.
+            // We set the length to 0 so that only the most recent mouse movement is saved.
+            mouse->sp_queries.set_len(0);
+            mouse->sp_queries.push(spq);
+
             client->mouse.window = spq.sp.window;
             client->mouse.row = spq.sp.window_row;
             client->mouse.column = spq.sp.window_column;
