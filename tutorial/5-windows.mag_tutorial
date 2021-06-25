@@ -37,5 +37,8 @@ documentation in `basic/search_commands.hpp`.  Cross referencing the
 commands listed there with their bindings in `custom/config.cpp`
 should allow you to learn new commands by trying them out.
 
-Note that A-r and C-r and related commands are also
-called search commands which is a little confusing.
+Note that A-r and C-r and related commands are also called search.
+
+
+Go to tutorial 6:
+C-o 6-mini_buffer.mag_tutorial ENTER

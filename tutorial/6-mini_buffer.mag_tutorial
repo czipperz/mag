@@ -1,0 +1,24 @@
+Mag Tutorial 6
+==============
+
+The mini buffer is the buffer that you edit when you use a
+command that prompts for input, such as open file (C-o).
+
+The mini buffer is special in that completion and editing
+paths are used much more often than when editing normal text.
+
+If you hit C-o now (C-g to cancel) you'll see a bunch of completion results.
+
+Try hitting TAB or A-i to insert a completion result.
+Try hitting A-j to quickly submit a result.
+Try hitting A-n or A-p to select different results.
+Try hitting A-u to go up a directory.
+
+As per usual you can hit A-/ and C-/ to undo and redo.
+
+An interesting quirk is that the mini buffer has a continuous undo history
+so you can just undo back to the previous input you gave.  This is useful if
+you make a search with a typo or want to reuse an input to multiple prompts.
+
+Another important mini buffer command is A-x b (switch buffer).
+A-x k (kill buffer) is useful if you want to ditch your changes to a buffer.
