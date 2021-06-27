@@ -577,6 +577,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         buffer->mode.use_tabs = false;
         buffer->mode.preferred_column = 100;
         BIND(buffer->mode.key_map, "A-g c", command_build_debug_git_root);
+
+        if (cz::path::has_component(buffer->directory, "mag/tutorial")) {
+            buffer->mode.preferred_column = 80;
+        }
     }
 
     switch (buffer->type) {
