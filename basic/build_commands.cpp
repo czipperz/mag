@@ -3,20 +3,20 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include "command_macros.hpp"
-#include "git/git.hpp"
 #include "job.hpp"
+#include "version_control/version_control.hpp"
 
 namespace mag {
 namespace basic {
 
-void command_build_debug_git_root(Editor* editor, Command_Source source) {
+void command_build_debug_vc_root(Editor* editor, Command_Source source) {
     cz::String top_level_path = {};
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
 
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        if (!git::get_git_top_level(editor, source.client, buffer->directory.buffer(),
-                                    cz::heap_allocator(), &top_level_path)) {
+        if (!version_control::get_root_directory(editor, source.client, buffer->directory.buffer(),
+                                                 cz::heap_allocator(), &top_level_path)) {
             return;
         }
     }

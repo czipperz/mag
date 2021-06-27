@@ -6,7 +6,7 @@
 namespace mag {
 namespace basic {
 
-void command_build_debug_git_root(Editor* editor, Command_Source source);
+void command_build_debug_vc_root(Editor* editor, Command_Source source);
 
 }
 }

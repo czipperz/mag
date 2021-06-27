@@ -1,4 +1,4 @@
-#include "git.hpp"
+#include "search.hpp"
 
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
@@ -13,15 +13,16 @@
 #include "overlay.hpp"
 #include "syntax/overlay_highlight_string.hpp"
 #include "token.hpp"
+#include "version_control.hpp"
 
 namespace mag {
-namespace git {
+namespace version_control {
 
-static void run_git_grep(Client* client,
-                         Editor* editor,
-                         const char* directory,
-                         cz::Str query,
-                         bool word_match) {
+static void run_search(Client* client,
+                       Editor* editor,
+                       const char* directory,
+                       cz::Str query,
+                       bool word_match) {
     cz::Heap_Vector<cz::Str> args = {};
     CZ_DEFER(args.drop());
     {
@@ -59,30 +60,30 @@ static void run_git_grep(Client* client,
     }
 }
 
-static void command_git_grep_callback(Editor* editor, Client* client, cz::Str query, void* data) {
+static void command_search_callback(Editor* editor, Client* client, cz::Str query, void* data) {
     cz::String top_level_path = {};
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
     {
         WITH_CONST_BUFFER(*(Buffer_Id*)data);
-        if (!get_git_top_level(editor, client, buffer->directory.buffer(), cz::heap_allocator(),
-                               &top_level_path)) {
+        if (!get_root_directory(editor, client, buffer->directory.buffer(), cz::heap_allocator(),
+                                &top_level_path)) {
             return;
         }
     }
 
-    run_git_grep(client, editor, top_level_path.buffer(), query, false);
+    run_search(client, editor, top_level_path.buffer(), query, false);
 }
 
-void command_git_grep(Editor* editor, Command_Source source) {
+void command_search(Editor* editor, Command_Source source) {
     Buffer_Id* selected_buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
     CZ_ASSERT(selected_buffer_id);
     *selected_buffer_id = source.client->selected_window()->id;
-    source.client->show_dialog(editor, "git grep: ", no_completion_engine,
-                               command_git_grep_callback, selected_buffer_id);
+    source.client->show_dialog(editor, "git grep: ", no_completion_engine, command_search_callback,
+                               selected_buffer_id);
     source.client->fill_mini_buffer_with_selected_region(editor);
 }
 
-void command_git_grep_token_at_position(Editor* editor, Command_Source source) {
+void command_search_token_at_position(Editor* editor, Command_Source source) {
     cz::String top_level_path = {};
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
     cz::String query = {};
@@ -91,8 +92,8 @@ void command_git_grep_token_at_position(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
 
-        if (!get_git_top_level(editor, source.client, buffer->directory.buffer(),
-                               cz::heap_allocator(), &top_level_path)) {
+        if (!get_root_directory(editor, source.client, buffer->directory.buffer(),
+                                cz::heap_allocator(), &top_level_path)) {
             source.client->show_message(editor, "No git directory");
             return;
         }
@@ -109,7 +110,7 @@ void command_git_grep_token_at_position(Editor* editor, Command_Source source) {
         buffer->contents.slice_into(iterator, token.end, &query);
     }
 
-    run_git_grep(source.client, editor, top_level_path.buffer(), query, true);
+    run_search(source.client, editor, top_level_path.buffer(), query, true);
 }
 
 }

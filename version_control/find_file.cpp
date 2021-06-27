@@ -5,31 +5,27 @@
 #include <cz/process.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
-#include "git.hpp"
+#include "version_control.hpp"
 
 namespace mag {
-namespace git {
+namespace version_control {
 
-struct Git_Find_File_Completion_Engine_Data {
+struct Find_File_Completion_Engine_Data {
     const char* working_directory;
     Run_Command_For_Completion_Results runner;
 };
 
-static bool git_find_file_completion_engine(Editor*,
-                                            Completion_Engine_Context* context,
-                                            bool is_initial_frame) {
+static bool find_file_completion_engine(Editor*,
+                                        Completion_Engine_Context* context,
+                                        bool is_initial_frame) {
     cz::Str args[] = {"git", "ls-files"};
-    Git_Find_File_Completion_Engine_Data* data =
-        (Git_Find_File_Completion_Engine_Data*)context->data;
+    Find_File_Completion_Engine_Data* data = (Find_File_Completion_Engine_Data*)context->data;
     cz::Process_Options options;
     options.working_directory = data->working_directory;
     return data->runner.iterate(context, args, options, is_initial_frame);
 }
 
-static void command_git_find_file_response(Editor* editor,
-                                           Client* client,
-                                           cz::Str file,
-                                           void* data) {
+static void command_find_file_response(Editor* editor, Client* client, cz::Str file, void* data) {
     cz::Str directory = (char*)data;
 
     cz::String path = {};
@@ -43,29 +39,29 @@ static void command_git_find_file_response(Editor* editor,
     open_file(editor, client, path);
 }
 
-void command_git_find_file(Editor* editor, Command_Source source) {
+void command_find_file(Editor* editor, Command_Source source) {
     cz::String top_level_path = {};
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        if (!get_git_top_level(editor, source.client, buffer->directory.buffer(),
-                               cz::heap_allocator(), &top_level_path)) {
+        if (!get_root_directory(editor, source.client, buffer->directory.buffer(),
+                                cz::heap_allocator(), &top_level_path)) {
             return;
         }
     }
 
     char* directory = top_level_path.clone_null_terminate(cz::heap_allocator()).buffer();
 
-    source.client->show_dialog(editor, "Git Find File: ", git_find_file_completion_engine,
-                               command_git_find_file_response, directory);
+    source.client->show_dialog(editor, "Version Control Find File: ", find_file_completion_engine,
+                               command_find_file_response, directory);
 
-    auto data = cz::heap_allocator().alloc<Git_Find_File_Completion_Engine_Data>();
+    auto data = cz::heap_allocator().alloc<Find_File_Completion_Engine_Data>();
     *data = {};
     data->working_directory = directory;
     source.client->mini_buffer_completion_cache.engine_context.data = data;
 
     source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* _data) {
-        Git_Find_File_Completion_Engine_Data* data = (Git_Find_File_Completion_Engine_Data*)_data;
+        Find_File_Completion_Engine_Data* data = (Find_File_Completion_Engine_Data*)_data;
         // Don't deallocate the directory in the completion engine context because
         // we deallocate when the dialog is closed by passing it to show_dialog.
         data->runner.drop();

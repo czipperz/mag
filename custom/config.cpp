@@ -28,11 +28,6 @@
 #include "basic/window_completion_commands.hpp"
 #include "clang_format/clang_format.hpp"
 #include "decoration.hpp"
-#include "git/find_file.hpp"
-#include "git/git.hpp"
-#include "git/tokenize_git_commit_edit_message.hpp"
-#include "git/tokenize_patch.hpp"
-#include "git/tokenize_rebase_todo.hpp"
 #include "gnu_global/gnu_global.hpp"
 #include "man/man.hpp"
 #include "overlay.hpp"
@@ -69,6 +64,12 @@
 #include "syntax/tokenize_search.hpp"
 #include "syntax/tokenize_shell_script.hpp"
 #include "syntax/tokenize_splash.hpp"
+#include "version_control/find_file.hpp"
+#include "version_control/search.hpp"
+#include "version_control/tokenize_git_commit_edit_message.hpp"
+#include "version_control/tokenize_patch.hpp"
+#include "version_control/tokenize_rebase_todo.hpp"
+#include "version_control/version_control.hpp"
 
 namespace mag {
 namespace custom {
@@ -325,9 +326,9 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-g a", prose::command_alternate);
 
-    BIND(key_map, "A-g s", git::command_git_grep);
-    BIND(key_map, "A-g A-s", git::command_git_grep_token_at_position);
-    BIND(key_map, "A-g f", git::command_git_find_file);
+    BIND(key_map, "A-g s", version_control::command_search);
+    BIND(key_map, "A-g A-s", version_control::command_search_token_at_position);
+    BIND(key_map, "A-g f", version_control::command_find_file);
     BIND(key_map, "A-g r", prose::command_search_in_current_directory);
     BIND(key_map, "A-g A-r", prose::command_search_in_current_directory_token_at_position);
 
@@ -548,8 +549,8 @@ static void window_completion_key_map(Key_Map& key_map) {
 }
 
 static void git_edit_key_map(Key_Map& key_map) {
-    BIND(key_map, "A-c A-c", git::command_save_and_quit);
-    BIND(key_map, "A-c A-k", git::command_abort_and_quit);
+    BIND(key_map, "A-c A-c", version_control::command_save_and_quit);
+    BIND(key_map, "A-c A-k", version_control::command_abort_and_quit);
 }
 
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
@@ -576,7 +577,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         buffer->mode.indent_width = buffer->mode.tab_width = 4;
         buffer->mode.use_tabs = false;
         buffer->mode.preferred_column = 100;
-        BIND(buffer->mode.key_map, "A-g c", command_build_debug_git_root);
+        BIND(buffer->mode.key_map, "A-g c", command_build_debug_vc_root);
 
         if (cz::path::has_component(buffer->directory, "mag/tutorial")) {
             buffer->mode.preferred_column = 80;
