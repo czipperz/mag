@@ -1329,6 +1329,7 @@ void command_search_forward(Editor* editor, Command_Source source) {
         data->forward = true;
         data->mini_buffer_change_index = 0;
         source.client->set_prompt_text(editor, "Search forward: ");
+        source.client->_message.response_callback = command_search_forward_callback;
     } else if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
         WITH_CONST_WINDOW_BUFFER(window);
@@ -1412,6 +1413,7 @@ void command_search_backward(Editor* editor, Command_Source source) {
         data->forward = false;
         data->mini_buffer_change_index = 0;
         source.client->set_prompt_text(editor, "Search backward: ");
+        source.client->_message.response_callback = command_search_backward_callback;
     } else if (window->show_marks) {
         cz::Slice<Cursor> cursors = window->cursors;
         WITH_CONST_WINDOW_BUFFER(window);
