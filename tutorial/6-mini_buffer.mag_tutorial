@@ -22,3 +22,6 @@ you make a search with a typo or want to reuse an input to multiple prompts.
 
 Another important mini buffer command is A-x b (switch buffer).
 A-x k (kill buffer) is useful if you want to ditch your changes to a buffer.
+
+Go to the next tutorial via:
+C-o 7- A-j

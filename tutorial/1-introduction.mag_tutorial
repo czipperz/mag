@@ -1,14 +1,16 @@
 Mag Tutorial 1
 ==============
 
-Mag is a text editor.  It is WSIWYG (What You See Is What You Get) meaning if you
-type some letters they will be inserted into the file at the point of your cursor.
+Mag is a text editor.  It is WSIWYG (What You See Is What
+You Get) editor meaning if you type some letters they will
+be inserted into the file at the point of your cursor.
 
 In this tutorial we will go over some basic movement key bindings.
 
 Key bindings are expressed as a series of modifiers and then a key.
 C- means hold Control, A- means hold Alt, and S- means hold Shift.
-For example, C-a can be pressed by holding the Control key down and pressing the "a" key.
+For example, C-a can be pressed by holding the
+Control key down and pressing the "a" key.
 
 A-n (next line) will move your cursor down one line.
 A-p (previous line) will move your cursor up one line.
@@ -29,6 +31,12 @@ using C-f (forward char) and C-b (backward char).
 Try moving down and inserting text inbetween the arrows.
 >>>  <<<
 
+
+
+Like many other text editors, C-s is bound to
+save the buffer and C-o is bound to open a file.
+
+To exit Mag you can press A-x A-c, meaning first A-x and then A-c.
 
 Go to tutorial 2:
 C-o 2-editing.mag_tutorial ENTER

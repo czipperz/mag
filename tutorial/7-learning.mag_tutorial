@@ -1,0 +1,42 @@
+Mag Tutorial 7
+==============
+
+In this tutorial we'll cover some strategies to learn new things on your own.
+
+First I would recommend installing GNU Global, also commonly
+called gtags.  This will allow you to go from a symbol to its
+definition by pressing A-g A-t (goto tag at token).  Or to
+lookup a symbol (via a prompt) using A-g t (goto tag prompt).
+
+All configuration for Mag is contained in the file custom/config.cpp.
+There are generally two components to this file: a callback that is ran on
+editor startup, and a callback that is ran when a new buffer is created.
+
+
+Try going to the function create_key_map (A-x 3 A-g t create_key_map ENTER).
+This function contains all key bindings generally available.  Simply scrolling
+through the list may give you a good understanding of what keys exist.
+
+Try to find what keys will move your cursor to the start
+or end of a line (hint: search for start_of_line).
+
+Another way to lookup key bindings is to hit F1,
+which will visualize the global key bindings.
+
+
+
+Next, try looking at buffer_created_callback.  From here we can
+see how to configure various aspects of how buffers are shown and
+edited.  Because these configuration variables are stored on a
+per-buffer basis we have a lot of flexibility in how everything works.
+
+For example, "mag" and "cz" directories have special
+indent rules just in case the defaults are changed.
+
+If you scroll down even more you can see how syntax highlighting works
+-- the name of the file is matched against various identifiers.  We even
+have a custom rule for "Makefile"s to ensure they always use tabs.
+
+
+To go to tutorial 8:
+C-o 8- A-j

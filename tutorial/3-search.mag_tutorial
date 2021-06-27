@@ -28,10 +28,11 @@ Select this text: "Problem 1" and hit A-r and C-r to demo this.
 
 Multiple cursors allow for you to edit multiple points in a file at once.
 
-Put your cursor at the start of this line then press C-A-n.
-This will cause you to also have a cursor at the start of this line.
-Try moving around and making some edits.
-Note that each cursor does these actions.
+Put your cursor at the start of this line then press C-A-n by
+holding Control and Alt while pressing n.  This will cause you to
+also have a cursor at the start of the next line.  Try moving around
+and making some edits.  Note that each cursor does these actions.
+
 Press C-g (stop action) to exit multiple cursor mode.
 
 

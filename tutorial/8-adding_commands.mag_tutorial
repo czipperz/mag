@@ -1,0 +1,97 @@
+Mag Tutorial 8
+==============
+
+In this tutorial we will cover how to add custom commands.
+
+A command is a function that is ran when you press a key.
+For example, inserting text runs command_insert_char.
+
+Mag is a multi threaded text editor.  To accomodate this there are two rules:
+
+1. Only a Buffer and the state it directly points to may be
+   accessed from a secondary thread.  No other state from the
+   classes Server, Editor, Client, or Window are thread safe.
+   (unless Asynchronous_Job_Handler::try_sync_lock succeeds).
+2. A Buffer can only be accessed while it is locked.
+
+As for the threading architecture: the main thread is in charge of
+rendering, running commands, and running synchronous jobs.  The background
+thread (also called the job thread) is in charge of running asynchronous
+jobs.  Asynchronous jobs can be created by commands.  They are also created
+to do syntax highlighting and load files asynchronously at startup.
+
+Running things in the foreground thread is convenient and
+efficient, but if the command lasts longer than 1/60th of
+a second it should utilize an asynchronous job.
+
+It turns out that 99% of the time the editor is open, no buffers are
+changing.  But we still want to be able to render and do other tasks
+that just need to read the state.  Thus each buffer is controlled by a
+reader/writer lock.  There are macros in the file "command_macros.hpp"
+that implement all the necessary interaction for you so you don't have
+to worry about it.  These macros are all prefixed with WITH_.
+
+
+Here is an example command that doesn't modify the buffer:
+
+#include "command_macros.hpp"
+#include "movement.hpp"
+
+void command_forward_line(Editor* editor, Command_Source source) {
+    // Lock the selected buffer in read mode.
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    // An iterator allows us to efficiently access the Buffer's Contents.
+    Contents_Iterator iterator = buffer->contents.start();
+
+    for (size_t i = 0; i < window->cursors.len(); ++i) {
+        // We could use this but it is less efficient:
+        // iterator = buffer->contents.iterator_at(window->cursors[i].point);
+
+        iterator.go_to(window->cursors[i].point);
+
+        // forward_line tries to go to the same column on the next
+        // line so it needs the Mode to know how to render tabs.
+        forward_line(buffer->mode, &iterator);
+
+        // Note that the Window is not connected directly to
+        // the Buffer.  It cannot be accessed at all by the
+        // secondary thread and thus doesn't need to be locked.
+        window->cursors[i].point = iterator.position;
+    }
+}
+
+
+Here is an example command that does modify the buffer:
+
+void command_insert_hello_world(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    // Batch all edits in a Transaction.  This will create
+    // a single "commit" that can be atomically undone/redone.
+    Transaction transaction = {};
+    transaction.init(buffer);
+
+    uint64_t offset = 0;
+    for (size_t i = 0; i < window->cursors.len(); ++i) {
+        Edit edit;
+        edit.value = SSOStr::from_constant("hello world");
+        edit.position = window->cursors[i].point + offset;
+        edit.flags = Edit::INSERT;
+
+        transaction.push(edit);
+
+        // Each edit is applied after the previous edits have
+        // been applied and thus must track the new position.
+        // Note that edits are applied when `Transaction::commit` is called.
+        // Note that the cursors are sorted by their "point" value
+        //      so all previous edits must be before this one.
+        offset += edit.value.len();
+    }
+
+    // Apply all the edits as one Commit.
+    transaction.commit();
+}
+
+
+There are a lot of useful helper commands in "match.hpp" and "movement.hpp".
