@@ -71,7 +71,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     ZoneScoped;
 
     // If the file exists then immediately open it.
-    if (cz::file::does_file_exist(arg.buffer)) {
+    if (cz::file::exists(arg.buffer)) {
     open:
         open_file_tiling(editor, client, arg, opened_count, 0, 0);
         return;
@@ -95,7 +95,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     cz::String path = arg.slice_end(colon).duplicate_null_terminate(cz::heap_allocator());
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
-    if (cz::file::does_file_exist(path.buffer())) {
+    if (cz::file::exists(path.buffer())) {
         // Argument is of form FILE:LINE.
         open_file_tiling(editor, client, path, opened_count, line, 0);
         return;
@@ -123,7 +123,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     path.set_len(colon - path.buffer());
     path.null_terminate();
 
-    if (cz::file::does_file_exist(path.buffer())) {
+    if (cz::file::exists(path.buffer())) {
         // Argument is of form FILE:LINE:COLUMN.
         open_file_tiling(editor, client, path, opened_count, line, column);
         return;

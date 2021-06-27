@@ -33,32 +33,6 @@
 namespace mag {
 namespace basic {
 
-static int create_directory(const char* path) {
-#ifdef _WIN32
-    if (CreateDirectoryA(path, NULL)) {
-        return 0;
-    }
-
-    int error = GetLastError();
-    if (error == ERROR_ALREADY_EXISTS) {
-        return 2;
-    } else {
-        return 1;
-    }
-#else
-    if (mkdir(path, 0755) == 0) {
-        return 0;
-    }
-
-    int error = errno;
-    if (error == EEXIST) {
-        return 2;
-    } else {
-        return 1;
-    }
-#endif
-}
-
 static void get_selected_entry(Window_Unified* window,
                                Buffer* buffer,
                                bool* has_entry,
@@ -348,7 +322,7 @@ static cz::Result copy_path(cz::String* path, cz::String* new_path) {
         [&](const char* src) {
             // directory
             set_new_path();
-            int res = create_directory(new_path->buffer());
+            int res = cz::file::create_directory(new_path->buffer());
             if (res != 0) {
                 cz::Result result;
                 result.code = res;
@@ -543,7 +517,9 @@ static void command_create_directory_callback(Editor* editor,
                                               Client* client,
                                               cz::Str query,
                                               void*) {
-    cz::String new_path;
+    cz::String new_path = {};
+    CZ_DEFER(new_path.drop(cz::heap_allocator()));
+
     if (cz::path::is_absolute(query)) {
         new_path = query.duplicate_null_terminate(cz::heap_allocator());
     } else {
@@ -554,9 +530,8 @@ static void command_create_directory_callback(Editor* editor,
         new_path.append(query);
         new_path.null_terminate();
     }
-    CZ_DEFER(new_path.drop(cz::heap_allocator()));
 
-    int res = create_directory(new_path.buffer());
+    int res = cz::file::create_directory(new_path.buffer());
     if (res == 1) {
         client->show_message(editor, "Couldn't create directory");
     } else if (res == 2) {

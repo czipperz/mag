@@ -31,7 +31,7 @@ static bool test_all_files(cz::String& path, cz::Slice<cz::Str> dest_extensions)
         path.append(dest_extensions[i]);
         path.null_terminate();
 
-        if (cz::file::does_file_exist(path.buffer())) {
+        if (cz::file::exists(path.buffer())) {
             return true;
         }
 
