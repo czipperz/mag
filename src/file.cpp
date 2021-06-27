@@ -362,16 +362,11 @@ static Job_Tick_Result open_file_job_tick(Asynchronous_Job_Handler* handler, voi
 
     uint64_t position = iterator_at_line_column(buffer.contents, data->line, data->column).position;
 
-    // Finish by loading the buffer synchronously.
-    Server* server;
-    Client* client;
-    if (handler->try_sync_lock(&server, &client)) {
-        CZ_DEFER(handler->sync_unlock());
-        finish_open_file(&server->editor, client, buffer, position, data->index);
-        server->slurp_jobs();
-    } else {
-        handler->add_synchronous_job(job_finish_open_file_sync(buffer, position, data->index));
-    }
+    // Finish by loading the buffer synchronously.  We *cannot* attempt to lock the state here
+    // because it introduces a race condition where: the first job fails to lock and finishes via a
+    // synchronous job then the second job successfully locks and finishes immediately.  This causes
+    // the second job to finish before the first job which the code to finish doesn't handle.
+    handler->add_synchronous_job(job_finish_open_file_sync(buffer, position, data->index));
 
     open_file_job_kill(data);
     return Job_Tick_Result::FINISHED;
