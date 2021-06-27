@@ -1,6 +1,9 @@
 #include "buffer_commands.hpp"
 
 #include <stdlib.h>
+#include <cz/char_type.hpp>
+#include <cz/file.hpp>
+#include <cz/path.hpp>
 #include <cz/working_directory.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
@@ -64,11 +67,81 @@ void fill_mini_buffer_with(Editor* editor, Client* client, cz::Str default_value
     transaction.commit();
 }
 
+static void command_save_file_callback(Editor* editor, Client* client, cz::Str, void*) {
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+
+    cz::Vector<size_t> stack = {};
+    CZ_DEFER(stack.drop(cz::heap_allocator()));
+
+    WITH_SELECTED_BUFFER(client);
+
+    // This shouldn't happen unless the user switches which buffer they select mid prompt.
+    if (buffer->directory.len() == 0) {
+        return;
+    }
+
+    directory = buffer->directory.clone(cz::heap_allocator());
+    CZ_ASSERT(directory.ends_with('/'));
+    directory.pop();
+
+    // Find the first existing directory and track all directories we need to create.
+    while (1) {
+        // If we have hit the root then stop and create from there.
+#ifdef _WIN32
+        if (directory.len() == 2) {
+            if (cz::is_alpha(directory[0]) && directory[1] == ':') {
+                break;
+            }
+        }
+#else
+        if (directory.len() == 0) {
+            break;
+        }
+#endif
+
+        // If this part of the path exists then we can start creating from this point.
+        directory.null_terminate();
+        if (cz::file::exists(directory.buffer())) {
+            break;
+        }
+
+        stack.reserve(cz::heap_allocator(), 1);
+        stack.push(directory.len());
+        if (!cz::path::pop_component(&directory)) {
+            break;
+        }
+    }
+
+    // Create all the directories.
+    for (size_t i = stack.len(); i-- > 0;) {
+        directory.push('/');
+        directory.set_len(stack[i]);
+
+        // Should be null terminated via the loop above.
+        CZ_DEBUG_ASSERT(*directory.end() == '\0');
+
+        if (!cz::file::create_directory(directory.buffer())) {
+            client->show_message(editor, "Failed to create parent directory");
+        }
+    }
+
+    if (!save_buffer(buffer)) {
+        client->show_message(editor, "Error saving file");
+    }
+}
+
 void command_save_file(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     if (buffer->type != Buffer::FILE) {
         source.client->show_message(editor, "Buffer must be associated with a file");
+        return;
+    }
+
+    if (!cz::file::exists(buffer->directory.buffer())) {
+        source.client->show_dialog(editor, "Submit to confirm create directory ",
+                                   no_completion_engine, command_save_file_callback, nullptr);
         return;
     }
 
@@ -199,7 +272,10 @@ void command_kill_buffer(Editor* editor, Command_Source source) {
                                command_kill_buffer_callback, buffer_id);
 }
 
-static void command_rename_buffer_callback(Editor* editor, Client* client, cz::Str path, void* data) {
+static void command_rename_buffer_callback(Editor* editor,
+                                           Client* client,
+                                           cz::Str path,
+                                           void* data) {
     Buffer_Id* buffer_id = (Buffer_Id*)data;
     CZ_DEFER(cz::heap_allocator().dealloc(buffer_id));
 
