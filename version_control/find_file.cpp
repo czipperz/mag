@@ -171,6 +171,7 @@ void command_find_file(Editor* editor, Command_Source source) {
         for (size_t i = data->directories.len(); i-- > 0;) {
             (void)data->directories[i].drop();
         }
+        data->directories.drop(cz::heap_allocator());
         data->path.drop(cz::heap_allocator());
         data->ignore_rules.drop();
         cz::heap_allocator().dealloc(data);
