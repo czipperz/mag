@@ -261,7 +261,7 @@ static void command_directory_delete_path_callback(Editor* editor, Client* clien
 }
 
 void command_directory_delete_path(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Confirm delete path: ", no_completion_engine,
+    source.client->show_dialog(editor, "Submit to confirm delete path ", no_completion_engine,
                                command_directory_delete_path_callback, nullptr);
 }
 
