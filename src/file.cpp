@@ -812,101 +812,70 @@ bool save_buffer(Buffer* buffer) {
         return false;
     }
 
-    if (save_contents(&buffer->contents, path.buffer(), buffer->use_carriage_returns)) {
-        buffer->mark_saved();
-        return true;
+    if (!save_buffer_to(buffer, path.buffer())) {
+        return false;
     }
 
-    return false;
-}
-
-bool save_contents_cr(const Contents* contents, cz::Output_File file) {
-    for (size_t bucket = 0; bucket < contents->buckets.len(); ++bucket) {
-        if (file.write_add_carriage_returns(contents->buckets[bucket].elems,
-                                            contents->buckets[bucket].len) < 0) {
-            return false;
-        }
-    }
+    buffer->mark_saved();
     return true;
 }
 
-bool save_contents_no_cr(const Contents* contents, cz::Output_File file) {
-    for (size_t bucket = 0; bucket < contents->buckets.len(); ++bucket) {
-        if (file.write_binary(contents->buckets[bucket].elems, contents->buckets[bucket].len) < 0) {
-            return false;
-        }
-    }
-    return true;
+bool save_buffer_to(const Buffer* buffer, cz::Output_File file) {
+    return save_contents(&buffer->contents, file, buffer->use_carriage_returns);
+}
+
+bool save_buffer_to(const Buffer* buffer, const char* path) {
+    return save_contents(&buffer->contents, path, buffer->use_carriage_returns);
+}
+
+bool save_buffer_to_temp_file(const Buffer* buffer, cz::Input_File* file) {
+    return save_contents_to_temp_file(&buffer->contents, file, buffer->use_carriage_returns);
 }
 
 bool save_contents(const Contents* contents, cz::Output_File file, bool use_carriage_returns) {
     if (use_carriage_returns) {
-        return save_contents_cr(contents, file);
+        for (size_t bucket = 0; bucket < contents->buckets.len(); ++bucket) {
+            if (file.write_add_carriage_returns(contents->buckets[bucket].elems,
+                                                contents->buckets[bucket].len) < 0) {
+                return false;
+            }
+        }
+        return true;
     } else {
-        return save_contents_no_cr(contents, file);
+        for (size_t bucket = 0; bucket < contents->buckets.len(); ++bucket) {
+            if (file.write_binary(contents->buckets[bucket].elems, contents->buckets[bucket].len) <
+                0) {
+                return false;
+            }
+        }
+        return true;
     }
-}
-
-bool save_contents_cr(const Contents* contents, const char* path) {
-    cz::Output_File file;
-    if (!file.open(path)) {
-        return false;
-    }
-    CZ_DEFER(file.close());
-
-    return save_contents_cr(contents, file);
-}
-
-bool save_contents_no_cr(const Contents* contents, const char* path) {
-    cz::Output_File file;
-    if (!file.open(path)) {
-        return false;
-    }
-    CZ_DEFER(file.close());
-
-    return save_contents_no_cr(contents, file);
 }
 
 bool save_contents(const Contents* contents, const char* path, bool use_carriage_returns) {
-    if (use_carriage_returns) {
-        return save_contents_cr(contents, path);
-    } else {
-        return save_contents_no_cr(contents, path);
+    cz::Output_File file;
+    if (!file.open(path)) {
+        return false;
     }
-}
+    CZ_DEFER(file.close());
 
-bool save_contents_to_temp_file_cr(const Contents* contents, cz::Input_File* fd) {
-    char temp_file_buffer[L_tmpnam];
-    if (!tmpnam(temp_file_buffer)) {
-        return false;
-    }
-    if (!save_contents_cr(contents, temp_file_buffer)) {
-        return false;
-    }
-    // Todo: don't open the file twice, instead open it once in read/write mode and reset the head.
-    return fd->open(temp_file_buffer);
-}
-
-bool save_contents_to_temp_file_no_cr(const Contents* contents, cz::Input_File* fd) {
-    char temp_file_buffer[L_tmpnam];
-    if (!tmpnam(temp_file_buffer)) {
-        return false;
-    }
-    if (!save_contents_no_cr(contents, temp_file_buffer)) {
-        return false;
-    }
-    // Todo: don't open the file twice, instead open it once in read/write mode and reset the head.
-    return fd->open(temp_file_buffer);
+    return save_contents(contents, file, use_carriage_returns);
 }
 
 bool save_contents_to_temp_file(const Contents* contents,
                                 cz::Input_File* fd,
                                 bool use_carriage_returns) {
-    if (use_carriage_returns) {
-        return save_contents_to_temp_file_cr(contents, fd);
-    } else {
-        return save_contents_to_temp_file_no_cr(contents, fd);
+    char temp_file_buffer[L_tmpnam];
+    if (!tmpnam(temp_file_buffer)) {
+        return false;
     }
+
+    if (!save_contents(contents, temp_file_buffer, use_carriage_returns)) {
+        return false;
+    }
+
+    // Todo: don't open the file twice, instead open it once in read/write mode and reset the head.
+    return fd->open(temp_file_buffer);
 }
 
 }

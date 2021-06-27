@@ -40,14 +40,9 @@ void open_file(Editor* editor, Client* client, cz::Str user_path);
 Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column, size_t index);
 
 bool save_buffer(Buffer* buffer);
-
-bool save_contents_cr(const Contents* contents, cz::Output_File file);
-bool save_contents_cr(const Contents* contents, const char* path);
-bool save_contents_to_temp_file_cr(const Contents* contents, cz::Input_File* fd);
-
-bool save_contents_no_cr(const Contents* contents, cz::Output_File file);
-bool save_contents_no_cr(const Contents* contents, const char* path);
-bool save_contents_to_temp_file_no_cr(const Contents* contents, cz::Input_File* fd);
+bool save_buffer_to(const Buffer* buffer, cz::Output_File file);
+bool save_buffer_to(const Buffer* buffer, const char* path);
+bool save_buffer_to_temp_file(const Buffer* buffer, cz::Input_File* fd);
 
 bool save_contents(const Contents* contents, cz::Output_File file, bool use_carriage_returns);
 bool save_contents(const Contents* contents, const char* path, bool use_carriage_returns);

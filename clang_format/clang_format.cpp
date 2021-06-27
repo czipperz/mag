@@ -302,7 +302,8 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     cz::Input_File input_file;
     // Use binary because we want no carriage returns on Windows because they make it hard to
     // process replacements.
-    if (!save_contents_to_temp_file_no_cr(&buffer->contents, &input_file)) {
+    if (!save_contents_to_temp_file(&buffer->contents, &input_file,
+                                    /*use_carriage_returns=*/false)) {
         source.client->show_message(editor, "Error: I/O operation failed");
         return;
     }

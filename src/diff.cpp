@@ -256,8 +256,7 @@ void reload_file(Editor* editor, Client* client, Buffer* buffer) {
         }
 
         cz::Process_Options options;
-        if (!save_contents_to_temp_file(&buffer->contents, &options.std_in,
-                                        buffer->use_carriage_returns)) {
+        if (!save_buffer_to_temp_file(buffer, &options.std_in)) {
             client->show_message(editor, "Error saving buffer to temp file");
             return;
         }
