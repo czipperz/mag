@@ -90,8 +90,9 @@ bool is_visible(const Window_Unified* window, const Mode& mode, Contents_Iterato
     // Go to start position
     end.retreat_to(window->start_position);
     // Then advance to end of visible region
-    forward_visual_line(window, mode, &end, window->rows());
-    return iterator.position < end.position;
+    forward_visual_line(window, mode, &end, window->rows() - 1);
+    end_of_visual_line(window, mode, &end);
+    return iterator.position <= end.position;
 }
 
 size_t get_scroll_outside(size_t rows, size_t scroll_outside) {
