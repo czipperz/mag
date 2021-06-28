@@ -98,7 +98,7 @@ void command_uppercase_region_or_word(Editor* editor, Command_Source source) {
         transaction.push(remove);
 
         Edit insert;
-        insert.value = remove.value.duplicate(transaction.value_allocator());
+        insert.value = remove.value.clone(transaction.value_allocator());
         cz::Str str = insert.value.as_str();
         for (size_t i = 0; i < str.len; ++i) {
             ((char*)str.buffer)[i] = cz::to_upper(str.buffer[i]);
@@ -143,7 +143,7 @@ void command_lowercase_region_or_word(Editor* editor, Command_Source source) {
         transaction.push(remove);
 
         Edit insert;
-        insert.value = remove.value.duplicate(transaction.value_allocator());
+        insert.value = remove.value.clone(transaction.value_allocator());
         cz::Str str = insert.value.as_str();
         for (size_t i = 0; i < str.len; ++i) {
             ((char*)str.buffer)[i] = cz::to_lower(str.buffer[i]);

@@ -137,7 +137,7 @@ struct SSOStr {
         }
     }
 
-    SSOStr duplicate(cz::Allocator allocator) const {
+    SSOStr clone(cz::Allocator allocator) const {
         return SSOStr::as_duplicate(allocator, as_str());
     }
 };

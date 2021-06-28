@@ -70,7 +70,7 @@ static void get_command_names(cz::Vector<cz::Str>* results,
     for (size_t i = 0; i < key_map.bindings.len(); ++i) {
         if (key_map.bindings[i].is_command) {
             results->reserve(cz::heap_allocator(), 1);
-            results->push(cz::Str{key_map.bindings[i].v.command.string}.duplicate(allocator));
+            results->push(cz::Str{key_map.bindings[i].v.command.string}.clone(allocator));
         } else {
             get_command_names(results, allocator, *key_map.bindings[i].v.map);
         }

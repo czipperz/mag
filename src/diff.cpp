@@ -232,7 +232,7 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
     for (size_t i = edits.len(); i-- > 0;) {
         Edit edit = edits[i];
         // The original is cleaned up in the deferred loop at the top.
-        edit.value = edit.value.duplicate(transaction.value_allocator());
+        edit.value = edit.value.clone(transaction.value_allocator());
         transaction.push(edit);
     }
 

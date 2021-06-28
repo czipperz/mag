@@ -110,8 +110,8 @@ static cz::Result load_directory(Buffer* buffer, char* path, size_t path_len) {
 
     *buffer = {};
     buffer->type = Buffer::DIRECTORY;
-    buffer->directory = cz::Str(path, path_len).duplicate_null_terminate(cz::heap_allocator());
-    buffer->name = cz::Str(".").duplicate(cz::heap_allocator());
+    buffer->directory = cz::Str(path, path_len).clone_null_terminate(cz::heap_allocator());
+    buffer->name = cz::Str(".").clone(cz::heap_allocator());
     buffer->read_only = true;
 
     cz::Result result = reload_directory_buffer(buffer);
@@ -259,10 +259,10 @@ cz::Result load_path_in_buffer(Buffer* buffer, char* path, size_t path_len) {
     if (end_dir) {
         ++end_dir;
         buffer->directory =
-            cz::Str(path, end_dir - path).duplicate_null_terminate(cz::heap_allocator());
-        buffer->name = cz::Str(end_dir, path + path_len - end_dir).duplicate(cz::heap_allocator());
+            cz::Str(path, end_dir - path).clone_null_terminate(cz::heap_allocator());
+        buffer->name = cz::Str(end_dir, path + path_len - end_dir).clone(cz::heap_allocator());
     } else {
-        buffer->name = cz::Str(path, path_len).duplicate(cz::heap_allocator());
+        buffer->name = cz::Str(path, path_len).clone(cz::heap_allocator());
     }
 
     path[path_len] = '\0';
@@ -399,7 +399,7 @@ static cz::Result load_path(Editor* editor,
 }
 
 cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
-    cz::String user_path_nt = user_path.duplicate_null_terminate(cz::heap_allocator());
+    cz::String user_path_nt = user_path.clone_null_terminate(cz::heap_allocator());
     CZ_DEFER(user_path_nt.drop(cz::heap_allocator()));
 
     // Dereference home directory.
@@ -481,7 +481,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
         char* ptr = realpath(user_path_nt.buffer(), nullptr);
         if (ptr) {
             CZ_DEFER(free(ptr));
-            return cz::Str{ptr}.duplicate_null_terminate(allocator);
+            return cz::Str{ptr}.clone_null_terminate(allocator);
         }
     }
 #endif

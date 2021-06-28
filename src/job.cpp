@@ -39,7 +39,7 @@ static Job_Tick_Result show_message_job_tick(Editor* editor, Client* client, voi
 void Asynchronous_Job_Handler::show_message(cz::Str message) {
     Show_Message_Job_Data* data = cz::heap_allocator().alloc<Show_Message_Job_Data>();
     CZ_ASSERT(data);
-    data->message = message.duplicate(cz::heap_allocator());
+    data->message = message.clone(cz::heap_allocator());
 
     Synchronous_Job job;
     job.tick = show_message_job_tick;

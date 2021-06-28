@@ -92,7 +92,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     uint64_t line = 0;
     sscanf(colon + 1, "%" PRIu64, &line);
 
-    cz::String path = arg.slice_end(colon).duplicate_null_terminate(cz::heap_allocator());
+    cz::String path = arg.slice_end(colon).clone_null_terminate(cz::heap_allocator());
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     if (cz::file::exists(path.buffer())) {
@@ -208,7 +208,7 @@ int mag_main(int argc, char** argv) {
             program_name = program_name_storage.buffer();
         }
 
-        cz::String program_dir_ = cz::Str(program_name).duplicate(cz::heap_allocator());
+        cz::String program_dir_ = cz::Str(program_name).clone(cz::heap_allocator());
         CZ_DEFER(program_dir_.drop(cz::heap_allocator()));
         cz::path::convert_to_forward_slashes(&program_dir_);
         if (cz::path::pop_name(&program_dir_)) {
@@ -224,12 +224,12 @@ int mag_main(int argc, char** argv) {
 
         Buffer scratch = {};
         scratch.type = Buffer::TEMPORARY;
-        scratch.name = cz::Str("*scratch*").duplicate(cz::heap_allocator());
+        scratch.name = cz::Str("*scratch*").clone(cz::heap_allocator());
         server.editor.create_buffer(scratch);
 
         Buffer splash_page = {};
         splash_page.type = Buffer::TEMPORARY;
-        splash_page.name = cz::Str("*splash page*").duplicate(cz::heap_allocator());
+        splash_page.name = cz::Str("*splash page*").clone(cz::heap_allocator());
         splash_page.read_only = true;
         splash_page.contents.append(
             "\

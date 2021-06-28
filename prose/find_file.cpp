@@ -124,7 +124,7 @@ static bool find_file_completion_engine(Editor*,
 
         context->results.reserve(1);
         context->results.push(data->path.slice_start(data->path_initial_len)
-                                  .duplicate(context->results_buffer_array.allocator()));
+                                  .clone(context->results_buffer_array.allocator()));
         cz::path::pop_name(&data->path);
     }
 

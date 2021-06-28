@@ -350,7 +350,7 @@ static void command_directory_copy_path_callback(Editor* editor,
         }
 
         if (cz::path::is_absolute(query)) {
-            new_path = query.duplicate_null_terminate(cz::heap_allocator());
+            new_path = query.clone_null_terminate(cz::heap_allocator());
         } else {
             new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
             new_path.append(buffer->directory);
@@ -411,7 +411,7 @@ static void command_directory_rename_path_callback(Editor* editor,
         }
 
         if (cz::path::is_absolute(query)) {
-            new_path = query.duplicate_null_terminate(cz::heap_allocator());
+            new_path = query.clone_null_terminate(cz::heap_allocator());
         } else {
             new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
             new_path.append(buffer->directory);
@@ -521,7 +521,7 @@ static void command_create_directory_callback(Editor* editor,
     CZ_DEFER(new_path.drop(cz::heap_allocator()));
 
     if (cz::path::is_absolute(query)) {
-        new_path = query.duplicate_null_terminate(cz::heap_allocator());
+        new_path = query.clone_null_terminate(cz::heap_allocator());
     } else {
         WITH_SELECTED_BUFFER(client);
 

@@ -19,7 +19,7 @@ static void command_apply_diff_callback(Editor* editor,
                                         Client* client,
                                         cz::Str diff_file,
                                         void* data) {
-    cz::String path = diff_file.duplicate_null_terminate(cz::heap_allocator());
+    cz::String path = diff_file.clone_null_terminate(cz::heap_allocator());
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     cz::Input_File file;

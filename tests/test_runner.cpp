@@ -11,7 +11,7 @@ Test_Runner::Test_Runner() {
 
     Buffer test_buffer = {};
     test_buffer.type = Buffer::TEMPORARY;
-    test_buffer.name = cz::Str("*test*").duplicate(cz::heap_allocator());
+    test_buffer.name = cz::Str("*test*").clone(cz::heap_allocator());
     server.editor.create_buffer(test_buffer);
 
     client = server.make_client();

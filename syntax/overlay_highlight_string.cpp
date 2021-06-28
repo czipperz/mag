@@ -142,7 +142,7 @@ Overlay overlay_highlight_string(Face face,
     Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
     data->face = face;
-    data->string = str.duplicate(cz::heap_allocator());
+    data->string = str.clone(cz::heap_allocator());
     data->case_insensitive = case_insensitive;
     data->token_type = token_type;
     return {&vtable, data};

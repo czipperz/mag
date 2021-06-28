@@ -17,7 +17,7 @@ using namespace mag::basic;
     Editor* editor = &server.editor;                                      \
     Buffer test_buffer = {};                                              \
     test_buffer.type = Buffer::TEMPORARY;                                 \
-    test_buffer.name = cz::Str("*test*").duplicate(cz::heap_allocator()); \
+    test_buffer.name = cz::Str("*test*").clone(cz::heap_allocator()); \
     editor->create_buffer(test_buffer);                                   \
                                                                           \
     Client client = server.make_client();                                 \

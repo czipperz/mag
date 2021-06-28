@@ -283,9 +283,9 @@ static void command_rename_buffer_callback(Editor* editor,
     cz::Str directory;
     parse_rendered_buffer_name(path, &name, &directory);
 
-    cz::String name_clone = name.duplicate(cz::heap_allocator());
+    cz::String name_clone = name.clone(cz::heap_allocator());
     CZ_DEFER(name_clone.drop(cz::heap_allocator()));
-    cz::String directory_clone = directory.duplicate(cz::heap_allocator());
+    cz::String directory_clone = directory.clone(cz::heap_allocator());
     CZ_DEFER(directory_clone.drop(cz::heap_allocator()));
 
     WITH_BUFFER(*buffer_id);
