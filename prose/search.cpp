@@ -4,6 +4,7 @@
 #include <cz/heap_vector.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
+#include "prose/helpers.hpp"
 #include "movement.hpp"
 #include "overlay.hpp"
 #include "syntax/overlay_highlight_string.hpp"
@@ -12,11 +13,11 @@
 namespace mag {
 namespace prose {
 
-static void run_ag(Client* client,
-                   Editor* editor,
-                   const char* directory,
-                   cz::Str query,
-                   bool query_word) {
+static void run_search(Client* client,
+                       Editor* editor,
+                       const char* directory,
+                       cz::Str query,
+                       bool query_word) {
     cz::Heap_Vector<cz::Str> args = {};
     CZ_DEFER(args.drop());
     {
@@ -47,54 +48,80 @@ static void run_ag(Client* client,
     }
 }
 
-static char* copy_directory(cz::Str buffer_directory) {
-    if (buffer_directory.len > 0) {
-        return buffer_directory.duplicate_null_terminate(cz::heap_allocator()).buffer();
-    }
-    return nullptr;
-}
-
 static void command_search_in_current_directory_callback(Editor* editor,
                                                          Client* client,
                                                          cz::Str query,
                                                          void* data) {
-    char* directory = nullptr;
-    CZ_DEFER(cz::heap_allocator().dealloc({directory, 1}));
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
 
     {
         WITH_CONST_BUFFER(*(Buffer_Id*)data);
-        directory = copy_directory(buffer->directory);
+        if (!copy_buffer_directory(editor, client, buffer, &directory)) {
+            return;
+        }
     }
 
-    run_ag(client, editor, directory, query, false);
+    run_search(client, editor, directory.buffer(), query, false);
 }
 
-void command_search_in_current_directory(Editor* editor, Command_Source source) {
+void command_search_in_current_directory_prompt(Editor* editor, Command_Source source) {
     Buffer_Id* selected_buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
     CZ_ASSERT(selected_buffer_id);
     *selected_buffer_id = source.client->selected_window()->id;
-    source.client->show_dialog(editor, "ag: ", no_completion_engine,
+    source.client->show_dialog(editor, "Search in current directory: ", no_completion_engine,
                                command_search_in_current_directory_callback, selected_buffer_id);
     source.client->fill_mini_buffer_with_selected_region(editor);
 }
 
-void command_search_in_current_directory_token_at_position(Editor* editor, Command_Source source) {
-    char* directory = nullptr;
-    CZ_DEFER(cz::heap_allocator().dealloc({directory, 1}));
+static void command_search_in_version_control_callback(Editor* editor,
+                                                       Client* client,
+                                                       cz::Str query,
+                                                       void* data) {
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+
+    {
+        WITH_CONST_BUFFER(*(Buffer_Id*)data);
+        if (!copy_version_control_directory(editor, client, buffer, &directory)) {
+            return;
+        }
+    }
+
+    run_search(client, editor, directory.buffer(), query, false);
+}
+
+void command_search_in_version_control_prompt(Editor* editor, Command_Source source) {
+    Buffer_Id* selected_buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
+    CZ_ASSERT(selected_buffer_id);
+    *selected_buffer_id = source.client->selected_window()->id;
+    source.client->show_dialog(editor, "Search in version control: ", no_completion_engine,
+                               command_search_in_version_control_callback, selected_buffer_id);
+    source.client->fill_mini_buffer_with_selected_region(editor);
+}
+
+template <class Copy_Directory>
+static void search_token_at_position(Editor* editor,
+                                     Client* client,
+                                     Copy_Directory&& copy_directory) {
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
 
     cz::String query = {};
     CZ_DEFER(query.drop(cz::heap_allocator()));
 
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_SELECTED_BUFFER(client);
 
-        directory = copy_directory(buffer->directory);
+        if (!copy_directory(editor, client, buffer, &directory)) {
+            return;
+        }
 
         Contents_Iterator iterator =
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
         Token token;
         if (!get_token_at_position(buffer, &iterator, &token)) {
-            source.client->show_message(editor, "Cursor is not positioned at a token");
+            client->show_message(editor, "Cursor is not positioned at a token");
             return;
         }
 
@@ -102,7 +129,15 @@ void command_search_in_current_directory_token_at_position(Editor* editor, Comma
         buffer->contents.slice_into(iterator, token.end, &query);
     }
 
-    run_ag(source.client, editor, directory, query, true);
+    run_search(client, editor, directory.buffer(), query, true);
+}
+
+void command_search_in_current_directory_token_at_position(Editor* editor, Command_Source source) {
+    search_token_at_position(editor, source.client, copy_buffer_directory);
+}
+
+void command_search_in_version_control_token_at_position(Editor* editor, Command_Source source) {
+    search_token_at_position(editor, source.client, copy_version_control_directory);
 }
 
 }

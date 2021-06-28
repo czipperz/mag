@@ -8,11 +8,11 @@
 #include <cz/process.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
-#include "ignore.hpp"
-#include "version_control.hpp"
+#include "prose/helpers.hpp"
+#include "version_control/ignore.hpp"
 
 namespace mag {
-namespace version_control {
+namespace prose {
 
 struct Find_File_Completion_Engine_Data {
     size_t path_initial_len;
@@ -22,7 +22,7 @@ struct Find_File_Completion_Engine_Data {
     bool finished;
 
     bool already_started;
-    Ignore_Rules ignore_rules;
+    version_control::Ignore_Rules ignore_rules;
 };
 
 static bool find_file_completion_engine(Editor*,
@@ -42,7 +42,7 @@ static bool find_file_completion_engine(Editor*,
 
         if (!data->already_started) {
             data->already_started = true;
-            find_ignore_rules(data->path.buffer(), &data->ignore_rules);
+            version_control::find_ignore_rules(data->path.buffer(), &data->ignore_rules);
         }
 
         context->results_buffer_array.clear();
@@ -92,7 +92,8 @@ static bool find_file_completion_engine(Editor*,
         }
 
         // Handle ignored files.
-        if (file_matches(data->ignore_rules, data->path.slice_start(data->path_initial_len - 1))) {
+        if (version_control::file_matches(data->ignore_rules,
+                                          data->path.slice_start(data->path_initial_len - 1))) {
             cz::path::pop_name(&data->path);
             continue;
         }
@@ -143,30 +144,32 @@ static void command_find_file_response(Editor* editor, Client* client, cz::Str f
     open_file(editor, client, path);
 }
 
-void command_find_file(Editor* editor, Command_Source source) {
-    cz::String top_level_path = {};
+template <class Copy_Directory>
+static void find_file(Editor* editor,
+                      Client* client,
+                      const char* prompt,
+                      Copy_Directory&& copy_directory) {
+    cz::String directory = {};
     {
-        WITH_CONST_SELECTED_BUFFER(source.client);
-        if (!get_root_directory(editor, source.client, buffer->directory.buffer(),
-                                cz::heap_allocator(), &top_level_path)) {
-            top_level_path.drop(cz::heap_allocator());
+        WITH_CONST_SELECTED_BUFFER(client);
+        if (!copy_directory(editor, client, buffer, &directory)) {
             return;
         }
     }
-    top_level_path.reserve(cz::heap_allocator(), 2);
-    top_level_path.push('/');
-    top_level_path.null_terminate();
+    directory.reserve(cz::heap_allocator(), 2);
+    directory.push('/');
+    directory.null_terminate();
 
-    source.client->show_dialog(editor, "Version Control Find File: ", find_file_completion_engine,
-                               command_find_file_response, top_level_path.buffer());
+    client->show_dialog(editor, prompt, find_file_completion_engine, command_find_file_response,
+                        directory.buffer());
 
     auto data = cz::heap_allocator().alloc<Find_File_Completion_Engine_Data>();
     *data = {};
-    data->path = top_level_path.clone_null_terminate(cz::heap_allocator());
+    data->path = directory.clone_null_terminate(cz::heap_allocator());
     data->path_initial_len = data->path.len();
-    source.client->mini_buffer_completion_cache.engine_context.data = data;
+    client->mini_buffer_completion_cache.engine_context.data = data;
 
-    source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* _data) {
+    client->mini_buffer_completion_cache.engine_context.cleanup = [](void* _data) {
         Find_File_Completion_Engine_Data* data = (Find_File_Completion_Engine_Data*)_data;
         for (size_t i = data->directories.len(); i-- > 0;) {
             (void)data->directories[i].drop();
@@ -176,6 +179,15 @@ void command_find_file(Editor* editor, Command_Source source) {
         data->ignore_rules.drop();
         cz::heap_allocator().dealloc(data);
     };
+}
+
+void command_find_file_in_current_directory(Editor* editor, Command_Source source) {
+    find_file(editor, source.client, "Find file in current directory: ", copy_buffer_directory);
+}
+
+void command_find_file_in_version_control(Editor* editor, Command_Source source) {
+    find_file(editor, source.client,
+              "Find file in version control: ", copy_version_control_directory);
 }
 
 }

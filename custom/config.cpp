@@ -32,6 +32,7 @@
 #include "man/man.hpp"
 #include "overlay.hpp"
 #include "prose/alternate.hpp"
+#include "prose/find_file.hpp"
 #include "prose/search.hpp"
 #include "solarized_dark.hpp"
 #include "syntax/decoration_column_number.hpp"
@@ -64,8 +65,6 @@
 #include "syntax/tokenize_search.hpp"
 #include "syntax/tokenize_shell_script.hpp"
 #include "syntax/tokenize_splash.hpp"
-#include "version_control/find_file.hpp"
-#include "version_control/search.hpp"
 #include "version_control/tokenize_git_commit_edit_message.hpp"
 #include "version_control/tokenize_patch.hpp"
 #include "version_control/tokenize_rebase_todo.hpp"
@@ -326,11 +325,12 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-g a", prose::command_alternate);
 
-    BIND(key_map, "A-g s", version_control::command_search);
-    BIND(key_map, "A-g A-s", version_control::command_search_token_at_position);
-    BIND(key_map, "A-g f", version_control::command_find_file);
-    BIND(key_map, "A-g r", prose::command_search_in_current_directory);
+    BIND(key_map, "A-g s", prose::command_search_in_version_control_prompt);
+    BIND(key_map, "A-g A-s", prose::command_search_in_version_control_token_at_position);
+    BIND(key_map, "A-g f", prose::command_find_file_in_version_control);
+    BIND(key_map, "A-g r", prose::command_search_in_current_directory_prompt);
     BIND(key_map, "A-g A-r", prose::command_search_in_current_directory_token_at_position);
+    BIND(key_map, "A-g h", prose::command_find_file_in_current_directory);
 
     BIND(key_map, "A-g A-t", gnu_global::command_lookup_at_point);
     BIND(key_map, "A-g t", gnu_global::command_lookup_prompt);
