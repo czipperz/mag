@@ -1035,6 +1035,8 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                                     is_type = true;
                                 }
                             }
+                        } else if (start_ch == '&' && start_ch2 == '&') {
+                            is_type = true;
                         }
                     }
                 }
@@ -1199,6 +1201,8 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                     normal_state == IN_PARAMETER_TYPE) &&
                    first_char == ',') {
             normal_state = START_OF_PARAMETER;
+        } else if (normal_state == START_OF_PARAMETER && token->type == Token_Type::PUNCTUATION) {
+            normal_state = IN_EXPR; // Misrecognized constructor call as function declaration.
         }
 
         if (in_preprocessor) {
