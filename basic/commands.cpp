@@ -182,6 +182,11 @@ void command_configure(Editor* editor, Command_Source source) {
     buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
 }
 
+void command_show_marks(Editor* editor, Command_Source source) {
+    Window_Unified* window = source.client->selected_window();
+    window->show_marks = true;
+}
+
 void command_set_mark(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;

@@ -104,6 +104,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "C-SPACE", command_set_mark);
     BIND(key_map, "A-x A-x", command_swap_mark_point);
+    BIND(key_map, "A-x A-SPACE", command_show_marks);
 
     BIND(key_map, "C-w", command_cut);
     BIND(key_map, "A-w", command_copy);
