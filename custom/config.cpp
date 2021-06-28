@@ -85,14 +85,14 @@ static void create_key_remap(Key_Remap& key_remap) {
     // Terminals rebind all of these keys so we do too
     // so we don't have to double specify these keys.
     key_remap.bind("C-@", "C-SPACE");
-    key_remap.bind("C-i", "\t");
-    key_remap.bind("C-m", "\n");
-    key_remap.bind("C-j", "\n");
+    key_remap.bind("C-i", "TAB");
+    key_remap.bind("C-m", "ENTER");
+    key_remap.bind("C-j", "ENTER");
     key_remap.bind("C-/", "C-_");
     key_remap.bind("C-h", "BACKSPACE");
 
     // I hit shift and these keys quite often and want the normal behavior.
-    key_remap.bind("S-\n", "\n");
+    key_remap.bind("S-ENTER", "ENTER");
     key_remap.bind("S-BACKSPACE", "BACKSPACE");
 }
 
@@ -182,7 +182,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-c a", command_cursors_align);
     BIND(key_map, "A-c l", command_create_cursors_lines_in_region);
-    BIND(key_map, "A-c \n", command_remove_cursors_at_empty_lines);
+    BIND(key_map, "A-c ENTER", command_remove_cursors_at_empty_lines);
     BIND(key_map, "A-c BACKSPACE", command_remove_selected_cursor);
 
     BIND(key_map, "A-c C-w", command_cursors_cut_as_lines);
@@ -240,10 +240,10 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-t", command_transpose_characters);
 
     BIND(key_map, "A-m", command_open_line);
-    BIND(key_map, "\n", command_insert_newline_indent);
-    BIND(key_map, "\t", command_increase_indent);
+    BIND(key_map, "ENTER", command_insert_newline_indent);
+    BIND(key_map, "TAB", command_increase_indent);
     BIND(key_map, "A-i", command_decrease_indent);
-    BIND(key_map, "S-\t", command_decrease_indent);
+    BIND(key_map, "S-TAB", command_decrease_indent);
     BIND(key_map, "A-=", command_delete_whitespace);
     BIND(key_map, "A-^", command_merge_lines);
 
@@ -490,14 +490,14 @@ void editor_created_callback(Editor* editor) {
 }
 
 static void directory_key_map(Key_Map& key_map) {
-    BIND(key_map, "\n", command_directory_open_path);
+    BIND(key_map, "ENTER", command_directory_open_path);
     BIND(key_map, "A-j", command_directory_open_path);
     BIND(key_map, "s", command_directory_run_path);
     BIND(key_map, "d", command_directory_delete_path);
     BIND(key_map, "c", command_directory_copy_path);
     BIND(key_map, "r", command_directory_rename_path);
     BIND(key_map, "g", command_directory_reload);
-    BIND(key_map, "\t", command_directory_toggle_sort);
+    BIND(key_map, "TAB", command_directory_toggle_sort);
     BIND(key_map, "m", command_create_directory);
 
     BIND(key_map, "n", command_forward_line);
@@ -505,7 +505,7 @@ static void directory_key_map(Key_Map& key_map) {
 }
 
 static void search_key_map(Key_Map& key_map) {
-    BIND(key_map, "\n", command_search_open_selected);
+    BIND(key_map, "ENTER", command_search_open_selected);
     BIND(key_map, "g", command_search_reload);
 
     BIND(key_map, "o", command_search_open_selected_no_swap);
@@ -527,9 +527,9 @@ static void mini_buffer_key_map(Key_Map& key_map) {
     BIND(key_map, "C-BACKSPACE", command_path_up_directory);
 
     BIND(key_map, "A-i", command_insert_completion);
-    BIND(key_map, "\t", command_insert_completion);
+    BIND(key_map, "TAB", command_insert_completion);
     BIND(key_map, "A-j", command_insert_completion_and_submit_mini_buffer);
-    BIND(key_map, "\n", command_submit_mini_buffer);
+    BIND(key_map, "ENTER", command_submit_mini_buffer);
 
     // These keys just mess up the prompt so unbind them.
     BIND(key_map, "C-k", command_do_nothing);
@@ -544,7 +544,7 @@ static void window_completion_key_map(Key_Map& key_map) {
     BIND(key_map, "A-<", window_completion::command_first_completion);
     BIND(key_map, "A->", window_completion::command_last_completion);
 
-    BIND(key_map, "\n", window_completion::command_finish_completion);
+    BIND(key_map, "ENTER", window_completion::command_finish_completion);
     BIND(key_map, "C-c", window_completion::command_finish_completion);
 }
 
@@ -613,7 +613,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::process_next_token;
         } else if (buffer->name == "*key map*") {
             buffer->mode.next_token = syntax::key_map_next_token;
-            BIND(buffer->mode.key_map, "\n", command_go_to_key_map_binding);
+            BIND(buffer->mode.key_map, "ENTER", command_go_to_key_map_binding);
         } else if (buffer->name == "*splash page*") {
             buffer->mode.next_token = syntax::splash_next_token;
         }
