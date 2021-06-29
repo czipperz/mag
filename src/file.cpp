@@ -487,16 +487,14 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
 #endif
 
     // Fallback to doing it ourselves.
+
+#ifdef _WIN32
     cz::path::convert_to_forward_slashes(&user_path_nt);
+#endif
 
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     cz::path::make_absolute(user_path_nt, cz::heap_allocator(), &path);
-#ifdef _WIN32
-    if (path.len() > 3 && path[path.len() - 1] == '/') {
-        path.pop();
-    }
-#endif
     if (path[path.len() - 1] == '/') {
         path.pop();
     }
@@ -509,9 +507,9 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     // Todo: support symbolic links on Windows.
 
     // Append drive as uppercase.
-    CZ_ASSERT(cz::is_alpha(path[0]));
-    CZ_ASSERT(path[1] == ':');
-    CZ_ASSERT(path.len() == 2 || path[2] == '/');
+    CZ_DEBUG_ASSERT(cz::is_alpha(path[0]));
+    CZ_DEBUG_ASSERT(path[1] == ':');
+    CZ_DEBUG_ASSERT(path.len() == 2 || path[2] == '/');
     result.push(cz::to_upper(path[0]));
     result.push(':');
 
