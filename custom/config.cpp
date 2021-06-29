@@ -101,6 +101,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "F1", command_dump_key_map);
     BIND(key_map, "C-x", command_run_command_by_name);
+    BIND(key_map, "F2", gnu_global::command_lookup_previous_command);
 
     BIND(key_map, "C-SPACE", command_set_mark);
     BIND(key_map, "A-x A-x", command_swap_mark_point);

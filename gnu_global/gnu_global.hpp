@@ -38,6 +38,8 @@ void command_move_mouse_and_lookup_at_point(Editor* editor, Command_Source sourc
 
 void command_complete_at_point(Editor* editor, Command_Source source);
 
+void command_lookup_previous_command(Editor* editor, Command_Source source);
+
 bool completion_engine(Editor* editor, Completion_Engine_Context* context, bool is_initial_frame);
 
 }

@@ -13,6 +13,7 @@
 #include <limits>
 #include <movement.hpp>
 #include <token.hpp>
+#include "program_info.hpp"
 #include "visible_region.hpp"
 
 namespace mag {
@@ -397,6 +398,11 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
         data->runner.drop();
         cz::heap_allocator().dealloc(data);
     };
+}
+
+void command_lookup_previous_command(Editor* editor, Command_Source source) {
+    gnu_global::lookup_and_prompt(editor, source.client, mag_build_directory,
+                                  source.previous_command.string);
 }
 
 }
