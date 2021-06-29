@@ -65,6 +65,7 @@ TEST_CASE("version_control_ignore: /test.txt") {
     CHECK(file_matches(rules, "/test.txt"));
     CHECK_FALSE(file_matches(rules, "/test.txt2"));
     CHECK_FALSE(file_matches(rules, "/src/test.txt"));
+    CHECK(file_matches(rules, "/test.txt/ok"));
 }
 
 TEST_CASE("version_control_ignore: basic inverse rule") {
