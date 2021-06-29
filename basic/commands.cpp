@@ -147,6 +147,18 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
         buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
     } else if (query == "draw line numbers") {
         editor->theme.draw_line_numbers = !editor->theme.draw_line_numbers;
+    } else if (query == "font size") {
+        client->show_dialog(
+            editor, "Set font size to: ", no_completion_engine,
+            [](Editor* editor, Client* client, cz::Str str, void*) {
+                uint32_t value;
+                if (cz::parse(str, &value) <= 0 || value == 0) {
+                    client->show_message(editor, "Invalid font size (only ints for now)");
+                    return;
+                }
+                editor->theme.font_size = value;
+            },
+            nullptr);
     } else {
         client->show_message(editor, "Invalid configuration variable");
     }
@@ -159,7 +171,7 @@ static bool configurations_completion_engine(Editor* editor,
         return false;
     }
 
-    context->results.reserve(10);
+    context->results.reserve(12);
     context->results.push("buffer indent width");
     context->results.push("buffer tab width");
     context->results.push("buffer use tabs");
@@ -171,6 +183,7 @@ static bool configurations_completion_engine(Editor* editor,
     context->results.push("buffer wrap long lines");
     context->results.push("animated scrolling");
     context->results.push("draw line numbers");
+    context->results.push("font size");
     return true;
 }
 
