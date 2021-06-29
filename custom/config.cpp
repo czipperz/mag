@@ -404,6 +404,8 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::IDENTIFIER] = {{}, {}, 0};
     theme.token_faces[Token_Type::NUMBER] = {{}, {}, 0};
 
+    theme.token_faces[Token_Type::PREPROCESSOR_KEYWORD] = {207, {}, 0};
+
     theme.token_faces[Token_Type::MERGE_START] = {184, {}, 0};
     theme.token_faces[Token_Type::MERGE_MIDDLE] = {184, {}, 0};
     theme.token_faces[Token_Type::MERGE_END] = {184, {}, 0};

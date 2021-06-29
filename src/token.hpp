@@ -20,6 +20,8 @@ enum Token_Type : uint64_t {
     IDENTIFIER,
     NUMBER,
 
+    PREPROCESSOR_KEYWORD,
+
     MERGE_START,
     MERGE_MIDDLE,
     MERGE_END,

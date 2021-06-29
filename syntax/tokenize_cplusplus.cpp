@@ -929,7 +929,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
 
         if (in_preprocessor && preprocessor_state == PREPROCESSOR_START_STATEMENT) {
             ZoneScopedN("preprocessor keyword");
-            token->type = Token_Type::KEYWORD;
+            token->type = Token_Type::PREPROCESSOR_KEYWORD;
             if (matches(start_iterator, token->end, "include")) {
                 preprocessor_state = PREPROCESSOR_AFTER_INCLUDE;
                 goto done_no_skip;
