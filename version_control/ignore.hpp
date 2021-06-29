@@ -6,9 +6,15 @@
 namespace mag {
 namespace version_control {
 
+struct Rule {
+    cz::String string;
+    size_t index;
+    bool inverse;
+};
+
 struct Ignore_Rules {
-    cz::Vector<cz::String> suffix_rules;
-    cz::Vector<cz::String> exact_rules;
+    cz::Vector<Rule> suffix_rules;
+    cz::Vector<Rule> exact_rules;
 
     void drop();
 };

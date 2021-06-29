@@ -22,6 +22,15 @@ TEST_CASE("version_control_ignore: empty lines and comments") {
     CHECK_FALSE(file_matches(rules, "/test/123"));
 }
 
+TEST_CASE("version_control_ignore: escaped #") {
+    Ignore_Rules rules = {};
+    CZ_DEFER(rules.drop());
+    parse_ignore_rules("\\#src", &rules);
+
+    CHECK_FALSE(file_matches(rules, "/src"));
+    CHECK(file_matches(rules, "/#src"));
+}
+
 TEST_CASE("version_control_ignore: basic rule") {
     Ignore_Rules rules = {};
     CZ_DEFER(rules.drop());
@@ -56,4 +65,25 @@ TEST_CASE("version_control_ignore: /test.txt") {
     CHECK(file_matches(rules, "/test.txt"));
     CHECK_FALSE(file_matches(rules, "/test.txt2"));
     CHECK_FALSE(file_matches(rules, "/src/test.txt"));
+}
+
+TEST_CASE("version_control_ignore: basic inverse rule") {
+    Ignore_Rules rules = {};
+    CZ_DEFER(rules.drop());
+    parse_ignore_rules("*\n!test.txt", &rules);
+
+    CHECK(file_matches(rules, "/src"));
+    CHECK_FALSE(file_matches(rules, "/test.txt"));
+    CHECK(file_matches(rules, "/test.txt2"));
+    CHECK_FALSE(file_matches(rules, "/src/test.txt"));
+    CHECK(file_matches(rules, "/test.txt/abc"));
+}
+
+TEST_CASE("version_control_ignore: escape !") {
+    Ignore_Rules rules = {};
+    CZ_DEFER(rules.drop());
+    parse_ignore_rules("\\!test.txt", &rules);
+
+    CHECK_FALSE(file_matches(rules, "/test.txt"));
+    CHECK(file_matches(rules, "/!test.txt"));
 }

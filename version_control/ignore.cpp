@@ -8,7 +8,7 @@
 namespace mag {
 namespace version_control {
 
-static void process_line(cz::Str line, Ignore_Rules* rules) {
+static void process_line(cz::Str line, Ignore_Rules* rules, size_t* counter) {
     ZoneScoped;
 
     // Ignore empty lines.
@@ -21,44 +21,56 @@ static void process_line(cz::Str line, Ignore_Rules* rules) {
         return;
     }
 
+    Rule rule = {};
+    rule.index = (*counter)++;
+
+    // Negative patterns start with !.
+    if (line[0] == '!') {
+        line = line.slice_start(1);
+        rule.inverse = true;
+    }
+
+    // If the line starts with a backslash then the next character is
+    // treated literally.  This isn't really exactly correct but it's close.
+    if (line[0] == '\\') {
+        line = line.slice_start(1);
+    }
+
     // If the line starts with * then we assume it is a rule like `*.txt` for now.
     if (line[0] == '*') {
         line = line.slice_start(1);
 
         // TODO: what if the new `line` has advanced characters?
-        cz::String string = {};
-        string.reserve(cz::heap_allocator(), line.len);
-        string.append(line);
+        rule.string.reserve(cz::heap_allocator(), line.len);
+        rule.string.append(line);
 
         rules->suffix_rules.reserve(cz::heap_allocator(), 1);
-        rules->suffix_rules.push(string);
+        rules->suffix_rules.push(rule);
         return;
     }
 
     // Line starting with /.
     if (line[0] == '/') {
         // TODO: what if the rest of `line` has advanced characters?
-        cz::String string = {};
-        string.reserve(cz::heap_allocator(), line.len);
-        string.append(line);
+        rule.string.reserve(cz::heap_allocator(), line.len);
+        rule.string.append(line);
 
         rules->exact_rules.reserve(cz::heap_allocator(), 1);
-        rules->exact_rules.push(string);
+        rules->exact_rules.push(rule);
         return;
     }
 
     // Default: match /line.
-    cz::String string = {};
-    string.reserve(cz::heap_allocator(), line.len + 1);
-    string.push('/');
-    string.append(line);
+    rule.string.reserve(cz::heap_allocator(), line.len + 1);
+    rule.string.push('/');
+    rule.string.append(line);
 
     rules->suffix_rules.reserve(cz::heap_allocator(), 1);
-    rules->suffix_rules.push(string);
+    rules->suffix_rules.push(rule);
     return;
 }
 
-void parse_ignore_rules(cz::Str contents, Ignore_Rules* rules) {
+static void parse_ignore_rules(cz::Str contents, Ignore_Rules* rules, size_t* counter) {
     ZoneScoped;
 
     size_t index = 0;
@@ -70,7 +82,7 @@ void parse_ignore_rules(cz::Str contents, Ignore_Rules* rules) {
             end = contents.len;
         }
 
-        process_line(contents.slice(index, end), rules);
+        process_line(contents.slice(index, end), rules, counter);
 
         index = end + 1;
         if (index >= contents.len) {
@@ -80,7 +92,12 @@ void parse_ignore_rules(cz::Str contents, Ignore_Rules* rules) {
     }
 }
 
-static void try_ignore_git_modules(const char* path, Ignore_Rules* rules) {
+void parse_ignore_rules(cz::Str contents, Ignore_Rules* rules) {
+    size_t counter = 0;
+    return parse_ignore_rules(contents, rules, &counter);
+}
+
+static void try_ignore_git_modules(const char* path, Ignore_Rules* rules, size_t* counter) {
     cz::Input_File file;
     if (!file.open(path)) {
         return;
@@ -105,13 +122,16 @@ static void try_ignore_git_modules(const char* path, Ignore_Rules* rules) {
         }
 
         cz::Str path = contents.slice(sub + 7, eol);
-        cz::String string = {};
-        string.reserve(cz::heap_allocator(), 1 + path.len);
-        string.push('/');
-        string.append(path);
+
+        Rule rule = {};
+        rule.index = (*counter)++;
+
+        rule.string.reserve(cz::heap_allocator(), 1 + path.len);
+        rule.string.push('/');
+        rule.string.append(path);
 
         rules->exact_rules.reserve(cz::heap_allocator(), 1);
-        rules->exact_rules.push(string);
+        rules->exact_rules.push(rule);
 
         if (eol == contents.end()) {
             break;
@@ -135,6 +155,8 @@ void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
 
     cz::Input_File file;
 
+    size_t counter = 0;
+
     size_t initial_len = path.len();
     path.append(".ignore");
     path.null_terminate();
@@ -142,7 +164,7 @@ void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
         CZ_DEFER(file.close());
 
         read_to_string(file, cz::heap_allocator(), &contents);
-        parse_ignore_rules(contents, rules);
+        parse_ignore_rules(contents, rules, &counter);
     }
 
     path.set_len(initial_len);
@@ -152,17 +174,17 @@ void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
         CZ_DEFER(file.close());
 
         // Add a special line such that .git is ignored.
-        process_line("/.git", rules);
+        process_line("/.git", rules, &counter);
 
         // Don't find files in Git submodules.
         path.set_len(initial_len);
         path.append(".gitmodules");
         path.null_terminate();
-        try_ignore_git_modules(path.buffer(), rules);
+        try_ignore_git_modules(path.buffer(), rules, &counter);
 
         contents.set_len(0);
         read_to_string(file, cz::heap_allocator(), &contents);
-        parse_ignore_rules(contents, rules);
+        parse_ignore_rules(contents, rules, &counter);
     }
 
     // TODO: find and parse SVN ignore files
@@ -171,34 +193,43 @@ void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
 bool file_matches(const Ignore_Rules& rules, cz::Str path) {
     ZoneScoped;
 
+    Rule rule;
+    rule.index = 0;
+    rule.inverse = true;
+
     // Test the suffix rules.
-    for (size_t i = 0; i < rules.suffix_rules.len(); ++i) {
-        if (path.ends_with(rules.suffix_rules[i])) {
-            return true;
+    for (size_t i = rules.suffix_rules.len(); i-- > 0;) {
+        if (path.ends_with(rules.suffix_rules[i].string)) {
+            rule = rules.suffix_rules[i];
+            break;
         }
     }
 
     // Test the exact rules.
-    for (size_t i = 0; i < rules.exact_rules.len(); ++i) {
-        if (path == rules.exact_rules[i]) {
-            return true;
+    for (size_t i = rules.exact_rules.len(); i-- > 0;) {
+        if (rules.exact_rules[i].index < rule.index) {
+            break;
+        }
+
+        if (path == rules.exact_rules[i].string) {
+            rule = rules.exact_rules[i];
+            break;
         }
     }
 
-    // No rules match.
-    return false;
+    return !rule.inverse;
 }
 
 void Ignore_Rules::drop() {
     auto& rules = *this;
 
     for (size_t i = 0; i < rules.suffix_rules.len(); ++i) {
-        rules.suffix_rules[i].drop(cz::heap_allocator());
+        rules.suffix_rules[i].string.drop(cz::heap_allocator());
     }
     rules.suffix_rules.drop(cz::heap_allocator());
 
     for (size_t i = 0; i < rules.exact_rules.len(); ++i) {
-        rules.exact_rules[i].drop(cz::heap_allocator());
+        rules.exact_rules[i].string.drop(cz::heap_allocator());
     }
     rules.exact_rules.drop(cz::heap_allocator());
 }
