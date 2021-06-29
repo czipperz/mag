@@ -60,8 +60,12 @@ static bool find_file_completion_engine(Editor*,
         if (data->directories.len() == 0) {
             // First time: create the first iterator and get the first file.
             cz::Directory_Iterator iterator;
-            if (iterator.init(data->path.buffer(), cz::heap_allocator(), &data->path).is_err() ||
-                iterator.done()) {
+            if (iterator.init(data->path.buffer(), cz::heap_allocator(), &data->path).is_err()) {
+                data->finished = true;
+                return false;
+            }
+            if (iterator.done()) {
+                iterator.drop();
                 data->finished = true;
                 return false;
             }
@@ -113,8 +117,12 @@ static bool find_file_completion_engine(Editor*,
 
                 cz::Directory_Iterator iterator;
                 if (iterator.init(data->path.buffer(), cz::heap_allocator(), &data->path)
-                        .is_err() ||
-                    iterator.done()) {
+                        .is_err()) {
+                    data->path.pop();
+                    goto pop;
+                }
+                if (iterator.done()) {
+                    iterator.drop();
                     data->path.pop();
                     goto pop;
                 }
