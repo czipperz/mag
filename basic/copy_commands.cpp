@@ -145,14 +145,14 @@ void command_paste(Editor* editor, Command_Source source) {
 void command_paste_previous(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;
-    if (source.previous_command == command_paste) {
+    if (source.previous_command.function == command_paste) {
         if (!setup_paste(cursors, source.client->global_copy_chain)) {
             return;
         }
     }
 
-    if (source.previous_command == command_paste ||
-        source.previous_command == command_paste_previous) {
+    if (source.previous_command.function == command_paste ||
+        source.previous_command.function == command_paste_previous) {
         for (size_t c = 0; c < cursors.len; ++c) {
             Copy_Chain** chain = &cursors[c].paste_local;
             if (*chain) {
@@ -367,14 +367,14 @@ void command_cursors_paste_as_lines(Editor* editor, Command_Source source) {
 void command_cursors_paste_previous_as_lines(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;
-    if (source.previous_command == command_cursors_paste_as_lines) {
+    if (source.previous_command.function == command_cursors_paste_as_lines) {
         if (!setup_paste(cursors, source.client->global_copy_chain)) {
             return;
         }
     }
 
-    if (source.previous_command == command_cursors_paste_as_lines ||
-        source.previous_command == command_cursors_paste_previous_as_lines) {
+    if (source.previous_command.function == command_cursors_paste_as_lines ||
+        source.previous_command.function == command_cursors_paste_previous_as_lines) {
         for (size_t c = 0; c < cursors.len; ++c) {
             Copy_Chain** chain = &cursors[c].paste_local;
             if (*chain) {

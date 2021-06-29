@@ -20,7 +20,7 @@ struct Command {
 struct Command_Source {
     Client* client;
     cz::Slice<const Key> keys;
-    Command_Function previous_command;
+    Command previous_command;
 };
 
 }

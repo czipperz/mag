@@ -485,7 +485,7 @@ static void command_insert_char(Editor* editor, Command_Source source) {
         }
     }
 
-    if (source.previous_command == command_insert_char &&
+    if (source.previous_command.function == command_insert_char &&
         buffer->check_last_committer(command_insert_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
         Commit commit = buffer->commits[buffer->commit_index - 1];
@@ -761,7 +761,7 @@ void Server::receive(Client* client, Key key) {
         // Make the source of the command.
         Command_Source source;
         source.client = client;
-        source.previous_command = previous_command.function;
+        source.previous_command = previous_command;
 
         cz::Vector<Key> temp = {};
         CZ_DEFER(temp.drop(cz::heap_allocator()));
