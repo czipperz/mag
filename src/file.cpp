@@ -610,6 +610,11 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
             if (cz::path::is_absolute(temp_path)) {
                 // Discard the directory of the symlink and since it is an absolute path.
                 std::swap(temp_path, path);
+
+                // Pop off trailing forward slashes.
+                while (path.ends_with('/')) {
+                    path.pop();
+                }
             } else {
                 // Expand the symlink from the directory it is in.
                 path.reserve(cz::heap_allocator(), temp_path.len() + 5);
