@@ -86,7 +86,6 @@ void command_toggle_wrap_long_lines(Editor* editor, Command_Source source) {
 }
 
 static void command_configure_callback(Editor* editor, Client* client, cz::Str query, void* _data) {
-    WITH_SELECTED_BUFFER(client);
     if (query == "animated scrolling") {
         editor->theme.allow_animated_scrolling = !editor->theme.allow_animated_scrolling;
     } else if (query == "buffer indent width") {
@@ -116,15 +115,21 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             },
             nullptr);
     } else if (query == "buffer use tabs") {
-        buffer->mode.use_tabs = !buffer->mode.use_tabs;
-        if (buffer->mode.use_tabs) {
+        bool use_tabs;
+        {
+            WITH_SELECTED_BUFFER(client);
+            use_tabs = buffer->mode.use_tabs = !buffer->mode.use_tabs;
+        }
+        if (use_tabs) {
             client->show_message(editor, "Buffer now uses tabs");
         } else {
             client->show_message(editor, "Buffer now does not use tabs");
         }
     } else if (query == "buffer line feed crlf") {
+        WITH_SELECTED_BUFFER(client);
         buffer->use_carriage_returns = !buffer->use_carriage_returns;
     } else if (query == "buffer pinned") {
+        Window_Unified* window = client->selected_window();
         window->pinned = !window->pinned;
     } else if (query == "buffer preferred column") {
         client->show_dialog(
@@ -140,10 +145,13 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             },
             nullptr);
     } else if (query == "buffer read only") {
+        WITH_SELECTED_BUFFER(client);
         buffer->read_only = !buffer->read_only;
     } else if (query == "buffer render bucket boundaries") {
+        WITH_SELECTED_BUFFER(client);
         buffer->mode.render_bucket_boundaries = !buffer->mode.render_bucket_boundaries;
     } else if (query == "buffer wrap long lines") {
+        WITH_SELECTED_BUFFER(client);
         buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
     } else if (query == "draw line numbers") {
         editor->theme.draw_line_numbers = !editor->theme.draw_line_numbers;
