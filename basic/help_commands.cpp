@@ -8,6 +8,7 @@
 #include "gnu_global/gnu_global.hpp"
 #include "match.hpp"
 #include "movement.hpp"
+#include "program_info.hpp"
 #include "transaction.hpp"
 #include "window.hpp"
 
@@ -38,8 +39,6 @@ static void add_key_map(Contents* contents, cz::String* prefix, const Key_Map& k
         prefix->set_len(old_len);
     }
 }
-
-const char* const mag_build_directory = CZ_STRINGIFY(MAG_BUILD_DIRECTORY);
 
 void command_dump_key_map(Editor* editor, Command_Source source) {
     cz::Arc<Buffer_Handle> handle;

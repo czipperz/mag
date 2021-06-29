@@ -5,4 +5,6 @@ namespace mag {
 char* program_name;
 cz::Str program_dir;
 
+const char* const mag_build_directory = CZ_STRINGIFY(MAG_BUILD_DIRECTORY);
+
 }
