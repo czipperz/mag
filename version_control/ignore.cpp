@@ -167,6 +167,10 @@ void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
 
     size_t counter = 0;
 
+    // Always ignore .git and .svn directories.
+    process_line(".git", rules, &counter);
+    process_line(".svn", rules, &counter);
+
     size_t initial_len = path.len();
     path.append(".ignore");
     path.null_terminate();
@@ -182,9 +186,6 @@ void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
     path.null_terminate();
     if (file.open(path.buffer())) {
         CZ_DEFER(file.close());
-
-        // Add a special line such that .git is ignored.
-        process_line("/.git", rules, &counter);
 
         // Don't find files in Git submodules.
         path.set_len(initial_len);
