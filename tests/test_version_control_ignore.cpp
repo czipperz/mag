@@ -87,3 +87,15 @@ TEST_CASE("version_control_ignore: escape !") {
     CHECK_FALSE(file_matches(rules, "/test.txt"));
     CHECK(file_matches(rules, "/!test.txt"));
 }
+
+TEST_CASE("version_control_ignore: /* !/foo /foo/* !/foo/bar") {
+    Ignore_Rules rules = {};
+    CZ_DEFER(rules.drop());
+    parse_ignore_rules("/*\n!/foo\n/foo/*\n!/foo/bar", &rules);
+
+    CHECK(file_matches(rules, "/test.txt"));
+    CHECK_FALSE(file_matches(rules, "/foo"));
+    CHECK(file_matches(rules, "/foo/abc"));
+    CHECK_FALSE(file_matches(rules, "/foo/bar"));
+    CHECK_FALSE(file_matches(rules, "/foo/bar/abc"));
+}

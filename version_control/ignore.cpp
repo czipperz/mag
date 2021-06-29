@@ -49,7 +49,17 @@ static void process_line(cz::Str line, Ignore_Rules* rules, size_t* counter) {
         return;
     }
 
-    // Line starting with /.
+    // Line ending in * is prefix.
+    if (line[0] == '/' && line.ends_with('*')) {
+        // TODO: what if the rest of `line` has advanced characters?
+        rule.string = line.slice_end(line.len - 1).clone(cz::heap_allocator());
+
+        rules->exact_rules.reserve(cz::heap_allocator(), 1);
+        rules->exact_rules.push(rule);
+        return;
+    }
+
+    // Line with / at start is an exact match.
     if (line[0] == '/') {
         // TODO: what if the rest of `line` has advanced characters?
         rule.string.reserve(cz::heap_allocator(), line.len);
@@ -211,9 +221,13 @@ bool file_matches(const Ignore_Rules& rules, cz::Str path) {
             break;
         }
 
-        if (path == rules.exact_rules[i].string) {
-            rule = rules.exact_rules[i];
-            break;
+        if (path.starts_with(rules.exact_rules[i].string)) {
+            if (path.len == rules.exact_rules[i].string.len() ||
+                rules.exact_rules[i].string[rules.exact_rules[i].string.len() - 1] == '/' ||
+                path[rules.exact_rules[i].string.len()] == '/') {
+                rule = rules.exact_rules[i];
+                break;
+            }
         }
     }
 
