@@ -98,7 +98,7 @@ static bool find_file_completion_engine(Editor*,
             continue;
         }
 
-        if (cz::file::is_directory(data->path.buffer())) {
+        if (cz::file::is_directory_and_not_symlink(data->path.buffer())) {
             // Recursively descend into directories.
             do {
                 // If we go too deep then just stop.
