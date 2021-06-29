@@ -178,8 +178,6 @@ void command_configure(Editor* editor, Command_Source source) {
     source.client->show_dialog(editor,
                                "Configuration to change: ", configurations_completion_engine,
                                command_configure_callback, nullptr);
-    WITH_SELECTED_BUFFER(source.client);
-    buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
 }
 
 void command_show_marks(Editor* editor, Command_Source source) {
