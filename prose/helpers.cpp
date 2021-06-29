@@ -7,8 +7,9 @@ namespace prose {
 
 bool copy_buffer_directory(Editor*, Client*, const Buffer* buffer, cz::String* out) {
     if (buffer->directory.len() > 0) {
-        out->reserve(cz::heap_allocator(), buffer->directory.len());
+        out->reserve(cz::heap_allocator(), buffer->directory.len() + 1);
         out->append(buffer->directory);
+        out->null_terminate();
     }
     return true;
 }
