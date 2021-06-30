@@ -972,7 +972,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
 
         if (look_for_type_keyword(start_iterator, token, first_char)) {
             token->type = Token_Type::TYPE;
-            if (normal_state == START_OF_PARAMETER) {
+            if (normal_state == START_OF_PARAMETER || normal_state == IN_PARAMETER_TYPE) {
                 normal_state = IN_PARAMETER_TYPE;
             } else {
                 normal_state = IN_VARIABLE_TYPE;
