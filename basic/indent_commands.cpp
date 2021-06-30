@@ -156,20 +156,27 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
     int64_t offset = 0;
     cz::Slice<Cursor> cursors = window->cursors;
 
-    // Special case for when all lines are empty we want to indent all of them.
-    size_t empty_count = 0;
+    // If we have a bunch of cursors, some of them at empty lines and
+    // some at empty lines we want to only indent at the non-empty lines.
+    // But if all lines are empty then we want to indent at all of them.
+    bool always_indent = true;
+
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
-        if (at_empty_line(iterator)) {
-            ++empty_count;
+
+        // Found a non-empty line so we can skip empty lines.
+        if (!at_empty_line(iterator)) {
+            always_indent = false;
+            break;
         }
     }
-    bool always_indent = empty_count == cursors.len;
 
-    iterator = buffer->contents.start();
+    iterator.retreat_to(cursors[0].point);
     for (size_t i = 0; i < cursors.len; ++i) {
         iterator.advance_to(cursors[i].point);
-        if (!always_indent && cursors.len > 1 && at_empty_line(iterator)) {
+
+        // Don't indent on empty lines unless all lines are empty.
+        if (!always_indent && at_empty_line(iterator)) {
             continue;
         }
 
@@ -177,19 +184,27 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
 
         Invalid_Indent_Data data = detect_invalid_indent(buffer->mode, iterator);
 
+        // In general we just add indent_offset but we also need to handle other edge cases.
         uint64_t new_columns = data.columns;
         if (indent_offset > 0) {
+            // Increasing indent.
             new_columns += indent_offset;
+
+            // Align with the indent_width.
             if (cursors.len == 1) {
                 new_columns -= new_columns % buffer->mode.indent_width;
             }
         } else if ((uint64_t)-indent_offset > new_columns) {
+            // Decreasing indent more than the existing so just delete it.
             new_columns = 0;
         } else if (cursors.len == 1 && new_columns % buffer->mode.indent_width > 0) {
+            // Align with the indent_width.
             new_columns -= new_columns % buffer->mode.indent_width;
         } else {
+            // Decrease indent (note: indent_offset is negative).
             new_columns += indent_offset;
         }
+
         uint64_t new_tabs, new_spaces;
         analyze_indent(buffer->mode, new_columns, &new_tabs, &new_spaces);
 
@@ -224,25 +239,23 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
                 iterator.advance();
             }
 
-            bool adding = false, removing = false;
+            // We may convert tabs -> spaces, spaces -> tabs, or just add / remove tabs and spaces.
+            // So we bundle all the add and remove operations together and push one edit for each.
             uint64_t spaces_to_remove = 0, tabs_to_remove = 0;
             uint64_t spaces_to_add = 0, tabs_to_add = 0;
             if (data.spaces > new_spaces) {
-                removing = true;
                 spaces_to_remove = data.spaces - new_spaces;
             } else if (data.spaces < new_spaces) {
-                adding = true;
                 spaces_to_add = new_spaces - data.spaces;
             }
             if (data.tabs > new_tabs) {
-                removing = true;
                 tabs_to_remove = data.tabs - new_tabs;
             } else if (data.tabs < new_tabs) {
-                adding = true;
                 tabs_to_add = new_tabs - data.tabs;
             }
 
-            if (removing) {
+            // Push remove edit.
+            if (tabs_to_remove > 0 || spaces_to_remove > 0) {
                 char* buffer = (char*)transaction.value_allocator().alloc(
                     {tabs_to_remove + spaces_to_remove, 1});
                 memset(buffer, '\t', tabs_to_remove);
@@ -256,7 +269,8 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
                 transaction.push(remove_indent);
             }
 
-            if (adding) {
+            // Push add edit.
+            if (tabs_to_add > 0 || spaces_to_add > 0) {
                 char* buffer =
                     (char*)transaction.value_allocator().alloc({tabs_to_add + spaces_to_add, 1});
                 memset(buffer, '\t', tabs_to_add);
