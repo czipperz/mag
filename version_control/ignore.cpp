@@ -182,6 +182,16 @@ void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
     }
 
     path.set_len(initial_len);
+    path.append(".hgignore");
+    path.null_terminate();
+    if (file.open(path.buffer())) {
+        CZ_DEFER(file.close());
+
+        read_to_string(file, cz::heap_allocator(), &contents);
+        parse_ignore_rules(contents, rules, &counter);
+    }
+
+    path.set_len(initial_len);
     path.append(".gitignore");
     path.null_terminate();
     if (file.open(path.buffer())) {
