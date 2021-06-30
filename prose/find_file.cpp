@@ -6,6 +6,7 @@
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
+#include <cz/sort.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "prose/helpers.hpp"
@@ -14,11 +15,17 @@
 namespace mag {
 namespace prose {
 
+struct Directory {
+    cz::Vector<cz::Str> entries;
+    cz::Buffer_Array::Save_Point save_point;
+};
+
 struct Find_File_Completion_Engine_Data {
     size_t path_initial_len;
     cz::String path;
 
-    cz::Vector<cz::Directory_Iterator> directories;
+    cz::Buffer_Array entries_buffer_array;
+    cz::Vector<Directory> directories;
     bool finished;
 
     bool already_started;
@@ -36,9 +43,10 @@ static bool find_file_completion_engine(Editor*,
         data->finished = false;
 
         for (size_t i = data->directories.len(); i-- > 0;) {
-            (void)data->directories[i].drop();
+            (void)data->directories[i].entries.drop(cz::heap_allocator());
         }
         data->directories.set_len(0);
+        data->entries_buffer_array.clear();
 
         if (!data->already_started) {
             data->already_started = true;
@@ -53,91 +61,95 @@ static bool find_file_completion_engine(Editor*,
         return false;
     }
 
+    cz::Allocator entry_allocator = data->entries_buffer_array.allocator();
+
     const size_t max_depth = 32;
     const size_t max_iterations = 128;
 
     for (size_t i = 0; i < max_iterations; ++i) {
         if (data->directories.len() == 0) {
-            // First time: create the first iterator and get the first file.
-            cz::Directory_Iterator iterator;
-            if (iterator.init(data->path.buffer(), cz::heap_allocator(), &data->path).is_err()) {
-                data->finished = true;
-                return false;
-            }
-            if (iterator.done()) {
-                iterator.drop();
-                data->finished = true;
-                return false;
-            }
-
+            // First iteration ever.
             data->directories.reserve(cz::heap_allocator(), max_depth);
-            data->directories.push(iterator);
         } else {
-            // Find the next file.
-            while (1) {
-                cz::Directory_Iterator& iterator = data->directories.last();
-                if (iterator.advance(cz::heap_allocator(), &data->path).is_err() ||
-                    iterator.done()) {
-                    // If this directory is dead then go to the parent.
-                    (void)iterator.drop();
-                    data->directories.pop();
+            // Pop empty entries.
+            while (data->directories.last().entries.len() == 0) {
+                // Pop last name and trailing `/`.  Ex. `/home/abc/` -> `/home/`.
+                data->path.pop();
+                cz::path::pop_name(&data->path);
 
-                    data->path.pop();
-                    cz::path::pop_name(&data->path);
+                // Cleanup the directory.
+                Directory directory = data->directories.pop();
+                data->entries_buffer_array.restore(directory.save_point);
+                directory.entries.drop(cz::heap_allocator());
 
-                    if (data->directories.len() == 0) {
-                        data->finished = true;
-                        return false;
-                    }
-
-                    continue;
+                // Test if we're completely done.
+                if (data->directories.len() == 0) {
+                    data->finished = true;
+                    return true;
                 }
+            }
+
+            const size_t old_len = data->path.len();
+
+            // Get the absolute path to this entry.
+            cz::Str entry = data->directories.last().entries.pop();
+            data->path.reserve(cz::heap_allocator(), entry.len + 2);
+            data->path.append(entry);
+            data->path.null_terminate();
+
+            // Skip ignored files.
+            if (version_control::file_matches(data->ignore_rules,
+                                              data->path.slice_start(data->path_initial_len))) {
+                data->path.set_len(old_len);
+                continue;
+            }
+
+            // Non-directories are listed literally.  Don't follow symlinks so count them as files.
+            if (!cz::file::is_directory_and_not_symlink(data->path.buffer()) ||
+                data->directories.remaining() == 0) {
+                cz::Str result = data->path.slice_start(data->path_initial_len + 1);
+                context->results.reserve(1);
+                context->results.push(result.clone(context->results_buffer_array.allocator()));
+                data->path.set_len(old_len);
+                continue;
+            }
+        }
+
+        // Get all files in the directory.
+        Directory directory;
+        directory.save_point = data->entries_buffer_array.save();
+        directory.entries = {};
+
+        cz::String entry = {};
+
+        // Start iterating in this directory.
+        cz::Directory_Iterator iterator;
+        if (iterator.init(data->path.buffer(), entry_allocator, &entry).is_err()) {
+            if (data->directories.len() == 0) {
+                data->finished = true;
+                return false;
+            } else {
+                continue;
+            }
+        }
+        CZ_DEFER(iterator.drop());
+
+        // Load all files.
+        while (!iterator.done()) {
+            directory.entries.reserve(cz::heap_allocator(), 1);
+            directory.entries.push(entry);
+
+            entry = {};
+            if (iterator.advance(entry_allocator, &entry).is_err()) {
                 break;
             }
         }
 
-        // Handle ignored files.
-        if (version_control::file_matches(data->ignore_rules,
-                                          data->path.slice_start(data->path_initial_len - 1))) {
-            cz::path::pop_name(&data->path);
-            continue;
-        }
+        // Then sort it into reverse order because we pop them from the end first.
+        cz::sort(directory.entries, [](cz::Str* left, cz::Str* right) { return *left > *right; });
+        data->directories.push(directory);
 
-        if (cz::file::is_directory_and_not_symlink(data->path.buffer())) {
-            // Recursively descend into directories.
-            do {
-                // If we go too deep then just stop.
-                if (data->directories.remaining() == 0) {
-                    break;
-                }
-
-                data->path.reserve(cz::heap_allocator(), 2);
-                data->path.push('/');
-                data->path.null_terminate();
-
-                cz::Directory_Iterator iterator;
-                if (iterator.init(data->path.buffer(), cz::heap_allocator(), &data->path)
-                        .is_err()) {
-                    data->path.pop();
-                    goto pop;
-                }
-                if (iterator.done()) {
-                    iterator.drop();
-                    data->path.pop();
-                    goto pop;
-                }
-                data->directories.push(iterator);
-            } while (cz::file::is_directory(data->path.buffer()));
-
-            // We now have a valid path so fall through.
-        }
-
-        context->results.reserve(1);
-        context->results.push(data->path.slice_start(data->path_initial_len)
-                                  .clone(context->results_buffer_array.allocator()));
-
-    pop:
-        cz::path::pop_name(&data->path);
+        data->path.push('/');
     }
 
     return true;
@@ -168,9 +180,6 @@ static void find_file(Editor* editor,
             return;
         }
     }
-    directory.reserve(cz::heap_allocator(), 2);
-    directory.push('/');
-    directory.null_terminate();
 
     client->show_dialog(editor, prompt, find_file_completion_engine, command_find_file_response,
                         directory.buffer());
@@ -179,14 +188,16 @@ static void find_file(Editor* editor,
     *data = {};
     data->path = directory.clone_null_terminate(cz::heap_allocator());
     data->path_initial_len = data->path.len();
+    data->entries_buffer_array.init();
     client->mini_buffer_completion_cache.engine_context.data = data;
 
     client->mini_buffer_completion_cache.engine_context.cleanup = [](void* _data) {
         Find_File_Completion_Engine_Data* data = (Find_File_Completion_Engine_Data*)_data;
         for (size_t i = data->directories.len(); i-- > 0;) {
-            (void)data->directories[i].drop();
+            (void)data->directories[i].entries.drop(cz::heap_allocator());
         }
         data->directories.drop(cz::heap_allocator());
+        data->entries_buffer_array.drop();
         data->path.drop(cz::heap_allocator());
         data->ignore_rules.drop();
         cz::heap_allocator().dealloc(data);
