@@ -32,6 +32,43 @@ struct Find_File_Completion_Engine_Data {
     version_control::Ignore_Rules ignore_rules;
 };
 
+static bool load_directory(Find_File_Completion_Engine_Data* data) {
+    cz::Allocator entry_allocator = data->entries_buffer_array.allocator();
+
+    // Get all files in the directory.
+    Directory directory;
+    directory.save_point = data->entries_buffer_array.save();
+    directory.entries = {};
+
+    cz::String entry = {};
+
+    // Start iterating in this directory.
+    cz::Directory_Iterator iterator;
+    if (iterator.init(data->path.buffer(), entry_allocator, &entry).is_err()) {
+        return false;
+    }
+    CZ_DEFER(iterator.drop());
+
+    // Load all files.
+    while (!iterator.done()) {
+        directory.entries.reserve(cz::heap_allocator(), 1);
+        directory.entries.push(entry);
+
+        entry = {};
+        if (iterator.advance(entry_allocator, &entry).is_err()) {
+            break;
+        }
+    }
+
+    // Then sort it into reverse order because we pop them from the end first.
+    cz::sort(directory.entries, [](cz::Str* left, cz::Str* right) { return *left > *right; });
+    data->directories.push(directory);
+
+    data->path.push('/');
+
+    return true;
+}
+
 static bool find_file_completion_engine(Editor*,
                                         Completion_Engine_Context* context,
                                         bool is_initial_frame) {
@@ -46,6 +83,7 @@ static bool find_file_completion_engine(Editor*,
             (void)data->directories[i].entries.drop(cz::heap_allocator());
         }
         data->directories.set_len(0);
+        data->directories.reserve(cz::heap_allocator(), 32);
         data->entries_buffer_array.clear();
 
         if (!data->already_started) {
@@ -55,6 +93,11 @@ static bool find_file_completion_engine(Editor*,
 
         context->results_buffer_array.clear();
         context->results.set_len(0);
+
+        // Load first directory.
+        if (!load_directory(data)) {
+            data->finished = true;
+        }
     }
 
     if (data->finished) {
@@ -63,93 +106,55 @@ static bool find_file_completion_engine(Editor*,
 
     cz::Allocator entry_allocator = data->entries_buffer_array.allocator();
 
-    const size_t max_depth = 32;
     const size_t max_iterations = 128;
 
     for (size_t i = 0; i < max_iterations; ++i) {
-        if (data->directories.len() == 0) {
-            // First iteration ever.
-            data->directories.reserve(cz::heap_allocator(), max_depth);
-        } else {
-            // Pop empty entries.
-            while (data->directories.last().entries.len() == 0) {
-                // Pop last name and trailing `/`.  Ex. `/home/abc/` -> `/home/`.
-                data->path.pop();
-                cz::path::pop_name(&data->path);
+        // Pop empty entries.
+        while (data->directories.last().entries.len() == 0) {
+            // Pop last name and trailing `/`.  Ex. `/home/abc/` -> `/home/`.
+            data->path.pop();
+            cz::path::pop_name(&data->path);
 
-                // Cleanup the directory.
-                Directory directory = data->directories.pop();
-                data->entries_buffer_array.restore(directory.save_point);
-                directory.entries.drop(cz::heap_allocator());
+            // Cleanup the directory.
+            Directory directory = data->directories.pop();
+            data->entries_buffer_array.restore(directory.save_point);
+            directory.entries.drop(cz::heap_allocator());
 
-                // Test if we're completely done.
-                if (data->directories.len() == 0) {
-                    data->finished = true;
-                    return true;
-                }
-            }
-
-            const size_t old_len = data->path.len();
-
-            // Get the absolute path to this entry.
-            cz::Str entry = data->directories.last().entries.pop();
-            data->path.reserve(cz::heap_allocator(), entry.len + 2);
-            data->path.append(entry);
-            data->path.null_terminate();
-
-            // Skip ignored files.
-            if (version_control::file_matches(data->ignore_rules,
-                                              data->path.slice_start(data->path_initial_len))) {
-                data->path.set_len(old_len);
-                continue;
-            }
-
-            // Non-directories are listed literally.  Don't follow symlinks so count them as files.
-            if (!cz::file::is_directory_and_not_symlink(data->path.buffer()) ||
-                data->directories.remaining() == 0) {
-                cz::Str result = data->path.slice_start(data->path_initial_len + 1);
-                context->results.reserve(1);
-                context->results.push(result.clone(context->results_buffer_array.allocator()));
-                data->path.set_len(old_len);
-                continue;
-            }
-        }
-
-        // Get all files in the directory.
-        Directory directory;
-        directory.save_point = data->entries_buffer_array.save();
-        directory.entries = {};
-
-        cz::String entry = {};
-
-        // Start iterating in this directory.
-        cz::Directory_Iterator iterator;
-        if (iterator.init(data->path.buffer(), entry_allocator, &entry).is_err()) {
+            // Test if we're completely done.
             if (data->directories.len() == 0) {
                 data->finished = true;
-                return false;
-            } else {
-                continue;
-            }
-        }
-        CZ_DEFER(iterator.drop());
-
-        // Load all files.
-        while (!iterator.done()) {
-            directory.entries.reserve(cz::heap_allocator(), 1);
-            directory.entries.push(entry);
-
-            entry = {};
-            if (iterator.advance(entry_allocator, &entry).is_err()) {
-                break;
+                return true;
             }
         }
 
-        // Then sort it into reverse order because we pop them from the end first.
-        cz::sort(directory.entries, [](cz::Str* left, cz::Str* right) { return *left > *right; });
-        data->directories.push(directory);
+        const size_t old_len = data->path.len();
 
-        data->path.push('/');
+        // Get the absolute path to this entry.
+        cz::Str entry = data->directories.last().entries.pop();
+        data->path.reserve(cz::heap_allocator(), entry.len + 2);
+        data->path.append(entry);
+        data->path.null_terminate();
+
+        // Skip ignored files.
+        if (version_control::file_matches(data->ignore_rules,
+                                          data->path.slice_start(data->path_initial_len))) {
+            data->path.set_len(old_len);
+            continue;
+        }
+
+        // Non-directories are listed literally.  Don't follow symlinks so count them as files.
+        if (!cz::file::is_directory_and_not_symlink(data->path.buffer()) ||
+            data->directories.remaining() == 0) {
+            cz::Str result = data->path.slice_start(data->path_initial_len + 1);
+            context->results.reserve(1);
+            context->results.push(result.clone(context->results_buffer_array.allocator()));
+            data->path.set_len(old_len);
+            continue;
+        }
+
+        // Reached a directory entry so load it.
+        // If loading fails we just ignore it and go to the next directory.
+        (void)load_directory(data);
     }
 
     return true;
