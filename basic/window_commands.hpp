@@ -18,5 +18,11 @@ void command_close_window(Editor* editor, Command_Source source);
 void command_cycle_window(Editor* editor, Command_Source source);
 void command_reverse_cycle_window(Editor* editor, Command_Source source);
 
+void command_swap_windows(Editor* editor, Command_Source source);
+void command_shift_window_up(Editor* editor, Command_Source source);
+void command_shift_window_down(Editor* editor, Command_Source source);
+void command_shift_window_left(Editor* editor, Command_Source source);
+void command_shift_window_right(Editor* editor, Command_Source source);
+
 }
 }
