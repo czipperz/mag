@@ -54,6 +54,7 @@
 #include "syntax/tokenize_css.hpp"
 #include "syntax/tokenize_directory.hpp"
 #include "syntax/tokenize_general.hpp"
+#include "syntax/tokenize_general_hash_comments.hpp"
 #include "syntax/tokenize_go.hpp"
 #include "syntax/tokenize_html.hpp"
 #include "syntax/tokenize_javascript.hpp"
@@ -735,6 +736,17 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".py") || name.ends_with(".gpy")) {
             buffer->mode.next_token = syntax::python_next_token;
+            BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
+            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
+
+            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
+            buffer->mode.overlays.reserve(2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+        } else if (name.ends_with(".cfg") || name == ".ignore" || name == ".gitignore" ||
+                   name == ".hgignore" || name == ".agignore") {
+            // A bunch of miscellaneous file types that all use # for comments.
+            buffer->mode.next_token = syntax::general_hash_comments_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
 
