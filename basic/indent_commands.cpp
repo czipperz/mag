@@ -147,6 +147,119 @@ static Invalid_Indent_Data detect_invalid_indent(const Mode& mode, Contents_Iter
     return data;
 }
 
+static void change_line_indent(const Mode& mode,
+                               Contents_Iterator iterator,
+                               int64_t indent_offset,
+                               Transaction* transaction,
+                               int64_t* offset,
+                               bool allow_alignment) {
+    start_of_line(&iterator);
+
+    Invalid_Indent_Data data = detect_invalid_indent(mode, iterator);
+
+    // In general we just add indent_offset but we also need to handle other edge cases.
+    uint64_t new_columns = data.columns;
+    if (indent_offset > 0) {
+        // Increasing indent.
+        new_columns += indent_offset;
+
+        // Align with the indent_width.
+        if (allow_alignment) {
+            new_columns -= new_columns % mode.indent_width;
+        }
+    } else if ((uint64_t)-indent_offset > new_columns) {
+        // Decreasing indent more than the existing so just delete it.
+        new_columns = 0;
+    } else if (allow_alignment && new_columns % mode.indent_width > 0) {
+        // Align with the indent_width.
+        new_columns -= new_columns % mode.indent_width;
+    } else {
+        // Decrease indent (note: indent_offset is negative).
+        new_columns += indent_offset;
+    }
+
+    uint64_t new_tabs, new_spaces;
+    analyze_indent(mode, new_columns, &new_tabs, &new_spaces);
+
+    if (data.invalid) {
+        // Remove existing indent.
+        Edit remove;
+        remove.value = iterator.contents->slice(transaction->value_allocator(), iterator,
+                                                iterator.position + data.tabs + data.spaces);
+        remove.position = iterator.position + *offset;
+        remove.flags = Edit::REMOVE;
+        transaction->push(remove);
+
+        // Build buffer with correct number of tabs and spaces.
+        char* buffer = (char*)transaction->value_allocator().alloc({new_tabs + new_spaces, 1});
+        memset(buffer, '\t', new_tabs);
+        memset(buffer + new_tabs, ' ', new_spaces);
+
+        // Then insert correct indent of the same width.
+        Edit insert;
+        insert.value = SSOStr::from_constant({buffer, new_tabs + new_spaces});
+        insert.position = iterator.position + *offset;
+        insert.flags = Edit::INSERT;
+        transaction->push(insert);
+
+        *offset += insert.value.len() - remove.value.len();
+    } else {
+        // Go to between tabs and spaces.
+        while (!iterator.at_eob()) {
+            if (iterator.get() != '\t') {
+                break;
+            }
+            iterator.advance();
+        }
+
+        // We may convert tabs -> spaces, spaces -> tabs, or just add / remove tabs and spaces.
+        // So we bundle all the add and remove operations together and push one edit for each.
+        uint64_t spaces_to_remove = 0, tabs_to_remove = 0;
+        uint64_t spaces_to_add = 0, tabs_to_add = 0;
+        if (data.spaces > new_spaces) {
+            spaces_to_remove = data.spaces - new_spaces;
+        } else if (data.spaces < new_spaces) {
+            spaces_to_add = new_spaces - data.spaces;
+        }
+        if (data.tabs > new_tabs) {
+            tabs_to_remove = data.tabs - new_tabs;
+        } else if (data.tabs < new_tabs) {
+            tabs_to_add = new_tabs - data.tabs;
+        }
+
+        // Push remove edit.
+        if (tabs_to_remove > 0 || spaces_to_remove > 0) {
+            char* buffer =
+                (char*)transaction->value_allocator().alloc({tabs_to_remove + spaces_to_remove, 1});
+            memset(buffer, '\t', tabs_to_remove);
+            memset(buffer + tabs_to_remove, ' ', spaces_to_remove);
+
+            Edit remove_indent;
+            remove_indent.value =
+                SSOStr::from_constant({buffer, tabs_to_remove + spaces_to_remove});
+            remove_indent.position = iterator.position + *offset - tabs_to_remove;
+            remove_indent.flags = Edit::REMOVE;
+            transaction->push(remove_indent);
+        }
+
+        // Push add edit.
+        if (tabs_to_add > 0 || spaces_to_add > 0) {
+            char* buffer =
+                (char*)transaction->value_allocator().alloc({tabs_to_add + spaces_to_add, 1});
+            memset(buffer, '\t', tabs_to_add);
+            memset(buffer + tabs_to_add, ' ', spaces_to_add);
+
+            Edit add_indent;
+            add_indent.value = SSOStr::from_constant({buffer, spaces_to_add + tabs_to_add});
+            add_indent.position = iterator.position + *offset - tabs_to_remove;
+            add_indent.flags = Edit::INSERT;
+            transaction->push(add_indent);
+        }
+
+        *offset += new_spaces - data.spaces + new_tabs - data.tabs;
+    }
+}
+
 static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent_offset) {
     Transaction transaction;
     transaction.init(buffer);
@@ -156,134 +269,82 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
     int64_t offset = 0;
     cz::Slice<Cursor> cursors = window->cursors;
 
-    // If we have a bunch of cursors, some of them at empty lines and
-    // some at empty lines we want to only indent at the non-empty lines.
-    // But if all lines are empty then we want to indent at all of them.
-    bool always_indent = true;
+    // With a visible region, treat each region independently.
+    // Without a visible region, blob all the cursors' lines into one "region".
+    //
+    // If we have a bunch of lines in the "region", some of them are empty and
+    // some are non-empty then we want to only indent at the non-empty lines.
+    // But if all the lines are empty then we want to indent at all of them.
+    //
+    // To account for this in either case we loop through all lines and check for any non-empty
+    // lines.  If any non-empty lines are found then we enable filtering which lines are indented.
+    if (window->show_marks) {
+        for (size_t i = 0; i < cursors.len; ++i) {
+            bool always_indent = true;
+            size_t line_count = 0;
 
-    for (size_t i = 0; i < cursors.len; ++i) {
-        iterator.advance_to(cursors[i].point);
+            iterator.advance_to(cursors[i].start());
+            while (iterator.position < cursors[i].end()) {
+                ++line_count;
 
-        // Found a non-empty line so we can skip empty lines.
-        if (!at_empty_line(iterator)) {
-            always_indent = false;
-            break;
-        }
-    }
+                // Found a non-empty line so we can skip empty lines.
+                if (!at_empty_line(iterator)) {
+                    always_indent = false;
 
-    iterator.retreat_to(cursors[0].point);
-    for (size_t i = 0; i < cursors.len; ++i) {
-        iterator.advance_to(cursors[i].point);
+                    if (line_count == 1) {
+                        end_of_line(&iterator);
+                        forward_char(&iterator);
+                        if (iterator.position < cursors[i].end()) {
+                            ++line_count;
+                        }
+                    }
 
-        // Don't indent on empty lines unless all lines are empty.
-        if (!always_indent && at_empty_line(iterator)) {
-            continue;
-        }
-
-        start_of_line(&iterator);
-
-        Invalid_Indent_Data data = detect_invalid_indent(buffer->mode, iterator);
-
-        // In general we just add indent_offset but we also need to handle other edge cases.
-        uint64_t new_columns = data.columns;
-        if (indent_offset > 0) {
-            // Increasing indent.
-            new_columns += indent_offset;
-
-            // Align with the indent_width.
-            if (cursors.len == 1) {
-                new_columns -= new_columns % buffer->mode.indent_width;
-            }
-        } else if ((uint64_t)-indent_offset > new_columns) {
-            // Decreasing indent more than the existing so just delete it.
-            new_columns = 0;
-        } else if (cursors.len == 1 && new_columns % buffer->mode.indent_width > 0) {
-            // Align with the indent_width.
-            new_columns -= new_columns % buffer->mode.indent_width;
-        } else {
-            // Decrease indent (note: indent_offset is negative).
-            new_columns += indent_offset;
-        }
-
-        uint64_t new_tabs, new_spaces;
-        analyze_indent(buffer->mode, new_columns, &new_tabs, &new_spaces);
-
-        if (data.invalid) {
-            // Remove existing indent.
-            Edit remove;
-            remove.value = buffer->contents.slice(transaction.value_allocator(), iterator,
-                                                  iterator.position + data.tabs + data.spaces);
-            remove.position = iterator.position + offset;
-            remove.flags = Edit::REMOVE;
-            transaction.push(remove);
-
-            // Build buffer with correct number of tabs and spaces.
-            char* buffer = (char*)transaction.value_allocator().alloc({new_tabs + new_spaces, 1});
-            memset(buffer, '\t', new_tabs);
-            memset(buffer + new_tabs, ' ', new_spaces);
-
-            // Then insert correct indent of the same width.
-            Edit insert;
-            insert.value = SSOStr::from_constant({buffer, new_tabs + new_spaces});
-            insert.position = iterator.position + offset;
-            insert.flags = Edit::INSERT;
-            transaction.push(insert);
-
-            offset += insert.value.len() - remove.value.len();
-        } else {
-            // Go to between tabs and spaces.
-            while (!iterator.at_eob()) {
-                if (iterator.get() != '\t') {
                     break;
                 }
-                iterator.advance();
+
+                end_of_line(&iterator);
+                forward_char(&iterator);
             }
 
-            // We may convert tabs -> spaces, spaces -> tabs, or just add / remove tabs and spaces.
-            // So we bundle all the add and remove operations together and push one edit for each.
-            uint64_t spaces_to_remove = 0, tabs_to_remove = 0;
-            uint64_t spaces_to_add = 0, tabs_to_add = 0;
-            if (data.spaces > new_spaces) {
-                spaces_to_remove = data.spaces - new_spaces;
-            } else if (data.spaces < new_spaces) {
-                spaces_to_add = new_spaces - data.spaces;
+            iterator.retreat_to(cursors[i].start());
+            while (iterator.position < cursors[i].end()) {
+                // Don't indent on empty lines unless all lines are empty.
+                if (always_indent || !at_empty_line(iterator)) {
+                    change_line_indent(buffer->mode, iterator, indent_offset, &transaction, &offset,
+                                       /*allow_alignment=*/line_count == 1);
+                }
+
+                end_of_line(&iterator);
+                forward_char(&iterator);
             }
-            if (data.tabs > new_tabs) {
-                tabs_to_remove = data.tabs - new_tabs;
-            } else if (data.tabs < new_tabs) {
-                tabs_to_add = new_tabs - data.tabs;
+        }
+    } else {
+        // If we have a bunch of cursors, some of them at empty lines and
+        // some at empty lines we want to only indent at the non-empty lines.
+        // But if all lines are empty then we want to indent at all of them.
+        bool always_indent = true;
+
+        for (size_t i = 0; i < cursors.len; ++i) {
+            iterator.advance_to(cursors[i].point);
+
+            // Found a non-empty line so we can skip empty lines.
+            if (!at_empty_line(iterator)) {
+                always_indent = false;
+                break;
             }
+        }
 
-            // Push remove edit.
-            if (tabs_to_remove > 0 || spaces_to_remove > 0) {
-                char* buffer = (char*)transaction.value_allocator().alloc(
-                    {tabs_to_remove + spaces_to_remove, 1});
-                memset(buffer, '\t', tabs_to_remove);
-                memset(buffer + tabs_to_remove, ' ', spaces_to_remove);
+        iterator.retreat_to(cursors[0].point);
+        for (size_t i = 0; i < cursors.len; ++i) {
+            iterator.advance_to(cursors[i].point);
 
-                Edit remove_indent;
-                remove_indent.value =
-                    SSOStr::from_constant({buffer, tabs_to_remove + spaces_to_remove});
-                remove_indent.position = iterator.position + offset - tabs_to_remove;
-                remove_indent.flags = Edit::REMOVE;
-                transaction.push(remove_indent);
-            }
-
-            // Push add edit.
-            if (tabs_to_add > 0 || spaces_to_add > 0) {
-                char* buffer =
-                    (char*)transaction.value_allocator().alloc({tabs_to_add + spaces_to_add, 1});
-                memset(buffer, '\t', tabs_to_add);
-                memset(buffer + tabs_to_add, ' ', spaces_to_add);
-
-                Edit add_indent;
-                add_indent.value = SSOStr::from_constant({buffer, spaces_to_add + tabs_to_add});
-                add_indent.position = iterator.position + offset - tabs_to_remove;
-                add_indent.flags = Edit::INSERT;
-                transaction.push(add_indent);
+            // Don't indent on empty lines unless all lines are empty.
+            if (!always_indent && at_empty_line(iterator)) {
+                continue;
             }
 
-            offset += (int64_t)0 + new_spaces - data.spaces + new_tabs - data.tabs;
+            change_line_indent(buffer->mode, iterator, indent_offset, &transaction, &offset,
+                               /*allow_alignment=*/cursors.len == 1);
         }
     }
 
