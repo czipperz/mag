@@ -1,9 +1,11 @@
 #include "find_file.hpp"
 
+#include <cz/arc.hpp>
 #include <cz/defer.hpp>
 #include <cz/directory.hpp>
 #include <cz/file.hpp>
 #include <cz/heap.hpp>
+#include <cz/mutex.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
 #include <cz/sort.hpp>
@@ -15,24 +17,80 @@
 namespace mag {
 namespace prose {
 
+namespace find_file_ {
+struct Find_File_Shared_Data {
+    cz::Mutex mutex;
+
+    cz::Vector<cz::Vector<cz::Str> > results;
+
+    bool finished;
+
+    cz::Buffer_Array results_buffer_array;
+
+    void drop() {
+        mutex.drop();
+
+        for (size_t i = 0; i < results.len(); ++i) {
+            results[i].drop(cz::heap_allocator());
+        }
+        results.drop(cz::heap_allocator());
+
+        results_buffer_array.drop();
+    }
+};
+
 struct Directory {
     cz::Vector<cz::Str> entries;
     cz::Buffer_Array::Save_Point save_point;
 };
 
-struct Find_File_Completion_Engine_Data {
+struct Find_File_Job_Data {
     size_t path_initial_len;
     cz::String path;
 
     cz::Buffer_Array entries_buffer_array;
     cz::Vector<Directory> directories;
-    bool finished;
+
+    cz::Buffer_Array results_buffer_array;
 
     bool already_started;
     version_control::Ignore_Rules ignore_rules;
+
+    cz::Arc_Weak<Find_File_Shared_Data> shared;
+
+    void drop() {
+        Find_File_Job_Data* data = this;
+
+        data->results_buffer_array.drop();
+
+        data->ignore_rules.drop();
+
+        for (size_t i = data->directories.len(); i-- > 0;) {
+            (void)data->directories[i].entries.drop(cz::heap_allocator());
+        }
+        data->directories.drop(cz::heap_allocator());
+
+        data->entries_buffer_array.drop();
+        data->path.drop(cz::heap_allocator());
+    }
 };
 
-static bool load_directory(Find_File_Completion_Engine_Data* data) {
+struct Find_File_Completion_Engine_Data {
+    cz::Arc<Find_File_Shared_Data> shared;
+    cz::String path;
+    bool finished;
+
+    void drop() {
+        if (shared.is_not_null()) {
+            shared.drop();
+        }
+        path.drop(cz::heap_allocator());
+    }
+};
+}
+using namespace find_file_;
+
+static bool load_directory(Find_File_Job_Data* data) {
     cz::Allocator entry_allocator = data->entries_buffer_array.allocator();
 
     // Get all files in the directory.
@@ -69,48 +127,51 @@ static bool load_directory(Find_File_Completion_Engine_Data* data) {
     return true;
 }
 
-static bool find_file_completion_engine(Editor*,
-                                        Completion_Engine_Context* context,
-                                        bool is_initial_frame) {
-    Find_File_Completion_Engine_Data* data = (Find_File_Completion_Engine_Data*)context->data;
-    if (is_initial_frame) {
-        data->path.set_len(data->path_initial_len);
-        data->path.null_terminate();
+static Job_Tick_Result find_file_job_tick(Asynchronous_Job_Handler* handler, void* _data) {
+    Find_File_Job_Data* data = (Find_File_Job_Data*)_data;
 
-        data->finished = false;
+    // Try to acquire the shared data but don't lock it until later.  If it has
+    // been deleted then our results are no longer needed so we can delete them.
+    cz::Arc<Find_File_Shared_Data> shared;
+    if (!data->shared.upgrade(&shared)) {
+        data->drop();
+        cz::heap_allocator().dealloc(data);
+        return Job_Tick_Result::FINISHED;
+    }
+    CZ_DEFER(shared.drop());
 
-        for (size_t i = data->directories.len(); i-- > 0;) {
-            (void)data->directories[i].entries.drop(cz::heap_allocator());
-        }
-        data->directories.set_len(0);
+    // First iteration setup.
+    if (!data->already_started) {
+        data->already_started = true;
+
         data->directories.reserve(cz::heap_allocator(), 32);
-        data->entries_buffer_array.clear();
+        data->entries_buffer_array.init();
 
-        if (!data->already_started) {
-            data->already_started = true;
-            version_control::find_ignore_rules(data->path.buffer(), &data->ignore_rules);
-        }
+        data->results_buffer_array.init();
 
-        context->results_buffer_array.clear();
-        context->results.set_len(0);
+        version_control::find_ignore_rules(data->path.buffer(), &data->ignore_rules);
 
         // Load first directory.
         if (!load_directory(data)) {
-            data->finished = true;
+            {
+                shared->mutex.lock();
+                CZ_DEFER(shared->mutex.unlock());
+
+                shared->finished = true;
+            }
+
+            data->drop();
+            cz::heap_allocator().dealloc(data);
+            return Job_Tick_Result::FINISHED;
         }
     }
 
-    if (data->finished) {
-        return false;
-    }
+    cz::Vector<cz::Str> results = {};
+    results.reserve(cz::heap_allocator(), 128);
 
-    cz::Allocator entry_allocator = data->entries_buffer_array.allocator();
-
-    const size_t max_iterations = 128;
-
-    for (size_t i = 0; i < max_iterations; ++i) {
+    while (results.remaining() > 0) {
         // Pop empty entries.
-        while (data->directories.last().entries.len() == 0) {
+        while (data->directories.len() > 0 && data->directories.last().entries.len() == 0) {
             // Pop last name and trailing `/`.  Ex. `/home/abc/` -> `/home/`.
             data->path.pop();
             cz::path::pop_name(&data->path);
@@ -119,12 +180,11 @@ static bool find_file_completion_engine(Editor*,
             Directory directory = data->directories.pop();
             data->entries_buffer_array.restore(directory.save_point);
             directory.entries.drop(cz::heap_allocator());
+        }
 
-            // Test if we're completely done.
-            if (data->directories.len() == 0) {
-                data->finished = true;
-                return true;
-            }
+        // Test if we're completely done.
+        if (data->directories.len() == 0) {
+            break;
         }
 
         const size_t old_len = data->path.len();
@@ -146,8 +206,7 @@ static bool find_file_completion_engine(Editor*,
         if (!cz::file::is_directory_and_not_symlink(data->path.buffer()) ||
             data->directories.remaining() == 0) {
             cz::Str result = data->path.slice_start(data->path_initial_len + 1);
-            context->results.reserve(1);
-            context->results.push(result.clone(context->results_buffer_array.allocator()));
+            results.push(result.clone(data->results_buffer_array.allocator()));
             data->path.set_len(old_len);
             continue;
         }
@@ -157,7 +216,118 @@ static bool find_file_completion_engine(Editor*,
         (void)load_directory(data);
     }
 
-    return true;
+    shared->mutex.lock();
+    CZ_DEFER(shared->mutex.unlock());
+
+    Job_Tick_Result result = Job_Tick_Result::MADE_PROGRESS;
+
+    // If we stop early then we are done.
+    if (results.remaining() > 0) {
+        shared->finished = true;
+        std::swap(shared->results_buffer_array, data->results_buffer_array);
+        data->drop();
+        cz::heap_allocator().dealloc(data);
+        result = Job_Tick_Result::FINISHED;
+    }
+
+    // If there are results then push them.
+    if (results.len() > 0) {
+        shared->results.reserve(cz::heap_allocator(), 1);
+        shared->results.push(results);
+    } else {
+        results.drop(cz::heap_allocator());
+    }
+
+    return result;
+}
+
+static void find_file_job_kill(void* _data) {
+    Find_File_Job_Data* data = (Find_File_Job_Data*)_data;
+
+    // If the shared state is still alive then mark ourselves as done.
+    cz::Arc<Find_File_Shared_Data> shared;
+    if (data->shared.upgrade(&shared)) {
+        CZ_DEFER(shared.drop());
+
+        shared->mutex.lock();
+        CZ_DEFER(shared->mutex.unlock());
+
+        shared->finished = true;
+    }
+
+    data->drop();
+    cz::heap_allocator().dealloc(data);
+}
+
+static bool find_file_completion_engine(Editor* editor,
+                                        Completion_Engine_Context* context,
+                                        bool is_initial_frame) {
+    Find_File_Completion_Engine_Data* data = (Find_File_Completion_Engine_Data*)context->data;
+
+    if (is_initial_frame) {
+        if (data->shared.is_not_null()) {
+            data->shared.drop();
+        }
+
+        data->shared.init_copy({});
+        data->shared->mutex.init();
+        data->shared->results_buffer_array.init();
+
+        Find_File_Job_Data* job_data = cz::heap_allocator().alloc<Find_File_Job_Data>();
+        CZ_ASSERT(job_data);
+        *job_data = {};
+        job_data->path_initial_len = data->path.len();
+        job_data->path = data->path.clone_null_terminate(cz::heap_allocator());
+        job_data->shared = data->shared.clone_downgrade();
+        job_data->entries_buffer_array.init();
+
+        Asynchronous_Job job;
+        job.tick = find_file_job_tick;
+        job.kill = find_file_job_kill;
+        job.data = job_data;
+        editor->add_asynchronous_job(job);
+
+        context->results_buffer_array.clear();
+        context->results.set_len(0);
+    }
+
+    if (data->finished) {
+        return false;
+    }
+
+    // Take a local copy so we don't deallocate before we unlock.
+    cz::Arc<Find_File_Shared_Data> shared = data->shared.clone();
+    CZ_DEFER(shared.drop());
+
+    shared->mutex.lock();
+    CZ_DEFER(shared->mutex.unlock());
+
+    bool changes = false;
+
+    cz::Slice<cz::Vector<cz::Str> > results = shared->results;
+    if (results.len > 0) {
+        changes = true;
+
+        size_t total = 0;
+        for (size_t i = 0; i < results.len; ++i) {
+            total += results[i].len();
+        }
+
+        context->results.reserve(total);
+
+        for (size_t i = 0; i < results.len; ++i) {
+            context->results.append(results[i]);
+            results[i].drop(cz::heap_allocator());
+        }
+
+        shared->results.set_len(0);
+    }
+
+    if (shared->finished) {
+        data->finished = true;
+    }
+
+    return changes;
 }
 
 static void command_find_file_response(Editor* editor, Client* client, cz::Str file, void* data) {
@@ -190,21 +360,14 @@ static void find_file(Editor* editor,
                         directory.buffer());
 
     auto data = cz::heap_allocator().alloc<Find_File_Completion_Engine_Data>();
+    CZ_ASSERT(data);
     *data = {};
     data->path = directory.clone_null_terminate(cz::heap_allocator());
-    data->path_initial_len = data->path.len();
-    data->entries_buffer_array.init();
     client->mini_buffer_completion_cache.engine_context.data = data;
 
     client->mini_buffer_completion_cache.engine_context.cleanup = [](void* _data) {
         Find_File_Completion_Engine_Data* data = (Find_File_Completion_Engine_Data*)_data;
-        for (size_t i = data->directories.len(); i-- > 0;) {
-            (void)data->directories[i].entries.drop(cz::heap_allocator());
-        }
-        data->directories.drop(cz::heap_allocator());
-        data->entries_buffer_array.drop();
-        data->path.drop(cz::heap_allocator());
-        data->ignore_rules.drop();
+        data->drop();
         cz::heap_allocator().dealloc(data);
     };
 }
