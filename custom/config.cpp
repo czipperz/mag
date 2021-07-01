@@ -76,7 +76,8 @@ namespace custom {
 
 using namespace basic;
 
-#define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, {FUNC, #FUNC}))
+#define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, COMMAND(FUNC)))
+#define COMMAND(FUNC) (Command{FUNC, #FUNC})
 
 static void create_key_remap(Key_Remap& key_remap) {
     ZoneScoped;
@@ -497,6 +498,9 @@ void editor_created_callback(Editor* editor) {
     create_key_remap(editor->key_remap);
     create_key_map(editor->key_map);
     create_theme(editor->theme);
+
+    editor->misc_commands.reserve(1);
+    editor->misc_commands.push(COMMAND(command_swap_windows));
 }
 
 static void directory_key_map(Key_Map& key_map) {

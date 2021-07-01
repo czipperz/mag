@@ -1,6 +1,7 @@
 #include "help_commands.hpp"
 
 #include <cz/char_type.hpp>
+#include <cz/sort.hpp>
 #include <cz/stringify.hpp>
 #include "command_macros.hpp"
 #include "editor.hpp"
@@ -88,10 +89,17 @@ static bool command_completion_engine(Editor* editor,
     context->results_buffer_array.clear();
     context->results.set_len(0);
     context->results.reserve(128);
-    context->results_buffer_array.allocator();
 
-    get_command_names(&context->results, context->results_buffer_array.allocator(),
-                      editor->key_map);
+    cz::Allocator allocator = context->results_buffer_array.allocator();
+
+    get_command_names(&context->results, allocator, editor->key_map);
+
+    context->results.reserve(editor->misc_commands.len());
+    for (size_t i = 0; i < editor->misc_commands.len(); ++i) {
+        context->results.push(cz::Str{editor->misc_commands[i].string}.clone(allocator));
+    }
+
+    cz::sort(context->results);
 
     return true;
 }
@@ -127,6 +135,15 @@ static void command_run_command_by_name_callback(Editor* editor,
 
     if (!command) {
         command = find_command(editor->key_map, str);
+    }
+
+    if (!command) {
+        for (size_t i = 0; i < editor->misc_commands.len(); ++i) {
+            if (str == editor->misc_commands[i].string) {
+                command = editor->misc_commands[i].function;
+                break;
+            }
+        }
     }
 
     if (!command) {
