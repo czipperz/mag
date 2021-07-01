@@ -199,8 +199,19 @@ static void process_event(Server* server,
                           int character_width,
                           int character_height,
                           bool* force_redraw,
-                          bool* minimized) {
+                          bool* minimized,
+                          bool* disable_key_presses,
+                          uint32_t* disable_key_presses_until) {
     ZoneScoped;
+
+    // See comment on disable_key_presses's declaration.
+    if (*disable_key_presses && event.type != SDL_QUIT) {
+        if (event.text.timestamp > *disable_key_presses_until) {
+            *disable_key_presses = false;
+        } else {
+            return;
+        }
+    }
 
     switch (event.type) {
     case SDL_QUIT:
@@ -233,6 +244,11 @@ static void process_event(Server* server,
         case SDL_WINDOWEVENT_SIZE_CHANGED:
         case SDL_WINDOWEVENT_EXPOSED:
             *force_redraw = true;
+            break;
+        case SDL_WINDOWEVENT_FOCUS_GAINED:
+            // See comment on disable_key_presses's declaration.
+            *disable_key_presses = true;
+            *disable_key_presses_until = event.window.timestamp + 100;
             break;
         case SDL_WINDOWEVENT_MINIMIZED:
             *minimized = true;
@@ -502,13 +518,15 @@ static void process_events(Server* server,
                            int character_width,
                            int character_height,
                            bool* force_redraw,
-                           bool* minimized) {
+                           bool* minimized,
+                           bool* disable_key_presses,
+                           uint32_t* disable_key_presses_until) {
     ZoneScoped;
 
     SDL_Event event;
     while (poll_event(&event)) {
         process_event(server, client, event, mouse, character_width, character_height, force_redraw,
-                      minimized);
+                      minimized, disable_key_presses, disable_key_presses_until);
         if (client->queue_quit) {
             return;
         }
@@ -1143,6 +1161,12 @@ void run(Server* server, Client* client) {
     bool minimized = false;
     bool force_redraw = false;
 
+    // There is a super freaking annoying bug that we will gain focus and get
+    // a key press that the user was pressing on another window.  So just
+    // disable key presses for a split second when we gain focus.
+    bool disable_key_presses = false;
+    uint32_t disable_key_presses_until;
+
     while (1) {
         ZoneScopedN("sdl main loop");
 
@@ -1153,7 +1177,7 @@ void run(Server* server, Client* client) {
         bool no_jobs = !(any_asynchronous_jobs || any_synchronous_jobs);
 
         process_events(server, client, &mouse, character_width, character_height, &force_redraw,
-                       &minimized);
+                       &minimized, &disable_key_presses, &disable_key_presses_until);
 
         process_scroll(server, client, &mouse.scroll);
 
@@ -1223,7 +1247,8 @@ void run(Server* server, Client* client) {
 
             if (result) {
                 process_event(server, client, event, &mouse, character_width, character_height,
-                              &force_redraw, &minimized);
+                              &force_redraw, &minimized, &disable_key_presses,
+                              &disable_key_presses_until);
             }
         }
 
