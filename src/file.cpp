@@ -304,6 +304,11 @@ static void finish_open_file(Editor* editor,
     client->selected_normal_window->cursors[0].point = position;
 
     start_syntax_highlighting(editor, handle);
+
+    {
+        WITH_BUFFER_HANDLE(handle);
+        push_jump(client->selected_normal_window, client, buffer);
+    }
 }
 
 static Job_Tick_Result finish_open_file_sync_job_tick(Editor* editor, Client* client, void* _data) {
