@@ -199,6 +199,10 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c A-y", command_cursors_paste_as_lines);
     BIND(key_map, "A-c C-y", command_cursors_paste_previous_as_lines);
 
+    BIND(key_map, "A-c <", command_sort_lines_ascending);
+    BIND(key_map, "A-c >", command_sort_lines_descending);
+    BIND(key_map, "A-c |", command_flip_lines);
+
     BIND(key_map, "A-c #", command_insert_numbers);
     BIND(key_map, "A-c +", command_prompt_increase_numbers);
     BIND(key_map, "A-c -", command_copy_selected_region_length);

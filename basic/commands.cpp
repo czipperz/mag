@@ -1675,5 +1675,98 @@ void command_comment_hash(Editor* editor, Command_Source source) {
     transaction.commit();
 }
 
+static void sort_lines(Buffer* buffer, Window_Unified* window, int order) {
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    cz::Vector<SSOStr> unsorted_lines = {};
+    CZ_DEFER(unsorted_lines.drop(cz::heap_allocator()));
+    unsorted_lines.reserve(cz::heap_allocator(), cursors.len);
+
+    Contents_Iterator it = buffer->contents.start();
+    for (size_t i = 0; i < cursors.len; ++i) {
+        it.advance_to(cursors[i].point);
+
+        Contents_Iterator eol = it;
+        start_of_line(&it);
+        end_of_line(&eol);
+        if (it.position == eol.position) {
+            continue;
+        }
+
+        SSOStr string = buffer->contents.slice(transaction.value_allocator(), it, eol.position);
+        unsorted_lines.push(string);
+    }
+
+    cz::Vector<SSOStr> sorted_lines = unsorted_lines.clone(cz::heap_allocator());
+    CZ_DEFER(sorted_lines.drop(cz::heap_allocator()));
+
+    if (order == 0) {  // Ascending
+        cz::sort(sorted_lines,
+                 [](SSOStr* left, SSOStr* right) { return left->as_str() < right->as_str(); });
+    } else if (order == 1) {  // Descending
+        cz::sort(sorted_lines,
+                 [](SSOStr* left, SSOStr* right) { return left->as_str() > right->as_str(); });
+    } else {  // Flip
+        for (size_t i = 0; i < sorted_lines.len() / 2; ++i) {
+            std::swap(sorted_lines[i], sorted_lines[sorted_lines.len() - 1 - i]);
+        }
+    }
+
+    it.retreat_to(cursors[0].point);
+    uint64_t offset = 0;
+    size_t line = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        it.advance_to(cursors[i].point);
+
+        start_of_line(&it);
+        if (at_end_of_line(it)) {
+            continue;
+        }
+
+        // Don't create unnecessary edits.
+        if (sorted_lines[line].as_str() == unsorted_lines[line].as_str()) {
+            ++line;
+            continue;
+        }
+
+        Edit remove_old_line;
+        remove_old_line.value = unsorted_lines[line];
+        remove_old_line.position = it.position + offset;
+        remove_old_line.flags = Edit::REMOVE;
+        transaction.push(remove_old_line);
+
+        Edit insert_new_line;
+        insert_new_line.value = sorted_lines[line];
+        insert_new_line.position = it.position + offset;
+        insert_new_line.flags = Edit::INSERT;
+        transaction.push(insert_new_line);
+
+        offset += insert_new_line.value.len() - remove_old_line.value.len();
+
+        ++line;
+    }
+
+    transaction.commit();
+}
+
+void command_sort_lines_ascending(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    sort_lines(buffer, window, 0);
+}
+
+void command_sort_lines_descending(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    sort_lines(buffer, window, 1);
+}
+
+void command_flip_lines(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    sort_lines(buffer, window, 2);
+}
+
 }
 }
