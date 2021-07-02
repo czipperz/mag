@@ -498,7 +498,7 @@ static void create_theme(Theme& theme) {
 
     theme.scroll_outside_visual_columns = 10;
 
-    terminal_path = "xterm";
+    terminal_script = "xterm";
 }
 
 void editor_created_callback(Editor* editor) {

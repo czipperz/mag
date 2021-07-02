@@ -18,7 +18,7 @@ void command_directory_run_path(Editor* editor, Command_Source source);
 
 void command_create_directory(Editor* editor, Command_Source source);
 
-extern const char* terminal_path;
+extern const char* terminal_script;
 
 }
 }

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cz/directory.hpp>
 #include <cz/file.hpp>
+#include <cz/format.hpp>
 #include <cz/heap_string.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
@@ -472,7 +473,7 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
     }
 }
 
-const char* terminal_path = "xterm";
+const char* terminal_script = "xterm";
 
 void command_directory_run_path(Editor* editor, Command_Source source) {
     cz::String directory = {};
@@ -486,7 +487,6 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
         if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
             path.reserve(cz::heap_allocator(), buffer->directory.len());
             path.append(buffer->directory);
-            return;
         }
     }
 
@@ -504,12 +504,11 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
 #else
         if (path.ends_with('/')) {
             // Start this directory in a terminal.
-            cz::Str run_terminal[] = {terminal_path, path};
-            success = process.launch_program(args, &options);
+            success = process.launch_script(terminal_script, &options);
         } else {
             // Run the program that the cursor is on.
             cz::Str run_program[] = {path};
-            success = process.launch_program(args, &options);
+            success = process.launch_program(run_program, &options);
         }
 #endif
 
