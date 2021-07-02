@@ -472,6 +472,8 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
     }
 }
 
+const char* terminal_path = "xterm";
+
 void command_directory_run_path(Editor* editor, Command_Source source) {
     cz::String directory = {};
     CZ_DEFER(directory.drop(cz::heap_allocator()));
@@ -482,6 +484,8 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
         WITH_CONST_SELECTED_BUFFER(source.client);
         directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
         if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
+            path.reserve(cz::heap_allocator(), buffer->directory.len());
+            path.append(buffer->directory);
             return;
         }
     }
@@ -490,15 +494,26 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
         cz::Process_Options options;
         options.working_directory = directory.buffer();
 
+        cz::Process process;
+        bool success;
+
 #ifdef _WIN32
         cz::path::convert_to_back_slashes(&path);
         cz::Str args[] = {"cmd", "/C", "start", path};
+        success = process.launch_program(args, &options);
 #else
-        cz::Str args[] = {path};
+        if (path.ends_with('/')) {
+            // Start this directory in a terminal.
+            cz::Str run_terminal[] = {terminal_path, path};
+            success = process.launch_program(args, &options);
+        } else {
+            // Run the program that the cursor is on.
+            cz::Str run_program[] = {path};
+            success = process.launch_program(args, &options);
+        }
 #endif
 
-        cz::Process process;
-        if (!process.launch_program(args, &options)) {
+        if (!success) {
             cz::String string = {};
             CZ_DEFER(string.drop(cz::heap_allocator()));
             cz::Str prefix = "Failed to run path ";

@@ -497,6 +497,8 @@ static void create_theme(Theme& theme) {
     theme.scroll_jump_half_page_when_outside_visible_region = false;
 
     theme.scroll_outside_visual_columns = 10;
+
+    terminal_path = "xterm";
 }
 
 void editor_created_callback(Editor* editor) {
