@@ -23,6 +23,10 @@ bool copy_version_control_directory(Editor* editor,
         client->show_message(editor, "No version control repository found");
         return false;
     }
+
+    directory->reserve(cz::heap_allocator(), 2);
+    directory->push('/');
+    directory->null_terminate();
     return true;
 }
 
