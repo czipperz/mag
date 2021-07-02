@@ -166,7 +166,7 @@ bool Buffer::redo() {
     return true;
 }
 
-bool Buffer::commit(Commit commit, Command_Function committer) {
+bool Buffer::commit(cz::Slice<Edit> edits, Command_Function committer) {
     ZoneScoped;
 
     if (read_only) {
@@ -175,13 +175,15 @@ bool Buffer::commit(Commit commit, Command_Function committer) {
 
     // If the edit doesn't apply then the creator messed up; in this case we
     // shouldn't commit the edits because they will corrupt the undo tree.
-    if (!apply_edits(this, commit.edits)) {
+    if (!apply_edits(this, edits)) {
         return false;
     }
 
     // Push the commit onto the undo tree.
-    commits.set_len(commit_index);
+    Commit commit;
+    commit.edits = edits;
     commit.id = generate_commit_id();
+    commits.set_len(commit_index);
     commits.reserve(cz::heap_allocator(), 1);
     commits.push(commit);
 

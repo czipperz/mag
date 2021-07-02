@@ -36,9 +36,7 @@ SSOStr Transaction::last_edit_value() const {
 void Transaction::commit(Command_Function committer) {
     // Only commit if edits were made.
     if (edits.len() > 0) {
-        Commit commit;
-        commit.edits = edits.clone(buffer->commit_buffer_array.allocator());
-        if (buffer->commit(commit, committer)) {
+        if (buffer->commit(edits.clone(buffer->commit_buffer_array.allocator()), committer)) {
             committed = true;
         }
     }

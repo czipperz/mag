@@ -107,7 +107,7 @@ struct Buffer {
     ///
     /// If the file is in read only mode, does nothing and returns `false`.
     /// Otherwise returns `true`.
-    bool commit(Commit commit, Command_Function committer = nullptr);
+    bool commit(cz::Slice<Edit> edits, Command_Function committer = nullptr);
 
     /// Checks if the last committer is the same as `committer` and if the last commit's edits were
     /// at the same positions as the cursors.
