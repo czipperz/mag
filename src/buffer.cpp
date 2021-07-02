@@ -49,37 +49,63 @@ void Buffer::drop() {
     mode.drop();
 }
 
-static void insert(Contents* contents, uint64_t position, cz::Str str) {
-    CZ_ASSERT(position <= contents->len);
+static bool insert(Contents* contents, uint64_t position, cz::Str str) {
+    if (position > contents->len) {
+        return false;
+    }
+
     contents->insert(position, str);
+    return true;
 }
 
-static void remove(Contents* contents, uint64_t position, cz::Str str) {
-    CZ_ASSERT(position + str.len <= contents->len);
-    CZ_ASSERT(looking_at(contents->iterator_at(position), str));
+static bool remove(Contents* contents, uint64_t position, cz::Str str) {
+    if (!looking_at(contents->iterator_at(position), str)) {
+        return false;
+    }
+
     contents->remove(position, str.len);
+    return true;
 }
 
-static void apply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
+static bool unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits);
+static bool apply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
     for (size_t i = 0; i < edits.len; ++i) {
+        bool r;
+
         const Edit* edit = &edits[i];
         if (edit->flags & Edit::INSERT_MASK) {
-            insert(&buffer->contents, edit->position, edit->value.as_str());
+            r = insert(&buffer->contents, edit->position, edit->value.as_str());
         } else {
-            remove(&buffer->contents, edit->position, edit->value.as_str());
+            r = remove(&buffer->contents, edit->position, edit->value.as_str());
+        }
+
+        if (!r) {
+            // Undo all changes because an edit failed to apply.
+            unapply_edits(buffer, edits.slice_end(i));
+            return false;
         }
     }
+    return true;
 }
 
-static void unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
+static bool unapply_edits(Buffer* buffer, cz::Slice<const Edit> edits) {
     for (size_t i = edits.len; i-- > 0;) {
+        bool r;
+
         const Edit* edit = &edits[i];
         if (edit->flags & Edit::INSERT_MASK) {
-            remove(&buffer->contents, edit->position, edit->value.as_str());
+            r = remove(&buffer->contents, edit->position, edit->value.as_str());
         } else {
-            insert(&buffer->contents, edit->position, edit->value.as_str());
+            r = insert(&buffer->contents, edit->position, edit->value.as_str());
+        }
+
+        if (!r) {
+            // Undo all changes because an edit failed to apply.
+            apply_edits(buffer, edits.slice_start(i + 1));
+            return false;
         }
     }
+    return true;
 }
 
 bool Buffer::undo() {
@@ -89,15 +115,22 @@ bool Buffer::undo() {
         return false;
     }
 
-    --commit_index;
+    Commit commit = commits[commit_index - 1];
 
+    // If the edit doesn't apply then someone edited the buffer manually.  We should
+    // just force the edit to fail so we don't get into a corrupted state.
+    if (!unapply_edits(this, commit.edits)) {
+        return false;
+    }
+
+    // Track the change to the buffer.
     Change change;
-    change.commit = commits[commit_index];
+    change.commit = commit;
     change.is_redo = false;
     changes.reserve(cz::heap_allocator(), 1);
     changes.push(change);
 
-    unapply_edits(this, change.commit.edits);
+    --commit_index;
 
     last_committer = nullptr;
 
@@ -111,13 +144,20 @@ bool Buffer::redo() {
         return false;
     }
 
+    Commit commit = commits[commit_index];
+
+    // If the edit doesn't apply then someone edited the buffer manually.  We should
+    // just force the edit to fail so we don't get into a corrupted state.
+    if (!apply_edits(this, commit.edits)) {
+        return false;
+    }
+
+    // Track the change to the buffer.
     Change change;
-    change.commit = commits[commit_index];
+    change.commit = commit;
     change.is_redo = true;
     changes.reserve(cz::heap_allocator(), 1);
     changes.push(change);
-
-    apply_edits(this, change.commit.edits);
 
     ++commit_index;
 
@@ -133,13 +173,25 @@ bool Buffer::commit(Commit commit, Command_Function committer) {
         return false;
     }
 
-    commits.set_len(commit_index);
+    // If the edit doesn't apply then the creator messed up; in this case we
+    // shouldn't commit the edits because they will corrupt the undo tree.
+    if (!apply_edits(this, commit.edits)) {
+        return false;
+    }
 
+    // Push the commit onto the undo tree.
+    commits.set_len(commit_index);
     commit.id = generate_commit_id();
     commits.reserve(cz::heap_allocator(), 1);
     commits.push(commit);
 
-    redo();
+    // Track the change to the buffer.
+    Change change;
+    change.commit = commits[commit_index];
+    change.is_redo = true;
+    changes.reserve(cz::heap_allocator(), 1);
+    changes.push(change);
+    ++commit_index;
 
     last_committer = committer;
     return true;
