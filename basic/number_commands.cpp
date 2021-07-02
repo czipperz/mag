@@ -150,5 +150,34 @@ void command_prompt_increase_numbers(Editor* editor, Command_Source source) {
                                command_prompt_increase_numbers_callback, nullptr);
 }
 
+void command_insert_letters(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    if (cursors.len > 26) {
+        source.client->show_message(
+            editor, "command_insert_letters only supports up to 26 cursors as of right now");
+        return;
+    }
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        Edit insert;
+        insert.value = SSOStr::from_char('a' + i);
+        insert.position = cursors[i].point + offset;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+
+        offset += 1;
+    }
+
+    transaction.commit();
+}
+
 }
 }
