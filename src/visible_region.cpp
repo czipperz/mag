@@ -10,6 +10,7 @@ namespace mag {
 void center_in_window(Window_Unified* window, const Mode& mode, Contents_Iterator iterator) {
     size_t target_rows = window->rows() / 2;
     if (!mode.wrap_long_lines) {
+        start_of_line(&iterator);
         for (size_t i = 0; i < target_rows; ++i) {
             backward_char(&iterator);
             start_of_line(&iterator);
