@@ -258,7 +258,11 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
         buffer_id = handle->id;
     }
 
-    // TODO: prevent killing *scratch*
+    // Prevent killing *scratch*, *splash page*, *client messages*, and *client mini buffer*.
+    if (buffer_id.value < 4) {
+        return;
+    }
+
     editor->kill(buffer_id);
 
     remove_windows_for_buffer(client, buffer_id, editor->buffers[0]->id);
