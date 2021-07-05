@@ -333,6 +333,11 @@ static bool find_file_completion_engine(Editor* editor,
 static void command_find_file_response(Editor* editor, Client* client, cz::Str file, void* data) {
     cz::Str directory = (char*)data;
 
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        push_jump(window, client, buffer);
+    }
+
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     path.reserve(cz::heap_allocator(), directory.len + file.len + 1);
