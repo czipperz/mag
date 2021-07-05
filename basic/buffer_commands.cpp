@@ -22,8 +22,11 @@ static void command_open_file_callback(Editor* editor, Client* client, cz::Str q
 }
 
 void command_open_file(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Open file: ", file_completion_engine,
-                               command_open_file_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Open file: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_open_file_callback;
+    source.client->show_dialog(editor, dialog);
 
     fill_mini_buffer_with_selected_window_directory(editor, source.client);
 }
@@ -140,8 +143,10 @@ void command_save_file(Editor* editor, Command_Source source) {
     }
 
     if (!cz::file::exists(buffer->directory.buffer())) {
-        source.client->show_dialog(editor, "Submit to confirm create directory ",
-                                   no_completion_engine, command_save_file_callback, nullptr);
+        Dialog dialog = {};
+        dialog.prompt = "Submit to confirm create directory ";
+        dialog.response_callback = command_save_file_callback;
+        source.client->show_dialog(editor, dialog);
         return;
     }
 
@@ -176,8 +181,11 @@ static void command_switch_buffer_callback(Editor* editor,
 }
 
 void command_switch_buffer(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Buffer to switch to: ", buffer_completion_engine,
-                               command_switch_buffer_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Buffer to switch to: ";
+    dialog.completion_engine = buffer_completion_engine;
+    dialog.response_callback = command_switch_buffer_callback;
+    source.client->show_dialog(editor, dialog);
 }
 
 static int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** selected_window) {
@@ -272,8 +280,13 @@ void command_kill_buffer(Editor* editor, Command_Source source) {
     Buffer_Id* buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
     CZ_ASSERT(buffer_id);
     *buffer_id = source.client->selected_window()->id;
-    source.client->show_dialog(editor, "Buffer to kill: ", buffer_completion_engine,
-                               command_kill_buffer_callback, buffer_id);
+
+    Dialog dialog = {};
+    dialog.prompt = "Buffer to kill: ";
+    dialog.completion_engine = buffer_completion_engine;
+    dialog.response_callback = command_kill_buffer_callback;
+    dialog.response_callback_data = buffer_id;
+    source.client->show_dialog(editor, dialog);
 }
 
 static void command_rename_buffer_callback(Editor* editor,
@@ -306,13 +319,13 @@ void command_rename_buffer(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
         WITH_CONST_BUFFER(*buffer_id);
-        if (buffer->type == Buffer::TEMPORARY) {
-            source.client->show_dialog(editor, "Rename buffer to: ", no_completion_engine,
-                                       command_rename_buffer_callback, buffer_id);
-        } else {
-            source.client->show_dialog(editor, "Rename buffer to: ", file_completion_engine,
-                                       command_rename_buffer_callback, buffer_id);
-        }
+        Dialog dialog = {};
+        dialog.prompt = "Rename buffer to: ";
+        dialog.completion_engine =
+            buffer->type == Buffer::TEMPORARY ? no_completion_engine : file_completion_engine;
+        dialog.response_callback = command_rename_buffer_callback;
+        dialog.response_callback_data = buffer_id;
+        source.client->show_dialog(editor, dialog);
 
         buffer->render_name(cz::heap_allocator(), &path);
     }

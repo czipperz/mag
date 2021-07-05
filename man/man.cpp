@@ -65,8 +65,11 @@ static void command_man_response(Editor* editor, Client* client, cz::Str page, v
 }
 
 void command_man(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Man: ", man_completion_engine, command_man_response,
-                               nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Man: ";
+    dialog.completion_engine = man_completion_engine;
+    dialog.response_callback = command_man_response;
+    source.client->show_dialog(editor, dialog);
 
     auto data = cz::heap_allocator().alloc<Run_Command_For_Completion_Results>();
     *data = {};

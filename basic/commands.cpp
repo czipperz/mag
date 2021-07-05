@@ -89,31 +89,31 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
     if (query == "animated scrolling") {
         editor->theme.allow_animated_scrolling = !editor->theme.allow_animated_scrolling;
     } else if (query == "buffer indent width") {
-        client->show_dialog(
-            editor, "Set indent width to: ", no_completion_engine,
-            [](Editor* editor, Client* client, cz::Str str, void*) {
-                WITH_SELECTED_BUFFER(client);
-                uint32_t value;
-                if (cz::parse(str, &value) <= 0 || value == 0) {
-                    client->show_message(editor, "Invalid indent width");
-                    return;
-                }
-                buffer->mode.indent_width = value;
-            },
-            nullptr);
+        Dialog dialog = {};
+        dialog.prompt = "Set indent width to: ";
+        dialog.response_callback = [](Editor* editor, Client* client, cz::Str str, void*) {
+            WITH_SELECTED_BUFFER(client);
+            uint32_t value;
+            if (cz::parse(str, &value) <= 0 || value == 0) {
+                client->show_message(editor, "Invalid indent width");
+                return;
+            }
+            buffer->mode.indent_width = value;
+        };
+        client->show_dialog(editor, dialog);
     } else if (query == "buffer tab width") {
-        client->show_dialog(
-            editor, "Set tab width to: ", no_completion_engine,
-            [](Editor* editor, Client* client, cz::Str str, void*) {
-                WITH_SELECTED_BUFFER(client);
-                uint32_t value;
-                if (cz::parse(str, &value) <= 0 || value == 0) {
-                    client->show_message(editor, "Invalid tab width");
-                    return;
-                }
-                buffer->mode.tab_width = value;
-            },
-            nullptr);
+        Dialog dialog = {};
+        dialog.prompt = "Set tab width to: ";
+        dialog.response_callback = [](Editor* editor, Client* client, cz::Str str, void*) {
+            WITH_SELECTED_BUFFER(client);
+            uint32_t value;
+            if (cz::parse(str, &value) <= 0 || value == 0) {
+                client->show_message(editor, "Invalid tab width");
+                return;
+            }
+            buffer->mode.tab_width = value;
+        };
+        client->show_dialog(editor, dialog);
     } else if (query == "buffer use tabs") {
         bool use_tabs;
         {
@@ -132,18 +132,18 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
         Window_Unified* window = client->selected_window();
         window->pinned = !window->pinned;
     } else if (query == "buffer preferred column") {
-        client->show_dialog(
-            editor, "Set preferred column to: ", no_completion_engine,
-            [](Editor* editor, Client* client, cz::Str str, void*) {
-                WITH_SELECTED_BUFFER(client);
-                uint32_t value;
-                if (cz::parse(str, &value) <= 0 || value == 0) {
-                    client->show_message(editor, "Invalid preferred column");
-                    return;
-                }
-                buffer->mode.preferred_column = value;
-            },
-            nullptr);
+        Dialog dialog = {};
+        dialog.prompt = "Set preferred column to: ";
+        dialog.response_callback = [](Editor* editor, Client* client, cz::Str str, void*) {
+            WITH_SELECTED_BUFFER(client);
+            uint32_t value;
+            if (cz::parse(str, &value) <= 0 || value == 0) {
+                client->show_message(editor, "Invalid preferred column");
+                return;
+            }
+            buffer->mode.preferred_column = value;
+        };
+        client->show_dialog(editor, dialog);
     } else if (query == "buffer read only") {
         WITH_SELECTED_BUFFER(client);
         buffer->read_only = !buffer->read_only;
@@ -156,17 +156,17 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
     } else if (query == "draw line numbers") {
         editor->theme.draw_line_numbers = !editor->theme.draw_line_numbers;
     } else if (query == "font size") {
-        client->show_dialog(
-            editor, "Set font size to: ", no_completion_engine,
-            [](Editor* editor, Client* client, cz::Str str, void*) {
-                uint32_t value;
-                if (cz::parse(str, &value) <= 0 || value == 0) {
-                    client->show_message(editor, "Invalid font size (only ints for now)");
-                    return;
-                }
-                editor->theme.font_size = value;
-            },
-            nullptr);
+        Dialog dialog = {};
+        dialog.prompt = "Set font size to: ";
+        dialog.response_callback = [](Editor* editor, Client* client, cz::Str str, void*) {
+            uint32_t value;
+            if (cz::parse(str, &value) <= 0 || value == 0) {
+                client->show_message(editor, "Invalid font size (only ints for now)");
+                return;
+            }
+            editor->theme.font_size = value;
+        };
+        client->show_dialog(editor, dialog);
     } else {
         client->show_message(editor, "Invalid configuration variable");
     }
@@ -196,9 +196,11 @@ static bool configurations_completion_engine(Editor* editor,
 }
 
 void command_configure(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor,
-                               "Configuration to change: ", configurations_completion_engine,
-                               command_configure_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Configuration to change: ";
+    dialog.completion_engine = configurations_completion_engine;
+    dialog.response_callback = command_configure_callback;
+    source.client->show_dialog(editor, dialog);
 }
 
 void command_show_marks(Editor* editor, Command_Source source) {
@@ -1369,12 +1371,18 @@ void command_search_forward(Editor* editor, Command_Source source) {
         data->cursor_mark = window->cursors[0].mark;
         data->mini_buffer_change_index = 0;
 
-        source.client->show_interactive_dialog(
-            editor, "Search forward: ", no_completion_engine, command_search_forward_callback,
-            interactive_search_response_callback, interactive_search_cancel, data);
+        Dialog dialog = {};
+        dialog.prompt = "Search forward: ";
+        dialog.response_callback = command_search_forward_callback;
+        dialog.interactive_response_callback = interactive_search_response_callback;
+        dialog.response_cancel = interactive_search_cancel;
+        dialog.response_callback_data = data;
+        source.client->show_dialog(editor, dialog);
     } else {
-        source.client->show_dialog(editor, "Search forward: ", no_completion_engine,
-                                   command_search_forward_callback, nullptr);
+        Dialog dialog = {};
+        dialog.prompt = "Search forward: ";
+        dialog.response_callback = command_search_forward_callback;
+        source.client->show_dialog(editor, dialog);
     }
 }
 
@@ -1453,12 +1461,18 @@ void command_search_backward(Editor* editor, Command_Source source) {
         data->cursor_mark = window->cursors[0].mark;
         data->mini_buffer_change_index = 0;
 
-        source.client->show_interactive_dialog(
-            editor, "Search backward: ", no_completion_engine, command_search_backward_callback,
-            interactive_search_response_callback, interactive_search_cancel, data);
+        Dialog dialog = {};
+        dialog.prompt = "Search backward: ";
+        dialog.response_callback = command_search_backward_callback;
+        dialog.interactive_response_callback = interactive_search_response_callback;
+        dialog.response_cancel = interactive_search_cancel;
+        dialog.response_callback_data = data;
+        source.client->show_dialog(editor, dialog);
     } else {
-        source.client->show_dialog(editor, "Search backward: ", no_completion_engine,
-                                   command_search_backward_callback, nullptr);
+        Dialog dialog = {};
+        dialog.prompt = "Search backward: ";
+        dialog.response_callback = command_search_backward_callback;
+        source.client->show_dialog(editor, dialog);
     }
 }
 
@@ -1507,13 +1521,17 @@ static void command_goto_position_callback(Editor* editor,
 }
 
 void command_goto_line(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Goto line: ", no_completion_engine,
-                               command_goto_line_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Goto line: ";
+    dialog.response_callback = command_goto_line_callback;
+    source.client->show_dialog(editor, dialog);
 }
 
 void command_goto_position(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Goto position: ", no_completion_engine,
-                               command_goto_position_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Goto position: ";
+    dialog.response_callback = command_goto_position_callback;
+    source.client->show_dialog(editor, dialog);
 }
 
 void command_path_up_directory(Editor* editor, Command_Source source) {

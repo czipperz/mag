@@ -164,8 +164,12 @@ void command_run_command_by_name(Editor* editor, Command_Source source) {
     CZ_ASSERT(buffer_id);
     *buffer_id = source.client->selected_window()->id;
 
-    source.client->show_dialog(editor, "Run command: ", command_completion_engine,
-                               command_run_command_by_name_callback, buffer_id);
+    Dialog dialog = {};
+    dialog.prompt = "Run command: ";
+    dialog.completion_engine = command_completion_engine;
+    dialog.response_callback = command_run_command_by_name_callback;
+    dialog.response_callback_data = buffer_id;
+    source.client->show_dialog(editor, dialog);
 }
 
 void command_go_to_key_map_binding(Editor* editor, Command_Source source) {

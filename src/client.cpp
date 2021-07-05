@@ -41,13 +41,6 @@ void Client::hide_mini_buffer(Editor* editor) {
         _message.response_cancel(editor, this, _message.response_callback_data);
     }
     dealloc_message();
-    clear_mini_buffer(editor);
-}
-
-void Client::clear_mini_buffer(Editor* editor) {
-    Window_Unified* window = mini_buffer_window();
-    WITH_WINDOW_BUFFER(window);
-    clear_buffer(buffer);
 }
 
 void Client::dealloc_message() {
@@ -232,32 +225,24 @@ void Client::update_mini_buffer_completion_cache(Editor* editor) {
     }
 }
 
-void Client::show_dialog(Editor* editor,
-                         cz::Str prompt,
-                         Completion_Engine completion_engine,
-                         Message::Response_Callback response_callback,
-                         void* response_callback_data) {
-    show_interactive_dialog(editor, prompt, completion_engine, response_callback, nullptr, nullptr,
-                            response_callback_data);
-}
-
-void Client::show_interactive_dialog(Editor* editor,
-                                     cz::Str prompt,
-                                     Completion_Engine completion_engine,
-                                     Message::Response_Callback response_callback,
-                                     Message::Response_Callback interactive_response_callback,
-                                     Message::Response_Cancel response_cancel,
-                                     void* response_callback_data) {
+void Client::show_dialog(Editor* editor, Dialog dialog) {
     dealloc_message();
-    clear_mini_buffer(editor);
 
-    show_message(editor, prompt);
+    // Setup the mini buffer's contents.
+    {
+        Window_Unified* window = mini_buffer_window();
+        WITH_WINDOW_BUFFER(window);
+
+        clear_buffer(buffer);
+    }
+
+    show_message(editor, dialog.prompt);
     _message.tag = Message::RESPOND;
-    _message.completion_engine = completion_engine;
-    _message.response_callback = response_callback;
-    _message.interactive_response_callback = interactive_response_callback;
-    _message.response_cancel = response_cancel;
-    _message.response_callback_data = response_callback_data;
+    _message.completion_engine = dialog.completion_engine;
+    _message.response_callback = dialog.response_callback;
+    _message.interactive_response_callback = dialog.interactive_response_callback;
+    _message.response_cancel = dialog.response_cancel;
+    _message.response_callback_data = dialog.response_callback_data;
     _select_mini_buffer = true;
 
     setup_completion_cache(this, editor);

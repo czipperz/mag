@@ -69,8 +69,13 @@ void command_search_in_current_directory_prompt(Editor* editor, Command_Source s
     Buffer_Id* selected_buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
     CZ_ASSERT(selected_buffer_id);
     *selected_buffer_id = source.client->selected_window()->id;
-    source.client->show_dialog(editor, "Search in current directory: ", no_completion_engine,
-                               command_search_in_current_directory_callback, selected_buffer_id);
+
+    Dialog dialog = {};
+    dialog.prompt = "Search in current directory: ";
+    dialog.response_callback = command_search_in_current_directory_callback;
+    dialog.response_callback_data = selected_buffer_id;
+    source.client->show_dialog(editor, dialog);
+
     source.client->fill_mini_buffer_with_selected_region(editor);
 }
 
@@ -95,8 +100,13 @@ void command_search_in_version_control_prompt(Editor* editor, Command_Source sou
     Buffer_Id* selected_buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
     CZ_ASSERT(selected_buffer_id);
     *selected_buffer_id = source.client->selected_window()->id;
-    source.client->show_dialog(editor, "Search in version control: ", no_completion_engine,
-                               command_search_in_version_control_callback, selected_buffer_id);
+
+    Dialog dialog = {};
+    dialog.prompt = "Search in version control: ";
+    dialog.response_callback = command_search_in_version_control_callback;
+    dialog.response_callback_data = selected_buffer_id;
+    source.client->show_dialog(editor, dialog);
+
     source.client->fill_mini_buffer_with_selected_region(editor);
 }
 

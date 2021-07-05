@@ -262,8 +262,10 @@ static void command_directory_delete_path_callback(Editor* editor, Client* clien
 }
 
 void command_directory_delete_path(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Submit to confirm delete path ", no_completion_engine,
-                               command_directory_delete_path_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Submit to confirm delete path: ";
+    dialog.response_callback = command_directory_delete_path_callback;
+    source.client->show_dialog(editor, dialog);
 }
 
 static cz::Result copy_path(cz::String* path, cz::String* new_path) {
@@ -389,8 +391,11 @@ void command_directory_copy_path(Editor* editor, Command_Source source) {
         }
     }
 
-    source.client->show_dialog(editor, "Copy file to: ", file_completion_engine,
-                               command_directory_copy_path_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Copy file to: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_directory_copy_path_callback;
+    source.client->show_dialog(editor, dialog);
 
     fill_mini_buffer_with(editor, source.client, path);
 }
@@ -450,8 +455,11 @@ void command_directory_rename_path(Editor* editor, Command_Source source) {
         }
     }
 
-    source.client->show_dialog(editor, "Rename file to: ", file_completion_engine,
-                               command_directory_rename_path_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Rename file to: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_directory_rename_path_callback;
+    source.client->show_dialog(editor, dialog);
 
     fill_mini_buffer_with(editor, source.client, path);
 }
@@ -554,8 +562,11 @@ static void command_create_directory_callback(Editor* editor,
 }
 
 void command_create_directory(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Create directory: ", file_completion_engine,
-                               command_create_directory_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Create directory: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_create_directory_callback;
+    source.client->show_dialog(editor, dialog);
 
     fill_mini_buffer_with_selected_window_directory(editor, source.client);
 }

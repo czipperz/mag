@@ -230,8 +230,11 @@ void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::
     data->tags = tags;
     data->buffer = buffer;
 
-    client->show_dialog(editor, "Open tag: ", tag_completion_engine, prompt_open_tags_callback,
-                        nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Open tag: ";
+    dialog.completion_engine = tag_completion_engine;
+    dialog.response_callback = prompt_open_tags_callback;
+    client->show_dialog(editor, dialog);
 
     if (client->mini_buffer_completion_cache.engine_context.data) {
         client->mini_buffer_completion_cache.engine_context.cleanup(
@@ -333,8 +336,11 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
         directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer();
     }
 
-    source.client->show_dialog(editor, "Lookup: ", completion_engine,
-                               command_lookup_prompt_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Lookup: ";
+    dialog.completion_engine = completion_engine;
+    dialog.response_callback = command_lookup_prompt_callback;
+    source.client->show_dialog(editor, dialog);
 
     // If data wasn't cleared by show_dialog then it needs to be cleaned up now.
     auto data =

@@ -7,6 +7,7 @@
 #include "buffer_id.hpp"
 #include "completion.hpp"
 #include "copy_chain.hpp"
+#include "dialog.hpp"
 #include "jump.hpp"
 #include "key.hpp"
 #include "message.hpp"
@@ -90,28 +91,7 @@ struct Client {
 
     /// Show a dialog.  If submitted then `response_callback` is called.  Once the
     /// dialog has ended the data will be deallocated via `cz::heap_allocator`.
-    void show_dialog(Editor* editor,
-                     cz::Str prompt,
-                     Completion_Engine completion_engine,
-                     Message::Response_Callback response_callback,
-                     void* response_callback_data);
-
-    /// Show a dialog.  If submitted then `response_callback` is called.  If it
-    /// is cancelled then `response_cancel` is called.  Once the dialog has
-    /// ended the data will be deallocated via `cz::heap_allocator`.
-    ///
-    /// Every frame, `interactive_response_callback` will
-    /// be invoked similarly to a `Synchronous_Job`.
-    ///
-    /// `interactive_response_callback` and/or `response_cancel`
-    /// can be `nullptr` if no functionality is desired.
-    void show_interactive_dialog(Editor* editor,
-                                 cz::Str prompt,
-                                 Completion_Engine completion_engine,
-                                 Message::Response_Callback response_callback,
-                                 Message::Response_Callback interactive_response_callback,
-                                 Message::Response_Cancel response_cancel,
-                                 void* response_callback_data);
+    void show_dialog(Editor* editor, Dialog dialog);
 
     void update_mini_buffer_completion_cache(Editor* editor);
 

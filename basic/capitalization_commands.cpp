@@ -557,9 +557,11 @@ static bool recapitalize_to_completion_engine(Editor* editor,
 }
 
 void command_recapitalize_token_prompt(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor,
-                               "Recapitalize to format: ", recapitalize_to_completion_engine,
-                               command_recapitalize_token_prompt_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Recapitalize to format: ";
+    dialog.completion_engine = recapitalize_to_completion_engine;
+    dialog.response_callback = command_recapitalize_token_prompt_callback;
+    source.client->show_dialog(editor, dialog);
 
     fill_mini_buffer_with(editor, source.client, "(");
 }

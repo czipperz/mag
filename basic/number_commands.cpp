@@ -146,8 +146,10 @@ static void command_prompt_increase_numbers_callback(Editor* editor,
 }
 
 void command_prompt_increase_numbers(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Increase numbers by: ", no_completion_engine,
-                               command_prompt_increase_numbers_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Increase numbers by: ";
+    dialog.response_callback = command_prompt_increase_numbers_callback;
+    source.client->show_dialog(editor, dialog);
 }
 
 void command_insert_letters(Editor* editor, Command_Source source) {

@@ -34,8 +34,11 @@ static void command_apply_diff_callback(Editor* editor,
 }
 
 void command_apply_diff(Editor* editor, Command_Source source) {
-    source.client->show_dialog(editor, "Diff to apply: ", file_completion_engine,
-                               command_apply_diff_callback, nullptr);
+    Dialog dialog = {};
+    dialog.prompt = "Diff to apply: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_apply_diff_callback;
+    source.client->show_dialog(editor, dialog);
 }
 
 }
