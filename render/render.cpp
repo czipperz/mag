@@ -1186,9 +1186,12 @@ static bool load_completion_cache(Editor* editor,
         has_selected_result = true;
     }
 
-    bool engine_change =
-        completion_cache->engine(editor, &completion_cache->engine_context,
-                                 completion_cache->state == Completion_Cache::INITIAL);
+    bool engine_change = false;
+    if (completion_cache->engine) {
+        engine_change =
+            completion_cache->engine(editor, &completion_cache->engine_context,
+                                     completion_cache->state == Completion_Cache::INITIAL);
+    }
 
     if (completion_cache->state != Completion_Cache::LOADED || engine_change) {
         completion_cache->filter_context.selected = 0;
