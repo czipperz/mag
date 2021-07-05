@@ -395,9 +395,8 @@ void command_directory_copy_path(Editor* editor, Command_Source source) {
     dialog.prompt = "Copy file to: ";
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_directory_copy_path_callback;
+    dialog.mini_buffer_contents = path;
     source.client->show_dialog(editor, dialog);
-
-    fill_mini_buffer_with(editor, source.client, path);
 }
 
 static void command_directory_rename_path_callback(Editor* editor,
@@ -459,9 +458,8 @@ void command_directory_rename_path(Editor* editor, Command_Source source) {
     dialog.prompt = "Rename file to: ";
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_directory_rename_path_callback;
+    dialog.mini_buffer_contents = path;
     source.client->show_dialog(editor, dialog);
-
-    fill_mini_buffer_with(editor, source.client, path);
 }
 
 void command_directory_open_path(Editor* editor, Command_Source source) {
@@ -562,13 +560,17 @@ static void command_create_directory_callback(Editor* editor,
 }
 
 void command_create_directory(Editor* editor, Command_Source source) {
+    cz::String selected_window_directory = {};
+    CZ_DEFER(selected_window_directory.drop(cz::heap_allocator()));
+    get_selected_window_directory(editor, source.client, cz::heap_allocator(),
+                                  &selected_window_directory);
+
     Dialog dialog = {};
     dialog.prompt = "Create directory: ";
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_create_directory_callback;
+    dialog.mini_buffer_contents = selected_window_directory;
     source.client->show_dialog(editor, dialog);
-
-    fill_mini_buffer_with_selected_window_directory(editor, source.client);
 }
 
 }

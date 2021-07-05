@@ -4,9 +4,9 @@
 #include <cz/heap_vector.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
-#include "prose/helpers.hpp"
 #include "movement.hpp"
 #include "overlay.hpp"
+#include "prose/helpers.hpp"
 #include "syntax/overlay_highlight_string.hpp"
 #include "token.hpp"
 
@@ -70,13 +70,16 @@ void command_search_in_current_directory_prompt(Editor* editor, Command_Source s
     CZ_ASSERT(selected_buffer_id);
     *selected_buffer_id = source.client->selected_window()->id;
 
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
+    get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
+
     Dialog dialog = {};
     dialog.prompt = "Search in current directory: ";
     dialog.response_callback = command_search_in_current_directory_callback;
     dialog.response_callback_data = selected_buffer_id;
+    dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(editor, dialog);
-
-    source.client->fill_mini_buffer_with_selected_region(editor);
 }
 
 static void command_search_in_version_control_callback(Editor* editor,
@@ -101,13 +104,16 @@ void command_search_in_version_control_prompt(Editor* editor, Command_Source sou
     CZ_ASSERT(selected_buffer_id);
     *selected_buffer_id = source.client->selected_window()->id;
 
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
+    get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
+
     Dialog dialog = {};
     dialog.prompt = "Search in version control: ";
     dialog.response_callback = command_search_in_version_control_callback;
     dialog.response_callback_data = selected_buffer_id;
+    dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(editor, dialog);
-
-    source.client->fill_mini_buffer_with_selected_region(editor);
 }
 
 template <class Copy_Directory>

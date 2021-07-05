@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cz/str.hpp>
+#include <cz/string.hpp>
 #include "completion.hpp"
 #include "message.hpp"
 
@@ -38,6 +39,37 @@ struct Dialog {
 
     /// The data to be passed to the callbacks above.
     void* response_callback_data;
+
+    /// The string to set the mini buffer to.
+    cz::Str mini_buffer_contents;
 };
+
+//////////////////////////////////////////////////////////
+/// Common methods for getting `mini_buffer_contents`. ///
+//////////////////////////////////////////////////////////
+
+struct Buffer;
+struct Client;
+struct Editor;
+struct Window_Unified;
+
+/// Get the selected region in the specified window and buffer as a string.
+void get_selected_region(Window_Unified* window,
+                         const Buffer* buffer,
+                         cz::Allocator allocator,
+                         cz::String* string);
+
+/// Get the selected region in the selected window as a string.
+void get_selected_region(Editor* editor,
+                         Client* client,
+                         cz::Allocator allocator,
+                         cz::String* string);
+
+/// Get the selected window's buffer's directory or, if the buffer
+/// has no directory, then retrieves the working directory.
+void get_selected_window_directory(Editor* editor,
+                                   Client* client,
+                                   cz::Allocator allocator,
+                                   cz::String* string);
 
 }

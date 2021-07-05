@@ -330,16 +330,22 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
     ZoneScoped;
 
     char* directory;
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
     {
-        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        Window_Unified* window = source.client->selected_normal_window;
+        WITH_CONST_WINDOW_BUFFER(window);
 
         directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer();
+
+        get_selected_region(window, buffer, cz::heap_allocator(), &selected_region);
     }
 
     Dialog dialog = {};
     dialog.prompt = "Lookup: ";
     dialog.completion_engine = completion_engine;
     dialog.response_callback = command_lookup_prompt_callback;
+    dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(editor, dialog);
 
     // If data wasn't cleared by show_dialog then it needs to be cleaned up now.
@@ -361,8 +367,6 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
         data->runner.drop();
         cz::heap_allocator().dealloc(data);
     };
-
-    source.client->fill_mini_buffer_with_selected_region(editor);
 }
 
 void command_complete_at_point(Editor* editor, Command_Source source) {

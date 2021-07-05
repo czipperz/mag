@@ -22,35 +22,17 @@ static void command_open_file_callback(Editor* editor, Client* client, cz::Str q
 }
 
 void command_open_file(Editor* editor, Command_Source source) {
+    cz::String selected_window_directory = {};
+    CZ_DEFER(selected_window_directory.drop(cz::heap_allocator()));
+    get_selected_window_directory(editor, source.client, cz::heap_allocator(),
+                                  &selected_window_directory);
+
     Dialog dialog = {};
     dialog.prompt = "Open file: ";
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_open_file_callback;
+    dialog.mini_buffer_contents = selected_window_directory;
     source.client->show_dialog(editor, dialog);
-
-    fill_mini_buffer_with_selected_window_directory(editor, source.client);
-}
-
-void fill_mini_buffer_with_selected_window_directory(Editor* editor, Client* client) {
-    cz::String default_value = {};
-    CZ_DEFER(default_value.drop(cz::heap_allocator()));
-
-    {
-        WITH_CONST_WINDOW_BUFFER(client->selected_normal_window);
-        if (buffer->directory.len() > 0) {
-            default_value = buffer->directory.clone(cz::heap_allocator());
-        }
-    }
-
-    if (default_value.len() == 0) {
-        if (cz::get_working_directory(cz::heap_allocator(), &default_value).is_err()) {
-            return;
-        }
-        default_value.reserve(cz::heap_allocator(), 1);
-        default_value.push('/');
-    }
-
-    fill_mini_buffer_with(editor, client, default_value);
 }
 
 void fill_mini_buffer_with(Editor* editor, Client* client, cz::Str default_value) {

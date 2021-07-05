@@ -233,7 +233,29 @@ void Client::show_dialog(Editor* editor, Dialog dialog) {
         Window_Unified* window = mini_buffer_window();
         WITH_WINDOW_BUFFER(window);
 
-        clear_buffer(buffer);
+        Transaction transaction;
+        transaction.init(buffer);
+        CZ_DEFER(transaction.drop());
+
+        if (buffer->contents.len > 0) {
+            Edit edit;
+            edit.value = buffer->contents.slice(transaction.value_allocator(),
+                                                buffer->contents.start(), buffer->contents.len);
+            edit.position = 0;
+            edit.flags = Edit::REMOVE;
+            transaction.push(edit);
+        }
+
+        if (dialog.mini_buffer_contents.len > 0) {
+            Edit edit;
+            edit.value =
+                SSOStr::as_duplicate(transaction.value_allocator(), dialog.mini_buffer_contents);
+            edit.position = 0;
+            edit.flags = Edit::INSERT;
+            transaction.push(edit);
+        }
+
+        transaction.commit();
     }
 
     show_message(editor, dialog.prompt);
@@ -246,39 +268,6 @@ void Client::show_dialog(Editor* editor, Dialog dialog) {
     _select_mini_buffer = true;
 
     setup_completion_cache(this, editor);
-}
-
-void Client::fill_mini_buffer_with_selected_region(Editor* editor) {
-    SSOStr value;
-
-    {
-        Window_Unified* window = selected_normal_window;
-        WITH_CONST_WINDOW_BUFFER(window);
-        if (!window->show_marks) {
-            return;
-        }
-
-        uint64_t start = window->cursors[window->selected_cursor].start();
-        uint64_t end = window->cursors[window->selected_cursor].end();
-        value =
-            buffer->contents.slice(cz::heap_allocator(), buffer->contents.iterator_at(start), end);
-    }
-
-    {
-        WITH_WINDOW_BUFFER(mini_buffer_window());
-
-        Transaction transaction = {};
-        transaction.init(buffer);
-        CZ_DEFER(transaction.drop());
-
-        Edit edit;
-        edit.value = value;
-        edit.position = 0;
-        edit.flags = Edit::INSERT;
-        transaction.push(edit);
-
-        transaction.commit();
-    }
 }
 
 }

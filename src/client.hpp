@@ -99,10 +99,6 @@ struct Client {
 
     void clear_mini_buffer(Editor* editor);
 
-    /// Call right after running `show_dialog` to populate the mini buffer with the contents of the
-    /// selected region in the buffer invoking the dialog.
-    void fill_mini_buffer_with_selected_region(Editor* editor);
-
     void dealloc_message();
 
     void restore_selected_buffer();
