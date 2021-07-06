@@ -14,6 +14,8 @@ struct Command_Source;
 
 namespace basic {
 
+extern bool sentences_start_with_two_spaces;
+
 /// Reformat at the iterator blocks of text where the first line starts with
 /// `acceptable_start` and each consecutive line starts with `acceptable_continuation`.
 ///

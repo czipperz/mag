@@ -12,6 +12,8 @@
 namespace mag {
 namespace basic {
 
+bool sentences_start_with_two_spaces = true;
+
 static bool end_of_sentence(cz::Str word) {
     if (word.starts_with("(")) {
         word = word.slice_start(1);
@@ -232,8 +234,7 @@ bool reformat_at(Buffer* buffer,
                 buffer->contents.slice(buffer_array.allocator(), word_start, iterator.position);
             words_len_sum += word.len();
 
-            // TODO: make "sentences end in two spaces" a config variable (in the Mode).
-            if (end_of_sentence(word.as_str())) {
+            if (sentences_start_with_two_spaces && end_of_sentence(word.as_str())) {
                 extra_spaces++;
             }
 

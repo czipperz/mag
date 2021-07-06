@@ -278,6 +278,7 @@ static void create_key_map(Key_Map& key_map) {
     // Note: consider rebinding this in programming language
     // specific key maps so that the reformat works for comments.
     BIND(key_map, "A-h", command_reformat_paragraph);
+    sentences_start_with_two_spaces = true;
 
     BIND(key_map, "A-/", command_undo);
     BIND(key_map, "A-_", command_undo);
