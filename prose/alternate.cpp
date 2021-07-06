@@ -22,10 +22,6 @@ static bool replace_if_contains(cz::String& path, cz::Str search, cz::Str replac
 }
 
 static bool test_all_files(cz::String& path, cz::Slice<cz::Str> dest_extensions) {
-    if (!replace_if_contains(path, "/cz/include/cz/", "/cz/src/")) {
-        replace_if_contains(path, "/cz/src/", "/cz/include/cz/");
-    }
-
     path.reserve(cz::heap_allocator(), 5);
     for (size_t i = 0; i < dest_extensions.len; ++i) {
         path.append(dest_extensions[i]);
@@ -73,15 +69,26 @@ void command_alternate(Editor* editor, Command_Source source) {
         }
     }
 
-    cz::Str source_extensions[] = {".c", ".cc", ".cxx", ".cpp"};
-    cz::Str header_extensions[] = {".h", ".hh", ".hxx", ".hpp"};
+    bool any_changes = false;
 
-    int result = test_extensions(path, source_extensions, header_extensions);
-    if (result == 0) {
-        result = test_extensions(path, header_extensions, source_extensions);
+    // Apply all `alternate_path` rules.
+    for (size_t i = 0; i < alternate_path_len; ++i) {
+        if (replace_if_contains(path, alternate_path_1[i], alternate_path_2[i])) {
+            any_changes = true;
+        } else if (replace_if_contains(path, alternate_path_2[i], alternate_path_1[i])) {
+            any_changes = true;
+        }
     }
 
+    cz::Slice<cz::Str> extensions_1 = {alternate_extensions_1, alternate_extensions_len};
+    cz::Slice<cz::Str> extensions_2 = {alternate_extensions_2, alternate_extensions_len};
+
+    int result = test_extensions(path, extensions_1, extensions_2);
     if (result == 0) {
+        result = test_extensions(path, extensions_2, extensions_1);
+    }
+
+    if (!any_changes && result == 0) {
         source.client->show_message(editor, "File doesn't have a supported extension");
         return;
     }

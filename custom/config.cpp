@@ -72,6 +72,18 @@
 #include "version_control/version_control.hpp"
 
 namespace mag {
+namespace prose {
+
+cz::Str alternate_path_1[] = {"/cz/src/"};
+cz::Str alternate_path_2[] = {"/cz/include/cz/"};
+size_t alternate_path_len = 1;
+
+cz::Str alternate_extensions_1[] = {".c", ".cc", ".cxx", ".cpp"};
+cz::Str alternate_extensions_2[] = {".h", ".hh", ".hxx", ".hpp"};
+size_t alternate_extensions_len = 4;
+
+}
+
 namespace custom {
 
 using namespace basic;
