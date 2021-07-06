@@ -97,6 +97,8 @@ void command_remove_selected_cursor(Editor* editor, Command_Source source);
 
 void command_search_forward(Editor* editor, Command_Source source);
 void command_search_backward(Editor* editor, Command_Source source);
+void command_search_forward_expanding(Editor* editor, Command_Source source);
+void command_search_backward_expanding(Editor* editor, Command_Source source);
 
 void command_goto_line(Editor* editor, Command_Source source);
 void command_goto_position(Editor* editor, Command_Source source);

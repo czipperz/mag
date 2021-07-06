@@ -1476,6 +1476,58 @@ void command_search_backward(Editor* editor, Command_Source source) {
     }
 }
 
+static void command_search_backward_expanding_callback(Editor* editor,
+                                                       Client* client,
+                                                       cz::Str query,
+                                                       void* _data) {
+    WITH_CONST_SELECTED_BUFFER(client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+    if (!window->show_marks) {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            cursors[c].mark = cursors[c].point;
+        }
+    }
+
+    for (size_t c = 0; c < cursors.len; ++c) {
+        SEARCH_QUERY_THEN(search_backward_cased, cursors[c].point = new_cursor.mark);
+    }
+    window->show_marks = true;
+}
+
+static void command_search_forward_expanding_callback(Editor* editor,
+                                                      Client* client,
+                                                      cz::Str query,
+                                                      void* _data) {
+    WITH_CONST_SELECTED_BUFFER(client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+    if (!window->show_marks) {
+        for (size_t c = 0; c < cursors.len; ++c) {
+            cursors[c].mark = cursors[c].point;
+        }
+    }
+
+    for (size_t c = 0; c < cursors.len; ++c) {
+        SEARCH_QUERY_THEN(search_forward_cased, cursors[c].point = new_cursor.point);
+    }
+    window->show_marks = true;
+}
+
+void command_search_backward_expanding(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Search backward: ";
+    dialog.response_callback = command_search_backward_expanding_callback;
+    source.client->show_dialog(editor, dialog);
+}
+
+void command_search_forward_expanding(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Search forward: ";
+    dialog.response_callback = command_search_forward_expanding_callback;
+    source.client->show_dialog(editor, dialog);
+}
+
 static void parse_number(cz::Str str, uint64_t* number) {
     for (size_t i = 0; i < str.len; ++i) {
         if (!cz::is_digit(str[i])) {
