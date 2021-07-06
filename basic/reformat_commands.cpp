@@ -221,6 +221,12 @@ bool reformat_at(Buffer* buffer,
                 iterator.advance();
             }
 
+            // Zero length words are ignored.  We get here with a
+            // line that matches `acceptable_start` but has no words.
+            if (iterator.position == word_start.position) {
+                break;
+            }
+
             words.reserve(cz::heap_allocator(), 1);
             SSOStr word =
                 buffer->contents.slice(buffer_array.allocator(), word_start, iterator.position);
@@ -275,7 +281,7 @@ bool reformat_at(Buffer* buffer,
             break;
         }
 
-        while (!iterator.at_eob() && cz::is_space(iterator.get())) {
+        while (!iterator.at_eob() && cz::is_blank(iterator.get())) {
             iterator.advance();
         }
     }
