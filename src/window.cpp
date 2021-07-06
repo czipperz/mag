@@ -179,6 +179,7 @@ Window_Split* Window_Split::create(Window::Tag tag, Window* first, Window* secon
     window->first = first;
     window->second = second;
     window->split_ratio = 0.5f;
+    window->fused = false;
     return window;
 }
 
@@ -330,6 +331,19 @@ Window_Unified* window_last(Window* window) {
     CZ_PANIC("");
 }
 
+void toggle_cycle_window(Client* client) {
+    Window* window = client->selected_normal_window;
+    if (!window->parent) {
+        return;
+    }
+
+    if (window == window->parent->first) {
+        client->selected_normal_window = window_first(window->parent->second);
+    } else {
+        client->selected_normal_window = window_last(window->parent->first);
+    }
+}
+
 void cycle_window(Client* client) {
     Window* child = client->selected_normal_window;
     Window_Split* parent = child->parent;
@@ -363,8 +377,12 @@ void reverse_cycle_window(Client* client) {
 }
 
 Window_Split* split_window(Client* client, Window::Tag tag) {
-    Window_Unified* top = client->selected_normal_window;
-    Window_Unified* bottom = top->clone();
+    Window* top = client->selected_normal_window;
+    Window_Unified* bottom = client->selected_normal_window->clone();
+
+    if (top->parent && top->parent->fused) {
+        top = top->parent;
+    }
 
     Window_Split* parent = Window_Split::create(tag, top, bottom);
 

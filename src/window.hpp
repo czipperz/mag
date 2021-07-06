@@ -89,6 +89,13 @@ struct Window_Split : Window {
     /// Percent of `rows` allocated to the `first` child.  `0.6` means 60%.
     float split_ratio;
 
+    /// If a split is fused then the children & structure shouldn't be
+    /// changed.  This is used to fuse the search window with its results.
+    ///
+    /// Commands such as `command_split_window_horizontal` will walk up the window
+    /// tree before splitting so as to keep these two windows under the same parent.
+    bool fused;
+
     static Window_Split* create(Window::Tag tag, Window* first, Window* second);
     static void drop_non_recursive(Window_Split* window);
 
@@ -107,6 +114,10 @@ Contents_Iterator nearest_character(const Window_Unified* window,
 Window_Unified* window_first(Window* window);
 Window_Unified* window_last(Window* window);
 
+/// Toggle between the children of the selected window's split.
+void toggle_cycle_window(Client* client);
+
+/// Go to the next window in a clockwise rotation / depth first traversal.
 void cycle_window(Client* client);
 void reverse_cycle_window(Client* client);
 

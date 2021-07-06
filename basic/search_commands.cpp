@@ -77,13 +77,13 @@ static void open_file_and_goto_position(Editor* editor,
                                         cz::Str path,
                                         uint64_t line,
                                         uint64_t column) {
-    if (!client->selected_normal_window->parent ||
-        client->selected_normal_window != client->selected_normal_window->parent->second) {
+    if (!client->selected_normal_window->parent || !client->selected_normal_window->parent->fused) {
         Window_Split* split = split_window(client, Window::HORIZONTAL_SPLIT);
         split->split_ratio = 0.75f;
+        split->fused = true;
     }
 
-    reverse_cycle_window(client);
+    toggle_cycle_window(client);
 
     open_file(editor, client, path);
 
@@ -95,7 +95,7 @@ static void open_file_and_goto_position(Editor* editor,
         center_in_window(window, buffer->mode, iterator);
     }
 
-    cycle_window(client);
+    toggle_cycle_window(client);
 }
 
 void command_search_reload(Editor* editor, Command_Source source) {
@@ -150,13 +150,13 @@ void command_search_open_selected_no_swap(Editor* editor, Command_Source source)
 
 void command_search_open_selected(Editor* editor, Command_Source source) {
     search_open_selected_no_swap(editor, source.client);
-    reverse_cycle_window(source.client);
+    toggle_cycle_window(source.client);
 }
 
 void command_search_continue_selected(Editor* editor, Command_Source source) {
-    cycle_window(source.client);
+    toggle_cycle_window(source.client);
     search_open_selected_no_swap(editor, source.client);
-    reverse_cycle_window(source.client);
+    toggle_cycle_window(source.client);
 }
 
 static void search_open_next_no_swap(Editor* editor, Client* client) {
@@ -193,13 +193,13 @@ void command_search_open_next_no_swap(Editor* editor, Command_Source source) {
 
 void command_search_open_next(Editor* editor, Command_Source source) {
     search_open_next_no_swap(editor, source.client);
-    reverse_cycle_window(source.client);
+    toggle_cycle_window(source.client);
 }
 
 void command_search_continue_next(Editor* editor, Command_Source source) {
-    cycle_window(source.client);
+    toggle_cycle_window(source.client);
     search_open_next_no_swap(editor, source.client);
-    reverse_cycle_window(source.client);
+    toggle_cycle_window(source.client);
 }
 
 static void search_open_previous_no_swap(Editor* editor, Client* client) {
@@ -236,13 +236,13 @@ void command_search_open_previous_no_swap(Editor* editor, Command_Source source)
 
 void command_search_open_previous(Editor* editor, Command_Source source) {
     search_open_previous_no_swap(editor, source.client);
-    reverse_cycle_window(source.client);
+    toggle_cycle_window(source.client);
 }
 
 void command_search_continue_previous(Editor* editor, Command_Source source) {
-    cycle_window(source.client);
+    toggle_cycle_window(source.client);
     search_open_previous_no_swap(editor, source.client);
-    reverse_cycle_window(source.client);
+    toggle_cycle_window(source.client);
 }
 
 }
