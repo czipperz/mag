@@ -130,6 +130,8 @@ struct Buffer {
     bool get_path(cz::Allocator allocator, cz::String* path) const;
 
     void render_name(cz::Allocator allocator, cz::String* string) const;
+
+    void set_tokenizer(Tokenizer tokenizer);
 };
 
 SSOStr clear_buffer(Buffer* buffer);

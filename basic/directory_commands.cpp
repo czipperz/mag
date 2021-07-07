@@ -22,6 +22,7 @@
 #include "job.hpp"
 #include "match.hpp"
 #include "movement.hpp"
+#include "syntax/tokenize_path.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -396,6 +397,7 @@ void command_directory_copy_path(Editor* editor, Command_Source source) {
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_directory_copy_path_callback;
     dialog.mini_buffer_contents = path;
+    dialog.next_token = syntax::path_next_token;
     source.client->show_dialog(editor, dialog);
 }
 
@@ -459,6 +461,7 @@ void command_directory_rename_path(Editor* editor, Command_Source source) {
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_directory_rename_path_callback;
     dialog.mini_buffer_contents = path;
+    dialog.next_token = syntax::path_next_token;
     source.client->show_dialog(editor, dialog);
 }
 
@@ -570,6 +573,7 @@ void command_create_directory(Editor* editor, Command_Source source) {
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_create_directory_callback;
     dialog.mini_buffer_contents = selected_window_directory;
+    dialog.next_token = syntax::path_next_token;
     source.client->show_dialog(editor, dialog);
 }
 

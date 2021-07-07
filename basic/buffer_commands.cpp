@@ -7,6 +7,7 @@
 #include <cz/working_directory.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
+#include "syntax/tokenize_path.hpp"
 #include "window_commands.hpp"
 
 namespace mag {
@@ -32,6 +33,7 @@ void command_open_file(Editor* editor, Command_Source source) {
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_open_file_callback;
     dialog.mini_buffer_contents = selected_window_directory;
+    dialog.next_token = syntax::path_next_token;
     source.client->show_dialog(editor, dialog);
 }
 
@@ -167,6 +169,7 @@ void command_switch_buffer(Editor* editor, Command_Source source) {
     dialog.prompt = "Buffer to switch to: ";
     dialog.completion_engine = buffer_completion_engine;
     dialog.response_callback = command_switch_buffer_callback;
+    dialog.next_token = syntax::path_next_token;
     source.client->show_dialog(editor, dialog);
 }
 
@@ -268,6 +271,7 @@ void command_kill_buffer(Editor* editor, Command_Source source) {
     dialog.completion_engine = buffer_completion_engine;
     dialog.response_callback = command_kill_buffer_callback;
     dialog.response_callback_data = buffer_id;
+    dialog.next_token = syntax::path_next_token;
     source.client->show_dialog(editor, dialog);
 }
 
@@ -307,6 +311,7 @@ void command_rename_buffer(Editor* editor, Command_Source source) {
             buffer->type == Buffer::TEMPORARY ? no_completion_engine : file_completion_engine;
         dialog.response_callback = command_rename_buffer_callback;
         dialog.response_callback_data = buffer_id;
+        dialog.next_token = syntax::path_next_token;
         source.client->show_dialog(editor, dialog);
 
         buffer->render_name(cz::heap_allocator(), &path);

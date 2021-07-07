@@ -12,6 +12,7 @@
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "prose/helpers.hpp"
+#include "syntax/tokenize_path.hpp"
 #include "version_control/ignore.hpp"
 
 namespace mag {
@@ -366,6 +367,7 @@ static void find_file(Editor* editor,
     dialog.completion_engine = find_file_completion_engine;
     dialog.response_callback = command_find_file_response;
     dialog.response_callback_data = directory.buffer();
+    dialog.next_token = syntax::path_next_token;
     client->show_dialog(editor, dialog);
 
     auto data = cz::heap_allocator().alloc<Find_File_Completion_Engine_Data>();

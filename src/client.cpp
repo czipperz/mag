@@ -228,8 +228,8 @@ void Client::update_mini_buffer_completion_cache(Editor* editor) {
 void Client::show_dialog(Editor* editor, Dialog dialog) {
     dealloc_message();
 
-    // Setup the mini buffer's contents.
     {
+        // Setup the mini buffer's contents.
         Window_Unified* window = mini_buffer_window();
         WITH_WINDOW_BUFFER(window);
 
@@ -256,6 +256,10 @@ void Client::show_dialog(Editor* editor, Dialog dialog) {
         }
 
         transaction.commit();
+
+        // Set the tokenizer.
+        Tokenizer tokenizer = dialog.next_token ? dialog.next_token : default_next_token;
+        buffer->set_tokenizer(tokenizer);
     }
 
     show_message(editor, dialog.prompt);

@@ -300,4 +300,13 @@ void Buffer::render_name(cz::Allocator allocator, cz::String* string) const {
     }
 }
 
+void Buffer::set_tokenizer(Tokenizer tokenizer) {
+    if (mode.next_token == tokenizer) {
+        return;
+    }
+
+    mode.next_token = tokenizer;
+    token_cache.reset();
+}
+
 }

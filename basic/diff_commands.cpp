@@ -10,6 +10,7 @@
 #include "diff.hpp"
 #include "edit.hpp"
 #include "file.hpp"
+#include "syntax/tokenize_path.hpp"
 #include "transaction.hpp"
 
 namespace mag {
@@ -38,6 +39,7 @@ void command_apply_diff(Editor* editor, Command_Source source) {
     dialog.prompt = "Diff to apply: ";
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_apply_diff_callback;
+    dialog.next_token = syntax::path_next_token;
     source.client->show_dialog(editor, dialog);
 }
 

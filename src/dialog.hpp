@@ -4,6 +4,7 @@
 #include <cz/string.hpp>
 #include "completion.hpp"
 #include "message.hpp"
+#include "token.hpp"
 
 namespace mag {
 
@@ -42,6 +43,10 @@ struct Dialog {
 
     /// The string to set the mini buffer to.
     cz::Str mini_buffer_contents;
+
+    /// The tokenizer to use for syntax highlighting; if
+    /// unset then no syntax highlighting will be performed.
+    Tokenizer next_token;
 };
 
 //////////////////////////////////////////////////////////
