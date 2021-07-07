@@ -1849,5 +1849,33 @@ void command_flip_lines(Editor* editor, Command_Source source) {
     sort_lines(buffer, window, 2);
 }
 
+void command_restore_last_save_point(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    if (!buffer->saved_commit_id.is_present) {
+        // Undo all edits.
+        while (buffer->undo()) {
+        }
+        return;
+    }
+
+    Commit_Id saved_commit_id = buffer->saved_commit_id.value;
+    for (size_t i = 0; i < buffer->commits.len(); ++i) {
+        if (buffer->commits[i].id == saved_commit_id) {
+            while (i < buffer->commit_index) {
+                if (!buffer->undo()) {
+                    return;
+                }
+            }
+            while (i >= buffer->commit_index) {
+                if (!buffer->redo()) {
+                    return;
+                }
+            }
+            return;
+        }
+    }
+}
+
 }
 }
