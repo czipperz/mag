@@ -89,4 +89,18 @@ struct Token {
     Token_Type type;
 };
 
+struct Contents_Iterator;
+
+/// A `Tokenizer` parses a `Buffer`'s `Contents` into a sequence of `Token`s.
+///
+/// Whitespace should be skipped at the start of the implementation.
+///
+/// `state` starts as `0` and can be any value; it is the
+/// only state you are allowed to maintain between runs.
+///
+/// Returns `true` if a token was found and `false` if end of file was reached.
+using Tokenizer = bool (*)(Contents_Iterator* iterator /* in/out */,
+                           Token* token /* out */,
+                           uint64_t* state /* in/out */);
+
 }

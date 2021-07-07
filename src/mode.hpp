@@ -1,14 +1,14 @@
 #pragma once
 
 #include <stdint.h>
-#include <cz/slice.hpp>
 #include <cz/heap_vector.hpp>
+#include <cz/slice.hpp>
 #include "key_map.hpp"
+#include "token.hpp"
 
 namespace mag {
 
 struct Contents_Iterator;
-struct Token;
 struct Decoration;
 struct Overlay;
 
@@ -16,9 +16,7 @@ struct Mode {
     Key_Map key_map;
     Key_Map completion_key_map;
 
-    bool (*next_token)(Contents_Iterator* iterator /* in/out */,
-                       Token* token /* out */,
-                       uint64_t* state /* in/out */);
+    Tokenizer next_token;
 
     cz::Heap_Vector<Decoration> decorations;
     cz::Heap_Vector<Overlay> overlays;
