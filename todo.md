@@ -1,7 +1,4 @@
 # Features
-* Prose
-  - find file
-
 * Autocomplete
   - While typing in normal buffers
     + file names
@@ -9,7 +6,6 @@
 * Screen based movement
   - Move cursor to top and bottom of screen
 
-* Write file to path
 * Uncomment line and region
 * Run compile
 * Edit server
