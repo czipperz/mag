@@ -1276,6 +1276,7 @@ void render_to_cells(Cell* cells,
 
         Window_Unified* window = client->mini_buffer_window();
         WITH_CONST_WINDOW_BUFFER(window);
+        Tokenizer minibuffer_next_token = buffer->mode.next_token;
 
         size_t message_width = std::min(client->_message.end - client->_message.start, total_cols);
         // Add 1 for the title bar even though the mini buffer doesn't have a title bar.
@@ -1317,6 +1318,7 @@ void render_to_cells(Cell* cells,
                    editor->theme.special_faces[Face_Type::MINI_BUFFER_PROMPT]);
         {
             WITH_CONST_BUFFER(client->messages_id);
+
             Contents_Iterator it = buffer->contents.iterator_at(client->_message.start);
             // TODO: handle multi line mini buffer message
             for (; x < message_width; it.advance()) {
@@ -1367,20 +1369,56 @@ void render_to_cells(Cell* cells,
             } else {
                 offset -= results_height / 2;
             }
+
             for (size_t r = offset; r < results_height + offset; ++r) {
-                {
-                    Face face = {};
-                    if (r == completion_cache->filter_context.selected) {
-                        apply_face(&face,
-                                   editor->theme
-                                       .special_faces[Face_Type::MINI_BUFFER_COMPLETION_SELECTED]);
+                // Syntax highlight results with the Tokenizer set on the mini buffer.
+                Contents contents = {};
+                CZ_DEFER(contents.drop());
+
+                cz::Str result = completion_cache->filter_context.results[r];
+                // TODO: have some sort of scroll or wrap for results?
+                if (result.len > total_cols) {
+                    result = result.slice_end(total_cols);
+                }
+
+                contents.insert(0, result);
+
+                Contents_Iterator iterator = contents.start();
+                uint64_t state = 0;
+                Token token;
+                bool has_token = minibuffer_next_token(&iterator, &token, &state);
+
+                Face base_face = {};
+                if (r == completion_cache->filter_context.selected) {
+                    apply_face(
+                        &base_face,
+                        editor->theme.special_faces[Face_Type::MINI_BUFFER_COMPLETION_SELECTED]);
+                }
+
+                for (size_t i = 0; i < result.len; ++i) {
+                    Face face = base_face;
+
+                    while (has_token) {
+                        if (i < token.start) {
+                            // Before the start of the token; do nothing.
+                            break;
+                        } else if (i < token.end) {
+                            // The token is active.
+                            if (token.type & Token_Type::CUSTOM) {
+                                apply_face(&face, Token_Type_::decode(token.type));
+                            } else {
+                                apply_face(&face, editor->theme.token_faces[token.type]);
+                            }
+                            break;
+                        } else {
+                            // Go to the next token.
+                            has_token = minibuffer_next_token(&iterator, &token, &state);
+                            continue;
+                        }
                     }
 
-                    cz::Str result = completion_cache->filter_context.results[r];
-                    for (size_t i = 0; i < total_cols && i < result.len; ++i) {
-                        SET_IND(face, result[i]);
-                        ++x;
-                    }
+                    SET_IND(face, result[i]);
+                    ++x;
                 }
 
                 for (; x < total_cols; ++x) {
