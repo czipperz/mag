@@ -253,7 +253,7 @@ bool search_forward(Contents_Iterator* it, cz::Str query) {
         return true;
     }
 
-    while (it->position + query.len <= it->contents->len) {
+    while (1) {
         if (looking_at(*it, query)) {
             return true;
         }
@@ -278,7 +278,7 @@ bool search_forward_cased(Contents_Iterator* it, cz::Str query, bool case_insens
         return true;
     }
 
-    while (it->position + query.len <= it->contents->len) {
+    while (1) {
         if (looking_at_cased(*it, query, case_insensitive)) {
             return true;
         }
