@@ -254,14 +254,15 @@ bool search_forward(Contents_Iterator* it, cz::Str query) {
     }
 
     while (1) {
+        if (!find(it, query[0])) {
+            break;
+        }
+
         if (looking_at(*it, query)) {
             return true;
         }
 
         it->advance();
-        if (!find(it, query[0])) {
-            break;
-        }
     }
 
     return false;
@@ -279,14 +280,15 @@ bool search_forward_cased(Contents_Iterator* it, cz::Str query, bool case_insens
     }
 
     while (1) {
+        if (!find_cased(it, query[0], case_insensitive)) {
+            break;
+        }
+
         if (looking_at_cased(*it, query, case_insensitive)) {
             return true;
         }
 
         it->advance();
-        if (!find_cased(it, query[0], case_insensitive)) {
-            break;
-        }
     }
 
     return false;
@@ -296,6 +298,7 @@ bool search_backward(Contents_Iterator* it, cz::Str query) {
     ZoneScoped;
 
     if (query.len > it->contents->len) {
+        *it = it->contents->start();
         return false;
     }
     if (query.len == 0) {
@@ -327,6 +330,7 @@ bool search_backward_cased(Contents_Iterator* it, cz::Str query, bool case_insen
     ZoneScoped;
 
     if (query.len > it->contents->len) {
+        *it = it->contents->start();
         return false;
     }
     if (query.len == 0) {
