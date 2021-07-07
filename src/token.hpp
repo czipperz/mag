@@ -68,6 +68,8 @@ enum Token_Type : uint64_t {
     SPLASH_LOGO,
     SPLASH_KEY_BIND,
 
+    BUFFER_TEMPORARY_NAME,
+
     // Special value representing the number of values in the enum.
     length,
 

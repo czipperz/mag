@@ -480,6 +480,8 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::SPLASH_LOGO] = {46, {}, 0};
     theme.token_faces[Token_Type::SPLASH_KEY_BIND] = {213, {}, 0};
 
+    theme.token_faces[Token_Type::BUFFER_TEMPORARY_NAME] = {177, {}, 0};
+
     theme.decorations.reserve(5);
     theme.decorations.push(syntax::decoration_line_number());
     theme.decorations.push(syntax::decoration_column_number());

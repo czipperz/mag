@@ -7,6 +7,7 @@
 #include <cz/working_directory.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
+#include "syntax/tokenize_buffer_name.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "window_commands.hpp"
 
@@ -169,7 +170,7 @@ void command_switch_buffer(Editor* editor, Command_Source source) {
     dialog.prompt = "Buffer to switch to: ";
     dialog.completion_engine = buffer_completion_engine;
     dialog.response_callback = command_switch_buffer_callback;
-    dialog.next_token = syntax::path_next_token;
+    dialog.next_token = syntax::buffer_name_next_token;
     source.client->show_dialog(editor, dialog);
 }
 
@@ -271,7 +272,7 @@ void command_kill_buffer(Editor* editor, Command_Source source) {
     dialog.completion_engine = buffer_completion_engine;
     dialog.response_callback = command_kill_buffer_callback;
     dialog.response_callback_data = buffer_id;
-    dialog.next_token = syntax::path_next_token;
+    dialog.next_token = syntax::buffer_name_next_token;
     source.client->show_dialog(editor, dialog);
 }
 
