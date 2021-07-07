@@ -1101,7 +1101,18 @@ void command_create_cursors_last_change(Editor* editor, Command_Source source) {
 void command_create_cursors_lines_in_region(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
-    if (window->cursors.len() > 1) {
+    if (window->cursors.len() > 1 || !window->show_marks) {
+        uint64_t start = window->cursors[0].start();
+        uint64_t end = window->cursors.last().end();
+
+        kill_extra_cursors(window, source.client);
+
+        Contents_Iterator it = buffer->contents.iterator_at(end);
+        forward_line(buffer->mode, &it);
+
+        window->cursors[0].mark = start;
+        window->cursors[0].point = it.position;
+        window->show_marks = true;
         return;
     }
 
