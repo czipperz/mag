@@ -1,6 +1,7 @@
 #include "help_commands.hpp"
 
 #include <cz/char_type.hpp>
+#include <cz/dedup.hpp>
 #include <cz/sort.hpp>
 #include <cz/stringify.hpp>
 #include "command_macros.hpp"
@@ -100,6 +101,7 @@ static bool command_completion_engine(Editor* editor,
     }
 
     cz::sort(context->results);
+    cz::dedup(&context->results);
 
     return true;
 }
