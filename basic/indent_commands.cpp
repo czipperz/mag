@@ -269,6 +269,17 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
     int64_t offset = 0;
     cz::Slice<Cursor> cursors = window->cursors;
 
+    // Only use marks if at least one region is non-empty.
+    bool use_marks = false;
+    if (window->show_marks) {
+        for (size_t i = 0; i < cursors.len; ++i) {
+            if (cursors[i].point != cursors[i].mark) {
+                use_marks = true;
+                break;
+            }
+        }
+    }
+
     // With a visible region, treat each region independently.
     // Without a visible region, blob all the cursors' lines into one "region".
     //
@@ -278,7 +289,7 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
     //
     // To account for this in either case we loop through all lines and check for any non-empty
     // lines.  If any non-empty lines are found then we enable filtering which lines are indented.
-    if (window->show_marks) {
+    if (use_marks) {
         for (size_t i = 0; i < cursors.len; ++i) {
             bool always_indent = true;
             size_t line_count = 0;
