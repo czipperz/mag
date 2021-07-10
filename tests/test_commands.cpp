@@ -5,26 +5,27 @@
 #include "basic/shift_commands.hpp"
 #include "command_macros.hpp"
 #include "server.hpp"
+#include "test_runner.hpp"
 
 using namespace cz;
 using namespace mag;
 using namespace mag::basic;
 
-#define SETUP_TEST(CONTENTS)                                              \
-    Server server = {};                                                   \
-    server.init();                                                        \
-    CZ_DEFER(server.drop());                                              \
-    Editor* editor = &server.editor;                                      \
-    Buffer test_buffer = {};                                              \
-    test_buffer.type = Buffer::TEMPORARY;                                 \
+#define SETUP_TEST(CONTENTS)                                          \
+    Server server = {};                                               \
+    server.init();                                                    \
+    CZ_DEFER(server.drop());                                          \
+    Editor* editor = &server.editor;                                  \
+    Buffer test_buffer = {};                                          \
+    test_buffer.type = Buffer::TEMPORARY;                             \
     test_buffer.name = cz::Str("*test*").clone(cz::heap_allocator()); \
-    editor->create_buffer(test_buffer);                                   \
-                                                                          \
-    Client client = server.make_client();                                 \
-    server.setup_async_context(&client);                                  \
-    Command_Source source;                                                \
-    source.client = &client;                                              \
-    source.keys = {0, 0};                                                 \
+    editor->create_buffer(test_buffer);                               \
+                                                                      \
+    Client client = server.make_client();                             \
+    server.setup_async_context(&client);                              \
+    Command_Source source;                                            \
+    source.client = &client;                                          \
+    source.keys = {0, 0};                                             \
     insert_default_contents(editor, &client, CONTENTS);
 
 static void insert_default_contents(Editor* editor, Client* client, cz::Str contents) {
@@ -405,5 +406,53 @@ TEST_CASE("shift line backward two lines no trailing newline") {
 
         REQUIRE(window->cursors.len() == 1);
         CHECK(window->cursors[0].point == 1);  // e
+    }
+}
+
+TEST_CASE("command_transpose_words basic cases") {
+    SECTION("empty buffer") {
+        Test_Runner tr;
+        tr.setup("|");
+        tr.run(command_transpose_words);
+        CHECK(tr.stringify() == "|");
+    }
+    SECTION("one word before") {
+        Test_Runner tr;
+        tr.setup("word|");
+        tr.run(command_transpose_words);
+        CHECK(tr.stringify() == "word|");
+    }
+    SECTION("one word after") {
+        Test_Runner tr;
+        tr.setup("|word");
+        tr.run(command_transpose_words);
+        CHECK(tr.stringify() == "|word");
+    }
+}
+
+TEST_CASE("command_transpose_words normal cases") {
+    SECTION("two words") {
+        Test_Runner tr;
+        tr.setup("word1 | word2");
+        tr.run(command_transpose_words);
+        CHECK(tr.stringify() == "word2  word1|");
+    }
+    SECTION("in middle of word pretends at end of word") {
+        Test_Runner tr;
+        tr.setup("word1 wor|d2 word3 word4");
+        tr.run(command_transpose_words);
+        CHECK(tr.stringify() == "word1 word3 word2| word4");
+    }
+    SECTION("at start of word does before and after") {
+        Test_Runner tr;
+        tr.setup("word1 |word2");
+        tr.run(command_transpose_words);
+        CHECK(tr.stringify() == "word2 word1|");
+    }
+    SECTION("at end of word does before and after") {
+        Test_Runner tr;
+        tr.setup("word1| word2");
+        tr.run(command_transpose_words);
+        CHECK(tr.stringify() == "word2 word1|");
     }
 }

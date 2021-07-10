@@ -580,6 +580,66 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
     transaction.commit();
 }
 
+void command_transpose_words(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    cz::Slice<Cursor> cursors = window->cursors;
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    Contents_Iterator it = buffer->contents.start();
+    for (size_t c = 0; c < cursors.len; ++c) {
+        it.advance_to(cursors[c].point);
+
+        Contents_Iterator start1, end1, start2, end2;
+
+        start1 = it;
+        backward_word(&start1);
+        end1 = start1;
+        forward_word(&end1);
+        end2 = end1;
+        forward_word(&end2);
+        start2 = end2;
+        backward_word(&start2);
+
+        // No word to swap.
+        if (start1.position == start2.position) {
+            continue;
+        }
+
+        // Replace the second word.
+        Edit delete2;
+        delete2.value =
+            buffer->contents.slice(transaction.value_allocator(), start2, end2.position);
+        delete2.position = start2.position;
+        delete2.flags = Edit::REMOVE_AFTER_POSITION;
+        transaction.push(delete2);
+        Edit insert1;
+        insert1.value =
+            buffer->contents.slice(transaction.value_allocator(), start1, end1.position);
+        insert1.position = start2.position;
+        insert1.flags = Edit::INSERT;
+        transaction.push(insert1);
+
+        // Replace the first word.
+        Edit delete1;
+        delete1.value = insert1.value;
+        delete1.position = start1.position;
+        delete1.flags = Edit::REMOVE_AFTER_POSITION;
+        transaction.push(delete1);
+        Edit insert2;
+        insert2.value = delete2.value;
+        insert2.position = start1.position;
+        insert2.flags = Edit::INSERT;
+        transaction.push(insert2);
+
+        // Put the cursor after the second word.
+        cursors[c].point = end2.position;
+    }
+
+    transaction.commit();
+}
+
 void command_open_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     insert_char(buffer, window, '\n');

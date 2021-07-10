@@ -266,6 +266,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-A-k", command_delete_end_of_line);
 
     BIND(key_map, "C-t", command_transpose_characters);
+    BIND(key_map, "A-t", command_transpose_words);
 
     BIND(key_map, "A-m", command_open_line);
     BIND(key_map, "ENTER", command_insert_newline_indent);
