@@ -329,6 +329,8 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-x A-u", command_uppercase_region_or_word);
     BIND(key_map, "A-x A-l", command_lowercase_region_or_word);
 
+    BIND(key_map, "A-x C-t", command_launch_terminal);
+
     BIND(key_map, "A-x A-t", command_recapitalize_token_prompt);
     BIND(key_map, "A-x t c", command_recapitalize_token_to_camel);
     BIND(key_map, "A-x t p", command_recapitalize_token_to_pascal);
@@ -518,7 +520,11 @@ static void create_theme(Theme& theme) {
 
     theme.scroll_outside_visual_columns = 10;
 
+#ifdef _WIN32
+    terminal_script = "start pwsh";
+#else
     terminal_script = "xterm";
+#endif
 }
 
 void editor_created_callback(Editor* editor) {

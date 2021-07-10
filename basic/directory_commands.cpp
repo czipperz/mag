@@ -490,50 +490,96 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
+    bool got_path;
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
-        if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
-            path.reserve(cz::heap_allocator(), buffer->directory.len());
-            path.append(buffer->directory);
+
+        // If there is no buffer then leave it null so we launch in the current working directory.
+        if (buffer->directory.len() > 0) {
+            directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
         }
+
+        got_path = get_path(buffer, &path, window->cursors[window->selected_cursor].point);
     }
 
-    if (path.len() > 0) {
-        cz::Process_Options options;
-        options.working_directory = directory.buffer();
+    // As a backup (or if we're on the first line) then launch a terminal instead.
+    if (!got_path) {
+        return launch_terminal_in(editor, source.client, directory.buffer());
+    }
 
-        cz::Process process;
-        bool success;
+    if (path.len() == 0) {
+        return;
+    }
 
+    cz::Process_Options options;
+    options.working_directory = directory.buffer();
+
+    cz::Process process;
+    bool success;
+
+    // Run the program that the cursor is on.
 #ifdef _WIN32
-        cz::path::convert_to_back_slashes(&path);
-        cz::Str args[] = {"cmd", "/C", "start", path};
-        success = process.launch_program(args, &options);
+    cz::path::convert_to_back_slashes(&path);
+    cz::Str args[] = {"cmd", "/C", "start", path};
+    success = process.launch_program(args, &options);
 #else
-        if (path.ends_with('/')) {
-            // Start this directory in a terminal.
-            success = process.launch_script(terminal_script, &options);
-        } else {
-            // Run the program that the cursor is on.
-            cz::Str run_program[] = {path};
-            success = process.launch_program(run_program, &options);
-        }
+    cz::Str run_program[] = {path};
+    success = process.launch_program(run_program, &options);
 #endif
 
-        if (!success) {
-            cz::String string = {};
-            CZ_DEFER(string.drop(cz::heap_allocator()));
-            cz::Str prefix = "Failed to run path ";
-            string.reserve(cz::heap_allocator(), prefix.len + path.len());
-            string.append(prefix);
-            string.append(path);
-            source.client->show_message(editor, string);
-            return;
-        }
-
-        editor->add_asynchronous_job(job_process_silent(process));
+    if (!success) {
+        cz::String string = {};
+        CZ_DEFER(string.drop(cz::heap_allocator()));
+        cz::Str prefix = "Failed to run path ";
+        string.reserve(cz::heap_allocator(), prefix.len + path.len());
+        string.append(prefix);
+        string.append(path);
+        source.client->show_message(editor, string);
+        return;
     }
+
+    editor->add_asynchronous_job(job_process_silent(process));
+}
+
+void command_launch_terminal(Editor* editor, Command_Source source) {
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+
+        // If there is no buffer then leave it null so we launch in the current working directory.
+        if (buffer->directory.len() > 0) {
+            directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
+        }
+    }
+
+    launch_terminal_in(editor, source.client, directory.buffer());
+}
+
+void launch_terminal_in(Editor* editor, Client* client, const char* directory) {
+    cz::Process_Options options;
+    options.working_directory = directory;
+
+    cz::Process process;
+    if (!process.launch_script(terminal_script, &options)) {
+        cz::String string = {};
+        CZ_DEFER(string.drop(cz::heap_allocator()));
+        cz::Str prefix = "Failed to start terminal ";
+        cz::Str terminal_script_str = terminal_script;
+        cz::Str infix = " in directory ";
+        cz::Str directory_str = directory;
+        string.reserve(cz::heap_allocator(),
+                       prefix.len + terminal_script_str.len + infix.len + directory_str.len);
+        string.append(prefix);
+        string.append(terminal_script_str);
+        string.append(infix);
+        string.append(directory_str);
+        client->show_message(editor, string);
+        return;
+    }
+
+    editor->add_asynchronous_job(job_process_silent(process));
 }
 
 static void command_create_directory_callback(Editor* editor,
