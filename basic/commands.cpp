@@ -801,7 +801,7 @@ void command_stop_action(Editor* editor, Command_Source source) {
         message = "Stop multiple cursors";
     }
 
-    if (!message && window->id == source.client->mini_buffer_window()->id) {
+    if (!message && source.client->_select_mini_buffer) {
         source.client->hide_mini_buffer(editor);
         message = "Stop prompting";
     }
@@ -1712,7 +1712,7 @@ void command_submit_mini_buffer(Editor* editor, Command_Source source) {
     }
 
     {
-        WITH_BUFFER(source.client->messages_id);
+        WITH_BUFFER_HANDLE(source.client->messages_buffer_handle);
         buffer->contents.insert(source.client->_message.end, mini_buffer_contents.as_str());
     }
 

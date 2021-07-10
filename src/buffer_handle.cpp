@@ -12,7 +12,7 @@ enum : uint32_t {
     READER_0 = 2,
 };
 
-void Buffer_Handle::init(Buffer_Id buffer_id, Buffer buffer) {
+void Buffer_Handle::init(Buffer buffer) {
     mutex.init();
     waiters_condition.init();
 
@@ -27,8 +27,6 @@ void Buffer_Handle::init(Buffer_Id buffer_id, Buffer buffer) {
     }());
     context->CustomName(buffer.name.buffer(), buffer.name.len());
 #endif
-
-    id = buffer_id;
 
 #ifndef NDEBUG
     associated_threads = {};

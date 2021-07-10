@@ -15,14 +15,10 @@
     Window_Unified* window = (CLIENT)->selected_window(); \
     WITH_WINDOW_BUFFER(window)
 
-#define WITH_WINDOW_BUFFER(WINDOW) \
-    WITH_BUFFER((WINDOW)->id);     \
+#define WITH_WINDOW_BUFFER(WINDOW)                           \
+    cz::Arc<Buffer_Handle> handle = (WINDOW)->buffer_handle; \
+    WITH_BUFFER_HANDLE(handle);                              \
     (WINDOW)->update_cursors(buffer)
-
-#define WITH_BUFFER(BUFFER_ID)                                 \
-    /* Note: this Arc does not need to be destructed. */       \
-    cz::Arc<Buffer_Handle> handle = editor->lookup(BUFFER_ID); \
-    WITH_BUFFER_HANDLE(handle)
 
 #define WITH_BUFFER_HANDLE(HANDLE)             \
     Buffer* buffer = (HANDLE)->lock_writing(); \
@@ -36,14 +32,10 @@
     Window_Unified* window = (CLIENT)->selected_window(); \
     WITH_CONST_WINDOW_BUFFER(window)
 
-#define WITH_CONST_WINDOW_BUFFER(WINDOW) \
-    WITH_CONST_BUFFER((WINDOW)->id);     \
+#define WITH_CONST_WINDOW_BUFFER(WINDOW)                     \
+    cz::Arc<Buffer_Handle> handle = (WINDOW)->buffer_handle; \
+    WITH_CONST_BUFFER_HANDLE(handle);                        \
     (WINDOW)->update_cursors(buffer)
-
-#define WITH_CONST_BUFFER(BUFFER_ID)                           \
-    /* Note: this Arc does not need to be destructed. */       \
-    cz::Arc<Buffer_Handle> handle = editor->lookup(BUFFER_ID); \
-    WITH_CONST_BUFFER_HANDLE(handle)
 
 #define WITH_CONST_BUFFER_HANDLE(HANDLE)             \
     const Buffer* buffer = (HANDLE)->lock_reading(); \

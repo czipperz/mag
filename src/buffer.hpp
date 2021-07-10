@@ -19,6 +19,8 @@ struct Client;
 struct Cursor;
 
 struct Buffer {
+    Buffer_Id id;
+
     /// The directory the buffer is located in.
     ///
     /// Should be delineated by forward slashes (`'/'`).  Should be terminated by a forward slash

@@ -4,13 +4,13 @@
 #include <stdint.h>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
-#include "buffer_id.hpp"
+#include "buffer_handle.hpp"
 
 namespace mag {
 struct Buffer;
 
 struct Jump {
-    Buffer_Id buffer_id;
+    cz::Arc_Weak<Buffer_Handle> buffer_handle;
     uint64_t position;
     size_t change_index;
 
@@ -52,6 +52,6 @@ struct Client;
 struct Buffer;
 struct Editor;
 void push_jump(Window_Unified* window, Client* client, const Buffer* buffer);
-void goto_jump(Editor* editor, Client* client, Jump* jump);
+bool goto_jump(Editor* editor, Client* client, Jump* jump);
 
 }

@@ -321,8 +321,7 @@ bool Server::run_synchronous_jobs(Client* client) {
         cz::String mini_buffer_contents = {};
         CZ_DEFER(mini_buffer_contents.drop(cz::heap_allocator()));
         {
-            cz::Arc<Buffer_Handle> handle = editor.lookup(client->_mini_buffer->id);
-            WITH_CONST_BUFFER_HANDLE(handle);
+            WITH_CONST_WINDOW_BUFFER(client->mini_buffer_window());
             mini_buffer_contents = buffer->contents.stringify(cz::heap_allocator());
         }
 
@@ -335,20 +334,21 @@ bool Server::run_synchronous_jobs(Client* client) {
 
 Client Server::make_client() {
     Client client = {};
-    Buffer_Id selected_buffer_id = {editor.buffers.len() - 1};
+
+    cz::Arc<Buffer_Handle> selected_buffer_handle = editor.buffers.last();
 
     Buffer messages = {};
     messages.type = Buffer::TEMPORARY;
     messages.name = cz::Str("*client messages*").clone(cz::heap_allocator());
     messages.read_only = true;
-    Buffer_Id messages_id = editor.create_buffer(messages)->id;
+    cz::Arc<Buffer_Handle> messages_handle = editor.create_buffer(messages);
 
     Buffer mini_buffer = {};
     mini_buffer.type = Buffer::TEMPORARY;
     mini_buffer.name = cz::Str("*client mini buffer*").clone(cz::heap_allocator());
-    Buffer_Id mini_buffer_id = editor.create_buffer(mini_buffer)->id;
+    cz::Arc<Buffer_Handle> mini_buffer_handle = editor.create_buffer(mini_buffer);
 
-    client.init(selected_buffer_id, mini_buffer_id, messages_id);
+    client.init(selected_buffer_handle, mini_buffer_handle, messages_handle);
 
     return client;
 }
@@ -363,6 +363,9 @@ static bool can_merge_insert(cz::Str str, char code) {
 
 static void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+
+    CZ_ASSERT(source.keys[0].code <= UCHAR_MAX);
+
     char code = source.keys[0].code;
 
     // If temporarily showing marks then first delete the region then

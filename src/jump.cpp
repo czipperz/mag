@@ -21,15 +21,25 @@ void push_jump(Window_Unified* window, Client* client, const Buffer* buffer) {
     Cursor* cursor = &window->cursors[0];
 
     Jump jump;
-    jump.buffer_id = window->id;
+    jump.buffer_handle = window->buffer_handle.clone_downgrade();
     jump.position = cursor->point;
     jump.change_index = buffer->changes.len();
     client->jump_chain.push(jump);
 }
 
-void goto_jump(Editor* editor, Client* client, Jump* jump) {
-    client->set_selected_buffer(jump->buffer_id);
+bool goto_jump(Editor* editor, Client* client, Jump* jump) {
+    // Open the file being jumped to.
+    {
+        cz::Arc<Buffer_Handle> handle;
+        if (!jump->buffer_handle.upgrade(&handle)) {
+            return false;
+        }
+        CZ_DEFER(handle.drop());
 
+        client->set_selected_buffer(handle);
+    }
+
+    // Go to the jump point in the file.
     Window_Unified* window = client->selected_window();
     kill_extra_cursors(window, client);
     {
@@ -40,8 +50,11 @@ void goto_jump(Editor* editor, Client* client, Jump* jump) {
     window->cursors[0].point = jump->position;
     window->cursors[0].mark = window->cursors[0].point;
 
+    // And center it.
     WITH_WINDOW_BUFFER(window);
     center_in_window(window, buffer->mode, buffer->contents.iterator_at(jump->position));
+
+    return true;
 }
 
 }

@@ -43,13 +43,13 @@ void cache_window_unified_position(Window_Unified* window,
 
 void cache_window_unified_create(Editor* editor,
                                  Window_Cache* window_cache,
-                                 Window_Unified* window) {
+                                 Window_Unified* window,
+                                 const Buffer* buffer) {
     ZoneScoped;
 
-    WITH_CONST_WINDOW_BUFFER(window);
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified = {};
-    window_cache->v.unified.id = window->id;
+    window_cache->v.unified.id = buffer->id;
     window_cache->v.unified.cursor_count = window->cursors.len();
     window_cache->v.unified.animated_scrolling.visible_start = window->start_position;
     cache_window_unified_position(window, window_cache, window->start_position, buffer);

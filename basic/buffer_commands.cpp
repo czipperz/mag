@@ -162,7 +162,7 @@ static void command_switch_buffer_callback(Editor* editor,
         push_jump(window, client, buffer);
     }
 
-    client->set_selected_buffer(handle->id);
+    client->set_selected_buffer(handle);
 }
 
 void command_switch_buffer(Editor* editor, Command_Source source) {
@@ -174,12 +174,14 @@ void command_switch_buffer(Editor* editor, Command_Source source) {
     source.client->show_dialog(editor, dialog);
 }
 
-static int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** selected_window) {
+static int remove_windows_matching(Window** w,
+                                   cz::Arc<Buffer_Handle> buffer_handle,
+                                   Window_Unified** selected_window) {
     switch ((*w)->tag) {
     case Window::UNIFIED: {
         Window_Unified* window = (Window_Unified*)*w;
-        if (id == window->id) {
-            if (id == (*selected_window)->id) {
+        if (buffer_handle.get() == window->buffer_handle.get()) {
+            if (buffer_handle.get() == (*selected_window)->buffer_handle.get()) {
                 return 2;
             } else {
                 return 1;
@@ -192,8 +194,9 @@ static int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** se
     case Window::VERTICAL_SPLIT:
     case Window::HORIZONTAL_SPLIT: {
         Window_Split* window = (Window_Split*)*w;
-        int left_matches = remove_windows_matching(&window->first, id, selected_window);
-        int right_matches = remove_windows_matching(&window->second, id, selected_window);
+        int left_matches = remove_windows_matching(&window->first, buffer_handle, selected_window);
+        int right_matches =
+            remove_windows_matching(&window->second, buffer_handle, selected_window);
         if (left_matches && right_matches) {
             return cz::max(left_matches, right_matches);
         } else if (left_matches) {
@@ -230,48 +233,47 @@ static int remove_windows_matching(Window** w, Buffer_Id id, Window_Unified** se
     CZ_PANIC("");
 }
 
-void remove_windows_for_buffer(Client* client, Buffer_Id buffer_id, Buffer_Id replacement_id) {
-    if (remove_windows_matching(&client->window, buffer_id, &client->selected_normal_window)) {
+void remove_windows_for_buffer(Client* client,
+                               cz::Arc<Buffer_Handle> buffer_handle,
+                               cz::Arc<Buffer_Handle> replacement) {
+    if (remove_windows_matching(&client->window, buffer_handle, &client->selected_normal_window)) {
         // Every buffer matches the killed buffer id
         Window::drop_(client->window);
-        client->selected_normal_window = Window_Unified::create(replacement_id);
+        client->selected_normal_window = Window_Unified::create(replacement);
         client->window = client->selected_normal_window;
     }
 }
 
-static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str path, void* data) {
-    Buffer_Id buffer_id;
+static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str path, void*) {
+    cz::Arc<Buffer_Handle> buffer_handle;
     if (path.len == 0) {
-        buffer_id = *(Buffer_Id*)data;
+        buffer_handle = client->selected_normal_window->buffer_handle;
     } else {
-        cz::Arc<Buffer_Handle> handle;
-        if (!find_buffer_by_path(editor, client, path, &handle)) {
+        if (!find_buffer_by_path(editor, client, path, &buffer_handle)) {
             client->show_message(editor, "Couldn't find the buffer to kill");
             return;
         }
-        buffer_id = handle->id;
     }
 
-    // Prevent killing *scratch*, *splash page*, *client messages*, and *client mini buffer*.
-    if (buffer_id.value < 4) {
-        return;
+    // Prevent killing special buffers (*scratch*, *splash
+    // page*, *client messages*, and *client mini buffer*).
+    {
+        WITH_CONST_BUFFER_HANDLE(buffer_handle);
+        if (buffer->id.value < 4) {
+            return;
+        }
     }
 
-    editor->kill(buffer_id);
+    editor->kill(buffer_handle.get());
 
-    remove_windows_for_buffer(client, buffer_id, editor->buffers[0]->id);
+    remove_windows_for_buffer(client, buffer_handle, editor->buffers[0]);
 }
 
 void command_kill_buffer(Editor* editor, Command_Source source) {
-    Buffer_Id* buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
-    CZ_ASSERT(buffer_id);
-    *buffer_id = source.client->selected_window()->id;
-
     Dialog dialog = {};
     dialog.prompt = "Buffer to kill: ";
     dialog.completion_engine = buffer_completion_engine;
     dialog.response_callback = command_kill_buffer_callback;
-    dialog.response_callback_data = buffer_id;
     dialog.next_token = syntax::buffer_name_next_token;
     source.client->show_dialog(editor, dialog);
 }
@@ -280,9 +282,6 @@ static void command_rename_buffer_callback(Editor* editor,
                                            Client* client,
                                            cz::Str path,
                                            void* data) {
-    Buffer_Id* buffer_id = (Buffer_Id*)data;
-    CZ_DEFER(cz::heap_allocator().dealloc(buffer_id));
-
     cz::Str name;
     cz::Str directory;
     parse_rendered_buffer_name(path, &name, &directory);
@@ -292,31 +291,27 @@ static void command_rename_buffer_callback(Editor* editor,
     cz::String directory_clone = directory.clone(cz::heap_allocator());
     CZ_DEFER(directory_clone.drop(cz::heap_allocator()));
 
-    WITH_BUFFER(*buffer_id);
+    WITH_SELECTED_BUFFER(client);
     std::swap(buffer->name, name_clone);
     std::swap(buffer->directory, directory_clone);
 }
 
 void command_rename_buffer(Editor* editor, Command_Source source) {
-    Buffer_Id* buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
-    CZ_ASSERT(buffer_id);
-    *buffer_id = source.client->selected_window()->id;
-
+    bool is_temporary;
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
-        WITH_CONST_BUFFER(*buffer_id);
-        Dialog dialog = {};
-        dialog.prompt = "Rename buffer to: ";
-        dialog.completion_engine =
-            buffer->type == Buffer::TEMPORARY ? no_completion_engine : file_completion_engine;
-        dialog.response_callback = command_rename_buffer_callback;
-        dialog.response_callback_data = buffer_id;
-        dialog.next_token = syntax::path_next_token;
-        source.client->show_dialog(editor, dialog);
-
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        is_temporary = buffer->type == Buffer::TEMPORARY;
         buffer->render_name(cz::heap_allocator(), &path);
     }
+
+    Dialog dialog = {};
+    dialog.prompt = "Rename buffer to: ";
+    dialog.completion_engine = is_temporary ? no_completion_engine : file_completion_engine;
+    dialog.response_callback = command_rename_buffer_callback;
+    dialog.next_token = syntax::path_next_token;
+    source.client->show_dialog(editor, dialog);
 
     fill_mini_buffer_with(editor, source.client, path);
 }

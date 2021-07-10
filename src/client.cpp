@@ -11,14 +11,16 @@ int Client::update_global_copy_chain() {
     return update_global_copy_chain_func(&global_copy_chain, update_global_copy_chain_data);
 }
 
-void Client::init(Buffer_Id selected_buffer_id, Buffer_Id mini_buffer_id, Buffer_Id messages_id) {
-    selected_normal_window = Window_Unified::create(selected_buffer_id);
+void Client::init(cz::Arc<Buffer_Handle> selected_buffer_handle,
+                  cz::Arc<Buffer_Handle> mini_buffer_handle,
+                  cz::Arc<Buffer_Handle> messages_handle) {
+    selected_normal_window = Window_Unified::create(selected_buffer_handle);
     window = selected_normal_window;
 
-    _mini_buffer = Window_Unified::create(mini_buffer_id);
+    _mini_buffer = Window_Unified::create(mini_buffer_handle);
     mini_buffer_completion_cache.init();
 
-    this->messages_id = messages_id;
+    messages_buffer_handle = messages_handle.clone();
 }
 
 void Client::drop() {
@@ -32,6 +34,7 @@ void Client::drop() {
         Window::drop_(_offscreen_windows[i]);
     }
     _offscreen_windows.drop(cz::heap_allocator());
+    messages_buffer_handle.drop();
     mini_buffer_completion_cache.drop();
 }
 
@@ -57,7 +60,7 @@ void Client::restore_selected_buffer() {
 }
 
 static bool binary_search_offscreen_windows(cz::Slice<Window_Unified*> offscreen_windows,
-                                            Buffer_Id id,
+                                            cz::Arc<Buffer_Handle> buffer_handle,
                                             size_t* index) {
     size_t start = 0;
     size_t end = offscreen_windows.len;
@@ -65,10 +68,10 @@ static bool binary_search_offscreen_windows(cz::Slice<Window_Unified*> offscreen
         size_t mid = (start + end) / 2;
         Window_Unified* w = offscreen_windows[mid];
         CZ_DEBUG_ASSERT(w->tag == Window::UNIFIED);
-        if (w->id == id) {
+        if (w->buffer_handle.get() == buffer_handle.get()) {
             *index = mid;
             return true;
-        } else if (w->id.value < id.value) {
+        } else if (w->buffer_handle.get() < buffer_handle.get()) {
             start = mid + 1;
         } else {
             end = mid;
@@ -79,11 +82,13 @@ static bool binary_search_offscreen_windows(cz::Slice<Window_Unified*> offscreen
     return false;
 }
 
-static bool find_matching_window(Window* w, Buffer_Id id, Window_Unified** out) {
+static bool find_matching_window(Window* w,
+                                 cz::Arc<Buffer_Handle> buffer_handle,
+                                 Window_Unified** out) {
     switch (w->tag) {
     case Window::UNIFIED: {
         Window_Unified* window = (Window_Unified*)w;
-        if (window->id == id) {
+        if (window->buffer_handle.get() == buffer_handle.get()) {
             *out = window;
             return true;
         } else {
@@ -94,34 +99,34 @@ static bool find_matching_window(Window* w, Buffer_Id id, Window_Unified** out) 
     case Window::VERTICAL_SPLIT:
     case Window::HORIZONTAL_SPLIT: {
         Window_Split* window = (Window_Split*)w;
-        return find_matching_window(window->first, id, out) ||
-               find_matching_window(window->second, id, out);
+        return find_matching_window(window->first, buffer_handle, out) ||
+               find_matching_window(window->second, buffer_handle, out);
     }
     }
 
     CZ_PANIC("");
 }
 
-Window_Unified* Client::make_window_for_buffer(Buffer_Id id) {
+Window_Unified* Client::make_window_for_buffer(cz::Arc<Buffer_Handle> buffer_handle) {
     Window_Unified* window;
 
     size_t index;
-    if (binary_search_offscreen_windows(_offscreen_windows, id, &index)) {
+    if (binary_search_offscreen_windows(_offscreen_windows, buffer_handle, &index)) {
         window = _offscreen_windows[index];
         _offscreen_windows.remove(index);
         return window;
     }
 
-    if (find_matching_window(this->window, id, &window)) {
+    if (find_matching_window(this->window, buffer_handle, &window)) {
         return window->clone();
     } else {
-        return Window_Unified::create(id);
+        return Window_Unified::create(buffer_handle);
     }
 }
 
 void Client::save_offscreen_window(Window_Unified* window) {
     size_t index;
-    if (binary_search_offscreen_windows(_offscreen_windows, window->id, &index)) {
+    if (binary_search_offscreen_windows(_offscreen_windows, window->buffer_handle, &index)) {
         // Delete the window because another window is already saved
         Window::drop_(window);
     } else {
@@ -133,7 +138,7 @@ void Client::save_offscreen_window(Window_Unified* window) {
 
 void Client::save_removed_window(Window_Unified* removed_window) {
     Window_Unified* matching_window;
-    if (find_matching_window(this->window, removed_window->id, &matching_window)) {
+    if (find_matching_window(this->window, removed_window->buffer_handle, &matching_window)) {
         // Delete the window because another window is currently open
         Window::drop_(removed_window);
     } else {
@@ -142,13 +147,13 @@ void Client::save_removed_window(Window_Unified* removed_window) {
     }
 }
 
-void Client::set_selected_buffer(Buffer_Id id) {
-    if (selected_window()->id == id) {
+void Client::set_selected_buffer(cz::Arc<Buffer_Handle> buffer_handle) {
+    if (selected_window()->buffer_handle.get() == buffer_handle.get()) {
         return;
     }
 
     Window_Unified* old_selected_window = selected_normal_window;
-    selected_normal_window = make_window_for_buffer(id);
+    selected_normal_window = make_window_for_buffer(buffer_handle);
     replace_window(old_selected_window, selected_normal_window);
     save_removed_window(old_selected_window);
 }
@@ -174,7 +179,7 @@ void Client::replace_window(Window* o, Window* n) {
 }
 
 void Client::set_prompt_text(Editor* editor, cz::Str text) {
-    WITH_BUFFER(messages_id);
+    WITH_BUFFER_HANDLE(messages_buffer_handle);
 
     cz::Date date = cz::time_t_to_date_local(time(nullptr));
     char date_string[32];

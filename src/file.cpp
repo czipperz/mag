@@ -300,7 +300,7 @@ static void finish_open_file(Editor* editor,
         split_window(client, index % 2 == 0 ? Window::HORIZONTAL_SPLIT : Window::VERTICAL_SPLIT);
     }
 
-    client->set_selected_buffer(handle->id);
+    client->set_selected_buffer(handle);
     client->selected_normal_window->cursors[0].point = position;
 
     start_syntax_highlighting(editor, handle);
@@ -803,7 +803,7 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
         // Still open empty file buffer.
     }
 
-    client->set_selected_buffer(handle->id);
+    client->set_selected_buffer(handle);
 
     start_syntax_highlighting(editor, handle);
 }

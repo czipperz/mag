@@ -15,7 +15,7 @@
 
 namespace mag {
 
-Window_Unified* Window_Unified::create(Buffer_Id buffer_id) {
+Window_Unified* Window_Unified::create(cz::Arc<Buffer_Handle> buffer_handle) {
     Window_Unified* window = cz::heap_allocator().alloc<Window_Unified>();
     CZ_ASSERT(window);
     window->parent = nullptr;
@@ -23,7 +23,7 @@ Window_Unified* Window_Unified::create(Buffer_Id buffer_id) {
     window->total_cols = 0;
     window->tag = Window::UNIFIED;
 
-    window->id = buffer_id;
+    window->buffer_handle = buffer_handle.clone();
     window->start_position = 0;
     window->column_offset = 0;
 
@@ -51,6 +51,7 @@ Window_Unified* Window_Unified::clone() {
     window->completion_cache = {};
     window->completion_cache.init();
     window->completing = false;
+    window->buffer_handle = buffer_handle.clone();
     return window;
 }
 
@@ -155,6 +156,7 @@ void Window::drop_(Window* window) {
         Window_Unified* w = (Window_Unified*)window;
         w->cursors.drop(cz::heap_allocator());
         w->completion_cache.drop();
+        w->buffer_handle.drop();
         cz::heap_allocator().dealloc(w);
         break;
     }

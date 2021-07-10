@@ -1045,6 +1045,7 @@ static void draw_buffer(Cell* cells,
                         Editor* editor,
                         Client* client,
                         Window_Unified* window,
+                        const Buffer* buffer,
                         bool is_selected_window,
                         size_t start_row,
                         size_t start_col,
@@ -1061,10 +1062,8 @@ static void draw_buffer(Cell* cells,
         }
     }
 
-    WITH_CONST_BUFFER(window->id);
-
     Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
-        editor, client, window, handle, buffer, window_cache);
+        editor, client, window, window->buffer_handle, buffer, window_cache);
 
     size_t cursor_pos_y, cursor_pos_x;
     draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
@@ -1077,16 +1076,17 @@ static void draw_buffer(Cell* cells,
 
 static void setup_unified_window_cache(Editor* editor,
                                        Window_Unified* window,
+                                       const Buffer* buffer,
                                        Window_Cache** window_cache) {
     if (!*window_cache) {
         *window_cache = cz::heap_allocator().alloc<Window_Cache>();
         CZ_ASSERT(*window_cache);
-        cache_window_unified_create(editor, *window_cache, window);
+        cache_window_unified_create(editor, *window_cache, window, buffer);
     } else if ((*window_cache)->tag != window->tag) {
         destroy_window_cache_children(*window_cache);
-        cache_window_unified_create(editor, *window_cache, window);
-    } else if ((*window_cache)->v.unified.id != window->id) {
-        cache_window_unified_create(editor, *window_cache, window);
+        cache_window_unified_create(editor, *window_cache, window, buffer);
+    } else if ((*window_cache)->v.unified.id != buffer->id) {
+        cache_window_unified_create(editor, *window_cache, window, buffer);
     }
 }
 
@@ -1106,9 +1106,11 @@ static void draw_window(Cell* cells,
     case Window::UNIFIED: {
         Window_Unified* window = (Window_Unified*)w;
 
-        setup_unified_window_cache(editor, window, window_cache);
+        WITH_CONST_BUFFER_HANDLE(window->buffer_handle);
 
-        draw_buffer(cells, *window_cache, total_cols, editor, client, window,
+        setup_unified_window_cache(editor, window, buffer, window_cache);
+
+        draw_buffer(cells, *window_cache, total_cols, editor, client, window, buffer,
                     window == selected_window, start_row, start_col, spqs);
         break;
     }
@@ -1305,7 +1307,7 @@ void render_to_cells(Cell* cells,
 
             window->total_rows = 1 + mini_buffer_height;
 
-            setup_unified_window_cache(editor, window, mini_buffer_window_cache);
+            setup_unified_window_cache(editor, window, buffer, mini_buffer_window_cache);
         }
 
         size_t y = 0;
@@ -1317,7 +1319,7 @@ void render_to_cells(Cell* cells,
         apply_face(&minibuffer_prompt_face,
                    editor->theme.special_faces[Face_Type::MINI_BUFFER_PROMPT]);
         {
-            WITH_CONST_BUFFER(client->messages_id);
+            WITH_CONST_BUFFER_HANDLE(client->messages_buffer_handle);
 
             Contents_Iterator it = buffer->contents.iterator_at(client->_message.start);
             // TODO: handle multi line mini buffer message

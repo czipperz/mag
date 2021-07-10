@@ -4,7 +4,6 @@
 #include <chrono>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
-#include "buffer_id.hpp"
 #include "completion.hpp"
 #include "copy_chain.hpp"
 #include "dialog.hpp"
@@ -51,14 +50,17 @@ struct Client {
     Window_Unified* _mini_buffer;
     bool _select_mini_buffer;
 
-    Buffer_Id messages_id;
+    cz::Arc<Buffer_Handle> messages_buffer_handle;
 
     Completion_Cache mini_buffer_completion_cache;
 
     std::chrono::system_clock::time_point _message_time;
     Message _message;
 
-    void init(Buffer_Id selected_buffer_id, Buffer_Id mini_buffer_id, Buffer_Id messages_id);
+    /// Clones all inputs.
+    void init(cz::Arc<Buffer_Handle> selected_buffer_handle,
+              cz::Arc<Buffer_Handle> mini_buffer_handle,
+              cz::Arc<Buffer_Handle> messages_handle);
     void drop();
 
     Window_Unified* mini_buffer_window() const { return _mini_buffer; }
@@ -71,15 +73,17 @@ struct Client {
         }
     }
 
-    Window_Unified* make_window_for_buffer(Buffer_Id id);
+    /// Clones the handle.
+    Window_Unified* make_window_for_buffer(cz::Arc<Buffer_Handle> buffer_handle);
 
-    /// Save to offscreen_windows unless it already is
+    /// Save to offscreen_windows unless it already is.
     void save_offscreen_window(Window_Unified* window);
 
-    /// Save to offscreen_windows unless it is on the screen or already in the offscreen_windows
+    /// Save to offscreen_windows unless it is on the screen or already in the offscreen_windows.
     void save_removed_window(Window_Unified* removed_window);
 
-    void set_selected_buffer(Buffer_Id id);
+    /// Clones the handle.
+    void set_selected_buffer(cz::Arc<Buffer_Handle> buffer_handle);
 
     void replace_window(Window* o, Window* n);
 

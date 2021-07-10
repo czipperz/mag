@@ -61,7 +61,7 @@ void command_dump_key_map(Editor* editor, Command_Source source) {
 
     add_key_map(&buffer->contents, &prefix, editor->key_map);
 
-    source.client->set_selected_buffer(handle->id);
+    source.client->set_selected_buffer(handle);
 }
 
 /// Append all commands in the key map to the results.  All strings are allocated with `allocator`.
@@ -130,8 +130,7 @@ static void command_run_command_by_name_callback(Editor* editor,
     Command_Function command;
 
     {
-        Buffer_Id* buffer_id = (Buffer_Id*)data;
-        WITH_BUFFER(*buffer_id);
+        WITH_CONST_SELECTED_BUFFER(client);
         command = find_command(buffer->mode.key_map, str);
     }
 
@@ -162,15 +161,10 @@ static void command_run_command_by_name_callback(Editor* editor,
 }
 
 void command_run_command_by_name(Editor* editor, Command_Source source) {
-    Buffer_Id* buffer_id = cz::heap_allocator().alloc<Buffer_Id>();
-    CZ_ASSERT(buffer_id);
-    *buffer_id = source.client->selected_window()->id;
-
     Dialog dialog = {};
     dialog.prompt = "Run command: ";
     dialog.completion_engine = command_completion_engine;
     dialog.response_callback = command_run_command_by_name_callback;
-    dialog.response_callback_data = buffer_id;
     source.client->show_dialog(editor, dialog);
 }
 

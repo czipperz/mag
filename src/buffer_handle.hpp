@@ -29,10 +29,8 @@ private:
     Buffer buffer;
 
 public:
-    Buffer_Id id;
-
     /// Call this with `buffer.directory`, `buffer.file`, and `buffer.is_temp` set.
-    void init(Buffer_Id buffer_id, Buffer buffer);
+    void init(Buffer buffer);
     void drop();
 
     /// Lock the buffer for the purposes of reading and writing.

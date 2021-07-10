@@ -2,13 +2,14 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <cz/arc.hpp>
 #include <cz/vector.hpp>
-#include "buffer_id.hpp"
 #include "completion.hpp"
 #include "cursor.hpp"
 
 namespace mag {
 struct Buffer;
+struct Buffer_Handle;
 struct Contents_Iterator;
 
 struct Window_Split;
@@ -32,7 +33,10 @@ struct Window {
 };
 
 struct Window_Unified : Window {
-    Buffer_Id id;
+    /// The buffer this window is associated with.  If the buffer (which is owned by
+    /// the `Editor`) is killed then this window needs to be replaced by the killer.
+    cz::Arc<Buffer_Handle> buffer_handle;
+
     uint64_t start_position;
     uint64_t column_offset;
 
@@ -56,7 +60,8 @@ struct Window_Unified : Window {
     /// If a window is pinned then it won't be closed via `command_one_window_except_pinned`.
     bool pinned;
 
-    static Window_Unified* create(Buffer_Id buffer_id);
+    /// Clones the `Buffer_Handle`.
+    static Window_Unified* create(cz::Arc<Buffer_Handle> buffer_handle);
     Window_Unified* clone();
 
     void update_cursors(const Buffer* buffer);

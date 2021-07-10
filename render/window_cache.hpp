@@ -44,7 +44,8 @@ void cache_window_unified_position(Window_Unified* window,
                                    const Buffer* buffer);
 void cache_window_unified_create(Editor* editor,
                                  Window_Cache* window_cache,
-                                 Window_Unified* window);
+                                 Window_Unified* window,
+                                 const Buffer* buffer);
 
 }
 }
