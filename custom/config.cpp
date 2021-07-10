@@ -647,6 +647,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         buffer->mode.use_tabs = false;
         buffer->mode.preferred_column = -1;
 
+        BIND(buffer->mode.key_map, "q", command_quit_window);
+
         if (buffer->name == "*client mini buffer*") {
             buffer->mode.next_token = syntax::path_next_token;
             mini_buffer_key_map(buffer->mode.key_map);

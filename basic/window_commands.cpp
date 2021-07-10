@@ -98,6 +98,16 @@ void command_close_window(Editor* editor, Command_Source source) {
     }
 }
 
+void command_quit_window(Editor* editor, Command_Source source) {
+    Window_Unified* child = source.client->selected_normal_window;
+    Window_Split* parent = child->parent;
+    if (parent) {
+        return command_close_window(editor, source);
+    }
+
+    source.client->set_selected_buffer(editor->buffers[0]);
+}
+
 void command_split_window_horizontal(Editor* editor, Command_Source source) {
     split_window(source.client, Window::HORIZONTAL_SPLIT);
 }

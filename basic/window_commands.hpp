@@ -15,6 +15,7 @@ void command_split_increase_ratio(Editor* editor, Command_Source source);
 void command_split_decrease_ratio(Editor* editor, Command_Source source);
 void command_split_reset_ratio(Editor* editor, Command_Source source);
 void command_close_window(Editor* editor, Command_Source source);
+void command_quit_window(Editor* editor, Command_Source source);
 void command_cycle_window(Editor* editor, Command_Source source);
 void command_reverse_cycle_window(Editor* editor, Command_Source source);
 
