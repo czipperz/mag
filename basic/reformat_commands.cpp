@@ -15,7 +15,7 @@ namespace basic {
 bool sentences_start_with_two_spaces = true;
 
 static bool end_of_sentence(cz::Str word) {
-    if (word.starts_with("(")) {
+    if (word.starts_with('(')) {
         word = word.slice_start(1);
     }
 
@@ -25,8 +25,11 @@ static bool end_of_sentence(cz::Str word) {
         return false;
     }
 
-    return word.ends_with(".") || word.ends_with("!") || word.ends_with("?") ||
-           word.ends_with(".)") || word.ends_with("!)") || word.ends_with("?)");
+    while (word.ends_with(')') || word.ends_with('"')) {
+        word = word.slice_end(word.len - 1);
+    }
+
+    return word.ends_with('.') || word.ends_with('!') || word.ends_with('?');
 }
 
 static size_t judge_word_column_goal_score(cz::Slice<SSOStr> words,
