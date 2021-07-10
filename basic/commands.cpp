@@ -1377,14 +1377,18 @@ static void command_search_forward_callback(Editor* editor,
         interactive_search_reset(window, data);
     }
 
-    if (window->cursors.len() == 1 && window->cursors[0].point != 0 &&
-        window->cursors[0].point != buffer->contents.len) {
-        push_jump(window, client, buffer);
-    }
-
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_forward_cased, {
+            // Only push jump if we hit a result, are the only cursor, and not at either sob
+            // or eob.  If we don't hit a result the cursor doesn't move so push_jump just
+            // adds a useless jump.  If we are at sob or eob then there is already a jump
+            // and we don't want to create an intermediary jump they have top page through.
+            if (window->cursors.len() == 1 && window->cursors[0].point != 0 &&
+                window->cursors[0].point != buffer->contents.len) {
+                push_jump(window, client, buffer);
+            }
+
             cursors[c] = new_cursor;
             window->show_marks = true;
         });
@@ -1467,14 +1471,18 @@ static void command_search_backward_callback(Editor* editor,
         interactive_search_reset(window, data);
     }
 
-    if (window->cursors.len() == 1 && window->cursors[0].point != 0 &&
-        window->cursors[0].point != buffer->contents.len) {
-        push_jump(window, client, buffer);
-    }
-
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_backward_cased, {
+            // Only push jump if we hit a result, are the only cursor, and not at either sob
+            // or eob.  If we don't hit a result the cursor doesn't move so push_jump just
+            // adds a useless jump.  If we are at sob or eob then there is already a jump
+            // and we don't want to create an intermediary jump they have top page through.
+            if (window->cursors.len() == 1 && window->cursors[0].point != 0 &&
+                window->cursors[0].point != buffer->contents.len) {
+                push_jump(window, client, buffer);
+            }
+
             cursors[c] = new_cursor;
             window->show_marks = true;
         });
