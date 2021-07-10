@@ -50,6 +50,7 @@ void Editor::kill(Buffer_Handle* buffer) {
         if (buffers[i].get() == buffer) {
             buffers[i].drop();
             buffers.remove(i);
+            break;
         }
     }
 }

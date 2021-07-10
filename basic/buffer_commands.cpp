@@ -242,6 +242,15 @@ void remove_windows_for_buffer(Client* client,
         client->selected_normal_window = Window_Unified::create(replacement);
         client->window = client->selected_normal_window;
     }
+
+    cz::Vector<Window_Unified*>& offscreen_windows = client->_offscreen_windows;
+    for (size_t i = offscreen_windows.len(); i-- > 0;) {
+        if (offscreen_windows[i]->buffer_handle.get() == buffer_handle.get()) {
+            Window::drop_(offscreen_windows[i]);
+            offscreen_windows.remove(i);
+            break;
+        }
+    }
 }
 
 static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str path, void*) {
