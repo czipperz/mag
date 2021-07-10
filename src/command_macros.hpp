@@ -7,6 +7,10 @@
 #include "ssostr.hpp"
 #include "transaction.hpp"
 
+#define WITH_SELECTED_NORMAL_BUFFER(CLIENT)                    \
+    Window_Unified* window = (CLIENT)->selected_normal_window; \
+    WITH_WINDOW_BUFFER(window)
+
 #define WITH_SELECTED_BUFFER(CLIENT)                      \
     Window_Unified* window = (CLIENT)->selected_window(); \
     WITH_WINDOW_BUFFER(window)
@@ -23,6 +27,10 @@
 #define WITH_BUFFER_HANDLE(HANDLE)             \
     Buffer* buffer = (HANDLE)->lock_writing(); \
     CZ_DEFER((HANDLE)->unlock())
+
+#define WITH_CONST_SELECTED_NORMAL_BUFFER(CLIENT)              \
+    Window_Unified* window = (CLIENT)->selected_normal_window; \
+    WITH_CONST_WINDOW_BUFFER(window)
 
 #define WITH_CONST_SELECTED_BUFFER(CLIENT)                \
     Window_Unified* window = (CLIENT)->selected_window(); \
