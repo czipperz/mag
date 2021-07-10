@@ -324,9 +324,20 @@ void command_push_jump(Editor* editor, Command_Source source) {
 }
 
 void command_unpop_jump(Editor* editor, Command_Source source) {
-    Jump* jump = source.client->jump_chain.unpop();
-    if (jump) {
-        goto_jump(editor, source.client, jump);
+    while (1) {
+        Jump* jump = source.client->jump_chain.unpop();
+        if (!jump) {
+            source.client->show_message(editor, "No more jumps");
+            break;
+        }
+
+        if (goto_jump(editor, source.client, jump)) {
+            break;
+        }
+
+        // Invalid jump so kill it and retry.
+        source.client->jump_chain.pop();
+        source.client->jump_chain.kill_this_jump();
     }
 }
 
@@ -337,9 +348,19 @@ void command_pop_jump(Editor* editor, Command_Source source) {
         source.client->jump_chain.pop();
     }
 
-    Jump* jump = source.client->jump_chain.pop();
-    if (jump) {
-        goto_jump(editor, source.client, jump);
+    while (1) {
+        Jump* jump = source.client->jump_chain.pop();
+        if (!jump) {
+            source.client->show_message(editor, "No more jumps");
+            break;
+        }
+
+        if (goto_jump(editor, source.client, jump)) {
+            break;
+        }
+
+        // Invalid jump so kill it and retry.
+        source.client->jump_chain.kill_this_jump();
     }
 }
 

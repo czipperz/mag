@@ -36,6 +36,10 @@ struct Jump_Chain {
         }
     }
 
+    void kill_this_jump() {
+        jumps.remove(index);
+    }
+
     Jump* unpop() {
         if (index + 1 < jumps.len()) {
             return &jumps[++index];
