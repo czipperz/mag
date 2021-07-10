@@ -17,10 +17,10 @@ namespace mag {
 namespace version_control {
 
 bool get_root_directory(Editor* editor,
-                       Client* client,
-                       const char* dir_cstr,
-                       cz::Allocator allocator,
-                       cz::String* top_level_path) {
+                        Client* client,
+                        const char* dir_cstr,
+                        cz::Allocator allocator,
+                        cz::String* top_level_path) {
     // Use the current working directory if none is provided.
     if (!dir_cstr) {
         dir_cstr = ".";
