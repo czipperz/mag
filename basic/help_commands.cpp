@@ -189,11 +189,32 @@ static void command_run_command_by_name_callback(Editor* editor,
     command(editor, source);
 }
 
+bool formatted_command_next_token(Contents_Iterator* it, Token* token, uint64_t* state) {
+    if (it->at_eob()) {
+        return false;
+    }
+
+    token->start = it->position;
+    if (it->position == 0) {
+        search_forward(it, " (");
+        token->type = Token_Type::IDENTIFIER;
+    } else {
+        if (it->get() == ' ') {
+            ++token->start;
+        }
+        it->advance_to(it->contents->len);
+        token->type = Token_Type::SPLASH_KEY_BIND;
+    }
+    token->end = it->position;
+    return true;
+}
+
 void command_run_command_by_name(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Run command: ";
     dialog.completion_engine = command_completion_engine;
     dialog.response_callback = command_run_command_by_name_callback;
+    dialog.next_token = formatted_command_next_token;
     source.client->show_dialog(editor, dialog);
 }
 
