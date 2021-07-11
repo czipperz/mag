@@ -119,6 +119,37 @@ void command_comment(Editor* editor, Command_Source source) {
     transaction.commit();
 }
 
+void command_uncomment(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    Contents_Iterator start = buffer->contents.start();
+    if (window->show_marks) {
+        for (size_t i = 0; i < cursors.len; ++i) {
+            start.advance_to(cursors[i].start());
+            remove_line_comments(&transaction, buffer->mode, start, cursors[i].end(), "//");
+        }
+    } else {
+        for (size_t i = 0; i < cursors.len; ++i) {
+            start.advance_to(cursors[i].point);
+            Contents_Iterator end = start;
+            end_of_line(&end);
+            remove_line_comments(&transaction, buffer->mode, start, end.position, "//");
+
+            if (cursors.len == 1) {
+                forward_char(&end);
+                cursors[i].point = end.position;
+            }
+        }
+    }
+
+    transaction.commit();
+}
+
 void command_reformat_comment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

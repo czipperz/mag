@@ -9,8 +9,8 @@ namespace mag {
 /// Get the visual column that line comments should be inserted at
 /// when trying to insert line comments for every line in the region.
 ///
-/// Accounts for lines that have mixed tabs and spaces.  Ignores empty
-/// lines, assuming that they will be padded to the resulting column.
+/// In practice, this means the lowest visual column amongst the lines in the region.
+/// Ignores empty lines, assuming that they will be padded to the resulting column.
 uint64_t visual_column_for_aligned_line_comments(const Mode& mode,
                                                  Contents_Iterator start,
                                                  uint64_t end);
@@ -30,6 +30,16 @@ void insert_line_comments(Transaction* transaction,
 
 /// Convenience wrapper that calculates `visual_column` for you.
 void insert_line_comments(Transaction* transaction,
+                          const Mode& mode,
+                          Contents_Iterator start,
+                          uint64_t end,
+                          cz::Str comment_start);
+
+/// Remove the line comments from the region.
+///
+/// Fixes the indentation of the lines that had tabs broken.
+/// Handles lines that were empty and became indented.
+void remove_line_comments(Transaction* transaction,
                           const Mode& mode,
                           Contents_Iterator start,
                           uint64_t end,

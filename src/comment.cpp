@@ -1,6 +1,9 @@
 #include "comment.hpp"
 
+#include <cz/defer.hpp>
+#include <cz/format.hpp>
 #include "edit.hpp"
+#include "match.hpp"
 #include "movement.hpp"
 
 namespace mag {
@@ -138,7 +141,7 @@ void insert_line_comments(Transaction* transaction,
                           cz::Str comment_start) {
     uint64_t offset = 0;
 
-    String comment_start_space_string =
+    cz::String comment_start_space_string =
         cz::format(transaction->value_allocator(), comment_start, ' ');
     SSOStr comment_start_space = SSOStr::from_constant(comment_start_space_string);
     if (comment_start_space.is_short()) {
@@ -196,6 +199,130 @@ void insert_line_comments(Transaction* transaction,
     start_of_line(&start);
     uint64_t visual_column = visual_column_for_aligned_line_comments(mode, start, end);
     insert_line_comments(transaction, mode, start, end, visual_column, comment_start);
+}
+
+void remove_line_comments(Transaction* transaction,
+                          const Mode& mode,
+                          Contents_Iterator start,
+                          uint64_t end,
+                          cz::Str comment_start) {
+    start_of_line(&start);
+
+    int64_t offset = 0;
+    while (1) {
+        Contents_Iterator sol = start;
+        forward_through_whitespace(&start);
+
+        if (start.position >= end) {
+            break;
+        }
+
+        if (!looking_at(start, comment_start)) {
+            goto next_line;
+        }
+
+        Contents_Iterator after = start;
+        after.advance(comment_start.len);
+        if (after.at_eob() || after.get() == '\n') {
+            // Delete all indent and the comment.
+            Edit remove_line;
+            remove_line.value =
+                sol.contents->slice(transaction->value_allocator(), sol, after.position);
+            remove_line.position = sol.position + offset;
+            remove_line.flags = Edit::REMOVE;
+            transaction->push(remove_line);
+            offset -= remove_line.value.len();
+            goto next_line;
+        }
+
+        if (after.get() == ' ') {
+            after.advance();
+        }
+
+        // Remove the comment.
+        Edit remove_comment;
+        remove_comment.value =
+            start.contents->slice(transaction->value_allocator(), start, after.position);
+        remove_comment.position = start.position + offset;
+        remove_comment.flags = Edit::REMOVE;
+        transaction->push(remove_comment);
+        // Note: offset is edited after we fix the indent because 
+
+        //
+        // Fix indentation.
+        // TODO: merge with change_indent() ???
+        //
+
+        // First count the columns before the comment.  Then count the columns after it.
+        uint64_t column = 0;
+        uint64_t before_tabs = 0, before_spaces = 0;
+        Contents_Iterator it = sol;
+        for (; it.position < start.position; it.advance()) {
+            char ch = it.get();
+            if (ch == ' ') {
+                before_spaces++;
+            } else if (ch == '\t') {
+                before_tabs++;
+            }
+            column = char_visual_columns(mode, ch, column);
+        }
+        it.advance_to(after.position);
+        for (;; it.advance()) {
+            char ch = it.get();
+            if (!cz::is_space(ch)) {
+                break;
+            }
+            if (ch == ' ') {
+                before_spaces++;
+            } else if (ch == '\t') {
+                before_tabs++;
+            }
+
+            column = char_visual_columns(mode, ch, column);
+        }
+
+        // If the desired indent is different then completely replace it.
+        uint64_t after_tabs, after_spaces;
+        analyze_indent(mode, column, &after_tabs, &after_spaces);
+        if (before_tabs != after_tabs || before_spaces != after_spaces) {
+            cz::String old_indent = {};
+            old_indent.reserve(transaction->value_allocator(), before_tabs + before_spaces);
+            sol.contents->slice_into(sol, start.position, &old_indent);
+            sol.contents->slice_into(after, it.position, &old_indent);
+
+            cz::String new_indent = {};
+            new_indent.reserve(transaction->value_allocator(), after_tabs + after_spaces);
+            new_indent.push_many('\t', after_tabs);
+            new_indent.push_many(' ', after_spaces);
+
+            Edit remove_old_indent;
+            remove_old_indent.value = SSOStr::from_constant(old_indent);
+            remove_old_indent.position = sol.position + offset;
+            remove_old_indent.flags = Edit::REMOVE;
+            transaction->push(remove_old_indent);
+
+            Edit insert_new_indent;
+            insert_new_indent.value = SSOStr::from_constant(new_indent);
+            insert_new_indent.position = sol.position + offset;
+            insert_new_indent.flags = Edit::INSERT_AFTER_POSITION;
+            transaction->push(insert_new_indent);
+
+            offset += new_indent.len() - old_indent.len();
+
+            if (insert_new_indent.value.is_short()) {
+                new_indent.drop(transaction->value_allocator());
+            }
+            if (remove_old_indent.value.is_short()) {
+                old_indent.drop(transaction->value_allocator());
+            }
+        }
+
+        offset -= remove_comment.value.len();
+
+    next_line:
+        end_of_line(&start);
+        forward_char(&start);
+    }
 }
 
 }
