@@ -134,13 +134,13 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
     ZoneScoped;
 
     {
-        WITH_CONST_SELECTED_BUFFER(client);
+        WITH_CONST_SELECTED_NORMAL_BUFFER(client);
         push_jump(window, client, buffer);
     }
 
     open_file(editor, client, tag.file_name);
 
-    WITH_CONST_SELECTED_BUFFER(client);
+    WITH_CONST_SELECTED_NORMAL_BUFFER(client);
     kill_extra_cursors(window, client);
 
     Contents_Iterator iterator = start_of_line_position(buffer->contents, tag.line);
