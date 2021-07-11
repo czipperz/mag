@@ -20,6 +20,18 @@ void push_jump(Window_Unified* window, Client* client, const Buffer* buffer) {
 
     Cursor* cursor = &window->cursors[0];
 
+    // If the previous jump in the jump chain is the exact same then don't push jump.
+    Jump* prev = client->jump_chain.pop();
+    if (prev) {
+        client->jump_chain.unpop();
+        if (prev->buffer_handle.ptr_equal(window->buffer_handle)) {
+            prev->update(buffer);
+            if (prev->position == cursor->point) {
+                return;
+            }
+        }
+    }
+
     Jump jump;
     jump.buffer_handle = window->buffer_handle.clone_downgrade();
     jump.position = cursor->point;
