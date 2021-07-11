@@ -2,6 +2,7 @@
 
 #include <cz/char_type.hpp>
 #include <cz/dedup.hpp>
+#include <cz/heap_string.hpp>
 #include <cz/sort.hpp>
 #include <cz/stringify.hpp>
 #include "command_macros.hpp"
@@ -67,13 +68,34 @@ void command_dump_key_map(Editor* editor, Command_Source source) {
 /// Append all commands in the key map to the results.  All strings are allocated with `allocator`.
 static void get_command_names(cz::Vector<cz::Str>* results,
                               cz::Allocator allocator,
+                              cz::Heap_String* key_chain,
                               const Key_Map& key_map) {
     for (size_t i = 0; i < key_map.bindings.len(); ++i) {
+        Key key = key_map.bindings[i].key;
         if (key_map.bindings[i].is_command) {
             results->reserve(cz::heap_allocator(), 1);
-            results->push(cz::Str{key_map.bindings[i].v.command.string}.clone(allocator));
+
+            cz::Str command_string = key_map.bindings[i].v.command.string;
+            cz::String command = {};
+            command.reserve(allocator,
+                            command_string.len + 3 + key_chain->len() + stringify_key_max_size);
+            command.append(command_string);
+            command.append(" (");
+            command.append(*key_chain);
+            stringify_key(&command, key);
+            command.push(')');
+            command.realloc(allocator);
+
+            results->push(command);
         } else {
-            get_command_names(results, allocator, *key_map.bindings[i].v.map);
+            size_t old_len = key_chain->len();
+            CZ_DEFER(key_chain->set_len(old_len));
+
+            key_chain->reserve(stringify_key_max_size + 1);
+            stringify_key(key_chain, key);
+            key_chain->push(' ');
+
+            get_command_names(results, allocator, key_chain, *key_map.bindings[i].v.map);
         }
     }
 }
@@ -93,7 +115,9 @@ static bool command_completion_engine(Editor* editor,
 
     cz::Allocator allocator = context->results_buffer_array.allocator();
 
-    get_command_names(&context->results, allocator, editor->key_map);
+    cz::Heap_String key_chain = {};
+    CZ_DEFER(key_chain.drop());
+    get_command_names(&context->results, allocator, &key_chain, editor->key_map);
 
     context->results.reserve(editor->misc_commands.len());
     for (size_t i = 0; i < editor->misc_commands.len(); ++i) {
@@ -128,6 +152,11 @@ static void command_run_command_by_name_callback(Editor* editor,
                                                  cz::Str str,
                                                  void* data) {
     Command_Function command;
+
+    // Get rid of key binding suffix.
+    if (const char* suffix = str.find(" (")) {
+        str = str.slice_end(suffix);
+    }
 
     {
         WITH_CONST_SELECTED_BUFFER(client);
