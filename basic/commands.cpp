@@ -1847,6 +1847,13 @@ void command_comment_hash(Editor* editor, Command_Source source) {
             transaction.push(insert);
             offset += 2;
         }
+
+        // If there is only one cursor and no region selected then move to the next line.
+        if (cursors.len == 1) {
+            Contents_Iterator it = buffer->contents.iterator_at(cursors[0].point);
+            forward_line(buffer->mode, &it);
+            cursors[0].point = it.position;
+        }
     }
 
     transaction.commit();

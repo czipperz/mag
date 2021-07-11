@@ -107,6 +107,13 @@ void command_comment(Editor* editor, Command_Source source) {
             edit.flags = Edit::INSERT;
             transaction.push(edit);
         }
+
+        // If there is only one cursor and no region selected then move to the next line.
+        if (cursors.len == 1) {
+            Contents_Iterator it = buffer->contents.iterator_at(cursors[0].point);
+            forward_line(buffer->mode, &it);
+            cursors[0].point = it.position;
+        }
     }
 
     transaction.commit();
