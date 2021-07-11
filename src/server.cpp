@@ -294,6 +294,14 @@ bool Server::slurp_jobs() {
     return data->jobs.len() > 0;
 }
 
+bool Server::send_pending_asynchronous_jobs() {
+    if (editor.pending_jobs.len() == 0) {
+        return false;
+    }
+
+    return slurp_jobs();
+}
+
 bool Server::run_synchronous_jobs(Client* client) {
     ZoneScoped;
 

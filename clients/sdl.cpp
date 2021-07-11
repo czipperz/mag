@@ -1175,10 +1175,11 @@ void run(Server* server, Client* client) {
 
         bool any_asynchronous_jobs = server->slurp_jobs();
         bool any_synchronous_jobs = server->run_synchronous_jobs(client);
-        bool no_jobs = !(any_asynchronous_jobs || any_synchronous_jobs);
 
         process_events(server, client, &mouse, character_width, character_height, &force_redraw,
                        &minimized, &disable_key_presses, &disable_key_presses_until);
+
+        any_asynchronous_jobs |= server->send_pending_asynchronous_jobs();
 
         process_scroll(server, client, &mouse.scroll);
 
@@ -1215,10 +1216,13 @@ void run(Server* server, Client* client) {
 
         process_mouse_events(&server->editor, client, &mouse);
 
+        any_asynchronous_jobs |= server->send_pending_asynchronous_jobs();
+
         uint32_t frame_end_ticks = SDL_GetTicks();
 
         // 60 fps is default.
         uint32_t frame_length = (uint32_t)(1000.0f / 60.0f);
+        bool no_jobs = !(any_asynchronous_jobs || any_synchronous_jobs);
         if (redrew_this_time) {
             // Record that we redrew.
             redrew_last = frame_end_ticks;

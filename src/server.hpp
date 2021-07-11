@@ -31,6 +31,7 @@ struct Server {
     void receive(Client* client, Key key);
 
     bool slurp_jobs();
+    bool send_pending_asynchronous_jobs();
     bool run_synchronous_jobs(Client* client);
 
     void setup_async_context(Client* client);
