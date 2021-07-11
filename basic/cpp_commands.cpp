@@ -89,7 +89,8 @@ void command_comment(Editor* editor, Command_Source source) {
                 edit_end.flags = Edit::INSERT;
                 transaction.push(edit_end);
             } else {
-                insert_line_comments(&transaction, buffer->mode, start, end.position, "//");
+                insert_line_comments(&transaction, &offset, buffer->mode, start, end.position,
+                                     "//");
             }
         }
     } else {
@@ -127,18 +128,20 @@ void command_uncomment(Editor* editor, Command_Source source) {
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
+    uint64_t offset = 0;
     Contents_Iterator start = buffer->contents.start();
     if (window->show_marks) {
         for (size_t i = 0; i < cursors.len; ++i) {
             start.advance_to(cursors[i].start());
-            remove_line_comments(&transaction, buffer->mode, start, cursors[i].end(), "//");
+            remove_line_comments(&transaction, &offset, buffer->mode, start, cursors[i].end(),
+                                 "//");
         }
     } else {
         for (size_t i = 0; i < cursors.len; ++i) {
             start.advance_to(cursors[i].point);
             Contents_Iterator end = start;
             end_of_line(&end);
-            remove_line_comments(&transaction, buffer->mode, start, end.position, "//");
+            remove_line_comments(&transaction, &offset, buffer->mode, start, end.position, "//");
 
             if (cursors.len == 1) {
                 forward_char(&end);

@@ -134,13 +134,12 @@ static void go_to_visual_column_and_break_tabs(const Mode& mode,
 }
 
 void insert_line_comments(Transaction* transaction,
+                          uint64_t* offset,
                           const Mode& mode,
                           Contents_Iterator start,
                           uint64_t end,
                           uint64_t visual_column,
                           cz::Str comment_start) {
-    uint64_t offset = 0;
-
     cz::String comment_start_space_string =
         cz::format(transaction->value_allocator(), comment_start, ' ');
     SSOStr comment_start_space = SSOStr::from_constant(comment_start_space_string);
@@ -162,8 +161,8 @@ void insert_line_comments(Transaction* transaction,
 
             Edit edit;
             edit.value = SSOStr::from_constant(string);
-            edit.position = start.position + offset;
-            offset += string.len();
+            edit.position = start.position + *offset;
+            *offset += string.len();
             edit.flags = Edit::INSERT_AFTER_POSITION;
             transaction->push(edit);
 
@@ -172,18 +171,18 @@ void insert_line_comments(Transaction* transaction,
             }
         } else {
             // Go to the visual column and break tabs after it.
-            uint64_t offset_after = offset;
-            go_to_visual_column_and_break_tabs(mode, &start, visual_column, &offset, &offset_after,
+            uint64_t offset_after = *offset;
+            go_to_visual_column_and_break_tabs(mode, &start, visual_column, offset, &offset_after,
                                                transaction);
 
             // On non-empty lines insert `comment_start` then a space at the aligned column.
             Edit edit;
             edit.value = comment_start_space;
-            edit.position = start.position + offset;
+            edit.position = start.position + *offset;
             edit.flags = Edit::INSERT_AFTER_POSITION;
             transaction->push(edit);
 
-            offset = offset_after + edit.value.len();
+            *offset = offset_after + edit.value.len();
         }
 
         end_of_line(&start);
@@ -192,23 +191,24 @@ void insert_line_comments(Transaction* transaction,
 }
 
 void insert_line_comments(Transaction* transaction,
+                          uint64_t* offset,
                           const Mode& mode,
                           Contents_Iterator start,
                           uint64_t end,
                           cz::Str comment_start) {
     start_of_line(&start);
     uint64_t visual_column = visual_column_for_aligned_line_comments(mode, start, end);
-    insert_line_comments(transaction, mode, start, end, visual_column, comment_start);
+    insert_line_comments(transaction, offset, mode, start, end, visual_column, comment_start);
 }
 
 void remove_line_comments(Transaction* transaction,
+                          uint64_t* offset,
                           const Mode& mode,
                           Contents_Iterator start,
                           uint64_t end,
                           cz::Str comment_start) {
     start_of_line(&start);
 
-    int64_t offset = 0;
     while (1) {
         Contents_Iterator sol = start;
         forward_through_whitespace(&start);
@@ -228,10 +228,10 @@ void remove_line_comments(Transaction* transaction,
             Edit remove_line;
             remove_line.value =
                 sol.contents->slice(transaction->value_allocator(), sol, after.position);
-            remove_line.position = sol.position + offset;
+            remove_line.position = sol.position + *offset;
             remove_line.flags = Edit::REMOVE;
             transaction->push(remove_line);
-            offset -= remove_line.value.len();
+            *offset -= remove_line.value.len();
             goto next_line;
         }
 
@@ -243,10 +243,10 @@ void remove_line_comments(Transaction* transaction,
         Edit remove_comment;
         remove_comment.value =
             start.contents->slice(transaction->value_allocator(), start, after.position);
-        remove_comment.position = start.position + offset;
+        remove_comment.position = start.position + *offset;
         remove_comment.flags = Edit::REMOVE;
         transaction->push(remove_comment);
-        // Note: offset is edited after we fix the indent because 
+        // Note: offset is edited after we fix the indent because
 
         //
         // Fix indentation.
@@ -297,17 +297,17 @@ void remove_line_comments(Transaction* transaction,
 
             Edit remove_old_indent;
             remove_old_indent.value = SSOStr::from_constant(old_indent);
-            remove_old_indent.position = sol.position + offset;
+            remove_old_indent.position = sol.position + *offset;
             remove_old_indent.flags = Edit::REMOVE;
             transaction->push(remove_old_indent);
 
             Edit insert_new_indent;
             insert_new_indent.value = SSOStr::from_constant(new_indent);
-            insert_new_indent.position = sol.position + offset;
+            insert_new_indent.position = sol.position + *offset;
             insert_new_indent.flags = Edit::INSERT_AFTER_POSITION;
             transaction->push(insert_new_indent);
 
-            offset += new_indent.len() - old_indent.len();
+            *offset += new_indent.len() - old_indent.len();
 
             if (insert_new_indent.value.is_short()) {
                 new_indent.drop(transaction->value_allocator());
@@ -317,7 +317,7 @@ void remove_line_comments(Transaction* transaction,
             }
         }
 
-        offset -= remove_comment.value.len();
+        *offset -= remove_comment.value.len();
 
     next_line:
         end_of_line(&start);
