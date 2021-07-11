@@ -705,6 +705,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::cmake_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
+            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -739,6 +740,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (name.ends_with(".js")) {
             buffer->mode.next_token = syntax::js_next_token;
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
+            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
@@ -749,6 +751,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (name.ends_with(".go")) {
             buffer->mode.next_token = syntax::go_next_token;
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
+            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
 
             // Go uses tabs for alignment.
@@ -776,6 +779,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::sh_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
+            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -785,6 +789,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::python_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
+            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -796,6 +801,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::general_hash_comments_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
+            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -809,10 +815,12 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (name == "git-rebase-todo") {
             buffer->mode.next_token = syntax::git_rebase_todo_next_token;
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
+            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
             git_edit_key_map(buffer->mode.key_map);
         } else if (name == "COMMIT_EDITMSG") {
             buffer->mode.next_token = syntax::git_commit_edit_message_next_token;
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
+            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
             git_edit_key_map(buffer->mode.key_map);
         } else if (name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
