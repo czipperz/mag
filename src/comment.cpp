@@ -135,21 +135,27 @@ void insert_line_comments(Transaction* transaction,
                           Contents_Iterator start,
                           uint64_t end,
                           uint64_t visual_column,
-                          cz::Str no_space,
-                          cz::Str yes_space) {
+                          cz::Str comment_start) {
     uint64_t offset = 0;
+
+    String comment_start_space_string =
+        cz::format(transaction->value_allocator(), comment_start, ' ');
+    SSOStr comment_start_space = SSOStr::from_constant(comment_start_space_string);
+    if (comment_start_space.is_short()) {
+        comment_start_space_string.drop(transaction->value_allocator());
+    }
 
     while (start.position < end) {
         if (start.get() == '\n') {
-            // On empty lines insert indentation and then `no_space`.
+            // On empty lines insert indentation and then `comment_start`.
             uint64_t tabs, spaces;
             analyze_indent(mode, visual_column, &tabs, &spaces);
 
             cz::String string = {};
-            string.reserve(transaction->value_allocator(), tabs + spaces + no_space.len);
+            string.reserve(transaction->value_allocator(), tabs + spaces + comment_start.len);
             string.push_many('\t', tabs);
             string.push_many(' ', spaces);
-            string.append(no_space);
+            string.append(comment_start);
 
             Edit edit;
             edit.value = SSOStr::from_constant(string);
@@ -167,9 +173,9 @@ void insert_line_comments(Transaction* transaction,
             go_to_visual_column_and_break_tabs(mode, &start, visual_column, &offset, &offset_after,
                                                transaction);
 
-            // On non-empty lines insert `yes_space` at the aligned column.
+            // On non-empty lines insert `comment_start` then a space at the aligned column.
             Edit edit;
-            edit.value = SSOStr::from_constant(yes_space);
+            edit.value = comment_start_space;
             edit.position = start.position + offset;
             edit.flags = Edit::INSERT_AFTER_POSITION;
             transaction->push(edit);
@@ -186,11 +192,10 @@ void insert_line_comments(Transaction* transaction,
                           const Mode& mode,
                           Contents_Iterator start,
                           uint64_t end,
-                          cz::Str no_space,
-                          cz::Str yes_space) {
+                          cz::Str comment_start) {
     start_of_line(&start);
     uint64_t visual_column = visual_column_for_aligned_line_comments(mode, start, end);
-    insert_line_comments(transaction, mode, start, end, visual_column, no_space, yes_space);
+    insert_line_comments(transaction, mode, start, end, visual_column, comment_start);
 }
 
 }

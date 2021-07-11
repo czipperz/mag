@@ -1833,7 +1833,7 @@ void command_comment_hash(Editor* editor, Command_Source source) {
         Contents_Iterator start = buffer->contents.start();
         for (size_t c = 0; c < cursors.len; ++c) {
             start.go_to(cursors[c].start());
-            insert_line_comments(&transaction, buffer->mode, start, cursors[c].end(), "#", "# ");
+            insert_line_comments(&transaction, buffer->mode, start, cursors[c].end(), "#");
         }
     } else {
         Contents_Iterator it = buffer->contents.iterator_at(cursors[0].point);

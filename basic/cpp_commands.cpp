@@ -89,7 +89,7 @@ void command_comment(Editor* editor, Command_Source source) {
                 edit_end.flags = Edit::INSERT;
                 transaction.push(edit_end);
             } else {
-                insert_line_comments(&transaction, buffer->mode, start, end.position, "//", "// ");
+                insert_line_comments(&transaction, buffer->mode, start, end.position, "//");
             }
         }
     } else {
