@@ -1697,10 +1697,11 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
 
     Contents_Iterator start = buffer->contents.iterator_at(buffer->contents.len);
     start.retreat();
-    if (!rfind(&start, '/')) {
-        return;
+
+    // If we find a '/' then delete after it.  Otherwise delete the entire buffer.
+    if (rfind(&start, '/')) {
+        start.advance();
     }
-    start.advance();
 
     Transaction transaction;
     transaction.init(buffer);
