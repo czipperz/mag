@@ -15,6 +15,7 @@
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "file.hpp"
+#include "program_info.hpp"
 
 namespace mag {
 
@@ -253,13 +254,6 @@ static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
     if (found_dir_sep) {
         // Replace ~ with user home directory.
         if (query.starts_with("~/")) {
-            const char* user_home_path;
-#ifdef _WIN32
-            user_home_path = getenv("USERPROFILE");
-#else
-            user_home_path = getenv("HOME");
-#endif
-
             if (user_home_path) {
                 cz::Str home = user_home_path;
                 size_t len = index;

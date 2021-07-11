@@ -9,4 +9,6 @@ cz::Date program_date;
 
 const char* const mag_build_directory = CZ_STRINGIFY(MAG_BUILD_DIRECTORY);
 
+const char* user_home_path;
+
 }

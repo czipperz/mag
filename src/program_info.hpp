@@ -13,4 +13,6 @@ extern cz::Date program_date;
 
 extern const char* const mag_build_directory;
 
+extern const char* user_home_path;
+
 }

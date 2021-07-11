@@ -147,13 +147,6 @@ static void switch_to_the_home_directory() {
         }
     }
 
-    const char* user_home_path;
-#ifdef _WIN32
-    user_home_path = getenv("USERPROFILE");
-#else
-    user_home_path = getenv("HOME");
-#endif
-
     if (user_home_path) {
         cz::set_working_directory(user_home_path);
     }
@@ -223,6 +216,25 @@ int mag_main(int argc, char** argv) {
         } else {
             program_dir = ".";
         }
+
+        // Get the home directory.
+        cz::String home_directory_storage = {};
+        CZ_DEFER(home_directory_storage.drop(cz::heap_allocator()));
+        const char* home_directory_env;
+#ifdef _WIN32
+        home_directory_env = getenv("USERPROFILE");
+#else
+        home_directory_env = getenv("HOME");
+#endif
+        if (home_directory_env) {
+            home_directory_storage =
+                cz::Str{home_directory_env}.clone_null_terminate(cz::heap_allocator());
+            user_home_path = home_directory_storage.buffer();
+        } else {
+            user_home_path = nullptr;
+        }
+
+        switch_to_the_home_directory();
 
         Server server = {};
         server.init();
@@ -327,8 +339,6 @@ A-g     Project or directory commands\n\
                 server.slurp_jobs();
             }
         }
-
-        switch_to_the_home_directory();
 
         switch (chosen_client) {
 #ifdef HAS_NCURSES

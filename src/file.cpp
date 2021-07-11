@@ -22,6 +22,7 @@
 #include "config.hpp"
 #include "editor.hpp"
 #include "movement.hpp"
+#include "program_info.hpp"
 #include "server.hpp"
 #include "tracy_format.hpp"
 
@@ -463,13 +464,6 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
 
     // Dereference home directory.
     if (user_path_nt.starts_with("~")) {
-        const char* user_home_path;
-#ifdef _WIN32
-        user_home_path = getenv("USERPROFILE");
-#else
-        user_home_path = getenv("HOME");
-#endif
-
         if (user_home_path) {
             cz::Str home = user_home_path;
             user_path_nt.reserve(cz::heap_allocator(), home.len);

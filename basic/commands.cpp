@@ -1752,13 +1752,6 @@ void command_submit_mini_buffer(Editor* editor, Command_Source source) {
 }
 
 void command_insert_home_directory(Editor* editor, Command_Source source) {
-    const char* user_home_path;
-#ifdef _WIN32
-    user_home_path = getenv("USERPROFILE");
-#else
-    user_home_path = getenv("HOME");
-#endif
-
     if (!user_home_path) {
         return;
     }
