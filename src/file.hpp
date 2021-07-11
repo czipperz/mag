@@ -90,4 +90,8 @@ bool find_temp_buffer(Editor* editor,
                       cz::Str name,
                       cz::Option<cz::Str> directory,
                       cz::Arc<Buffer_Handle>* handle_out);
+
+/// Format date as `YYYY/MM/DD HH:MM:SS`.
+void format_date(const cz::Date& date, char buffer[20]);
+
 }

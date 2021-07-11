@@ -168,6 +168,11 @@ static void sort_files(cz::Slice<cz::Str> files,
     }
 }
 
+void format_date(const cz::Date& date, char buffer[20]) {
+    snprintf(buffer, 21, "%04d/%02d/%02d %02d:%02d:%02d", date.year, date.month, date.day_of_month,
+             date.hour, date.minute, date.second);
+}
+
 cz::Result reload_directory_buffer(Buffer* buffer) {
     cz::Buffer_Array buffer_array;
     buffer_array.init();
@@ -224,18 +229,17 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
     for (size_t i = 0; i < files.len(); ++i) {
         cz::Date date;
         if (cz::file_time_to_date_local(file_times[i], &date)) {
-            char date_string[32];
-            snprintf(date_string, sizeof(date_string), "%04d/%02d/%02d %02d:%02d:%02d ", date.year,
-                     date.month, date.day_of_month, date.hour, date.minute, date.second);
+            char date_string[21];
+            format_date(date, date_string);
             buffer->contents.append(date_string);
         } else {
-            buffer->contents.append("                    ");
+            buffer->contents.append("                   ");
         }
 
         if (file_directories.get(i)) {
-            buffer->contents.append("/ ");
+            buffer->contents.append(" / ");
         } else {
-            buffer->contents.append("  ");
+            buffer->contents.append("   ");
         }
 
         buffer->contents.append(files[i]);

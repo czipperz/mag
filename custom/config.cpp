@@ -31,6 +31,7 @@
 #include "gnu_global/gnu_global.hpp"
 #include "man/man.hpp"
 #include "overlay.hpp"
+#include "program_info.hpp"
 #include "prose/alternate.hpp"
 #include "prose/find_file.hpp"
 #include "prose/search.hpp"

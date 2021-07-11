@@ -208,6 +208,12 @@ int mag_main(int argc, char** argv) {
             program_name = program_name_storage.buffer();
         }
 
+        program_date = {};
+        cz::File_Time program_file_time;
+        if (cz::get_file_time(program_name, &program_file_time)) {
+            cz::file_time_to_date_local(program_file_time, &program_date);
+        }
+
         cz::String program_dir_ = cz::Str(program_name).clone(cz::heap_allocator());
         CZ_DEFER(program_dir_.drop(cz::heap_allocator()));
         cz::path::convert_to_forward_slashes(&program_dir_);

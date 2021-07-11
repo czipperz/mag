@@ -2,6 +2,7 @@
 
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
+#include <cz/format.hpp>
 #include <cz/option.hpp>
 #include <cz/parse.hpp>
 #include <cz/path.hpp>
@@ -13,6 +14,7 @@
 #include "insert.hpp"
 #include "match.hpp"
 #include "movement.hpp"
+#include "program_info.hpp"
 #include "region_movement_commands.hpp"
 #include "transaction.hpp"
 #include "visible_region.hpp"
@@ -1808,7 +1810,12 @@ void command_decrease_font_size(Editor* editor, Command_Source source) {
 }
 
 void command_show_date_of_build(Editor* editor, Command_Source source) {
-    source.client->show_message(editor, "Date of build: " __DATE__ " " __TIME__);
+    char buffer[20];
+    format_date(program_date, buffer);
+
+    cz::Heap_String message = cz::format("Date of build: ", buffer);
+    CZ_DEFER(message.drop());
+    source.client->show_message(editor, message);
 }
 
 void command_comment_hash(Editor* editor, Command_Source source) {
