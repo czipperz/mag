@@ -48,12 +48,14 @@ uint64_t visual_column_for_aligned_line_comments(const Mode& mode,
     return start_offset;
 }
 
-void go_to_visual_column_and_break_tabs(const Mode& mode,
-                                        Contents_Iterator* start,
-                                        uint64_t visual_column,
-                                        uint64_t* offset,
-                                        uint64_t* offset_after,
-                                        Transaction* transaction) {
+/// Fix mixed tabs and spaces by breaking all tabs at
+/// and after the visual_column point into spaces.
+static void go_to_visual_column_and_break_tabs(const Mode& mode,
+                                               Contents_Iterator* start,
+                                               uint64_t visual_column,
+                                               uint64_t* offset,
+                                               uint64_t* offset_after,
+                                               Transaction* transaction) {
     CZ_DEBUG_ASSERT(at_start_of_line(*start));
 
     // Find the start of the region to be replaced by spaces.
@@ -99,6 +101,7 @@ void go_to_visual_column_and_break_tabs(const Mode& mode,
         return;
     }
 
+    // Remove all indent.
     Edit remove_region;
     remove_region.value =
         start->contents->slice(transaction->value_allocator(), *start, s2.position);
@@ -106,10 +109,12 @@ void go_to_visual_column_and_break_tabs(const Mode& mode,
     remove_region.flags = Edit::REMOVE;
     transaction->push(remove_region);
 
+    // Put a space for each column.
     cz::String spaces = {};
     spaces.reserve(transaction->value_allocator(), column_end_spaces - column_start_spaces);
     spaces.push_many(' ', column_end_spaces - column_start_spaces);
 
+    // Insert the spaces.
     Edit insert_spaces;
     insert_spaces.value = SSOStr::from_constant(spaces);
     if (insert_spaces.value.is_short()) {
@@ -119,6 +124,8 @@ void go_to_visual_column_and_break_tabs(const Mode& mode,
     insert_spaces.flags = Edit::INSERT_AFTER_POSITION;
     transaction->push(insert_spaces);
 
+    // We need to track the offset of edits on the next line and the offset
+    // to insert the comment (which will be in the middle of the spaces).
     *offset_after += insert_spaces.value.len() - remove_region.value.len();
     *offset += visual_column - column_start_spaces;
 }
@@ -155,14 +162,12 @@ void insert_line_comments(Transaction* transaction,
                 string.drop(transaction->value_allocator());
             }
         } else {
-            // On non-empty lines insert `yes_space` at the aligned column.
-
-            // Fix mixed tabs and spaces by breaking all tabs at
-            // and after the visual_column point into spaces.
+            // Go to the visual column and break tabs after it.
             uint64_t offset_after = offset;
             go_to_visual_column_and_break_tabs(mode, &start, visual_column, &offset, &offset_after,
                                                transaction);
 
+            // On non-empty lines insert `yes_space` at the aligned column.
             Edit edit;
             edit.value = SSOStr::from_constant(yes_space);
             edit.position = start.position + offset;
