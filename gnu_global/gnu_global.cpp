@@ -59,6 +59,12 @@ const char* lookup(const char* directory,
                    cz::String* buffer) {
     ZoneScoped;
 
+    // GNU Global cannot deal with namespaced lookups so strip it now.
+    const char* ns = query.rfind("::");
+    if (ns) {
+        query = query.slice_start(ns + 2);
+    }
+
     cz::Input_File std_out_read;
     CZ_DEFER(std_out_read.close());
 
