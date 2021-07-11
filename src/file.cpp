@@ -120,6 +120,7 @@ static cz::Result load_directory(Buffer* buffer, char* path, size_t path_len) {
         buffer->contents.drop();
         buffer->name.drop(cz::heap_allocator());
         buffer->directory.drop(cz::heap_allocator());
+        path[--path_len] = '\0';
     }
 
     return result;
@@ -269,7 +270,6 @@ cz::Result load_path_in_buffer(Buffer* buffer, char* path, size_t path_len) {
         buffer->name = cz::Str(path, path_len).clone(cz::heap_allocator());
     }
 
-    path[path_len] = '\0';
     return load_file(buffer, path);
 }
 
