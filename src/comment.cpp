@@ -325,4 +325,49 @@ void remove_line_comments(Transaction* transaction,
     }
 }
 
+void generic_line_comment(Buffer* buffer, Window_Unified* window, cz::Str comment_start, bool add) {
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    Contents_Iterator start = buffer->contents.start();
+    if (window->show_marks) {
+        for (size_t i = 0; i < cursors.len; ++i) {
+            start.advance_to(cursors[i].start());
+            if (add) {
+                insert_line_comments(&transaction, &offset, buffer->mode, start, cursors[i].end(),
+                                     comment_start);
+            } else {
+                remove_line_comments(&transaction, &offset, buffer->mode, start, cursors[i].end(),
+                                     comment_start);
+            }
+        }
+    } else {
+        for (size_t i = 0; i < cursors.len; ++i) {
+            start.advance_to(cursors[i].point);
+            Contents_Iterator end = start;
+            forward_char(&end);
+            if (add) {
+                insert_line_comments(&transaction, &offset, buffer->mode, start, end.position,
+                                     comment_start);
+            } else {
+                remove_line_comments(&transaction, &offset, buffer->mode, start, end.position,
+                                     comment_start);
+            }
+        }
+
+        // If there is only one cursor and no region selected then move to the next line.
+        if (cursors.len == 1) {
+            Contents_Iterator it = buffer->contents.iterator_at(cursors[0].point);
+            forward_line(buffer->mode, &it);
+            cursors[0].point = it.position;
+        }
+    }
+
+    transaction.commit();
+}
+
 }

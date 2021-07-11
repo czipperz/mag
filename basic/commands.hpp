@@ -118,6 +118,7 @@ void command_decrease_font_size(Editor* editor, Command_Source source);
 void command_show_date_of_build(Editor* editor, Command_Source source);
 
 void command_comment_hash(Editor* editor, Command_Source source);
+void command_uncomment_hash(Editor* editor, Command_Source source);
 
 void command_sort_lines_ascending(Editor* editor, Command_Source source);
 void command_sort_lines_descending(Editor* editor, Command_Source source);

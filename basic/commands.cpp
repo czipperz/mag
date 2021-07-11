@@ -1821,43 +1821,12 @@ void command_show_date_of_build(Editor* editor, Command_Source source) {
 
 void command_comment_hash(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
+    generic_line_comment(buffer, window, "#", /*add=*/true);
+}
 
-    cz::Slice<Cursor> cursors = window->cursors;
-
-    Transaction transaction;
-    transaction.init(buffer);
-    CZ_DEFER(transaction.drop());
-
-    uint64_t offset = 0;
-    if (window->show_marks) {
-        Contents_Iterator start = buffer->contents.start();
-        for (size_t c = 0; c < cursors.len; ++c) {
-            start.go_to(cursors[c].start());
-            insert_line_comments(&transaction, &offset, buffer->mode, start, cursors[c].end(), "#");
-        }
-    } else {
-        Contents_Iterator it = buffer->contents.iterator_at(cursors[0].point);
-        for (size_t c = 0; c < cursors.len; ++c) {
-            it.advance_to(cursors[c].point);
-            start_of_line_text(&it);
-
-            Edit insert;
-            insert.value = SSOStr::from_constant("# ");
-            insert.position = it.position + offset;
-            insert.flags = Edit::INSERT;
-            transaction.push(insert);
-            offset += 2;
-        }
-
-        // If there is only one cursor and no region selected then move to the next line.
-        if (cursors.len == 1) {
-            Contents_Iterator it = buffer->contents.iterator_at(cursors[0].point);
-            forward_line(buffer->mode, &it);
-            cursors[0].point = it.position;
-        }
-    }
-
-    transaction.commit();
+void command_uncomment_hash(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    generic_line_comment(buffer, window, "#", /*add=*/false);
 }
 
 static void sort_lines(Buffer* buffer, Window_Unified* window, int order) {

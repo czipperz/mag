@@ -43,10 +43,11 @@ void command_comment(Editor* editor, Command_Source source) {
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
+    uint64_t offset = 0;
+    Contents_Iterator start = buffer->contents.start();
     if (window->show_marks) {
-        uint64_t offset = 0;
         for (size_t c = 0; c < cursors.len; ++c) {
-            Contents_Iterator start = buffer->contents.iterator_at(cursors[c].start());
+            start.advance_to(cursors[c].start());
             Contents_Iterator end = start;
             end.advance_to(cursors[c].end());
 
@@ -94,19 +95,11 @@ void command_comment(Editor* editor, Command_Source source) {
             }
         }
     } else {
-        SSOStr value = SSOStr::from_constant("// ");
-
-        uint64_t offset = 0;
         for (size_t c = 0; c < cursors.len; ++c) {
-            Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
-            start_of_line_text(&start);
-
-            Edit edit;
-            edit.value = value;
-            edit.position = start.position + offset;
-            offset += 3;
-            edit.flags = Edit::INSERT;
-            transaction.push(edit);
+            start.advance_to(cursors[c].point);
+            Contents_Iterator end = start;
+            forward_char(&end);
+            insert_line_comments(&transaction, &offset, buffer->mode, start, end.position, "//");
         }
 
         // If there is only one cursor and no region selected then move to the next line.
@@ -120,37 +113,14 @@ void command_comment(Editor* editor, Command_Source source) {
     transaction.commit();
 }
 
+void command_comment_line_comments_only(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    generic_line_comment(buffer, window, "//", /*add=*/true);
+}
+
 void command_uncomment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    cz::Slice<Cursor> cursors = window->cursors;
-
-    Transaction transaction = {};
-    transaction.init(buffer);
-    CZ_DEFER(transaction.drop());
-
-    uint64_t offset = 0;
-    Contents_Iterator start = buffer->contents.start();
-    if (window->show_marks) {
-        for (size_t i = 0; i < cursors.len; ++i) {
-            start.advance_to(cursors[i].start());
-            remove_line_comments(&transaction, &offset, buffer->mode, start, cursors[i].end(),
-                                 "//");
-        }
-    } else {
-        for (size_t i = 0; i < cursors.len; ++i) {
-            start.advance_to(cursors[i].point);
-            Contents_Iterator end = start;
-            end_of_line(&end);
-            remove_line_comments(&transaction, &offset, buffer->mode, start, end.position, "//");
-
-            if (cursors.len == 1) {
-                forward_char(&end);
-                cursors[i].point = end.position;
-            }
-        }
-    }
-
-    transaction.commit();
+    generic_line_comment(buffer, window, "//", /*add=*/false);
 }
 
 void command_reformat_comment(Editor* editor, Command_Source source) {

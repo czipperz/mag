@@ -1,8 +1,10 @@
 #pragma once
 
+#include "buffer.hpp"
 #include "contents.hpp"
 #include "mode.hpp"
 #include "transaction.hpp"
+#include "window.hpp"
 
 namespace mag {
 
@@ -47,5 +49,8 @@ void remove_line_comments(Transaction* transaction,
                           Contents_Iterator start,
                           uint64_t end,
                           cz::Str comment_start);
+
+/// Helper routine to comment or uncomment bunch of regions / lines.
+void generic_line_comment(Buffer* buffer, Window_Unified* window, cz::Str comment_start, bool add);
 
 }
