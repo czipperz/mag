@@ -1,6 +1,7 @@
 #define __STDC_WANT_LIB_EXT1__ 1
 #include "file.hpp"
 
+#include <errno.h>
 #include <stdio.h>
 #include <time.h>
 #include <Tracy.hpp>
@@ -48,6 +49,28 @@ bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* fil
     return false;
 }
 
+bool open_existing(cz::Output_File* file, const char* path) {
+    ZoneScoped;
+    ZoneText(path, strlen(path));
+
+#ifdef _WIN32
+    SECURITY_ATTRIBUTES sa;
+    sa.nLength = sizeof(sa);
+    sa.bInheritHandle = TRUE;
+    sa.lpSecurityDescriptor = NULL;
+
+    void* h = CreateFile(path, GENERIC_WRITE, 0, &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+    file->handle = h;
+    return true;
+#else
+    file->fd = ::open(path, O_WRONLY);
+    return file->fd != -1;
+#endif
+}
+
 static cz::Result load_file(Buffer* buffer, const char* path) {
     // If we're on Windows, set the default to use carriage returns.
 #ifdef _WIN32
@@ -56,9 +79,25 @@ static cz::Result load_file(Buffer* buffer, const char* path) {
     buffer->use_carriage_returns = false;
 #endif
 
+    // Determine if we can write to the file by trying to open it in write mode.
+    {
+        cz::Output_File file;
+        CZ_DEFER(file.close());
+
+        buffer->read_only = !open_existing(&file, path);
+    }
+
     cz::Input_File file;
     if (!file.open(path)) {
-        return {1};
+        // Failed to open so the file either doesn't exist or isn't readable.
+        if (errno == EEXIST) {
+            // Doesn't exist.
+            buffer->read_only = false;
+            return {1};
+        } else {
+            // Either permission error or spurious failure.
+            return {2};
+        }
     }
     CZ_DEFER(file.close());
 
@@ -366,7 +405,16 @@ static Job_Tick_Result open_file_job_tick(Asynchronous_Job_Handler* handler, voi
     Buffer buffer;
     cz::Result result = load_path_in_buffer(&buffer, data->path.buffer(), data->path.len());
     if (result.is_err()) {
-        handler->show_message("File not found");
+        if (result.code == 1) {
+            handler->show_message("File not found");
+            // Still open empty file buffer.
+        } else {
+            handler->show_message("Couldn't open file");
+
+            // Returning here when there are multiple other files being opened asynchronously
+            // allows for weird windowing states but they won't crash so it's ok for now.
+            return Job_Tick_Result::FINISHED;
+        }
     }
 
     uint64_t position = iterator_at_line_column(buffer.contents, data->line, data->column).position;
@@ -403,7 +451,9 @@ static cz::Result load_path(Editor* editor,
                             cz::Arc<Buffer_Handle>* handle) {
     Buffer buffer;
     cz::Result result = load_path_in_buffer(&buffer, path, path_len);
-    *handle = editor->create_buffer(buffer);
+    if (result.code != 2) {
+        *handle = editor->create_buffer(buffer);
+    }
     return result;
 }
 
@@ -802,9 +852,17 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
 
     cz::Arc<Buffer_Handle> handle;
     if (find_buffer_by_path(editor, client, path, &handle)) {
-    } else if (load_path(editor, path.buffer(), path.len(), &handle).is_err()) {
-        client->show_message(editor, "File not found");
-        // Still open empty file buffer.
+    } else {
+        cz::Result result = load_path(editor, path.buffer(), path.len(), &handle);
+        if (result.is_err()) {
+            if (result.code == 1) {
+                client->show_message(editor, "File not found");
+                // Still open empty file buffer.
+            } else {
+                client->show_message(editor, "Couldn't open file");
+                return;
+            }
+        }
     }
 
     client->set_selected_buffer(handle);
