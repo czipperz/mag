@@ -353,21 +353,14 @@ static void command_directory_copy_path_callback(Editor* editor,
             return;
         }
 
-        if (cz::path::is_absolute(query)) {
-            new_path = query.clone_null_terminate(cz::heap_allocator());
-        } else {
-            new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
-            new_path.append(buffer->directory);
-            new_path.append(query);
-            new_path.null_terminate();
-        }
+        new_path = standardize_path(cz::heap_allocator(), query);
     }
 
     if (cz::file::is_directory(new_path.buffer())) {
         cz::Str name;
         if (cz::path::name_component(path, &name)) {
             new_path.reserve(cz::heap_allocator(), name.len + 2);
-            if (!new_path.ends_with("/")) {
+            if (!new_path.ends_with('/')) {
                 new_path.push('/');
             }
             new_path.append(name);
@@ -417,14 +410,7 @@ static void command_directory_rename_path_callback(Editor* editor,
             return;
         }
 
-        if (cz::path::is_absolute(query)) {
-            new_path = query.clone_null_terminate(cz::heap_allocator());
-        } else {
-            new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
-            new_path.append(buffer->directory);
-            new_path.append(query);
-            new_path.null_terminate();
-        }
+        new_path = standardize_path(cz::heap_allocator(), query);
     }
 
     if (cz::file::is_directory(new_path.buffer())) {
