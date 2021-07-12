@@ -215,6 +215,7 @@ static void change_indirection(Buffer* buffer, cz::Slice<Cursor> cursors, bool i
 
                 offset += 1;
             } else {
+            wrap_ampersand:
                 // `a.b` becomes `(&a).b`.
                 Edit insert_start;
                 insert_start.value = SSOStr::from_constant("(&");
@@ -232,6 +233,7 @@ static void change_indirection(Buffer* buffer, cz::Slice<Cursor> cursors, bool i
             }
         } else if (looking_at(end, "->")) {
             if (increase) {
+            wrap_star:
                 // `a->b` becomes `(*a)->b`.
                 Edit insert_start;
                 insert_start.value = SSOStr::from_constant("(*");
@@ -261,6 +263,14 @@ static void change_indirection(Buffer* buffer, cz::Slice<Cursor> cursors, bool i
                 transaction.push(insert_dot);
 
                 offset -= 1;
+            }
+        } else if (looking_at(end, "(") || looking_at(end, "[")) {
+            // In either of these cases we must wrap parenthesis
+            // because otherwise these operators will bind tighter.
+            if (increase) {
+                goto wrap_star;
+            } else {
+                goto wrap_ampersand;
             }
         } else {
             if (increase) {
