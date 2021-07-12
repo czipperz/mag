@@ -1822,6 +1822,64 @@ void command_uncomment_hash(Editor* editor, Command_Source source) {
     generic_line_comment(buffer, window, "#", /*add=*/false);
 }
 
+static void slice_and_add_line(Contents_Iterator sol,
+                               cz::Vector<SSOStr>* lines,
+                               cz::Allocator allocator) {
+    Contents_Iterator eol = sol;
+    start_of_line(&sol);
+    end_of_line(&eol);
+    if (sol.position == eol.position) {
+        return;
+    }
+
+    SSOStr string = sol.contents->slice(allocator, sol, eol.position);
+    lines->push(string);
+}
+
+static void make_sorted_lines(cz::Vector<SSOStr>* sorted_lines,
+                              cz::Slice<SSOStr> unsorted_lines,
+                              int order) {
+    sorted_lines->reserve(cz::heap_allocator(), unsorted_lines.len);
+    sorted_lines->append(unsorted_lines);
+
+    if (order == 0) {  // Ascending
+        cz::sort(*sorted_lines,
+                 [](SSOStr* left, SSOStr* right) { return left->as_str() < right->as_str(); });
+    } else if (order == 1) {  // Descending
+        cz::sort(*sorted_lines,
+                 [](SSOStr* left, SSOStr* right) { return left->as_str() > right->as_str(); });
+    } else {  // Flip
+        for (size_t i = 0; i < sorted_lines->len() / 2; ++i) {
+            std::swap((*sorted_lines)[i], (*sorted_lines)[sorted_lines->len() - 1 - i]);
+        }
+    }
+}
+
+static void set_line_to_sorted(SSOStr sorted_line,
+                               SSOStr unsorted_line,
+                               uint64_t position,
+                               uint64_t* offset,
+                               Transaction* transaction) {
+    // Don't create unnecessary edits.
+    if (sorted_line.as_str() == unsorted_line.as_str()) {
+        return;
+    }
+
+    Edit remove_old_line;
+    remove_old_line.value = unsorted_line;
+    remove_old_line.position = position + *offset;
+    remove_old_line.flags = Edit::REMOVE_AFTER_POSITION;
+    transaction->push(remove_old_line);
+
+    Edit insert_new_line;
+    insert_new_line.value = sorted_line;
+    insert_new_line.position = position + *offset;
+    insert_new_line.flags = Edit::INSERT_AFTER_POSITION;
+    transaction->push(insert_new_line);
+
+    *offset += insert_new_line.value.len() - remove_old_line.value.len();
+}
+
 static void sort_lines(Buffer* buffer, Window_Unified* window, int order) {
     cz::Slice<Cursor> cursors = window->cursors;
 
@@ -1831,70 +1889,67 @@ static void sort_lines(Buffer* buffer, Window_Unified* window, int order) {
 
     cz::Vector<SSOStr> unsorted_lines = {};
     CZ_DEFER(unsorted_lines.drop(cz::heap_allocator()));
-    unsorted_lines.reserve(cz::heap_allocator(), cursors.len);
 
-    Contents_Iterator it = buffer->contents.start();
-    for (size_t i = 0; i < cursors.len; ++i) {
-        it.advance_to(cursors[i].point);
-
-        Contents_Iterator eol = it;
-        start_of_line(&it);
-        end_of_line(&eol);
-        if (it.position == eol.position) {
-            continue;
-        }
-
-        SSOStr string = buffer->contents.slice(transaction.value_allocator(), it, eol.position);
-        unsorted_lines.push(string);
-    }
-
-    cz::Vector<SSOStr> sorted_lines = unsorted_lines.clone(cz::heap_allocator());
+    cz::Vector<SSOStr> sorted_lines = {};
     CZ_DEFER(sorted_lines.drop(cz::heap_allocator()));
 
-    if (order == 0) {  // Ascending
-        cz::sort(sorted_lines,
-                 [](SSOStr* left, SSOStr* right) { return left->as_str() < right->as_str(); });
-    } else if (order == 1) {  // Descending
-        cz::sort(sorted_lines,
-                 [](SSOStr* left, SSOStr* right) { return left->as_str() > right->as_str(); });
-    } else {  // Flip
-        for (size_t i = 0; i < sorted_lines.len() / 2; ++i) {
-            std::swap(sorted_lines[i], sorted_lines[sorted_lines.len() - 1 - i]);
+    Contents_Iterator it = buffer->contents.start();
+    if (window->show_marks) {
+        for (size_t i = 0; i < cursors.len; ++i) {
+            unsorted_lines.set_len(0);
+            sorted_lines.set_len(0);
+
+            it.advance_to(cursors[i].start());
+            start_of_line(&it);
+            while (it.position < cursors[i].end()) {
+                unsorted_lines.reserve(cz::heap_allocator(), 1);
+                slice_and_add_line(it, &unsorted_lines, transaction.value_allocator());
+
+                end_of_line(&it);
+                forward_char(&it);
+            }
+
+            make_sorted_lines(&sorted_lines, unsorted_lines, order);
+
+            it.retreat_to(cursors[i].start());
+            start_of_line(&it);
+
+            uint64_t offset = 0;
+            size_t line = 0;
+            while (it.position < cursors[i].end()) {
+                if (!at_end_of_line(it)) {
+                    set_line_to_sorted(sorted_lines[line], unsorted_lines[line], it.position,
+                                       &offset, &transaction);
+                    ++line;
+                }
+
+                end_of_line(&it);
+                forward_char(&it);
+            }
         }
-    }
+    } else {
+        unsorted_lines.reserve(cz::heap_allocator(), cursors.len);
 
-    it.retreat_to(cursors[0].point);
-    uint64_t offset = 0;
-    size_t line = 0;
-    for (size_t i = 0; i < cursors.len; ++i) {
-        it.advance_to(cursors[i].point);
-
-        start_of_line(&it);
-        if (at_end_of_line(it)) {
-            continue;
+        for (size_t i = 0; i < cursors.len; ++i) {
+            it.advance_to(cursors[i].point);
+            slice_and_add_line(it, &unsorted_lines, transaction.value_allocator());
         }
 
-        // Don't create unnecessary edits.
-        if (sorted_lines[line].as_str() == unsorted_lines[line].as_str()) {
-            ++line;
-            continue;
+        make_sorted_lines(&sorted_lines, unsorted_lines, order);
+
+        it.retreat_to(cursors[0].point);
+
+        uint64_t offset = 0;
+        size_t line = 0;
+        for (size_t i = 0; i < cursors.len; ++i) {
+            it.advance_to(cursors[i].point);
+            start_of_line(&it);
+            if (!at_end_of_line(it)) {
+                set_line_to_sorted(sorted_lines[line], unsorted_lines[line], it.position, &offset,
+                                   &transaction);
+                ++line;
+            }
         }
-
-        Edit remove_old_line;
-        remove_old_line.value = unsorted_lines[line];
-        remove_old_line.position = it.position + offset;
-        remove_old_line.flags = Edit::REMOVE;
-        transaction.push(remove_old_line);
-
-        Edit insert_new_line;
-        insert_new_line.value = sorted_lines[line];
-        insert_new_line.position = it.position + offset;
-        insert_new_line.flags = Edit::INSERT;
-        transaction.push(insert_new_line);
-
-        offset += insert_new_line.value.len() - remove_old_line.value.len();
-
-        ++line;
     }
 
     transaction.commit();
