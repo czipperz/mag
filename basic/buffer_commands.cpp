@@ -293,16 +293,17 @@ static void command_rename_buffer_callback(Editor* editor,
                                            void* data) {
     cz::Str name;
     cz::Str directory;
-    parse_rendered_buffer_name(path, &name, &directory);
+    Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
 
     cz::String name_clone = name.clone(cz::heap_allocator());
     CZ_DEFER(name_clone.drop(cz::heap_allocator()));
-    cz::String directory_clone = directory.clone(cz::heap_allocator());
+    cz::String directory_clone = directory.clone_null_terminate(cz::heap_allocator());
     CZ_DEFER(directory_clone.drop(cz::heap_allocator()));
 
     WITH_SELECTED_BUFFER(client);
     std::swap(buffer->name, name_clone);
     std::swap(buffer->directory, directory_clone);
+    buffer->type = type;
 }
 
 void command_rename_buffer(Editor* editor, Command_Source source) {
