@@ -326,5 +326,55 @@ void command_rename_buffer(Editor* editor, Command_Source source) {
     fill_mini_buffer_with(editor, source.client, path);
 }
 
+static void command_save_buffer_to_callback(Editor* editor,
+                                            Client* client,
+                                            cz::Str path,
+                                            void* data) {
+    cz::Str name;
+    cz::Str directory;
+    Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
+    if (type != Buffer::FILE) {
+        client->show_message(editor, "Buffer name must be for a file");
+        return;
+    }
+
+    cz::String name_clone = name.clone(cz::heap_allocator());
+    CZ_DEFER(name_clone.drop(cz::heap_allocator()));
+    cz::String directory_clone = directory.clone_null_terminate(cz::heap_allocator());
+    CZ_DEFER(directory_clone.drop(cz::heap_allocator()));
+
+    WITH_SELECTED_BUFFER(client);
+    std::swap(buffer->name, name_clone);
+    std::swap(buffer->directory, directory_clone);
+    buffer->type = type;
+
+    // Force the buffer to be unsaved.
+    buffer->saved_commit_id = {{(uint64_t)-1}};
+
+    if (!save_buffer(buffer)) {
+        client->show_message(editor, "Error saving file");
+    }
+}
+
+void command_save_buffer_to(Editor* editor, Command_Source source) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        path.reserve(cz::heap_allocator(), buffer->directory.len() + buffer->name.len());
+        path.append(buffer->directory);
+        path.append(buffer->name);
+    }
+
+    Dialog dialog = {};
+    dialog.prompt = "Save buffer to: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_save_buffer_to_callback;
+    dialog.next_token = syntax::path_next_token;
+    source.client->show_dialog(editor, dialog);
+
+    fill_mini_buffer_with(editor, source.client, path);
+}
+
 }
 }
