@@ -29,11 +29,11 @@ void command_create_all_cursors_matching_token(Editor* editor, Command_Source so
 
 void command_create_all_cursors_matching_token_or_search(Editor* editor, Command_Source source);
 
-void backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor);
-void forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor);
+bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor);
+bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor);
 
-void forward_token_pair(Buffer* buffer, Contents_Iterator* iterator);
-void backward_token_pair(Buffer* buffer, Contents_Iterator* iterator);
+bool forward_token_pair(Buffer* buffer, Contents_Iterator* iterator);
+bool backward_token_pair(Buffer* buffer, Contents_Iterator* iterator);
 
 int forward_matching_token(Buffer* buffer, Contents_Iterator* iterator);
 int backward_matching_token(Buffer* buffer, Contents_Iterator* iterator);
@@ -46,6 +46,16 @@ int find_backward_matching_token(Buffer* buffer,
                                  Contents_Iterator iterator,
                                  Token* this_token,
                                  Token* matching_token);
+
+bool get_token_before_position(Buffer* buffer,
+                               Contents_Iterator* token_iterator,
+                               uint64_t* state,
+                               Token* token);
+
+bool get_token_after_position(Buffer* buffer,
+                              Contents_Iterator* token_iterator,
+                              uint64_t* state,
+                              Token* token);
 
 }
 }

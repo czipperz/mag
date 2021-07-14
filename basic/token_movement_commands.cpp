@@ -37,7 +37,7 @@ static void tokenize_recording_pairs(Tokenizer_Check_Point check_point,
     }
 }
 
-void backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
+bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
     uint64_t end_position = cursor->position;
     Contents_Iterator token_iterator = *cursor;
 
@@ -63,7 +63,7 @@ void backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
             if (tokens[i].type == Token_Type::OPEN_PAIR) {
                 if (depth == 0) {
                     cursor->retreat_to(tokens[i].start);
-                    return;
+                    return true;
                 }
 
                 --depth;
@@ -73,7 +73,7 @@ void backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
         }
 
         if (check_point_index == 0) {
-            return;
+            return false;
         }
 
         --check_point_index;
@@ -83,10 +83,10 @@ void backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
     }
 }
 
-static bool get_token_after_position(Buffer* buffer,
-                                     Contents_Iterator* token_iterator,
-                                     uint64_t* state,
-                                     Token* token) {
+bool get_token_after_position(Buffer* buffer,
+                              Contents_Iterator* token_iterator,
+                              uint64_t* state,
+                              Token* token) {
     uint64_t end_position = token_iterator->position;
 
     Tokenizer_Check_Point check_point = {};
@@ -107,10 +107,10 @@ static bool get_token_after_position(Buffer* buffer,
     }
 }
 
-static bool get_token_before_position(Buffer* buffer,
-                                      Contents_Iterator* token_iterator,
-                                      uint64_t* state,
-                                      Token* token) {
+bool get_token_before_position(Buffer* buffer,
+                               Contents_Iterator* token_iterator,
+                               uint64_t* state,
+                               Token* token) {
     uint64_t end_position = token_iterator->position;
 
     Tokenizer_Check_Point check_point = {};
@@ -153,13 +153,13 @@ static bool get_token_before_position(Buffer* buffer,
     }
 }
 
-void forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
+bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
     Contents_Iterator token_iterator = *cursor;
 
     Token token;
     uint64_t state;
     if (!get_token_after_position(buffer, &token_iterator, &state, &token)) {
-        return;
+        return false;
     }
 
     size_t depth = 0;
@@ -167,7 +167,7 @@ void forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
         if (token.type == Token_Type::CLOSE_PAIR) {
             if (depth == 0) {
                 cursor->advance_to(token.end);
-                return;
+                return true;
             }
 
             --depth;
@@ -177,7 +177,7 @@ void forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
 
         bool has_token = buffer->mode.next_token(&token_iterator, &token, &state);
         if (!has_token) {
-            return;
+            return false;
         }
     }
 }
@@ -213,13 +213,13 @@ void command_forward_up_token_pair(Editor* editor, Command_Source source) {
     sort_cursors(window->cursors);
 }
 
-void forward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
+bool forward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
     Token token;
     uint64_t state;
     Contents_Iterator backup = *iterator;
     if (!get_token_after_position(buffer, iterator, &state, &token)) {
         *iterator = backup;
-        return;
+        return false;
     }
 
     CZ_DEBUG_ASSERT(token.end == iterator->position);
@@ -227,6 +227,8 @@ void forward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
     if (token.type == Token_Type::OPEN_PAIR) {
         forward_up_token_pair(buffer, iterator);
     }
+
+    return true;
 }
 
 void command_forward_token_pair(Editor* editor, Command_Source source) {
@@ -242,13 +244,13 @@ void command_forward_token_pair(Editor* editor, Command_Source source) {
     sort_cursors(window->cursors);
 }
 
-void backward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
+bool backward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
     Token token;
     uint64_t state;
     Contents_Iterator backup = *iterator;
     if (!get_token_before_position(buffer, iterator, &state, &token)) {
         *iterator = backup;
-        return;
+        return false;
     }
 
     iterator->retreat_to(token.start);
@@ -256,6 +258,8 @@ void backward_token_pair(Buffer* buffer, Contents_Iterator* iterator) {
     if (token.type == Token_Type::CLOSE_PAIR) {
         backward_up_token_pair(buffer, iterator);
     }
+
+    return true;
 }
 
 void command_backward_token_pair(Editor* editor, Command_Source source) {
