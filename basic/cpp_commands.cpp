@@ -264,8 +264,9 @@ static void change_indirection(Buffer* buffer, cz::Slice<Cursor> cursors, bool i
 
                 offset -= 1;
             }
-        } else if (looking_at(end, "(") || looking_at(end, "[")) {
-            // In either of these cases we must wrap parenthesis
+        } else if (looking_at(end, "(") || looking_at(end, "[") || looking_at(end, "++") ||
+                   looking_at(end, "--")) {
+            // In any of these cases we must wrap parenthesis
             // because otherwise these operators will bind tighter.
             if (increase) {
                 goto wrap_star;
