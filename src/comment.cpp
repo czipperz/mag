@@ -218,7 +218,10 @@ void remove_line_comments(Transaction* transaction,
         }
 
         if (!looking_at(start, comment_start)) {
-            goto next_line;
+        next_line:
+            end_of_line(&start);
+            forward_char(&start);
+            continue;
         }
 
         Contents_Iterator after = start;
@@ -319,9 +322,7 @@ void remove_line_comments(Transaction* transaction,
 
         *offset -= remove_comment.value.len();
 
-    next_line:
-        end_of_line(&start);
-        forward_char(&start);
+        goto next_line;
     }
 }
 
