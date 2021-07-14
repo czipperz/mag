@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <cz/char_type.hpp>
 #include <cz/file.hpp>
+#include <cz/format.hpp>
+#include <cz/heap_string.hpp>
 #include <cz/path.hpp>
 #include <cz/working_directory.hpp>
 #include "command_macros.hpp"
@@ -370,6 +372,55 @@ void command_save_buffer_to(Editor* editor, Command_Source source) {
     dialog.prompt = "Save buffer to: ";
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_save_buffer_to_callback;
+    dialog.next_token = syntax::path_next_token;
+    source.client->show_dialog(editor, dialog);
+
+    fill_mini_buffer_with(editor, source.client, path);
+}
+
+static void command_diff_buffer_against_callback(Editor* editor,
+                                                 Client* client,
+                                                 cz::Str path,
+                                                 void* data) {
+    WITH_CONST_SELECTED_BUFFER(client);
+
+    char temp_file_buffer[L_tmpnam];
+    if (!tmpnam(temp_file_buffer)) {
+        client->show_message(editor, "No temporary file available");
+        return;
+    }
+
+    if (!save_buffer_to(buffer, temp_file_buffer)) {
+        client->show_message(editor, "Couldn't save to temporary file");
+        return;
+    }
+
+    cz::Heap_String name = {};
+    CZ_DEFER(name.drop());
+    name = cz::format("diff ", path, " ");
+    buffer->render_name(cz::heap_allocator(), &name);
+
+    cz::Str args[] = {"diff", path, temp_file_buffer};
+
+    run_console_command(client, editor, buffer->directory.buffer(), args, name, "Diff error");
+}
+
+void command_diff_buffer_against(Editor* editor, Command_Source source) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        path.reserve(cz::heap_allocator(), buffer->directory.len() + buffer->name.len());
+        path.append(buffer->directory);
+        if (buffer->type == Buffer::FILE) {
+            path.append(buffer->name);
+        }
+    }
+
+    Dialog dialog = {};
+    dialog.prompt = "Diff buffer against: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_diff_buffer_against_callback;
     dialog.next_token = syntax::path_next_token;
     source.client->show_dialog(editor, dialog);
 
