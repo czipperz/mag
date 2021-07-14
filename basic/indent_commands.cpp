@@ -1,5 +1,6 @@
 #include "indent_commands.hpp"
 
+#include "basic/token_movement_commands.hpp"
 #include "command.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
@@ -10,58 +11,36 @@ namespace mag {
 namespace basic {
 
 static uint64_t find_indent_width(Buffer* buffer, Contents_Iterator it) {
-    Contents_Iterator original = it;
-
-    // Find a line backwards that isn't empty (including the current line).
-    while (!it.at_bob()) {
-        start_of_line(&it);
-
-        if (!it.at_eob() && it.get() != '\n') {
-            break;
-        }
-
-        it.retreat();
+    if (!backward_up_token_pair(buffer, &it)) {
+        return 0;
     }
 
-    // Look at all tokens between it and original and add one indentation (4) for each unmatched
-    // open pair.
-    int64_t depth = 0;
-
-    if (buffer->mode.indent_after_open_pair) {
-        Tokenizer_Check_Point check_point = {};
-        buffer->token_cache.update(buffer);
-        buffer->token_cache.find_check_point(it.position, &check_point);
-
+    // If the open pair token is at the end of the line then indent starting after it.
+    {
         Contents_Iterator token_iterator = it;
-        token_iterator.retreat_to(check_point.position);
-        uint64_t state = check_point.state;
-
+        uint64_t state;
         Token token;
-        while (buffer->mode.next_token(&token_iterator, &token, &state)) {
-            if (token.start < it.position) {
-                continue;
-            }
-            if (token.end > original.position) {
-                break;
-            }
-            if (token.type == Token_Type::OPEN_PAIR) {
-                ++depth;
-            }
-            if (token.type == Token_Type::CLOSE_PAIR) {
-                --depth;
-            }
+        if (!get_token_after_position(buffer, &token_iterator, &state, &token)) {
+            token.end = it.position;
         }
-
-        // Don't unindent if the line has more close pairs.  A line `}`
-        // shouldn't cause the next line to be unindented even more.
-        // It should be indented the same amount as the closing pair.
-        depth = cz::max(depth, (int64_t)0);
+        token_iterator.retreat_to(token.end);
+        if (!at_end_of_line(token_iterator)) {
+            return get_visual_column(buffer->mode, token_iterator);
+        }
     }
 
-    Contents_Iterator end = it;
-    forward_through_whitespace(&end);
+    // This is super inefficient but it's not invoked programmatically so it's not a big deal.
+    while (1) {
+        Contents_Iterator solt = it;
+        start_of_line_text(&solt);
+        if (solt.position == it.position) {
+            return get_visual_column(buffer->mode, it) + buffer->mode.indent_width;
+        }
 
-    return depth * buffer->mode.indent_width + get_visual_column(buffer->mode, end);
+        if (!backward_token_pair(buffer, &it)) {
+            return buffer->mode.indent_width;
+        }
+    }
 }
 
 void command_insert_newline_indent(Editor* editor, Command_Source source) {
