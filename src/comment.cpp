@@ -209,13 +209,9 @@ void remove_line_comments(Transaction* transaction,
                           cz::Str comment_start) {
     start_of_line(&start);
 
-    while (1) {
+    while (start.position < end) {
         Contents_Iterator sol = start;
         forward_through_whitespace(&start);
-
-        if (start.position >= end) {
-            break;
-        }
 
         if (!looking_at(start, comment_start)) {
         next_line:
