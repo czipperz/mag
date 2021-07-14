@@ -39,6 +39,7 @@ bool search_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
     }
 
     if (*state == END_OF_LINE) {
+        ++token->start;
         iterator->advance();
         while (!iterator->at_eob()) {
             if (iterator->get() == ':') {
