@@ -57,12 +57,10 @@ void horizontally_center_in_window(Window_Unified* window,
         return;
     }
 
-    Contents_Iterator sol = iterator;
     Contents_Iterator eol = iterator;
-    start_of_line(&sol);
     end_of_line(&eol);
 
-    uint64_t column = count_visual_columns(mode, sol, iterator.position);
+    uint64_t column = get_visual_column(mode, iterator);
     uint64_t line_columns = count_visual_columns(mode, iterator, eol.position, column);
     size_t scroll_outside = get_scroll_outside(window->cols(), theme.scroll_outside_visual_columns);
 
@@ -73,19 +71,8 @@ void horizontally_center_in_window(Window_Unified* window,
         return;
     }
 
-    // Otherwise, find a column that is around half a screen to the left of the iterator.
-    uint64_t col = 0;
-    while (1) {
-        uint64_t after = char_visual_columns(mode, sol.get(), col);
-        if (after + window->cols() / 2 > column) {
-            break;
-        }
-
-        col = after;
-        sol.advance();
-    }
-
-    window->column_offset = col;
+    // Otherwise, center the iterator.
+    window->column_offset = column - window->cols() / 2;
 }
 
 void center_in_window(Window_Unified* window,
