@@ -616,6 +616,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
     buffer->mode.search_case_insensitive = true;
 
+    buffer->mode.comment_break_tabs = true;
+
     buffer->mode.preferred_column = 100;
 
     buffer->mode.wrap_long_lines = false;

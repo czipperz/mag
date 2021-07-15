@@ -62,6 +62,19 @@ struct Mode {
     /// Controls whether search commands stemming from this buffer will be case sensitive.
     bool search_case_insensitive = true;
 
+    /// If enabled then the various comment commands will break tabs
+    /// into spaces at and after the point the comments are inserted.
+    ///
+    /// This causes the lines that are indented more in the comment
+    /// section to look as if they are still indented more than the least
+    /// indented lines instead of the tab absorbing the comment start.
+    ///
+    /// If `tab_width != indent_width` and this option is disabled then the comments
+    /// will be put after the last tab making the resulting indentation look weird.
+    ///
+    /// Uncommenting will coalesce spaces into tabs regardless of whether this is set.
+    bool comment_break_tabs = true;
+
     /// Used for debugging.
     bool render_bucket_boundaries = false;
 

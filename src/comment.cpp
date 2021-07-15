@@ -24,9 +24,15 @@ uint64_t visual_column_for_aligned_line_comments(const Mode& mode,
                     break;
                 }
 
+                uint64_t before = column;
                 column = char_visual_columns(mode, ch, column);
+
                 // This line is more indented than the previous line.
                 if (column > start_offset) {
+                    // If we hit a tab that spans the column then retreat to the tab boundary.
+                    if (!mode.comment_break_tabs && before < start_offset) {
+                        column = before;
+                    }
                     break;
                 }
             }
@@ -172,8 +178,12 @@ void insert_line_comments(Transaction* transaction,
         } else {
             // Go to the visual column and break tabs after it.
             uint64_t offset_after = *offset;
-            go_to_visual_column_and_break_tabs(mode, &start, visual_column, offset, &offset_after,
-                                               transaction);
+            if (mode.comment_break_tabs) {
+                go_to_visual_column_and_break_tabs(mode, &start, visual_column, offset, &offset_after,
+                                                   transaction);
+            } else {
+                go_to_visual_column(mode, &start, visual_column);
+            }
 
             // On non-empty lines insert `comment_start` then a space at the aligned column.
             Edit edit;
