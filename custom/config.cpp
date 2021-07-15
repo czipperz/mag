@@ -67,6 +67,7 @@
 #include "syntax/tokenize_search.hpp"
 #include "syntax/tokenize_shell_script.hpp"
 #include "syntax/tokenize_splash.hpp"
+#include "version_control/tokenize_diff.hpp"
 #include "version_control/tokenize_git_commit_edit_message.hpp"
 #include "version_control/tokenize_patch.hpp"
 #include "version_control/tokenize_rebase_todo.hpp"
@@ -674,6 +675,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "ENTER", command_go_to_key_map_binding);
         } else if (buffer->name == "*splash page*") {
             buffer->mode.next_token = syntax::splash_next_token;
+        } else if (buffer->name.starts_with("*diff ")) {
+            buffer->mode.next_token = syntax::diff_next_token;
         }
         break;
 
