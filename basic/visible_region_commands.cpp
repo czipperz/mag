@@ -207,7 +207,7 @@ static void scroll_right(Editor* editor, Command_Source source, size_t num) {
                 } else {
                     window->column_offset = column - scroll_outside;
                 }
-                return;
+                break;
             }
 
             column = char_visual_columns(buffer->mode, ch, column);
