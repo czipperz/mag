@@ -94,7 +94,13 @@ static cz::Result load_file(Buffer* buffer, const char* path) {
     cz::Input_File file;
     if (!file.open(path)) {
         // Failed to open so the file either doesn't exist or isn't readable.
-        if (errno == EEXIST) {
+        bool dne;
+#ifdef _WIN32
+        dne = (GetLastError() == ERROR_FILE_NOT_FOUND);
+#else
+        dne = (errno == ENOENT);
+#endif
+        if (dne) {
             // Doesn't exist.
             buffer->read_only = false;
             return {1};
