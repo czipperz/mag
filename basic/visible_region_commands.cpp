@@ -8,8 +8,8 @@
 namespace mag {
 namespace basic {
 
-void center_selected_cursor(Window_Unified* window, const Buffer* buffer) {
-    center_in_window(window, buffer->mode,
+void center_selected_cursor(Editor* editor, Window_Unified* window, const Buffer* buffer) {
+    center_in_window(window, buffer->mode, editor->theme,
                      buffer->contents.iterator_at(window->cursors[window->selected_cursor].point));
 }
 
@@ -21,7 +21,7 @@ void command_center_in_window(Editor* editor, Command_Source source) {
     }
 
     WITH_CONST_WINDOW_BUFFER(window);
-    center_selected_cursor(window, buffer);
+    center_selected_cursor(editor, window, buffer);
 }
 
 void command_goto_center_of_window(Editor* editor, Command_Source source) {
@@ -47,7 +47,7 @@ void command_up_page(Editor* editor, Command_Source source) {
         }
         --window->selected_cursor;
 
-        center_selected_cursor(window, buffer);
+        center_selected_cursor(editor, window, buffer);
         return;
     }
 
@@ -74,7 +74,7 @@ void command_down_page(Editor* editor, Command_Source source) {
             window->selected_cursor = 0;
         }
 
-        center_selected_cursor(window, buffer);
+        center_selected_cursor(editor, window, buffer);
         return;
     }
 

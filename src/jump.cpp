@@ -64,7 +64,8 @@ bool goto_jump(Editor* editor, Client* client, Jump* jump) {
 
     // And center it.
     WITH_WINDOW_BUFFER(window);
-    center_in_window(window, buffer->mode, buffer->contents.iterator_at(jump->position));
+    center_in_window(window, buffer->mode, editor->theme,
+                     buffer->contents.iterator_at(jump->position));
 
     return true;
 }

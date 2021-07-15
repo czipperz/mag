@@ -154,7 +154,7 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
         ve.retreat_to(window->start_position);
         forward_visual_line(window, buffer->mode, &ve, window->rows() - 1);
         if (iterator.position < ve.position) {
-            center_in_window(window, buffer->mode, iterator);
+            center_in_window(window, buffer->mode, editor->theme, iterator);
         } else {
             window->start_position = iterator.position;
         }

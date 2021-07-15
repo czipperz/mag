@@ -92,7 +92,7 @@ static void open_file_and_goto_position(Editor* editor,
         kill_extra_cursors(window, client);
         Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
         window->cursors[0].point = iterator.position;
-        center_in_window(window, buffer->mode, iterator);
+        center_in_window(window, buffer->mode, editor->theme, iterator);
     }
 
     toggle_cycle_window(client);
