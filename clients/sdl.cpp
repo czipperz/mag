@@ -588,7 +588,7 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
                     spq.sp.position != mouse->mouse_down_pos.position) {
                     kill_extra_cursors(spq.sp.window, client);
                     if (mouse->mouse_down_data == MOUSE_DOWN) {
-                        spq.sp.window->show_marks = true;
+                        spq.sp.window->show_marks = 2;
                         spq.sp.window->cursors[0].mark = mouse->mouse_down_pos.position;
                         spq.sp.window->cursors[0].point = spq.sp.position;
                     } else {
@@ -617,7 +617,7 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
                             forward_char(end);
                         }
 
-                        spq.sp.window->show_marks = true;
+                        spq.sp.window->show_marks = 2;
                         spq.sp.window->cursors[0].mark = mark.position;
                         spq.sp.window->cursors[0].point = point.position;
                     }
@@ -655,7 +655,7 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
                     forward_word(&end);
 
                     kill_extra_cursors(window, client);
-                    window->show_marks = true;
+                    window->show_marks = 2;
                     window->cursors[0].mark = start.position;
                     window->cursors[0].point = end.position;
                 }
@@ -677,7 +677,7 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
                     forward_char(&end);
 
                     kill_extra_cursors(window, client);
-                    window->show_marks = true;
+                    window->show_marks = 2;
                     window->cursors[0].mark = start.position;
                     window->cursors[0].point = end.position;
                 }
