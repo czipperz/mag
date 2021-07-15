@@ -1,4 +1,4 @@
-#include "tokenize_git_commit_edit_message.hpp"
+#include "tokenize_patch.hpp"
 
 #include "contents.hpp"
 #include "movement.hpp"
