@@ -572,17 +572,27 @@ static void continue_inside_multiline_comment(Contents_Iterator* iterator,
         // to happen unless the user types /** at the start of a big file.
         if (++counter == 1000) {
             // Pause in the middle of the comment.
-            *comment_state = COMMENT_MIDDLE_OF_LINE;
+            if (*comment_state != COMMENT_TITLE) {
+                *comment_state = COMMENT_MIDDLE_OF_LINE;
+            }
             break;
         }
 
         char ch = iterator->get();
         if (previous == '*' && ch == '/') {
         end_comment:
-            iterator->advance();
-            *in_multiline_doc_comment = false;
+            if (*comment_state == COMMENT_TITLE) {
+                iterator->retreat();
+                *comment_state = COMMENT_MIDDLE_OF_LINE;
+            } else {
+                iterator->advance();
+                *in_multiline_doc_comment = false;
+            }
             break;
         } else if (ch == '\n') {
+            if (*comment_state == COMMENT_TITLE) {
+                break;
+            }
             *comment_state = COMMENT_START_OF_LINE_1;
         } else if (ch == '`') {
             *comment_state = COMMENT_MIDDLE_OF_LINE;
@@ -622,31 +632,6 @@ static void continue_around_multiline_comment(Contents_Iterator* iterator,
         char ch = iterator->get();
         if (previous == '*' && ch == '/') {
             iterator->advance();
-            break;
-        }
-
-        previous = ch;
-    }
-}
-
-static void continue_inside_multiline_comment_title(Contents_Iterator* iterator,
-                                                    bool* in_multiline_doc_comment,
-                                                    uint64_t* comment_state) {
-    char previous = 0;
-    for (; !iterator->at_eob(); iterator->advance()) {
-        char ch = iterator->get();
-        if (previous == '*' && ch == '/') {
-            iterator->advance();
-            *in_multiline_doc_comment = false;
-            break;
-        } else if (ch == '\n') {
-            break;
-        } else if (ch == '`') {
-            *comment_state = COMMENT_MIDDLE_OF_LINE;
-            break;
-        } else if ((*comment_state == COMMENT_START_OF_LINE_1 ||
-                    *comment_state == COMMENT_START_OF_LINE_2) &&
-                   (ch == '#' || ch == '*' || ch == '-' || ch == '+')) {
             break;
         }
 
@@ -761,8 +746,8 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             if (in_oneline_comment) {
                 continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
             } else {
-                continue_inside_multiline_comment_title(iterator, &in_multiline_doc_comment,
-                                                        &comment_state);
+                continue_inside_multiline_comment(iterator, &in_multiline_doc_comment,
+                                                  &comment_state);
             }
             token->type = Token_Type::TITLE;
             goto done;
