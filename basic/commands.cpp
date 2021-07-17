@@ -1475,11 +1475,19 @@ void command_search_forward(Editor* editor, Command_Source source) {
         dialog.interactive_response_callback = interactive_search_response_callback;
         dialog.response_cancel = interactive_search_cancel;
         dialog.response_callback_data = data;
+        {
+            WITH_CONST_WINDOW_BUFFER(window);
+            dialog.next_token = buffer->mode.next_token;
+        }
         source.client->show_dialog(editor, dialog);
     } else {
         Dialog dialog = {};
         dialog.prompt = "Search forward: ";
         dialog.response_callback = command_search_forward_callback;
+        {
+            WITH_CONST_WINDOW_BUFFER(window);
+            dialog.next_token = buffer->mode.next_token;
+        }
         source.client->show_dialog(editor, dialog);
     }
 }
@@ -1569,11 +1577,19 @@ void command_search_backward(Editor* editor, Command_Source source) {
         dialog.interactive_response_callback = interactive_search_response_callback;
         dialog.response_cancel = interactive_search_cancel;
         dialog.response_callback_data = data;
+        {
+            WITH_CONST_WINDOW_BUFFER(window);
+            dialog.next_token = buffer->mode.next_token;
+        }
         source.client->show_dialog(editor, dialog);
     } else {
         Dialog dialog = {};
         dialog.prompt = "Search backward: ";
         dialog.response_callback = command_search_backward_callback;
+        {
+            WITH_CONST_WINDOW_BUFFER(window);
+            dialog.next_token = buffer->mode.next_token;
+        }
         source.client->show_dialog(editor, dialog);
     }
 }
@@ -1620,6 +1636,10 @@ void command_search_backward_expanding(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Search backward: ";
     dialog.response_callback = command_search_backward_expanding_callback;
+    {
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        dialog.next_token = buffer->mode.next_token;
+    }
     source.client->show_dialog(editor, dialog);
 }
 
@@ -1627,6 +1647,10 @@ void command_search_forward_expanding(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Search forward: ";
     dialog.response_callback = command_search_forward_expanding_callback;
+    {
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        dialog.next_token = buffer->mode.next_token;
+    }
     source.client->show_dialog(editor, dialog);
 }
 
