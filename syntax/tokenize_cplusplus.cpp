@@ -732,6 +732,10 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 token->type = Token_Type::PUNCTUATION;
                 break;
             case '*':
+                if (in_multiline_doc_comment && looking_at(*iterator, "*/")) {
+                    goto comment_normal;
+                }
+                // fallthrough
             case '-':
             case '+':
                 comment_state = COMMENT_MIDDLE_OF_LINE;
