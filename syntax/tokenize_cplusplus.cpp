@@ -219,27 +219,27 @@ static bool is_identifier_continuation(char ch) {
         break;                           \
     }
 
-static bool look_for_type_definition_keyword(Contents_Iterator iterator, Token* token, char ch) {
+static bool look_for_type_definition_keyword(Contents_Iterator iterator, uint64_t end, char ch) {
     ZoneScoped;
 
     switch (ch) {
     case 'c':
-        if (matches(iterator, token->end, "class")) {
+        if (matches(iterator, end, "class")) {
             return true;
         }
         break;
     case 'e':
-        if (matches(iterator, token->end, "enum")) {
+        if (matches(iterator, end, "enum")) {
             return true;
         }
         break;
     case 'u':
-        if (matches(iterator, token->end, "union")) {
+        if (matches(iterator, end, "union")) {
             return true;
         }
         break;
     case 's':
-        if (matches(iterator, token->end, "struct")) {
+        if (matches(iterator, end, "struct")) {
             return true;
         }
         break;
@@ -247,10 +247,10 @@ static bool look_for_type_definition_keyword(Contents_Iterator iterator, Token* 
     return false;
 }
 
-static bool look_for_normal_keyword(Contents_Iterator iterator, Token* token, char ch) {
+static bool look_for_normal_keyword(Contents_Iterator iterator, uint64_t end, char ch) {
     ZoneScoped;
 
-    switch (token->end - token->start) {
+    switch (end - iterator.position) {
         LEN(2, {
             CASE('d', "do");
             CASE('i', "if");
@@ -410,10 +410,10 @@ static bool look_for_normal_keyword(Contents_Iterator iterator, Token* token, ch
     return false;
 }
 
-static bool look_for_type_keyword(Contents_Iterator iterator, Token* token, char ch) {
+static bool look_for_type_keyword(Contents_Iterator iterator, uint64_t end, char ch) {
     ZoneScoped;
 
-    switch (token->end - token->start) {
+    switch (end - iterator.position) {
         LEN(3, CASE('i', "int"));
         LEN(4, {
             CASE('a', "auto");
@@ -907,15 +907,14 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                  iterator->advance()) {
             }
         }
-        token->end = iterator->position;
 
         if (in_preprocessor && preprocessor_state == PREPROCESSOR_START_STATEMENT) {
             ZoneScopedN("preprocessor keyword");
             token->type = Token_Type::PREPROCESSOR_KEYWORD;
-            if (matches(start_iterator, token->end, "include")) {
+            if (matches(start_iterator, iterator->position, "include")) {
                 preprocessor_state = PREPROCESSOR_AFTER_INCLUDE;
                 goto done_no_skip;
-            } else if (matches(start_iterator, token->end, "define")) {
+            } else if (matches(start_iterator, iterator->position, "define")) {
                 preprocessor_state = PREPROCESSOR_AFTER_DEFINE;
                 goto done_no_skip;
             } else {
@@ -932,23 +931,23 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             goto done;
         }
 
-        if (look_for_type_definition_keyword(start_iterator, token, first_char)) {
+        if (look_for_type_definition_keyword(start_iterator, iterator->position, first_char)) {
             token->type = Token_Type::KEYWORD;
             normal_state = IN_TYPE_DEFINITION;
             goto done;
         }
 
-        if (look_for_normal_keyword(start_iterator, token, first_char)) {
+        if (look_for_normal_keyword(start_iterator, iterator->position, first_char)) {
             token->type = Token_Type::KEYWORD;
-            if (matches(start_iterator, token->end, "for")) {
+            if (matches(start_iterator, iterator->position, "for")) {
                 normal_state = AFTER_FOR;
-            } else if (matches(start_iterator, token->end, "return")) {
+            } else if (matches(start_iterator, iterator->position, "return")) {
                 normal_state = IN_EXPR;
             }
             goto done;
         }
 
-        if (look_for_type_keyword(start_iterator, token, first_char)) {
+        if (look_for_type_keyword(start_iterator, iterator->position, first_char)) {
             token->type = Token_Type::TYPE;
             if (normal_state == START_OF_PARAMETER || normal_state == IN_PARAMETER_TYPE) {
                 normal_state = IN_PARAMETER_TYPE;
