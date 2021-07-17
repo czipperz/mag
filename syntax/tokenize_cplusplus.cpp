@@ -673,6 +673,8 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         return false;
     }
 
+    token->start = iterator->position;
+
     if (first_char == '<' || first_char == '=' || first_char == '>') {
         Contents_Iterator mc = *iterator;
         mc.advance();
@@ -687,7 +689,6 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             mc.advance();
         }
         if (i == 6) {
-            token->start = iterator->position;
             switch (first_char) {
             case '<':
                 token->type = Token_Type::MERGE_START;
@@ -701,17 +702,14 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             }
             *iterator = mc;
             end_of_line(iterator);
-            token->end = mc.position;
             goto done;
         }
     }
 
     if (in_multiline_normal_comment) {
         ZoneScopedN("block comment continuation");
-        token->start = iterator->position;
         continue_around_multiline_comment(iterator, &in_multiline_normal_comment);
         token->type = Token_Type::COMMENT;
-        token->end = iterator->position;
         goto done;
     }
 
@@ -723,12 +721,10 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             switch (first_char) {
             case '#':
                 comment_state = COMMENT_TITLE;
-                token->start = iterator->position;
                 iterator->advance();
                 while (!iterator->at_eob() && iterator->get() == '#') {
                     iterator->advance();
                 }
-                token->end = iterator->position;
                 token->type = Token_Type::PUNCTUATION;
                 break;
             case '*':
@@ -739,9 +735,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             case '-':
             case '+':
                 comment_state = COMMENT_MIDDLE_OF_LINE;
-                token->start = iterator->position;
                 iterator->advance();
-                token->end = iterator->position;
                 token->type = Token_Type::PUNCTUATION;
                 break;
             default:
@@ -750,20 +744,17 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             goto done;
 
         case COMMENT_TITLE:
-            token->start = iterator->position;
             if (in_oneline_comment) {
                 continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
             } else {
                 continue_inside_multiline_comment_title(iterator, &in_multiline_doc_comment,
                                                         &comment_state);
             }
-            token->end = iterator->position;
             token->type = Token_Type::TITLE;
             goto done;
 
         case COMMENT_MIDDLE_OF_LINE:
             if (first_char == '`') {
-                token->start = iterator->position;
                 iterator->advance();
                 comment_state = COMMENT_CODE_INLINE;
                 if (!iterator->at_eob() && iterator->get() == '`') {
@@ -786,28 +777,23 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                     LOAD_COMBINED_STATE(*state_combined);
                 }
 
-                token->end = iterator->position;
                 token->type = Token_Type::OPEN_PAIR;
                 goto done;
             } else {
             comment_normal:
-                token->start = iterator->position;
                 if (in_oneline_comment) {
                     continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
                 } else {
                     continue_inside_multiline_comment(iterator, &in_multiline_doc_comment,
                                                       &comment_state);
                 }
-                token->end = iterator->position;
                 token->type = Token_Type::DOC_COMMENT;
                 goto done;
             }
 
         case COMMENT_CODE_INLINE:
             if (first_char == '`') {
-                token->start = iterator->position;
                 iterator->advance();
-                token->end = iterator->position;
 
             end_comment_code:
                 MAKE_COMBINED_STATE(*state_combined);
@@ -829,10 +815,8 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 if (!it.at_eob() && it.get() == '`') {
                     it.advance();
                     if (!it.at_eob() && it.get() == '`') {
-                        token->start = iterator->position;
                         it.advance();
                         *iterator = it;
-                        token->end = iterator->position;
                         goto end_comment_code;
                     }
                 }
@@ -848,9 +832,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         preprocessor_saved_state = normal_state << PREPROCESSOR_SAVE_SHIFT;
         normal_state = IN_EXPR;
 
-        token->start = iterator->position;
         iterator->advance();
-        token->end = iterator->position;
         token->type = Token_Type::PUNCTUATION;
         goto done;
     }
@@ -858,7 +840,6 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
     if (first_char == '"' || (first_char == '<' && in_preprocessor &&
                               preprocessor_state == PREPROCESSOR_AFTER_INCLUDE)) {
         ZoneScopedN("string");
-        token->start = iterator->position;
         for (iterator->advance(); !iterator->at_eob(); iterator->advance()) {
             char ch = iterator->get();
             if (ch == '"' || ch == '\n') {
@@ -886,7 +867,6 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 }
             }
         }
-        token->end = iterator->position;
         token->type = Token_Type::STRING;
         normal_state = IN_EXPR;
         goto done;
@@ -894,7 +874,6 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
 
     if (first_char == '\'') {
         ZoneScopedN("character");
-        token->start = iterator->position;
         if (iterator->position + 3 >= iterator->contents->len) {
             iterator->advance_to(iterator->contents->len);
         } else {
@@ -905,7 +884,6 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 iterator->advance(2);
             }
         }
-        token->end = iterator->position;
         token->type = Token_Type::STRING;
         normal_state = IN_EXPR;
         goto done;
@@ -923,13 +901,12 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         Contents_Iterator start_iterator = *iterator;
         {
             ZoneScopedN("find end");
-            token->start = iterator->position;
             for (iterator->advance();
                  !iterator->at_eob() && is_identifier_continuation(iterator->get());
                  iterator->advance()) {
             }
-            token->end = iterator->position;
         }
+        token->end = iterator->position;
 
         if (in_preprocessor && preprocessor_state == PREPROCESSOR_START_STATEMENT) {
             ZoneScopedN("preprocessor keyword");
@@ -1081,7 +1058,6 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         next_iterator.advance();
         if (!next_iterator.at_eob() && next_iterator.get() == '/') {
             ZoneScopedN("line comment");
-            token->start = iterator->position;
             next_iterator.advance();
             *iterator = next_iterator;
             if (!iterator->at_eob() && iterator->get() == '/') {
@@ -1099,13 +1075,11 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 continue_around_oneline_comment(iterator);
                 token->type = Token_Type::COMMENT;
             }
-            token->end = iterator->position;
             goto done;
         }
 
         if (!next_iterator.at_eob() && next_iterator.get() == '*') {
             ZoneScopedN("block comment");
-            token->start = iterator->position;
             next_iterator.advance();
             *iterator = next_iterator;
             if (!iterator->at_eob() && iterator->get() == '*') {
@@ -1124,14 +1098,12 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 continue_around_multiline_comment(iterator, &in_multiline_normal_comment);
                 token->type = Token_Type::COMMENT;
             }
-            token->end = iterator->position;
             goto done;
         }
     }
 
     if (cz::is_punct(first_char)) {
         ZoneScopedN("punctuation");
-        token->start = iterator->position;
         iterator->advance();
 
         char second_char = 0;
@@ -1174,7 +1146,6 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 iterator->advance();
             }
         }
-        token->end = iterator->position;
 
         if (first_char == '(' || first_char == '{' || first_char == '[') {
             token->type = Token_Type::OPEN_PAIR;
@@ -1206,7 +1177,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                    first_char == ',') {
             normal_state = START_OF_PARAMETER;
         } else if (normal_state == START_OF_PARAMETER && token->type == Token_Type::PUNCTUATION) {
-            normal_state = IN_EXPR; // Misrecognized constructor call as function declaration.
+            normal_state = IN_EXPR;  // Misrecognized constructor call as function declaration.
         }
 
         if (in_preprocessor) {
@@ -1224,7 +1195,6 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
     }
 
     if (cz::is_digit(first_char)) {
-        token->start = iterator->position;
         iterator->advance();
         while (!iterator->at_eob()) {
             char ch = iterator->get();
@@ -1233,15 +1203,12 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             }
             iterator->advance();
         }
-        token->end = iterator->position;
         token->type = Token_Type::NUMBER;
         normal_state = IN_EXPR;
         goto done;
     }
 
-    token->start = iterator->position;
     iterator->advance();
-    token->end = iterator->position;
     token->type = Token_Type::DEFAULT;
     goto done;
 
@@ -1254,6 +1221,8 @@ done:
 
 done_no_skip:
     MAKE_COMBINED_STATE(*state_combined);
+
+    token->end = iterator->position;
     return true;
 }
 
