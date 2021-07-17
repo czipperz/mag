@@ -96,6 +96,7 @@ void infix_completion_filter(Editor* editor,
 
 struct Wildcard_Pattern {
     bool wild_start = true;
+    bool wild_start_component = true;
     bool wild_end = true;
     cz::Vector<cz::Str> pieces;
 
@@ -103,19 +104,27 @@ struct Wildcard_Pattern {
         size_t index = 0;
         for (size_t j = 0; j < pieces.len(); ++j) {
             cz::Str piece = pieces[j];
-            if (j == 0 && !wild_start) {
-                if (string.starts_with_case_insensitive(piece)) {
-                    index += piece.len;
-                } else {
+            if (j == 0 && (!wild_start || !wild_start_component)) {
+                cz::Str p2 = piece;
+                if (!wild_start_component) {
+                    p2 = piece.slice_start(1);
+                }
+
+                if (string.starts_with_case_insensitive(p2)) {
+                    index += p2.len;
+                    continue;
+                }
+
+                if (!wild_start) {
                     return false;
                 }
+            }
+
+            const char* find = string.slice_start(index).find_case_insensitive(piece);
+            if (!find) {
+                return false;
             } else {
-                const char* find = string.slice_start(index).find_case_insensitive(piece);
-                if (!find) {
-                    return false;
-                } else {
-                    index = find - string.buffer + piece.len;
-                }
+                index = find - string.buffer + piece.len;
             }
         }
         if (!wild_end && index < string.len) {
@@ -142,6 +151,14 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
             ++start;
         }
 
+        if (query[start] == '%') {
+            pattern.wild_start_component = false;
+            ++start;
+        }
+        while (start < query.len() && query[start] == ' ') {
+            ++start;
+        }
+
         if (query[end - 1] == '$') {
             pattern.wild_end = false;
             --end;
@@ -155,6 +172,8 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
         }
     }
 
+    size_t abs_start = start;
+
     while (true) {
         pattern.pieces.reserve(cz::heap_allocator(), 1);
 
@@ -167,8 +186,8 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
 
             // Forward slashes break the piece but are still included in the piece.
             if (query[i] == '/') {
-                // `abc/^def` should be parsed as the piece `abc/def`.
-                if (i + 1 < end && query[i + 1] == '^') {
+                // `abc/%def` should be parsed as the piece `abc/def`.
+                if (i + 1 < end && query[i + 1] == '%') {
                     query.remove(i + 1);
                     --end;
                 } else {
@@ -194,6 +213,13 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
 
         // Advance.
         start = i;
+    }
+
+    // Include '/' in the start of the piece so we can use it in `match`.
+    if (!pattern.wild_start_component) {
+        pattern.pieces[0].buffer--;
+        pattern.pieces[0].len++;
+        *(char*)pattern.pieces[0].buffer = '/';
     }
 
     return pattern;
