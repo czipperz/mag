@@ -46,11 +46,12 @@ enum State : uint64_t {
     COMMENT_PREVIOUS_ONELINE_FLAG = 0x8000000000000000,
 
     COMMENT_STATE_MASK = 0x0700000000000000,
-    COMMENT_START_OF_LINE = 0x0000000000000000,
-    COMMENT_TITLE = 0x0100000000000000,
-    COMMENT_MIDDLE_OF_LINE = 0x0200000000000000,
-    COMMENT_CODE_INLINE = 0x0300000000000000,
-    COMMENT_CODE_MULTILINE = 0x0400000000000000,
+    COMMENT_START_OF_LINE_1 = 0x0000000000000000,
+    COMMENT_START_OF_LINE_2 = 0x0100000000000000,
+    COMMENT_TITLE = 0x0200000000000000,
+    COMMENT_MIDDLE_OF_LINE = 0x0300000000000000,
+    COMMENT_CODE_INLINE = 0x0400000000000000,
+    COMMENT_CODE_MULTILINE = 0x0500000000000000,
 };
 }
 using namespace tokenize_cpp_impl;
@@ -133,7 +134,7 @@ static bool skip_whitespace(Contents_Iterator* iterator,
             if (*ch == '\n') {
                 *in_oneline_comment = false;
                 if (*comment_state == COMMENT_TITLE || *comment_state == COMMENT_MIDDLE_OF_LINE) {
-                    *comment_state = COMMENT_START_OF_LINE;
+                    *comment_state = COMMENT_START_OF_LINE_1;
                 }
             }
             if (!cz::is_space(*ch)) {
@@ -533,7 +534,7 @@ static void continue_inside_oneline_comment(Contents_Iterator* iterator,
         } else if (ch == '`') {
             *comment_state = COMMENT_MIDDLE_OF_LINE;
             break;
-        } else if (*comment_state == COMMENT_START_OF_LINE &&
+        } else if (*comment_state == COMMENT_START_OF_LINE_2 &&
                    (ch == '#' || ch == '*' || ch == '-' || ch == '+')) {
             break;
         } else {
@@ -582,11 +583,12 @@ static void continue_inside_multiline_comment(Contents_Iterator* iterator,
             *in_multiline_doc_comment = false;
             break;
         } else if (ch == '\n') {
-            *comment_state = COMMENT_START_OF_LINE;
+            *comment_state = COMMENT_START_OF_LINE_1;
         } else if (ch == '`') {
             *comment_state = COMMENT_MIDDLE_OF_LINE;
             break;
-        } else if (*comment_state == COMMENT_START_OF_LINE &&
+        } else if ((*comment_state == COMMENT_START_OF_LINE_1 ||
+                    *comment_state == COMMENT_START_OF_LINE_2) &&
                    (ch == '#' || ch == '*' || ch == '-' || ch == '+')) {
             Contents_Iterator it = *iterator;
             it.advance();
@@ -642,7 +644,8 @@ static void continue_inside_multiline_comment_title(Contents_Iterator* iterator,
         } else if (ch == '`') {
             *comment_state = COMMENT_MIDDLE_OF_LINE;
             break;
-        } else if (*comment_state == COMMENT_START_OF_LINE &&
+        } else if ((*comment_state == COMMENT_START_OF_LINE_1 ||
+                    *comment_state == COMMENT_START_OF_LINE_2) &&
                    (ch == '#' || ch == '*' || ch == '-' || ch == '+')) {
             break;
         }
@@ -717,7 +720,8 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
         // The fact that we stopped here in the middle of a comment means we hit a special
         // character.  As of right now that is one of `, #, *, -, or +.
         switch (comment_state) {
-        case COMMENT_START_OF_LINE:
+        case COMMENT_START_OF_LINE_1:
+        case COMMENT_START_OF_LINE_2:
             switch (first_char) {
             case '#':
                 comment_state = COMMENT_TITLE;
@@ -728,9 +732,19 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 token->type = Token_Type::PUNCTUATION;
                 break;
             case '*':
+                // Handle */.
                 if (in_multiline_doc_comment && looking_at(*iterator, "*/")) {
                     goto comment_normal;
                 }
+
+                // If this is the first * in a multiline doc comment then treat
+                // it as a continuation character instead of a markdown list.
+                if (in_multiline_doc_comment && comment_state == COMMENT_START_OF_LINE_1) {
+                    comment_state = COMMENT_START_OF_LINE_2;
+                    iterator->advance();
+                    goto comment_normal;
+                }
+
                 // fallthrough
             case '-':
             case '+':
@@ -1067,7 +1081,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                                                     comment_state == COMMENT_CODE_MULTILINE)) {
                     // Merge consecutive online comments where a code block extends between them.
                 } else {
-                    comment_state = COMMENT_START_OF_LINE;
+                    comment_state = COMMENT_START_OF_LINE_2;
                     continue_inside_oneline_comment(iterator, &in_oneline_comment, &comment_state);
                 }
                 token->type = Token_Type::DOC_COMMENT;
@@ -1089,7 +1103,7 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                     token->type = Token_Type::COMMENT;
                 } else {
                     in_multiline_doc_comment = true;
-                    comment_state = COMMENT_START_OF_LINE;
+                    comment_state = COMMENT_START_OF_LINE_2;
                     continue_inside_multiline_comment(iterator, &in_multiline_doc_comment,
                                                       &comment_state);
                     token->type = Token_Type::DOC_COMMENT;
