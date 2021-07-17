@@ -507,8 +507,8 @@ static void create_theme(Theme& theme) {
     theme.overlays.push(syntax::overlay_highlight_string(
         {{}, {}, Face::BOLD}, "TODO", Case_Handling::CASE_SENSITIVE, Token_Type::DOC_COMMENT));
 
-    theme.max_completion_results = 5;
-    theme.mini_buffer_max_height = 5;
+    theme.max_completion_results = 10;
+    theme.mini_buffer_max_height = 10;
     theme.mini_buffer_completion_filter = spaces_are_wildcards_completion_filter;
     theme.window_completion_filter = prefix_completion_filter;
 
