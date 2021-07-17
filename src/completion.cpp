@@ -104,8 +104,10 @@ struct Wildcard_Pattern {
         size_t index = 0;
         for (size_t j = 0; j < pieces.len(); ++j) {
             cz::Str piece = pieces[j];
+
             if (j == 0 && (!wild_start || !wild_start_component)) {
                 cz::Str p2 = piece;
+                // We add a / to a wild_start_component so ignore it here.
                 if (!wild_start_component) {
                     p2 = piece.slice_start(1);
                 }
@@ -115,11 +117,20 @@ struct Wildcard_Pattern {
                     continue;
                 }
 
+                // wild_start must be at the start; wild_start_component could be at the start
+                // or after a / (note the piece includes the / so the general case works).
                 if (!wild_start) {
                     return false;
                 }
             }
 
+            // If there are multiple parts of the string that match the last
+            // piece and wild_end is set then we only care about the end.
+            if (j + 1 == pieces.len() && !wild_end) {
+                return string.ends_with_case_insensitive(piece);
+            }
+
+            // Find the piece.
             const char* find = string.slice_start(index).find_case_insensitive(piece);
             if (!find) {
                 return false;
@@ -127,9 +138,7 @@ struct Wildcard_Pattern {
                 index = find - string.buffer + piece.len;
             }
         }
-        if (!wild_end && index < string.len) {
-            return false;
-        }
+
         return true;
     }
 };
@@ -142,34 +151,35 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
     size_t start = 0;
     size_t end = query.len();
 
-    if (query.len() > 0) {
-        if (query[start] == '^') {
-            pattern.wild_start = false;
-            ++start;
-        }
-        while (start < query.len() && query[start] == ' ') {
-            ++start;
-        }
+    // Recognize ^ at start -> first piece must be at the start of the string.
+    if (start < query.len() && query[start] == '^') {
+        pattern.wild_start = false;
+        ++start;
+    }
+    while (start < query.len() && query[start] == ' ') {
+        ++start;
+    }
 
-        if (query[start] == '%') {
-            pattern.wild_start_component = false;
-            ++start;
-        }
-        while (start < query.len() && query[start] == ' ') {
-            ++start;
-        }
+    // Recognize % at start -> first piece must either be at the start of the string or after a /.
+    if (start < query.len() && query[start] == '%') {
+        pattern.wild_start_component = false;
+        ++start;
+    }
+    while (start < query.len() && query[start] == ' ') {
+        ++start;
+    }
 
-        if (query[end - 1] == '$') {
-            pattern.wild_end = false;
-            --end;
-        }
-        while (end > 0 && query[end - 1] == ' ') {
-            --end;
-        }
+    // Recognize $ at end -> last piece must be at the end of the string.
+    if (end > 0 && query[end - 1] == '$') {
+        pattern.wild_end = false;
+        --end;
+    }
+    while (end > 0 && query[end - 1] == ' ') {
+        --end;
+    }
 
-        if (end < start) {
-            start = end = 0;
-        }
+    if (end < start) {
+        start = end = 0;
     }
 
     size_t abs_start = start;
