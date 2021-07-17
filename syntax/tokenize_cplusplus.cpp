@@ -263,6 +263,8 @@ static bool look_for_normal_keyword(Contents_Iterator iterator, Token* token, ch
                 CASE('s', "sm");
             });
 
+            CASE('f', "for");
+
             ADVANCE('n', {
                 CASE('e', "ew");
                 CASE('o', "ot");
@@ -936,15 +938,11 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             goto done;
         }
 
-        if (matches(start_iterator, token->end, "for")) {
-            token->type = Token_Type::KEYWORD;
-            normal_state = AFTER_FOR;
-            goto done;
-        }
-
         if (look_for_normal_keyword(start_iterator, token, first_char)) {
             token->type = Token_Type::KEYWORD;
-            if (matches(start_iterator, token->end, "return")) {
+            if (matches(start_iterator, token->end, "for")) {
+                normal_state = AFTER_FOR;
+            } else if (matches(start_iterator, token->end, "return")) {
                 normal_state = IN_EXPR;
             }
             goto done;
