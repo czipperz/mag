@@ -44,7 +44,7 @@ static void run_search(Client* client,
         buffer->mode.overlays.reserve(1);
         buffer->mode.overlays.push(syntax::overlay_highlight_string(
             editor->theme.special_faces[Face_Type::SEARCH_MODE_RESULT_HIGHLIGHT], query,
-            /*case_insensitive=*/false, Token_Type::SEARCH_RESULT));
+            Case_Handling::CASE_SENSITIVE, Token_Type::SEARCH_RESULT));
     }
 }
 

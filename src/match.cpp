@@ -5,6 +5,40 @@
 
 namespace mag {
 
+static void resolve_smart_case(cz::Str query, Case_Handling* case_handling) {
+    if (*case_handling == Case_Handling::SMART_CASE) {
+        for (size_t i = 0; i < query.len; ++i) {
+            if (cz::is_upper(query[i])) {
+                *case_handling = Case_Handling::CASE_SENSITIVE;
+                return;
+            }
+        }
+        *case_handling = Case_Handling::CASE_INSENSITIVE;
+    }
+}
+
+static void resolve_smart_case(Contents_Iterator query,
+                               uint64_t end,
+                               Case_Handling* case_handling) {
+    if (*case_handling == Case_Handling::SMART_CASE) {
+        for (; query.position < end; query.advance()) {
+            if (cz::is_upper(query.get())) {
+                *case_handling = Case_Handling::CASE_SENSITIVE;
+                return;
+            }
+        }
+        *case_handling = Case_Handling::CASE_INSENSITIVE;
+    }
+}
+
+static bool cased_char_match(char test, char query, Case_Handling case_handling) {
+    if (case_handling == Case_Handling::UPPERCASE_STICKY && cz::is_upper(query)) {
+        return test == query;
+    }
+
+    return cz::to_lower(test) == cz::to_lower(query);
+}
+
 bool looking_at_no_bounds_check(Contents_Iterator it, cz::Str query) {
     ZoneScoped;
 
@@ -29,8 +63,9 @@ bool looking_at(Contents_Iterator it, cz::Str query) {
     return looking_at_no_bounds_check(it, query);
 }
 
-bool looking_at_cased(Contents_Iterator it, cz::Str query, bool case_insensitive) {
-    if (!case_insensitive) {
+bool looking_at_cased(Contents_Iterator it, cz::Str query, Case_Handling case_handling) {
+    resolve_smart_case(query, &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE) {
         return looking_at(it, query);
     }
 
@@ -41,10 +76,9 @@ bool looking_at_cased(Contents_Iterator it, cz::Str query, bool case_insensitive
     }
 
     for (size_t i = 0; i < query.len; ++i) {
-        if (cz::to_lower(it.get()) != cz::to_lower(query[i])) {
+        if (!cased_char_match(it.get(), query[i], case_handling)) {
             return false;
         }
-
         it.advance();
     }
 
@@ -89,23 +123,23 @@ bool matches(Contents_Iterator it, uint64_t end, Contents_Iterator query, uint64
 bool matches_cased(Contents_Iterator it,
                    uint64_t end,
                    Contents_Iterator query,
-                   bool case_insensitive) {
-    if (!case_insensitive) {
-        return matches(it, end, query);
-    }
-
-    ZoneScoped;
-
+                   Case_Handling case_handling) {
     CZ_DEBUG_ASSERT(end >= it.position);
     if (query.position + (end - it.position) > query.contents->len) {
         return false;
     }
 
+    resolve_smart_case(query, query.position + (end - it.position), &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE) {
+        return matches(it, end, query);
+    }
+
+    ZoneScoped;
+
     while (it.position < end) {
-        if (cz::to_lower(it.get()) != cz::to_lower(query.get())) {
+        if (!cased_char_match(it.get(), query.get(), case_handling)) {
             return false;
         }
-
         it.advance();
         query.advance();
     }
@@ -169,8 +203,26 @@ bool rfind(Contents_Iterator* it, char ch) {
     }
 }
 
-bool find_cased(Contents_Iterator* it, char ch, bool case_insensitive) {
-    if (!case_insensitive || !cz::is_alpha(ch)) {
+static void resolve_find_case(char ch, Case_Handling* case_handling) {
+    switch (*case_handling) {
+    case Case_Handling::CASE_SENSITIVE:
+    case Case_Handling::CASE_INSENSITIVE:
+        break;
+
+    case Case_Handling::UPPERCASE_STICKY:
+    case Case_Handling::SMART_CASE:
+        if (cz::is_lower(ch)) {
+            *case_handling = Case_Handling::CASE_INSENSITIVE;
+        } else {
+            *case_handling = Case_Handling::CASE_SENSITIVE;
+        }
+        break;
+    }
+}
+
+bool find_cased(Contents_Iterator* it, char ch, Case_Handling case_handling) {
+    resolve_find_case(ch, &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE || !cz::is_alpha(ch)) {
         return find(it, ch);
     }
 
@@ -205,8 +257,9 @@ bool find_cased(Contents_Iterator* it, char ch, bool case_insensitive) {
     }
 }
 
-bool rfind_cased(Contents_Iterator* it, char ch, bool case_insensitive) {
-    if (!case_insensitive || !cz::is_alpha(ch)) {
+bool rfind_cased(Contents_Iterator* it, char ch, Case_Handling case_handling) {
+    resolve_find_case(ch, &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE || !cz::is_alpha(ch)) {
         return rfind(it, ch);
     }
 
@@ -268,8 +321,9 @@ bool search_forward(Contents_Iterator* it, cz::Str query) {
     return false;
 }
 
-bool search_forward_cased(Contents_Iterator* it, cz::Str query, bool case_insensitive) {
-    if (!case_insensitive) {
+bool search_forward_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling) {
+    resolve_smart_case(query, &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE) {
         return search_forward(it, query);
     }
 
@@ -280,11 +334,11 @@ bool search_forward_cased(Contents_Iterator* it, cz::Str query, bool case_insens
     }
 
     while (1) {
-        if (!find_cased(it, query[0], case_insensitive)) {
+        if (!find_cased(it, query[0], case_handling)) {
             break;
         }
 
-        if (looking_at_cased(*it, query, case_insensitive)) {
+        if (looking_at_cased(*it, query, case_handling)) {
             return true;
         }
 
@@ -322,8 +376,9 @@ bool search_backward(Contents_Iterator* it, cz::Str query) {
     return false;
 }
 
-bool search_backward_cased(Contents_Iterator* it, cz::Str query, bool case_insensitive) {
-    if (!case_insensitive) {
+bool search_backward_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling) {
+    resolve_smart_case(query, &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE) {
         return search_backward(it, query);
     }
 
@@ -342,11 +397,11 @@ bool search_backward_cased(Contents_Iterator* it, cz::Str query, bool case_insen
     }
 
     while (1) {
-        if (looking_at_cased(*it, query, case_insensitive)) {
+        if (looking_at_cased(*it, query, case_handling)) {
             return true;
         }
 
-        if (!rfind_cased(it, query[0], case_insensitive)) {
+        if (!rfind_cased(it, query[0], case_handling)) {
             break;
         }
     }

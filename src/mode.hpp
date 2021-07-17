@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <cz/heap_vector.hpp>
 #include <cz/slice.hpp>
+#include "case.hpp"
 #include "key_map.hpp"
 #include "token.hpp"
 
@@ -59,8 +60,11 @@ struct Mode {
     /// Increase the level of indentation on the line after an open pair automatically.
     bool indent_after_open_pair = false;
 
-    /// Controls whether search commands stemming from this buffer will be case sensitive.
-    bool search_case_insensitive = true;
+    /// Controls whether searching in this buffer will handle case sensitivity.
+    /// `search_prompt_case_handling` is used when the search has a prompt.
+    /// `search_continue_case_handling` is used when the search is based off a selected region.
+    Case_Handling search_prompt_case_handling = Case_Handling::UPPERCASE_STICKY;
+    Case_Handling search_continue_case_handling = Case_Handling::CASE_SENSITIVE;
 
     /// If enabled then the various comment commands will break tabs
     /// into spaces at and after the point the comments are inserted.

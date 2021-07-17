@@ -926,7 +926,7 @@ static bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start,
     CZ_DEFER(slice.drop(cz::heap_allocator()));
 
     start->advance_to(end);
-    return search_forward_cased(start, slice.as_str(), buffer->mode.search_case_insensitive);
+    return search_forward_cased(start, slice.as_str(), buffer->mode.search_continue_case_handling);
 }
 
 #define SEARCH_SLICE_THEN(FUNC, CREATED, THEN)                             \
@@ -947,17 +947,17 @@ static bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start,
         }                                                                  \
     } while (0)
 
-#define SEARCH_QUERY_THEN(FUNC, THEN)                                        \
-    do {                                                                     \
-        uint64_t start = cursors[c].point;                                   \
-        Contents_Iterator new_start = buffer->contents.iterator_at(start);   \
-        if (FUNC(&new_start, query, buffer->mode.search_case_insensitive)) { \
-            Cursor new_cursor = {};                                          \
-            new_cursor.point = new_start.position + query.len;               \
-            new_cursor.mark = new_start.position;                            \
-            new_cursor.local_copy_chain = cursors[c].local_copy_chain;       \
-            THEN;                                                            \
-        }                                                                    \
+#define SEARCH_QUERY_THEN(FUNC, THEN)                                            \
+    do {                                                                         \
+        uint64_t start = cursors[c].point;                                       \
+        Contents_Iterator new_start = buffer->contents.iterator_at(start);       \
+        if (FUNC(&new_start, query, buffer->mode.search_prompt_case_handling)) { \
+            Cursor new_cursor = {};                                              \
+            new_cursor.point = new_start.position + query.len;                   \
+            new_cursor.mark = new_start.position;                                \
+            new_cursor.local_copy_chain = cursors[c].local_copy_chain;           \
+            THEN;                                                                \
+        }                                                                        \
     } while (0)
 
 static int create_cursor_forward_search(const Buffer* buffer, Window_Unified* window) {
@@ -996,7 +996,7 @@ static bool search_backward_slice(const Buffer* buffer, Contents_Iterator* start
     CZ_DEFER(slice.drop(cz::heap_allocator()));
 
     start->retreat(end - start->position);
-    return search_backward_cased(start, slice.as_str(), buffer->mode.search_case_insensitive);
+    return search_backward_cased(start, slice.as_str(), buffer->mode.search_continue_case_handling);
 }
 
 static int create_cursor_backward_search(const Buffer* buffer, Window_Unified* window) {

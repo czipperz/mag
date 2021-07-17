@@ -22,7 +22,7 @@ struct Data {
     bool enabled;
     cz::String string;
     Face face;
-    bool case_insensitive;
+    Case_Handling case_handling;
 
     Token_Type token_type;
     Contents_Iterator token_it;
@@ -99,7 +99,7 @@ static Face overlay_highlight_string_get_face_and_advance(const Buffer* buffer,
             }
         }
 
-        if (looking_at_cased(iterator, data->string, data->case_insensitive)) {
+        if (looking_at_cased(iterator, data->string, data->case_handling)) {
             data->countdown_cursor_region = data->string.len();
         }
     }
@@ -129,7 +129,7 @@ static void overlay_highlight_string_cleanup(void* _data) {
 
 Overlay overlay_highlight_string(Face face,
                                  cz::Str str,
-                                 bool case_insensitive,
+                                 Case_Handling case_handling,
                                  Token_Type token_type) {
     static const Overlay::VTable vtable = {
         overlay_highlight_string_start_frame,
@@ -143,7 +143,7 @@ Overlay overlay_highlight_string(Face face,
     CZ_ASSERT(data);
     data->face = face;
     data->string = str.clone(cz::heap_allocator());
-    data->case_insensitive = case_insensitive;
+    data->case_handling = case_handling;
     data->token_type = token_type;
     return {&vtable, data};
 }

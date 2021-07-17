@@ -502,10 +502,10 @@ static void create_theme(Theme& theme) {
     theme.overlays.push(syntax::overlay_preferred_column({{}, 21, 0}));
     theme.overlays.push(syntax::overlay_trailing_spaces({{}, 208, 0}));
     theme.overlays.push(syntax::overlay_incorrect_indent({{}, 208, 0}));
-    theme.overlays.push(
-        syntax::overlay_highlight_string({{}, {}, Face::BOLD}, "TODO", false, Token_Type::COMMENT));
-    theme.overlays.push(syntax::overlay_highlight_string({{}, {}, Face::BOLD}, "TODO", false,
-                                                         Token_Type::DOC_COMMENT));
+    theme.overlays.push(syntax::overlay_highlight_string(
+        {{}, {}, Face::BOLD}, "TODO", Case_Handling::CASE_SENSITIVE, Token_Type::COMMENT));
+    theme.overlays.push(syntax::overlay_highlight_string(
+        {{}, {}, Face::BOLD}, "TODO", Case_Handling::CASE_SENSITIVE, Token_Type::DOC_COMMENT));
 
     theme.max_completion_results = 5;
     theme.mini_buffer_max_height = 5;
@@ -614,7 +614,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
     buffer->mode.indent_after_open_pair = false;
 
-    buffer->mode.search_case_insensitive = true;
+    buffer->mode.search_prompt_case_handling = Case_Handling::UPPERCASE_STICKY;
+    buffer->mode.search_continue_case_handling = Case_Handling::CASE_SENSITIVE;
 
     buffer->mode.comment_break_tabs = true;
 
@@ -652,7 +653,6 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         // have a max column limit.  They're temporary after all!
         buffer->mode.use_tabs = false;
         buffer->mode.preferred_column = -1;
-
 
         if (buffer->name == "*client mini buffer*") {
             buffer->mode.next_token = syntax::path_next_token;

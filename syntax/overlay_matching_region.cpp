@@ -84,7 +84,7 @@ static Face overlay_matching_region_get_face_and_advance(const Buffer* buffer,
     if (data->countdown_cursor_region == 0) {
         uint64_t end_marked_region = window->cursors[window->selected_cursor].end();
         if (matches_cased(data->start_marked_region, end_marked_region, iterator,
-                          buffer->mode.search_case_insensitive)) {
+                          buffer->mode.search_continue_case_handling)) {
             data->countdown_cursor_region = end_marked_region - data->start_marked_region.position;
         }
     }
