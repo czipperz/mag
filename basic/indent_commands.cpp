@@ -10,6 +10,42 @@
 namespace mag {
 namespace basic {
 
+uint64_t remove_spaces(Transaction* transaction,
+                       const Buffer* buffer,
+                       Contents_Iterator it,
+                       uint64_t offset) {
+    Contents_Iterator end = it;
+    forward_through_whitespace(&end);
+    Edit remove;
+    remove.value = buffer->contents.slice(transaction->value_allocator(), it, end.position);
+    remove.position = it.position + offset;
+    remove.flags = Edit::REMOVE;
+    transaction->push(remove);
+    return end.position - it.position;
+}
+
+void insert_line_with_indent(Transaction* transaction,
+                             const Mode& mode,
+                             uint64_t position,
+                             uint64_t* offset,
+                             uint64_t columns) {
+    uint64_t num_tabs, num_spaces;
+    analyze_indent(mode, columns, &num_tabs, &num_spaces);
+
+    char* value = (char*)transaction->value_allocator().alloc({1 + num_tabs + num_spaces, 1});
+    value[0] = '\n';
+    memset(value + 1, '\t', num_tabs);
+    memset(value + 1 + num_tabs, ' ', num_spaces);
+
+    Edit insert;
+    insert.value = SSOStr::from_constant({value, 1 + num_tabs + num_spaces});
+    insert.position = position + *offset;
+    insert.flags = Edit::INSERT;
+    transaction->push(insert);
+
+    *offset += insert.value.len();
+}
+
 void command_insert_newline_indent(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -17,37 +53,18 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
-    int64_t offset = 0;
+    uint64_t offset = 0;
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t i = 0; i < cursors.len; ++i) {
         Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
-        forward_through_whitespace(&it);
-        uint64_t end = it.position;
         backward_through_whitespace(&it);
 
-        Edit remove;
-        remove.value = buffer->contents.slice(transaction.value_allocator(), it, end);
-        remove.position = it.position + offset;
-        remove.flags = Edit::REMOVE;
-        transaction.push(remove);
+        uint64_t removed = remove_spaces(&transaction, buffer, it, offset);
 
         uint64_t columns = find_indent_width(buffer, it);
+        insert_line_with_indent(&transaction, buffer->mode, it.position, &offset, columns);
 
-        uint64_t num_tabs, num_spaces;
-        analyze_indent(buffer->mode, columns, &num_tabs, &num_spaces);
-
-        char* value = (char*)transaction.value_allocator().alloc({1 + num_tabs + num_spaces, 1});
-        value[0] = '\n';
-        memset(value + 1, '\t', num_tabs);
-        memset(value + 1 + num_tabs, ' ', num_spaces);
-
-        Edit insert;
-        insert.value = SSOStr::from_constant({value, 1 + num_tabs + num_spaces});
-        insert.position = it.position + offset;
-        insert.flags = Edit::INSERT;
-        transaction.push(insert);
-
-        offset += insert.value.len() - remove.value.len();
+        offset -= removed;
     }
 
     transaction.commit();

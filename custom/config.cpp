@@ -719,6 +719,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "}", basic::command_insert_close_pair);
             BIND(buffer->mode.key_map, ")", basic::command_insert_close_pair);
             BIND(buffer->mode.key_map, "]", basic::command_insert_close_pair);
+            BIND(buffer->mode.key_map, "ENTER", basic::command_insert_newline_split_pairs);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};

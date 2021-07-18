@@ -1,5 +1,6 @@
 #include "indent_commands.hpp"
 
+#include "basic/indent_commands.hpp"
 #include "basic/token_movement_commands.hpp"
 #include "command.hpp"
 #include "command_macros.hpp"
@@ -93,6 +94,52 @@ void command_insert_close_pair(Editor* editor, Command_Source source) {
         } else {
             cursors[i].point++;
         }
+    }
+
+    transaction.commit();
+}
+
+void command_insert_newline_split_pairs(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
+        backward_through_whitespace(&it);
+
+        uint64_t removed = remove_spaces(&transaction, buffer, it, offset);
+
+        if (!it.at_bob() && !it.at_eob()) {
+            Contents_Iterator before_it = it;
+            before_it.retreat();
+            char before = before_it.get();
+            char after = it.get();
+            if ((before == '{' || before == '(' || before == '[') &&
+                (after == '}' || after == ')' || after == ']')) {
+                uint64_t columns =
+                    find_indent_width(buffer, it, Discover_Indent_Policy::UP_THEN_BACK_PAIR);
+                CZ_ASSERT(columns >= buffer->mode.indent_width);
+
+                // Insert the line for the cursor.
+                insert_line_with_indent(&transaction, buffer->mode, it.position, &offset, columns);
+
+                // Insert the line for the close pair.
+                insert_line_with_indent(&transaction, buffer->mode, it.position, &offset,
+                                        columns - buffer->mode.indent_width);
+                transaction.edits.last().flags = Edit::INSERT_AFTER_POSITION;
+                continue;
+            }
+        }
+
+        uint64_t columns = find_indent_width(buffer, it);
+        insert_line_with_indent(&transaction, buffer->mode, it.position, &offset, columns);
+
+        offset -= removed;
     }
 
     transaction.commit();
