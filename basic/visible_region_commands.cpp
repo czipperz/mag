@@ -26,6 +26,8 @@ void command_center_in_window(Editor* editor, Command_Source source) {
 
 void command_goto_center_of_window(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+
+    kill_extra_cursors(window, source.client);
     window->cursors[window->selected_cursor].point =
         center_of_window(window, buffer->mode, &buffer->contents).position;
 }
