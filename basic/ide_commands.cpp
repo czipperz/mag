@@ -119,8 +119,7 @@ void command_insert_newline_split_pairs(Editor* editor, Command_Source source) {
             before_it.retreat();
             char before = before_it.get();
             char after = it.get();
-            if ((before == '{' || before == '(' || before == '[') &&
-                (after == '}' || after == ')' || after == ']')) {
+            if (before == '{' && after == '}') {
                 uint64_t columns =
                     find_indent_width(buffer, it, Discover_Indent_Policy::UP_THEN_BACK_PAIR);
                 CZ_ASSERT(columns >= buffer->mode.indent_width);
