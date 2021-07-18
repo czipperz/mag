@@ -71,6 +71,10 @@ static bool can_merge_insert(cz::Str str, char code) {
 void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
+    do_command_insert_char(buffer, window, source);
+}
+
+void do_command_insert_char(Buffer* buffer, Window_Unified* window, Command_Source source) {
     CZ_ASSERT(source.keys[0].code <= UCHAR_MAX);
 
     char code = (char)source.keys[0].code;

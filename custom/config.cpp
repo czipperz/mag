@@ -14,6 +14,7 @@
 #include "basic/directory_commands.hpp"
 #include "basic/help_commands.hpp"
 #include "basic/html_commands.hpp"
+#include "basic/ide_commands.hpp"
 #include "basic/indent_commands.hpp"
 #include "basic/macro_commands.hpp"
 #include "basic/markdown_commands.hpp"
@@ -711,6 +712,13 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
             BIND(buffer->mode.key_map, "A-x *", cpp::command_make_indirect);
             BIND(buffer->mode.key_map, "A-x &", cpp::command_make_direct);
+
+            BIND(buffer->mode.key_map, "{", basic::command_insert_open_pair);
+            BIND(buffer->mode.key_map, "(", basic::command_insert_open_pair);
+            BIND(buffer->mode.key_map, "[", basic::command_insert_open_pair);
+            BIND(buffer->mode.key_map, "}", basic::command_insert_close_pair);
+            BIND(buffer->mode.key_map, ")", basic::command_insert_close_pair);
+            BIND(buffer->mode.key_map, "]", basic::command_insert_close_pair);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
