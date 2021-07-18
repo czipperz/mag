@@ -70,6 +70,8 @@ void command_insert_close_pair(Editor* editor, Command_Source source) {
 
     Key key = source.keys[0];
     CZ_ASSERT(key.modifiers == 0);
+    CZ_ASSERT(key.code == (char)key.code);
+    CZ_ASSERT(cz::is_print((char)key.code));
 
     Transaction transaction;
     transaction.init(buffer);
@@ -82,7 +84,7 @@ void command_insert_close_pair(Editor* editor, Command_Source source) {
 
         if (it.at_eob() || it.get() != key.code) {
             Edit edit;
-            edit.value = SSOStr::from_char(key.code);
+            edit.value = SSOStr::from_char((char)key.code);
             edit.position = cursors[i].point + offset;
             edit.flags = Edit::INSERT;
             transaction.push(edit);
