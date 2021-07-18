@@ -613,8 +613,6 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
     buffer->mode.tab_width = 4;
     buffer->mode.use_tabs = false;
 
-    // Note: UP_THEN_BACK_PAIR only works if the language use
-    // pairs (`(,)`, `{,}`, `[,]`, `begin,end`) to denote scope.
     buffer->mode.discover_indent_policy = Discover_Indent_Policy::UP_THEN_BACK_PAIR;
 
     buffer->mode.indent_after_open_pair = false;
