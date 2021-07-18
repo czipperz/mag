@@ -18,4 +18,6 @@ void insert_char(Buffer* buffer,
 
 void delete_regions(Buffer* buffer, Window_Unified* window, Command_Function committer = nullptr);
 
+void command_insert_char(Editor* editor, Command_Source source);
+
 }
