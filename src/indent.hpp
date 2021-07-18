@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 namespace mag {
 
 namespace Discover_Indent_Policy_ {
@@ -17,5 +19,11 @@ enum Discover_Indent_Policy {
 };
 }
 using Discover_Indent_Policy_::Discover_Indent_Policy;
+
+struct Buffer;
+struct Contents_Iterator;
+
+/// Find the indent width for an operation on the line of the iterator.
+uint64_t find_indent_width(Buffer* buffer, Contents_Iterator it);
 
 }
