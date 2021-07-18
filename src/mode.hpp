@@ -4,6 +4,7 @@
 #include <cz/heap_vector.hpp>
 #include <cz/slice.hpp>
 #include "case.hpp"
+#include "indent.hpp"
 #include "key_map.hpp"
 #include "token.hpp"
 
@@ -50,6 +51,9 @@ struct Mode {
 
     /// If `true`, prefers tabs over spaces as long as they fit.
     bool use_tabs = false;
+
+    /// The policy to discover what the correct indent should be for a line.
+    Discover_Indent_Policy discover_indent_policy = Discover_Indent_Policy::UP_THEN_BACK_PAIR;
 
     /// Stores the preferred max line length.
     uint64_t preferred_column = 100;

@@ -612,6 +612,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
     buffer->mode.tab_width = 4;
     buffer->mode.use_tabs = false;
 
+    // Note: UP_THEN_BACK_PAIR only works if the language use
+    // pairs (`(,)`, `{,}`, `[,]`, `begin,end`) to denote scope.
+    buffer->mode.discover_indent_policy = Discover_Indent_Policy::UP_THEN_BACK_PAIR;
+
     buffer->mode.indent_after_open_pair = false;
 
     buffer->mode.search_prompt_case_handling = Case_Handling::UPPERCASE_STICKY;
@@ -719,6 +723,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
 
+            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
@@ -729,6 +735,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    name.ends_with(".rst") || name.ends_with(".txt")) {
             buffer->mode.next_token = syntax::md_next_token;
             BIND(buffer->mode.key_map, "A-h", markdown::command_reformat_paragraph);
+            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else if (name.ends_with(".css")) {
             buffer->mode.next_token = syntax::css_next_token;
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment_block_only);
@@ -743,6 +750,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (name.ends_with(".html")) {
             buffer->mode.next_token = syntax::html_next_token;
             BIND(buffer->mode.key_map, "A-;", html::command_comment);
+            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
 
             static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
                                                Token_Type::HTML_ATTRIBUTE_NAME};
@@ -802,6 +810,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
+            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -814,6 +823,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
+            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -824,20 +834,25 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             if (name == "addp-hunk-edit.diff") {
                 git_edit_key_map(buffer->mode.key_map);
             }
+            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else if (name == "git-rebase-todo") {
             buffer->mode.next_token = syntax::git_rebase_todo_next_token;
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
             git_edit_key_map(buffer->mode.key_map);
+            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else if (name == "COMMIT_EDITMSG") {
             buffer->mode.next_token = syntax::git_commit_edit_message_next_token;
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
             git_edit_key_map(buffer->mode.key_map);
+            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else if (name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
+            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else {
             buffer->mode.next_token = syntax::general_next_token;
+            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
