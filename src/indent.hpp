@@ -25,5 +25,6 @@ struct Contents_Iterator;
 
 /// Find the indent width for an operation on the line of the iterator.
 uint64_t find_indent_width(Buffer* buffer, Contents_Iterator it);
+uint64_t find_indent_width(Buffer* buffer, Contents_Iterator it, Discover_Indent_Policy);
 
 }

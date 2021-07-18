@@ -9,7 +9,13 @@ namespace mag {
 using namespace basic;
 
 uint64_t find_indent_width(Buffer* buffer, Contents_Iterator it) {
-    switch (buffer->mode.discover_indent_policy) {
+    return find_indent_width(buffer, it, buffer->mode.discover_indent_policy);
+}
+
+uint64_t find_indent_width(Buffer* buffer,
+                           Contents_Iterator it,
+                           Discover_Indent_Policy discover_indent_policy) {
+    switch (discover_indent_policy) {
     case Discover_Indent_Policy::UP_THEN_BACK_PAIR: {
         uint64_t start_position = it.position;
 
