@@ -22,8 +22,24 @@ are in the queue to trigger a `Command`, that `Command` will be invoked.
 Rendering (`render/render.cpp`) does all of the following things:
 
 * Layout windows
+  - The normal windows form a tree structure.
+    + All leaves in the `Window` tree are `Window_Unified` objects representing a specific buffer.
+    + All non-leaves are `Window_Split` objects that point to 2 tree subtrees and
+      specify the direction of the split and the ratio between the two windows.
+  - The mini buffer window and the prompt pseudo-window
+    are sometimes display at the bottom the screen.
+    + If a command is prompting for input then both will be displayed.
+    + If a message is shown then the prompt will be shown but not the mini buffer.
+  - Normal windows have a title bar at the bottom.
+    + Each slot after the file name is created by an `Overlay`.
+
 * Animate scrolling
+
 * Put characters into the grid
+  - The renderer makes a grid of characters
+  - The client (see `clients` folder) then renders the
+    characters that have changed (either in value or in face).
+
 * Find face for characters
   - A `Face` (`src/face.hpp`) is a combination of a foreground color,
     background color, and text modifiers (italics, bold, etc.)
