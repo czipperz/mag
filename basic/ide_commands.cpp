@@ -20,6 +20,12 @@ void command_insert_open_pair(Editor* editor, Command_Source source) {
     Contents_Iterator it = buffer->contents.start();
     for (size_t i = 0; i < cursors.len; ++i) {
         it.advance_to(cursors[i].point);
+
+        // If at eob or at a space then we want to insert a pair.  Otherwise just one.
+        if (!it.at_eob() && !cz::is_space(it.get())) {
+            return do_command_insert_char(buffer, window, source);
+        }
+
         Contents_Iterator token_iterator = it;
         Token token;
         if (get_token_at_position(buffer, &token_iterator, &token)) {
