@@ -233,7 +233,7 @@ static void process_event(Server* server,
             break;
         }
 
-        printf("Todo: handle SDL_TEXTEDITING\n");
+        printf("TODO: handle SDL_TEXTEDITING\n");
         printf("Edit: text: %s, start: %" PRIi32 ", length: %" PRIi32 "\n", event.edit.text,
                event.edit.start, event.edit.length);
 

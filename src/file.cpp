@@ -566,7 +566,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
     result.reserve(allocator, path.len() + 1);
 
 #ifdef _WIN32
-    // Todo: support symbolic links on Windows.
+    // TODO: support symbolic links on Windows.
 
     // Append drive as uppercase.
     CZ_DEBUG_ASSERT(cz::is_alpha(path[0]));
@@ -942,7 +942,7 @@ bool save_contents_to_temp_file(const Contents* contents,
         return false;
     }
 
-    // Todo: don't open the file twice, instead open it once in read/write mode and reset the head.
+    // TODO: don't open the file twice, instead open it once in read/write mode and reset the head.
     return fd->open(temp_file_buffer);
 }
 

@@ -118,7 +118,7 @@ void Window_Unified::finish_completion(Buffer* buffer) {
         return;
     }
 
-    // Todo: multi cursors?
+    // TODO: multi cursors?
     Contents_Iterator iterator = buffer->contents.iterator_at(cursors[selected_cursor].point);
     Token token;
     bool do_remove = get_token_at_position(buffer, &iterator, &token);

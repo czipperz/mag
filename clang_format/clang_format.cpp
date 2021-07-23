@@ -76,7 +76,7 @@ static void parse_replacements(cz::Vector<Replacement>* replacements,
                                cz::Str* error_line) {
     ZoneScoped;
 
-    // Todo: make this more secure.
+    // TODO: make this more secure.
     size_t index = 0;
     int count_greater = 0;
     for (; index < output_xml.len && count_greater < 1; ++index) {
@@ -172,7 +172,7 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
         uint64_t position = repl->offset;
 
         Edit removal;
-        // Todo: this copy is useless except for storing the length
+        // TODO: this copy is useless except for storing the length
         removal.value =
             buffer->contents.slice(transaction.value_allocator(),
                                    buffer->contents.iterator_at(position), position + repl->length);
