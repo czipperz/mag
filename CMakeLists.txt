@@ -61,6 +61,7 @@ file(GLOB_RECURSE CLIENT_SRCS clients/*.cpp)
 add_executable(${PROJECT_NAME} WIN32 mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
 target_link_libraries(${PROJECT_NAME} ${LIBRARY_NAME})
 target_link_libraries(${PROJECT_NAME} cz)
+target_link_libraries(${PROJECT_NAME} z)
 target_include_directories(${PROJECT_NAME} PUBLIC clients render)
 
 # Include client libraries to mag
@@ -78,7 +79,7 @@ endif()
 target_link_libraries(${PROJECT_NAME} tracy)
 
 if (NOT WIN32)
-  target_link_libraries(${PROJECT_NAME} pthread dl)
+  target_link_libraries(${PROJECT_NAME} pthread dl z)
 endif()
 
 # Run GNU Global if it is available.
@@ -153,7 +154,7 @@ else()
   target_link_libraries(${TEST_EXECUTABLE} czt)
   target_link_libraries(${TEST_EXECUTABLE} tracy)
   if (NOT WIN32)
-    target_link_libraries(${TEST_EXECUTABLE} pthread dl)
+    target_link_libraries(${TEST_EXECUTABLE} pthread dl z)
   endif()
 endif()
 
