@@ -1,5 +1,6 @@
 #include "buffer_commands.hpp"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <cz/char_type.hpp>
 #include <cz/file.hpp>
