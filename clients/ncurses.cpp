@@ -148,7 +148,14 @@ static void render(int* total_rows,
                     attrset(attrs);
 
                     int16_t bg = get_face_color_or(new_cell->face.background, 0);
+                    if (colors[bg] == 0) {
+                        bg = 0;
+                    }
                     int16_t fg = get_face_color_or(new_cell->face.foreground, 7);
+                    if (colors[fg] == 0) {
+                        fg = 7;
+                    }
+
                     int32_t color_pair = (colors[bg] - 1) * used_colors + (colors[fg] - 1) + 1;
                     color_set(color_pair, nullptr);
 
