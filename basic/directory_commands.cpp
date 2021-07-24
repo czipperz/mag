@@ -192,6 +192,7 @@ static cz::Result for_each_file(cz::String* path,
                 return result;
             }
 
+            file.set_len(0);
             result = iterator.advance(cz::heap_allocator(), &file);
             if (result.is_err()) {
                 // ignore errors in destruction
