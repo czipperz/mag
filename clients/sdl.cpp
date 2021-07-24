@@ -712,7 +712,6 @@ static void blit_surface(SDL_Surface* surface, SDL_Surface* rendered_char, SDL_R
 }
 
 static void render(SDL_Window* window,
-                   SDL_Renderer* renderer,
                    TTF_Font* font,
                    SDL_Surface**** surface_cache,
                    int* old_width,
@@ -1083,25 +1082,6 @@ void run(Server* server, Client* client) {
 
     set_icon(window);
 
-    SDL_Renderer* renderer;
-    {
-        ZoneScopedN("SDL_CreateRenderer");
-        renderer =
-            SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-        // Retry with less requirements if it doesn't work the first time around.
-        if (!renderer) {
-            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-        }
-        if (!renderer) {
-            renderer = SDL_CreateRenderer(window, -1, 0);
-        }
-    }
-    if (!renderer) {
-        fprintf(stderr, "Failed to create a renderer: %s\n", SDL_GetError());
-        return;
-    }
-    CZ_DEFER(SDL_DestroyRenderer(renderer));
-
     // @Unlocked End of region
     server->set_async_locked(true);
 
@@ -1207,7 +1187,7 @@ void run(Server* server, Client* client) {
         load_mini_buffer_completion_cache(server, client);
 
         bool redrew_this_time = false;
-        render(window, renderer, font, surface_cache, &old_width, &old_height, &total_rows,
+        render(window, font, surface_cache, &old_width, &old_height, &total_rows,
                &total_cols, character_width, character_height, cellss, &window_cache,
                &mini_buffer_window_cache, &server->editor, client, mouse.sp_queries, force_redraw,
                &redrew_this_time);
