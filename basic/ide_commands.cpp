@@ -127,8 +127,8 @@ void command_insert_newline_split_pairs(Editor* editor, Command_Source source) {
             char after = it.get();
             if (before == '{' && after == '}') {
                 uint64_t columns =
-                    find_indent_width(buffer, it, Discover_Indent_Policy::UP_THEN_BACK_PAIR);
-                CZ_ASSERT(columns >= buffer->mode.indent_width);
+                    find_indent_width(buffer, it, Discover_Indent_Policy::COPY_PREVIOUS_LINE);
+                columns += buffer->mode.indent_width;
 
                 // Insert the line for the cursor.
                 insert_line_with_indent(&transaction, buffer->mode, it.position, &offset, columns);
