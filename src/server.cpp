@@ -521,14 +521,15 @@ static bool lookup_key_press_completion(cz::Slice<Key> key_chain,
                                         size_t* end,
                                         size_t* max_depth,
                                         Editor* editor,
-                                        Client* client) {
+                                        Client* client,
+                                        const Key_Remap& key_remap) {
     Window_Unified* window = client->selected_window();
     if (!window->completing) {
         return false;
     }
 
     WITH_CONST_WINDOW_BUFFER(window);
-    return lookup_key_press(key_chain, start, command, end, max_depth, editor->key_remap,
+    return lookup_key_press(key_chain, start, command, end, max_depth, key_remap,
                             &buffer->mode.completion_key_map);
 }
 
@@ -538,9 +539,10 @@ static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
                                     size_t* end,
                                     size_t* max_depth,
                                     Editor* editor,
-                                    Client* client) {
+                                    Client* client,
+                                    const Key_Remap& key_remap) {
     WITH_CONST_SELECTED_BUFFER(client);
-    return lookup_key_press(key_chain, start, command, end, max_depth, editor->key_remap,
+    return lookup_key_press(key_chain, start, command, end, max_depth, key_remap,
                             &buffer->mode.key_map);
 }
 
@@ -549,9 +551,9 @@ static bool lookup_key_press_global(cz::Slice<Key> key_chain,
                                     Command* command,
                                     size_t* end,
                                     size_t* max_depth,
-                                    Editor* editor) {
-    return lookup_key_press(key_chain, start, command, end, max_depth, editor->key_remap,
-                            &editor->key_map);
+                                    Editor* editor,
+                                    const Key_Remap& key_remap) {
+    return lookup_key_press(key_chain, start, command, end, max_depth, key_remap, &editor->key_map);
 }
 
 static bool handle_key_press_insert(cz::Slice<Key> key_chain,
@@ -560,7 +562,7 @@ static bool handle_key_press_insert(cz::Slice<Key> key_chain,
                                     size_t* end,
                                     size_t* max_depth) {
     Key key = key_chain[start];
-    if (key.modifiers == 0 && ((key.code <= UCHAR_MAX && cz::is_print(key.code)) ||
+    if (key.modifiers == 0 && ((key.code <= UCHAR_MAX && cz::is_print((char)key.code)) ||
                                key.code == '\t' || key.code == '\n')) {
         *command = {command_insert_char, "command_insert_char"};
         *end = start + 1;
@@ -580,20 +582,35 @@ void Server::receive(Client* client, Key key) {
         size_t end;
         size_t max_depth = 1;
 
-        // Try the different key maps or fall back to trying
-        // to convert the key press to inserting text.
+        Key_Remap empty_remap = {};
+
+        // Try to lookup the exact key sequence.
+        // Then try looking it up while using the remap.
+        // Then fallback to inserting the key as as text.
         if (lookup_key_press_completion(client->key_chain, client->key_chain_offset, &command, &end,
-                                        &max_depth, &editor, client) ||
+                                        &max_depth, &editor, client, empty_remap) ||
             lookup_key_press_buffer(client->key_chain, client->key_chain_offset, &command, &end,
-                                    &max_depth, &editor, client) ||
+                                    &max_depth, &editor, client, empty_remap) ||
             lookup_key_press_global(client->key_chain, client->key_chain_offset, &command, &end,
-                                    &max_depth, &editor) ||
-            handle_key_press_insert(client->key_chain, client->key_chain_offset, &command, &end,
-                                    &max_depth)) {
+                                    &max_depth, &editor, empty_remap)) {
             // We need more keys before we can run a command.
             if (command.function == nullptr) {
                 break;
             }
+        } else if (lookup_key_press_completion(client->key_chain, client->key_chain_offset,
+                                               &command, &end, &max_depth, &editor, client,
+                                               editor.key_remap) ||
+                   lookup_key_press_buffer(client->key_chain, client->key_chain_offset, &command,
+                                           &end, &max_depth, &editor, client, editor.key_remap) ||
+                   lookup_key_press_global(client->key_chain, client->key_chain_offset, &command,
+                                           &end, &max_depth, &editor, editor.key_remap)) {
+            // We need more keys before we can run a command.
+            if (command.function == nullptr) {
+                break;
+            }
+        } else if (handle_key_press_insert(client->key_chain, client->key_chain_offset, &command,
+                                           &end, &max_depth)) {
+            CZ_DEBUG_ASSERT(command.function != nullptr);
         } else {
             command = {basic::command_invalid, "command_invalid"};
         }
