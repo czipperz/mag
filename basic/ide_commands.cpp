@@ -150,5 +150,49 @@ void command_insert_newline_split_pairs(Editor* editor, Command_Source source) {
     transaction.commit();
 }
 
+void command_insert_pair(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    Key key = source.keys[0];
+    CZ_ASSERT(key.code == (char)key.code);
+    CZ_ASSERT(cz::is_print((char)key.code));
+
+    char open = (char)key.code;
+    char close;
+    if (open == '(') {
+        close = ')';
+    } else if (open == '[') {
+        close = ']';
+    } else if (open == '{') {
+        close = '}';
+    } else {
+        CZ_PANIC("command_insert_pair: no corresponding pair");
+    }
+
+    uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        Edit edit1;
+        edit1.value = SSOStr::from_char(open);
+        edit1.position = cursors[i].point + offset;
+        edit1.flags = Edit::INSERT;
+        transaction.push(edit1);
+        ++offset;
+
+        Edit edit2;
+        edit2.value = SSOStr::from_char(close);
+        edit2.position = cursors[i].point + offset;
+        edit2.flags = Edit::INSERT_AFTER_POSITION;
+        transaction.push(edit2);
+        ++offset;
+    }
+
+    transaction.commit();
+}
+
 }
 }

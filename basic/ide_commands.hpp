@@ -11,5 +11,7 @@ void command_insert_close_pair(Editor* editor, Command_Source source);
 
 void command_insert_newline_split_pairs(Editor* editor, Command_Source source);
 
+void command_insert_pair(Editor* editor, Command_Source source);
+
 }
 }

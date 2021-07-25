@@ -167,6 +167,10 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-A-LEFT", command_shift_window_left);
     BIND(key_map, "C-A-RIGHT", command_shift_window_right);
 
+    BIND(key_map, "C-(", command_insert_pair);
+    BIND(key_map, "C-[", command_insert_pair);
+    BIND(key_map, "C-{", command_insert_pair);
+
     BIND(key_map, "A-]", command_forward_paragraph);
     BIND(key_map, "A-[", command_backward_paragraph);
     BIND(key_map, "A-}", region_movement::command_forward_paragraph);
@@ -709,6 +713,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
             BIND(buffer->mode.key_map, "A-x *", cpp::command_make_indirect);
             BIND(buffer->mode.key_map, "A-x &", cpp::command_make_direct);
+            BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
