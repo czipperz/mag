@@ -40,6 +40,9 @@ static bool test_all_files(cz::String& path, cz::Slice<cz::Str> dest_extensions)
 static int test_extensions(cz::String& path,
                            cz::Slice<cz::Str> src_extensions,
                            cz::Slice<cz::Str> dest_extensions) {
+    bool any_match = false;
+    size_t match;
+
     for (size_t i = 0; i < src_extensions.len; ++i) {
         if (path.ends_with(src_extensions[i])) {
             path.set_len(path.len() - src_extensions[i].len);
@@ -49,10 +52,25 @@ static int test_extensions(cz::String& path,
                 return 2;
             }
 
-            // If not we want to approximate by filling in the paired extension.
-            path.append(dest_extensions[i]);
-            return 1;
+            path.append(src_extensions[i]);
+
+            // We can't find an exact match; maybe another extension yields an actual file.
+            if (any_match) {
+                if (src_extensions[i].len > src_extensions[match].len) {
+                    match = i;
+                }
+            } else {
+                any_match = true;
+                match = i;
+            }
         }
+    }
+
+    // No files were found so guess at the extension based on the first match.
+    if (any_match) {
+        path.set_len(path.len() - src_extensions[match].len);
+        path.append(dest_extensions[match]);
+        return 1;
     }
 
     return 0;
