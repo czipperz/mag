@@ -31,6 +31,8 @@
 #include "decoration.hpp"
 #include "gnu_global/gnu_global.hpp"
 #include "man/man.hpp"
+#include "match.hpp"
+#include "movement.hpp"
 #include "overlay.hpp"
 #include "program_info.hpp"
 #include "prose/alternate.hpp"
@@ -762,6 +764,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".js")) {
+        javascript:
             buffer->mode.next_token = syntax::js_next_token;
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
             BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
@@ -794,6 +797,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    name.ends_with(".ps1") ||
                    // Perl isn't really a shell script but it pretty much works.
                    name.ends_with(".pl")) {
+        shell:
             if (name == "Makefile" || name == ".gitconfig") {
                 // Makefiles must use tabs so set that up automatically.
                 buffer->mode.tab_width = buffer->mode.indent_width;
@@ -810,6 +814,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".py") || name.ends_with(".gpy")) {
+        python:
             buffer->mode.next_token = syntax::python_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
@@ -855,6 +860,25 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::color_test_next_token;
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else {
+            // Recognize shebangs.
+            Contents_Iterator start = buffer->contents.start();
+            if (looking_at(start, "#!")) {
+                Contents_Iterator end = start;
+                end_of_line(&end);
+
+                SSOStr string = buffer->contents.slice(cz::heap_allocator(), start, end.position);
+                CZ_DEFER(string.drop(cz::heap_allocator()));
+
+                auto str = string.as_str();
+                if (str.contains("python")) {
+                    goto python;
+                } else if (str.contains("sh")) {
+                    goto shell;
+                } else if (str.contains("node")) {
+                    goto javascript;
+                }
+            }
+
             buffer->mode.next_token = syntax::general_next_token;
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
 
