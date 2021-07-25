@@ -1,7 +1,6 @@
 #include "man.hpp"
 
 #include <stdio.h>
-#include <zlib.h>
 #include <algorithm>
 #include <cz/buffer_array.hpp>
 #include <cz/defer.hpp>
@@ -15,6 +14,10 @@
 #include "editor.hpp"
 #include "file.hpp"
 
+#ifndef _WIN32
+#include <zlib.h>
+#endif
+
 namespace mag {
 namespace man {
 
@@ -24,7 +27,7 @@ bool man_completion_engine(Editor*, Completion_Engine_Context* context, bool is_
     return false;
 }
 void command_man(Editor* editor, Command_Source source) {
-    source.client->show_message("Error: man isn't support on Windows");
+    source.client->show_message(editor, "Error: man isn't supported on Windows");
     return;
 }
 

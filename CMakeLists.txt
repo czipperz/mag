@@ -61,7 +61,6 @@ file(GLOB_RECURSE CLIENT_SRCS clients/*.cpp)
 add_executable(${PROJECT_NAME} WIN32 mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
 target_link_libraries(${PROJECT_NAME} ${LIBRARY_NAME})
 target_link_libraries(${PROJECT_NAME} cz)
-target_link_libraries(${PROJECT_NAME} z)
 target_include_directories(${PROJECT_NAME} PUBLIC clients render)
 
 # Include client libraries to mag
