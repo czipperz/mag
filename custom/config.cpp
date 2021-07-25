@@ -79,11 +79,11 @@ namespace prose {
 
 cz::Str alternate_path_1[] = {"/cz/src/"};
 cz::Str alternate_path_2[] = {"/cz/include/cz/"};
-size_t alternate_path_len = 1;
+size_t alternate_path_len = sizeof(alternate_path_1) / sizeof(*alternate_path_1);
 
 cz::Str alternate_extensions_1[] = {".c", ".cc", ".cxx", ".cpp"};
 cz::Str alternate_extensions_2[] = {".h", ".hh", ".hxx", ".hpp"};
-size_t alternate_extensions_len = 4;
+size_t alternate_extensions_len = sizeof(alternate_extensions_1) / sizeof(*alternate_extensions_1);
 
 }
 
