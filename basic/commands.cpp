@@ -951,8 +951,7 @@ static bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start,
     do {                                                                              \
         uint64_t start = cursors[c].point;                                            \
         Contents_Iterator new_start = buffer->contents.iterator_at(start);            \
-        size_t i = 0;                                                                 \
-        for (; i < n; ++i) {                                                          \
+        for (i = 0; i < n; ++i) {                                                     \
             if (i > 0) {                                                              \
                 if (FUNC == search_forward_cased) {                                   \
                     forward_char(&new_start);                                         \
@@ -964,6 +963,7 @@ static bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start,
                 break;                                                                \
             }                                                                         \
         }                                                                             \
+                                                                                      \
         if (i == n) {                                                                 \
             Cursor new_cursor = {};                                                   \
             new_cursor.point = new_start.position + query.len;                        \
@@ -1397,18 +1397,30 @@ static void interactive_search_response_callback(Editor* editor,
     WITH_CONST_WINDOW_BUFFER(window);
     cz::Slice<Cursor> cursors = window->cursors;
     size_t c = 0;
+    size_t i = 0;
+retry:
     if (data->direction >= 1) {
         size_t n = data->direction;
         SEARCH_QUERY_THEN(search_forward_cased, {
             cursors[0] = new_cursor;
             window->show_marks = true;
         });
+
+        if (i != n && i > 0) {
+            data->direction = i;
+            goto retry;
+        }
     } else {
         size_t n = 1 - data->direction;
         SEARCH_QUERY_THEN(search_backward_cased, {
             cursors[0] = new_cursor;
             window->show_marks = true;
         });
+
+        if (i != n && i > 0) {
+            data->direction = 1 - i;
+            goto retry;
+        }
     }
 }
 
@@ -1425,6 +1437,7 @@ static void command_search_forward_callback(Editor* editor,
     }
 
     cz::Slice<Cursor> cursors = window->cursors;
+    size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_forward_cased, {
             // Only push jump if we hit a result, are the only cursor, and not at either sob
@@ -1455,6 +1468,7 @@ static void command_search_backward_callback(Editor* editor,
     }
 
     cz::Slice<Cursor> cursors = window->cursors;
+    size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_backward_cased, {
             // Only push jump if we hit a result, are the only cursor, and not at either sob
@@ -1613,6 +1627,7 @@ static void command_search_backward_expanding_callback(Editor* editor,
     }
 
     size_t n = 1;
+    size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_backward_cased, cursors[c].point = new_cursor.mark);
     }
@@ -1633,6 +1648,7 @@ static void command_search_forward_expanding_callback(Editor* editor,
     }
 
     size_t n = 1;
+    size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_forward_cased, cursors[c].point = new_cursor.point);
     }
