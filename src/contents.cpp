@@ -268,7 +268,7 @@ static void slice_impl(char* buffer,
 void Contents::stringify_into(cz::Allocator allocator, cz::String* string) const {
     ZoneScoped;
     string->reserve(allocator, len);
-    slice_impl(string->buffer(), buckets, start(), len);
+    slice_impl(string->end(), buckets, start(), len);
     string->set_len(string->len() + len);
 }
 
