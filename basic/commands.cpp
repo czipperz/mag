@@ -947,17 +947,26 @@ static bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start,
         }                                                                  \
     } while (0)
 
-#define SEARCH_QUERY_THEN(FUNC, THEN)                                            \
-    do {                                                                         \
-        uint64_t start = cursors[c].point;                                       \
-        Contents_Iterator new_start = buffer->contents.iterator_at(start);       \
-        if (FUNC(&new_start, query, buffer->mode.search_prompt_case_handling)) { \
-            Cursor new_cursor = {};                                              \
-            new_cursor.point = new_start.position + query.len;                   \
-            new_cursor.mark = new_start.position;                                \
-            new_cursor.local_copy_chain = cursors[c].local_copy_chain;           \
-            THEN;                                                                \
-        }                                                                        \
+#define SEARCH_QUERY_THEN(FUNC, THEN)                                                 \
+    do {                                                                              \
+        uint64_t start = cursors[c].point;                                            \
+        Contents_Iterator new_start = buffer->contents.iterator_at(start);            \
+        size_t i = 0;                                                                 \
+        for (; i < n; ++i) {                                                          \
+            if (i > 0 && FUNC == search_forward_cased) {                              \
+                forward_char(&new_start);                                             \
+            }                                                                         \
+            if (!FUNC(&new_start, query, buffer->mode.search_prompt_case_handling)) { \
+                break;                                                                \
+            }                                                                         \
+        }                                                                             \
+        if (i == n) {                                                                 \
+            Cursor new_cursor = {};                                                   \
+            new_cursor.point = new_start.position + query.len;                        \
+            new_cursor.mark = new_start.position;                                     \
+            new_cursor.local_copy_chain = cursors[c].local_copy_chain;                \
+            THEN;                                                                     \
+        }                                                                             \
     } while (0)
 
 static int create_cursor_forward_search(const Buffer* buffer, Window_Unified* window) {
@@ -1342,7 +1351,7 @@ void command_remove_selected_cursor(Editor* editor, Command_Source source) {
 }
 
 struct Interactive_Search_Data {
-    bool forward;
+    int64_t direction;
     uint64_t cursor_point;
     uint64_t cursor_mark;
     uint64_t mini_buffer_change_index;
@@ -1384,10 +1393,19 @@ static void interactive_search_response_callback(Editor* editor,
     WITH_CONST_WINDOW_BUFFER(window);
     cz::Slice<Cursor> cursors = window->cursors;
     size_t c = 0;
-    SEARCH_QUERY_THEN((data->forward ? search_forward_cased : search_backward_cased), {
-        cursors[0] = new_cursor;
-        window->show_marks = true;
-    });
+    if (data->direction >= 1) {
+        size_t n = data->direction;
+        SEARCH_QUERY_THEN(search_forward_cased, {
+            cursors[0] = new_cursor;
+            window->show_marks = true;
+        });
+    } else {
+        size_t n = 1 - data->direction;
+        SEARCH_QUERY_THEN(search_backward_cased, {
+            cursors[0] = new_cursor;
+            window->show_marks = true;
+        });
+    }
 }
 
 static void command_search_forward_callback(Editor* editor,
@@ -1395,9 +1413,11 @@ static void command_search_forward_callback(Editor* editor,
                                             cz::Str query,
                                             void* _data) {
     WITH_CONST_SELECTED_BUFFER(client);
+    size_t n = 1;
     if (_data) {
         Interactive_Search_Data* data = (Interactive_Search_Data*)_data;
         interactive_search_reset(window, data);
+        n = data->direction;
     }
 
     cz::Slice<Cursor> cursors = window->cursors;
@@ -1418,88 +1438,16 @@ static void command_search_forward_callback(Editor* editor,
     }
 }
 
-void command_search_forward(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_normal_window;
-
-    // If we have no results we want to keep the prompt but reverse the direction.
-    bool no_results = false;
-
-    // If we're already in an interactive search then search inside the normal window.
-    if (source.client->_select_mini_buffer && !source.client->_mini_buffer->show_marks &&
-        source.client->_message.interactive_response_callback ==
-            interactive_search_response_callback) {
-        {
-            WITH_CONST_WINDOW_BUFFER(source.client->_mini_buffer);
-
-            if (!window->show_marks) {
-                no_results = true;
-            }
-
-            // If we have an empty prompt and start searching then we want to reprompt.
-            if (buffer->contents.len == 0) {
-                window->show_marks = false;
-            }
-        }
-
-        if (!no_results) {
-            // Hide the mini buffer but don't reset the cursor.
-            source.client->_message.response_cancel = nullptr;
-            source.client->hide_mini_buffer(editor);
-        }
-    }
-
-    if (no_results) {
-        auto data = (Interactive_Search_Data*)source.client->_message.response_callback_data;
-        data->forward = true;
-        data->mini_buffer_change_index = 0;
-        source.client->set_prompt_text(editor, "Search forward: ");
-        source.client->_message.response_callback = command_search_forward_callback;
-    } else if (window->show_marks) {
-        cz::Slice<Cursor> cursors = window->cursors;
-        WITH_CONST_WINDOW_BUFFER(window);
-        for (size_t c = 0; c < cursors.len; ++c) {
-            bool created;
-            SEARCH_SLICE_THEN(search_forward_slice, created, cursors[c] = new_cursor);
-        }
-    } else if (window->cursors.len() == 1) {
-        Interactive_Search_Data* data = cz::heap_allocator().alloc<Interactive_Search_Data>();
-        CZ_ASSERT(data);
-        data->forward = true;
-        data->cursor_point = window->cursors[0].point;
-        data->cursor_mark = window->cursors[0].mark;
-        data->mini_buffer_change_index = 0;
-
-        Dialog dialog = {};
-        dialog.prompt = "Search forward: ";
-        dialog.response_callback = command_search_forward_callback;
-        dialog.interactive_response_callback = interactive_search_response_callback;
-        dialog.response_cancel = interactive_search_cancel;
-        dialog.response_callback_data = data;
-        {
-            WITH_CONST_WINDOW_BUFFER(window);
-            dialog.next_token = buffer->mode.next_token;
-        }
-        source.client->show_dialog(editor, dialog);
-    } else {
-        Dialog dialog = {};
-        dialog.prompt = "Search forward: ";
-        dialog.response_callback = command_search_forward_callback;
-        {
-            WITH_CONST_WINDOW_BUFFER(window);
-            dialog.next_token = buffer->mode.next_token;
-        }
-        source.client->show_dialog(editor, dialog);
-    }
-}
-
 static void command_search_backward_callback(Editor* editor,
                                              Client* client,
                                              cz::Str query,
                                              void* _data) {
     WITH_CONST_SELECTED_BUFFER(client);
+    size_t n = 1;
     if (_data) {
         Interactive_Search_Data* data = (Interactive_Search_Data*)_data;
         interactive_search_reset(window, data);
+        n = 1 - data->direction;
     }
 
     cz::Slice<Cursor> cursors = window->cursors;
@@ -1520,69 +1468,107 @@ static void command_search_backward_callback(Editor* editor,
     }
 }
 
-void command_search_backward(Editor* editor, Command_Source source) {
+bool in_interactive_search(Client* client) {
+    return client->_select_mini_buffer &&
+           client->_message.interactive_response_callback == interactive_search_response_callback;
+}
+
+void command_search_forward(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_normal_window;
 
-    // If we have no results we want to keep the prompt but reverse the direction.
-    bool no_results = false;
-
-    // If we're already in an interactive search then search inside the normal window.
-    if (source.client->_select_mini_buffer && !source.client->_mini_buffer->show_marks &&
-        source.client->_message.interactive_response_callback ==
-            interactive_search_response_callback) {
-        {
-            WITH_CONST_WINDOW_BUFFER(source.client->_mini_buffer);
-
-            if (!window->show_marks) {
-                no_results = true;
-            }
-
-            // If we have an empty prompt and start searching then we want to reprompt.
-            if (buffer->contents.len == 0) {
-                window->show_marks = false;
-            }
+    // Already prompting.
+    if (in_interactive_search(source.client)) {
+        auto data = (Interactive_Search_Data*)source.client->_message.response_callback_data;
+        ++data->direction;
+        data->mini_buffer_change_index = 0;
+        if (data->direction == 1) {
+            source.client->set_prompt_text(editor, "Search forward: ");
+            source.client->_message.response_callback = command_search_forward_callback;
         }
+        return;
+    }
 
-        if (!no_results) {
-            // Hide the mini buffer but don't reset the cursor.
-            source.client->_message.response_cancel = nullptr;
+    // If not interactively prompting then deal with the mini buffer.
+    if (source.client->_select_mini_buffer) {
+        if (source.client->_message.response_callback == command_search_backward_callback ||
+            source.client->_message.response_callback == command_search_forward_callback) {
+            submit_mini_buffer(editor, source.client);
+        } else {
             source.client->hide_mini_buffer(editor);
         }
     }
 
-    if (no_results) {
+    if (window->show_marks) {
+        // Search using the matching region.
+        cz::Slice<Cursor> cursors = window->cursors;
+        WITH_CONST_WINDOW_BUFFER(window);
+        for (size_t c = 0; c < cursors.len; ++c) {
+            bool created;
+            SEARCH_SLICE_THEN(search_forward_slice, created, cursors[c] = new_cursor);
+        }
+    } else {
+        // Search using a prompt.
+        Dialog dialog = {};
+        dialog.prompt = "Search forward: ";
+        dialog.response_callback = command_search_forward_callback;
+        {
+            WITH_CONST_WINDOW_BUFFER(window);
+            dialog.next_token = buffer->mode.next_token;
+        }
+
+        // Interactive search.
+        if (window->cursors.len() == 1) {
+            Interactive_Search_Data* data = cz::heap_allocator().alloc<Interactive_Search_Data>();
+            CZ_ASSERT(data);
+            data->direction = 1;
+            data->cursor_point = window->cursors[0].point;
+            data->cursor_mark = window->cursors[0].mark;
+            data->mini_buffer_change_index = 0;
+
+            dialog.interactive_response_callback = interactive_search_response_callback;
+            dialog.response_cancel = interactive_search_cancel;
+            dialog.response_callback_data = data;
+        }
+
+        source.client->show_dialog(editor, dialog);
+    }
+}
+
+void command_search_backward(Editor* editor, Command_Source source) {
+    Window_Unified* window = source.client->selected_normal_window;
+
+    // Already prompting.
+    if (in_interactive_search(source.client)) {
         auto data = (Interactive_Search_Data*)source.client->_message.response_callback_data;
-        data->forward = false;
+        --data->direction;
         data->mini_buffer_change_index = 0;
-        source.client->set_prompt_text(editor, "Search backward: ");
-        source.client->_message.response_callback = command_search_backward_callback;
-    } else if (window->show_marks) {
+        if (data->direction == 0) {
+            source.client->set_prompt_text(editor, "Search backward: ");
+            source.client->_message.response_callback = command_search_backward_callback;
+        }
+        return;
+    }
+
+    // If not interactively prompting then deal with the mini buffer.
+    if (source.client->_select_mini_buffer) {
+        if (source.client->_message.response_callback == command_search_backward_callback ||
+            source.client->_message.response_callback == command_search_forward_callback) {
+            submit_mini_buffer(editor, source.client);
+        } else {
+            source.client->hide_mini_buffer(editor);
+        }
+    }
+
+    if (window->show_marks) {
+        // Search using the matching region.
         cz::Slice<Cursor> cursors = window->cursors;
         WITH_CONST_WINDOW_BUFFER(window);
         for (size_t c = 0; c < cursors.len; ++c) {
             bool created;
             SEARCH_SLICE_THEN(search_backward_slice, created, cursors[c] = new_cursor);
         }
-    } else if (window->cursors.len() == 1) {
-        Interactive_Search_Data* data = cz::heap_allocator().alloc<Interactive_Search_Data>();
-        CZ_ASSERT(data);
-        data->forward = false;
-        data->cursor_point = window->cursors[0].point;
-        data->cursor_mark = window->cursors[0].mark;
-        data->mini_buffer_change_index = 0;
-
-        Dialog dialog = {};
-        dialog.prompt = "Search backward: ";
-        dialog.response_callback = command_search_backward_callback;
-        dialog.interactive_response_callback = interactive_search_response_callback;
-        dialog.response_cancel = interactive_search_cancel;
-        dialog.response_callback_data = data;
-        {
-            WITH_CONST_WINDOW_BUFFER(window);
-            dialog.next_token = buffer->mode.next_token;
-        }
-        source.client->show_dialog(editor, dialog);
     } else {
+        // Search using a prompt.
         Dialog dialog = {};
         dialog.prompt = "Search backward: ";
         dialog.response_callback = command_search_backward_callback;
@@ -1590,6 +1576,21 @@ void command_search_backward(Editor* editor, Command_Source source) {
             WITH_CONST_WINDOW_BUFFER(window);
             dialog.next_token = buffer->mode.next_token;
         }
+
+        // Interactive search.
+        if (window->cursors.len() == 1) {
+            Interactive_Search_Data* data = cz::heap_allocator().alloc<Interactive_Search_Data>();
+            CZ_ASSERT(data);
+            data->direction = 0;
+            data->cursor_point = window->cursors[0].point;
+            data->cursor_mark = window->cursors[0].mark;
+            data->mini_buffer_change_index = 0;
+
+            dialog.interactive_response_callback = interactive_search_response_callback;
+            dialog.response_cancel = interactive_search_cancel;
+            dialog.response_callback_data = data;
+        }
+
         source.client->show_dialog(editor, dialog);
     }
 }
@@ -1607,6 +1608,7 @@ static void command_search_backward_expanding_callback(Editor* editor,
         }
     }
 
+    size_t n = 1;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_backward_cased, cursors[c].point = new_cursor.mark);
     }
@@ -1626,6 +1628,7 @@ static void command_search_forward_expanding_callback(Editor* editor,
         }
     }
 
+    size_t n = 1;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_forward_cased, cursors[c].point = new_cursor.point);
     }
@@ -1751,28 +1754,32 @@ void command_mark_buffer(Editor* editor, Command_Source source) {
     window->cursors[0].point = buffer->contents.len;
 }
 
-void command_submit_mini_buffer(Editor* editor, Command_Source source) {
+void submit_mini_buffer(Editor* editor, Client* client) {
     SSOStr mini_buffer_contents;
     {
-        Window_Unified* window = source.client->mini_buffer_window();
+        Window_Unified* window = client->mini_buffer_window();
         WITH_WINDOW_BUFFER(window);
         mini_buffer_contents = clear_buffer(buffer);
     }
 
     {
-        WITH_BUFFER_HANDLE(source.client->messages_buffer_handle);
-        buffer->contents.insert(source.client->_message.end, mini_buffer_contents.as_str());
+        WITH_BUFFER_HANDLE(client->messages_buffer_handle);
+        buffer->contents.insert(client->_message.end, mini_buffer_contents.as_str());
     }
 
-    source.client->restore_selected_buffer();
+    client->restore_selected_buffer();
 
-    Message message = source.client->_message;
+    Message message = client->_message;
     CZ_DEFER(cz::heap_allocator().dealloc({message.response_callback_data, 0}));
-    source.client->_message.response_callback_data = nullptr;
-    source.client->dealloc_message();
+    client->_message.response_callback_data = nullptr;
+    client->dealloc_message();
 
-    message.response_callback(editor, source.client, mini_buffer_contents.as_str(),
+    message.response_callback(editor, client, mini_buffer_contents.as_str(),
                               message.response_callback_data);
+}
+
+void command_submit_mini_buffer(Editor* editor, Command_Source source) {
+    submit_mini_buffer(editor, source.client);
 }
 
 void command_insert_home_directory(Editor* editor, Command_Source source) {

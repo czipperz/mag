@@ -96,6 +96,7 @@ void command_cursors_align(Editor* editor, Command_Source source);
 void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source);
 void command_remove_selected_cursor(Editor* editor, Command_Source source);
 
+bool in_interactive_search(Client* client);
 void command_search_forward(Editor* editor, Command_Source source);
 void command_search_backward(Editor* editor, Command_Source source);
 void command_search_forward_expanding(Editor* editor, Command_Source source);
@@ -108,6 +109,7 @@ void command_path_up_directory(Editor* editor, Command_Source source);
 
 void command_mark_buffer(Editor* editor, Command_Source source);
 
+void submit_mini_buffer(Editor* editor, Client* client);
 void command_submit_mini_buffer(Editor* editor, Command_Source source);
 
 void command_insert_home_directory(Editor* editor, Command_Source source);

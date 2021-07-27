@@ -5,7 +5,11 @@
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/heap.hpp>
+#include "basic/commands.hpp"
 #include "buffer.hpp"
+#include "client.hpp"
+#include "command_macros.hpp"
+#include "editor.hpp"
 #include "match.hpp"
 #include "overlay.hpp"
 #include "theme.hpp"
@@ -24,6 +28,10 @@ struct Data {
     Contents_Iterator start_marked_region;
 
     size_t countdown_cursor_region;
+
+    Case_Handling case_handling;
+    bool use_prompt;
+    cz::String prompt;
 };
 }
 using namespace overlay_matching_region_impl;
@@ -65,6 +73,18 @@ static void overlay_matching_region_start_frame(Editor* editor,
         }
     }
     data->countdown_cursor_region = 0;
+
+    data->case_handling = buffer->mode.search_continue_case_handling;
+    data->use_prompt = false;
+    if (basic::in_interactive_search(client)) {
+        data->case_handling = buffer->mode.search_prompt_case_handling;
+        data->use_prompt = true;
+
+        Window_Unified* window = client->mini_buffer_window();
+        WITH_CONST_WINDOW_BUFFER(window);
+        data->prompt.set_len(0);
+        buffer->contents.stringify_into(cz::heap_allocator(), &data->prompt);
+    }
 }
 
 static Face overlay_matching_region_get_face_and_advance(const Buffer* buffer,
@@ -84,10 +104,17 @@ static Face overlay_matching_region_get_face_and_advance(const Buffer* buffer,
     }
 
     if (data->countdown_cursor_region == 0) {
-        uint64_t end_marked_region = window->cursors[window->selected_cursor].end();
-        if (matches_cased(data->start_marked_region, end_marked_region, iterator,
-                          buffer->mode.search_continue_case_handling)) {
-            data->countdown_cursor_region = end_marked_region - data->start_marked_region.position;
+        if (data->use_prompt) {
+            if (looking_at_cased(iterator, data->prompt, data->case_handling)) {
+                data->countdown_cursor_region = data->prompt.len();
+            }
+        } else {
+            uint64_t end_marked_region = window->cursors[window->selected_cursor].end();
+            if (matches_cased(data->start_marked_region, end_marked_region, iterator,
+                              data->case_handling)) {
+                data->countdown_cursor_region =
+                    end_marked_region - data->start_marked_region.position;
+            }
         }
     }
 
