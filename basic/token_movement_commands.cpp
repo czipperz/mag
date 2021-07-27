@@ -513,7 +513,13 @@ void command_create_cursors_to_end_matching_token(Editor* editor, Command_Source
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_matching_token(buffer, window);
     if (created == 1) {
+        if (window->selected_cursor + 1 == window->cursors.len() - 1) {
+            ++window->selected_cursor;
+        }
         while (create_cursor_forward_matching_token(buffer, window) == 1) {
+            if (window->selected_cursor + 1 == window->cursors.len() - 1) {
+                ++window->selected_cursor;
+            }
         }
     }
     show_created_messages(editor, source.client, created);
@@ -523,9 +529,13 @@ void command_create_cursors_to_start_matching_token(Editor* editor, Command_Sour
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_matching_token(buffer, window);
     if (created == 1) {
-        ++window->selected_cursor;
-        while (create_cursor_backward_matching_token(buffer, window) == 1) {
+        if (window->selected_cursor != 0) {
             ++window->selected_cursor;
+        }
+        while (create_cursor_backward_matching_token(buffer, window) == 1) {
+            if (window->selected_cursor != 0) {
+                ++window->selected_cursor;
+            }
         }
     }
     show_created_messages(editor, source.client, created);
