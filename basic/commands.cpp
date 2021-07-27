@@ -953,8 +953,12 @@ static bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start,
         Contents_Iterator new_start = buffer->contents.iterator_at(start);            \
         size_t i = 0;                                                                 \
         for (; i < n; ++i) {                                                          \
-            if (i > 0 && FUNC == search_forward_cased) {                              \
-                forward_char(&new_start);                                             \
+            if (i > 0) {                                                              \
+                if (FUNC == search_forward_cased) {                                   \
+                    forward_char(&new_start);                                         \
+                } else {                                                              \
+                    backward_char(&new_start);                                        \
+                }                                                                     \
             }                                                                         \
             if (!FUNC(&new_start, query, buffer->mode.search_prompt_case_handling)) { \
                 break;                                                                \
