@@ -28,6 +28,8 @@ enum Token_Type : uint64_t {
 
     TITLE,
     CODE,
+    LINK_TITLE,
+    LINK_HREF,
 
     PATCH_REMOVE,
     PATCH_ADD,

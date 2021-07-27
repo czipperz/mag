@@ -3,6 +3,8 @@
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include "contents.hpp"
+#include "match.hpp"
+#include "movement.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -15,6 +17,9 @@ enum {
     INSIDE_ITALICS,
     INSIDE_BOLD,
     INSIDE_BOLD_ITALICS,
+    AFTER_LINK_TITLE,
+    BEFORE_LINK_HREF_LINE,
+    BEFORE_LINK_HREF_PAREN,
 };
 
 static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* state) {
@@ -59,7 +64,7 @@ static void advance_through_inline_code_block(Contents_Iterator* iterator) {
 }
 
 static bool is_special(char ch) {
-    return ch == '`' || ch == '*' || ch == '_';
+    return ch == '`' || ch == '*' || ch == '_' || ch == '[';
 }
 
 bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
@@ -111,6 +116,45 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             advance_through_inline_code_block(iterator);
         }
 
+        goto ret;
+    }
+
+    if (first_ch == '[') {
+        // Link
+        token->type = Token_Type::LINK_TITLE;
+        if (find(iterator, ']')) {
+            iterator->advance();
+        }
+
+        *state = AFTER_LINK_TITLE;
+        goto ret;
+    }
+
+    // [Title]: Href
+    if (*state == AFTER_LINK_TITLE && looking_at(*iterator, ": ")) {
+        iterator->advance();
+        token->type = Token_Type::DEFAULT;
+        *state = BEFORE_LINK_HREF_LINE;
+        goto ret;
+    }
+    if (*state == BEFORE_LINK_HREF_LINE) {
+        end_of_line(iterator);
+        token->type = Token_Type::LINK_HREF;
+        *state = START_OF_LINE;
+        goto ret;
+    }
+
+    // [Title](Href)
+    if (*state == AFTER_LINK_TITLE && first_ch == '(') {
+        iterator->advance();
+        token->type = Token_Type::DEFAULT;
+        *state = BEFORE_LINK_HREF_PAREN;
+        goto ret;
+    }
+    if (*state == BEFORE_LINK_HREF_PAREN) {
+        find(iterator, ')');
+        token->type = Token_Type::LINK_HREF;
+        *state = MIDDLE_OF_LINE;
         goto ret;
     }
 

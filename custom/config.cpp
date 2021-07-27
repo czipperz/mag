@@ -452,6 +452,8 @@ static void create_theme(Theme& theme) {
 
     theme.token_faces[Token_Type::TITLE] = {3, {}, 0};
     theme.token_faces[Token_Type::CODE] = {2, {}, 0};
+    theme.token_faces[Token_Type::LINK_TITLE] = {{}, {}, Face::BOLD};
+    theme.token_faces[Token_Type::LINK_HREF] = {{}, {}, Face::UNDERSCORE};
 
     theme.token_faces[Token_Type::PATCH_REMOVE] = {1, {}, 0};
     theme.token_faces[Token_Type::PATCH_ADD] = {76, {}, 0};
