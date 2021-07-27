@@ -30,7 +30,9 @@ struct Data {
 }
 using namespace overlay_indent_guides_impl;
 
-static void overlay_indent_guides_start_frame(const Buffer*,
+static void overlay_indent_guides_start_frame(Editor*,
+                                              Client*,
+                                              const Buffer*,
                                               Window_Unified*,
                                               Contents_Iterator start_position_iterator,
                                               void* _data) {

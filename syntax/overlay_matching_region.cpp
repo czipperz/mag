@@ -28,7 +28,9 @@ struct Data {
 }
 using namespace overlay_matching_region_impl;
 
-static void overlay_matching_region_start_frame(const Buffer* buffer,
+static void overlay_matching_region_start_frame(Editor* editor,
+                                                Client* client,
+                                                const Buffer* buffer,
                                                 Window_Unified* window,
                                                 Contents_Iterator start_position_iterator,
                                                 void* _data) {

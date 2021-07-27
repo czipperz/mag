@@ -20,7 +20,9 @@ struct Data {
 }
 using namespace overlay_preferred_column_impl;
 
-static void overlay_preferred_column_start_frame(const Buffer* buffer,
+static void overlay_preferred_column_start_frame(Editor*,
+                                                 Client*,
+                                                 const Buffer* buffer,
                                                  Window_Unified* window,
                                                  Contents_Iterator start_position_iterator,
                                                  void* _data) {

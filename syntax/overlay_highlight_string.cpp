@@ -34,7 +34,9 @@ struct Data {
 }
 using namespace overlay_highlight_string_impl;
 
-static void overlay_highlight_string_start_frame(const Buffer* buffer,
+static void overlay_highlight_string_start_frame(Editor*,
+                                                 Client*,
+                                                 const Buffer* buffer,
                                                  Window_Unified*,
                                                  Contents_Iterator iterator,
                                                  void* _data) {

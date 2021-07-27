@@ -636,11 +636,11 @@ static void draw_buffer_contents(Cell* cells,
 
     for (size_t i = 0; i < editor->theme.overlays.len(); ++i) {
         const Overlay* overlay = &editor->theme.overlays[i];
-        overlay->start_frame(buffer, window, iterator);
+        overlay->start_frame(editor, client, buffer, window, iterator);
     }
     for (size_t i = 0; i < buffer->mode.overlays.len(); ++i) {
         const Overlay* overlay = &buffer->mode.overlays[i];
-        overlay->start_frame(buffer, window, iterator);
+        overlay->start_frame(editor, client, buffer, window, iterator);
     }
 
     uint64_t line_number = buffer->contents.get_line_number(iterator.position) + 1;

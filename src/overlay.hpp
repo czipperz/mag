@@ -7,11 +7,15 @@
 namespace mag {
 
 struct Buffer;
+struct Editor;
+struct Client;
 struct Window_Unified;
 
 struct Overlay {
     struct VTable {
-        void (*start_frame)(const Buffer*,
+        void (*start_frame)(Editor*,
+                            Client*,
+                            const Buffer*,
                             Window_Unified*,
                             Contents_Iterator start_position_iterator,
                             void*);
@@ -30,10 +34,12 @@ struct Overlay {
     const VTable* vtable;
     void* data;
 
-    void start_frame(const Buffer* buffer,
+    void start_frame(Editor* editor,
+                     Client* client,
+                     const Buffer* buffer,
                      Window_Unified* window,
                      Contents_Iterator start_position_iterator) const {
-        vtable->start_frame(buffer, window, start_position_iterator, data);
+        vtable->start_frame(editor, client, buffer, window, start_position_iterator, data);
     }
 
     Face get_face_and_advance(const Buffer* buffer,

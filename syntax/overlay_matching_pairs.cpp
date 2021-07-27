@@ -54,7 +54,9 @@ static bool binary_search(cz::Slice<Token> tokens, uint64_t position, size_t* to
     return false;
 }
 
-static void overlay_matching_pairs_start_frame(const Buffer* buffer,
+static void overlay_matching_pairs_start_frame(Editor*,
+                                               Client*,
+                                               const Buffer* buffer,
                                                Window_Unified* window,
                                                Contents_Iterator start_position_iterator,
                                                void* _data) {

@@ -18,7 +18,9 @@ struct Data {
 }
 using namespace overlay_incorrect_indent_impl;
 
-static void overlay_incorrect_indent_start_frame(const Buffer* buffer,
+static void overlay_incorrect_indent_start_frame(Editor*,
+                                                 Client*,
+                                                 const Buffer* buffer,
                                                  Window_Unified* window,
                                                  Contents_Iterator start_position_iterator,
                                                  void* data) {}

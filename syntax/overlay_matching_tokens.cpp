@@ -65,7 +65,9 @@ static void set_token_matches(Data* data) {
     data->token_matches = true;
 }
 
-static void overlay_matching_tokens_start_frame(const Buffer* buffer,
+static void overlay_matching_tokens_start_frame(Editor*,
+                                                Client*,
+                                                const Buffer* buffer,
                                                 Window_Unified* window,
                                                 Contents_Iterator iterator,
                                                 void* _data) {
