@@ -2,6 +2,7 @@
 * Autocomplete
   - While typing in normal buffers
     + file names
+    + misc. identifiers near the cursor
 
 * Edit server
 
