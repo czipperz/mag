@@ -541,10 +541,12 @@ void editor_created_callback(Editor* editor) {
     create_key_map(editor->key_map);
     create_theme(editor->theme);
 
-    editor->misc_commands.reserve(3);
+    editor->misc_commands.reserve(5);
     editor->misc_commands.push(COMMAND(command_swap_windows));
     editor->misc_commands.push(COMMAND(command_restore_last_save_point));
     editor->misc_commands.push(COMMAND(command_diff_buffer_against));
+    editor->misc_commands.push(COMMAND(command_goto_top_of_window));
+    editor->misc_commands.push(COMMAND(command_goto_bottom_of_window));
 }
 
 static void directory_key_map(Key_Map& key_map) {

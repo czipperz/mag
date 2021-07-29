@@ -120,6 +120,26 @@ Contents_Iterator center_of_window(Window_Unified* window,
     return iterator;
 }
 
+Contents_Iterator top_of_window(Window_Unified* window,
+                                const Mode& mode,
+                                const Theme& theme,
+                                const Contents* contents) {
+    Contents_Iterator it = contents->iterator_at(window->start_position);
+    uint64_t scroll_outside = get_scroll_outside(window->rows(), theme.scroll_outside_visual_rows);
+    forward_visual_line(window, mode, &it, scroll_outside);
+    return it;
+}
+
+Contents_Iterator bottom_of_window(Window_Unified* window,
+                                   const Mode& mode,
+                                   const Theme& theme,
+                                   const Contents* contents) {
+    Contents_Iterator it = contents->iterator_at(window->start_position);
+    uint64_t scroll_outside = get_scroll_outside(window->rows(), theme.scroll_outside_visual_rows);
+    forward_visual_line(window, mode, &it, window->rows() - scroll_outside);
+    return it;
+}
+
 bool is_visible(const Window_Unified* window, const Mode& mode, Contents_Iterator iterator) {
     if (iterator.position < window->start_position) {
         return false;

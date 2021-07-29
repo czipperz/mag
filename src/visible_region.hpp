@@ -20,6 +20,18 @@ Contents_Iterator center_of_window(Window_Unified* window,
                                    const Mode& mode,
                                    const Contents* contents);
 
+/// Get an iterator to the top of the window.
+Contents_Iterator top_of_window(Window_Unified* window,
+                                const Mode& mode,
+                                const Theme& theme,
+                                const Contents* contents);
+
+/// Get an iterator to the bottom of the window.
+Contents_Iterator bottom_of_window(Window_Unified* window,
+                                   const Mode& mode,
+                                   const Theme& theme,
+                                   const Contents* contents);
+
 /// Test if the iterator is inside the visible region of the window.
 bool is_visible(const Window_Unified* window, const Mode& mode, Contents_Iterator iterator);
 

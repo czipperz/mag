@@ -32,6 +32,22 @@ void command_goto_center_of_window(Editor* editor, Command_Source source) {
         center_of_window(window, buffer->mode, &buffer->contents).position;
 }
 
+void command_goto_top_of_window(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    kill_extra_cursors(window, source.client);
+    window->cursors[window->selected_cursor].point =
+        top_of_window(window, buffer->mode, editor->theme, &buffer->contents).position;
+}
+
+void command_goto_bottom_of_window(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    kill_extra_cursors(window, source.client);
+    window->cursors[window->selected_cursor].point =
+        bottom_of_window(window, buffer->mode, editor->theme, &buffer->contents).position;
+}
+
 static size_t subtract_bounded(size_t left, size_t right) {
     if (left < right) {
         return left;

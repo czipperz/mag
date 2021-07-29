@@ -3,9 +3,6 @@
   - While typing in normal buffers
     + file names
 
-* Screen based movement
-  - Move cursor to top and bottom of screen
-
 * Edit server
 
 * Eliminate copy leak bug
