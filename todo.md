@@ -6,8 +6,6 @@
 * Screen based movement
   - Move cursor to top and bottom of screen
 
-* Uncomment line and region
-* Run compile
 * Edit server
 
 * Eliminate copy leak bug
@@ -17,7 +15,6 @@
   - left click
   - drag
   - right click
-  - scroll
 
 * File tree
 * List symbols in file
