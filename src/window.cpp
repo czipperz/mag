@@ -64,8 +64,6 @@ void Window_Unified::update_cursors(const Buffer* buffer) {
         return;
     }
 
-    clear_show_marks_temporarily();
-
     cz::Slice<Cursor> cursors = this->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         position_after_changes(new_changes, &cursors[c].point);
