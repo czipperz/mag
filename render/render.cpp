@@ -234,12 +234,15 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // Calculate the minimum cursor boundary.
         Contents_Iterator visible_start_iterator = iterator;
-        forward_visual_line(window, buffer->mode, &visible_start_iterator, scroll_outside);
+        forward_visual_line(window, buffer->mode, &visible_start_iterator, scroll_outside - 1);
+        end_of_visual_line(window, buffer->mode, &visible_start_iterator);
+        forward_char(&visible_start_iterator);
 
         // Calculate the maximum cursor boundary.
         Contents_Iterator visible_end_iterator = iterator;
         forward_visual_line(window, buffer->mode, &visible_end_iterator,
                             window->rows() - (scroll_outside + 1));
+        end_of_visual_line(window, buffer->mode, &visible_end_iterator);
 
         // The visible_end_iterator is at the last visible character.  So if
         // we have scrolled past the entire screen then we should scroll up
