@@ -241,33 +241,40 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         forward_visual_line(window, buffer->mode, &visible_end_iterator,
                             window->rows() - (scroll_outside + 1));
 
+        // The visible_end_iterator is at the last visible character.  So if
+        // we have scrolled past the entire screen then we should scroll up
+        // a little so there are still scroll_outside lines on screen.
+        bool eob_special_case = selected_cursor_position == buffer->contents.len &&
+                                visible_start_iterator.position == buffer->contents.len;
+
         // Make sure the selected cursor is shown.
-        if ((selected_cursor_position < visible_start_iterator.position &&
-             iterator.position != 0) ||
+        if (((selected_cursor_position < visible_start_iterator.position &&
+              iterator.position != 0) ||
+             eob_special_case) ||
             selected_cursor_position > visible_end_iterator.position) {
             // For the line the cursor is on.
             iterator.go_to(selected_cursor_position);
 
-            if (selected_cursor_position < visible_start_iterator.position) {
-                // Scroll up such that the cursor is in bounds.
-                backward_visual_line(window, buffer->mode, &iterator, scroll_outside);
-            } else {
+            if (selected_cursor_position > visible_end_iterator.position) {
                 // Scroll down such that the cursor is in bounds.
                 backward_visual_line(window, buffer->mode, &iterator,
                                      window->rows() - (scroll_outside + 1));
+            } else {
+                // Scroll up such that the cursor is in bounds.
+                backward_visual_line(window, buffer->mode, &iterator, scroll_outside);
             }
 
             if (editor->theme.scroll_jump_half_page_when_outside_visible_region) {
-                if (selected_cursor_position < visible_start_iterator.position) {
+                if (selected_cursor_position > visible_end_iterator.position) {
                     Contents_Iterator it = visible_start_iterator;
-                    backward_visual_line(window, buffer->mode, &it, window->rows() / 2);
-                    if (it.position < iterator.position) {
+                    forward_visual_line(window, buffer->mode, &it, window->rows() / 2);
+                    if (it.position > iterator.position) {
                         iterator = it;
                     }
                 } else {
                     Contents_Iterator it = visible_start_iterator;
-                    forward_visual_line(window, buffer->mode, &it, window->rows() / 2);
-                    if (it.position > iterator.position) {
+                    backward_visual_line(window, buffer->mode, &it, window->rows() / 2);
+                    if (it.position < iterator.position) {
                         iterator = it;
                     }
                 }
