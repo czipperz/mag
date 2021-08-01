@@ -96,7 +96,8 @@ static cz::Result load_file(Buffer* buffer, const char* path) {
         // Failed to open so the file either doesn't exist or isn't readable.
         bool dne;
 #ifdef _WIN32
-        dne = (GetLastError() == ERROR_FILE_NOT_FOUND);
+        auto error = GetLastError();
+        dne = (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND);
 #else
         dne = (errno == ENOENT);
 #endif
