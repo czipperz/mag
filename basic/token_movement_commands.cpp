@@ -639,5 +639,61 @@ void command_duplicate_token(Editor* editor, Command_Source source) {
     transaction.commit();
 }
 
+void command_transpose_tokens(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    Contents_Iterator it = buffer->contents.start();
+    for (size_t c = 0; c < cursors.len; ++c) {
+        it.go_to(cursors[c].point);
+
+        uint64_t state;
+        Token before_token;
+        if (!get_token_before_position(buffer, &it, &state, &before_token)) {
+            continue;
+        }
+
+        Token after_token;
+        if (!buffer->mode.next_token(&it, &after_token, &state)) {
+            continue;
+        }
+
+        it.go_to(before_token.start);
+        SSOStr value1 = buffer->contents.slice(transaction.value_allocator(), it, before_token.end);
+        it.advance_to(after_token.start);
+        SSOStr value2 = buffer->contents.slice(transaction.value_allocator(), it,
+                                               after_token.end);
+
+        Edit remove1;
+        remove1.value = value1;
+        remove1.position = before_token.start;
+        remove1.flags = Edit::REMOVE;
+        transaction.push(remove1);
+        Edit insert2;
+        insert2.value = value2;
+        insert2.position = before_token.start;
+        insert2.flags = Edit::INSERT;
+        transaction.push(insert2);
+
+        Edit remove2;
+        remove2.value = value2;
+        remove2.position = after_token.start + value2.len() - value1.len();
+        remove2.flags = Edit::REMOVE;
+        transaction.push(remove2);
+        Edit insert1;
+        insert1.value = value1;
+        insert1.position = after_token.start + value2.len() - value1.len();
+        insert1.flags = Edit::INSERT;
+        transaction.push(insert1);
+    }
+
+    transaction.commit();
+}
+
 }
 }

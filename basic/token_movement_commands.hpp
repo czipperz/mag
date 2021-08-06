@@ -31,6 +31,7 @@ void command_create_all_cursors_matching_token_or_search(Editor* editor, Command
 
 void command_delete_token(Editor* editor, Command_Source source);
 void command_duplicate_token(Editor* editor, Command_Source source);
+void command_transpose_tokens(Editor* editor, Command_Source source);
 
 bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor);
 bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor);
