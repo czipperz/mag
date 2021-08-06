@@ -597,8 +597,7 @@ void command_delete_token(Editor* editor, Command_Source source) {
         it.retreat_to(std::min(token.start, cursors[c].point));
 
         Edit edit;
-        edit.value =
-            buffer->contents.slice(transaction.value_allocator(), it, token.end);
+        edit.value = buffer->contents.slice(transaction.value_allocator(), it, token.end);
         edit.flags = Edit::REMOVE;
         edit.position = it.position - offset;
         offset += token.end - it.position;
@@ -630,8 +629,7 @@ void command_duplicate_token(Editor* editor, Command_Source source) {
         it.retreat_to(token.start);
 
         Edit edit;
-        edit.value =
-            buffer->contents.slice(transaction.value_allocator(), it, token.end);
+        edit.value = buffer->contents.slice(transaction.value_allocator(), it, token.end);
         edit.flags = Edit::INSERT_AFTER_POSITION;
         edit.position = cursors[c].point + offset;
         offset += token.end - token.start;
