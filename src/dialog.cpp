@@ -45,8 +45,10 @@ void get_selected_window_directory(Editor* editor,
         return;
     }
 
-    string->reserve(allocator, 1);
-    string->push('/');
+    if (!string->ends_with('/')) {
+        string->reserve(allocator, 1);
+        string->push('/');
+    }
 }
 
 }
