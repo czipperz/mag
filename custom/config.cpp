@@ -43,6 +43,7 @@
 #include "syntax/decoration_cursor_count.hpp"
 #include "syntax/decoration_line_ending_indicator.hpp"
 #include "syntax/decoration_line_number.hpp"
+#include "syntax/decoration_max_line_number.hpp"
 #include "syntax/decoration_pinned_indicator.hpp"
 #include "syntax/decoration_read_only_indicator.hpp"
 #include "syntax/overlay_highlight_string.hpp"
@@ -496,8 +497,9 @@ static void create_theme(Theme& theme) {
 
     theme.token_faces[Token_Type::BUFFER_TEMPORARY_NAME] = {177, {}, 0};
 
-    theme.decorations.reserve(5);
+    theme.decorations.reserve(6);
     theme.decorations.push(syntax::decoration_line_number());
+    theme.decorations.push(syntax::decoration_max_line_number());
     theme.decorations.push(syntax::decoration_column_number());
     theme.decorations.push(syntax::decoration_cursor_count());
     theme.decorations.push(syntax::decoration_read_only_indicator());
