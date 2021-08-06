@@ -144,9 +144,12 @@ bool get_token_before_position(Buffer* buffer,
 
         while (1) {
             Token previous_token = *token;
+            uint64_t previous_state = *state;
             bool has_token = buffer->mode.next_token(token_iterator, token, state);
             if (!has_token || token->start >= end_position) {
                 *token = previous_token;
+                *state = previous_state;
+                token_iterator->retreat_to(previous_token.end);
                 return true;
             }
         }
