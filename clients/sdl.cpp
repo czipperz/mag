@@ -277,6 +277,10 @@ static void process_event(Server* server,
         client->_select_mini_buffer = false;
 
         Key key = {};
+        if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
+            event.wheel.y *= -1;
+            event.wheel.x *= -1;
+        }
         for (int y = 0; y < event.wheel.y; ++y) {
             key.code = Key_Code::SCROLL_UP;
             server->receive(client, key);
