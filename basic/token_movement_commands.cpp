@@ -569,5 +569,74 @@ void command_create_all_cursors_matching_token_or_search(Editor* editor, Command
     }
 }
 
+void command_delete_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    Contents_Iterator it = buffer->contents.start();
+    for (size_t c = 0; c < cursors.len; ++c) {
+        it.go_to(cursors[c].point);
+
+        Token token;
+        if (!get_token_at_position(buffer, &it, &token)) {
+            it.go_to(cursors[c].point);
+            uint64_t state;
+            if (!get_token_after_position(buffer, &it, &state, &token)) {
+                continue;
+            }
+        }
+
+        it.retreat_to(std::min(token.start, cursors[c].point));
+
+        Edit edit;
+        edit.value =
+            buffer->contents.slice(transaction.value_allocator(), it, token.end);
+        edit.flags = Edit::REMOVE;
+        edit.position = it.position - offset;
+        offset += token.end - it.position;
+        transaction.push(edit);
+    }
+
+    transaction.commit();
+}
+
+void command_duplicate_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    Contents_Iterator it = buffer->contents.start();
+    for (size_t c = 0; c < cursors.len; ++c) {
+        it.go_to(cursors[c].point);
+
+        Token token;
+        if (!get_token_at_position(buffer, &it, &token)) {
+            continue;
+        }
+
+        cursors[c].point = token.end;
+        it.retreat_to(token.start);
+
+        Edit edit;
+        edit.value =
+            buffer->contents.slice(transaction.value_allocator(), it, token.end);
+        edit.flags = Edit::INSERT_AFTER_POSITION;
+        edit.position = cursors[c].point + offset;
+        offset += token.end - token.start;
+        transaction.push(edit);
+    }
+
+    transaction.commit();
+}
+
 }
 }

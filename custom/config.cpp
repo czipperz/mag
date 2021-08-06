@@ -291,6 +291,9 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-t", command_transpose_characters);
     BIND(key_map, "A-t", command_transpose_words);
 
+    BIND(key_map, "C-A-y", command_duplicate_token);
+    BIND(key_map, "C-A-w", command_delete_token);
+
     BIND(key_map, "A-m", command_open_line);
     BIND(key_map, "ENTER", command_insert_newline_indent);
     BIND(key_map, "TAB", command_increase_indent);
