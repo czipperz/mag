@@ -128,5 +128,8 @@ void command_flip_lines(Editor* editor, Command_Source source);
 
 void command_restore_last_save_point(Editor* editor, Command_Source source);
 
+void command_run_command_for_result(Editor* editor, Command_Source source);
+void command_run_command_ignore_result(Editor* editor, Command_Source source);
+
 }
 }

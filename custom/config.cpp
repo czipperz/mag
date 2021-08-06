@@ -340,6 +340,8 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-x A-u", command_uppercase_region_or_word);
     BIND(key_map, "A-x A-l", command_lowercase_region_or_word);
 
+    BIND(key_map, "A-!", command_run_command_for_result);
+    BIND(key_map, "A-@", command_run_command_ignore_result);
     BIND(key_map, "A-x C-t", command_launch_terminal);
 
     BIND(key_map, "A-x A-t", command_recapitalize_token_prompt);
@@ -675,7 +677,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         // Don't bind "q" in the mini buffer.
         BIND(buffer->mode.key_map, "q", command_quit_window);
 
-        if (buffer->name.starts_with("*git grep ") || buffer->name.starts_with("*ag ")) {
+        if (buffer->name.starts_with("*git grep ") || buffer->name.starts_with("*ag ") ||
+            buffer->name.starts_with("*shell ")) {
             buffer->mode.next_token = syntax::search_next_token;
             search_key_map(buffer->mode.key_map);
         } else if (buffer->name.starts_with("*build ")) {

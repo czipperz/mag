@@ -6,6 +6,7 @@
 #include <cz/option.hpp>
 #include <cz/parse.hpp>
 #include <cz/path.hpp>
+#include <cz/process.hpp>
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
 #include "command_macros.hpp"
@@ -2047,6 +2048,54 @@ void command_restore_last_save_point(Editor* editor, Command_Source source) {
             return;
         }
     }
+}
+
+static void command_run_command_for_result_callback(Editor* editor,
+                                                    Client* client,
+                                                    cz::Str script,
+                                                    void*) {
+    cz::String buffer_name = {};
+    CZ_DEFER(buffer_name.drop(cz::heap_allocator()));
+    buffer_name.reserve(cz::heap_allocator(), 6 + script.len);
+    buffer_name.append("shell ");
+    buffer_name.append(script);
+
+    WITH_CONST_SELECTED_BUFFER(client);
+
+    run_console_command(client, editor, buffer->directory.buffer(), script, buffer_name,
+                        "Shell error");
+}
+
+static void command_run_command_ignore_result_callback(Editor* editor,
+                                                       Client* client,
+                                                       cz::Str script,
+                                                       void*) {
+    WITH_CONST_SELECTED_BUFFER(client);
+
+    cz::Process_Options options;
+    options.working_directory = buffer->directory.buffer();
+
+    cz::Process process;
+    if (!process.launch_script(script, &options)) {
+        client->show_message(editor, "Shell error");
+        return;
+    }
+
+    editor->add_asynchronous_job(job_process_silent(process));
+}
+
+void command_run_command_for_result(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Shell: ";
+    dialog.response_callback = command_run_command_for_result_callback;
+    source.client->show_dialog(editor, dialog);
+}
+
+void command_run_command_ignore_result(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Shell: ";
+    dialog.response_callback = command_run_command_ignore_result_callback;
+    source.client->show_dialog(editor, dialog);
 }
 
 }
