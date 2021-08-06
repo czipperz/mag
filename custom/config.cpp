@@ -675,10 +675,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         // Don't bind "q" in the mini buffer.
         BIND(buffer->mode.key_map, "q", command_quit_window);
 
-        if (buffer->name.contains("*git grep ") || buffer->name.contains("*ag ")) {
+        if (buffer->name.starts_with("*git grep ") || buffer->name.starts_with("*ag ")) {
             buffer->mode.next_token = syntax::search_next_token;
             search_key_map(buffer->mode.key_map);
-        } else if (buffer->name.contains("*build ")) {
+        } else if (buffer->name.starts_with("*build ")) {
             // Build will eventually get its own tokenizer and key map.
             buffer->mode.next_token = syntax::search_next_token;
             search_key_map(buffer->mode.key_map);
