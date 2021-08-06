@@ -76,12 +76,7 @@ bool open_existing(cz::Output_File* file, const char* path) {
 }
 
 static cz::Result load_file(Buffer* buffer, const char* path) {
-    // If we're on Windows, set the default to use carriage returns.
-#ifdef _WIN32
-    buffer->use_carriage_returns = true;
-#else
-    buffer->use_carriage_returns = false;
-#endif
+    buffer->use_carriage_returns = custom::default_use_carriage_returns;
 
     // Determine if we can write to the file by trying to open it in write mode.
     {

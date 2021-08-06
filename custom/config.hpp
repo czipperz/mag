@@ -25,5 +25,7 @@ void editor_created_callback(Editor* editor);
 /// that we can display partial search results to the user.
 void buffer_created_callback(Editor* editor, Buffer* buffer);
 
+extern bool default_use_carriage_returns;
+
 }
 }

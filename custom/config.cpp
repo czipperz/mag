@@ -92,6 +92,17 @@ size_t alternate_extensions_len = sizeof(alternate_extensions_1) / sizeof(*alter
 
 namespace custom {
 
+/// Specify if new file buffers should use carriage returns when they
+/// are saved.  Existing file buffers copy the existing format.  This is
+/// needed because buffers always use LF (no carriage returns).
+///
+/// I added the ifdef to make it easy to configure specifically on Windows.
+#ifdef _WIN32
+bool default_use_carriage_returns = false;
+#else
+bool default_use_carriage_returns = false;
+#endif
+
 using namespace basic;
 
 #define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, COMMAND(FUNC)))
