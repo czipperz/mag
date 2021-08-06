@@ -1407,8 +1407,13 @@ retry:
             window->show_marks = true;
         });
 
-        if (i != n && i > 0) {
+        if (i == 0) {
+            i = 1;
+        }
+
+        if (i != n) {
             data->direction = i;
+            // Retry for case where we go off the end.
             goto retry;
         }
     } else {
@@ -1418,8 +1423,13 @@ retry:
             window->show_marks = true;
         });
 
-        if (i != n && i > 0) {
+        if (i == 0) {
+            i = 1;
+        }
+
+        if (i != n) {
             data->direction = 1 - i;
+            // Retry for case where we go off the end.
             goto retry;
         }
     }
