@@ -427,9 +427,11 @@ void run(Server* server, Client* client) {
                 continue;
             }
         } else {
+            server->set_async_locked(false);
             timeout(10);
             ch = getch();
             nodelay(stdscr, TRUE);
+            server->set_async_locked(true);
         }
 
         process_key_presses(server, client, ch);
