@@ -220,18 +220,8 @@ int mag_main(int argc, char** argv) {
         // Get the home directory.
         cz::String home_directory_storage = {};
         CZ_DEFER(home_directory_storage.drop(cz::heap_allocator()));
-        const char* home_directory_env;
-#ifdef _WIN32
-        home_directory_env = getenv("USERPROFILE");
-#else
-        home_directory_env = getenv("HOME");
-#endif
-        if (home_directory_env) {
-            home_directory_storage =
-                cz::Str{home_directory_env}.clone_null_terminate(cz::heap_allocator());
+        if (cz::env::get_home(cz::heap_allocator(), &home_directory_storage)) {
             user_home_path = home_directory_storage.buffer();
-        } else {
-            user_home_path = nullptr;
         }
 
         switch_to_the_home_directory();
