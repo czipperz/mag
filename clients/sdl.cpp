@@ -903,64 +903,32 @@ static bool get_character_dims(TTF_Font* font, int* character_width, int* charac
     return true;
 }
 
-static void set_clipboard_variable(cz::String* clipboard, cz::Str text) {
-    clipboard->set_len(0);
-    clipboard->reserve(cz::heap_allocator(), text.len + 1);
-    clipboard->append(text);
-    clipboard->null_terminate();
-}
-
-struct Clipboard_Context {
-    cz::String value;
-};
-
-static int process_clipboard_updates(Editor* editor,
-                                     Copy_Chain** global_copy_chain,
-                                     Clipboard_Context* clipboard) {
+static bool get_clipboard(void*, cz::Allocator allocator, cz::String* text) {
     ZoneScoped;
 
-    char* clipboard_currently_cstr = SDL_GetClipboardText();
-    if (!clipboard_currently_cstr) {
-        return -1;
+    char* ptr = SDL_GetClipboardText();
+    if (!ptr) {
+        return false;
+    }
+    CZ_DEFER(SDL_free(ptr));
+    if (!ptr[0]) {
+        return false;
     }
 
-    CZ_DEFER(SDL_free(clipboard_currently_cstr));
-    cz::Str clipboard_currently = clipboard_currently_cstr;
-
-    if (clipboard_currently == "") {
-        return -1;
-    }
-
+    cz::Str str = ptr;
 #ifdef _WIN32
-    cz::strip_carriage_returns(clipboard_currently_cstr, &clipboard_currently.len);
+    cz::strip_carriage_returns(ptr, &str.len);
 #endif
 
-    if (clipboard->value != clipboard_currently) {
-        set_clipboard_variable(&clipboard->value, clipboard_currently);
-
-        Copy_Chain* chain = editor->copy_buffer.allocator().alloc<Copy_Chain>();
-        chain->value = SSOStr::as_duplicate(editor->copy_buffer.allocator(), clipboard->value);
-        chain->previous = *global_copy_chain;
-        *global_copy_chain = chain;
-    }
-
-    return 0;
+    text->reserve(allocator, str.len);
+    text->append(str);
+    return true;
 }
 
-struct Update_Global_Copy_Chain_Data {
-    Editor* editor;
-    Clipboard_Context clipboard;
-};
-
-static int sdl_update_global_copy_chain(Copy_Chain** global_copy_chain, void* _data) {
-    Update_Global_Copy_Chain_Data* data = (Update_Global_Copy_Chain_Data*)_data;
-    return process_clipboard_updates(data->editor, global_copy_chain, &data->clipboard);
-}
-
-static int sdl_copy(void* data, cz::Str text) {
-    Clipboard_Context* clipboard = (Clipboard_Context*)data;
-    set_clipboard_variable(&clipboard->value, text);
-    return SDL_SetClipboardText(clipboard->value.buffer());
+static bool set_clipboard(void*, cz::Str text) {
+    cz::String copy = text.clone_null_terminate(cz::heap_allocator());
+    CZ_DEFER(copy.drop(cz::heap_allocator()));
+    return SDL_SetClipboardText(copy.buffer()) >= 0;
 }
 
 void set_icon(SDL_Window* sdl_window) {
@@ -1135,14 +1103,10 @@ void run(Server* server, Client* client) {
     // If no redraws have happened in a long time then increase the frame length.
     uint32_t redrew_last = 0;
 
-    Update_Global_Copy_Chain_Data ugccd = {};
-    ugccd.editor = &server->editor;
-    CZ_DEFER(ugccd.clipboard.value.drop(cz::heap_allocator()));
-
-    client->system_copy_text_func = sdl_copy;
-    client->system_copy_text_data = &ugccd.clipboard;
-    client->update_global_copy_chain_func = sdl_update_global_copy_chain;
-    client->update_global_copy_chain_data = &ugccd;
+    client->set_system_clipboard_func = set_clipboard;
+    client->set_system_clipboard_data = nullptr;
+    client->get_system_clipboard_func = get_clipboard;
+    client->get_system_clipboard_data = nullptr;
 
     Mouse_State mouse = {};
     CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
@@ -1195,10 +1159,9 @@ void run(Server* server, Client* client) {
         load_mini_buffer_completion_cache(server, client);
 
         bool redrew_this_time = false;
-        render(window, font, surface_cache, &old_width, &old_height, &total_rows,
-               &total_cols, character_width, character_height, cellss, &window_cache,
-               &mini_buffer_window_cache, &server->editor, client, mouse.sp_queries, force_redraw,
-               &redrew_this_time);
+        render(window, font, surface_cache, &old_width, &old_height, &total_rows, &total_cols,
+               character_width, character_height, cellss, &window_cache, &mini_buffer_window_cache,
+               &server->editor, client, mouse.sp_queries, force_redraw, &redrew_this_time);
 
         force_redraw = false;
 

@@ -14,7 +14,7 @@ static void save_copy(Copy_Chain** cursor_chain, Editor* editor, SSOStr value, C
     *cursor_chain = chain;
 
     if (client) {
-        client->system_copy_text(value.as_str());
+        client->set_system_clipboard(value.as_str());
     }
 }
 
@@ -151,7 +151,7 @@ static void run_paste(Window_Unified* window, Buffer* buffer) {
 
 void command_paste(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    source.client->update_global_copy_chain();
+    source.client->update_global_copy_chain(editor);
     if (!setup_paste(window->cursors, source.client->global_copy_chain)) {
         return;
     }
@@ -372,7 +372,7 @@ static void run_paste_as_lines(cz::Slice<Cursor> cursors, Buffer* buffer) {
 
 void command_cursors_paste_as_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    source.client->update_global_copy_chain();
+    source.client->update_global_copy_chain(editor);
     cz::Slice<Cursor> cursors = window->cursors;
     if (!setup_paste(window->cursors, source.client->global_copy_chain)) {
         return;

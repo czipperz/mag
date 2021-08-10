@@ -7,8 +7,27 @@
 
 namespace mag {
 
-int Client::update_global_copy_chain() {
-    return update_global_copy_chain_func(&global_copy_chain, update_global_copy_chain_data);
+bool Client::update_global_copy_chain(Editor* editor) {
+    cz::String text = {};
+    CZ_DEFER(text.drop(cz::heap_allocator()));
+
+    if (!get_system_clipboard(cz::heap_allocator(), &text)) {
+        return false;
+    }
+
+    bool push = true;
+    if (global_copy_chain) {
+        push = (text != global_copy_chain->value.as_str());
+    }
+
+    if (push) {
+        Copy_Chain* chain = editor->copy_buffer.allocator().alloc<Copy_Chain>();
+        chain->value = SSOStr::as_duplicate(editor->copy_buffer.allocator(), text);
+        chain->previous = global_copy_chain;
+        global_copy_chain = chain;
+    }
+
+    return true;
 }
 
 void Client::init(cz::Arc<Buffer_Handle> selected_buffer_handle,

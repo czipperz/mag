@@ -31,15 +31,26 @@ struct Client {
     Copy_Chain* global_copy_chain;
     Jump_Chain jump_chain;
 
-    int (*system_copy_text_func)(void* data, cz::Str text);
-    void* system_copy_text_data;
-    int system_copy_text(cz::Str text) {
-        return system_copy_text_func(system_copy_text_data, text);
+    /// Set the system clipboard's value.
+    bool (*set_system_clipboard_func)(void* data, cz::Str text);
+    void* set_system_clipboard_data;
+    bool set_system_clipboard(cz::Str text) {
+        if (!set_system_clipboard_func)
+            return false;
+        return set_system_clipboard_func(set_system_clipboard_data, text);
     }
 
-    int (*update_global_copy_chain_func)(Copy_Chain** copy_chain, void* data);
-    void* update_global_copy_chain_data;
-    int update_global_copy_chain();
+    /// Get the system clipboard's value.
+    bool (*get_system_clipboard_func)(void* data, cz::Allocator allocator, cz::String* string);
+    void* get_system_clipboard_data;
+    bool get_system_clipboard(cz::Allocator allocator, cz::String* string) {
+        if (!get_system_clipboard_func)
+            return false;
+        return get_system_clipboard_func(get_system_clipboard_data, allocator, string);
+    }
+
+    /// If the system clipboard has changed then push it onto the global copy chain.
+    bool update_global_copy_chain(Editor* editor);
 
     Mouse_Position mouse;
 

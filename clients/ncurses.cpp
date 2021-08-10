@@ -336,11 +336,6 @@ void run(Server* server, Client* client) {
     Window_Cache* mini_buffer_window_cache = nullptr;
     CZ_DEFER(destroy_window_cache(mini_buffer_window_cache));
 
-    client->system_copy_text_func = ncurses_copy;
-    client->system_copy_text_data = nullptr;
-    client->update_global_copy_chain_func = ncurses_update_global_copy_chain;
-    client->update_global_copy_chain_data = nullptr;
-
     nodelay(stdscr, TRUE);
 
     while (1) {
