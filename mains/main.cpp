@@ -3,6 +3,7 @@
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
+#include <cz/env.hpp>
 #include <cz/file.hpp>
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
