@@ -30,10 +30,9 @@ bool get_clipboard(void*, cz::Allocator allocator, cz::String* text) {
 
     cz::read_to_string(std_out, allocator, text);
 
-    // if (process.join() != 0) {
-    //     return false;
-    // }
-    process.detach();
+    if (process.join() != 0) {
+        return false;
+    }
 
     return true;
 }
@@ -68,7 +67,6 @@ bool set_clipboard(void*, cz::Str text) {
     if (process.join() != 0) {
         return false;
     }
-    // process.detach();
 
     return true;
 }
