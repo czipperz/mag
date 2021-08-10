@@ -2,7 +2,6 @@
 
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
-#include <cz/file.hpp>
 #include <cz/path.hpp>
 #include "basic/buffer_commands.hpp"
 #include "basic/build_commands.hpp"
@@ -117,9 +116,7 @@ void client_created_callback(Editor* editor, Client* client) {
     } else {
         // xclip generally works better than the default SDL behavior.
 #if 1 && !defined(_WIN32)
-        if (cz::file::exists("/usr/bin/xclip")) {
-            xclip::use_xclip_clipboard(client);
-        }
+        xclip::use_xclip_clipboard(client);
 #endif
     }
 }

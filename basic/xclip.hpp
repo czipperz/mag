@@ -10,7 +10,7 @@ namespace xclip {
 bool get_clipboard(void*, cz::Allocator allocator, cz::String* text);
 bool set_clipboard(void*, cz::Str text);
 
-void use_xclip_clipboard(Client* client);
+bool use_xclip_clipboard(Client* client);
 
 }
 }

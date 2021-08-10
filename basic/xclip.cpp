@@ -1,6 +1,7 @@
 #include "xclip.hpp"
 
 #include <cz/defer.hpp>
+#include <cz/env.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
 #include "client.hpp"
@@ -71,11 +72,16 @@ bool set_clipboard(void*, cz::Str text) {
     return true;
 }
 
-void use_xclip_clipboard(Client* client) {
+bool use_xclip_clipboard(Client* client) {
+    if (!cz::env::in_path("xclip")) {
+        return false;
+    }
+
     client->set_system_clipboard_func = set_clipboard;
     client->set_system_clipboard_data = nullptr;
     client->get_system_clipboard_func = get_clipboard;
     client->get_system_clipboard_data = nullptr;
+    return true;
 }
 
 }
