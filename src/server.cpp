@@ -63,7 +63,7 @@ struct Run_Jobs {
     Run_Jobs_Data* data;
 
     void operator()() {
-        tracy::SetThreadName("Job thread");
+        tracy::SetThreadName("Mag job thread");
 
         Asynchronous_Job_Handler handler = {};
         handler.async_context = &data->async_context;

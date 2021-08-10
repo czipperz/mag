@@ -153,7 +153,7 @@ static void switch_to_the_home_directory() {
 }
 
 int mag_main(int argc, char** argv) {
-    tracy::SetThreadName("Main thread");
+    tracy::SetThreadName("Mag main thread");
     ZoneScoped;
 
     try {
