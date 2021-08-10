@@ -331,8 +331,6 @@ A-g     Project or directory commands\n\
             }
         }
 
-        custom::client_created_callback(&server.editor, &client);
-
         switch (chosen_client) {
 #ifdef HAS_NCURSES
         case Client::NCURSES:

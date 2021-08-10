@@ -18,6 +18,7 @@
 #include "cell.hpp"
 #include "client.hpp"
 #include "command_macros.hpp"
+#include "custom/config.hpp"
 #include "file.hpp"
 #include "movement.hpp"
 #include "program_info.hpp"
@@ -1119,6 +1120,8 @@ void run(Server* server, Client* client) {
     // disable key presses for a split second when we gain focus.
     bool disable_key_presses = false;
     uint32_t disable_key_presses_until;
+
+    custom::client_created_callback(&server->editor, client);
 
     while (1) {
         ZoneScopedN("sdl main loop");

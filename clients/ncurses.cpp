@@ -12,6 +12,7 @@
 #include "cell.hpp"
 #include "client.hpp"
 #include "completion.hpp"
+#include "custom/config.hpp"
 #include "movement.hpp"
 #include "render.hpp"
 #include "server.hpp"
@@ -337,6 +338,8 @@ void run(Server* server, Client* client) {
     CZ_DEFER(destroy_window_cache(mini_buffer_window_cache));
 
     nodelay(stdscr, TRUE);
+
+    custom::client_created_callback(&server->editor, client);
 
     while (1) {
         ZoneScopedN("ncurses main loop");
