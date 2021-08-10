@@ -2,6 +2,7 @@
 
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
+#include <cz/file.hpp>
 #include <cz/path.hpp>
 #include "basic/buffer_commands.hpp"
 #include "basic/build_commands.hpp"
@@ -27,6 +28,7 @@
 #include "basic/visible_region_commands.hpp"
 #include "basic/window_commands.hpp"
 #include "basic/window_completion_commands.hpp"
+#include "basic/xclip.hpp"
 #include "clang_format/clang_format.hpp"
 #include "decoration.hpp"
 #include "gnu_global/gnu_global.hpp"
@@ -107,6 +109,20 @@ using namespace basic;
 
 #define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, COMMAND(FUNC)))
 #define COMMAND(FUNC) (Command{FUNC, #FUNC})
+
+void client_created_callback(Editor* editor, Client* client) {
+    if (client->type == Client::NCURSES) {
+        // NCurses doesn't have clipboard support so we use xclip.
+        xclip::use_xclip_clipboard(client);
+    } else {
+        // xclip generally works better than the default SDL behavior.
+#if 1 && !defined(_WIN32)
+        if (cz::file::exists("/usr/bin/xclip")) {
+            xclip::use_xclip_clipboard(client);
+        }
+#endif
+    }
+}
 
 static void create_key_remap(Key_Remap& key_remap) {
     ZoneScoped;

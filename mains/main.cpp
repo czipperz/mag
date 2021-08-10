@@ -315,7 +315,7 @@ A-g     Project or directory commands\n\
         client.window->set_size(38, 88);
 
         uint32_t opened_count = 0;
-        int chosen_client = 1;
+        int chosen_client = Client::SDL;
         for (int i = 1; i < argc; ++i) {
             cz::Str arg = argv[i];
             if (arg == "--help") {
@@ -323,13 +323,13 @@ A-g     Project or directory commands\n\
             } else if (arg.starts_with("--client=")) {
 #ifdef HAS_NCURSES
                 if (arg == "--client=ncurses") {
-                    chosen_client = 0;
+                    chosen_client = Client::NCURSES;
                     continue;
                 }
 #endif
 
                 if (arg == "--client=sdl") {
-                    chosen_client = 1;
+                    chosen_client = Client::SDL;
                     continue;
                 }
 
@@ -340,14 +340,16 @@ A-g     Project or directory commands\n\
             }
         }
 
+        custom::client_created_callback(&server.editor, &client);
+
         switch (chosen_client) {
 #ifdef HAS_NCURSES
-        case 0:
+        case Client::NCURSES:
             client::ncurses::run(&server, &client);
             break;
 #endif
 
-        case 1:
+        case Client::SDL:
             client::sdl::run(&server, &client);
             break;
         }

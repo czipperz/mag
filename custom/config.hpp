@@ -4,10 +4,14 @@
 
 namespace mag {
 
+struct Client;
 struct Editor;
 struct Buffer;
 
 namespace custom {
+
+/// Called when a client is created.  Currently this only happens at the start of `main()`.
+void client_created_callback(Editor* editor, Client* client);
 
 /// Called when the editor is created at the start of `main()`.  The main
 /// purpose of this function is to initialize the `Editor::key_map` and
