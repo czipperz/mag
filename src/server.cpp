@@ -64,7 +64,6 @@ struct Run_Jobs {
 
     void operator()() {
         tracy::SetThreadName("Job thread");
-        ZoneScoped;
 
         Asynchronous_Job_Handler handler = {};
         handler.async_context = &data->async_context;
@@ -184,7 +183,6 @@ struct Run_Jobs {
                     started = false;
                 }
 
-                ZoneScopedN("job thread waiting for more jobs");
                 data->added_asynchronous_job_signal.acquire();
             }
 

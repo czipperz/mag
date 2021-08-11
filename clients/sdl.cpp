@@ -1029,8 +1029,6 @@ static bool load_font(cz::String* font_file,
 }
 
 void run(Server* server, Client* client) {
-    ZoneScoped;
-
     server->set_async_locked(false);
     // @Unlocked No usage of server or client can be made in this region!!!
 
@@ -1226,7 +1224,6 @@ void run(Server* server, Client* client) {
 
             server->set_async_locked(false);
             {
-                ZoneScopedN("SDL_WaitEventTimeout");
                 uint32_t sleep_time = frame_length - elapsed_ticks;
                 ZoneValue(sleep_time);
 
