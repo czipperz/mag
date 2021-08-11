@@ -71,12 +71,20 @@ static bool any_changes_after(cz::Slice<const Change> changes, uint64_t position
                 if (edit.position >= position) {
                     return true;
                 }
+                if (!(edit.flags & Edit::INSERT_MASK) &&
+                    edit.position + edit.value.len() >= position) {
+                    return true;
+                }
                 position_after_edit(edit, &position);
             }
         } else {
             for (size_t e = changes[c].commit.edits.len; e-- > 0;) {
                 auto& edit = changes[c].commit.edits[e];
                 if (edit.position >= position) {
+                    return true;
+                }
+                if ((edit.flags & Edit::INSERT_MASK) &&
+                    edit.position + edit.value.len() >= position) {
                     return true;
                 }
                 position_before_edit(edit, &position);
