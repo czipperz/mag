@@ -281,6 +281,12 @@ static void process_event(Server* server,
             event.wheel.y *= -1;
             event.wheel.x *= -1;
         }
+
+// On linux the horizontal scroll is flipped for some reason.
+#ifndef _WIN32
+        event.wheel.x *= -1;
+#else
+
         for (int y = 0; y < event.wheel.y; ++y) {
             key.code = Key_Code::SCROLL_UP;
             server->receive(client, key);
