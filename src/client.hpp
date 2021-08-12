@@ -26,7 +26,7 @@ struct Mouse_Position {
     uint32_t window_column;
 
     // The place the user started selecting.
-    bool selecting;
+    uint32_t selecting;
     uint32_t window_select_start_row;
     uint32_t window_select_start_column;
 };

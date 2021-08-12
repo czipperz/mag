@@ -2,6 +2,7 @@
 
 #include "command_macros.hpp"
 #include "copy_commands.hpp"
+#include "movement.hpp"
 
 namespace mag {
 namespace basic {
@@ -18,49 +19,55 @@ static Job_Tick_Result mouse_motion_job_tick(Editor* editor, Client* client, voi
     }
 
     WITH_CONST_SELECTED_NORMAL_BUFFER(client);
-    Contents_Iterator iterator =
-        nearest_character(window, buffer, client->mouse.window_row, client->mouse.window_column);
-
     kill_extra_cursors(window, client);
 
-    window->cursors[0].point = iterator.position;
-    if (iterator.position != window->cursors[0].mark) {
+    Contents_Iterator mark =
+        nearest_character(window, buffer, client->mouse.window_select_start_row,
+                          client->mouse.window_select_start_column);
+    Contents_Iterator point =
+        nearest_character(window, buffer, client->mouse.window_row, client->mouse.window_column);
+
+    // Word and line selection.
+    if (client->mouse.selecting > 1) {
+        Contents_Iterator* start;
+        Contents_Iterator* end;
+        if (mark.position < point.position) {
+            start = &mark;
+            end = &point;
+        } else {
+            start = &point;
+            end = &mark;
+        }
+
+        if (client->mouse.selecting == 2) {
+            forward_char(start);
+            backward_word(start);
+            forward_word(end);
+        } else {
+            start_of_line(start);
+            end_of_line(end);
+            forward_char(end);
+        }
+    }
+
+    if (mark.position != point.position) {
         window->show_marks = 2;
     } else {
         window->show_marks = false;
     }
-
-#if 0
-                Contents_Iterator* start;
-                Contents_Iterator* end;
-                if (mark.position < point.position) {
-                    start = &mark;
-                    end = &point;
-                } else {
-                    start = &point;
-                    end = &mark;
-                }
-
-                if (client->mouse.mouse_down_data == MOUSE_SELECT_WORD) {
-                    forward_char(start);
-                    backward_word(start);
-                    forward_word(end);
-                } else {
-                    start_of_line(start);
-                    end_of_line(end);
-                    forward_char(end);
-                }
-
-                spq.sp.window->show_marks = 2;
-                spq.sp.window->cursors[0].mark = mark.position;
-                spq.sp.window->cursors[0].point = point.position;
-#endif
+    window->cursors[0].mark = mark.position;
+    window->cursors[0].point = point.position;
 
     // We are basically I/O bound so don't spin on the CPU.
     return Job_Tick_Result::STALLED;
 }
 
 static void mouse_motion_job_kill(void*) {}
+
+static uint32_t mouse_click_length;
+static uint32_t mouse_click_row, mouse_click_column;
+static std::chrono::high_resolution_clock::time_point mouse_click_time;
+static const std::chrono::milliseconds mouse_click_elapsed{500};
 
 void command_mouse_select_start(Editor* editor, Command_Source source) {
     if (!source.client->mouse.window || source.client->mouse.window->tag != Window::UNIFIED) {
@@ -75,7 +82,21 @@ void command_mouse_select_start(Editor* editor, Command_Source source) {
     kill_extra_cursors(window, source.client);
     window->cursors[0].point = window->cursors[0].mark = iterator.position;
 
-    source.client->mouse.selecting = true;
+    // Reset click chain if too much time has elapsed or mouse moved.
+    auto now = std::chrono::high_resolution_clock::now();
+    if (now - mouse_click_time > mouse_click_elapsed ||
+        mouse_click_row != source.client->mouse.window_row ||
+        mouse_click_column != source.client->mouse.window_column) {
+        mouse_click_length = 0;
+    }
+
+    // Record click.
+    ++mouse_click_length;
+    mouse_click_row = source.client->mouse.window_row;
+    mouse_click_column = source.client->mouse.window_column;
+    mouse_click_time = now;
+
+    source.client->mouse.selecting = (mouse_click_length - 1) % 3 + 1;
     source.client->mouse.window_select_start_row = source.client->mouse.window_row;
     source.client->mouse.window_select_start_column = source.client->mouse.window_column;
 
