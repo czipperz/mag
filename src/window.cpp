@@ -254,41 +254,11 @@ Contents_Iterator nearest_character(const Window_Unified* window,
     row = std::min(row, (uint32_t)window->rows() - 1);
     column = std::min(column, (uint32_t)window->cols() - 1);
 
-    uint32_t it_row = 0;
-    uint32_t it_column = 0;
-    if (it_row != row) {
-        // Find the visual row that matches.
-        while (!iterator.at_eob()) {
-            char ch = iterator.get();
-            ++it_column;
-            iterator.advance();
+    forward_visual_line(window, buffer->mode, &iterator, row);
 
-            // Every character is rendered at one width.  We wrap at the
-            // window width.  Newlines wrap after they are rendered.
-            if (it_column == window->cols() || ch == '\n') {
-                ++it_row;
-                it_column = 0;
-                if (it_row == row) {
-                    break;
-                }
-            }
-        }
-    }
-
-    // Find the visual column that matches.
-    while (!iterator.at_eob()) {
-        if (it_column == column) {
-            break;
-        }
-
-        // End of the line so this is the best guess.
-        if (iterator.get() == '\n') {
-            break;
-        }
-
-        iterator.advance();
-        ++it_column;
-    }
+    uint64_t line_column = get_visual_column(buffer->mode, iterator);
+    line_column -= line_column % window->cols();
+    go_to_visual_column(buffer->mode, &iterator, line_column + column);
 
     return iterator;
 }
