@@ -256,28 +256,25 @@ Contents_Iterator nearest_character(const Window_Unified* window,
 
     uint32_t it_row = 0;
     uint32_t it_column = 0;
-    if (it_row == row) {
-        goto match_column;
-    }
+    if (it_row != row) {
+        // Find the visual row that matches.
+        while (!iterator.at_eob()) {
+            char ch = iterator.get();
+            ++it_column;
+            iterator.advance();
 
-    // Find the visual row that matches.
-    while (!iterator.at_eob()) {
-        char ch = iterator.get();
-        ++it_column;
-        iterator.advance();
-
-        // Every character is rendered at one width.  We wrap at the
-        // window width.  Newlines wrap after they are rendered.
-        if (it_column == window->cols() || ch == '\n') {
-            ++it_row;
-            it_column = 0;
-            if (it_row == row) {
-                goto match_column;
+            // Every character is rendered at one width.  We wrap at the
+            // window width.  Newlines wrap after they are rendered.
+            if (it_column == window->cols() || ch == '\n') {
+                ++it_row;
+                it_column = 0;
+                if (it_row == row) {
+                    break;
+                }
             }
         }
     }
 
-match_column:
     // Find the visual column that matches.
     while (!iterator.at_eob()) {
         if (it_column == column) {
