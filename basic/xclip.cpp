@@ -10,11 +10,7 @@ namespace mag {
 namespace xclip {
 
 bool get_clipboard(void*, cz::Allocator allocator, cz::String* text) {
-    cz::Str args[] = {"xsel", "-o"};
-    // Prefer xclip.
-    if (cz::env::in_path("xclip")) {
-        args[0] = "xclip";
-    }
+    cz::Str args[] = {"xclip", "-o"};
 
     cz::Process process;
 
@@ -43,7 +39,6 @@ bool get_clipboard(void*, cz::Allocator allocator, cz::String* text) {
 }
 
 bool set_clipboard(void*, cz::Str text) {
-    // No xsel support!
     cz::Str args[] = {"xclip", "-i"};
 
     cz::Process process;
@@ -79,8 +74,8 @@ bool set_clipboard(void*, cz::Str text) {
 
 bool use_xclip_clipboard(Client* client) {
     bool xclip = cz::env::in_path("xclip");
-    bool xsel = cz::env::in_path("xsel");
-    if (!xclip && !xsel) {
+    // Note: xsel get_clipboard works but set_clipboard does not.
+    if (!xclip) {
         return false;
     }
 
