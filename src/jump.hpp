@@ -47,7 +47,12 @@ struct Jump_Chain {
         }
     }
 
-    void drop() { jumps.drop(cz::heap_allocator()); }
+    void drop() {
+        for (size_t i = 0; i < jumps.len(); ++i) {
+            jumps[i].buffer_handle.drop();
+        }
+        jumps.drop(cz::heap_allocator());
+    }
 };
 
 struct Window_Unified;
