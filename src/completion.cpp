@@ -182,8 +182,6 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
         start = end = 0;
     }
 
-    size_t abs_start = start;
-
     while (true) {
         pattern.pieces.reserve(cz::heap_allocator(), 1);
 
