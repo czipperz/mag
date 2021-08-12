@@ -8,11 +8,6 @@ namespace mag {
 namespace basic {
 
 static Job_Tick_Result mouse_motion_job_tick(Editor* editor, Client* client, void*) {
-    if (!client->mouse.pressed_buttons[0]) {
-        client->mouse.selecting = false;
-        return Job_Tick_Result::FINISHED;
-    }
-
     // Moved the mouse out of bounds.
     if (!client->mouse.window) {
         return Job_Tick_Result::STALLED;
@@ -57,6 +52,14 @@ static Job_Tick_Result mouse_motion_job_tick(Editor* editor, Client* client, voi
     }
     window->cursors[0].mark = mark.position;
     window->cursors[0].point = point.position;
+
+    // If the mouse has been released then stop.  We process this frame even
+    // though the mouse has been released because it allows for ncurses (which
+    // only updates the mouse position on a press/release event) to select text.
+    if (!client->mouse.pressed_buttons[0]) {
+        client->mouse.selecting = false;
+        return Job_Tick_Result::FINISHED;
+    }
 
     // We are basically I/O bound so don't spin on the CPU.
     return Job_Tick_Result::STALLED;
