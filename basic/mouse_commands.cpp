@@ -62,18 +62,6 @@ static Job_Tick_Result mouse_motion_job_tick(Editor* editor, Client* client, voi
 
 static void mouse_motion_job_kill(void*) {}
 
-static void mouse_select_start(Editor* editor, Client* client) {
-    client->mouse.selecting = true;
-    client->mouse.window_select_start_row = client->mouse.window_row;
-    client->mouse.window_select_start_column = client->mouse.window_column;
-
-    Synchronous_Job job;
-    job.tick = mouse_motion_job_tick;
-    job.kill = mouse_motion_job_kill;
-    job.data = nullptr;
-    editor->add_synchronous_job(job);
-}
-
 void command_mouse_select_start(Editor* editor, Command_Source source) {
     if (!source.client->mouse.window || source.client->mouse.window->tag != Window::UNIFIED) {
         return;
@@ -87,7 +75,15 @@ void command_mouse_select_start(Editor* editor, Command_Source source) {
     kill_extra_cursors(window, source.client);
     window->cursors[0].point = window->cursors[0].mark = iterator.position;
 
-    mouse_select_start(editor, source.client);
+    source.client->mouse.selecting = true;
+    source.client->mouse.window_select_start_row = source.client->mouse.window_row;
+    source.client->mouse.window_select_start_column = source.client->mouse.window_column;
+
+    Synchronous_Job job;
+    job.tick = mouse_motion_job_tick;
+    job.kill = mouse_motion_job_kill;
+    job.data = nullptr;
+    editor->add_synchronous_job(job);
 }
 
 void command_copy_paste(Editor* editor, Command_Source source) {
