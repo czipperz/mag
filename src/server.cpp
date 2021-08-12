@@ -575,6 +575,26 @@ void Server::receive(Client* client, Key key) {
     client->key_chain.reserve(cz::heap_allocator(), 1);
     client->key_chain.push(key);
 
+    switch (key.code) {
+    case Key_Code::MOUSE1:
+        client->mouse.pressed_buttons[0] = true;
+        break;
+    case Key_Code::MOUSE2:
+        client->mouse.pressed_buttons[1] = true;
+        break;
+    case Key_Code::MOUSE3:
+        client->mouse.pressed_buttons[2] = true;
+        break;
+    case Key_Code::MOUSE4:
+        client->mouse.pressed_buttons[3] = true;
+        break;
+    case Key_Code::MOUSE5:
+        client->mouse.pressed_buttons[4] = true;
+        break;
+    default:
+        break;
+    }
+
     while (client->key_chain_offset < client->key_chain.len()) {
         Command command;
         size_t end;
@@ -637,6 +657,29 @@ void Server::receive(Client* client, Key key) {
 
         // Run the command.
         run_command(command, &editor, source);
+    }
+}
+
+void Server::release(Client* client, Key key) {
+    switch (key.code) {
+    case Key_Code::MOUSE1:
+        client->mouse.pressed_buttons[0] = false;
+        break;
+    case Key_Code::MOUSE2:
+        client->mouse.pressed_buttons[1] = false;
+        break;
+    case Key_Code::MOUSE3:
+        client->mouse.pressed_buttons[2] = false;
+        break;
+    case Key_Code::MOUSE4:
+        client->mouse.pressed_buttons[3] = false;
+        break;
+    case Key_Code::MOUSE5:
+        client->mouse.pressed_buttons[4] = false;
+        break;
+    default:
+        CZ_PANIC("Server::release non-mouse button unimplemented");
+        break;
     }
 }
 

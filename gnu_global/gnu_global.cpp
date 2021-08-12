@@ -302,10 +302,9 @@ void command_move_mouse_and_lookup_at_point(Editor* editor, Command_Source sourc
     source.client->selected_normal_window = (Window_Unified*)source.client->mouse.window;
 
     {
-        WITH_CONST_SELECTED_BUFFER(source.client);
-        Contents_Iterator iterator =
-            nearest_character(source.client->selected_normal_window, buffer,
-                              source.client->mouse.row, source.client->mouse.column);
+        WITH_CONST_SELECTED_NORMAL_BUFFER(source.client);
+        Contents_Iterator iterator = nearest_character(
+            window, buffer, source.client->mouse.window_row, source.client->mouse.window_column);
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = iterator.position;
     }

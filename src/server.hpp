@@ -29,6 +29,7 @@ struct Server {
     Client make_client();
 
     void receive(Client* client, Key key);
+    void release(Client* client, Key key);
 
     bool slurp_jobs();
     bool send_pending_asynchronous_jobs();

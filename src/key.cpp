@@ -80,6 +80,10 @@ bool Key::parse(Key* key, cz::Str description) {
         key->code = Key_Code::F11;
     } else if (d == "F12") {
         key->code = Key_Code::F12;
+    } else if (d == "MOUSE1") {
+        key->code = Key_Code::MOUSE1;
+    } else if (d == "MOUSE2") {
+        key->code = Key_Code::MOUSE2;
     } else if (d == "MOUSE3") {
         key->code = Key_Code::MOUSE3;
     } else if (d == "MOUSE4") {

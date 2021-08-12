@@ -266,17 +266,9 @@ Contents_Iterator nearest_character(const Window_Unified* window,
         ++it_column;
         iterator.advance();
 
-        // Every character is rendered at one width.
-        if (it_column == window->cols() + 1) {
-            ++it_row;
-            it_column = 0;
-            if (it_row == row) {
-                goto match_column;
-            }
-        }
-
-        // Then newlines wrap after they are rendered.
-        if (ch == '\n') {
+        // Every character is rendered at one width.  We wrap at the
+        // window width.  Newlines wrap after they are rendered.
+        if (it_column == window->cols() || ch == '\n') {
             ++it_row;
             it_column = 0;
             if (it_row == row) {
@@ -288,8 +280,6 @@ Contents_Iterator nearest_character(const Window_Unified* window,
 match_column:
     // Find the visual column that matches.
     while (!iterator.at_eob()) {
-        ++it_column;
-
         if (it_column == column) {
             break;
         }
@@ -300,6 +290,7 @@ match_column:
         }
 
         iterator.advance();
+        ++it_column;
     }
 
     return iterator;

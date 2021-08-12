@@ -31,19 +31,12 @@ static bool load_completion_cache(Editor* editor,
         cell->code = CH;                                                     \
     } while (0)
 
-#define SET_BODY(FACE, CH)                                                                \
-    do {                                                                                  \
-        CZ_DEBUG_ASSERT(y < window->rows());                                              \
-        CZ_DEBUG_ASSERT(x < window->cols());                                              \
-                                                                                          \
-        SET_IND(FACE, CH);                                                                \
-                                                                                          \
-        for (size_t spqsi = 0; spqsi < spqs.len; ++spqsi) {                               \
-            if (spqs[spqsi].in_y == y + start_row && spqs[spqsi].in_x == x + start_col) { \
-                spqs[spqsi].sp.found_position = true;                                     \
-                spqs[spqsi].sp.position = iterator.position;                              \
-            }                                                                             \
-        }                                                                                 \
+#define SET_BODY(FACE, CH)                   \
+    do {                                     \
+        CZ_DEBUG_ASSERT(y < window->rows()); \
+        CZ_DEBUG_ASSERT(x < window->cols()); \
+                                             \
+        SET_IND(FACE, CH);                   \
     } while (0)
 
 #define ADD_NEWLINE(FACE)                 \
@@ -604,7 +597,6 @@ static void draw_buffer_contents(Cell* cells,
                                  Window_Unified* window,
                                  size_t start_row,
                                  size_t start_col,
-                                 cz::Slice<Screen_Position_Query> spqs,
                                  size_t* cursor_pos_y,
                                  size_t* cursor_pos_x,
                                  Contents_Iterator iterator) {
@@ -1115,18 +1107,19 @@ static void draw_buffer(Cell* cells,
                         const Buffer* buffer,
                         bool is_selected_window,
                         size_t start_row,
-                        size_t start_col,
-                        cz::Slice<Screen_Position_Query> spqs) {
+                        size_t start_col) {
     ZoneScoped;
 
-    for (size_t spqsi = 0; spqsi < spqs.len; ++spqsi) {
-        if (start_col <= spqs[spqsi].in_x && spqs[spqsi].in_x < start_col + window->cols() &&
-            start_row <= spqs[spqsi].in_y && spqs[spqsi].in_y < start_row + window->rows()) {
-            spqs[spqsi].sp.found_window = true;
-            spqs[spqsi].sp.window = window;
-            spqs[spqsi].sp.window_row = spqs[spqsi].in_y - start_row;
-            spqs[spqsi].sp.window_column = spqs[spqsi].in_x - start_col;
-        }
+    // Test if the mouse is in bounds.
+    if (client->mouse.has_client_position &&
+        (start_col <= client->mouse.client_column &&
+         client->mouse.client_column < start_col + window->cols()) &&
+        (start_row <= client->mouse.client_row &&
+         client->mouse.client_row < start_row + window->rows())) {
+        // Mark this window as the mouse's window.
+        client->mouse.window = window;
+        client->mouse.window_row = client->mouse.client_row - start_row;
+        client->mouse.window_column = client->mouse.client_column - start_col;
     }
 
     Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
@@ -1134,7 +1127,7 @@ static void draw_buffer(Cell* cells,
 
     size_t cursor_pos_y, cursor_pos_x;
     draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
-                         start_col, spqs, &cursor_pos_y, &cursor_pos_x, iterator);
+                         start_col, &cursor_pos_y, &cursor_pos_x, iterator);
     draw_buffer_decoration(cells, total_cols, editor, window, buffer, is_selected_window, start_row,
                            start_col);
     draw_window_completion(cells, editor, client, window, buffer, total_cols, start_row, start_col,
@@ -1165,8 +1158,7 @@ static void draw_window(Cell* cells,
                         Window* w,
                         Window* selected_window,
                         size_t start_row,
-                        size_t start_col,
-                        cz::Slice<Screen_Position_Query> spqs) {
+                        size_t start_col) {
     ZoneScoped;
 
     switch (w->tag) {
@@ -1178,7 +1170,7 @@ static void draw_window(Cell* cells,
         setup_unified_window_cache(editor, window, buffer, window_cache);
 
         draw_buffer(cells, *window_cache, total_cols, editor, client, window, buffer,
-                    window == selected_window, start_row, start_col, spqs);
+                    window == selected_window, start_row, start_col);
         break;
     }
 
@@ -1199,7 +1191,7 @@ static void draw_window(Cell* cells,
 
         if (window->tag == Window::VERTICAL_SPLIT) {
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, client,
-                        window->first, selected_window, start_row, start_col, spqs);
+                        window->first, selected_window, start_row, start_col);
 
             {
                 size_t x = window->first->total_cols;
@@ -1210,21 +1202,63 @@ static void draw_window(Cell* cells,
 
             draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, client,
                         window->second, selected_window, start_row,
-                        start_col + window->total_cols - window->second->total_cols, spqs);
+                        start_col + window->total_cols - window->second->total_cols);
         } else {
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, client,
-                        window->first, selected_window, start_row, start_col, spqs);
+                        window->first, selected_window, start_row, start_col);
 
             // No separator as the window title acts as it.
 
             draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, client,
                         window->second, selected_window,
-                        start_row + window->total_rows - window->second->total_rows, start_col,
-                        spqs);
+                        start_row + window->total_rows - window->second->total_rows, start_col);
         }
         break;
     }
     }
+}
+
+static void recalculate_mouse_recursive(Window* w,
+                                        Mouse_Position* mouse,
+                                        size_t start_row,
+                                        size_t start_col) {
+    switch (w->tag) {
+    case Window::UNIFIED: {
+        Window_Unified* window = (Window_Unified*)w;
+        // Test if the mouse is in bounds.
+        if (mouse->has_client_position &&
+            (start_col <= mouse->client_column &&
+             mouse->client_column < start_col + window->cols()) &&
+            (start_row <= mouse->client_row && mouse->client_row < start_row + window->rows())) {
+            // Mark this window as the mouse's window.
+            mouse->window = window;
+            mouse->window_row = mouse->client_row - start_row;
+            mouse->window_column = mouse->client_column - start_col;
+        }
+        break;
+    }
+
+    case Window::VERTICAL_SPLIT:
+    case Window::HORIZONTAL_SPLIT: {
+        Window_Split* window = (Window_Split*)w;
+        recalculate_mouse_recursive(window->first, mouse, start_row, start_col);
+        if (window->tag == Window::VERTICAL_SPLIT) {
+            recalculate_mouse_recursive(
+                window->second, mouse, start_row,
+                start_col + window->total_cols - window->second->total_cols);
+        } else {
+            recalculate_mouse_recursive(window->second, mouse,
+                                        start_row + window->total_rows - window->second->total_rows,
+                                        start_col);
+        }
+        break;
+    }
+    }
+}
+
+void recalculate_mouse(Client* client) {
+    client->mouse.window = nullptr;
+    recalculate_mouse_recursive(client->window, &client->mouse, 0, 0);
 }
 
 bool load_mini_buffer_completion_cache(Server* server, Client* client) {
@@ -1318,8 +1352,7 @@ void render_to_cells(Cell* cells,
                      size_t total_rows,
                      size_t total_cols,
                      Editor* editor,
-                     Client* client,
-                     cz::Slice<Screen_Position_Query> spqs) {
+                     Client* client) {
     ZoneScoped;
 
     size_t mini_buffer_height = 0;
@@ -1411,8 +1444,8 @@ void render_to_cells(Cell* cells,
                 editor, client, window, handle, buffer, *mini_buffer_window_cache);
             size_t cursor_pos_y, cursor_pos_x;
             draw_buffer_contents(cells, *mini_buffer_window_cache, total_cols, editor, client,
-                                 buffer, window, start_row, start_col, {}, &cursor_pos_y,
-                                 &cursor_pos_x, iterator);
+                                 buffer, window, start_row, start_col, &cursor_pos_y, &cursor_pos_x,
+                                 iterator);
         } else {
             y = 0;
             for (; x < total_cols; ++x) {
@@ -1504,7 +1537,7 @@ void render_to_cells(Cell* cells,
 
     client->window->set_size(total_rows, total_cols);
     draw_window(cells, window_cache, total_cols, editor, client, client->window,
-                client->selected_normal_window, 0, 0, spqs);
+                client->selected_normal_window, 0, 0);
 }
 
 }

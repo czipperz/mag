@@ -12,12 +12,12 @@ struct Str;
 namespace mag {
 
 enum Modifiers : uint_fast8_t {
-    CONTROL = 1,
-    ALT = 2,
-    CONTROL_ALT = 3,
-    SHIFT = 4,
-    CONTROL_SHIFT = 5,
-    ALT_SHIFT = 6,
+    CONTROL           = 1,
+    ALT               = 2,
+    CONTROL_ALT       = 3,
+    SHIFT             = 4,
+    CONTROL_SHIFT     = 5,
+    ALT_SHIFT         = 6,
     CONTROL_ALT_SHIFT = 7,
 };
 
@@ -57,6 +57,8 @@ enum Key_Code : uint16_t {
     MENU,
 
     // Mouse events
+    MOUSE1,  // left mouse button
+    MOUSE2,  // right mouse button
     MOUSE3,  // middle mouse button
     MOUSE4,  // side button usually bound to backwards
     MOUSE5,  // side button usually bound to forwards
@@ -73,7 +75,7 @@ enum Key_Code : uint16_t {
 using Key_Code_::Key_Code;
 
 struct Key {
-    uint_fast8_t modifiers;
+    uint16_t modifiers;
     uint16_t code;
 
     bool operator==(const Key& other) const {

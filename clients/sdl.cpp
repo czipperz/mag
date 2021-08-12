@@ -170,33 +170,10 @@ struct Scroll_State {
     double prev_pos;          // previous event's position
 };
 
-enum {
-    MOUSE_MOVE,
-    MOUSE_DOWN,
-    MOUSE_SELECT_WORD,
-    MOUSE_SELECT_LINE,
-    MOUSE_UP,
-    MOUSE_RIGHT,
-};
-
-struct Mouse_State {
-    Scroll_State scroll;
-
-    cz::Vector<Screen_Position_Query> sp_queries;
-
-    uint8_t multi_click_counter = 0;
-    uint8_t multi_click_offset = 0;
-    Screen_Position mouse_pos;
-
-    bool mouse_down;
-    Screen_Position mouse_down_pos;
-    int mouse_down_data;
-};
-
 static void process_event(Server* server,
                           Client* client,
                           SDL_Event event,
-                          Mouse_State* mouse,
+                          Scroll_State* scroll,
                           int character_width,
                           int character_height,
                           bool* force_redraw,
@@ -269,8 +246,8 @@ static void process_event(Server* server,
     case SDL_MOUSEWHEEL: {
         Window_Unified* window = client->selected_normal_window;
         CZ_DEFER(client->selected_normal_window = window);
-        if (mouse->mouse_pos.found_window) {
-            client->selected_normal_window = mouse->mouse_pos.window;
+        if (client->mouse.window && client->mouse.window->tag == Window::UNIFIED) {
+            client->selected_normal_window = (Window_Unified*)client->mouse.window;
         }
 
         bool mini = client->_select_mini_buffer;
@@ -309,94 +286,65 @@ static void process_event(Server* server,
 
     case SDL_MULTIGESTURE: {
         if (event.mgesture.numFingers == 2) {
-            if (mouse->scroll.scrolling == 0) {
-                mouse->scroll.y = 0;
+            if (scroll->scrolling == 0) {
+                scroll->y = 0;
             } else {
-                double dy = event.mgesture.y - mouse->scroll.prev_pos;
-                mouse->scroll.acceleration = dy * 40;
+                double dy = event.mgesture.y - scroll->prev_pos;
+                scroll->acceleration = dy * 40;
             }
 
-            mouse->scroll.prev_pos = event.mgesture.y;
-            mouse->scroll.scrolling = 1;
+            scroll->prev_pos = event.mgesture.y;
+            scroll->scrolling = 1;
         }
         break;
     }
 
     case SDL_FINGERDOWN: {
-        mouse->scroll.scrolling = 0;
+        scroll->scrolling = 0;
         break;
     }
 
     case SDL_MOUSEMOTION: {
-        Screen_Position_Query spq;
-        spq.in_x = event.motion.x / character_width;
-        spq.in_y = event.motion.y / character_height;
-        spq.data = MOUSE_MOVE;
-        mouse->sp_queries.reserve(cz::heap_allocator(), 1);
-        mouse->sp_queries.push(spq);
-
-        mouse->multi_click_offset = mouse->multi_click_counter;
+        client->mouse.has_client_position = true;
+        client->mouse.client_row = event.motion.y / character_height;
+        client->mouse.client_column = event.motion.x / character_width;
+        recalculate_mouse(client);
         break;
     }
 
-    case SDL_MOUSEBUTTONDOWN: {
-        if (event.button.button == SDL_BUTTON_LEFT) {
-            Screen_Position_Query spq;
-            spq.in_x = event.button.x / character_width;
-            spq.in_y = event.button.y / character_height;
-
-            uint8_t clicks = event.button.clicks;
-            if (clicks == 1) {
-                mouse->multi_click_counter = 0;
-                mouse->multi_click_offset = 0;
-            }
-            clicks -= mouse->multi_click_offset;
-
-            if (clicks % 3 == 1) {
-                spq.data = MOUSE_DOWN;
-            } else if (clicks % 3 == 2) {
-                spq.data = MOUSE_SELECT_WORD;
-            } else {
-                spq.data = MOUSE_SELECT_LINE;
-            }
-            ++mouse->multi_click_counter;
-
-            mouse->sp_queries.reserve(cz::heap_allocator(), 1);
-            mouse->sp_queries.push(spq);
-        } else if (event.button.button == SDL_BUTTON_RIGHT) {
-            Screen_Position_Query spq;
-            spq.in_x = event.button.x / character_width;
-            spq.in_y = event.button.y / character_height;
-            spq.data = MOUSE_RIGHT;
-            mouse->sp_queries.reserve(cz::heap_allocator(), 1);
-            mouse->sp_queries.push(spq);
-        } else if (event.button.button == SDL_BUTTON_MIDDLE) {
-            Key key;
-            key.modifiers = 0;
-            key.code = Key_Code::MOUSE3;
-            server->receive(client, key);
-        } else if (event.button.button == SDL_BUTTON_X1) {
-            Key key;
-            key.modifiers = 0;
-            key.code = Key_Code::MOUSE4;
-            server->receive(client, key);
-        } else if (event.button.button == SDL_BUTTON_X2) {
-            Key key;
-            key.modifiers = 0;
-            key.code = Key_Code::MOUSE5;
-            server->receive(client, key);
-        }
-        break;
-    }
-
+    case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP: {
+        Key key = {};
+
+        SDL_Keymod mod = SDL_GetModState();
+        if (mod & KMOD_CTRL) {
+            key.modifiers |= CONTROL;
+        }
+        if (mod & KMOD_ALT) {
+            key.modifiers |= ALT;
+        }
+        if (mod & KMOD_SHIFT) {
+            key.modifiers |= SHIFT;
+        }
+
         if (event.button.button == SDL_BUTTON_LEFT) {
-            Screen_Position_Query spq;
-            spq.in_x = event.button.x / character_width;
-            spq.in_y = event.button.y / character_height;
-            spq.data = MOUSE_UP;
-            mouse->sp_queries.reserve(cz::heap_allocator(), 1);
-            mouse->sp_queries.push(spq);
+            key.code = Key_Code::MOUSE1;
+        } else if (event.button.button == SDL_BUTTON_RIGHT) {
+            key.code = Key_Code::MOUSE2;
+        } else if (event.button.button == SDL_BUTTON_MIDDLE) {
+            key.code = Key_Code::MOUSE3;
+        } else if (event.button.button == SDL_BUTTON_X1) {
+            key.code = Key_Code::MOUSE4;
+        } else if (event.button.button == SDL_BUTTON_X2) {
+            key.code = Key_Code::MOUSE5;
+        } else {
+            break;
+        }
+
+        if (event.button.state == SDL_PRESSED) {
+            server->receive(client, key);
+        } else {
+            server->release(client, key);
         }
         break;
     }
@@ -534,7 +482,7 @@ static void process_event(Server* server,
 
 static void process_events(Server* server,
                            Client* client,
-                           Mouse_State* mouse,
+                           Scroll_State* scroll,
                            int character_width,
                            int character_height,
                            bool* force_redraw,
@@ -545,8 +493,8 @@ static void process_events(Server* server,
 
     SDL_Event event;
     while (poll_event(&event)) {
-        process_event(server, client, event, mouse, character_width, character_height, force_redraw,
-                      minimized, disable_key_presses, disable_key_presses_until);
+        process_event(server, client, event, scroll, character_width, character_height,
+                      force_redraw, minimized, disable_key_presses, disable_key_presses_until);
         if (client->queue_quit) {
             return;
         }
@@ -581,6 +529,7 @@ static void process_scroll(Server* server, Client* client, Scroll_State* scroll)
     }
 }
 
+#if 0
 void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
     cz::Slice<Screen_Position_Query> spqs = mouse->sp_queries;
     mouse->sp_queries.set_len(0);
@@ -588,60 +537,6 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
     for (size_t spqi = 0; spqi < spqs.len; ++spqi) {
         Screen_Position_Query spq = spqs[spqi];
         if (spq.data == MOUSE_MOVE) {
-            // We need to recalculate the visual position if any changes happen to the window
-            // structure.  But programming that is a little complicated whereas just
-            // re-calculating the mouse position every frame is really easy and is super cheap.
-            // We set the length to 0 so that only the most recent mouse movement is saved.
-            mouse->sp_queries.set_len(0);
-            mouse->sp_queries.push(spq);
-
-            client->mouse.window = spq.sp.window;
-            client->mouse.row = spq.sp.window_row;
-            client->mouse.column = spq.sp.window_column;
-
-            mouse->mouse_pos = spq.sp;
-            if (mouse->mouse_down && spq.sp.found_window && spq.sp.found_position &&
-                mouse->mouse_down_pos.found_window && mouse->mouse_down_pos.found_position &&
-                spq.sp.window == mouse->mouse_down_pos.window) {
-                if (spq.sp.window->show_marks ||
-                    spq.sp.position != mouse->mouse_down_pos.position) {
-                    kill_extra_cursors(spq.sp.window, client);
-                    if (mouse->mouse_down_data == MOUSE_DOWN) {
-                        spq.sp.window->show_marks = 2;
-                        spq.sp.window->cursors[0].mark = mouse->mouse_down_pos.position;
-                        spq.sp.window->cursors[0].point = spq.sp.position;
-                    } else {
-                        WITH_WINDOW_BUFFER(spq.sp.window);
-                        Contents_Iterator mark =
-                            buffer->contents.iterator_at(mouse->mouse_down_pos.position);
-                        Contents_Iterator point = buffer->contents.iterator_at(spq.sp.position);
-
-                        Contents_Iterator* start;
-                        Contents_Iterator* end;
-                        if (mark.position < point.position) {
-                            start = &mark;
-                            end = &point;
-                        } else {
-                            start = &point;
-                            end = &mark;
-                        }
-
-                        if (mouse->mouse_down_data == MOUSE_SELECT_WORD) {
-                            forward_char(start);
-                            backward_word(start);
-                            forward_word(end);
-                        } else {
-                            start_of_line(start);
-                            end_of_line(end);
-                            forward_char(end);
-                        }
-
-                        spq.sp.window->show_marks = 2;
-                        spq.sp.window->cursors[0].mark = mark.position;
-                        spq.sp.window->cursors[0].point = point.position;
-                    }
-                }
-            }
         } else if (spq.data == MOUSE_DOWN) {
             mouse->mouse_down = true;
             mouse->mouse_down_pos = spq.sp;
@@ -724,6 +619,7 @@ void process_mouse_events(Editor* editor, Client* client, Mouse_State* mouse) {
         }
     }
 }
+#endif
 
 static void blit_surface(SDL_Surface* surface, SDL_Surface* rendered_char, SDL_Rect* rect) {
     ZoneScopedN("SDL_BlitSurface");
@@ -744,7 +640,6 @@ static void render(SDL_Window* window,
                    Window_Cache** mini_buffer_window_cache,
                    Editor* editor,
                    Client* client,
-                   cz::Slice<Screen_Position_Query> spqs,
                    bool force_redraw,
                    bool* redrew) {
     ZoneScoped;
@@ -796,8 +691,7 @@ static void render(SDL_Window* window,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client,
-                    spqs);
+    render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client);
 
     bool any_changes = false;
 
@@ -1117,8 +1011,7 @@ void run(Server* server, Client* client) {
     client->get_system_clipboard_func = get_clipboard;
     client->get_system_clipboard_data = nullptr;
 
-    Mouse_State mouse = {};
-    CZ_DEFER(mouse.sp_queries.drop(cz::heap_allocator()));
+    Scroll_State scroll = {};
 
     bool minimized = false;
     bool force_redraw = false;
@@ -1139,12 +1032,12 @@ void run(Server* server, Client* client) {
         bool any_asynchronous_jobs = server->slurp_jobs();
         bool any_synchronous_jobs = server->run_synchronous_jobs(client);
 
-        process_events(server, client, &mouse, character_width, character_height, &force_redraw,
+        process_events(server, client, &scroll, character_width, character_height, &force_redraw,
                        &minimized, &disable_key_presses, &disable_key_presses_until);
 
         any_asynchronous_jobs |= server->send_pending_asynchronous_jobs();
 
-        process_scroll(server, client, &mouse.scroll);
+        process_scroll(server, client, &scroll);
 
         process_buffer_external_updates(&server->editor, client, client->window);
 
@@ -1172,11 +1065,9 @@ void run(Server* server, Client* client) {
         bool redrew_this_time = false;
         render(window, font, surface_cache, &old_width, &old_height, &total_rows, &total_cols,
                character_width, character_height, cellss, &window_cache, &mini_buffer_window_cache,
-               &server->editor, client, mouse.sp_queries, force_redraw, &redrew_this_time);
+               &server->editor, client, force_redraw, &redrew_this_time);
 
         force_redraw = false;
-
-        process_mouse_events(&server->editor, client, &mouse);
 
         any_asynchronous_jobs |= server->send_pending_asynchronous_jobs();
 
@@ -1212,7 +1103,7 @@ void run(Server* server, Client* client) {
             server->set_async_locked(true);
 
             if (result) {
-                process_event(server, client, event, &mouse, character_width, character_height,
+                process_event(server, client, event, &scroll, character_width, character_height,
                               &force_redraw, &minimized, &disable_key_presses,
                               &disable_key_presses_until);
             }
