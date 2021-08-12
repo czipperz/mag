@@ -179,6 +179,72 @@ static void render(int* total_rows,
     FrameMark;
 }
 
+static void process_mouse_event(Server* server, Client* client) {
+    MEVENT mevent;
+    if (getmouse(&mevent) != OK) {
+        return;
+    }
+
+    client->mouse.has_client_position = true;
+    client->mouse.client_row = mevent.y;
+    client->mouse.client_column = mevent.x;
+    recalculate_mouse(client);
+
+    Key key = {};
+    if (mevent.bstate & BUTTON_CTRL) {
+        key.modifiers |= CONTROL;
+    }
+    if (mevent.bstate & BUTTON_ALT) {
+        key.modifiers |= ALT;
+    }
+    if (mevent.bstate & BUTTON_SHIFT) {
+        key.modifiers |= SHIFT;
+    }
+
+    if (mevent.bstate & BUTTON1_PRESSED) {
+        key.code = Key_Code::MOUSE1;
+        server->receive(client, key);
+    }
+    if (mevent.bstate & BUTTON1_RELEASED) {
+        key.code = Key_Code::MOUSE1;
+        server->release(client, key);
+    }
+    if (mevent.bstate & BUTTON2_PRESSED) {
+        key.code = Key_Code::MOUSE2;
+        server->receive(client, key);
+    }
+    if (mevent.bstate & BUTTON2_RELEASED) {
+        key.code = Key_Code::MOUSE2;
+        server->release(client, key);
+    }
+    if (mevent.bstate & BUTTON3_PRESSED) {
+        key.code = Key_Code::MOUSE3;
+        server->receive(client, key);
+    }
+    if (mevent.bstate & BUTTON3_RELEASED) {
+        key.code = Key_Code::MOUSE3;
+        server->release(client, key);
+    }
+    if (mevent.bstate & BUTTON4_PRESSED) {
+        key.code = Key_Code::MOUSE4;
+        server->receive(client, key);
+    }
+    if (mevent.bstate & BUTTON4_RELEASED) {
+        key.code = Key_Code::MOUSE4;
+        server->release(client, key);
+    }
+#ifdef BUTTON5_PRESSED
+    if (mevent.bstate & BUTTON5_PRESSED) {
+        key.code = Key_Code::MOUSE5;
+        server->receive(client, key);
+    }
+    if (mevent.bstate & BUTTON5_RELEASED) {
+        key.code = Key_Code::MOUSE5;
+        server->release(client, key);
+    }
+#endif
+}
+
 static void process_key_press(Server* server, Client* client, int ch) {
     ZoneScoped;
 
@@ -226,6 +292,9 @@ rerun:
         key.code = Key_Code::LEFT;
     } else if (ch == KEY_RIGHT) {
         key.code = Key_Code::RIGHT;
+    } else if (ch == KEY_MOUSE) {
+        process_mouse_event(server, client);
+        return;
     } else {
         return;
     }
@@ -257,6 +326,8 @@ void run(Server* server, Client* client) {
     noecho();
     keypad(stdscr, TRUE);
     curs_set(0);  // hide cursor
+    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+    mouseinterval(0);
     CZ_DEFER(endwin());
 
     start_color();
