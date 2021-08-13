@@ -297,6 +297,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "BACKSPACE", command_delete_backward_char);
     BIND(key_map, "A-BACKSPACE", command_delete_backward_word);
     BIND(key_map, "C-BACKSPACE", command_delete_backward_word);
+    BIND(key_map, "C-A-BACKSPACE", command_delete_start_of_line_text);
     BIND(key_map, "C-d", command_delete_forward_char);
     BIND(key_map, "DELETE", command_delete_forward_char);
     BIND(key_map, "S-DELETE", command_delete_forward_char);
