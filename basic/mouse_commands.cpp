@@ -16,9 +16,11 @@ static Job_Tick_Result mouse_motion_job_tick(Editor* editor, Client* client, voi
     WITH_CONST_SELECTED_NORMAL_BUFFER(client);
     kill_extra_cursors(window, client);
 
-    Contents_Iterator mark =
-        nearest_character(window, buffer, client->mouse.window_select_start_row,
-                          client->mouse.window_select_start_column);
+    if (client->mouse.window_select_point > buffer->contents.len) {
+        client->mouse.window_select_point = buffer->contents.len;
+    }
+
+    Contents_Iterator mark = buffer->contents.iterator_at(client->mouse.window_select_point);
     Contents_Iterator point =
         nearest_character(window, buffer, client->mouse.window_row, client->mouse.window_column);
 
@@ -100,8 +102,7 @@ void command_mouse_select_start(Editor* editor, Command_Source source) {
     mouse_click_time = now;
 
     source.client->mouse.selecting = (mouse_click_length - 1) % 3 + 1;
-    source.client->mouse.window_select_start_row = source.client->mouse.window_row;
-    source.client->mouse.window_select_start_column = source.client->mouse.window_column;
+    source.client->mouse.window_select_point = iterator.position;
 
     Synchronous_Job job;
     job.tick = mouse_motion_job_tick;

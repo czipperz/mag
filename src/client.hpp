@@ -27,8 +27,7 @@ struct Mouse_Position {
 
     // The place the user started selecting.
     uint32_t selecting;
-    uint32_t window_select_start_row;
-    uint32_t window_select_start_column;
+    uint64_t window_select_point;
 };
 
 struct Client {
