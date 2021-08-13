@@ -1,8 +1,8 @@
 #include "diff_commands.hpp"
 
 #include <cz/defer.hpp>
+#include <cz/file.hpp>
 #include <cz/heap.hpp>
-#include <cz/process.hpp>
 #include <cz/try.hpp>
 #include "buffer.hpp"
 #include "client.hpp"
