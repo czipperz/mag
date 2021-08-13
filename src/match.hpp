@@ -19,6 +19,10 @@ bool looking_at(Contents_Iterator it, cz::Str query);
 /// Handles case differences based on `case_handling`.
 bool looking_at_cased(Contents_Iterator it, cz::Str query, Case_Handling case_handling);
 
+/// Equivalent to the above versions except much faster.
+bool looking_at(Contents_Iterator it, char query);
+bool looking_at_cased(Contents_Iterator it, char query, Case_Handling case_handling);
+
 /// Tests if the region from `start` to `end` matches `query`.
 bool matches(Contents_Iterator start, uint64_t end, cz::Str query);
 

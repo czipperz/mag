@@ -5,6 +5,16 @@
 
 namespace mag {
 
+static void resolve_smart_case(char query, Case_Handling* case_handling) {
+    if (*case_handling == Case_Handling::SMART_CASE) {
+        if (cz::is_upper(query)) {
+            *case_handling = Case_Handling::CASE_SENSITIVE;
+            return;
+        }
+        *case_handling = Case_Handling::CASE_INSENSITIVE;
+    }
+}
+
 static void resolve_smart_case(cz::Str query, Case_Handling* case_handling) {
     if (*case_handling == Case_Handling::SMART_CASE) {
         for (size_t i = 0; i < query.len; ++i) {
@@ -83,6 +93,19 @@ bool looking_at_cased(Contents_Iterator it, cz::Str query, Case_Handling case_ha
     }
 
     return true;
+}
+
+bool looking_at(Contents_Iterator it, char query) {
+    return !it.at_eob() && it.get() == query;
+}
+
+bool looking_at_cased(Contents_Iterator it, char query, Case_Handling case_handling) {
+    resolve_smart_case(query, &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE) {
+        return looking_at(it, query);
+    }
+
+    return !it.at_eob() && cased_char_match(it.get(), query, case_handling);
 }
 
 bool matches(Contents_Iterator it, uint64_t end, cz::Str query) {
