@@ -1110,6 +1110,94 @@ void command_create_cursors_to_start_search(Editor* editor, Command_Source sourc
     show_created_messages(editor, source.client, created);
 }
 
+static void command_filter_cursors_looking_at_callback(Editor* editor,
+                                                       Client* client,
+                                                       cz::Str query,
+                                                       void* _data) {
+    WITH_CONST_SELECTED_BUFFER(client);
+
+    Contents_Iterator it = buffer->contents.start();
+
+    // Calculate number remaining.
+    size_t num_remaining = 0;
+    for (size_t i = 0; i < window->cursors.len(); ++i) {
+        it.advance_to(window->cursors[i].point);
+        num_remaining += looking_at(it, query);
+    }
+
+    // If everything would die then handle it gracefully.
+    if (num_remaining == 0) {
+        kill_extra_cursors(window, client);
+        return;
+    }
+
+    // Delete non-matching cursors.
+    ++window->selected_cursor;
+    for (size_t i = window->cursors.len(); i-- > 0;) {
+        it.retreat_to(window->cursors[i].point);
+        if (!looking_at(it, query)) {
+            window->cursors.remove(i);
+            if (window->selected_cursor > i) {
+                --window->selected_cursor;
+            }
+        }
+    }
+    if (window->selected_cursor > 0) {
+        --window->selected_cursor;
+    }
+}
+
+static void command_filter_cursors_not_looking_at_callback(Editor* editor,
+                                                           Client* client,
+                                                           cz::Str query,
+                                                           void* _data) {
+    WITH_CONST_SELECTED_BUFFER(client);
+
+    Contents_Iterator it = buffer->contents.start();
+
+    // Calculate number remaining.
+    size_t num_remaining = 0;
+    for (size_t i = 0; i < window->cursors.len(); ++i) {
+        it.advance_to(window->cursors[i].point);
+        num_remaining += !looking_at(it, query);
+    }
+
+    // If everything would die then handle it gracefully.
+    if (num_remaining == 0) {
+        kill_extra_cursors(window, client);
+        return;
+    }
+
+    // Delete non-matching cursors.
+    ++window->selected_cursor;
+    for (size_t i = window->cursors.len(); i-- > 0;) {
+        it.retreat_to(window->cursors[i].point);
+        if (looking_at(it, query)) {
+            window->cursors.remove(i);
+            if (window->selected_cursor > i) {
+                --window->selected_cursor;
+            }
+        }
+    }
+    if (window->selected_cursor > 0) {
+        --window->selected_cursor;
+    }
+}
+
+void command_filter_cursors_looking_at(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Filter looking at: ";
+    dialog.response_callback = command_filter_cursors_looking_at_callback;
+    source.client->show_dialog(editor, dialog);
+}
+
+void command_filter_cursors_not_looking_at(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Filter not looking at: ";
+    dialog.response_callback = command_filter_cursors_not_looking_at_callback;
+    source.client->show_dialog(editor, dialog);
+}
+
 static void set_cursor_position_to_edit_redo(Cursor* cursor, const Edit* edit) {
     cursor->mark = edit->position;
     cursor->point = edit->position;

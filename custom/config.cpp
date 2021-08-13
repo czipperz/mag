@@ -228,6 +228,9 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c C-A-n", command_create_cursors_to_end_search);
     BIND(key_map, "A-c C-A-p", command_create_cursors_to_start_search);
 
+    BIND(key_map, "A-c f", command_filter_cursors_looking_at);
+    BIND(key_map, "A-c A-f", command_filter_cursors_not_looking_at);
+
     BIND(key_map, "A-c /", command_create_cursors_last_change);
     BIND(key_map, "A-c _", command_create_cursors_last_change);
     BIND(key_map, "A-c A-/", command_create_cursors_undo);

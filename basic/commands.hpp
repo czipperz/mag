@@ -85,6 +85,9 @@ void command_create_cursors_all_search(Editor* editor, Command_Source source);
 void command_create_cursors_to_end_search(Editor* editor, Command_Source source);
 void command_create_cursors_to_start_search(Editor* editor, Command_Source source);
 
+void command_filter_cursors_looking_at(Editor* editor, Command_Source source);
+void command_filter_cursors_not_looking_at(Editor* editor, Command_Source source);
+
 void command_create_cursors_undo(Editor* editor, Command_Source source);
 void command_create_cursors_redo(Editor* editor, Command_Source source);
 void command_create_cursors_last_change(Editor* editor, Command_Source source);
