@@ -55,28 +55,6 @@ void Editor::kill(Buffer_Handle* buffer) {
     }
 }
 
-static bool binary_search_buffers(cz::Slice<cz::Arc<Buffer_Handle> > buffers,
-                                  cz::Arc<Buffer_Handle> buffer_handle,
-                                  size_t* index) {
-    size_t start = 0;
-    size_t end = buffers.len;
-    while (start < end) {
-        size_t mid = (start + end) / 2;
-        Buffer_Handle* test = buffers[mid].get();
-        if (test == buffer_handle.get()) {
-            *index = mid;
-            return true;
-        } else if (test < buffer_handle.get()) {
-            start = mid + 1;
-        } else {
-            end = mid;
-        }
-    }
-
-    *index = start;
-    return false;
-}
-
 cz::Arc<Buffer_Handle> Editor::create_buffer(Buffer buffer) {
     ZoneScoped;
 

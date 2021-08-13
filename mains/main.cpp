@@ -178,9 +178,9 @@ int mag_main(int argc, char** argv) {
             if (count <= 0) {
                 // Failure.
                 break;
-            } else if (count <= program_name_storage.cap()) {
+            } else if ((size_t)count <= program_name_storage.cap()) {
                 // Success.
-                program_name_storage.set_len(count);
+                program_name_storage.set_len((size_t)count);
 
                 // String is already null terminated on Windows but we need to do it manually on
                 // Linux.

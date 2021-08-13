@@ -34,9 +34,7 @@ uint64_t find_indent_width(Buffer* buffer,
         if (!at_end_of_line(token_iterator) && token.end != start_position) {
             return get_visual_column(buffer->mode, token_iterator);
         }
-
-        // fallthrough
-    }
+    }  // fallthrough
 
     case Discover_Indent_Policy::BACK_PAIR: {
         uint64_t base_columns = buffer->mode.indent_width;
