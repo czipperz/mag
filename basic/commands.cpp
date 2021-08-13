@@ -773,6 +773,10 @@ void command_delete_line(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
+    if (offset == 0) {
+        return;
+    }
+
     transaction.commit(source.client);
 }
 
@@ -797,6 +801,10 @@ void command_delete_end_of_line(Editor* editor, Command_Source source) {
         offset += edit.value.len();
         edit.flags = Edit::REMOVE;
         transaction.push(edit);
+    }
+
+    if (offset == 0) {
+        return;
     }
 
     transaction.commit(source.client);
@@ -825,6 +833,10 @@ void command_delete_start_of_line_text(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
+    if (offset == 0) {
+        return;
+    }
+
     transaction.commit(source.client);
 }
 
@@ -849,6 +861,10 @@ void command_delete_start_of_line(Editor* editor, Command_Source source) {
         offset += edit.value.len();
         edit.flags = Edit::REMOVE;
         transaction.push(edit);
+    }
+
+    if (offset == 0) {
+        return;
     }
 
     transaction.commit(source.client);
