@@ -162,6 +162,8 @@ void stringify_key(cz::String* prefix, Key key) {
         KEY_CODE_CASE(F11);
         KEY_CODE_CASE(F12);
 
+        KEY_CODE_CASE(MOUSE1);
+        KEY_CODE_CASE(MOUSE2);
         KEY_CODE_CASE(MOUSE3);
         KEY_CODE_CASE(MOUSE4);
         KEY_CODE_CASE(MOUSE5);
@@ -185,7 +187,10 @@ void stringify_key(cz::String* prefix, Key key) {
         break;
 
     default:
+        CZ_DEBUG_ASSERT(key.code <= UCHAR_MAX);
+        CZ_DEBUG_ASSERT(cz::is_print((char)key.code));
         prefix->push((char)key.code);
+        break;
     }
 }
 
