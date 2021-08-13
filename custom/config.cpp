@@ -362,7 +362,8 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-x w", command_save_buffer_to);
     BIND(key_map, "A-x A-r", command_pretend_rename_buffer);
 
-    BIND(key_map, "A-x C-d", command_apply_diff);
+    BIND(key_map, "A-x d", command_diff_buffer_against);
+    BIND(key_map, "A-x A-d", command_apply_diff);
 
     BIND(key_map, "A-x A-q", command_configure);
     BIND(key_map, "A-x q", command_toggle_read_only);
@@ -581,10 +582,9 @@ void editor_created_callback(Editor* editor) {
     create_key_map(editor->key_map);
     create_theme(editor->theme);
 
-    editor->misc_commands.reserve(5);
+    editor->misc_commands.reserve(4);
     editor->misc_commands.push(COMMAND(command_swap_windows));
     editor->misc_commands.push(COMMAND(command_restore_last_save_point));
-    editor->misc_commands.push(COMMAND(command_diff_buffer_against));
     editor->misc_commands.push(COMMAND(command_goto_top_of_window));
     editor->misc_commands.push(COMMAND(command_goto_bottom_of_window));
 }
