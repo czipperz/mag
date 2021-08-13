@@ -116,30 +116,36 @@ void Window_Unified::finish_completion(Client* client, Buffer* buffer) {
         return;
     }
 
-    // TODO: multi cursors?
-    Contents_Iterator iterator = buffer->contents.iterator_at(cursors[selected_cursor].point);
-    Token token;
-    bool do_remove = get_token_at_position(buffer, &iterator, &token);
-
-    cz::Str value = context->results[context->selected];
-
     Transaction transaction;
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
-    if (do_remove) {
-        Edit remove;
-        remove.value = buffer->contents.slice(transaction.value_allocator(), iterator, token.end);
-        remove.position = token.start;
-        remove.flags = Edit::REMOVE;
-        transaction.push(remove);
-    }
+    SSOStr completion_result =
+        SSOStr::as_duplicate(transaction.value_allocator(), context->results[context->selected]);
+    int64_t offset = 0;
+    for (size_t c = 0; c < cursors.len(); ++c) {
+        Contents_Iterator iterator = buffer->contents.iterator_at(cursors[c].point);
+        Token token;
+        bool do_remove = get_token_at_position(buffer, &iterator, &token);
 
-    Edit insert;
-    insert.value = SSOStr::as_duplicate(transaction.value_allocator(), value);
-    insert.position = token.start;
-    insert.flags = Edit::INSERT;
-    transaction.push(insert);
+        int64_t pending_offset = 0;
+        if (do_remove) {
+            Edit remove;
+            remove.value =
+                buffer->contents.slice(transaction.value_allocator(), iterator, token.end);
+            remove.position = token.start + offset;
+            remove.flags = Edit::REMOVE;
+            transaction.push(remove);
+            pending_offset -= token.end - iterator.position;
+        }
+
+        Edit insert;
+        insert.value = completion_result;
+        insert.position = token.start + offset;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+        offset += pending_offset + completion_result.len();
+    }
 
     transaction.commit(client);
 }
