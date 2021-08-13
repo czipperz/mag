@@ -669,7 +669,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
     buffer->mode.indent_after_open_pair = false;
 
-    buffer->mode.search_prompt_case_handling = Case_Handling::UPPERCASE_STICKY;
+    buffer->mode.search_prompt_case_handling = Case_Handling::SMART_CASE;
     buffer->mode.search_continue_case_handling = Case_Handling::CASE_SENSITIVE;
 
     buffer->mode.comment_break_tabs = true;
