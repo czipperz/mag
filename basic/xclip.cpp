@@ -24,7 +24,7 @@ bool get_clipboard(void*, cz::Allocator allocator, cz::String* text) {
             return false;
         }
 
-        if (!process.launch_program(args, &options)) {
+        if (!process.launch_program(args, options)) {
             return false;
         }
     }
@@ -60,7 +60,7 @@ bool set_clipboard(void*, cz::Str text) {
         std_in.close();
         std_in = {};
 
-        if (!process.launch_program(args, &options)) {
+        if (!process.launch_program(args, options)) {
             return false;
         }
     }

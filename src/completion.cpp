@@ -454,7 +454,7 @@ bool Run_Command_For_Completion_Results::iterate(Completion_Engine_Context* cont
         CZ_DEFER(options.std_out.close());
         data->stdout_read.set_non_blocking();
 
-        if (!data->process.launch_program(args, &options)) {
+        if (!data->process.launch_program(args, options)) {
             data->stdout_read.close();
             cz::heap_allocator().dealloc(data);
             return false;

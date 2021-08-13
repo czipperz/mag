@@ -2339,7 +2339,7 @@ static void command_run_command_ignore_result_callback(Editor* editor,
     options.working_directory = buffer->directory.buffer();
 
     cz::Process process;
-    if (!process.launch_script(script, &options)) {
+    if (!process.launch_script(script, options)) {
         client->show_message("Shell error");
         return;
     }

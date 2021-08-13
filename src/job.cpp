@@ -217,7 +217,7 @@ bool run_console_command_in(Client* client,
     options.std_err = options.std_out;
 
     cz::Process process;
-    if (!process.launch_script(script, &options)) {
+    if (!process.launch_script(script, options)) {
         client->show_message(error);
         stdout_read.close();
         return false;

@@ -508,10 +508,10 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
 #ifdef _WIN32
     cz::path::convert_to_back_slashes(&path);
     cz::Str args[] = {"cmd", "/C", "start", path};
-    success = process.launch_program(args, &options);
+    success = process.launch_program(args, options);
 #else
     cz::Str run_program[] = {path};
-    success = process.launch_program(run_program, &options);
+    success = process.launch_program(run_program, options);
 #endif
 
     if (!success) {
@@ -549,7 +549,7 @@ void launch_terminal_in(Editor* editor, Client* client, const char* directory) {
     options.working_directory = directory;
 
     cz::Process process;
-    if (!process.launch_script(terminal_script, &options)) {
+    if (!process.launch_script(terminal_script, options)) {
         cz::String string = {};
         CZ_DEFER(string.drop(cz::heap_allocator()));
         cz::Str prefix = "Failed to start terminal ";

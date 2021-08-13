@@ -330,7 +330,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     CZ_DEFER(options.std_out.close());
 
     cz::Process process;
-    if (!process.launch_program(args, &options)) {
+    if (!process.launch_program(args, options)) {
         source.client->show_message("Error: Couldn't launch clang-format");
         stdout_read.close();
         return;

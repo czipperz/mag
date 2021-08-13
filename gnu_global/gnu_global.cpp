@@ -80,7 +80,7 @@ const char* lookup(const char* directory,
         CZ_DEFER(options.std_out.close());
 
         cz::Str rev_parse_args[] = {"global", "-at", query};
-        if (!process.launch_program(rev_parse_args, &options)) {
+        if (!process.launch_program(rev_parse_args, options)) {
             return "Couldn't launch `global`";
         }
     }

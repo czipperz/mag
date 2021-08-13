@@ -55,7 +55,7 @@ static bool get_man_paths(cz::Allocator path_allocator,
 
             cz::Str args[] = {"manpath"};
 
-            if (!process.launch_program(args, &options)) {
+            if (!process.launch_program(args, options)) {
                 return false;
             }
         }
@@ -443,7 +443,7 @@ static void command_man_response(Editor* editor, Client* client, cz::Str query, 
     cz::Str args[] = {"groff", "-Tascii", "-man"};
 
     cz::Process process;
-    if (!process.launch_program(args, &options)) {
+    if (!process.launch_program(args, options)) {
         client->show_message("Error: Couldn't show man page");
         stdout_read.close();
         return;
