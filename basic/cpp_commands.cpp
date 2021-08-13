@@ -166,7 +166,7 @@ void command_reformat_comment_block_only(Editor* editor, Command_Source source) 
 
 static void change_indirection(Client* client,
                                Buffer* buffer,
-                               cz::Slice<Cursor> cursors,
+                               Window_Unified* window,
                                bool increase) {
     Transaction transaction = {};
     transaction.init(buffer);
@@ -174,31 +174,41 @@ static void change_indirection(Client* client,
 
     uint64_t offset = 0;
     Contents_Iterator iterator = buffer->contents.start();
-    for (size_t i = 0; i < cursors.len; ++i) {
-        iterator.advance_to(cursors[i].point);
-
-        // Go to start of token.
+    for (size_t i = 0; i < window->cursors.len(); ++i) {
+        iterator.advance_to(window->cursors[i].point);
         bool before_start = false;
         Contents_Iterator start = iterator;
-        backward_char(&start);
-        while (!start.at_bob()) {
-            char ch = start.get();
-            if (ch == '_' || cz::is_alnum(ch)) {
-                start.retreat();
-            } else {
-                before_start = true;
-                break;
-            }
-        }
-
-        // Go to the end of the token.
         Contents_Iterator end = iterator;
-        while (!end.at_eob()) {
-            char ch = end.get();
-            if (ch == '_' || cz::is_alnum(ch)) {
-                end.advance();
-            } else {
-                break;
+
+        if (window->show_marks) {
+            // Use the region as the boundaries.
+            start.retreat_to(window->cursors[i].start());
+            end.advance_to(window->cursors[i].end());
+            if (!start.at_bob()) {
+                before_start = true;
+                start.retreat();
+            }
+        } else {
+            // Go to start of token.
+            backward_char(&start);
+            while (!start.at_bob()) {
+                char ch = start.get();
+                if (ch == '_' || cz::is_alnum(ch)) {
+                    start.retreat();
+                } else {
+                    before_start = true;
+                    break;
+                }
+            }
+
+            // Go to the end of the token.
+            while (!end.at_eob()) {
+                char ch = end.get();
+                if (ch == '_' || cz::is_alnum(ch)) {
+                    end.advance();
+                } else {
+                    break;
+                }
             }
         }
 
@@ -358,12 +368,12 @@ static void change_indirection(Client* client,
 
 void command_make_direct(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    change_indirection(source.client, buffer, window->cursors, false);
+    change_indirection(source.client, buffer, window, false);
 }
 
 void command_make_indirect(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    change_indirection(source.client, buffer, window->cursors, true);
+    change_indirection(source.client, buffer, window, true);
 }
 
 void command_extract_variable(Editor* editor, Command_Source source) {
