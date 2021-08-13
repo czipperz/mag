@@ -86,8 +86,10 @@ cz::Str alternate_path_1[] = {"/cz/src/"};
 cz::Str alternate_path_2[] = {"/cz/include/cz/"};
 size_t alternate_path_len = sizeof(alternate_path_1) / sizeof(*alternate_path_1);
 
-cz::Str alternate_extensions_1[] = {".c", ".cc", ".cxx", ".cpp"};
-cz::Str alternate_extensions_2[] = {".h", ".hh", ".hxx", ".hpp"};
+// .tpp is first so template implementation/header
+// pairs are alternated instead of the empty .cpp file.
+cz::Str alternate_extensions_1[] = {".tpp", ".c", ".cc", ".cxx", ".cpp"};
+cz::Str alternate_extensions_2[] = {".hpp", ".h", ".hh", ".hxx", ".hpp"};
 size_t alternate_extensions_len = sizeof(alternate_extensions_1) / sizeof(*alternate_extensions_1);
 
 }
@@ -753,7 +755,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
         if (name.ends_with(".c") || name.ends_with(".h") || name.ends_with(".cc") ||
             name.ends_with(".hh") || name.ends_with(".cpp") || name.ends_with(".hpp") ||
-            name.ends_with(".cxx") || name.ends_with(".hxx") || name.ends_with(".glsl")) {
+            name.ends_with(".cxx") || name.ends_with(".hxx") || name.ends_with(".tpp") ||
+            name.ends_with(".glsl")) {
             buffer->mode.next_token = syntax::cpp_next_token;
             BIND(buffer->mode.key_map, "A-x A-f", clang_format::command_clang_format_buffer);
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
