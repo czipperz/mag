@@ -305,6 +305,9 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-DELETE", command_delete_forward_word);
     BIND(key_map, "A-d", command_delete_forward_word);
 
+    BIND(key_map, "C-=", command_fill_region_with_spaces);
+    BIND(key_map, "C-A-=", command_fill_region_or_solt_with_spaces);
+
     BIND(key_map, "A-k", command_delete_line);
     BIND(key_map, "C-k", command_duplicate_line);
     BIND(key_map, "C-A-k", command_delete_end_of_line);

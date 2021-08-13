@@ -870,6 +870,73 @@ void command_delete_start_of_line(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+template <class Func>
+static void fill_spaces(Client* client, Buffer* buffer, Window_Unified* window, Func func) {
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t max_region_size = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        if (max_region_size < cursors[c].end() - cursors[c].start()) {
+            max_region_size = cursors[c].end() - cursors[c].start();
+        }
+    }
+
+    if (max_region_size == 0) {
+        return;
+    }
+
+    cz::String spaces = {};
+    spaces.reserve(transaction.value_allocator(), max_region_size);
+    spaces.push_many(' ', max_region_size);
+
+    for (size_t c = 0; c < cursors.len; ++c) {
+        Contents_Iterator start, end;
+        if (window->show_marks) {
+            start = end = buffer->contents.iterator_at(cursors[c].end());
+            start.retreat_to(cursors[c].start());
+        } else {
+            start = end = buffer->contents.iterator_at(cursors[c].point);
+            func(&start);
+            if (start.position > end.position) {
+                cz::swap(start, end);
+            }
+        }
+
+        Edit remove;
+        remove.value = buffer->contents.slice(transaction.value_allocator(), start, end.position);
+        remove.position = start.position;
+        remove.flags = Edit::REMOVE;
+        transaction.push(remove);
+
+        Edit insert;
+        insert.value = SSOStr::from_constant(spaces.slice_end(remove.value.len()));
+        insert.position = start.position;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+    }
+
+    transaction.commit(client);
+}
+
+void command_fill_region_with_spaces(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    if (!window->show_marks) {
+        source.client->show_message("No region selected");
+        return;
+    }
+    fill_spaces(source.client, buffer, window,
+                [](Contents_Iterator*) { CZ_PANIC("Buffer mutated while locked"); });
+}
+
+void command_fill_region_or_solt_with_spaces(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    fill_spaces(source.client, buffer, window, start_of_line_text);
+}
+
 void command_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->undo()) {
