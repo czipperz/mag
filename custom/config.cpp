@@ -755,6 +755,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             name.ends_with(".hh") || name.ends_with(".cpp") || name.ends_with(".hpp") ||
             name.ends_with(".cxx") || name.ends_with(".hxx") || name.ends_with(".tpp") ||
             name.ends_with(".glsl")) {
+        cpp:
             buffer->mode.next_token = syntax::cpp_next_token;
             BIND(buffer->mode.key_map, "A-x A-f", clang_format::command_clang_format_buffer);
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
@@ -911,22 +912,37 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::color_test_next_token;
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else {
-            // Recognize shebangs.
+            // Get the first line of the file.
             Contents_Iterator start = buffer->contents.start();
-            if (looking_at(start, "#!")) {
-                Contents_Iterator end = start;
-                end_of_line(&end);
+            Contents_Iterator end = start;
+            end_of_line(&end);
+            SSOStr first_linex = buffer->contents.slice(cz::heap_allocator(), start, end.position);
+            CZ_DEFER(first_linex.drop(cz::heap_allocator()));
+            cz::Str first_line = first_line.as_str();
 
-                SSOStr string = buffer->contents.slice(cz::heap_allocator(), start, end.position);
-                CZ_DEFER(string.drop(cz::heap_allocator()));
-
-                auto str = string.as_str();
-                if (str.contains("python")) {
+            // Recognize shebangs.
+            if (first_line.starts_with("#!")) {
+                if (first_line.contains("python")) {
                     goto python;
-                } else if (str.contains("sh")) {
+                } else if (first_line.contains("sh")) {
                     goto shell;
-                } else if (str.contains("node")) {
+                } else if (first_line.contains("node")) {
                     goto javascript;
+                }
+            }
+
+            // Recognize Emacs file declarations.
+            if (first_line.ends_with("-*-") &&
+                first_line.slice_end(first_line.len() - 1).contains("-*-")) {
+                if (first_line.contains_case_insensitive("python")) {
+                    goto python;
+                } else if (first_line.contains_case_insensitive("shell-script")) {
+                    goto shell;
+                } else if (first_line.contains_case_insensitive("javascript")) {
+                    goto javascript;
+                } else if (first_line.contains_case_insensitive("c++") ||
+                           first_line.contains_case_insensitive("c")) {
+                    goto cpp;
                 }
             }
 
