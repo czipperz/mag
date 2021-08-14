@@ -901,7 +901,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
             git_edit_key_map(buffer->mode.key_map);
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
-        } else if (name == "COMMIT_EDITMSG") {
+        } else if (name == "COMMIT_EDITMSG" || name == "MERGE_MSG") {
             buffer->mode.next_token = syntax::git_commit_edit_message_next_token;
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
