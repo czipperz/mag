@@ -86,10 +86,8 @@ cz::Str alternate_path_1[] = {"/cz/src/"};
 cz::Str alternate_path_2[] = {"/cz/include/cz/"};
 size_t alternate_path_len = sizeof(alternate_path_1) / sizeof(*alternate_path_1);
 
-// .tpp is first so template implementation/header
-// pairs are alternated instead of the empty .cpp file.
-cz::Str alternate_extensions_1[] = {".tpp", ".c", ".cc", ".cxx", ".cpp"};
-cz::Str alternate_extensions_2[] = {".hpp", ".h", ".hh", ".hxx", ".hpp"};
+cz::Str alternate_extensions_1[] = {".c", ".cc", ".cxx", ".cpp"};
+cz::Str alternate_extensions_2[] = {".h", ".hh", ".hxx", ".hpp"};
 size_t alternate_extensions_len = sizeof(alternate_extensions_1) / sizeof(*alternate_extensions_1);
 
 }
