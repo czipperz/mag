@@ -1,5 +1,6 @@
 #include "blame.hpp"
 
+#include <stdio.h>
 #include <cz/date.hpp>
 #include <cz/format.hpp>
 #include <cz/heap_string.hpp>
