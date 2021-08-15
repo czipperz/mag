@@ -304,9 +304,9 @@ int client_connect_and_open(cz::Str file) {
         timeout.tv_sec = 0;
         timeout.tv_usec = 500000;
         result = connect_timeout(sock, (sockaddr*)&address, sizeof(address), &timeout);
-        if (result == SOCKET_ERROR)
-            goto error;
 
+        // Ignore errors from connecting and just send the data anyway.
+        // If we aren't connected, the send will fail.
         result = send(sock, file.buffer, (len_t)file.len, 0);
         if (result == SOCKET_ERROR)
             goto error;
