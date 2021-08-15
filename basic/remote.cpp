@@ -241,10 +241,7 @@ void command_kill_server(Editor* editor, Command_Source source) {
 /// Client interface
 ///////////////////////////////////////////////////////////////////////////////
 
-static int connect_timeout(SOCKET sock,
-                           const sockaddr* addr,
-                           socklen_t len,
-                           timeval* timeout) {
+static int connect_timeout(SOCKET sock, const sockaddr* addr, socklen_t len, timeval* timeout) {
     int result = connect(sock, addr, len);
     if (result != SOCKET_ERROR)
         return 0;
@@ -255,7 +252,7 @@ static int connect_timeout(SOCKET sock,
         return -1;
 #else
     int error = errno;
-    if (error != EAGAIN && error != EWOULDBLOCK)
+    if (error != EINPROGRESS)
         return -1;
 #endif
 
