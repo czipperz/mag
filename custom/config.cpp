@@ -402,6 +402,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-g A-g", command_goto_line);
     BIND(key_map, "A-g g", command_goto_position);
+    BIND(key_map, "A-g c", command_show_file_length_info);
 
     BIND(key_map, "A-g n", command_search_continue_next);
     BIND(key_map, "A-g p", command_search_continue_previous);
@@ -539,9 +540,8 @@ static void create_theme(Theme& theme) {
 
     theme.token_faces[Token_Type::BUFFER_TEMPORARY_NAME] = {177, {}, 0};
 
-    theme.decorations.reserve(6);
+    theme.decorations.reserve(5);
     theme.decorations.push(syntax::decoration_line_number());
-    theme.decorations.push(syntax::decoration_max_line_number());
     theme.decorations.push(syntax::decoration_column_number());
     theme.decorations.push(syntax::decoration_cursor_count());
     theme.decorations.push(syntax::decoration_read_only_indicator());

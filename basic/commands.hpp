@@ -112,6 +112,7 @@ void command_search_backward_expanding(Editor* editor, Command_Source source);
 
 void command_goto_line(Editor* editor, Command_Source source);
 void command_goto_position(Editor* editor, Command_Source source);
+void command_show_file_length_info(Editor* editor, Command_Source source);
 
 void command_path_up_directory(Editor* editor, Command_Source source);
 

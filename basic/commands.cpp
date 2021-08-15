@@ -1999,6 +1999,34 @@ void command_goto_position(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+void command_show_file_length_info(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    cz::String string = {};
+    CZ_DEFER(string.drop(cz::heap_allocator()));
+
+    uint64_t lines = buffer->contents.get_line_number(buffer->contents.len) + 1;
+
+    uint64_t words = 0;
+    Contents_Iterator words_it = buffer->contents.start();
+    while (!words_it.at_eob()) {
+        ++words;
+        forward_word(&words_it);
+    }
+    --words;
+    if (!words_it.at_bob()) {
+        words_it.retreat();
+        if (cz::is_alnum(words_it.get())) {
+            ++words;
+        }
+    }
+
+    cz::append(cz::heap_allocator(), &string, "Bytes: ", buffer->contents.len, ", lines: ", lines,
+               ", words: ", words);
+
+    source.client->show_message(string);
+}
+
 void command_path_up_directory(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
