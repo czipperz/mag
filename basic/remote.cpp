@@ -55,7 +55,7 @@ static int make_non_blocking(SOCKET socket) {
 /// Global data
 ///////////////////////////////////////////////////////////////////////////////
 
-#define PORT "41089"
+#define PORT 41089
 
 struct Server_Data {
     bool running = false;
@@ -140,6 +140,8 @@ static void server_kill(void*) {
 ///////////////////////////////////////////////////////////////////////////////
 
 static int actually_start_server() {
+    struct sockaddr_in address;
+
     if (server_data.running)
         return 0;
 
@@ -147,29 +149,30 @@ static int actually_start_server() {
     if (result != 0)
         return -1;
 
-    struct addrinfo* addr = nullptr;
-    struct addrinfo hints = {};
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_PASSIVE;
-
-    result = getaddrinfo(nullptr, PORT, &hints, &addr);
-    if (result != 0)
+    server_data.socket_server = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_data.socket_server == INVALID_SOCKET)
         goto error;
 
+    // Reuse port to allow for quick restarting.
     {
-        CZ_DEFER(freeaddrinfo(addr));
-
-        server_data.socket_server = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-        if (server_data.socket_server == INVALID_SOCKET)
-            goto error;
-
-        result = bind(server_data.socket_server, addr->ai_addr, (socklen_t)addr->ai_addrlen);
-        if (result == SOCKET_ERROR) {
+        int opt = 1;
+        result = setsockopt(server_data.socket_server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
+                            &opt, sizeof(opt));
+        if (result < 0) {
             closesocket(server_data.socket_server);
             goto error;
         }
+    }
+
+    memset(&address, 0, sizeof(address));
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    result = bind(server_data.socket_server, (sockaddr*)&address, sizeof(address));
+    if (result == SOCKET_ERROR) {
+        closesocket(server_data.socket_server);
+        goto error;
     }
 
     result = make_non_blocking(server_data.socket_server);
@@ -280,32 +283,29 @@ int client_connect_and_open(cz::Str file) {
     if (result != 0)
         return -1;
 
-    struct addrinfo* addr = nullptr;
-    struct addrinfo hints = {};
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-
-    result = getaddrinfo(nullptr, PORT, &hints, &addr);
-    if (result != 0)
+    SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == INVALID_SOCKET)
         goto error;
 
-    for (struct addrinfo* ptr = addr; ptr != NULL; ptr = ptr->ai_next) {
-        SOCKET sock = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-        if (sock == INVALID_SOCKET)
-            continue;
+    {
         CZ_DEFER(closesocket(sock));
 
         result = make_non_blocking(sock);
         if (result == SOCKET_ERROR)
-            continue;
+            goto error;
+
+        struct sockaddr_in address;
+        memset(&address, 0, sizeof(address));
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = INADDR_LOOPBACK;
+        address.sin_port = htons(PORT);
 
         timeval timeout = {};
         timeout.tv_sec = 0;
         timeout.tv_usec = 500000;
-        result = connect_timeout(sock, ptr->ai_addr, (socklen_t)ptr->ai_addrlen, &timeout);
+        result = connect_timeout(sock, (sockaddr*)&address, sizeof(address), &timeout);
         if (result == SOCKET_ERROR)
-            continue;
+            goto error;
 
         result = send(sock, file.buffer, (len_t)file.len, 0);
         if (result == SOCKET_ERROR)
@@ -314,11 +314,7 @@ int client_connect_and_open(cz::Str file) {
         return 0;
     }
 
-    goto error;
-
 error:
-    if (addr)
-        freeaddrinfo(addr);
 #ifdef _WIN32
     WSACleanup();
 #endif
