@@ -918,7 +918,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             end_of_line(&end);
             SSOStr first_linex = buffer->contents.slice(cz::heap_allocator(), start, end.position);
             CZ_DEFER(first_linex.drop(cz::heap_allocator()));
-            cz::Str first_line = first_line.as_str();
+            cz::Str first_line = first_linex.as_str();
 
             // Recognize shebangs.
             if (first_line.starts_with("#!")) {
@@ -933,7 +933,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             // Recognize Emacs file declarations.
             if (first_line.ends_with("-*-") &&
-                first_line.slice_end(first_line.len() - 1).contains("-*-")) {
+                first_line.slice_end(first_line.len - 1).contains("-*-")) {
                 if (first_line.contains_case_insensitive("python")) {
                     goto python;
                 } else if (first_line.contains_case_insensitive("shell-script")) {
