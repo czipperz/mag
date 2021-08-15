@@ -9,9 +9,13 @@
 #include <ws2tcpip.h>
 #pragma comment(lib, "Ws2_32.lib")
 #else
+#include <errno.h>
+#include <fcntl.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 #endif
 
@@ -240,7 +244,7 @@ void command_kill_server(Editor* editor, Command_Source source) {
 static int connect_timeout(SOCKET sock,
                            const sockaddr* addr,
                            socklen_t len,
-                           const timeval* timeout) {
+                           timeval* timeout) {
     int result = connect(sock, addr, len);
     if (result != SOCKET_ERROR)
         return 0;
@@ -299,7 +303,7 @@ int client_connect_and_open(cz::Str file) {
         if (result == SOCKET_ERROR)
             continue;
 
-        timeval timeout = {0};
+        timeval timeout = {};
         timeout.tv_sec = 0;
         timeout.tv_usec = 500000;
         result = connect_timeout(sock, ptr->ai_addr, (socklen_t)ptr->ai_addrlen, &timeout);
