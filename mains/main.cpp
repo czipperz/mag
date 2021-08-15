@@ -205,9 +205,9 @@ int mag_main(int argc, char** argv) {
 
             if (chosen_client == Client::REMOTE) {
                 if (files.len == 0)
-                    fprintf(stderr, "No files to send to the remote client");
+                    fprintf(stderr, "No files to send to the remote client\n");
                 else
-                    fprintf(stderr, "Failed to connect to the remote client");
+                    fprintf(stderr, "Failed to connect to the remote client\n");
                 return 1;
             }
         }
