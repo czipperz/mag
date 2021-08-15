@@ -20,23 +20,6 @@
 namespace mag {
 namespace render {
 
-static size_t line_number_columns(const Theme& theme,
-                                  const Window_Unified* window,
-                                  const Buffer* buffer) {
-    if (!theme.draw_line_numbers)
-        return 0;
-
-    size_t end_line_number = buffer->contents.get_line_number(buffer->contents.len) + 1;
-    size_t line_number_width = (size_t)log10(end_line_number) + 1;
-    size_t result = line_number_width + 1 /* space on right */;
-
-    // Enable drawing line numbers for non-mini buffer
-    // windows if they are enabled and fit on the screen.
-    if (result + 5 > window->total_cols)
-        return 0;
-    return result;
-}
-
 static bool load_completion_cache(Editor* editor,
                                   Completion_Cache* completion_cache,
                                   Completion_Filter completion_filter);
@@ -686,7 +669,7 @@ static void draw_buffer_contents(Cell* cells,
     CZ_DEFER(line_number_buffer.drop(cz::heap_allocator()));
     bool draw_line_numbers = false;
     if (window != client->_mini_buffer) {
-        size_t cols = line_number_columns(editor->theme, window, buffer);
+        size_t cols = line_number_cols(editor->theme, window, buffer);
         draw_line_numbers = (cols > 0);
         if (draw_line_numbers)
             line_number_buffer.reserve_exact(cz::heap_allocator(), cols);
@@ -1252,7 +1235,7 @@ static void recalculate_mouse_recursive(const Theme& theme,
             mouse->window = window;
             mouse->window_row = (uint32_t)(mouse->client_row - start_row);
             mouse->window_column = (uint32_t)(mouse->client_column - start_col -
-                                              line_number_columns(theme, window, buffer));
+                                              line_number_cols(theme, window, buffer));
         }
         break;
     }

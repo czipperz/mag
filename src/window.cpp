@@ -1,5 +1,6 @@
 #include "window.hpp"
 
+#include <math.h>
 #include <stdlib.h>
 #include <Tracy.hpp>
 #include <algorithm>

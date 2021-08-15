@@ -548,8 +548,6 @@ static bool look_in(cz::Slice<char> bucket,
 }
 
 static bool search_backward_identifier(Contents_Iterator* iterator, cz::Str query) {
-    iterator->bucket;
-
     Contents_Iterator backward;
     backward = *iterator;
     backward.retreat(backward.index);
