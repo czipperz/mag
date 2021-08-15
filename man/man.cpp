@@ -99,7 +99,7 @@ bool man_completion_engine(Editor*, Completion_Engine_Context* context, bool is_
 
     cz::Allocator cbaa = context->results_buffer_array.allocator();
 
-    for (size_t man_path_index = 0; man_path_index < man_paths.len(); ++man_path_index) {
+    for (size_t man_path_index = 0; man_path_index < man_paths.len; ++man_path_index) {
         cz::Str directory_base = man_paths[man_path_index];
 
         directory.len = 0;
@@ -111,16 +111,14 @@ bool man_completion_engine(Editor*, Completion_Engine_Context* context, bool is_
         cz::Buffer_Array::Save_Point lbasp = lba.save();
         for (int man_index = 0; man_index <= 8; ++man_index) {
             lba.restore(lbasp);
-            directory[directory.len() - 1] = man_index + '0';
+            directory[directory.len - 1] = man_index + '0';
 
             files.len = 0;
-            cz::Result files_result =
-                cz::files(cz::heap_allocator(), lba.allocator(), directory.buffer(), &files);
-            if (files_result.is_err()) {
+            if (!cz::files(cz::heap_allocator(), lba.allocator(), directory.buffer, &files)) {
                 continue;
             }
 
-            for (size_t i = 0; i < files.len(); ++i) {
+            for (size_t i = 0; i < files.len; ++i) {
                 const char* dot = files[i].rfind('.');
                 if (dot) {
                     context->results.reserve(1);
@@ -164,16 +162,16 @@ static bool decompress_gz(FILE* file, cz::String* out, cz::Allocator out_allocat
         do {
             out->reserve(out_allocator, 1 << 10);
             stream.next_out = (unsigned char*)out->end();
-            stream.avail_out = out->cap() - out->len();
+            stream.avail_out = out->cap - out->len;
             ret = inflate(&stream, Z_NO_FLUSH);
             if (ret == Z_OK) {
-                out->len = out->cap() - stream.avail_out;
+                out->len = out->cap - stream.avail_out;
             } else if (ret == Z_STREAM_END) {
-                out->len = out->cap() - stream.avail_out;
+                out->len = out->cap - stream.avail_out;
                 inflateEnd(&stream);
                 return true;
             } else if (ret == Z_BUF_ERROR) {
-                out->reserve(out_allocator, (out->cap() - out->len()) * 2);
+                out->reserve(out_allocator, (out->cap - out->len) * 2);
             } else {
                 fprintf(stderr, "Inflation error: %s %d\n", stream.msg, ret);
                 inflateEnd(&stream);
@@ -224,18 +222,17 @@ static void lookup_specific_man_page(cz::Slice<cz::Str> man_paths,
         results_buffer_array->restore(rbasp);
 
         files.len = 0;
-        cz::Result files_result = cz::files(cz::heap_allocator(), results_buffer_array->allocator(),
-                                            directory.buffer(), &files);
-        if (files_result.is_err()) {
+        if (!cz::files(cz::heap_allocator(), results_buffer_array->allocator(), directory.buffer,
+                       &files)) {
             continue;
         }
 
-        for (size_t i = 0; i < files.len(); ++i) {
+        for (size_t i = 0; i < files.len; ++i) {
             cz::Str file = files[i];
             if (file.starts_with(after_slash)) {
                 results->reserve(cz::heap_allocator(), 1);
                 cz::String path = {};
-                path.reserve(results_buffer_array->allocator(), directory.len() + file.len + 2);
+                path.reserve(results_buffer_array->allocator(), directory.len + file.len + 2);
                 path.append(directory);
                 path.push('/');
                 path.append(file);
@@ -258,7 +255,7 @@ static bool load_contents(cz::Slice<cz::Str> man_paths,
     }
 
     while (contents->starts_with(".so ")) {
-        cz::Str file_to_find = {contents->buffer() + 4, contents->len() - 5};
+        cz::Str file_to_find = {contents->buffer + 4, contents->len - 5};
         results->len = 0;
         results_buffer_array->restore(rbasp);
         lookup_specific_man_page(man_paths, file_to_find, results, results_buffer_array);
@@ -317,21 +314,19 @@ static void lookup_man_page(cz::Slice<cz::Str> man_paths,
         cz::Buffer_Array::Save_Point lbasp = lba.save();
         for (int man_index = 0; man_index <= 8; ++man_index) {
             lba.restore(lbasp);
-            directory[directory.len() - 1] = man_index + '0';
+            directory[directory.len - 1] = man_index + '0';
 
             files.len = 0;
-            cz::Result files_result =
-                cz::files(cz::heap_allocator(), lba.allocator(), directory.buffer(), &files);
-            if (files_result.is_err()) {
+            if (!cz::files(cz::heap_allocator(), lba.allocator(), directory.buffer, &files)) {
                 continue;
             }
 
-            for (size_t i = 0; i < files.len(); ++i) {
+            for (size_t i = 0; i < files.len; ++i) {
                 cz::Str file = files[i];
                 if (file.starts_with(man_page_dot)) {
                     results->reserve(cz::heap_allocator(), 1);
                     cz::String path = {};
-                    path.reserve(result_allocator, directory.len() + file.len + 2);
+                    path.reserve(result_allocator, directory.len + file.len + 2);
                     path.append(directory);
                     path.push('/');
                     path.append(file);
@@ -361,7 +356,7 @@ static const char* find_and_load_man_page(cz::Str query, cz::String* page, cz::S
     cz::Buffer_Array::Save_Point basp = ba.save();
     lookup_man_page(man_paths, query, &results, ba.allocator());
 
-    if (results.len() == 0) {
+    if (results.len == 0) {
         return "Error: No matching man pages found";
     }
 
@@ -397,7 +392,7 @@ static void command_man_response(Editor* editor, Client* client, cz::Str query, 
         CZ_DEFER(out.close());
 
         size_t offset = 0;
-        while (offset < contents.len()) {
+        while (offset < contents.len) {
             cz::Str s = contents.slice_start(offset);
             int64_t result = out.write(s.buffer, s.len);
             if (result <= 0) {
@@ -438,7 +433,7 @@ static void command_man_response(Editor* editor, Client* client, cz::Str query, 
 
     cz::String name = {};
     CZ_DEFER(name.drop(cz::heap_allocator()));
-    name.reserve(cz::heap_allocator(), 4 + page.len());
+    name.reserve(cz::heap_allocator(), 4 + page.len);
     name.append("man ");
     name.append(page);
 

@@ -765,7 +765,7 @@ void set_icon(SDL_Window* sdl_window) {
     logo.append("logo.png");
     logo.null_terminate();
 
-    SDL_Surface* icon = IMG_Load(logo.buffer());
+    SDL_Surface* icon = IMG_Load(logo.buffer);
     if (icon) {
         SDL_SetWindowIcon(sdl_window, icon);
         SDL_FreeSurface(icon);

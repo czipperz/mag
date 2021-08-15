@@ -89,7 +89,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
 
     cz::Str line_string = arg.slice_start(colon + 1);
     uint64_t line = 0;
-    if (cz::parse(line_string, &line) != line_string.len) {
+    if (cz::parse(line_string, &line) != (int64_t)line_string.len) {
         goto open;
     }
 
@@ -112,7 +112,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
 
     cz::Str column_string = path.slice_start(colon + 1);
     uint64_t column = 0;
-    if (cz::parse(column_string, &column) != column_string.len) {
+    if (cz::parse(column_string, &column) != (int64_t)column_string.len) {
         goto open;
     }
     cz::swap(line, column);

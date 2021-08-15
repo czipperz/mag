@@ -641,7 +641,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
         size_t dereference_count = 0;
         while (1) {
             // Dereference the symbolic link.
-            res = readlink(path.buffer, temp_path.buffer, temp_path.cap());
+            res = readlink(path.buffer, temp_path.buffer, temp_path.cap);
 
             // If we had an error, stop.
             if (res < 0) {
@@ -649,8 +649,8 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
             }
 
             // Retry with a bigger buffer.
-            if ((size_t)res == temp_path.cap()) {
-                temp_path.reserve_total(cz::heap_allocator(), temp_path.cap() * 2);
+            if ((size_t)res == temp_path.cap) {
+                temp_path.reserve_total(cz::heap_allocator(), temp_path.cap * 2);
                 continue;
             }
 

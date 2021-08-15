@@ -753,7 +753,7 @@ static void command_duplicate_line_prompt_callback(Editor* editor,
                                                    cz::Str query,
                                                    void* _data) {
     uint64_t num = 0;
-    if (cz::parse(query, &num) != query.len) {
+    if (cz::parse(query, &num) != (int64_t)query.len) {
         client->show_message("Error: Invalid input");
         return;
     }
