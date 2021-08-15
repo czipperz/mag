@@ -685,7 +685,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         buffer->mode.indent_width = buffer->mode.tab_width = 4;
         buffer->mode.use_tabs = false;
         buffer->mode.preferred_column = 100;
-        BIND(buffer->mode.key_map, "A-g c", command_build_debug_vc_root);
+        BIND(buffer->mode.key_map, "F7", command_build_debug_vc_root);
 
         if (cz::path::has_component(buffer->directory, "mag/tutorial")) {
             buffer->mode.preferred_column = 80;

@@ -22,9 +22,9 @@ void command_build_debug_vc_root(Editor* editor, Command_Source source) {
     }
 
 #ifdef _WIN32
-    cz::Str args[] = {"powershell", ".\\build-debug.ps1"};
+    cz::Str args[] = {"powershell", ".\\build-debug"};
 #else
-    cz::Str args[] = {"./build-debug.sh"};
+    cz::Str args[] = {"./build-debug"};
 #endif
     run_console_command(source.client, editor, top_level_path.buffer(), args, "build debug",
                         "Failed to run build-debug.sh");
