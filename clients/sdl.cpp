@@ -462,6 +462,14 @@ static void process_event(Server* server,
         } break;
         }
 
+        // Transform capslock to holding shift.
+        if (event.key.keysym.mod & KMOD_CAPS) {
+            event.key.keysym.mod &= ~KMOD_CAPS;
+            event.key.keysym.mod |= KMOD_SHIFT;
+        }
+        // Ignore numlock.
+        event.key.keysym.mod &= ~KMOD_NUM;
+
         if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_ALT)) == 0 &&
             (key.code <= UCHAR_MAX && cz::is_print(key.code))) {
             // Ignore key presses
