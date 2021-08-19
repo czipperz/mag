@@ -2214,14 +2214,14 @@ static void command_run_command_ignore_result_callback(Editor* editor,
 
 void command_run_command_for_result(Editor* editor, Command_Source source) {
     Dialog dialog = {};
-    dialog.prompt = "Shell: ";
+    dialog.prompt = "Shell buffer: ";
     dialog.response_callback = command_run_command_for_result_callback;
     source.client->show_dialog(editor, dialog);
 }
 
 void command_run_command_ignore_result(Editor* editor, Command_Source source) {
     Dialog dialog = {};
-    dialog.prompt = "Shell: ";
+    dialog.prompt = "Shell silent: ";
     dialog.response_callback = command_run_command_ignore_result_callback;
     source.client->show_dialog(editor, dialog);
 }
