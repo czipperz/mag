@@ -317,6 +317,8 @@ static void command_rename_buffer_callback(Editor* editor,
     std::swap(buffer->name, name_clone);
     std::swap(buffer->directory, directory_clone);
     buffer->type = type;
+
+    reset_mode(editor, buffer);
 }
 
 void command_rename_buffer(Editor* editor, Command_Source source) {
@@ -367,6 +369,8 @@ static void command_save_buffer_to_callback(Editor* editor,
     if (!save_buffer(buffer)) {
         client->show_message(editor, "Error saving file");
     }
+
+    reset_mode(editor, buffer);
 }
 
 void command_save_buffer_to(Editor* editor, Command_Source source) {
