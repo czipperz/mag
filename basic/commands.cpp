@@ -1786,7 +1786,7 @@ static void command_search_forward_expanding_callback(Editor* editor,
 
 void command_search_backward_expanding(Editor* editor, Command_Source source) {
     Dialog dialog = {};
-    dialog.prompt = "Search backward: ";
+    dialog.prompt = "Search backward expanding: ";
     dialog.response_callback = command_search_backward_expanding_callback;
     {
         WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
@@ -1797,7 +1797,7 @@ void command_search_backward_expanding(Editor* editor, Command_Source source) {
 
 void command_search_forward_expanding(Editor* editor, Command_Source source) {
     Dialog dialog = {};
-    dialog.prompt = "Search forward: ";
+    dialog.prompt = "Search forward expanding: ";
     dialog.response_callback = command_search_forward_expanding_callback;
     {
         WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
