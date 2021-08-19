@@ -90,7 +90,7 @@ void command_insert_hello_world(Editor* editor, Command_Source source) {
     }
 
     // Apply all the edits as one Commit.
-    transaction.commit();
+    transaction.commit(client);
 }
 
 

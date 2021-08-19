@@ -107,7 +107,7 @@ void Window_Unified::update_completion_cache(const Buffer* buffer) {
     }
 }
 
-void Window_Unified::finish_completion(Buffer* buffer) {
+void Window_Unified::finish_completion(Client* client, Buffer* buffer) {
     CZ_DEBUG_ASSERT(completing);
     completing = false;
 
@@ -141,7 +141,7 @@ void Window_Unified::finish_completion(Buffer* buffer) {
     insert.flags = Edit::INSERT;
     transaction.push(insert);
 
-    transaction.commit();
+    transaction.commit(client);
 }
 
 void Window_Unified::abort_completion() {

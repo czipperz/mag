@@ -67,7 +67,7 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
         offset -= removed;
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 struct Invalid_Indent_Data {
@@ -223,7 +223,10 @@ static void change_line_indent(const Mode& mode,
     }
 }
 
-static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent_offset) {
+static void change_indent(Client* client,
+                          Window_Unified* window,
+                          Buffer* buffer,
+                          int64_t indent_offset) {
     Transaction transaction;
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
@@ -322,16 +325,16 @@ static void change_indent(Window_Unified* window, Buffer* buffer, int64_t indent
         }
     }
 
-    transaction.commit();
+    transaction.commit(client);
 }
 
 void command_increase_indent(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    change_indent(window, buffer, buffer->mode.indent_width);
+    change_indent(source.client, window, buffer, buffer->mode.indent_width);
 }
 void command_decrease_indent(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    change_indent(window, buffer, -(int64_t)buffer->mode.indent_width);
+    change_indent(source.client, window, buffer, -(int64_t)buffer->mode.indent_width);
 }
 
 void command_delete_whitespace(Editor* editor, Command_Source source) {
@@ -367,7 +370,7 @@ void command_delete_whitespace(Editor* editor, Command_Source source) {
         offset += count;
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_merge_lines(Editor* editor, Command_Source source) {
@@ -408,7 +411,7 @@ void command_merge_lines(Editor* editor, Command_Source source) {
         --offset;
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 }

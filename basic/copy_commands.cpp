@@ -58,7 +58,7 @@ void command_cut(Editor* editor, Command_Source source) {
         }
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 
     window->show_marks = false;
 }
@@ -102,7 +102,7 @@ static bool setup_paste(cz::Slice<Cursor> cursors, Copy_Chain* global_copy_chain
     return true;
 }
 
-static void run_paste(Window_Unified* window, Buffer* buffer) {
+static void run_paste(Client* client, Window_Unified* window, Buffer* buffer) {
     // :CopyLeak Probably we will need to copy all the values here.
     Transaction transaction;
     transaction.init(buffer);
@@ -138,7 +138,7 @@ static void run_paste(Window_Unified* window, Buffer* buffer) {
         }
     }
 
-    transaction.commit();
+    transaction.commit(client);
 
     // Put mark at the start of the paste region.
     if (!window->show_marks) {
@@ -156,7 +156,7 @@ void command_paste(Editor* editor, Command_Source source) {
         return;
     }
 
-    run_paste(window, buffer);
+    run_paste(source.client, window, buffer);
 }
 
 void command_paste_previous(Editor* editor, Command_Source source) {
@@ -192,7 +192,7 @@ void command_paste_previous(Editor* editor, Command_Source source) {
             WITH_WINDOW_BUFFER(window);
             buffer->undo();
             window->update_cursors(buffer);
-            run_paste(window, buffer);
+            run_paste(source.client, window, buffer);
         }
     } else {
         source.client->show_message("Error: previous command was not paste");
@@ -305,7 +305,7 @@ void command_cursors_cut_as_lines(Editor* editor, Command_Source source) {
         }
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 
     window->show_marks = false;
 }
@@ -329,7 +329,7 @@ void command_cursors_copy_as_lines(Editor* editor, Command_Source source) {
     window->show_marks = false;
 }
 
-static void run_paste_as_lines(cz::Slice<Cursor> cursors, Buffer* buffer) {
+static void run_paste_as_lines(Client* client, cz::Slice<Cursor> cursors, Buffer* buffer) {
     // :CopyLeak Probably we will need to copy all the values here.
     Transaction transaction;
     transaction.init(buffer);
@@ -367,7 +367,7 @@ static void run_paste_as_lines(cz::Slice<Cursor> cursors, Buffer* buffer) {
         value = value.slice_start(newline + 1);
     }
 
-    transaction.commit();
+    transaction.commit(client);
 }
 
 void command_cursors_paste_as_lines(Editor* editor, Command_Source source) {
@@ -378,7 +378,7 @@ void command_cursors_paste_as_lines(Editor* editor, Command_Source source) {
         return;
     }
 
-    run_paste_as_lines(cursors, buffer);
+    run_paste_as_lines(source.client, cursors, buffer);
 }
 
 void command_cursors_paste_previous_as_lines(Editor* editor, Command_Source source) {
@@ -414,7 +414,7 @@ void command_cursors_paste_previous_as_lines(Editor* editor, Command_Source sour
             WITH_WINDOW_BUFFER(window);
             buffer->undo();
             window->update_cursors(buffer);
-            run_paste_as_lines(cursors, buffer);
+            run_paste_as_lines(source.client, cursors, buffer);
         }
     } else {
         source.client->show_message("Error: previous command was not paste");

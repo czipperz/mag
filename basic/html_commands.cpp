@@ -146,7 +146,7 @@ void command_comment(Editor* editor, Command_Source source) {
         }
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 }

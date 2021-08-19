@@ -67,7 +67,7 @@ void Test_Runner::setup(cz::Str input) {
     edit.flags = Edit::INSERT;
     transaction.push(edit);
 
-    transaction.commit();
+    transaction.commit(&client);
 
     window->change_index = buffer->changes.len();
 }

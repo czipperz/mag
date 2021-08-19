@@ -127,7 +127,8 @@ static bool any_patterns_match(Contents_Iterator it, size_t offset, cz::Slice<cz
     return false;
 }
 
-bool reformat_at(Buffer* buffer,
+bool reformat_at(Client* client,
+                 Buffer* buffer,
                  Contents_Iterator iterator,
                  cz::Str acceptable_start,
                  cz::Str acceptable_continuation,
@@ -369,20 +370,22 @@ bool reformat_at(Buffer* buffer,
     insert.flags = Edit::INSERT;
     transaction.push(insert);
 
-    transaction.commit();
+    transaction.commit(client);
     return true;
 }
 
 void command_reformat_paragraph(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    reformat_at(buffer, buffer->contents.iterator_at(window->cursors[0].point), "", "");
+    reformat_at(source.client, buffer, buffer->contents.iterator_at(window->cursors[0].point), "",
+                "");
 }
 
 void command_reformat_comment_hash(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    reformat_at(buffer, buffer->contents.iterator_at(window->cursors[0].point), "# ", "# ");
+    reformat_at(source.client, buffer, buffer->contents.iterator_at(window->cursors[0].point), "# ",
+                "# ");
 }
 
 }

@@ -136,6 +136,6 @@ struct Buffer {
     void set_tokenizer(Tokenizer tokenizer);
 };
 
-SSOStr clear_buffer(Buffer* buffer);
+SSOStr clear_buffer(Client* client, Buffer* buffer);
 
 }

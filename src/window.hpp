@@ -11,6 +11,7 @@ namespace mag {
 struct Buffer;
 struct Buffer_Handle;
 struct Contents_Iterator;
+struct Client;
 
 struct Window_Split;
 
@@ -74,7 +75,7 @@ struct Window_Unified : Window {
     /// to not modify the buffer so we can render immutable buffer objects.
     void update_completion_cache(const Buffer*);
 
-    void finish_completion(Buffer*);
+    void finish_completion(Client* client, Buffer*);
     void abort_completion();
 
     void clear_show_marks_temporarily() {

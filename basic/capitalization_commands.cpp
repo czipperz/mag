@@ -38,7 +38,7 @@ void command_uppercase_letter(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_lowercase_letter(Editor* editor, Command_Source source) {
@@ -66,7 +66,7 @@ void command_lowercase_letter(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_uppercase_region_or_word(Editor* editor, Command_Source source) {
@@ -109,7 +109,7 @@ void command_uppercase_region_or_word(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 
     window->show_marks = false;
 }
@@ -154,7 +154,7 @@ void command_lowercase_region_or_word(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 
     window->show_marks = false;
 }
@@ -505,7 +505,7 @@ void command_recapitalize_token_to(Editor* editor,
         offset += insert.value.len() - remove.value.len();
     }
 
-    transaction.commit();
+    transaction.commit(client);
 }
 
 static void command_recapitalize_token_prompt_callback(Editor* editor,

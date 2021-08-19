@@ -279,7 +279,7 @@ void Client::show_dialog(Dialog dialog) {
             transaction.push(edit);
         }
 
-        transaction.commit();
+        transaction.commit(this);
 
         // Set the tokenizer.
         Tokenizer tokenizer = dialog.next_token ? dialog.next_token : default_next_token;

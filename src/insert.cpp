@@ -10,7 +10,11 @@
 
 namespace mag {
 
-void insert(Buffer* buffer, Window_Unified* window, SSOStr value, Command_Function committer) {
+void insert(Client* client,
+            Buffer* buffer,
+            Window_Unified* window,
+            SSOStr value,
+            Command_Function committer) {
     ZoneScoped;
 
     window->update_cursors(buffer);
@@ -28,14 +32,21 @@ void insert(Buffer* buffer, Window_Unified* window, SSOStr value, Command_Functi
         transaction.push(edit);
     }
 
-    transaction.commit(committer);
+    transaction.commit(client, committer);
 }
 
-void insert_char(Buffer* buffer, Window_Unified* window, char code, Command_Function committer) {
-    insert(buffer, window, SSOStr::from_char(code), committer);
+void insert_char(Client* client,
+                 Buffer* buffer,
+                 Window_Unified* window,
+                 char code,
+                 Command_Function committer) {
+    insert(client, buffer, window, SSOStr::from_char(code), committer);
 }
 
-void delete_regions(Buffer* buffer, Window_Unified* window, Command_Function committer) {
+void delete_regions(Client* client,
+                    Buffer* buffer,
+                    Window_Unified* window,
+                    Command_Function committer) {
     ZoneScoped;
 
     Transaction transaction;
@@ -57,7 +68,7 @@ void delete_regions(Buffer* buffer, Window_Unified* window, Command_Function com
         transaction.push(edit);
     }
 
-    transaction.commit(committer);
+    transaction.commit(client, committer);
 }
 
 static bool is_word_char(char c) {
@@ -71,10 +82,13 @@ static bool can_merge_insert(cz::Str str, char code) {
 void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    do_command_insert_char(buffer, window, source);
+    do_command_insert_char(source.client, buffer, window, source);
 }
 
-void do_command_insert_char(Buffer* buffer, Window_Unified* window, Command_Source source) {
+void do_command_insert_char(Client* client,
+                            Buffer* buffer,
+                            Window_Unified* window,
+                            Command_Source source) {
     CZ_ASSERT(source.keys[0].code <= UCHAR_MAX);
 
     char code = (char)source.keys[0].code;
@@ -82,8 +96,8 @@ void do_command_insert_char(Buffer* buffer, Window_Unified* window, Command_Sour
     // If temporarily showing marks then first delete the region then
     // type.  This makes 2 edits so you can redo inbetween these edits.
     if (window->show_marks == 2) {
-        delete_regions(buffer, window);
-        insert_char(buffer, window, code, command_insert_char);
+        delete_regions(client, buffer, window);
+        insert_char(client, buffer, window, code, command_insert_char);
         return;
     }
 
@@ -194,7 +208,7 @@ void do_command_insert_char(Buffer* buffer, Window_Unified* window, Command_Sour
             }
 
             // Don't merge edits around tab replacement.
-            transaction.commit();
+            transaction.commit(client);
             return;
         }
     }
@@ -226,13 +240,13 @@ void do_command_insert_char(Buffer* buffer, Window_Unified* window, Command_Sour
                 transaction.push(edit);
             }
 
-            transaction.commit(command_insert_char);
+            transaction.commit(source.client, command_insert_char);
 
             return;
         }
     }
 
-    insert_char(buffer, window, code, command_insert_char);
+    insert_char(source.client, buffer, window, code, command_insert_char);
 }
 
 }

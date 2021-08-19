@@ -145,7 +145,8 @@ static void parse_replacements(cz::Vector<Replacement>* replacements,
     }
 }
 
-static void parse_and_apply_replacements(Buffer_Handle* handle,
+static void parse_and_apply_replacements(Asynchronous_Job_Handler* handler,
+                                         Buffer_Handle* handle,
                                          cz::Str output_xml,
                                          size_t change_index,
                                          cz::Str* error_line) {
@@ -200,7 +201,7 @@ static void parse_and_apply_replacements(Buffer_Handle* handle,
         offset += repl->text.len - repl->length;
     }
 
-    transaction.commit();
+    transaction.commit(handler);
 
     if (error_line->len == 0) {
         save_buffer(buffer);
@@ -236,7 +237,7 @@ static Job_Tick_Result clang_format_job_tick(Asynchronous_Job_Handler* handler, 
             if (data->buffer_handle.upgrade(&handle)) {
                 CZ_DEFER(handle.drop());
                 cz::Str error_line = {};
-                parse_and_apply_replacements(handle.get(),
+                parse_and_apply_replacements(handler, handle.get(),
                                              {data->output_xml.buffer(), data->output_xml.len()},
                                              data->change_index, &error_line);
 

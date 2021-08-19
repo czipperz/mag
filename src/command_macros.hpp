@@ -74,7 +74,7 @@
             }                                                                                   \
         }                                                                                       \
                                                                                                 \
-        transaction.commit(COMMITTER);                                                          \
+        transaction.commit(source.client, COMMITTER);                                           \
     } while (0)
 
 #define DELETE_FORWARD(FUNC, COMMITTER)                                                         \
@@ -100,5 +100,5 @@
             }                                                                                   \
         }                                                                                       \
                                                                                                 \
-        transaction.commit(COMMITTER);                                                          \
+        transaction.commit(source.client, COMMITTER);                                           \
     } while (0)

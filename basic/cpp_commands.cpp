@@ -111,17 +111,17 @@ void command_comment(Editor* editor, Command_Source source) {
         }
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_comment_line_comments_only(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    generic_line_comment(buffer, window, "//", /*add=*/true);
+    generic_line_comment(source.client, buffer, window, "//", /*add=*/true);
 }
 
 void command_uncomment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    generic_line_comment(buffer, window, "//", /*add=*/false);
+    generic_line_comment(source.client, buffer, window, "//", /*add=*/false);
 }
 
 void command_reformat_comment(Editor* editor, Command_Source source) {
@@ -129,23 +129,23 @@ void command_reformat_comment(Editor* editor, Command_Source source) {
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
 
-    if (basic::reformat_at(buffer, iterator, "// ", "// ")) {
+    if (basic::reformat_at(source.client, buffer, iterator, "// ", "// ")) {
         return;
     }
 
-    if (basic::reformat_at(buffer, iterator, "/// ", "/// ")) {
+    if (basic::reformat_at(source.client, buffer, iterator, "/// ", "/// ")) {
         return;
     }
 
-    if (basic::reformat_at(buffer, iterator, "//! ", "//! ")) {
+    if (basic::reformat_at(source.client, buffer, iterator, "//! ", "//! ")) {
         return;
     }
 
-    if (basic::reformat_at(buffer, iterator, "/* ", " * ")) {
+    if (basic::reformat_at(source.client, buffer, iterator, "/* ", " * ")) {
         return;
     }
 
-    if (basic::reformat_at(buffer, iterator, "/* ", "   ")) {
+    if (basic::reformat_at(source.client, buffer, iterator, "/* ", "   ")) {
         return;
     }
 }
@@ -155,16 +155,19 @@ void command_reformat_comment_block_only(Editor* editor, Command_Source source) 
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
 
-    if (basic::reformat_at(buffer, iterator, "/* ", " * ")) {
+    if (basic::reformat_at(source.client, buffer, iterator, "/* ", " * ")) {
         return;
     }
 
-    if (basic::reformat_at(buffer, iterator, "/* ", "   ")) {
+    if (basic::reformat_at(source.client, buffer, iterator, "/* ", "   ")) {
         return;
     }
 }
 
-static void change_indirection(Buffer* buffer, cz::Slice<Cursor> cursors, bool increase) {
+static void change_indirection(Client* client,
+                               Buffer* buffer,
+                               cz::Slice<Cursor> cursors,
+                               bool increase) {
     Transaction transaction = {};
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
@@ -350,17 +353,17 @@ static void change_indirection(Buffer* buffer, cz::Slice<Cursor> cursors, bool i
         }
     }
 
-    transaction.commit();
+    transaction.commit(client);
 }
 
 void command_make_direct(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    change_indirection(buffer, window->cursors, false);
+    change_indirection(source.client, buffer, window->cursors, false);
 }
 
 void command_make_indirect(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    change_indirection(buffer, window->cursors, true);
+    change_indirection(source.client, buffer, window->cursors, true);
 }
 
 void command_extract_variable(Editor* editor, Command_Source source) {
@@ -439,7 +442,7 @@ void command_extract_variable(Editor* editor, Command_Source source) {
         offset -= remove_region.value.len();
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 
     window->update_cursors(buffer);
 

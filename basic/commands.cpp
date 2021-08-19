@@ -426,7 +426,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
 
     // If temporarily showing marks then just delete the region instead.
     if (window->show_marks == 2) {
-        delete_regions(buffer, window);
+        delete_regions(source.client, buffer, window);
         window->show_marks = false;
         return;
     }
@@ -495,7 +495,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
         }
 
         // Don't merge edits around tab replacement.
-        transaction.commit();
+        transaction.commit(source.client);
         return;
     }
 
@@ -541,7 +541,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
                 transaction.push(edit);
             }
 
-            transaction.commit(command_delete_backward_char);
+            transaction.commit(source.client, command_delete_backward_char);
             return;
         }
     }
@@ -587,7 +587,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
                 edit.flags = Edit::REMOVE_AFTER_POSITION;
                 transaction.push(edit);
             }
-            transaction.commit(command_delete_forward_char);
+            transaction.commit(source.client, command_delete_forward_char);
             return;
         }
     }
@@ -631,7 +631,7 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
         transaction.push(insert_before);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_transpose_words(Editor* editor, Command_Source source) {
@@ -691,19 +691,19 @@ void command_transpose_words(Editor* editor, Command_Source source) {
         cursors[c].point = end2.position;
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_open_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    insert_char(buffer, window, '\n');
+    insert_char(source.client, buffer, window, '\n');
     window->update_cursors(buffer);
     TRANSFORM_POINTS(backward_char);
 }
 
 void command_insert_newline_no_indent(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    insert_char(buffer, window, '\n');
+    insert_char(source.client, buffer, window, '\n');
 }
 
 void command_duplicate_line(Editor* editor, Command_Source source) {
@@ -745,7 +745,7 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_delete_line(Editor* editor, Command_Source source) {
@@ -773,7 +773,7 @@ void command_delete_line(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_delete_end_of_line(Editor* editor, Command_Source source) {
@@ -799,7 +799,7 @@ void command_delete_end_of_line(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_undo(Editor* editor, Command_Source source) {
@@ -1416,7 +1416,7 @@ void command_cursors_align(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
-    transaction.commit(command_cursors_align);
+    transaction.commit(source.client, command_cursors_align);
 }
 
 void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source) {
@@ -1889,7 +1889,7 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
     edit.flags = Edit::REMOVE;
     transaction.push(edit);
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_mark_buffer(Editor* editor, Command_Source source) {
@@ -1908,7 +1908,7 @@ void submit_mini_buffer(Editor* editor, Client* client) {
     {
         Window_Unified* window = client->mini_buffer_window();
         WITH_WINDOW_BUFFER(window);
-        mini_buffer_contents = clear_buffer(buffer);
+        mini_buffer_contents = clear_buffer(client, buffer);
     }
 
     {
@@ -1970,7 +1970,7 @@ void command_insert_home_directory(Editor* editor, Command_Source source) {
         offset += str.len;
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_increase_font_size(Editor* editor, Command_Source source) {
@@ -1994,12 +1994,12 @@ void command_show_date_of_build(Editor* editor, Command_Source source) {
 
 void command_comment_hash(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    generic_line_comment(buffer, window, "#", /*add=*/true);
+    generic_line_comment(source.client, buffer, window, "#", /*add=*/true);
 }
 
 void command_uncomment_hash(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    generic_line_comment(buffer, window, "#", /*add=*/false);
+    generic_line_comment(source.client, buffer, window, "#", /*add=*/false);
 }
 
 static void slice_and_add_line(Contents_Iterator sol,
@@ -2060,7 +2060,7 @@ static void set_line_to_sorted(SSOStr sorted_line,
     *offset += insert_new_line.value.len() - remove_old_line.value.len();
 }
 
-static void sort_lines(Buffer* buffer, Window_Unified* window, int order) {
+static void sort_lines(Client* client, Buffer* buffer, Window_Unified* window, int order) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
@@ -2132,22 +2132,22 @@ static void sort_lines(Buffer* buffer, Window_Unified* window, int order) {
         }
     }
 
-    transaction.commit();
+    transaction.commit(client);
 }
 
 void command_sort_lines_ascending(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    sort_lines(buffer, window, 0);
+    sort_lines(source.client, buffer, window, 0);
 }
 
 void command_sort_lines_descending(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    sort_lines(buffer, window, 1);
+    sort_lines(source.client, buffer, window, 1);
 }
 
 void command_flip_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    sort_lines(buffer, window, 2);
+    sort_lines(source.client, buffer, window, 2);
 }
 
 void command_restore_last_save_point(Editor* editor, Command_Source source) {

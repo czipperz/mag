@@ -49,7 +49,7 @@ void command_insert_completion(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_insert_completion_and_submit_mini_buffer(Editor* editor, Command_Source source) {

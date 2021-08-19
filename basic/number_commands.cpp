@@ -40,10 +40,10 @@ void command_insert_numbers(Editor* editor, Command_Source source) {
         offset += len;
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
-static void change_numbers(Buffer* buffer, Window_Unified* window, int difference) {
+static void change_numbers(Client* client, Buffer* buffer, Window_Unified* window, int difference) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
@@ -109,17 +109,17 @@ static void change_numbers(Buffer* buffer, Window_Unified* window, int differenc
         offset -= j;
     }
 
-    transaction.commit();
+    transaction.commit(client);
 }
 
 void command_increment_numbers(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    change_numbers(buffer, window, +1);
+    change_numbers(source.client, buffer, window, +1);
 }
 
 void command_decrement_numbers(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    change_numbers(buffer, window, -1);
+    change_numbers(source.client, buffer, window, -1);
 }
 
 static void command_prompt_increase_numbers_callback(Editor* editor,
@@ -142,7 +142,7 @@ static void command_prompt_increase_numbers_callback(Editor* editor,
     }
 
     WITH_SELECTED_BUFFER(client);
-    change_numbers(buffer, window, num);
+    change_numbers(client, buffer, window, num);
 }
 
 void command_prompt_increase_numbers(Editor* editor, Command_Source source) {
@@ -158,7 +158,8 @@ void command_insert_letters(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     if (cursors.len > 26) {
-        source.client->show_message("command_insert_letters only supports up to 26 cursors as of right now");
+        source.client->show_message(
+            "command_insert_letters only supports up to 26 cursors as of right now");
         return;
     }
 
@@ -177,7 +178,7 @@ void command_insert_letters(Editor* editor, Command_Source source) {
         offset += 1;
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 }

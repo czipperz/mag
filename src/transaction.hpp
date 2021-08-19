@@ -10,6 +10,8 @@ namespace mag {
 
 struct Buffer;
 struct Edit;
+struct Client;
+struct Asynchronous_Job_Handler;
 
 /// A builder for a `Commit`.  The .  The `Buffer` must remain
 /// locked during the lifetime of the `Transaction`!
@@ -32,7 +34,9 @@ struct Transaction {
     SSOStr last_edit_value() const;
 
     /// Commit the changes to the buffer.
-    void commit(Command_Function committer = nullptr);
+    bool commit(Client* client, Command_Function committer = nullptr);
+    bool commit(Asynchronous_Job_Handler* handler, Command_Function committer = nullptr);
+    const char* commit_get_message(Command_Function committer = nullptr);
 };
 
 }

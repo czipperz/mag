@@ -236,7 +236,7 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
         transaction.push(edit);
     }
 
-    transaction.commit();
+    transaction.commit(client);
     return 0;
 }
 

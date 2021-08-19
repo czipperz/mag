@@ -67,7 +67,7 @@ void command_save_and_quit(Editor* editor, Command_Source source) {
 void command_abort_and_quit(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
-        clear_buffer(buffer);
+        clear_buffer(source.client, buffer);
 
         if (!save_buffer(buffer)) {
             source.client->show_message("Error saving file");

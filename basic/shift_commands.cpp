@@ -113,7 +113,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
         transaction.push(insert);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_shift_line_backward(Editor* editor, Command_Source source) {
@@ -223,7 +223,7 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
         transaction.push(remove);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 }

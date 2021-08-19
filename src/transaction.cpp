@@ -2,7 +2,9 @@
 
 #include <cz/heap.hpp>
 #include "buffer.hpp"
+#include "client.hpp"
 #include "commit.hpp"
+#include "job.hpp"
 
 namespace mag {
 
@@ -33,13 +35,38 @@ SSOStr Transaction::last_edit_value() const {
     return edits.last().value;
 }
 
-void Transaction::commit(Command_Function committer) {
-    // Only commit if edits were made.
-    if (edits.len() > 0) {
-        if (buffer->commit(edits.clone(buffer->commit_buffer_array.allocator()), committer)) {
-            committed = true;
-        }
+bool Transaction::commit(Client* client, Command_Function committer) {
+    const char* message = commit_get_message(committer);
+    if (message) {
+        client->show_message(message);
     }
+    return message == nullptr;
+}
+bool Transaction::commit(Asynchronous_Job_Handler* handler, Command_Function committer) {
+    const char* message = commit_get_message(committer);
+    if (message) {
+        handler->show_message(message);
+    }
+    return message == nullptr;
+}
+
+const char* Transaction::commit_get_message(Command_Function committer) {
+    // Only commit if edits were made.
+    if (edits.len() == 0) {
+        return nullptr;
+    }
+
+    if (buffer->read_only) {
+        return "Buffer is read only";
+    }
+
+    auto edits_clone = edits.clone(buffer->commit_buffer_array.allocator());
+    if (!buffer->commit(edits_clone, committer)) {
+        return "Error: invalid edit";
+    }
+
+    committed = true;
+    return nullptr;
 }
 
 }

@@ -51,6 +51,10 @@ void remove_line_comments(Transaction* transaction,
                           cz::Str comment_start);
 
 /// Helper routine to comment or uncomment bunch of regions / lines.
-void generic_line_comment(Buffer* buffer, Window_Unified* window, cz::Str comment_start, bool add);
+void generic_line_comment(Client* client,
+                          Buffer* buffer,
+                          Window_Unified* window,
+                          cz::Str comment_start,
+                          bool add);
 
 }

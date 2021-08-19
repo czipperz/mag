@@ -247,7 +247,7 @@ void Buffer::mark_saved() {
     initialize_file_time(this);
 }
 
-SSOStr clear_buffer(Buffer* buffer) {
+SSOStr clear_buffer(Client* client, Buffer* buffer) {
     if (buffer->contents.len == 0) {
         return {};
     }
@@ -265,7 +265,7 @@ SSOStr clear_buffer(Buffer* buffer) {
 
     SSOStr buffer_contents = transaction.last_edit_value();
 
-    transaction.commit();
+    transaction.commit(client);
 
     return buffer_contents;
 }

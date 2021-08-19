@@ -11,6 +11,7 @@ struct Buffer;
 struct Contents_Iterator;
 struct Editor;
 struct Command_Source;
+struct Client;
 
 namespace basic {
 
@@ -27,7 +28,8 @@ extern bool sentences_start_with_two_spaces;
 /// Returns `true` if the patterns match.
 ///
 /// If the range already matches the formatted output, no changes are made to the buffer.
-bool reformat_at(Buffer* buffer,
+bool reformat_at(Client* client,
+                 Buffer* buffer,
                  Contents_Iterator iterator,
                  cz::Str acceptable_start,
                  cz::Str acceptable_continuation,

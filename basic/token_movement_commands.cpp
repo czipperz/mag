@@ -596,7 +596,7 @@ void command_delete_token(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_duplicate_token(Editor* editor, Command_Source source) {
@@ -644,7 +644,7 @@ void command_duplicate_token(Editor* editor, Command_Source source) {
     }
     window->show_marks = false;
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_transpose_tokens(Editor* editor, Command_Source source) {
@@ -699,7 +699,7 @@ void command_transpose_tokens(Editor* editor, Command_Source source) {
         transaction.push(insert1);
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 }

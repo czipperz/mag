@@ -179,8 +179,8 @@ void insert_line_comments(Transaction* transaction,
             // Go to the visual column and break tabs after it.
             uint64_t offset_after = *offset;
             if (mode.comment_break_tabs) {
-                go_to_visual_column_and_break_tabs(mode, &start, visual_column, offset, &offset_after,
-                                                   transaction);
+                go_to_visual_column_and_break_tabs(mode, &start, visual_column, offset,
+                                                   &offset_after, transaction);
             } else {
                 go_to_visual_column(mode, &start, visual_column);
             }
@@ -332,7 +332,11 @@ void remove_line_comments(Transaction* transaction,
     }
 }
 
-void generic_line_comment(Buffer* buffer, Window_Unified* window, cz::Str comment_start, bool add) {
+void generic_line_comment(Client* client,
+                          Buffer* buffer,
+                          Window_Unified* window,
+                          cz::Str comment_start,
+                          bool add) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction = {};
@@ -374,7 +378,7 @@ void generic_line_comment(Buffer* buffer, Window_Unified* window, cz::Str commen
         }
     }
 
-    transaction.commit();
+    transaction.commit(client);
 }
 
 }

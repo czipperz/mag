@@ -23,7 +23,7 @@ void command_insert_open_pair(Editor* editor, Command_Source source) {
 
         // If at eob or at a space then we want to insert a pair.  Otherwise just one.
         if (!it.at_eob() && !cz::is_space(it.get())) {
-            return do_command_insert_char(buffer, window, source);
+            return do_command_insert_char(source.client, buffer, window, source);
         }
 
         Contents_Iterator token_iterator = it;
@@ -31,7 +31,7 @@ void command_insert_open_pair(Editor* editor, Command_Source source) {
         if (get_token_at_position(buffer, &token_iterator, &token)) {
             if (token.type == Token_Type::STRING || token.type == Token_Type::COMMENT ||
                 token.type == Token_Type::DOC_COMMENT) {
-                return do_command_insert_char(buffer, window, source);
+                return do_command_insert_char(source.client, buffer, window, source);
             }
         }
     }
@@ -40,11 +40,11 @@ void command_insert_open_pair(Editor* editor, Command_Source source) {
     CZ_ASSERT(key.modifiers == 0);
 
     if (key.code == '{') {
-        insert(buffer, window, SSOStr::from_constant("{}"));
+        insert(source.client, buffer, window, SSOStr::from_constant("{}"));
     } else if (key.code == '(') {
-        insert(buffer, window, SSOStr::from_constant("()"));
+        insert(source.client, buffer, window, SSOStr::from_constant("()"));
     } else if (key.code == '[') {
-        insert(buffer, window, SSOStr::from_constant("[]"));
+        insert(source.client, buffer, window, SSOStr::from_constant("[]"));
     } else {
         CZ_PANIC("command_insert_open_pair: no corresponding pair");
     }
@@ -70,7 +70,7 @@ void command_insert_close_pair(Editor* editor, Command_Source source) {
         if (get_token_at_position(buffer, &token_iterator, &token)) {
             if (token.type == Token_Type::STRING || token.type == Token_Type::COMMENT ||
                 token.type == Token_Type::DOC_COMMENT) {
-                return do_command_insert_char(buffer, window, source);
+                return do_command_insert_char(source.client, buffer, window, source);
             }
         }
     }
@@ -102,7 +102,7 @@ void command_insert_close_pair(Editor* editor, Command_Source source) {
         }
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_insert_newline_split_pairs(Editor* editor, Command_Source source) {
@@ -147,7 +147,7 @@ void command_insert_newline_split_pairs(Editor* editor, Command_Source source) {
         offset -= removed;
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 void command_insert_pair(Editor* editor, Command_Source source) {
@@ -191,7 +191,7 @@ void command_insert_pair(Editor* editor, Command_Source source) {
         ++offset;
     }
 
-    transaction.commit();
+    transaction.commit(source.client);
 }
 
 }
