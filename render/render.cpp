@@ -904,9 +904,6 @@ static void draw_buffer_decoration(Cell* cells,
                                    size_t start_col) {
     ZoneScoped;
 
-    size_t y = window->rows();
-    size_t x = 0;
-
     Face face = {};
     if (!buffer->is_unchanged()) {
         apply_face(&face, editor->theme.special_faces[Face_Type::UNSAVED_MODE_LINE]);
@@ -920,6 +917,7 @@ static void draw_buffer_decoration(Cell* cells,
     CZ_DEFER(string.drop());
     string.reserve(1024);
     buffer->render_name(cz::heap_allocator(), &string);
+    size_t starting_len = string.len();
 
     cz::append(&string, ' ');
 
@@ -934,7 +932,55 @@ static void draw_buffer_decoration(Cell* cells,
         }
     }
 
-    size_t max = cz::min<size_t>(string.len(), window->cols() - x);
+    // Attempt to shorten the start of the string.
+    if (string.len() > window->cols()) {
+        cz::Str rendered = string.slice_end(starting_len);
+        if (buffer->type == Buffer::TEMPORARY) {
+            // *identifier detail1 detail2 etc* => *identifier ...*
+            const char* space = rendered.find(' ');
+            const char* star = rendered.rfind('*');
+            if (space && star && star - (space + 1) > 3) {
+                string.remove_range(space + 1 - string.buffer(), star - string.buffer());
+                string.insert(space + 1 - string.buffer(), "...");
+                rendered.len -= star - (space + 1);
+                rendered.len += 3;
+            }
+        }
+
+        if (string.len() > window->cols() && buffer->directory.len() != 0) {
+            // *name* (/path1/path2/path3) => *name* (.../path3)
+            cz::Str dir = rendered;
+            if (buffer->type == Buffer::TEMPORARY) {
+                dir = rendered.slice_start(rendered.len - buffer->directory.len() - 1);
+                dir.len -= 2;  // remove `/)`
+            }
+
+            // Find the shortest removable portion such that it will fit.
+            const char* slash = dir.buffer;
+            while (1) {
+                slash = dir.slice_start(slash + 1).find('/');
+                if (!slash) {
+                    break;
+                }
+                if (string.len() - (slash - dir.buffer) + 3 < window->cols()) {
+                    break;
+                }
+            }
+
+            if (!slash) {
+                slash = dir.rfind('/');
+            }
+
+            if (slash && (slash - dir.buffer) > 3) {
+                string.remove_range(dir.buffer - string.buffer(), slash - string.buffer());
+                string.insert(dir.buffer - string.buffer(), "...");
+            }
+        }
+    }
+
+    size_t y = window->rows();
+    size_t x = 0;
+    size_t max = cz::min<size_t>(string.len(), window->cols());
     for (size_t i = 0; i < max; ++i) {
         SET_IND(face, string[i]);
         ++x;
