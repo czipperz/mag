@@ -9,6 +9,7 @@
 #include <cz/path.hpp>
 #include <cz/working_directory.hpp>
 #include "command_macros.hpp"
+#include "config.hpp"
 #include "file.hpp"
 #include "syntax/tokenize_buffer_name.hpp"
 #include "syntax/tokenize_path.hpp"
@@ -16,6 +17,15 @@
 
 namespace mag {
 namespace basic {
+
+static void reset_mode(Editor* editor, Buffer* buffer) {
+    buffer->mode.drop();
+    buffer->mode = {};
+
+    buffer->token_cache.reset();
+
+    custom::buffer_created_callback(editor, buffer);
+}
 
 static void command_open_file_callback(Editor* editor, Client* client, cz::Str query, void* data) {
     {
@@ -377,6 +387,51 @@ void command_save_buffer_to(Editor* editor, Command_Source source) {
     source.client->show_dialog(editor, dialog);
 
     fill_mini_buffer_with(editor, source.client, path);
+}
+
+static void command_pretend_rename_buffer_callback(Editor* editor,
+                                                   Client* client,
+                                                   cz::Str path,
+                                                   void* data) {
+    WITH_SELECTED_BUFFER(client);
+
+    cz::Str name, directory;
+    Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
+
+    Buffer::Type btype = buffer->type;
+    buffer->type = type;
+    CZ_DEFER(buffer->type = btype);
+
+    cz::String bname = buffer->name;
+    buffer->name = name.clone(cz::heap_allocator());
+    CZ_DEFER(buffer->name = bname);
+    CZ_DEFER(buffer->name.drop(cz::heap_allocator()));
+
+    cz::String bdirectory = buffer->directory;
+    buffer->directory = directory.clone(cz::heap_allocator());
+    CZ_DEFER(buffer->directory = bdirectory);
+    CZ_DEFER(buffer->directory.drop(cz::heap_allocator()));
+
+    reset_mode(editor, buffer);
+}
+
+void command_pretend_rename_buffer(Editor* editor, Command_Source source) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        path.reserve(cz::heap_allocator(), buffer->directory.len() + buffer->name.len());
+        path.append(buffer->directory);
+        path.append(buffer->name);
+    }
+
+    Dialog dialog = {};
+    dialog.prompt = "Pretend rename buffer to: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_pretend_rename_buffer_callback;
+    dialog.next_token = syntax::path_next_token;
+    dialog.mini_buffer_contents = path;
+    source.client->show_dialog(editor, dialog);
 }
 
 static void command_diff_buffer_against_callback(Editor* editor,

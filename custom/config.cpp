@@ -356,6 +356,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-x k", command_kill_buffer);
     BIND(key_map, "A-x r", command_rename_buffer);
     BIND(key_map, "A-x w", command_save_buffer_to);
+    BIND(key_map, "A-x A-r", command_pretend_rename_buffer);
 
     BIND(key_map, "A-x C-d", command_apply_diff);
 
