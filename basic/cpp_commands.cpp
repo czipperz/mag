@@ -1,6 +1,7 @@
 #include "cpp_commands.hpp"
 
 #include <cz/char_type.hpp>
+#include <cz/sort.hpp>
 #include "command_macros.hpp"
 #include "comment.hpp"
 #include "editor.hpp"
@@ -360,6 +361,102 @@ void command_make_direct(Editor* editor, Command_Source source) {
 void command_make_indirect(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     change_indirection(buffer, window->cursors, true);
+}
+
+void command_extract_variable(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    if (window->cursors.len() > 1) {
+        source.client->show_message(editor, "Multiple cursors aren't supported right now");
+        return;
+    }
+    if (!window->show_marks) {
+        source.client->show_message(editor, "Must select a region");
+        return;
+    }
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    window->show_marks = 0;
+
+    cz::Vector<uint64_t> new_cursors = {};
+    CZ_DEFER(new_cursors.drop(cz::heap_allocator()));
+    new_cursors.reserve(cz::heap_allocator(), window->cursors.len() * 2);
+
+    uint64_t offset = 0;
+    for (size_t c = 0; c < window->cursors.len(); ++c) {
+        Contents_Iterator it = buffer->contents.start();
+        it.advance_to(window->cursors[c].start());
+
+        SSOStr region =
+            buffer->contents.slice(transaction.value_allocator(), it, window->cursors[0].end());
+        uint64_t remove_position = it.position;
+
+        Edit remove_region;
+        remove_region.value = region;
+        remove_region.position = remove_position + offset;
+        remove_region.flags = Edit::REMOVE;
+        transaction.push(remove_region);
+
+        start_of_line(&it);
+        Contents_Iterator st = it;
+        forward_through_whitespace(&st);
+
+        Edit insert_indent;
+        insert_indent.value =
+            buffer->contents.slice(transaction.value_allocator(), it, st.position);
+        insert_indent.position = it.position + offset;
+        insert_indent.flags = Edit::INSERT;
+        transaction.push(insert_indent);
+        offset += insert_indent.value.len();
+
+        Edit insert_prefix;
+        insert_prefix.value = SSOStr::from_constant("auto  = ");
+        insert_prefix.position = it.position + offset;
+        insert_prefix.flags = Edit::INSERT;
+        transaction.push(insert_prefix);
+        offset += insert_prefix.value.len();
+
+        Edit insert_region;
+        insert_region.value = region;
+        insert_region.position = it.position + offset;
+        insert_region.flags = Edit::INSERT;
+        transaction.push(insert_region);
+        offset += insert_region.value.len();
+
+        Edit insert_suffix;
+        insert_suffix.value = SSOStr::from_constant(";\n");
+        insert_suffix.position = it.position + offset;
+        insert_suffix.flags = Edit::INSERT;
+        transaction.push(insert_suffix);
+        offset += insert_suffix.value.len();
+
+        new_cursors.push(insert_prefix.position + 5);
+        new_cursors.push(remove_position + offset);
+
+        offset -= remove_region.value.len();
+    }
+
+    transaction.commit();
+
+    window->update_cursors(buffer);
+
+    // Create cursors.
+    window->cursors.reserve(cz::heap_allocator(), window->cursors.len());
+    for (size_t c = 0; c < new_cursors.len() / 2; ++c) {
+        Cursor& cursor1 = window->cursors[c];
+        cursor1.point = cursor1.mark = new_cursors[c * 2];
+
+        Cursor cursor2 = cursor1;
+        cursor2.point = cursor2.mark = new_cursors[c * 2 + 1];
+        window->cursors.push(cursor2);
+    }
+
+    // Sort them since they are always out of order.
+    cz::sort(window->cursors,
+             [](Cursor* left, Cursor* right) { return left->point < right->point; });
 }
 
 }

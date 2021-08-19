@@ -28,5 +28,7 @@ void command_reformat_comment_block_only(Editor* editor, Command_Source source);
 void command_make_direct(Editor* editor, Command_Source source);
 void command_make_indirect(Editor* editor, Command_Source source);
 
+void command_extract_variable(Editor* editor, Command_Source source);
+
 }
 }
