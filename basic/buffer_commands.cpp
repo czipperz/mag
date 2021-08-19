@@ -51,23 +51,6 @@ void command_open_file(Editor* editor, Command_Source source) {
     source.client->show_dialog(editor, dialog);
 }
 
-void fill_mini_buffer_with(Editor* editor, Client* client, cz::Str default_value) {
-    Window_Unified* window = client->mini_buffer_window();
-    WITH_WINDOW_BUFFER(window);
-
-    Transaction transaction;
-    transaction.init(buffer);
-    CZ_DEFER(transaction.drop());
-
-    Edit edit;
-    edit.value = SSOStr::as_duplicate(transaction.value_allocator(), default_value);
-    edit.position = 0;
-    edit.flags = Edit::INSERT;
-    transaction.push(edit);
-
-    transaction.commit();
-}
-
 static void command_save_file_callback(Editor* editor, Client* client, cz::Str, void*) {
     cz::String directory = {};
     CZ_DEFER(directory.drop(cz::heap_allocator()));
@@ -336,9 +319,8 @@ void command_rename_buffer(Editor* editor, Command_Source source) {
     dialog.completion_engine = is_temporary ? no_completion_engine : file_completion_engine;
     dialog.response_callback = command_rename_buffer_callback;
     dialog.next_token = syntax::path_next_token;
+    dialog.mini_buffer_contents = path;
     source.client->show_dialog(editor, dialog);
-
-    fill_mini_buffer_with(editor, source.client, path);
 }
 
 static void command_save_buffer_to_callback(Editor* editor,
@@ -388,9 +370,8 @@ void command_save_buffer_to(Editor* editor, Command_Source source) {
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_save_buffer_to_callback;
     dialog.next_token = syntax::path_next_token;
+    dialog.mini_buffer_contents = path;
     source.client->show_dialog(editor, dialog);
-
-    fill_mini_buffer_with(editor, source.client, path);
 }
 
 static void command_pretend_rename_buffer_callback(Editor* editor,
@@ -482,9 +463,8 @@ void command_diff_buffer_against(Editor* editor, Command_Source source) {
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_diff_buffer_against_callback;
     dialog.next_token = syntax::path_next_token;
+    dialog.mini_buffer_contents = path;
     source.client->show_dialog(editor, dialog);
-
-    fill_mini_buffer_with(editor, source.client, path);
 }
 
 }
