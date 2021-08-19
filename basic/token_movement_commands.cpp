@@ -682,8 +682,7 @@ void command_transpose_tokens(Editor* editor, Command_Source source) {
         it.go_to(before_token.start);
         SSOStr value1 = buffer->contents.slice(transaction.value_allocator(), it, before_token.end);
         it.advance_to(after_token.start);
-        SSOStr value2 = buffer->contents.slice(transaction.value_allocator(), it,
-                                               after_token.end);
+        SSOStr value2 = buffer->contents.slice(transaction.value_allocator(), it, after_token.end);
 
         Edit remove1;
         remove1.value = value1;
