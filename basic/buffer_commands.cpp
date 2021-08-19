@@ -48,7 +48,7 @@ void command_open_file(Editor* editor, Command_Source source) {
     dialog.response_callback = command_open_file_callback;
     dialog.mini_buffer_contents = selected_window_directory;
     dialog.next_token = syntax::path_next_token;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static void command_save_file_callback(Editor* editor, Client* client, cz::Str, void*) {
@@ -106,12 +106,12 @@ static void command_save_file_callback(Editor* editor, Client* client, cz::Str, 
         CZ_DEBUG_ASSERT(*directory.end() == '\0');
 
         if (!cz::file::create_directory(directory.buffer())) {
-            client->show_message(editor, "Failed to create parent directory");
+            client->show_message("Failed to create parent directory");
         }
     }
 
     if (!save_buffer(buffer)) {
-        client->show_message(editor, "Error saving file");
+        client->show_message("Error saving file");
     }
 }
 
@@ -119,7 +119,7 @@ void command_save_file(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     if (buffer->type != Buffer::FILE) {
-        source.client->show_message(editor, "Buffer must be associated with a file");
+        source.client->show_message("Buffer must be associated with a file");
         return;
     }
 
@@ -127,12 +127,12 @@ void command_save_file(Editor* editor, Command_Source source) {
         Dialog dialog = {};
         dialog.prompt = "Submit to confirm create directory ";
         dialog.response_callback = command_save_file_callback;
-        source.client->show_dialog(editor, dialog);
+        source.client->show_dialog(dialog);
         return;
     }
 
     if (!save_buffer(buffer)) {
-        source.client->show_message(editor, "Error saving file");
+        source.client->show_message("Error saving file");
     }
 }
 
@@ -148,7 +148,7 @@ static void command_switch_buffer_callback(Editor* editor,
     }
 
     if (!find_buffer_by_path(editor, client, path, &handle)) {
-        client->show_message(editor, "Couldn't find the buffer to switch to");
+        client->show_message("Couldn't find the buffer to switch to");
         return;
     }
 
@@ -167,7 +167,7 @@ void command_switch_buffer(Editor* editor, Command_Source source) {
     dialog.completion_engine = buffer_completion_engine;
     dialog.response_callback = command_switch_buffer_callback;
     dialog.next_token = syntax::buffer_name_next_token;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static int remove_windows_matching(Window** w,
@@ -255,7 +255,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
         buffer_handle = client->selected_normal_window->buffer_handle;
     } else {
         if (!find_buffer_by_path(editor, client, path, &buffer_handle)) {
-            client->show_message(editor, "Couldn't find the buffer to kill");
+            client->show_message("Couldn't find the buffer to kill");
             return;
         }
     }
@@ -280,7 +280,7 @@ void command_kill_buffer(Editor* editor, Command_Source source) {
     dialog.completion_engine = buffer_completion_engine;
     dialog.response_callback = command_kill_buffer_callback;
     dialog.next_token = syntax::buffer_name_next_token;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static void command_rename_buffer_callback(Editor* editor,
@@ -320,7 +320,7 @@ void command_rename_buffer(Editor* editor, Command_Source source) {
     dialog.response_callback = command_rename_buffer_callback;
     dialog.next_token = syntax::path_next_token;
     dialog.mini_buffer_contents = path;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static void command_save_buffer_to_callback(Editor* editor,
@@ -331,7 +331,7 @@ static void command_save_buffer_to_callback(Editor* editor,
     cz::Str directory;
     Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
     if (type != Buffer::FILE) {
-        client->show_message(editor, "Buffer name must be for a file");
+        client->show_message("Buffer name must be for a file");
         return;
     }
 
@@ -349,7 +349,7 @@ static void command_save_buffer_to_callback(Editor* editor,
     buffer->saved_commit_id = {{(uint64_t)-1}};
 
     if (!save_buffer(buffer)) {
-        client->show_message(editor, "Error saving file");
+        client->show_message("Error saving file");
     }
 
     reset_mode(editor, buffer);
@@ -371,7 +371,7 @@ void command_save_buffer_to(Editor* editor, Command_Source source) {
     dialog.response_callback = command_save_buffer_to_callback;
     dialog.next_token = syntax::path_next_token;
     dialog.mini_buffer_contents = path;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static void command_pretend_rename_buffer_callback(Editor* editor,
@@ -416,7 +416,7 @@ void command_pretend_rename_buffer(Editor* editor, Command_Source source) {
     dialog.response_callback = command_pretend_rename_buffer_callback;
     dialog.next_token = syntax::path_next_token;
     dialog.mini_buffer_contents = path;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static void command_diff_buffer_against_callback(Editor* editor,
@@ -427,12 +427,12 @@ static void command_diff_buffer_against_callback(Editor* editor,
 
     char temp_file_buffer[L_tmpnam];
     if (!tmpnam(temp_file_buffer)) {
-        client->show_message(editor, "No temporary file available");
+        client->show_message("No temporary file available");
         return;
     }
 
     if (!save_buffer_to(buffer, temp_file_buffer)) {
-        client->show_message(editor, "Couldn't save to temporary file");
+        client->show_message("Couldn't save to temporary file");
         return;
     }
 
@@ -464,7 +464,7 @@ void command_diff_buffer_against(Editor* editor, Command_Source source) {
     dialog.response_callback = command_diff_buffer_against_callback;
     dialog.next_token = syntax::path_next_token;
     dialog.mini_buffer_contents = path;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 }

@@ -306,7 +306,7 @@ bool Server::run_synchronous_jobs(Client* client) {
     bool ran_any_jobs = false;
 
     if (pending_message.len() > 0) {
-        client->show_message(&editor, pending_message);
+        client->show_message(pending_message);
         pending_message.set_len(0);
     }
 
@@ -404,7 +404,7 @@ static void run_command(Command command, Editor* editor, Command_Source source) 
 
         command.function(editor, source);
     } catch (std::exception& ex) {
-        source.client->show_message(editor, ex.what());
+        source.client->show_message(ex.what());
     }
 
 #ifndef NDEBUG

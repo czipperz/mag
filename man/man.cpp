@@ -27,7 +27,7 @@ bool man_completion_engine(Editor*, Completion_Engine_Context* context, bool is_
     return false;
 }
 void command_man(Editor* editor, Command_Source source) {
-    source.client->show_message(editor, "Error: man isn't supported on Windows");
+    source.client->show_message("Error: man isn't supported on Windows");
     return;
 }
 
@@ -391,20 +391,20 @@ static void command_man_response(Editor* editor, Client* client, cz::Str query, 
     cz::String contents = {};
     CZ_DEFER(contents.drop(cz::heap_allocator()));
     if (const char* message = find_and_load_man_page(query, &page, &contents)) {
-        client->show_message(editor, message);
+        client->show_message(message);
         return;
     }
 
     char temp_file_buffer[L_tmpnam];
     if (!tmpnam(temp_file_buffer)) {
-        client->show_message(editor, "Error: Failed to allocate a temp file");
+        client->show_message("Error: Failed to allocate a temp file");
         return;
     }
 
     {
         cz::Output_File out;
         if (!out.open(temp_file_buffer)) {
-            client->show_message(editor, "Error: Failed to write temp file");
+            client->show_message("Error: Failed to write temp file");
             return;
         }
         CZ_DEFER(out.close());
@@ -428,14 +428,14 @@ static void command_man_response(Editor* editor, Client* client, cz::Str query, 
     cz::Process_Options options;
     // TODO: don't open the file twice, instead open it once in read/write mode and reset the head.
     if (!options.std_in.open(temp_file_buffer)) {
-        client->show_message(editor, "Error: Failed to read temp file");
+        client->show_message("Error: Failed to read temp file");
         return;
     }
     CZ_DEFER(options.std_in.close());
 
     cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
-        client->show_message(editor, "Error: I/O operation failed");
+        client->show_message("Error: I/O operation failed");
         return;
     }
     CZ_DEFER(options.std_out.close());
@@ -444,7 +444,7 @@ static void command_man_response(Editor* editor, Client* client, cz::Str query, 
 
     cz::Process process;
     if (!process.launch_program(args, &options)) {
-        client->show_message(editor, "Error: Couldn't show man page");
+        client->show_message("Error: Couldn't show man page");
         stdout_read.close();
         return;
     }

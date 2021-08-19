@@ -71,7 +71,7 @@ static void reload_directory_window(Editor* editor,
     const size_t offset = 22;
 
     if (reload_directory_buffer(buffer).is_err()) {
-        client->show_message(editor, "Couldn't reload directory");
+        client->show_message("Couldn't reload directory");
         return;
     }
 
@@ -253,12 +253,12 @@ static void command_directory_delete_path_callback(Editor* editor, Client* clien
 
     WITH_SELECTED_BUFFER(client);
     if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
-        client->show_message(editor, "Cursor not on a valid path");
+        client->show_message("Cursor not on a valid path");
         return;
     }
 
     if (remove_path(&path).is_err()) {
-        client->show_message(editor, "Couldn't delete path");
+        client->show_message("Couldn't delete path");
         return;
     }
 }
@@ -267,7 +267,7 @@ void command_directory_delete_path(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Submit to confirm delete path: ";
     dialog.response_callback = command_directory_delete_path_callback;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static cz::Result copy_path(cz::String* path, cz::String* new_path) {
@@ -350,7 +350,7 @@ static void command_directory_copy_path_callback(Editor* editor,
     {
         WITH_CONST_SELECTED_BUFFER(client);
         if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
-            client->show_message(editor, "Cursor not on a valid path");
+            client->show_message("Cursor not on a valid path");
             return;
         }
 
@@ -370,7 +370,7 @@ static void command_directory_copy_path_callback(Editor* editor,
     }
 
     if (copy_path(&path, &new_path).is_err()) {
-        client->show_message(editor, "Couldn't copy path");
+        client->show_message("Couldn't copy path");
         return;
     }
 }
@@ -381,7 +381,7 @@ void command_directory_copy_path(Editor* editor, Command_Source source) {
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
         if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
-            source.client->show_message(editor, "Cursor not on a valid path");
+            source.client->show_message("Cursor not on a valid path");
             return;
         }
     }
@@ -392,7 +392,7 @@ void command_directory_copy_path(Editor* editor, Command_Source source) {
     dialog.response_callback = command_directory_copy_path_callback;
     dialog.mini_buffer_contents = path;
     dialog.next_token = syntax::path_next_token;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static void command_directory_rename_path_callback(Editor* editor,
@@ -407,7 +407,7 @@ static void command_directory_rename_path_callback(Editor* editor,
     {
         WITH_CONST_SELECTED_BUFFER(client);
         if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
-            client->show_message(editor, "Cursor not on a valid path");
+            client->show_message("Cursor not on a valid path");
             return;
         }
 
@@ -427,7 +427,7 @@ static void command_directory_rename_path_callback(Editor* editor,
     }
 
     if (rename(path.buffer(), new_path.buffer()) != 0) {
-        client->show_message(editor, "Couldn't rename path");
+        client->show_message("Couldn't rename path");
         return;
     }
 }
@@ -438,7 +438,7 @@ void command_directory_rename_path(Editor* editor, Command_Source source) {
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
         if (!get_path(buffer, &path, window->cursors[window->selected_cursor].point)) {
-            source.client->show_message(editor, "Cursor not on a valid path");
+            source.client->show_message("Cursor not on a valid path");
             return;
         }
     }
@@ -449,7 +449,7 @@ void command_directory_rename_path(Editor* editor, Command_Source source) {
     dialog.response_callback = command_directory_rename_path_callback;
     dialog.mini_buffer_contents = path;
     dialog.next_token = syntax::path_next_token;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 void command_directory_open_path(Editor* editor, Command_Source source) {
@@ -521,7 +521,7 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
         string.reserve(cz::heap_allocator(), prefix.len + path.len());
         string.append(prefix);
         string.append(path);
-        source.client->show_message(editor, string);
+        source.client->show_message(string);
         return;
     }
 
@@ -562,7 +562,7 @@ void launch_terminal_in(Editor* editor, Client* client, const char* directory) {
         string.append(terminal_script_str);
         string.append(infix);
         string.append(directory_str);
-        client->show_message(editor, string);
+        client->show_message(string);
         return;
     }
 
@@ -589,9 +589,9 @@ static void command_create_directory_callback(Editor* editor,
 
     int res = cz::file::create_directory(new_path.buffer());
     if (res == 1) {
-        client->show_message(editor, "Couldn't create directory");
+        client->show_message("Couldn't create directory");
     } else if (res == 2) {
-        client->show_message(editor, "Directory already exists");
+        client->show_message("Directory already exists");
     }
 }
 
@@ -607,7 +607,7 @@ void command_create_directory(Editor* editor, Command_Source source) {
     dialog.response_callback = command_create_directory_callback;
     dialog.mini_buffer_contents = selected_window_directory;
     dialog.next_token = syntax::path_next_token;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 }

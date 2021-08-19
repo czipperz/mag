@@ -74,7 +74,7 @@ void command_search_in_current_directory_prompt(Editor* editor, Command_Source s
     dialog.prompt = "Search in current directory: ";
     dialog.response_callback = command_search_in_current_directory_callback;
     dialog.mini_buffer_contents = selected_region;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static void command_search_in_version_control_callback(Editor* editor,
@@ -103,7 +103,7 @@ void command_search_in_version_control_prompt(Editor* editor, Command_Source sou
     dialog.prompt = "Search in version control: ";
     dialog.response_callback = command_search_in_version_control_callback;
     dialog.mini_buffer_contents = selected_region;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 template <class Copy_Directory>
@@ -127,7 +127,7 @@ static void search_token_at_position(Editor* editor,
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
         Token token;
         if (!get_token_at_position(buffer, &iterator, &token)) {
-            client->show_message(editor, "Cursor is not positioned at a token");
+            client->show_message("Cursor is not positioned at a token");
             return;
         }
 

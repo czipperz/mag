@@ -562,7 +562,7 @@ void command_recapitalize_token_prompt(Editor* editor, Command_Source source) {
     dialog.completion_engine = recapitalize_to_completion_engine;
     dialog.response_callback = command_recapitalize_token_prompt_callback;
     dialog.mini_buffer_contents = "(";
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 void command_recapitalize_token_to_camel(Editor* editor, Command_Source source) {

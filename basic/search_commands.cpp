@@ -169,7 +169,7 @@ static void search_open_next_no_swap(Editor* editor, Client* client) {
     {
         WITH_CONST_SELECTED_BUFFER(client);
         if (buffer->mode.next_token != syntax::search_next_token) {
-            client->show_message(editor, "Error: trying to parse buffer not in search mode");
+            client->show_message("Error: trying to parse buffer not in search mode");
             return;
         }
 
@@ -212,7 +212,7 @@ static void search_open_previous_no_swap(Editor* editor, Client* client) {
     {
         WITH_CONST_SELECTED_BUFFER(client);
         if (buffer->mode.next_token != syntax::search_next_token) {
-            client->show_message(editor, "Error: trying to parse buffer not in search mode");
+            client->show_message("Error: trying to parse buffer not in search mode");
             return;
         }
 

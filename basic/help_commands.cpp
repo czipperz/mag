@@ -177,7 +177,7 @@ static void command_run_command_by_name_callback(Editor* editor,
     }
 
     if (!command) {
-        client->show_message(editor, "No command found by that name");
+        client->show_message("No command found by that name");
         return;
     }
 
@@ -215,7 +215,7 @@ void command_run_command_by_name(Editor* editor, Command_Source source) {
     dialog.completion_engine = command_completion_engine;
     dialog.response_callback = command_run_command_by_name_callback;
     dialog.next_token = formatted_command_next_token;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 void command_go_to_key_map_binding(Editor* editor, Command_Source source) {

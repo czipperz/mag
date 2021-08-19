@@ -20,7 +20,7 @@ bool copy_version_control_directory(Editor* editor,
                                     cz::String* directory) {
     if (!version_control::get_root_directory(editor, client, buffer->directory.buffer(),
                                              cz::heap_allocator(), directory)) {
-        client->show_message(editor, "No version control repository found");
+        client->show_message("No version control repository found");
         return false;
     }
 

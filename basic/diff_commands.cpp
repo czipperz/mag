@@ -25,7 +25,7 @@ static void command_apply_diff_callback(Editor* editor,
 
     cz::Input_File file;
     if (!file.open(path.buffer())) {
-        client->show_message(editor, "Error opening diff file");
+        client->show_message("Error opening diff file");
         return;
     }
     CZ_DEFER(file.close());
@@ -40,7 +40,7 @@ void command_apply_diff(Editor* editor, Command_Source source) {
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_apply_diff_callback;
     dialog.next_token = syntax::path_next_token;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 }

@@ -30,7 +30,7 @@ bool get_root_directory(Editor* editor,
     CZ_DEFER(temp.drop(cz::heap_allocator()));
 
     if (cz::path::make_absolute(dir_cstr, cz::heap_allocator(), &temp).is_err()) {
-        client->show_message(editor, "Failed to get working directory");
+        client->show_message("Failed to get working directory");
         return false;
     }
 
@@ -56,7 +56,7 @@ void command_save_and_quit(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
         if (!save_buffer(buffer)) {
-            source.client->show_message(editor, "Error saving file");
+            source.client->show_message("Error saving file");
             return;
         }
     }
@@ -70,7 +70,7 @@ void command_abort_and_quit(Editor* editor, Command_Source source) {
         clear_buffer(buffer);
 
         if (!save_buffer(buffer)) {
-            source.client->show_message(editor, "Error saving file");
+            source.client->show_message("Error saving file");
             return;
         }
     }

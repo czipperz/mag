@@ -1166,7 +1166,7 @@ void run(Server* server, Client* client) {
             }
         }
 
-        client->update_mini_buffer_completion_cache(&server->editor);
+        client->update_mini_buffer_completion_cache();
         load_mini_buffer_completion_cache(server, client);
 
         bool redrew_this_time = false;

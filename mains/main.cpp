@@ -57,7 +57,7 @@ static void open_file_tiling(Editor* editor,
                              uint64_t line,
                              uint64_t column) {
     if (arg.len == 0) {
-        client->show_message(editor, "File path must not be empty");
+        client->show_message("File path must not be empty");
         return;
     }
 

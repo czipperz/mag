@@ -368,7 +368,7 @@ static void find_file(Editor* editor,
     dialog.response_callback = command_find_file_response;
     dialog.response_callback_data = directory.buffer();
     dialog.next_token = syntax::path_next_token;
-    client->show_dialog(editor, dialog);
+    client->show_dialog(dialog);
 
     auto data = cz::heap_allocator().alloc<Find_File_Completion_Engine_Data>();
     CZ_ASSERT(data);

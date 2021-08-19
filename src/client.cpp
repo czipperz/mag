@@ -197,7 +197,7 @@ void Client::replace_window(Window* o, Window* n) {
     n->set_size(o->total_rows, o->total_cols);
 }
 
-void Client::set_prompt_text(Editor* editor, cz::Str text) {
+void Client::set_prompt_text(cz::Str text) {
     WITH_BUFFER_HANDLE(messages_buffer_handle);
 
     cz::Date date = cz::time_t_to_date_local(time(nullptr));
@@ -214,14 +214,14 @@ void Client::set_prompt_text(Editor* editor, cz::Str text) {
     buffer->contents.append("\n");
 }
 
-void Client::show_message(Editor* editor, cz::Str text) {
+void Client::show_message(cz::Str text) {
     _message = {};
-    set_prompt_text(editor, text);
+    set_prompt_text(text);
     _message.tag = Message::SHOW;
     _select_mini_buffer = false;
 }
 
-static void setup_completion_cache(Client* client, Editor* editor) {
+static void setup_completion_cache(Client* client) {
     ZoneScoped;
 
     Completion_Cache* completion_cache = &client->mini_buffer_completion_cache;
@@ -234,13 +234,13 @@ static void setup_completion_cache(Client* client, Editor* editor) {
     Completion_Engine engine = client->_message.completion_engine;
     completion_cache->set_engine(engine);
 
-    client->update_mini_buffer_completion_cache(editor);
+    client->update_mini_buffer_completion_cache();
 
     // Reset the state because it may get updated by updating the completion cache.
     completion_cache->state = Completion_Cache::INITIAL;
 }
 
-void Client::update_mini_buffer_completion_cache(Editor* editor) {
+void Client::update_mini_buffer_completion_cache() {
     WITH_WINDOW_BUFFER(mini_buffer_window());
 
     if (mini_buffer_completion_cache.update(buffer->changes.len())) {
@@ -249,7 +249,7 @@ void Client::update_mini_buffer_completion_cache(Editor* editor) {
     }
 }
 
-void Client::show_dialog(Editor* editor, Dialog dialog) {
+void Client::show_dialog(Dialog dialog) {
     dealloc_message();
 
     {
@@ -286,7 +286,7 @@ void Client::show_dialog(Editor* editor, Dialog dialog) {
         buffer->set_tokenizer(tokenizer);
     }
 
-    show_message(editor, dialog.prompt);
+    show_message(dialog.prompt);
     _message.tag = Message::RESPOND;
     _message.completion_engine = dialog.completion_engine;
     _message.response_callback = dialog.response_callback;
@@ -295,7 +295,7 @@ void Client::show_dialog(Editor* editor, Dialog dialog) {
     _message.response_callback_data = dialog.response_callback_data;
     _select_mini_buffer = true;
 
-    setup_completion_cache(this, editor);
+    setup_completion_cache(this);
 }
 
 }

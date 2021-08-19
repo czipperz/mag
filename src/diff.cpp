@@ -218,10 +218,10 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
 
     int ret = parse_file(buffer->contents.start(), file, &edits);
     if (ret < 0) {
-        client->show_message(editor, "Error reading diff file");
+        client->show_message("Error reading diff file");
         return ret;
     } else if (ret > 0) {
-        client->show_message(editor, "Error diff file is truncated");
+        client->show_message("Error diff file is truncated");
         return ret;
     }
 
@@ -243,7 +243,7 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
 void reload_file(Editor* editor, Client* client, Buffer* buffer) {
     if (buffer->type == Buffer::DIRECTORY) {
         if (reload_directory_buffer(buffer).is_err()) {
-            client->show_message(editor, "Couldn't reload directory");
+            client->show_message("Couldn't reload directory");
         }
         return;
     }
@@ -257,13 +257,13 @@ void reload_file(Editor* editor, Client* client, Buffer* buffer) {
 
         cz::Process_Options options;
         if (!save_buffer_to_temp_file(buffer, &options.std_in)) {
-            client->show_message(editor, "Error saving buffer to temp file");
+            client->show_message("Error saving buffer to temp file");
             return;
         }
         CZ_DEFER(options.std_in.close());
 
         if (!options.std_out.open(diff_file)) {
-            client->show_message(editor, "Error creating temp file to store diff in");
+            client->show_message("Error creating temp file to store diff in");
             return;
         }
         CZ_DEFER(options.std_out.close());
@@ -278,7 +278,7 @@ void reload_file(Editor* editor, Client* client, Buffer* buffer) {
 
         cz::Process process;
         if (!process.launch_program(args, &options)) {
-            client->show_message(editor, "Error launching diff");
+            client->show_message("Error launching diff");
             return;
         }
         process.join();
@@ -286,7 +286,7 @@ void reload_file(Editor* editor, Client* client, Buffer* buffer) {
 
     cz::Input_File file;
     if (!file.open(diff_file)) {
-        client->show_message(editor, "Error opening diff file");
+        client->show_message("Error opening diff file");
         return;
     }
     CZ_DEFER(file.close());

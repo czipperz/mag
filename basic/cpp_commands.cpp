@@ -367,11 +367,11 @@ void command_extract_variable(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     if (window->cursors.len() > 1) {
-        source.client->show_message(editor, "Multiple cursors aren't supported right now");
+        source.client->show_message("Multiple cursors aren't supported right now");
         return;
     }
     if (!window->show_marks) {
-        source.client->show_message(editor, "Must select a region");
+        source.client->show_message("Must select a region");
         return;
     }
 

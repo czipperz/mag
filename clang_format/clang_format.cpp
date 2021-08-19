@@ -304,7 +304,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     // process replacements.
     if (!save_contents_to_temp_file(&buffer->contents, &input_file,
                                     /*use_carriage_returns=*/false)) {
-        source.client->show_message(editor, "Error: I/O operation failed");
+        source.client->show_message("Error: I/O operation failed");
         return;
     }
     CZ_DEFER(input_file.close());
@@ -322,7 +322,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     options.std_in = input_file;
     cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
-        source.client->show_message(editor, "Error: I/O operation failed");
+        source.client->show_message("Error: I/O operation failed");
         return;
     }
     stdout_read.set_non_blocking();
@@ -330,7 +330,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
 
     cz::Process process;
     if (!process.launch_program(args, &options)) {
-        source.client->show_message(editor, "Error: Couldn't launch clang-format");
+        source.client->show_message("Error: Couldn't launch clang-format");
         stdout_read.close();
         return;
     }

@@ -129,7 +129,7 @@ static void command_prompt_increase_numbers_callback(Editor* editor,
     char buf[32];
     if (mini_buffer_contents.len > sizeof(buf) - 1) {
     parse_error:
-        client->show_message(editor, "Error: couldn't parse number to increase by");
+        client->show_message("Error: couldn't parse number to increase by");
         return;
     }
 
@@ -149,7 +149,7 @@ void command_prompt_increase_numbers(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Increase numbers by: ";
     dialog.response_callback = command_prompt_increase_numbers_callback;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 void command_insert_letters(Editor* editor, Command_Source source) {
@@ -158,8 +158,7 @@ void command_insert_letters(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     if (cursors.len > 26) {
-        source.client->show_message(
-            editor, "command_insert_letters only supports up to 26 cursors as of right now");
+        source.client->show_message("command_insert_letters only supports up to 26 cursors as of right now");
         return;
     }
 

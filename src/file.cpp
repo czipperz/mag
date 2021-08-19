@@ -839,7 +839,7 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     ZoneScoped;
 
     if (user_path.len == 0) {
-        client->show_message(editor, "File path must not be empty");
+        client->show_message("File path must not be empty");
         return;
     }
 
@@ -855,10 +855,10 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
         cz::Result result = load_path(editor, path.buffer(), path.len(), &handle);
         if (result.is_err()) {
             if (result.code == 1) {
-                client->show_message(editor, "File not found");
+                client->show_message("File not found");
                 // Still open empty file buffer.
             } else {
-                client->show_message(editor, "Couldn't open file");
+                client->show_message("Couldn't open file");
                 return;
             }
         }

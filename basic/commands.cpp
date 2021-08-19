@@ -47,7 +47,7 @@ void command_invalid(Editor* editor, Command_Source source) {
         stringify_key(&message, source.keys[i]);
     }
 
-    source.client->show_message(editor, message);
+    source.client->show_message(message);
 }
 
 void command_toggle_read_only(Editor* editor, Command_Source source) {
@@ -98,7 +98,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             WITH_SELECTED_BUFFER(client);
             uint32_t value;
             if (cz::parse(str, &value) <= 0 || value == 0) {
-                client->show_message(editor, "Invalid indent width");
+                client->show_message("Invalid indent width");
                 return;
             }
             buffer->mode.indent_width = value;
@@ -112,7 +112,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             dialog.mini_buffer_contents = old;
         }
 
-        client->show_dialog(editor, dialog);
+        client->show_dialog(dialog);
     } else if (query == "buffer tab width") {
         Dialog dialog = {};
         dialog.prompt = "Set tab width to: ";
@@ -120,7 +120,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             WITH_SELECTED_BUFFER(client);
             uint32_t value;
             if (cz::parse(str, &value) <= 0 || value == 0) {
-                client->show_message(editor, "Invalid tab width");
+                client->show_message("Invalid tab width");
                 return;
             }
             buffer->mode.tab_width = value;
@@ -134,7 +134,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             dialog.mini_buffer_contents = old;
         }
 
-        client->show_dialog(editor, dialog);
+        client->show_dialog(dialog);
     } else if (query == "buffer use tabs") {
         bool use_tabs;
         {
@@ -142,9 +142,9 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             use_tabs = buffer->mode.use_tabs = !buffer->mode.use_tabs;
         }
         if (use_tabs) {
-            client->show_message(editor, "Buffer now uses tabs");
+            client->show_message("Buffer now uses tabs");
         } else {
-            client->show_message(editor, "Buffer now does not use tabs");
+            client->show_message("Buffer now does not use tabs");
         }
     } else if (query == "buffer line feed crlf") {
         WITH_SELECTED_BUFFER(client);
@@ -159,7 +159,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             WITH_SELECTED_BUFFER(client);
             uint32_t value;
             if (cz::parse(str, &value) <= 0 || value == 0) {
-                client->show_message(editor, "Invalid preferred column");
+                client->show_message("Invalid preferred column");
                 return;
             }
             buffer->mode.preferred_column = value;
@@ -173,7 +173,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             dialog.mini_buffer_contents = old;
         }
 
-        client->show_dialog(editor, dialog);
+        client->show_dialog(dialog);
     } else if (query == "buffer read only") {
         WITH_SELECTED_BUFFER(client);
         buffer->read_only = !buffer->read_only;
@@ -191,7 +191,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
         dialog.response_callback = [](Editor* editor, Client* client, cz::Str str, void*) {
             uint32_t value;
             if (cz::parse(str, &value) <= 0 || value == 0) {
-                client->show_message(editor, "Invalid font size (only ints for now)");
+                client->show_message("Invalid font size (only ints for now)");
                 return;
             }
             editor->theme.font_size = value;
@@ -199,9 +199,9 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
         cz::Heap_String old = cz::format(editor->theme.font_size);
         CZ_DEFER(old.drop());
         dialog.mini_buffer_contents = old;
-        client->show_dialog(editor, dialog);
+        client->show_dialog(dialog);
     } else {
-        client->show_message(editor, "Invalid configuration variable");
+        client->show_message("Invalid configuration variable");
     }
 }
 
@@ -233,7 +233,7 @@ void command_configure(Editor* editor, Command_Source source) {
     dialog.prompt = "Configuration to change: ";
     dialog.completion_engine = configurations_completion_engine;
     dialog.response_callback = command_configure_callback;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 void command_show_marks(Editor* editor, Command_Source source) {
@@ -360,7 +360,7 @@ void command_unpop_jump(Editor* editor, Command_Source source) {
     while (1) {
         Jump* jump = source.client->jump_chain.unpop();
         if (!jump) {
-            source.client->show_message(editor, "No more jumps");
+            source.client->show_message("No more jumps");
             break;
         }
 
@@ -384,7 +384,7 @@ void command_pop_jump(Editor* editor, Command_Source source) {
     while (1) {
         Jump* jump = source.client->jump_chain.pop();
         if (!jump) {
-            source.client->show_message(editor, "No more jumps");
+            source.client->show_message("No more jumps");
             break;
         }
 
@@ -805,7 +805,7 @@ void command_delete_end_of_line(Editor* editor, Command_Source source) {
 void command_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->undo()) {
-        source.client->show_message(editor, "Nothing to undo");
+        source.client->show_message("Nothing to undo");
         return;
     }
 
@@ -822,7 +822,7 @@ void command_undo(Editor* editor, Command_Source source) {
 void command_redo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->redo()) {
-        source.client->show_message(editor, "Nothing to redo");
+        source.client->show_message("Nothing to redo");
         return;
     }
 
@@ -864,7 +864,7 @@ void command_stop_action(Editor* editor, Command_Source source) {
         message = "Nothing to stop";
     }
 
-    source.client->show_message(editor, message);
+    source.client->show_message(message);
 }
 
 void command_quit(Editor* editor, Command_Source source) {
@@ -872,11 +872,11 @@ void command_quit(Editor* editor, Command_Source source) {
 }
 
 static void show_no_create_cursor_message(Editor* editor, Client* client) {
-    client->show_message(editor, "No more cursors to create");
+    client->show_message("No more cursors to create");
 }
 
 static void show_no_region_message(Editor* editor, Client* client) {
-    client->show_message(editor, "Must select a non-empty region first");
+    client->show_message("Must select a non-empty region first");
 }
 
 static void show_created_messages(Editor* editor, Client* client, int created) {
@@ -1218,14 +1218,14 @@ void command_filter_cursors_looking_at(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Filter looking at: ";
     dialog.response_callback = command_filter_cursors_looking_at_callback;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 void command_filter_cursors_not_looking_at(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Filter not looking at: ";
     dialog.response_callback = command_filter_cursors_not_looking_at_callback;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static void set_cursor_position_to_edit_redo(Cursor* cursor, const Edit* edit) {
@@ -1285,7 +1285,7 @@ static void create_cursors_last_change(Window_Unified* window,
 void command_create_cursors_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->undo()) {
-        source.client->show_message(editor, "Nothing to undo");
+        source.client->show_message("Nothing to undo");
         return;
     }
 
@@ -1296,7 +1296,7 @@ void command_create_cursors_undo(Editor* editor, Command_Source source) {
 void command_create_cursors_redo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->redo()) {
-        source.client->show_message(editor, "Nothing to redo");
+        source.client->show_message("Nothing to redo");
         return;
     }
 
@@ -1629,7 +1629,7 @@ void command_search_forward(Editor* editor, Command_Source source) {
         ++data->direction;
         data->mini_buffer_change_index = 0;
         if (data->direction == 1) {
-            source.client->set_prompt_text(editor, "Search forward: ");
+            source.client->set_prompt_text("Search forward: ");
             source.client->_message.response_callback = command_search_forward_callback;
         }
         return;
@@ -1677,7 +1677,7 @@ void command_search_forward(Editor* editor, Command_Source source) {
             dialog.response_callback_data = data;
         }
 
-        source.client->show_dialog(editor, dialog);
+        source.client->show_dialog(dialog);
     }
 }
 
@@ -1690,7 +1690,7 @@ void command_search_backward(Editor* editor, Command_Source source) {
         --data->direction;
         data->mini_buffer_change_index = 0;
         if (data->direction == 0) {
-            source.client->set_prompt_text(editor, "Search backward: ");
+            source.client->set_prompt_text("Search backward: ");
             source.client->_message.response_callback = command_search_backward_callback;
         }
         return;
@@ -1738,7 +1738,7 @@ void command_search_backward(Editor* editor, Command_Source source) {
             dialog.response_callback_data = data;
         }
 
-        source.client->show_dialog(editor, dialog);
+        source.client->show_dialog(dialog);
     }
 }
 
@@ -1792,7 +1792,7 @@ void command_search_backward_expanding(Editor* editor, Command_Source source) {
         WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
         dialog.next_token = buffer->mode.next_token;
     }
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 void command_search_forward_expanding(Editor* editor, Command_Source source) {
@@ -1803,7 +1803,7 @@ void command_search_forward_expanding(Editor* editor, Command_Source source) {
         WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
         dialog.next_token = buffer->mode.next_token;
     }
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 static void parse_number(cz::Str str, uint64_t* number) {
@@ -1854,14 +1854,14 @@ void command_goto_line(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Goto line: ";
     dialog.response_callback = command_goto_line_callback;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 void command_goto_position(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Goto position: ";
     dialog.response_callback = command_goto_position_callback;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 void command_path_up_directory(Editor* editor, Command_Source source) {
@@ -1989,7 +1989,7 @@ void command_show_date_of_build(Editor* editor, Command_Source source) {
 
     cz::Heap_String message = cz::format("Date of build: ", buffer);
     CZ_DEFER(message.drop());
-    source.client->show_message(editor, message);
+    source.client->show_message(message);
 }
 
 void command_comment_hash(Editor* editor, Command_Source source) {
@@ -2205,7 +2205,7 @@ static void command_run_command_ignore_result_callback(Editor* editor,
 
     cz::Process process;
     if (!process.launch_script(script, &options)) {
-        client->show_message(editor, "Shell error");
+        client->show_message("Shell error");
         return;
     }
 
@@ -2216,14 +2216,14 @@ void command_run_command_for_result(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Shell buffer: ";
     dialog.response_callback = command_run_command_for_result_callback;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 void command_run_command_ignore_result(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Shell silent: ";
     dialog.response_callback = command_run_command_ignore_result_callback;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 }

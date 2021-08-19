@@ -195,7 +195,7 @@ void command_paste_previous(Editor* editor, Command_Source source) {
             run_paste(window, buffer);
         }
     } else {
-        source.client->show_message(editor, "Error: previous command was not paste");
+        source.client->show_message("Error: previous command was not paste");
     }
 }
 
@@ -417,7 +417,7 @@ void command_cursors_paste_previous_as_lines(Editor* editor, Command_Source sour
             run_paste_as_lines(cursors, buffer);
         }
     } else {
-        source.client->show_message(editor, "Error: previous command was not paste");
+        source.client->show_message("Error: previous command was not paste");
     }
 }
 

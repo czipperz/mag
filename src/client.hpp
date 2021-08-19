@@ -104,16 +104,16 @@ struct Client {
     void replace_window(Window* o, Window* n);
 
     /// Set the prompt's text without changing the callbacks.
-    void set_prompt_text(Editor* editor, cz::Str text);
+    void set_prompt_text(cz::Str text);
 
     /// Show a message to the user.
-    void show_message(Editor* editor, cz::Str text);
+    void show_message(cz::Str text);
 
     /// Show a dialog.  If submitted then `response_callback` is called.  Once the
     /// dialog has ended the data will be deallocated via `cz::heap_allocator`.
-    void show_dialog(Editor* editor, Dialog dialog);
+    void show_dialog(Dialog dialog);
 
-    void update_mini_buffer_completion_cache(Editor* editor);
+    void update_mini_buffer_completion_cache();
 
     void hide_mini_buffer(Editor* editor);
 

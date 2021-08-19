@@ -31,7 +31,7 @@ static void show_message_job_kill(void* _data) {
 
 static Job_Tick_Result show_message_job_tick(Editor* editor, Client* client, void* _data) {
     Show_Message_Job_Data* data = (Show_Message_Job_Data*)_data;
-    client->show_message(editor, data->message);
+    client->show_message(data->message);
     data->message.drop(cz::heap_allocator());
     return Job_Tick_Result::FINISHED;
 }
@@ -208,7 +208,7 @@ bool run_console_command_in(Client* client,
 
     cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
-        client->show_message(editor, "Error: I/O operation failed");
+        client->show_message("Error: I/O operation failed");
         return false;
     }
     stdout_read.set_non_blocking();
@@ -218,7 +218,7 @@ bool run_console_command_in(Client* client,
 
     cz::Process process;
     if (!process.launch_script(script, &options)) {
-        client->show_message(editor, error);
+        client->show_message(error);
         stdout_read.close();
         return false;
     }
