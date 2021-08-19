@@ -103,6 +103,15 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             }
             buffer->mode.indent_width = value;
         };
+
+        cz::Heap_String old = {};
+        CZ_DEFER(old.drop());
+        {
+            WITH_CONST_SELECTED_BUFFER(client);
+            old = cz::format(buffer->mode.indent_width);
+            dialog.mini_buffer_contents = old;
+        }
+
         client->show_dialog(editor, dialog);
     } else if (query == "buffer tab width") {
         Dialog dialog = {};
@@ -116,6 +125,15 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             }
             buffer->mode.tab_width = value;
         };
+
+        cz::Heap_String old = {};
+        CZ_DEFER(old.drop());
+        {
+            WITH_CONST_SELECTED_BUFFER(client);
+            old = cz::format(buffer->mode.tab_width);
+            dialog.mini_buffer_contents = old;
+        }
+
         client->show_dialog(editor, dialog);
     } else if (query == "buffer use tabs") {
         bool use_tabs;
@@ -146,6 +164,15 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             }
             buffer->mode.preferred_column = value;
         };
+
+        cz::Heap_String old = {};
+        CZ_DEFER(old.drop());
+        {
+            WITH_CONST_SELECTED_BUFFER(client);
+            old = cz::format(buffer->mode.preferred_column);
+            dialog.mini_buffer_contents = old;
+        }
+
         client->show_dialog(editor, dialog);
     } else if (query == "buffer read only") {
         WITH_SELECTED_BUFFER(client);
@@ -169,6 +196,9 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             }
             editor->theme.font_size = value;
         };
+        cz::Heap_String old = cz::format(editor->theme.font_size);
+        CZ_DEFER(old.drop());
+        dialog.mini_buffer_contents = old;
         client->show_dialog(editor, dialog);
     } else {
         client->show_message(editor, "Invalid configuration variable");
