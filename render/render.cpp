@@ -338,13 +338,24 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // Try to fit the newly created cursors on the screen.
         if (window->cursors.len() > window_cache->v.unified.cursor_count) {
+            // Don't scroll down so far that we lose sight of cursors
+            // above the selected cursor that are still on the screen.
+            uint64_t first_visible_cursor_position = selected_cursor_position;
+            for (size_t c = window->selected_cursor; c-- > 0;) {
+                uint64_t point = window->cursors[c].point;
+                if (point < iterator.position) {
+                    break;
+                }
+                first_visible_cursor_position = point;
+            }
+
             for (size_t c = window->cursors.len(); c-- > window_cache->v.unified.cursor_count;) {
                 if (try_to_make_visible(window, window_cache, buffer, &iterator, scroll_outside,
-                                        selected_cursor_position, window->cursors[c].point)) {
+                                        first_visible_cursor_position, window->cursors[c].point)) {
                     // Fitting the point worked.  Try to also fit the mark.
                     if (window->show_marks && window->cursors[c].mark > window->cursors[c].point) {
                         try_to_make_visible(window, window_cache, buffer, &iterator, scroll_outside,
-                                            selected_cursor_position, window->cursors[c].mark);
+                                            first_visible_cursor_position, window->cursors[c].mark);
                     }
 
                     // If we made this one visible then all the ones before it are automatically.
