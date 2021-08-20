@@ -22,7 +22,6 @@ Test_Runner::Test_Runner() {
 
 void Test_Runner::set_tokenizer(Tokenizer tokenizer) {
     Window_Unified* window = client.selected_window();
-    Editor* editor = &server.editor;
     WITH_WINDOW_BUFFER(window);
     buffer->mode.next_token = tokenizer;
 }
@@ -34,7 +33,6 @@ Test_Runner::~Test_Runner() {
 }
 
 void Test_Runner::setup(cz::Str input) {
-    Editor* editor = &server.editor;
     WITH_SELECTED_BUFFER(&client);
 
     Transaction transaction;
@@ -75,7 +73,6 @@ void Test_Runner::setup(cz::Str input) {
 cz::String Test_Runner::stringify() {
     cz::String output = {};
 
-    Editor* editor = &server.editor;
     WITH_CONST_SELECTED_BUFFER(&client);
 
     Contents_Iterator it = buffer->contents.start();
