@@ -250,13 +250,6 @@ static void process_key_presses(Server* server, Client* client, int ch) {
     }
 }
 
-static int ncurses_copy(void*, cz::Str) {
-    return 0;
-}
-static int ncurses_update_global_copy_chain(Copy_Chain**, void*) {
-    return 0;
-}
-
 void run(Server* server, Client* client) {
     ZoneScoped;
 
