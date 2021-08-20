@@ -475,7 +475,7 @@ void command_man(Editor* editor, Command_Source source) {
     dialog.prompt = "Man: ";
     dialog.completion_engine = man_completion_engine;
     dialog.response_callback = command_man_response;
-    source.client->show_dialog(editor, dialog);
+    source.client->show_dialog(dialog);
 }
 
 #endif
