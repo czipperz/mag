@@ -842,6 +842,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                 // Makefiles must use tabs so set that up automatically.
                 buffer->mode.tab_width = buffer->mode.indent_width;
                 buffer->mode.use_tabs = true;
+                // Indent based on the previous line instead of based
+                // on the paren level since there aren't braces.
+                buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
             }
 
             buffer->mode.next_token = syntax::sh_next_token;
