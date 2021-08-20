@@ -853,7 +853,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (name.ends_with(".py") || name.ends_with(".gpy")) {
+        } else if (name.ends_with(".py")) {
         python:
             buffer->mode.next_token = syntax::python_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
