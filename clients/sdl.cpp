@@ -9,6 +9,7 @@
 #include <command_macros.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
+#include <cz/file.hpp>
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
 #include <cz/str.hpp>
