@@ -840,13 +840,13 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".sh") || name.ends_with(".bash") || name.ends_with(".zsh") ||
                    name == ".bashrc" || name == ".zshrc" || name == "Makefile" ||
-                   name == ".gitconfig" ||
+                   name == ".gitconfig" || name == ".gitmodules" ||
                    // Powershell isn't really a shell script but it pretty much works.
                    name.ends_with(".ps1") ||
                    // Perl isn't really a shell script but it pretty much works.
                    name.ends_with(".pl")) {
         shell:
-            if (name == "Makefile" || name == ".gitconfig") {
+            if (name == "Makefile" || name == ".gitconfig" || name == ".gitmodules") {
                 // Makefiles must use tabs so set that up automatically.
                 buffer->mode.tab_width = buffer->mode.indent_width;
                 buffer->mode.use_tabs = true;
