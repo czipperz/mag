@@ -772,7 +772,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (name == "CMakeLists.txt") {
+        } else if (name == "CMakeLists.txt" || name.ends_with(".cmake")) {
             buffer->mode.next_token = syntax::cmake_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
