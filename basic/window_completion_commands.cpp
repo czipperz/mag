@@ -24,7 +24,7 @@ void command_next_completion(Editor* editor, Command_Source source) {
     }
 
     Completion_Filter_Context* context = &window->completion_cache.filter_context;
-    if (context->selected + 1 >= context->results.len()) {
+    if (context->selected + 1 >= context->results.len) {
         return;
     }
     ++context->selected;
@@ -50,8 +50,8 @@ void command_completion_down_page(Editor* editor, Command_Source source) {
     }
 
     Completion_Filter_Context* context = &window->completion_cache.filter_context;
-    if (context->selected + editor->theme.max_completion_results >= context->results.len()) {
-        context->selected = context->results.len();
+    if (context->selected + editor->theme.max_completion_results >= context->results.len) {
+        context->selected = context->results.len;
         if (context->selected > 0) {
             --context->selected;
         }
@@ -91,7 +91,7 @@ void command_last_completion(Editor* editor, Command_Source source) {
     }
 
     Completion_Filter_Context* context = &window->completion_cache.filter_context;
-    context->selected = context->results.len();
+    context->selected = context->results.len;
     if (context->selected > 0) {
         --context->selected;
     }

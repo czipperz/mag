@@ -52,7 +52,7 @@ bool Transaction::commit(Asynchronous_Job_Handler* handler, Command_Function com
 
 const char* Transaction::commit_get_message(Command_Function committer) {
     // Only commit if edits were made.
-    if (edits.len() == 0) {
+    if (edits.len == 0) {
         return nullptr;
     }
 

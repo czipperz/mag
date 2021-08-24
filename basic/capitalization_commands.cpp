@@ -278,7 +278,7 @@ void to_camel(cz::Str in, cz::Allocator allocator, cz::String* out) {
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
 
-    for (size_t i = 0; i < components.len(); ++i) {
+    for (size_t i = 0; i < components.len; ++i) {
         cz::Str component = components[i];
         out->reserve(allocator, component.len);
 
@@ -303,7 +303,7 @@ void to_pascal(cz::Str in, cz::Allocator allocator, cz::String* out) {
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
 
-    for (size_t i = 0; i < components.len(); ++i) {
+    for (size_t i = 0; i < components.len; ++i) {
         cz::Str component = components[i];
         out->reserve(allocator, component.len);
         out->push(cz::to_upper(component[0]));
@@ -323,7 +323,7 @@ void to_snake(cz::Str in, cz::Allocator allocator, cz::String* out) {
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
 
-    for (size_t i = 0; i < components.len(); ++i) {
+    for (size_t i = 0; i < components.len; ++i) {
         if (i != 0) {
             cz::append(allocator, out, '_');
         }
@@ -346,7 +346,7 @@ void to_usnake(cz::Str in, cz::Allocator allocator, cz::String* out) {
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
 
-    for (size_t i = 0; i < components.len(); ++i) {
+    for (size_t i = 0; i < components.len; ++i) {
         if (i != 0) {
             cz::append(allocator, out, '_');
         }
@@ -370,7 +370,7 @@ void to_ssnake(cz::Str in, cz::Allocator allocator, cz::String* out) {
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
 
-    for (size_t i = 0; i < components.len(); ++i) {
+    for (size_t i = 0; i < components.len; ++i) {
         if (i != 0) {
             cz::append(allocator, out, '_');
         }
@@ -393,7 +393,7 @@ void to_kebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
 
-    for (size_t i = 0; i < components.len(); ++i) {
+    for (size_t i = 0; i < components.len; ++i) {
         if (i != 0) {
             cz::append(allocator, out, '-');
         }
@@ -416,7 +416,7 @@ void to_ukebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
 
-    for (size_t i = 0; i < components.len(); ++i) {
+    for (size_t i = 0; i < components.len; ++i) {
         if (i != 0) {
             cz::append(allocator, out, '-');
         }
@@ -440,7 +440,7 @@ void to_skebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
     CZ_DEFER(components.drop());
     parse_components(in, cz::heap_allocator(), &components);
 
-    for (size_t i = 0; i < components.len(); ++i) {
+    for (size_t i = 0; i < components.len; ++i) {
         if (i != 0) {
             cz::append(allocator, out, '-');
         }
@@ -466,7 +466,7 @@ void command_recapitalize_token_to(Editor* editor,
 
     int64_t offset = 0;
     Contents_Iterator it = buffer->contents.start();
-    for (size_t i = 0; i < window->cursors.len(); ++i) {
+    for (size_t i = 0; i < window->cursors.len; ++i) {
         it.advance_to(window->cursors[i].point);
 
         Token token;
@@ -539,7 +539,7 @@ static void command_recapitalize_token_prompt_callback(Editor* editor,
 static bool recapitalize_to_completion_engine(Editor* editor,
                                               Completion_Engine_Context* context,
                                               bool is_initial_frame) {
-    if (context->results.len() > 0) {
+    if (context->results.len > 0) {
         // We never change the results so ignore input changes.
         return false;
     }

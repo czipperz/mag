@@ -11,8 +11,8 @@ namespace mag {
 
 void Jump::update(const Buffer* buffer) {
     position_after_changes(
-        {buffer->changes.elems() + change_index, buffer->changes.len() - change_index}, &position);
-    change_index = buffer->changes.len();
+        {buffer->changes.elems + change_index, buffer->changes.len - change_index}, &position);
+    change_index = buffer->changes.len;
 }
 
 void push_jump(Window_Unified* window, Client* client, const Buffer* buffer) {
@@ -35,7 +35,7 @@ void push_jump(Window_Unified* window, Client* client, const Buffer* buffer) {
     Jump jump;
     jump.buffer_handle = window->buffer_handle.clone_downgrade();
     jump.position = cursor->point;
-    jump.change_index = buffer->changes.len();
+    jump.change_index = buffer->changes.len;
     client->jump_chain.push(jump);
 }
 

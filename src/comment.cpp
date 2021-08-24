@@ -168,7 +168,7 @@ void insert_line_comments(Transaction* transaction,
             Edit edit;
             edit.value = SSOStr::from_constant(string);
             edit.position = start.position + *offset;
-            *offset += string.len();
+            *offset += string.len;
             edit.flags = Edit::INSERT_AFTER_POSITION;
             transaction->push(edit);
 
@@ -316,7 +316,7 @@ void remove_line_comments(Transaction* transaction,
             insert_new_indent.flags = Edit::INSERT_AFTER_POSITION;
             transaction->push(insert_new_indent);
 
-            *offset += new_indent.len() - old_indent.len();
+            *offset += new_indent.len - old_indent.len;
 
             if (insert_new_indent.value.is_short()) {
                 new_indent.drop(transaction->value_allocator());

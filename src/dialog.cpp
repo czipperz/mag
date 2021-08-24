@@ -34,8 +34,8 @@ void get_selected_window_directory(Editor* editor,
                                    cz::String* string) {
     {
         WITH_CONST_WINDOW_BUFFER(client->selected_normal_window);
-        if (buffer->directory.len() > 0) {
-            string->reserve(allocator, buffer->directory.len());
+        if (buffer->directory.len > 0) {
+            string->reserve(allocator, buffer->directory.len);
             string->append(buffer->directory);
             return;
         }

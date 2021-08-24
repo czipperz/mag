@@ -182,10 +182,10 @@ static bool tag_completion_engine(Editor* editor,
 
     Tag_Completion_Engine_Data* data = (Tag_Completion_Engine_Data*)context->data;
 
-    context->results.set_len(0);
-    context->results.reserve(data->tags.len());
+    context->results.len = 0;
+    context->results.reserve(data->tags.len);
 
-    for (size_t i = 0; i < data->tags.len(); ++i) {
+    for (size_t i = 0; i < data->tags.len; ++i) {
         cz::Allocator allocator = context->results_buffer_array.allocator();
         cz::String string = cz::format(allocator, data->tags[i].file_name, ':', data->tags[i].line);
         context->results.push(string);
@@ -213,7 +213,7 @@ static void prompt_open_tags_callback(Editor* editor, Client* client, cz::Str qu
 }
 
 void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::String buffer) {
-    if (tags.len() == 0) {
+    if (tags.len == 0) {
         tags.drop(cz::heap_allocator());
         buffer.drop(cz::heap_allocator());
 
@@ -221,7 +221,7 @@ void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::
         return;
     }
 
-    if (tags.len() == 1) {
+    if (tags.len == 1) {
         CZ_DEFER({
             tags.drop(cz::heap_allocator());
             buffer.drop(cz::heap_allocator());
@@ -291,7 +291,7 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
         directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
     }
 
-    lookup_and_prompt(editor, source.client, directory.buffer(), query.as_str());
+    lookup_and_prompt(editor, source.client, directory.buffer, query.as_str());
 }
 
 void command_move_mouse_and_lookup_at_point(Editor* editor, Command_Source source) {
@@ -328,7 +328,7 @@ static void command_lookup_prompt_callback(Editor* editor,
         directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
     }
 
-    lookup_and_prompt(editor, client, directory.buffer(), query);
+    lookup_and_prompt(editor, client, directory.buffer, query);
 }
 
 void command_lookup_prompt(Editor* editor, Command_Source source) {
@@ -341,7 +341,7 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
         Window_Unified* window = source.client->selected_normal_window;
         WITH_CONST_WINDOW_BUFFER(window);
 
-        directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer();
+        directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer;
 
         get_selected_region(window, buffer, cz::heap_allocator(), &selected_region);
     }
@@ -389,7 +389,7 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
             return;
         }
 
-        directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer();
+        directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer;
     }
 
     Window_Unified* window = source.client->selected_window();

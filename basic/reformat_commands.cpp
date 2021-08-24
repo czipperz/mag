@@ -295,7 +295,7 @@ bool reformat_at(Client* client,
     Contents_Iterator end = iterator;
     end_of_line(&end);
 
-    if (words.len() == 0) {
+    if (words.len == 0) {
         return false;
     }
 
@@ -311,7 +311,7 @@ bool reformat_at(Client* client,
 
     size_t current_column = 0;
     size_t previous_spaces = 0;
-    for (size_t i = 0; i < words.len(); ++i) {
+    for (size_t i = 0; i < words.len; ++i) {
         auto& word = words[i];
 
         // Test if the word fits on this line.

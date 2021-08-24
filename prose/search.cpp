@@ -62,7 +62,7 @@ static void command_search_in_current_directory_callback(Editor* editor,
         }
     }
 
-    run_search(client, editor, directory.buffer(), query, false);
+    run_search(client, editor, directory.buffer, query, false);
 }
 
 void command_search_in_current_directory_prompt(Editor* editor, Command_Source source) {
@@ -91,7 +91,7 @@ static void command_search_in_version_control_callback(Editor* editor,
         }
     }
 
-    run_search(client, editor, directory.buffer(), query, false);
+    run_search(client, editor, directory.buffer, query, false);
 }
 
 void command_search_in_version_control_prompt(Editor* editor, Command_Source source) {
@@ -135,7 +135,7 @@ static void search_token_at_position(Editor* editor,
         buffer->contents.slice_into(iterator, token.end, &query);
     }
 
-    run_search(client, editor, directory.buffer(), query, true);
+    run_search(client, editor, directory.buffer, query, true);
 }
 
 void command_search_in_current_directory_token_at_position(Editor* editor, Command_Source source) {

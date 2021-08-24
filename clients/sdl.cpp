@@ -739,7 +739,7 @@ static bool get_clipboard(void*, cz::Allocator allocator, cz::String* text) {
 static bool set_clipboard(void*, cz::Str text) {
     cz::String copy = text.clone_null_terminate(cz::heap_allocator());
     CZ_DEFER(copy.drop(cz::heap_allocator()));
-    return SDL_SetClipboardText(copy.buffer()) >= 0;
+    return SDL_SetClipboardText(copy.buffer) >= 0;
 }
 
 void set_icon(SDL_Window* sdl_window) {
@@ -791,9 +791,9 @@ static bool load_font(cz::String* font_file,
     *font_size = new_font_size;
 
     // Load the font.
-    TTF_Font* new_font = TTF_OpenFont(font_file->buffer(), *font_size);
+    TTF_Font* new_font = TTF_OpenFont(font_file->buffer, *font_size);
     if (!new_font) {
-        fprintf(stderr, "Failed to open the font file '%s': %s\n", font_file->buffer(),
+        fprintf(stderr, "Failed to open the font file '%s': %s\n", font_file->buffer,
                 SDL_GetError());
         return false;
     }
@@ -956,7 +956,7 @@ void run(Server* server, Client* client) {
         // If the font info was updated then reload the font.
         cz::Str new_font_file = server->editor.theme.font_file;
         if (font_file != new_font_file || font_size != server->editor.theme.font_size) {
-            font_file.set_len(0);
+            font_file.len = 0;
 
             // If loading the font fails then we print a message inside `load_font()` and continue.
             if (load_font(&font_file, &font_size, &font, &character_width, &character_height,

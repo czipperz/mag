@@ -163,11 +163,10 @@ static void parse_and_apply_replacements(Asynchronous_Job_Handler* handler,
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
-    cz::Slice<const Change> changes = {buffer->changes.start() + change_index,
-                                       buffer->changes.len() - change_index};
+    cz::Slice<const Change> changes = buffer->changes.slice_start(change_index);
 
     uint64_t offset = 0;
-    for (size_t i = 0; i < replacements.len(); ++i) {
+    for (size_t i = 0; i < replacements.len; ++i) {
         Replacement* repl = &replacements[i];
 
         uint64_t position = repl->offset;
@@ -237,8 +236,7 @@ static Job_Tick_Result clang_format_job_tick(Asynchronous_Job_Handler* handler, 
             if (data->buffer_handle.upgrade(&handle)) {
                 CZ_DEFER(handle.drop());
                 cz::Str error_line = {};
-                parse_and_apply_replacements(handler, handle.get(),
-                                             {data->output_xml.buffer(), data->output_xml.len()},
+                parse_and_apply_replacements(handler, handle.get(), data->output_xml,
                                              data->change_index, &error_line);
 
                 if (error_line.len > 0) {
@@ -337,7 +335,7 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
     }
 
     editor->add_asynchronous_job(
-        job_clang_format(buffer->changes.len(), handle.clone_downgrade(), process, stdout_read));
+        job_clang_format(buffer->changes.len, handle.clone_downgrade(), process, stdout_read));
 }
 
 }

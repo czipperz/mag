@@ -194,7 +194,7 @@ bool find(Contents_Iterator* it, char ch) {
 bool rfind(Contents_Iterator* it, char ch) {
     ZoneScoped;
 
-    if (it->bucket == it->contents->buckets.len()) {
+    if (it->bucket == it->contents->buckets.len) {
         if (it->bucket == 0) {
             return false;
         }

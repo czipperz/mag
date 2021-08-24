@@ -1,6 +1,6 @@
 #include "window_commands.hpp"
 
-#include <algorithm>
+#include <cz/util.hpp>
 #include "client.hpp"
 
 namespace mag {
@@ -156,7 +156,7 @@ void command_swap_windows(Editor* editor, Command_Source source) {
     if (!split) {
         return;
     }
-    std::swap(split->first, split->second);
+    cz::swap(split->first, split->second);
 }
 
 static void shift_window(Client* client, bool want_first, Window::Tag want_tag) {
@@ -172,7 +172,7 @@ static void shift_window(Client* client, bool want_first, Window::Tag want_tag) 
     while (1) {
         // We want to be on the opposite side so swap and set the orientation.
         if ((selected == split->first) != want_first) {
-            std::swap(split->first, split->second);
+            cz::swap(split->first, split->second);
             split->tag = want_tag;
             return;
         }
@@ -202,11 +202,11 @@ static void shift_window(Client* client, bool want_first, Window::Tag want_tag) 
         //        rotate         loop
         Window** selected_slot = want_first ? &selected->parent->first : &selected->parent->second;
         if (split->parent->first == split) {
-            std::swap(split->parent->second, *selected_slot);
-            std::swap(split->parent->second->parent, (*selected_slot)->parent);
+            cz::swap(split->parent->second, *selected_slot);
+            cz::swap(split->parent->second->parent, (*selected_slot)->parent);
         } else {
-            std::swap(split->parent->first, *selected_slot);
-            std::swap(split->parent->first->parent, (*selected_slot)->parent);
+            cz::swap(split->parent->first, *selected_slot);
+            cz::swap(split->parent->first->parent, (*selected_slot)->parent);
         }
 
         split = split->parent;

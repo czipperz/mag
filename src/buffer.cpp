@@ -26,7 +26,7 @@ static void initialize_file_time(Buffer* buffer) {
         return;
     }
 
-    buffer->has_file_time = get_file_time(path.buffer(), &buffer->file_time);
+    buffer->has_file_time = get_file_time(path.buffer, &buffer->file_time);
 }
 
 void Buffer::init() {
@@ -140,7 +140,7 @@ bool Buffer::undo() {
 bool Buffer::redo() {
     ZoneScoped;
 
-    if (read_only || commit_index == commits.len()) {
+    if (read_only || commit_index == commits.len) {
         return false;
     }
 
@@ -183,7 +183,7 @@ bool Buffer::commit(cz::Slice<Edit> edits, Command_Function committer) {
     Commit commit;
     commit.edits = edits;
     commit.id = generate_commit_id();
-    commits.set_len(commit_index);
+    commits.len = commit_index;
     commits.reserve(cz::heap_allocator(), 1);
     commits.push(commit);
 
@@ -275,7 +275,7 @@ bool Buffer::get_path(cz::Allocator allocator, cz::String* path) const {
         return false;
     }
 
-    path->reserve(allocator, directory.len() + name.len() + 1);
+    path->reserve(allocator, directory.len + name.len + 1);
     path->append(directory);
     path->append(name);
     path->null_terminate();
@@ -285,11 +285,11 @@ bool Buffer::get_path(cz::Allocator allocator, cz::String* path) const {
 
 void Buffer::render_name(cz::Allocator allocator, cz::String* string) const {
     if (type == Buffer::TEMPORARY) {
-        if (directory.len() == 0) {
-            string->reserve(allocator, name.len());
+        if (directory.len == 0) {
+            string->reserve(allocator, name.len);
             string->append(name);
         } else {
-            string->reserve(allocator, name.len() + 3 + directory.len());
+            string->reserve(allocator, name.len + 3 + directory.len);
             string->append(name);
             string->append(" (");
             string->append(directory);

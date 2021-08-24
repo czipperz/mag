@@ -159,7 +159,7 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
             }
 
             remove.value = SSOStr::from_constant(remove_str);
-            if (remove_str.len() <= SSOStr::MAX_SHORT_LEN) {
+            if (remove_str.len <= SSOStr::MAX_SHORT_LEN) {
                 remove_str.drop(cz::heap_allocator());
             }
             remove.position = iterator.position;
@@ -190,7 +190,7 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
 
             Edit insert;
             insert.value = SSOStr::from_constant(insert_str);
-            if (insert_str.len() <= SSOStr::MAX_SHORT_LEN) {
+            if (insert_str.len <= SSOStr::MAX_SHORT_LEN) {
                 insert_str.drop(cz::heap_allocator());
             }
             insert.position = iterator.position;
@@ -211,7 +211,7 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
     cz::Vector<Edit> edits = {};
     CZ_DEFER(edits.drop(cz::heap_allocator()));
     CZ_DEFER({
-        for (size_t i = 0; i < edits.len(); ++i) {
+        for (size_t i = 0; i < edits.len; ++i) {
             edits[i].value.drop(cz::heap_allocator());
         }
     });
@@ -229,7 +229,7 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
-    for (size_t i = edits.len(); i-- > 0;) {
+    for (size_t i = edits.len; i-- > 0;) {
         Edit edit = edits[i];
         // The original is cleaned up in the deferred loop at the top.
         edit.value = edit.value.clone(transaction.value_allocator());

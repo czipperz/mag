@@ -6,6 +6,7 @@
 #include <cz/bit_array.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include <cz/util.hpp>
 #include "buffer.hpp"
 #include "buffer_handle.hpp"
 #include "command_macros.hpp"
@@ -22,7 +23,7 @@ void Token_Cache::drop() {
 
 void Token_Cache::reset() {
     change_index = 0;
-    check_points.set_len(0);
+    check_points.len = 0;
     ran_to_end = false;
 }
 
@@ -40,8 +41,8 @@ bool Token_Cache::find_check_point(uint64_t position, size_t* index_out) const {
     ZoneScoped;
 
     size_t start = 0;
-    size_t end = check_points.len();
-    size_t result_index = check_points.len();
+    size_t end = check_points.len;
+    size_t result_index = check_points.len;
     while (start < end) {
         size_t mid = (start + end) / 2;
         if (check_points[mid].position == position) {
@@ -55,7 +56,7 @@ bool Token_Cache::find_check_point(uint64_t position, size_t* index_out) const {
         }
     }
 
-    if (result_index < check_points.len()) {
+    if (result_index < check_points.len) {
         *index_out = result_index;
         return true;
     } else {
@@ -107,11 +108,11 @@ bool Token_Cache::update(const Buffer* buffer) {
     }
 
     cz::Sized_Bit_Array changed_check_points;
-    changed_check_points.init(cz::heap_allocator(), check_points.len());
+    changed_check_points.init(cz::heap_allocator(), check_points.len);
     CZ_DEFER(changed_check_points.drop(cz::heap_allocator()));
 
     // Detect check points that changed
-    for (size_t i = 1; i < check_points.len(); ++i) {
+    for (size_t i = 1; i < check_points.len; ++i) {
         uint64_t pos = check_points[i].position;
 
         bool cntinue = any_changes_after(pending_changes, check_points[i].position);
@@ -126,7 +127,7 @@ bool Token_Cache::update(const Buffer* buffer) {
         check_points[i].position = pos;
 
         if (!cntinue) {
-            for (size_t j = i + 1; j < check_points.len(); ++j) {
+            for (size_t j = i + 1; j < check_points.len; ++j) {
                 check_points[j].position += offset;
             }
             break;
@@ -138,14 +139,14 @@ bool Token_Cache::update(const Buffer* buffer) {
     token.end = 0;
     uint64_t state = 0;
     // Fix check points that were changed
-    for (size_t i = 0; i < check_points.len(); ++i) {
+    for (size_t i = 0; i < check_points.len; ++i) {
         uint64_t end_position = check_points[i].position;
         if (changed_check_points.get(i)) {
             Contents_Iterator iterator = buffer->contents.iterator_at(token.end);
             size_t start = i;
             // Efficiently loop without recalculating the iterator so long as
             // the edit is screwing up future check points.
-            while (i < check_points.len()) {
+            while (i < check_points.len) {
                 ZoneScopedN("mag::Token_Cache::update: one check point");
 
                 // If we don't resolve after 3 check points we probably won't in the immediate
@@ -157,7 +158,7 @@ bool Token_Cache::update(const Buffer* buffer) {
                     TracyFormat(message, len, 1024, "Discarding check points after index %lu",
                                 (unsigned long)i);
                     TracyMessage(message, len);
-                    check_points.set_len(i);
+                    check_points.len = i;
                     ran_to_end = false;
                     return false;
                 }
@@ -172,7 +173,7 @@ bool Token_Cache::update(const Buffer* buffer) {
                     check_points[i].position = token.end;
                     check_points[i].state = state;
                     ++i;
-                    if (i == check_points.len()) {
+                    if (i == check_points.len) {
                         return true;
                     }
                     end_position = check_points[i].position;
@@ -194,7 +195,7 @@ void Token_Cache::generate_check_points_until(const Buffer* buffer, uint64_t pos
 
     uint64_t state;
     Contents_Iterator iterator;
-    if (check_points.len() > 0) {
+    if (check_points.len > 0) {
         state = check_points.last().state;
         iterator = buffer->contents.iterator_at(check_points.last().position);
     } else {
@@ -247,7 +248,7 @@ bool Token_Cache::is_covered(uint64_t position) const {
     }
 
     uint64_t cpp = 0;
-    if (check_points.len() > 0) {
+    if (check_points.len > 0) {
         cpp = check_points.last().position;
     }
     return position < cpp + 1024;
@@ -293,12 +294,12 @@ static Job_Tick_Result job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler
             return Job_Tick_Result::FINISHED;
         }
 
-        if (data->token_cache.check_points.len() != buffer->token_cache.check_points.len() ||
+        if (data->token_cache.check_points.len != buffer->token_cache.check_points.len ||
             data->token_cache.change_index != buffer->token_cache.change_index) {
             data->token_cache.change_index = buffer->token_cache.change_index;
-            data->token_cache.check_points.set_len(0);
+            data->token_cache.check_points.len = 0;
             data->token_cache.check_points.reserve(cz::heap_allocator(),
-                                                   buffer->token_cache.check_points.len());
+                                                   buffer->token_cache.check_points.len);
             data->token_cache.check_points.append(buffer->token_cache.check_points);
             data->token_cache.ran_to_end = buffer->token_cache.ran_to_end;
         }
@@ -307,7 +308,7 @@ static Job_Tick_Result job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler
 
         uint64_t state;
         Contents_Iterator iterator;
-        if (buffer->token_cache.check_points.len() > 0) {
+        if (buffer->token_cache.check_points.len > 0) {
             state = buffer->token_cache.check_points.last().state;
             iterator =
                 buffer->contents.iterator_at(buffer->token_cache.check_points.last().position);
@@ -335,7 +336,7 @@ static Job_Tick_Result job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler
         ZoneScopedN("job_syntax_highlight_buffer_tick record results");
 
         // Someone else pre-empted us and added a bunch of check points.
-        if (data->token_cache.check_points.len() < buffer_mut->token_cache.check_points.len()) {
+        if (data->token_cache.check_points.len < buffer_mut->token_cache.check_points.len) {
             return Job_Tick_Result::MADE_PROGRESS;
         }
 
@@ -344,7 +345,7 @@ static Job_Tick_Result job_syntax_highlight_buffer_tick(Asynchronous_Job_Handler
             return Job_Tick_Result::MADE_PROGRESS;
         }
 
-        std::swap(buffer_mut->token_cache, data->token_cache);
+        cz::swap(buffer_mut->token_cache, data->token_cache);
     }
 
     if (stop) {

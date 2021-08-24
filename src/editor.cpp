@@ -14,7 +14,7 @@ void Editor::create() {
 }
 
 void Editor::drop() {
-    for (size_t i = 0; i < buffers.len(); ++i) {
+    for (size_t i = 0; i < buffers.len; ++i) {
         buffers[i].drop();
     }
     buffers.drop(cz::heap_allocator());
@@ -25,11 +25,11 @@ void Editor::drop() {
     theme.drop();
     copy_buffer.drop();
 
-    for (size_t i = 0; i < pending_jobs.len(); ++i) {
+    for (size_t i = 0; i < pending_jobs.len; ++i) {
         pending_jobs[i].kill(pending_jobs[i].data);
     }
     pending_jobs.drop(cz::heap_allocator());
-    for (size_t i = 0; i < synchronous_jobs.len(); ++i) {
+    for (size_t i = 0; i < synchronous_jobs.len; ++i) {
         synchronous_jobs[i].kill(synchronous_jobs[i].data);
     }
     synchronous_jobs.drop(cz::heap_allocator());
@@ -46,7 +46,7 @@ void Editor::add_synchronous_job(Synchronous_Job job) {
 }
 
 void Editor::kill(Buffer_Handle* buffer) {
-    for (size_t i = buffers.len(); i-- > 0;) {
+    for (size_t i = buffers.len; i-- > 0;) {
         if (buffers[i].get() == buffer) {
             buffers[i].drop();
             buffers.remove(i);

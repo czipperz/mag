@@ -101,7 +101,7 @@ inline Contents_Iterator Contents::end() const {
     Contents_Iterator it = {};
     it.contents = this;
     it.position = len;
-    it.bucket = buckets.len();
+    it.bucket = buckets.len;
     it.index = 0;
     return it;
 }

@@ -102,7 +102,7 @@ static Face overlay_highlight_string_get_face_and_advance(const Buffer* buffer,
         }
 
         if (looking_at_cased(iterator, data->string, data->case_handling)) {
-            data->countdown_cursor_region = data->string.len();
+            data->countdown_cursor_region = data->string.len;
         }
     }
 

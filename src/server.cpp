@@ -9,6 +9,7 @@
 #include <cz/heap.hpp>
 #include <cz/mutex.hpp>
 #include <cz/semaphore.hpp>
+#include <cz/util.hpp>
 #include "basic/commands.hpp"
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -70,7 +71,7 @@ struct Run_Jobs {
 
         handler.pending_synchronous_jobs.reserve(cz::heap_allocator(), 2);
         CZ_DEFER({
-            for (size_t i = 0; i < handler.pending_synchronous_jobs.len(); ++i) {
+            for (size_t i = 0; i < handler.pending_synchronous_jobs.len; ++i) {
                 handler.pending_synchronous_jobs[i].kill(handler.pending_synchronous_jobs[i].data);
             }
             handler.pending_synchronous_jobs.drop(cz::heap_allocator());
@@ -78,7 +79,7 @@ struct Run_Jobs {
 
         handler.pending_asynchronous_jobs.reserve(cz::heap_allocator(), 2);
         CZ_DEFER({
-            for (size_t i = 0; i < handler.pending_asynchronous_jobs.len(); ++i) {
+            for (size_t i = 0; i < handler.pending_asynchronous_jobs.len; ++i) {
                 handler.pending_asynchronous_jobs[i].kill(
                     handler.pending_asynchronous_jobs[i].data);
             }
@@ -101,9 +102,9 @@ struct Run_Jobs {
                 data->mutex.lock();
                 CZ_DEFER(data->mutex.unlock());
 
-                if (queue_message.len() != 0) {
-                    std::swap(data->message, queue_message);
-                    queue_message.set_len(0);
+                if (queue_message.len != 0) {
+                    cz::swap(data->message, queue_message);
+                    queue_message.len = 0;
                 }
 
                 if (remove) {
@@ -120,22 +121,22 @@ struct Run_Jobs {
 
                 // Send synchronous jobs to the Editor.
                 data->pending_jobs.reserve(cz::heap_allocator(),
-                                           handler.pending_synchronous_jobs.len());
+                                           handler.pending_synchronous_jobs.len);
                 data->pending_jobs.append(handler.pending_synchronous_jobs);
-                handler.pending_synchronous_jobs.set_len(0);
+                handler.pending_synchronous_jobs.len = 0;
 
                 // Add asynchronous jobs to the list.
-                data->jobs.reserve(cz::heap_allocator(), handler.pending_asynchronous_jobs.len());
+                data->jobs.reserve(cz::heap_allocator(), handler.pending_asynchronous_jobs.len);
                 data->jobs.append(handler.pending_asynchronous_jobs);
-                handler.pending_asynchronous_jobs.set_len(0);
+                handler.pending_asynchronous_jobs.len = 0;
 
-                if (data->jobs.len() == 0) {
+                if (data->jobs.len == 0) {
                     job_index = 0;
                     made_progress = false;
                     goto wait_for_more_jobs;
                 }
 
-                if (job_index == data->jobs.len()) {
+                if (job_index == data->jobs.len) {
                     job_index = 0;
                     if (!made_progress) {
                         goto sleep;
@@ -247,12 +248,12 @@ void Server::drop() {
     data->added_asynchronous_job_signal.drop();
     data->mutex.drop();
 
-    for (size_t i = 0; i < data->jobs.len(); ++i) {
+    for (size_t i = 0; i < data->jobs.len; ++i) {
         data->jobs[i].kill(data->jobs[i].data);
     }
     data->jobs.drop(cz::heap_allocator());
 
-    for (size_t i = 0; i < data->pending_jobs.len(); ++i) {
+    for (size_t i = 0; i < data->pending_jobs.len; ++i) {
         data->pending_jobs[i].kill(data->pending_jobs[i].data);
     }
     data->pending_jobs.drop(cz::heap_allocator());
@@ -276,24 +277,24 @@ bool Server::slurp_jobs() {
     data->mutex.lock();
     CZ_DEFER(data->mutex.unlock());
 
-    data->jobs.reserve(cz::heap_allocator(), editor.pending_jobs.len());
+    data->jobs.reserve(cz::heap_allocator(), editor.pending_jobs.len);
     data->jobs.append(editor.pending_jobs);
-    if (editor.pending_jobs.len() > 0) {
+    if (editor.pending_jobs.len > 0) {
         data->added_asynchronous_job_signal.release();
     }
-    editor.pending_jobs.set_len(0);
+    editor.pending_jobs.len = 0;
 
-    editor.synchronous_jobs.reserve(cz::heap_allocator(), data->pending_jobs.len());
+    editor.synchronous_jobs.reserve(cz::heap_allocator(), data->pending_jobs.len);
     editor.synchronous_jobs.append(data->pending_jobs);
-    data->pending_jobs.set_len(0);
+    data->pending_jobs.len = 0;
 
-    std::swap(pending_message, data->message);
+    cz::swap(pending_message, data->message);
 
-    return data->jobs.len() > 0;
+    return data->jobs.len > 0;
 }
 
 bool Server::send_pending_asynchronous_jobs() {
-    if (editor.pending_jobs.len() == 0) {
+    if (editor.pending_jobs.len == 0) {
         return false;
     }
 
@@ -305,12 +306,12 @@ bool Server::run_synchronous_jobs(Client* client) {
 
     bool ran_any_jobs = false;
 
-    if (pending_message.len() > 0) {
+    if (pending_message.len > 0) {
         client->show_message(pending_message);
-        pending_message.set_len(0);
+        pending_message.len = 0;
     }
 
-    for (size_t i = 0; i < editor.synchronous_jobs.len();) {
+    for (size_t i = 0; i < editor.synchronous_jobs.len;) {
         ran_any_jobs = true;
         Synchronous_Job job = editor.synchronous_jobs[i];
         Job_Tick_Result result = job.tick(&editor, client, job.data);
@@ -398,7 +399,7 @@ static void run_command(Command command, Editor* editor, Command_Source source) 
             }
             message.append(")");
 
-            TracyMessage(message.buffer(), message.len());
+            TracyMessage(message.buffer(), message.len);
         }
 #endif
 
@@ -463,12 +464,12 @@ static bool recursively_remap_and_lookup_key_press(const Key_Remap& remap,
                                                    size_t* max_depth,
                                                    const Key_Map* map) {
     // Advance through keys that don't have alternatives.
-    while (index < key_chain.len() && !remap.bound(key_chain[index])) {
+    while (index < key_chain.len && !remap.bound(key_chain[index])) {
         ++index;
     }
 
     // No alternatives so look up at this point.
-    if (index == key_chain.len()) {
+    if (index == key_chain.len) {
         return lookup_key_press_inner(key_chain, start, command, end, max_depth, map);
     }
 
@@ -595,7 +596,7 @@ void Server::receive(Client* client, Key key) {
         break;
     }
 
-    while (client->key_chain_offset < client->key_chain.len()) {
+    while (client->key_chain_offset < client->key_chain.len) {
         Command command;
         size_t end;
         size_t max_depth = 1;

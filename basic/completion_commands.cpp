@@ -12,7 +12,7 @@ void command_insert_completion(Editor* editor, Command_Source source) {
     Completion_Filter_Context* context =
         &source.client->mini_buffer_completion_cache.filter_context;
     cz::Str query = source.client->mini_buffer_completion_cache.engine_context.query;
-    if (context->selected >= context->results.len()) {
+    if (context->selected >= context->results.len) {
         return;
     }
 
@@ -60,7 +60,7 @@ void command_insert_completion_and_submit_mini_buffer(Editor* editor, Command_So
 void command_next_completion(Editor* editor, Command_Source source) {
     Completion_Filter_Context* context =
         &source.client->mini_buffer_completion_cache.filter_context;
-    if (context->selected + 1 >= context->results.len()) {
+    if (context->selected + 1 >= context->results.len) {
         return;
     }
     ++context->selected;
@@ -78,8 +78,8 @@ void command_previous_completion(Editor* editor, Command_Source source) {
 void command_completion_down_page(Editor* editor, Command_Source source) {
     Completion_Filter_Context* context =
         &source.client->mini_buffer_completion_cache.filter_context;
-    if (context->selected + editor->theme.max_completion_results >= context->results.len()) {
-        context->selected = context->results.len();
+    if (context->selected + editor->theme.max_completion_results >= context->results.len) {
+        context->selected = context->results.len;
         if (context->selected > 0) {
             --context->selected;
         }
@@ -107,7 +107,7 @@ void command_first_completion(Editor* editor, Command_Source source) {
 void command_last_completion(Editor* editor, Command_Source source) {
     Completion_Filter_Context* context =
         &source.client->mini_buffer_completion_cache.filter_context;
-    context->selected = context->results.len();
+    context->selected = context->results.len;
     if (context->selected > 0) {
         --context->selected;
     }

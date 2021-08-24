@@ -34,7 +34,7 @@ static Face overlay_trailing_spaces_get_face_and_advance(
     }
 
     while (1) {
-        for (size_t i = 0; i < window->cursors.len(); ++i) {
+        for (size_t i = 0; i < window->cursors.len; ++i) {
             if (current_position_iterator.position == window->cursors[i].point) {
                 return {};
             }

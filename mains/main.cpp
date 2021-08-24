@@ -8,6 +8,7 @@
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
 #include <cz/str.hpp>
+#include <cz/util.hpp>
 #include <cz/working_directory.hpp>
 #include "client.hpp"
 #include "command.hpp"
@@ -96,7 +97,7 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     cz::String path = arg.slice_end(colon).clone_null_terminate(cz::heap_allocator());
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
-    if (cz::file::exists(path.buffer())) {
+    if (cz::file::exists(path.buffer)) {
         // Argument is of form FILE:LINE.
         open_file_tiling(editor, client, path, opened_count, line, 0);
         return;
@@ -119,12 +120,12 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     if (sscanf(colon + 1, "%" PRIu64, &column) < 1) {
         goto open;
     }
-    std::swap(line, column);
+    cz::swap(line, column);
 
-    path.set_len(colon - path.buffer());
+    path.len = colon - path.buffer;
     path.null_terminate();
 
-    if (cz::file::exists(path.buffer())) {
+    if (cz::file::exists(path.buffer)) {
         // Argument is of form FILE:LINE:COLUMN.
         open_file_tiling(editor, client, path, opened_count, line, column);
         return;
@@ -169,18 +170,18 @@ int mag_main(int argc, char** argv) {
 #endif
         while (1) {
 #ifdef _WIN32
-            DWORD count = GetModuleFileNameA(NULL, program_name_storage.buffer(),
-                                             (DWORD)program_name_storage.cap());
+            DWORD count = GetModuleFileNameA(NULL, program_name_storage.buffer,
+                                             (DWORD)program_name_storage.cap);
 #else
-            ssize_t count = readlink("/proc/self/exe", program_name_storage.buffer(),
-                                     program_name_storage.cap());
+            ssize_t count = readlink("/proc/self/exe", program_name_storage.buffer,
+                                     program_name_storage.cap);
 #endif
             if (count <= 0) {
                 // Failure.
                 break;
-            } else if ((size_t)count <= program_name_storage.cap()) {
+            } else if ((size_t)count <= program_name_storage.cap) {
                 // Success.
-                program_name_storage.set_len((size_t)count);
+                program_name_storage.len = (size_t)count;
 
                 // String is already null terminated on Windows but we need to do it manually on
                 // Linux.
@@ -191,15 +192,15 @@ int mag_main(int argc, char** argv) {
                 break;
             } else {
                 // Try again with more storage.
-                program_name_storage.reserve(cz::heap_allocator(), program_name_storage.cap() * 2);
+                program_name_storage.reserve(cz::heap_allocator(), program_name_storage.cap * 2);
             }
         }
 
         // If we never set the len then we couldn't get a valid path.
-        if (program_name_storage.len() == 0) {
+        if (program_name_storage.len == 0) {
             program_name = argv[0];
         } else {
-            program_name = program_name_storage.buffer();
+            program_name = program_name_storage.buffer;
         }
 
         program_date = {};
@@ -213,7 +214,7 @@ int mag_main(int argc, char** argv) {
         cz::path::convert_to_forward_slashes(&program_dir_);
         if (cz::path::pop_name(&program_dir_)) {
             program_dir_.null_terminate();
-            program_dir = program_dir_.buffer();
+            program_dir = program_dir_.buffer;
         } else {
             program_dir = ".";
         }
@@ -222,7 +223,7 @@ int mag_main(int argc, char** argv) {
         cz::String home_directory_storage = {};
         CZ_DEFER(home_directory_storage.drop(cz::heap_allocator()));
         if (cz::env::get_home(cz::heap_allocator(), &home_directory_storage)) {
-            user_home_path = home_directory_storage.buffer();
+            user_home_path = home_directory_storage.buffer;
         }
 
         switch_to_the_home_directory();

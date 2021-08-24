@@ -55,7 +55,7 @@ void Test_Runner::setup(cz::Str input) {
         }
     }
 
-    if (window->cursors.len() > 1) {
+    if (window->cursors.len > 1) {
         window->cursors.remove(0);
     }
 
@@ -67,7 +67,7 @@ void Test_Runner::setup(cz::Str input) {
 
     transaction.commit(&client);
 
-    window->change_index = buffer->changes.len();
+    window->change_index = buffer->changes.len;
 }
 
 cz::String Test_Runner::stringify() {
@@ -76,7 +76,7 @@ cz::String Test_Runner::stringify() {
     WITH_CONST_SELECTED_BUFFER(&client);
 
     Contents_Iterator it = buffer->contents.start();
-    for (size_t i = 0; i < window->cursors.len(); ++i) {
+    for (size_t i = 0; i < window->cursors.len; ++i) {
         uint64_t end = window->cursors[i].point;
         while (it.position < end) {
             output.reserve(allocator(), 1);

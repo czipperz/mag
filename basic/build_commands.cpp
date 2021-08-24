@@ -15,7 +15,7 @@ void command_build_debug_vc_root(Editor* editor, Command_Source source) {
 
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        if (!version_control::get_root_directory(editor, source.client, buffer->directory.buffer(),
+        if (!version_control::get_root_directory(editor, source.client, buffer->directory.buffer,
                                                  cz::heap_allocator(), &top_level_path)) {
             return;
         }
@@ -26,7 +26,7 @@ void command_build_debug_vc_root(Editor* editor, Command_Source source) {
 #else
     cz::Str args[] = {"./build-debug"};
 #endif
-    run_console_command(source.client, editor, top_level_path.buffer(), args, "build debug",
+    run_console_command(source.client, editor, top_level_path.buffer, args, "build debug",
                         "Failed to run build-debug.sh");
 }
 

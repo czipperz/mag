@@ -8,6 +8,7 @@
 #include <cz/mutex.hpp>
 #include <cz/path.hpp>
 #include <cz/sort.hpp>
+#include <cz/util.hpp>
 #include "command_macros.hpp"
 #include "file.hpp"
 #include "prose/helpers.hpp"
@@ -30,7 +31,7 @@ struct Find_File_Shared_Data {
     void drop() {
         mutex.drop();
 
-        for (size_t i = 0; i < results.len(); ++i) {
+        for (size_t i = 0; i < results.len; ++i) {
             results[i].drop(cz::heap_allocator());
         }
         results.drop(cz::heap_allocator());
@@ -65,7 +66,7 @@ struct Find_File_Job_Data {
 
         data->ignore_rules.drop();
 
-        for (size_t i = data->directories.len(); i-- > 0;) {
+        for (size_t i = data->directories.len; i-- > 0;) {
             (void)data->directories[i].entries.drop(cz::heap_allocator());
         }
         data->directories.drop(cz::heap_allocator());
@@ -102,7 +103,7 @@ static bool load_directory(Find_File_Job_Data* data) {
 
     // Start iterating in this directory.
     cz::Directory_Iterator iterator;
-    if (iterator.init(data->path.buffer(), entry_allocator, &entry).is_err()) {
+    if (iterator.init(data->path.buffer, entry_allocator, &entry).is_err()) {
         return false;
     }
     CZ_DEFER(iterator.drop());
@@ -149,7 +150,7 @@ static Job_Tick_Result find_file_job_tick(Asynchronous_Job_Handler* handler, voi
 
         data->results_buffer_array.init();
 
-        version_control::find_ignore_rules(data->path.buffer(), &data->ignore_rules);
+        version_control::find_ignore_rules(data->path.buffer, &data->ignore_rules);
 
         // Load first directory.
         if (!load_directory(data)) {
@@ -171,7 +172,7 @@ static Job_Tick_Result find_file_job_tick(Asynchronous_Job_Handler* handler, voi
 
     while (results.remaining() > 0) {
         // Pop empty entries.
-        while (data->directories.len() > 0 && data->directories.last().entries.len() == 0) {
+        while (data->directories.len > 0 && data->directories.last().entries.len == 0) {
             // Pop last name and trailing `/`.  Ex. `/home/abc/` -> `/home/`.
             data->path.pop();
             cz::path::pop_name(&data->path);
@@ -183,11 +184,11 @@ static Job_Tick_Result find_file_job_tick(Asynchronous_Job_Handler* handler, voi
         }
 
         // Test if we're completely done.
-        if (data->directories.len() == 0) {
+        if (data->directories.len == 0) {
             break;
         }
 
-        const size_t old_len = data->path.len();
+        const size_t old_len = data->path.len;
 
         // Get the absolute path to this entry.
         cz::Str entry = data->directories.last().entries.pop();
@@ -198,16 +199,16 @@ static Job_Tick_Result find_file_job_tick(Asynchronous_Job_Handler* handler, voi
         // Skip ignored files.
         if (version_control::file_matches(data->ignore_rules,
                                           data->path.slice_start(data->path_initial_len))) {
-            data->path.set_len(old_len);
+            data->path.len = old_len;
             continue;
         }
 
         // Non-directories are listed literally.  Don't follow symlinks so count them as files.
-        if (!cz::file::is_directory_and_not_symlink(data->path.buffer()) ||
+        if (!cz::file::is_directory_and_not_symlink(data->path.buffer) ||
             data->directories.remaining() == 0) {
             cz::Str result = data->path.slice_start(data->path_initial_len + 1);
             results.push(result.clone(data->results_buffer_array.allocator()));
-            data->path.set_len(old_len);
+            data->path.len = old_len;
             continue;
         }
 
@@ -224,14 +225,14 @@ static Job_Tick_Result find_file_job_tick(Asynchronous_Job_Handler* handler, voi
     // If we stop early then we are done.
     if (results.remaining() > 0) {
         shared->finished = true;
-        std::swap(shared->results_buffer_array, data->results_buffer_array);
+        cz::swap(shared->results_buffer_array, data->results_buffer_array);
         data->drop();
         cz::heap_allocator().dealloc(data);
         result = Job_Tick_Result::FINISHED;
     }
 
     // If there are results then push them.
-    if (results.len() > 0) {
+    if (results.len > 0) {
         shared->results.reserve(cz::heap_allocator(), 1);
         shared->results.push(results);
     } else {
@@ -276,7 +277,7 @@ static bool find_file_completion_engine(Editor* editor,
         Find_File_Job_Data* job_data = cz::heap_allocator().alloc<Find_File_Job_Data>();
         CZ_ASSERT(job_data);
         *job_data = {};
-        job_data->path_initial_len = data->path.len();
+        job_data->path_initial_len = data->path.len;
         job_data->path = data->path.clone_null_terminate(cz::heap_allocator());
         job_data->shared = data->shared.clone_downgrade();
         job_data->entries_buffer_array.init();
@@ -288,7 +289,7 @@ static bool find_file_completion_engine(Editor* editor,
         editor->add_asynchronous_job(job);
 
         context->results_buffer_array.clear();
-        context->results.set_len(0);
+        context->results.len = 0;
     }
 
     if (data->finished) {
@@ -310,7 +311,7 @@ static bool find_file_completion_engine(Editor* editor,
 
         size_t total = 0;
         for (size_t i = 0; i < results.len; ++i) {
-            total += results[i].len();
+            total += results[i].len;
         }
 
         context->results.reserve(total);
@@ -320,7 +321,7 @@ static bool find_file_completion_engine(Editor* editor,
             results[i].drop(cz::heap_allocator());
         }
 
-        shared->results.set_len(0);
+        shared->results.len = 0;
     }
 
     if (shared->finished) {
@@ -365,7 +366,7 @@ static void find_file(Editor* editor,
     dialog.prompt = prompt;
     dialog.completion_engine = find_file_completion_engine;
     dialog.response_callback = command_find_file_response;
-    dialog.response_callback_data = directory.buffer();
+    dialog.response_callback_data = directory.buffer;
     dialog.next_token = syntax::path_next_token;
     client->show_dialog(dialog);
 

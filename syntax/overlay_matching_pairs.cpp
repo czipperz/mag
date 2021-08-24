@@ -64,13 +64,13 @@ static void overlay_matching_pairs_start_frame(Editor*,
 
     Data* data = (Data*)_data;
     data->index = 0;
-    data->points.set_len(0);
+    data->points.len = 0;
 
     Contents_Iterator end_iterator = start_position_iterator;
     forward_visual_line(window, buffer->mode, &end_iterator, window->rows() - 1);
 
     // Note: we update the token cache in the render loop.
-    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
+    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.find_check_point(start_position_iterator.position, &check_point);
 
@@ -109,7 +109,7 @@ static void overlay_matching_pairs_start_frame(Editor*,
 
             size_t depth = 1;
             if (tokens[token_index].type == Token_Type::OPEN_PAIR) {
-                for (size_t i = token_index + 1; i < tokens.len(); ++i) {
+                for (size_t i = token_index + 1; i < tokens.len; ++i) {
                     if (tokens[i].type == Token_Type::OPEN_PAIR) {
                         ++depth;
                     } else {
@@ -146,7 +146,7 @@ static void overlay_matching_pairs_start_frame(Editor*,
 
     cz::sort(data->points);
     auto new_end = std::unique(data->points.start(), data->points.end());
-    data->points.set_len(new_end - data->points.start());
+    data->points.len = new_end - data->points.start();
 }
 
 static Face overlay_matching_pairs_get_face_and_advance(const Buffer* buffer,
@@ -158,7 +158,7 @@ static Face overlay_matching_pairs_get_face_and_advance(const Buffer* buffer,
     Data* data = (Data*)_data;
 
     Face face = {};
-    if (data->index < data->points.len()) {
+    if (data->index < data->points.len) {
         if (data->points[data->index] == iterator.position) {
             face = data->face;
             ++data->index;

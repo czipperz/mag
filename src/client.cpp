@@ -49,7 +49,7 @@ void Client::drop() {
     dealloc_message();
     Window::drop_(window);
     Window::drop_(_mini_buffer);
-    for (size_t i = 0; i < _offscreen_windows.len(); ++i) {
+    for (size_t i = 0; i < _offscreen_windows.len; ++i) {
         Window::drop_(_offscreen_windows[i]);
     }
     _offscreen_windows.drop(cz::heap_allocator());
@@ -243,7 +243,7 @@ static void setup_completion_cache(Client* client) {
 void Client::update_mini_buffer_completion_cache() {
     WITH_WINDOW_BUFFER(mini_buffer_window());
 
-    if (mini_buffer_completion_cache.update(buffer->changes.len())) {
+    if (mini_buffer_completion_cache.update(buffer->changes.len)) {
         buffer->contents.stringify_into(cz::heap_allocator(),
                                         &mini_buffer_completion_cache.engine_context.query);
     }

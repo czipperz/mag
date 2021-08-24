@@ -59,9 +59,9 @@ static size_t subtract_bounded(size_t left, size_t right) {
 void command_up_page(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
-    if (window->cursors.len() > 1) {
+    if (window->cursors.len > 1) {
         if (window->selected_cursor == 0) {
-            window->selected_cursor = window->cursors.len();
+            window->selected_cursor = window->cursors.len;
         }
         --window->selected_cursor;
 
@@ -86,9 +86,9 @@ void command_up_page(Editor* editor, Command_Source source) {
 void command_down_page(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
-    if (window->cursors.len() > 1) {
+    if (window->cursors.len > 1) {
         ++window->selected_cursor;
-        if (window->selected_cursor == window->cursors.len()) {
+        if (window->selected_cursor == window->cursors.len) {
             window->selected_cursor = 0;
         }
 

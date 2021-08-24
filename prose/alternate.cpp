@@ -13,8 +13,8 @@ static bool replace_if_contains(cz::String& path, cz::Str search, cz::Str replac
         return false;
     }
 
-    size_t index = position - path.buffer();
-    path.reserve_total(cz::heap_allocator(), path.len() - search.len + replacement.len);
+    size_t index = position - path.buffer;
+    path.reserve_total(cz::heap_allocator(), path.len - search.len + replacement.len);
     path.remove_many(index, search.len);
     path.insert(index, replacement);
     return true;
@@ -26,11 +26,11 @@ static bool test_all_files(cz::String& path, cz::Slice<cz::Str> dest_extensions)
         path.append(dest_extensions[i]);
         path.null_terminate();
 
-        if (cz::file::exists(path.buffer())) {
+        if (cz::file::exists(path.buffer)) {
             return true;
         }
 
-        path.set_len(path.len() - dest_extensions[i].len);
+        path.len = path.len - dest_extensions[i].len;
     }
 
     return false;
@@ -44,7 +44,7 @@ static int test_extensions(cz::String& path,
 
     for (size_t i = 0; i < src_extensions.len; ++i) {
         if (path.ends_with(src_extensions[i])) {
-            path.set_len(path.len() - src_extensions[i].len);
+            path.len = path.len - src_extensions[i].len;
 
             // See if we can find the paired file.
             if (test_all_files(path, dest_extensions)) {
@@ -67,7 +67,7 @@ static int test_extensions(cz::String& path,
 
     // No files were found so guess at the extension based on the first match.
     if (any_match) {
-        path.set_len(path.len() - src_extensions[match].len);
+        path.len = path.len - src_extensions[match].len;
         path.append(dest_extensions[match]);
         return 1;
     }

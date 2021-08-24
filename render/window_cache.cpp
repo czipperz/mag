@@ -37,7 +37,7 @@ void cache_window_unified_position(Window_Unified* window,
 
     window_cache->v.unified.visible_start = start_position;
     window->start_position = start_position;
-    window_cache->v.unified.change_index = buffer->changes.len();
+    window_cache->v.unified.change_index = buffer->changes.len;
     window_cache->v.unified.selected_cursor_mark = window->cursors[window->selected_cursor].mark;
 }
 
@@ -50,7 +50,7 @@ void cache_window_unified_create(Editor* editor,
     window_cache->tag = Window::UNIFIED;
     window_cache->v.unified = {};
     window_cache->v.unified.id = buffer->id;
-    window_cache->v.unified.cursor_count = window->cursors.len();
+    window_cache->v.unified.cursor_count = window->cursors.len;
     window_cache->v.unified.animated_scrolling.visible_start = window->start_position;
     cache_window_unified_position(window, window_cache, window->start_position, buffer);
 }

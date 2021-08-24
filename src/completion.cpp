@@ -39,7 +39,7 @@ bool Completion_Cache::update(size_t changes_len) {
     if (change_index != changes_len) {
         change_index = changes_len;
         state = Completion_Cache::LOADING;
-        engine_context.query.set_len(0);
+        engine_context.query.len = 0;
         return true;
     }
     return false;
@@ -59,7 +59,7 @@ void Completion_Cache::set_engine(Completion_Engine new_engine) {
     engine_context.cleanup = nullptr;
     engine_context.data = nullptr;
     engine_context.results_buffer_array.clear();
-    engine_context.results.set_len(0);
+    engine_context.results.len = 0;
 }
 
 void prefix_completion_filter(Editor* editor,
@@ -67,11 +67,11 @@ void prefix_completion_filter(Editor* editor,
                               Completion_Engine_Context* engine_context,
                               cz::Str selected_result,
                               bool has_selected_result) {
-    for (size_t i = 0; i < engine_context->results.len(); ++i) {
+    for (size_t i = 0; i < engine_context->results.len; ++i) {
         cz::Str result = engine_context->results[i];
         if (result.starts_with(engine_context->query)) {
             if (has_selected_result && selected_result == result) {
-                context->selected = context->results.len();
+                context->selected = context->results.len;
             }
             context->results.push(result);
         }
@@ -83,11 +83,11 @@ void infix_completion_filter(Editor* editor,
                              Completion_Engine_Context* engine_context,
                              cz::Str selected_result,
                              bool has_selected_result) {
-    for (size_t i = 0; i < engine_context->results.len(); ++i) {
+    for (size_t i = 0; i < engine_context->results.len; ++i) {
         cz::Str result = engine_context->results[i];
         if (result.contains(engine_context->query)) {
             if (has_selected_result && selected_result == result) {
-                context->selected = context->results.len();
+                context->selected = context->results.len;
             }
             context->results.push(result);
         }
@@ -102,7 +102,7 @@ struct Wildcard_Pattern {
 
     bool matches(cz::Str string) {
         size_t index = 0;
-        for (size_t j = 0; j < pieces.len(); ++j) {
+        for (size_t j = 0; j < pieces.len;++j) {
             cz::Str piece = pieces[j];
 
             if (j == 0 && (!wild_start || !wild_start_component)) {
@@ -126,7 +126,7 @@ struct Wildcard_Pattern {
 
             // If there are multiple parts of the string that match the last
             // piece and wild_end is set then we only care about the end.
-            if (j + 1 == pieces.len() && !wild_end) {
+            if (j + 1 == pieces.len && !wild_end) {
                 return string.ends_with_case_insensitive(piece);
             }
 
@@ -149,23 +149,23 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
     Wildcard_Pattern pattern = {};
 
     size_t start = 0;
-    size_t end = query.len();
+    size_t end = query.len;
 
     // Recognize ^ at start -> first piece must be at the start of the string.
-    if (start < query.len() && query[start] == '^') {
+    if (start < query.len && query[start] == '^') {
         pattern.wild_start = false;
         ++start;
     }
-    while (start < query.len() && query[start] == ' ') {
+    while (start < query.len && query[start] == ' ') {
         ++start;
     }
 
     // Recognize % at start -> first piece must either be at the start of the string or after a /.
-    if (start < query.len() && query[start] == '%') {
+    if (start < query.len && query[start] == '%') {
         pattern.wild_start_component = false;
         ++start;
     }
-    while (start < query.len() && query[start] == ' ') {
+    while (start < query.len && query[start] == ' ') {
         ++start;
     }
 
@@ -247,13 +247,13 @@ void spaces_are_wildcards_completion_filter(Editor* editor,
     CZ_DEFER(pattern.pieces.drop(cz::heap_allocator()));
 
     context->selected = 0;
-    context->results.set_len(0);
-    context->results.reserve(engine_context->results.len());
-    for (size_t i = 0; i < engine_context->results.len(); ++i) {
+    context->results.len = 0;
+    context->results.reserve(engine_context->results.len);
+    for (size_t i = 0; i < engine_context->results.len; ++i) {
         cz::Str result = engine_context->results[i];
         if (pattern.matches(result)) {
             if (has_selected_result && selected_result == result) {
-                context->selected = context->results.len();
+                context->selected = context->results.len;
             }
             context->results.push(result);
         }
@@ -324,49 +324,49 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
         context->cleanup = file_completion_engine_data_cleanup;
     }
 
-    data->temp_result.set_len(0);
+    data->temp_result.len = 0;
     cz::Str prefix = get_directory_to_list(&data->temp_result, context->query);
     if (data->temp_result == data->directory) {
         if (!data->has_file_time ||
-            !check_out_of_date_and_update_file_time(data->directory.buffer(), &data->file_time)) {
+            !check_out_of_date_and_update_file_time(data->directory.buffer, &data->file_time)) {
             // Directory has not changed so track the selected item.
             return false;
         }
     }
 
-    std::swap(data->temp_result, data->directory);
+    cz::swap(data->temp_result, data->directory);
     data->directory.null_terminate();
 
     // Directory has changed so load new results.
     context->results_buffer_array.clear();
-    context->results.set_len(0);
+    context->results.len = 0;
 
-    data->has_file_time = cz::get_file_time(data->directory.buffer(), &data->file_time);
+    data->has_file_time = cz::get_file_time(data->directory.buffer, &data->file_time);
 
     do {
         cz::Heap_String file = {};
         CZ_DEFER(file.drop());
         cz::Heap_String query = {};
         CZ_DEFER(query.drop());
-        query.reserve(data->directory.len());
+        query.reserve(data->directory.len);
         query.append(data->directory);
 
         cz::Directory_Iterator iterator;
-        if (iterator.init(data->directory.buffer(), cz::heap_allocator(), &file).is_err()) {
+        if (iterator.init(data->directory.buffer, cz::heap_allocator(), &file).is_err()) {
             break;
         }
         CZ_DEFER(iterator.drop());
 
         while (!iterator.done()) {
-            query.reserve(file.len() + 1);
+            query.reserve(file.len + 1);
             query.append(file);
             query.null_terminate();
-            bool add_slash = cz::file::is_directory(query.buffer());
-            query.set_len(data->directory.len());
+            bool add_slash = cz::file::is_directory(query.buffer);
+            query.len = data->directory.len;
 
             cz::String result = {};
             result.reserve(context->results_buffer_array.allocator(),
-                           prefix.len + file.len() + add_slash);
+                           prefix.len + file.len + add_slash);
             result.append(prefix);
             result.append(file);
             if (add_slash) {
@@ -376,7 +376,7 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
             context->results.reserve(1);
             context->results.push(result);
 
-            file.set_len(0);
+            file.len = 0;
             if (iterator.advance(cz::heap_allocator(), &file).is_err()) {
                 break;
             }
@@ -392,14 +392,14 @@ bool buffer_completion_engine(Editor* editor,
                               bool is_initial_frame) {
     ZoneScoped;
 
-    if (!is_initial_frame && context->results.len() > 0) {
+    if (!is_initial_frame && context->results.len > 0) {
         return false;
     }
 
     context->results_buffer_array.clear();
-    context->results.set_len(0);
-    context->results.reserve(editor->buffers.len());
-    for (size_t i = 0; i < editor->buffers.len(); ++i) {
+    context->results.len = 0;
+    context->results.reserve(editor->buffers.len);
+    for (size_t i = 0; i < editor->buffers.len; ++i) {
         Buffer_Handle* handle = editor->buffers[i].get();
         WITH_CONST_BUFFER_HANDLE(handle);
 
@@ -438,7 +438,7 @@ bool Run_Command_For_Completion_Results::iterate(Completion_Engine_Context* cont
                                                  bool force_reload) {
     ZoneScoped;
 
-    if (!force_reload && context->results.len() > 0 && !pimpl) {
+    if (!force_reload && context->results.len > 0 && !pimpl) {
         return false;
     }
 
@@ -463,7 +463,7 @@ bool Run_Command_For_Completion_Results::iterate(Completion_Engine_Context* cont
         pimpl = data;
 
         context->results_buffer_array.clear();
-        context->results.set_len(0);
+        context->results.len = 0;
     }
 
     char buffer[1024];

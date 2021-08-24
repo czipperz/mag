@@ -57,7 +57,7 @@ static bool load_completion_cache(Editor* editor,
         if (buffer->mode.wrap_long_lines ||                                                   \
             (column >= window->column_offset &&                                               \
              column < window->column_offset + window->cols() -                                \
-                          draw_line_numbers * line_number_buffer.cap())) {                    \
+                          draw_line_numbers * line_number_buffer.cap)) {                    \
             SET_BODY(FACE, CH);                                                               \
             ++x;                                                                              \
         }                                                                                     \
@@ -68,7 +68,7 @@ static bool load_completion_cache(Editor* editor,
                                                                                               \
             if (draw_line_numbers) {                                                          \
                 Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING]; \
-                for (size_t i = 0; i < line_number_buffer.cap() - 1; ++i) {                   \
+                for (size_t i = 0; i < line_number_buffer.cap - 1; ++i) {                   \
                     SET_BODY(face, ' ');                                                      \
                     ++x;                                                                      \
                 }                                                                             \
@@ -152,12 +152,12 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
     }
 
     // Check that the selected cursor is in bounds.
-    CZ_DEBUG_ASSERT(window->selected_cursor < window->cursors.len());
+    CZ_DEBUG_ASSERT(window->selected_cursor < window->cursors.len);
 
     // Delete cursors at the same point.
-    for (size_t i = 0; i + 1 < window->cursors.len();) {
+    for (size_t i = 0; i + 1 < window->cursors.len;) {
         if (window->cursors[i].point == window->cursors[i + 1].point) {
-            if (window->cursors.len() == 2) {
+            if (window->cursors.len == 2) {
                 kill_extra_cursors(window, client);
             } else {
                 window->cursors.remove(i + 1);
@@ -171,12 +171,12 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
     }
 
     // Double check that the selected cursor is in bounds.
-    CZ_DEBUG_ASSERT(window->selected_cursor < window->cursors.len());
+    CZ_DEBUG_ASSERT(window->selected_cursor < window->cursors.len);
 
     // Lock in write mode if the token cache is out of date.
     Buffer* buffer_mut = nullptr;
     bool token_cache_was_invalidated = false;
-    if (buffer->changes.len() != buffer->token_cache.change_index) {
+    if (buffer->changes.len != buffer->token_cache.change_index) {
         buffer_mut = handle->increase_reading_to_writing();
         token_cache_was_invalidated = !buffer_mut->token_cache.update(buffer);
     }
@@ -196,7 +196,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
     if (window_cache) {
         ZoneScopedN("update window cache");
 
-        if (buffer->changes.len() != window_cache->v.unified.change_index) {
+        if (buffer->changes.len != window_cache->v.unified.change_index) {
             auto changes = buffer->changes.slice_start(window_cache->v.unified.change_index);
             position_after_changes(changes,
                                    &window_cache->v.unified.animated_scrolling.visible_start);
@@ -330,7 +330,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         }
 
         // Try to fit the newly created cursors on the screen.
-        if (window->cursors.len() > window_cache->v.unified.cursor_count) {
+        if (window->cursors.len > window_cache->v.unified.cursor_count) {
             // Don't scroll down so far that we lose sight of cursors
             // above the selected cursor that are still on the screen.
             uint64_t first_visible_cursor_position = selected_cursor_position;
@@ -342,7 +342,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                 first_visible_cursor_position = point;
             }
 
-            for (size_t c = window->cursors.len(); c-- > window_cache->v.unified.cursor_count;) {
+            for (size_t c = window->cursors.len; c-- > window_cache->v.unified.cursor_count;) {
                 if (try_to_make_visible(window, window_cache, buffer, &iterator, scroll_outside,
                                         first_visible_cursor_position, window->cursors[c].point)) {
                     // Fitting the point worked.  Try to also fit the mark.
@@ -356,7 +356,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                 }
             }
         }
-        window_cache->v.unified.cursor_count = window->cursors.len();
+        window_cache->v.unified.cursor_count = window->cursors.len;
 
         // If we allow animated scrolling then run the code to process it.  Otherwise we
         // just jump directly to the desired starting point (`iterator.position`).
@@ -567,16 +567,16 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
     if (buffer_mut) {
         // Note: we update the token cache at the top of this function.
-        CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
+        CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
 
         // Cover the visible region with check points.
-        bool had_no_check_points = buffer->token_cache.check_points.len() == 0;
+        bool had_no_check_points = buffer->token_cache.check_points.len == 0;
         buffer_mut->token_cache.generate_check_points_until(buffer, iterator.position);
 
         if (token_cache_was_invalidated || had_no_check_points) {
             // Start asynchronous syntax highlighting.
             TracyFormat(message, len, 1024, "Start syntax highlighting: %.*s",
-                        (int)buffer->name.len(), buffer->name.buffer());
+                        (int)buffer->name.len, buffer->name.buffer);
             TracyMessage(message, len);
             editor->add_asynchronous_job(job_syntax_highlight_buffer(handle.clone_downgrade()));
         }
@@ -611,7 +611,7 @@ static void draw_buffer_contents(Cell* cells,
     bool has_token = true;
     // Note: we run `buffer->token_cache.update(buffer)` in
     // update_cursors_and_run_animated_scrolling.
-    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
+    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
     {
         Tokenizer_Check_Point check_point;
         if (buffer->token_cache.find_check_point(iterator.position, &check_point)) {
@@ -637,21 +637,21 @@ static void draw_buffer_contents(Cell* cells,
     }
 
     CZ_DEFER({
-        for (size_t i = 0; i < editor->theme.overlays.len(); ++i) {
+        for (size_t i = 0; i < editor->theme.overlays.len; ++i) {
             const Overlay* overlay = &editor->theme.overlays[i];
             overlay->end_frame();
         }
-        for (size_t i = 0; i < buffer->mode.overlays.len(); ++i) {
+        for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
             const Overlay* overlay = &buffer->mode.overlays[i];
             overlay->end_frame();
         }
     });
 
-    for (size_t i = 0; i < editor->theme.overlays.len(); ++i) {
+    for (size_t i = 0; i < editor->theme.overlays.len; ++i) {
         const Overlay* overlay = &editor->theme.overlays[i];
         overlay->start_frame(editor, client, buffer, window, iterator);
     }
-    for (size_t i = 0; i < buffer->mode.overlays.len(); ++i) {
+    for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
         const Overlay* overlay = &buffer->mode.overlays[i];
         overlay->start_frame(editor, client, buffer, window, iterator);
     }
@@ -664,25 +664,25 @@ static void draw_buffer_contents(Cell* cells,
         forward_visual_line(window, buffer->mode, &end_position, window->rows());
 
         size_t end_line_number = buffer->contents.get_line_number(end_position.position) + 1;
-        size_t line_number_width = log10(end_line_number) + 1;
+        size_t line_number_width = (size_t)log10(end_line_number) + 1;
         line_number_buffer.reserve(cz::heap_allocator(), line_number_width + 1);
     }
 
     // Enable drawing line numbers for non-mini buffer
     // windows if they are enabled and fit on the screen.
     bool draw_line_numbers = client->_mini_buffer != window && editor->theme.draw_line_numbers &&
-                             line_number_buffer.cap() + 5 <= window->cols();
+                             line_number_buffer.cap + 5 <= window->cols();
 
     // Draw line number for first line.
     if (draw_line_numbers) {
-        int ret = snprintf(line_number_buffer.buffer(), line_number_buffer.cap(), "%*zu",
-                           (int)(line_number_buffer.cap() - 1), line_number);
+        int ret = snprintf(line_number_buffer.buffer, line_number_buffer.cap, "%*zu",
+                           (int)(line_number_buffer.cap - 1), line_number);
         if (ret > 0) {
-            line_number_buffer.set_len(ret);
+            line_number_buffer.len = ret;
 
             size_t i = 0;
             Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
-            for (; i < line_number_buffer.cap() - 1; ++i) {
+            for (; i < line_number_buffer.cap - 1; ++i) {
                 char ch = line_number_buffer[i];
                 if (ch != ' ') {
                     break;
@@ -692,7 +692,7 @@ static void draw_buffer_contents(Cell* cells,
             }
 
             face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
-            for (; i < line_number_buffer.cap() - 1; ++i) {
+            for (; i < line_number_buffer.cap - 1; ++i) {
                 char ch = line_number_buffer[i];
                 SET_BODY(face, ch);
                 ++x;
@@ -762,12 +762,12 @@ static void draw_buffer_contents(Cell* cells,
 
         {
             size_t j = 0;
-            for (size_t i = 0; i < editor->theme.overlays.len(); ++i, ++j) {
+            for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
                 const Overlay* overlay = &editor->theme.overlays[i];
                 Face overlay_face = overlay->get_face_and_advance(buffer, window, iterator);
                 apply_face(&face, overlay_face);
             }
-            for (size_t i = 0; i < buffer->mode.overlays.len(); ++i, ++j) {
+            for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
                 const Overlay* overlay = &buffer->mode.overlays[i];
                 Face overlay_face = overlay->get_face_and_advance(buffer, window, iterator);
                 apply_face(&face, overlay_face);
@@ -803,12 +803,12 @@ static void draw_buffer_contents(Cell* cells,
             {
                 Face face;
                 size_t j = 0;
-                for (size_t i = 0; i < editor->theme.overlays.len(); ++i, ++j) {
+                for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
                     const Overlay* overlay = &editor->theme.overlays[i];
                     Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
                     apply_face(&face, overlay_face);
                 }
-                for (size_t i = 0; i < buffer->mode.overlays.len(); ++i, ++j) {
+                for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
                     const Overlay* overlay = &buffer->mode.overlays[i];
                     Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
                     apply_face(&face, overlay_face);
@@ -820,14 +820,14 @@ static void draw_buffer_contents(Cell* cells,
             // Draw line number.  Note the first line number is drawn before the loop.
             if (draw_line_numbers) {
                 line_number += 1;
-                int ret = snprintf(line_number_buffer.buffer(), line_number_buffer.cap(), "%*zu",
-                                   (int)(line_number_buffer.cap() - 1), line_number);
+                int ret = snprintf(line_number_buffer.buffer, line_number_buffer.cap, "%*zu",
+                                   (int)(line_number_buffer.cap - 1), line_number);
                 if (ret > 0) {
-                    line_number_buffer.set_len(ret);
+                    line_number_buffer.len = ret;
 
                     size_t i = 0;
                     Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
-                    for (; i < line_number_buffer.cap() - 1; ++i) {
+                    for (; i < line_number_buffer.cap - 1; ++i) {
                         char ch = line_number_buffer[i];
                         if (ch != ' ') {
                             break;
@@ -837,7 +837,7 @@ static void draw_buffer_contents(Cell* cells,
                     }
 
                     face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
-                    for (; i < line_number_buffer.cap() - 1; ++i) {
+                    for (; i < line_number_buffer.cap - 1; ++i) {
                         char ch = line_number_buffer[i];
                         SET_BODY(face, ch);
                         ++x;
@@ -920,41 +920,41 @@ static void draw_buffer_decoration(Cell* cells,
     CZ_DEFER(string.drop());
     string.reserve(1024);
     buffer->render_name(cz::heap_allocator(), &string);
-    size_t starting_len = string.len();
+    size_t starting_len = string.len;
 
     cz::append(&string, ' ');
 
-    for (size_t i = 0; i < editor->theme.decorations.len(); ++i) {
+    for (size_t i = 0; i < editor->theme.decorations.len; ++i) {
         if (editor->theme.decorations[i].append(buffer, window, cz::heap_allocator(), &string)) {
             cz::append(&string, ' ');
         }
     }
-    for (size_t i = 0; i < buffer->mode.decorations.len(); ++i) {
+    for (size_t i = 0; i < buffer->mode.decorations.len; ++i) {
         if (buffer->mode.decorations[i].append(buffer, window, cz::heap_allocator(), &string)) {
             cz::append(&string, ' ');
         }
     }
 
     // Attempt to shorten the start of the string.
-    if (string.len() > window->cols()) {
+    if (string.len > window->cols()) {
         cz::Str rendered = string.slice_end(starting_len);
         if (buffer->type == Buffer::TEMPORARY) {
             // *identifier detail1 detail2 etc* => *identifier ...*
             const char* space = rendered.find(' ');
             const char* star = rendered.rfind('*');
             if (space && star && star - (space + 1) > 3) {
-                string.remove_range(space + 1 - string.buffer(), star - string.buffer());
-                string.insert(space + 1 - string.buffer(), "...");
+                string.remove_range(space + 1 - string.buffer, star - string.buffer);
+                string.insert(space + 1 - string.buffer, "...");
                 rendered.len -= star - (space + 1);
                 rendered.len += 3;
             }
         }
 
-        if (string.len() > window->cols() && buffer->directory.len() != 0) {
+        if (string.len > window->cols() && buffer->directory.len != 0) {
             // *name* (/path1/path2/path3) => *name* (.../path3)
             cz::Str dir = rendered;
             if (buffer->type == Buffer::TEMPORARY) {
-                dir = rendered.slice_start(rendered.len - buffer->directory.len() - 1);
+                dir = rendered.slice_start(rendered.len - buffer->directory.len - 1);
                 dir.len -= 2;  // remove `/)`
             }
 
@@ -965,7 +965,7 @@ static void draw_buffer_decoration(Cell* cells,
                 if (!slash) {
                     break;
                 }
-                if (string.len() - (slash - dir.buffer) + 3 < window->cols()) {
+                if (string.len - (slash - dir.buffer) + 3 < window->cols()) {
                     break;
                 }
             }
@@ -975,15 +975,15 @@ static void draw_buffer_decoration(Cell* cells,
             }
 
             if (slash && (slash - dir.buffer) > 3) {
-                string.remove_range(dir.buffer - string.buffer(), slash - string.buffer());
-                string.insert(dir.buffer - string.buffer(), "...");
+                string.remove_range(dir.buffer - string.buffer, slash - string.buffer);
+                string.insert(dir.buffer - string.buffer, "...");
             }
         }
     }
 
     size_t y = window->rows();
     size_t x = 0;
-    size_t max = cz::min<size_t>(string.len(), window->cols());
+    size_t max = cz::min<size_t>(string.len, window->cols());
     for (size_t i = 0; i < max; ++i) {
         SET_IND(face, string[i]);
         ++x;
@@ -1013,7 +1013,7 @@ static void draw_window_completion(Cell* cells,
 
     bool engine_change = load_completion_cache(editor, &window->completion_cache,
                                                editor->theme.window_completion_filter);
-    if (!engine_change && window->completion_cache.filter_context.results.len() == 0) {
+    if (!engine_change && window->completion_cache.filter_context.results.len == 0) {
         client->show_message("No completion results");
         window->abort_completion();
         return;
@@ -1021,7 +1021,7 @@ static void draw_window_completion(Cell* cells,
 
     if (window->completion_cache.state == Completion_Cache::LOADED || engine_change) {
         // todo: deduplicate with the code to draw mini buffer completion cache
-        size_t height = window->completion_cache.filter_context.results.len();
+        size_t height = window->completion_cache.filter_context.results.len;
         if (height > editor->theme.max_completion_results) {
             height = editor->theme.max_completion_results;
         }
@@ -1030,8 +1030,8 @@ static void draw_window_completion(Cell* cells,
         }
 
         size_t offset = window->completion_cache.filter_context.selected;
-        if (offset >= window->completion_cache.filter_context.results.len() - height / 2) {
-            offset = window->completion_cache.filter_context.results.len() - height;
+        if (offset >= window->completion_cache.filter_context.results.len - height / 2) {
+            offset = window->completion_cache.filter_context.results.len - height;
         } else if (offset < height / 2) {
             offset = 0;
         } else {
@@ -1281,7 +1281,7 @@ static bool load_completion_cache(Editor* editor,
     CZ_DEFER(selected_result.drop(cz::heap_allocator()));
     bool has_selected_result = false;
     if (completion_cache->filter_context.selected <
-        completion_cache->filter_context.results.len()) {
+        completion_cache->filter_context.results.len) {
         cz::Str selected_result_str =
             completion_cache->filter_context.results[completion_cache->filter_context.selected];
         selected_result.reserve(cz::heap_allocator(), selected_result_str.len);
@@ -1298,9 +1298,9 @@ static bool load_completion_cache(Editor* editor,
 
     if (completion_cache->state != Completion_Cache::LOADED || engine_change) {
         completion_cache->filter_context.selected = 0;
-        completion_cache->filter_context.results.set_len(0);
+        completion_cache->filter_context.results.len = 0;
         completion_cache->filter_context.results.reserve(
-            completion_cache->engine_context.results.len());
+            completion_cache->engine_context.results.len);
         completion_filter(editor, &completion_cache->filter_context,
                           &completion_cache->engine_context, selected_result, has_selected_result);
     }
@@ -1328,7 +1328,7 @@ void process_buffer_external_updates(Editor* editor, Client* client, Window* win
         }
 
         cz::File_Time file_time = buffer->file_time;
-        if (check_out_of_date_and_update_file_time(path.buffer(), &file_time)) {
+        if (check_out_of_date_and_update_file_time(path.buffer, &file_time)) {
             Buffer* buffer_mut = handle->increase_reading_to_writing();
             buffer_mut->file_time = file_time;
             reload_file(editor, client, buffer_mut);
@@ -1366,7 +1366,7 @@ void render_to_cells(Cell* cells,
         Completion_Cache* completion_cache = &client->mini_buffer_completion_cache;
         if (client->_message.tag > Message::SHOW) {
             if (completion_cache->state == Completion_Cache::LOADED) {
-                results_height = completion_cache->filter_context.results.len();
+                results_height = completion_cache->filter_context.results.len;
                 if (results_height > editor->theme.max_completion_results) {
                     results_height = editor->theme.max_completion_results;
                 }
@@ -1464,8 +1464,8 @@ void render_to_cells(Cell* cells,
             size_t start_row = total_rows - results_height;
             size_t start_col = 0;
             size_t offset = completion_cache->filter_context.selected;
-            if (offset >= completion_cache->filter_context.results.len() - results_height / 2) {
-                offset = completion_cache->filter_context.results.len() - results_height;
+            if (offset >= completion_cache->filter_context.results.len - results_height / 2) {
+                offset = completion_cache->filter_context.results.len - results_height;
             } else if (offset < results_height / 2) {
                 offset = 0;
             } else {

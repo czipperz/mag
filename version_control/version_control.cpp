@@ -32,15 +32,15 @@ bool get_root_directory(Editor* editor,
         return false;
     }
 
-    top_level_path->set_len(0);
-    top_level_path->reserve(allocator, temp.len() + 1);
+    top_level_path->len = 0;
+    top_level_path->reserve(allocator, temp.len + 1);
     top_level_path->append(temp);
     top_level_path->null_terminate();
     if (cz::find_dir_with_file_up(allocator, top_level_path, ".git")) {
         return true;
     }
 
-    top_level_path->set_len(0);
+    top_level_path->len = 0;
     top_level_path->append(temp);
     top_level_path->null_terminate();
     if (cz::find_dir_with_file_up(allocator, top_level_path, ".svn")) {

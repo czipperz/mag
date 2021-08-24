@@ -22,7 +22,7 @@ struct Jump_Chain {
     size_t index;
 
     void push(Jump jump) {
-        jumps.set_len(index);
+        jumps.len = index;
         jumps.reserve(cz::heap_allocator(), 1);
         jumps.push(jump);
         ++index;
@@ -39,16 +39,16 @@ struct Jump_Chain {
     void kill_this_jump() { jumps.remove(index); }
 
     Jump* unpop() {
-        if (index + 1 < jumps.len()) {
+        if (index + 1 < jumps.len) {
             return &jumps[++index];
         } else {
-            index = jumps.len();
+            index = jumps.len;
             return nullptr;
         }
     }
 
     void drop() {
-        for (size_t i = 0; i < jumps.len(); ++i) {
+        for (size_t i = 0; i < jumps.len; ++i) {
             jumps[i].buffer_handle.drop();
         }
         jumps.drop(cz::heap_allocator());

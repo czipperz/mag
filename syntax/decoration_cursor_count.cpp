@@ -23,7 +23,7 @@ static bool decoration_cursor_count_append(const Buffer* buffer,
                                            void* _data) {
     ZoneScoped;
 
-    if (window->cursors.len() <= 1) {
+    if (window->cursors.len <= 1) {
         return false;
     }
 
@@ -32,7 +32,7 @@ static bool decoration_cursor_count_append(const Buffer* buffer,
     forward_visual_line(window, buffer->mode, &visible_end, window->rows());
 
     size_t visible = 0;
-    for (size_t i = 0; i < window->cursors.len(); ++i) {
+    for (size_t i = 0; i < window->cursors.len; ++i) {
         if (window->cursors[i].point >= visible_start.position &&
             window->cursors[i].point <= visible_end.position) {
             ++visible;
@@ -40,8 +40,8 @@ static bool decoration_cursor_count_append(const Buffer* buffer,
     }
 
     cz::append(allocator, string, '(', visible);
-    if (visible != window->cursors.len()) {
-        cz::append(allocator, string, '/', window->cursors.len());
+    if (visible != window->cursors.len) {
+        cz::append(allocator, string, '/', window->cursors.len);
     }
     cz::append(allocator, string, ')');
     return true;

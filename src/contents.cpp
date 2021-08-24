@@ -13,7 +13,7 @@ namespace mag {
 #define CONTENTS_BUCKET_DESIRED_LEN (CONTENTS_BUCKET_MAX_SIZE * 3 / 4)
 
 void Contents::drop() {
-    for (size_t i = 0; i < buckets.len(); ++i) {
+    for (size_t i = 0; i < buckets.len; ++i) {
         cz::heap_allocator().dealloc(buckets[i].elems, CONTENTS_BUCKET_MAX_SIZE);
     }
     buckets.drop(cz::heap_allocator());
@@ -75,7 +75,7 @@ void Contents::remove(uint64_t start, uint64_t len) {
     CZ_DEBUG_ASSERT(start + len <= this->len);
     this->len -= len;
 
-    for (size_t v = 0; v < buckets.len();) {
+    for (size_t v = 0; v < buckets.len;) {
         if (start < buckets[v].len) {
             if (start + len <= buckets[v].len) {
                 bucket_remove(&buckets[v], &bucket_lfs[v], start, len);
@@ -114,7 +114,7 @@ void Contents::remove(uint64_t start, uint64_t len) {
 }
 
 static void insert_empty(Contents* contents, cz::Str str) {
-    CZ_DEBUG_ASSERT(contents->buckets.len() == 0);
+    CZ_DEBUG_ASSERT(contents->buckets.len == 0);
 
     if (str.len == 0) {
         return;
@@ -150,7 +150,7 @@ static void insert_at(Contents* contents, Contents_Iterator iterator, cz::Str st
 
     size_t b = iterator.bucket;
 
-    CZ_DEBUG_ASSERT(b < contents->buckets.len());
+    CZ_DEBUG_ASSERT(b < contents->buckets.len);
     CZ_DEBUG_ASSERT(iterator.index <= contents->buckets[b].len);
 
     contents->len += str.len;
@@ -226,7 +226,7 @@ static void insert_at(Contents* contents, Contents_Iterator iterator, cz::Str st
 void Contents::insert(uint64_t start, cz::Str str) {
     ZoneScoped;
 
-    if (buckets.len() == 0) {
+    if (buckets.len == 0) {
         CZ_DEBUG_ASSERT(start == 0);
         CZ_DEBUG_ASSERT(len == 0);
         insert_empty(this, str);
@@ -238,7 +238,7 @@ void Contents::insert(uint64_t start, cz::Str str) {
 void Contents::append(cz::Str str) {
     ZoneScoped;
 
-    if (buckets.len() == 0) {
+    if (buckets.len == 0) {
         CZ_DEBUG_ASSERT(len == 0);
         insert_empty(this, str);
     } else {
@@ -269,7 +269,7 @@ void Contents::stringify_into(cz::Allocator allocator, cz::String* string) const
     ZoneScoped;
     string->reserve(allocator, len);
     slice_impl(string->end(), buckets, start(), len);
-    string->set_len(string->len() + len);
+    string->len += len;
 }
 
 cz::String Contents::stringify(cz::Allocator allocator) const {
@@ -306,9 +306,9 @@ void Contents::slice_into(Contents_Iterator start, uint64_t end, char* string) c
 
 void Contents::slice_into(Contents_Iterator start, uint64_t end, cz::String* string) const {
     ZoneScoped;
-    CZ_DEBUG_ASSERT(string->cap() - string->len() >= end - start.position);
+    CZ_DEBUG_ASSERT(string->remaining() >= end - start.position);
     slice_impl(string->end(), buckets, start, end - start.position);
-    string->set_len(string->len() + end - start.position);
+    string->len += end - start.position;
 }
 
 void Contents::slice_into(cz::Allocator allocator,
@@ -323,7 +323,7 @@ void Contents::slice_into(cz::Allocator allocator,
 char Contents::get_once(uint64_t pos) const {
     ZoneScoped;
 
-    for (size_t i = 0; i < buckets.len(); ++i) {
+    for (size_t i = 0; i < buckets.len; ++i) {
         if (pos < buckets[i].len) {
             return buckets[i][pos];
         }
@@ -337,7 +337,7 @@ uint64_t Contents::get_line_number(uint64_t pos) const {
     ZoneScoped;
 
     uint64_t line = 0;
-    for (size_t i = 0; i < buckets.len(); ++i) {
+    for (size_t i = 0; i < buckets.len; ++i) {
         if (pos < buckets[i].len) {
             return line + count_lines({buckets[i].elems, pos});
         }
@@ -363,7 +363,7 @@ Contents_Iterator Contents::iterator_at(uint64_t pos) const {
     it.contents = this;
     it.position = pos;
 
-    for (size_t i = 0; i < buckets.len(); ++i) {
+    for (size_t i = 0; i < buckets.len; ++i) {
         if (pos < buckets[i].len) {
             it.bucket = i;
             it.index = pos;
@@ -374,7 +374,7 @@ Contents_Iterator Contents::iterator_at(uint64_t pos) const {
 
     CZ_DEBUG_ASSERT(pos == 0);
 
-    it.bucket = buckets.len();
+    it.bucket = buckets.len;
     it.index = 0;
     return it;
 }
@@ -407,7 +407,7 @@ void Contents_Iterator::advance(uint64_t offset) {
     position += offset;
     index += offset;
     while (1) {
-        if (bucket == contents->buckets.len()) {
+        if (bucket == contents->buckets.len) {
             CZ_DEBUG_ASSERT(index == 0);
             break;
         }
@@ -418,7 +418,7 @@ void Contents_Iterator::advance(uint64_t offset) {
 
         index -= contents->buckets[bucket].len;
         ++bucket;
-        if (bucket == contents->buckets.len()) {
+        if (bucket == contents->buckets.len) {
             CZ_DEBUG_ASSERT(index == 0);
             break;
         }

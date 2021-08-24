@@ -82,7 +82,7 @@ void Window_Unified::update_cursors(const Buffer* buffer) {
         start_position = 0;
     }
 
-    this->change_index = buffer->changes.len();
+    this->change_index = buffer->changes.len;
 }
 
 void Window_Unified::start_completion(Completion_Engine completion_engine) {
@@ -93,7 +93,7 @@ void Window_Unified::start_completion(Completion_Engine completion_engine) {
 void Window_Unified::update_completion_cache(const Buffer* buffer) {
     CZ_DEBUG_ASSERT(completing);
 
-    if (completion_cache.update(buffer->changes.len())) {
+    if (completion_cache.update(buffer->changes.len)) {
         Contents_Iterator iterator = buffer->contents.iterator_at(cursors[selected_cursor].point);
         Token token;
         if (!get_token_at_position_no_update(buffer, &iterator, &token)) {
@@ -112,7 +112,7 @@ void Window_Unified::finish_completion(Client* client, Buffer* buffer) {
     completing = false;
 
     Completion_Filter_Context* context = &completion_cache.filter_context;
-    if (context->selected >= context->results.len()) {
+    if (context->selected >= context->results.len) {
         return;
     }
 
@@ -123,7 +123,7 @@ void Window_Unified::finish_completion(Client* client, Buffer* buffer) {
     SSOStr completion_result =
         SSOStr::as_duplicate(transaction.value_allocator(), context->results[context->selected]);
     int64_t offset = 0;
-    for (size_t c = 0; c < cursors.len(); ++c) {
+    for (size_t c = 0; c < cursors.len; ++c) {
         Contents_Iterator iterator = buffer->contents.iterator_at(cursors[c].point);
         Token token;
         bool do_remove = get_token_at_position(buffer, &iterator, &token);
@@ -233,7 +233,7 @@ void Window_Split::drop_non_recursive(Window_Split* window) {
 void kill_extra_cursors(Window_Unified* window, Client* client) {
     // :CopyLeak we don't deallocate here
     Cursor cursor = window->cursors[window->selected_cursor];
-    window->cursors.set_len(1);
+    window->cursors.len = 1;
     window->cursors[0] = cursor;
     window->selected_cursor = 0;
 

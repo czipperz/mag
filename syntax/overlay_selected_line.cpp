@@ -28,7 +28,7 @@ static void overlay_selected_line_start_frame(Editor*,
     Data* data = (Data*)_data;
     data->start = 0;
     data->end = 0;
-    if (window->cursors.len() == 1) {
+    if (window->cursors.len == 1) {
         uint64_t point = window->cursors[window->selected_cursor].point;
         if (point >= start_position_iterator.position) {
             Contents_Iterator start = start_position_iterator;

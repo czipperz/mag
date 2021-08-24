@@ -20,15 +20,15 @@ namespace basic {
 
 static void add_key_map(Contents* contents, cz::String* prefix, const Key_Map& key_map) {
     prefix->reserve(cz::heap_allocator(), stringify_key_max_size + 1);
-    for (size_t i = 0; i < key_map.bindings.len(); ++i) {
+    for (size_t i = 0; i < key_map.bindings.len; ++i) {
         auto& binding = key_map.bindings[i];
-        size_t old_len = prefix->len();
+        size_t old_len = prefix->len;
         stringify_key(prefix, binding.key);
 
         if (binding.is_command) {
             contents->append(*prefix);
             // Align with column 20 by adding spaces to 19 and then a mandatory space.
-            for (size_t i = prefix->len(); i < 19; ++i) {
+            for (size_t i = prefix->len; i < 19; ++i) {
                 contents->append(" ");
             }
             contents->append(" ");
@@ -39,7 +39,7 @@ static void add_key_map(Contents* contents, cz::String* prefix, const Key_Map& k
             add_key_map(contents, prefix, *binding.v.map);
         }
 
-        prefix->set_len(old_len);
+        prefix->len = old_len;
     }
 }
 
@@ -70,7 +70,7 @@ static void get_command_names(cz::Vector<cz::Str>* results,
                               cz::Allocator allocator,
                               cz::Heap_String* key_chain,
                               const Key_Map& key_map) {
-    for (size_t i = 0; i < key_map.bindings.len(); ++i) {
+    for (size_t i = 0; i < key_map.bindings.len; ++i) {
         Key key = key_map.bindings[i].key;
         if (key_map.bindings[i].is_command) {
             results->reserve(cz::heap_allocator(), 1);
@@ -78,7 +78,7 @@ static void get_command_names(cz::Vector<cz::Str>* results,
             cz::Str command_string = key_map.bindings[i].v.command.string;
             cz::String command = {};
             command.reserve(allocator,
-                            command_string.len + 3 + key_chain->len() + stringify_key_max_size);
+                            command_string.len + 3 + key_chain->len + stringify_key_max_size);
             command.append(command_string);
             command.append(" (");
             command.append(*key_chain);
@@ -88,8 +88,8 @@ static void get_command_names(cz::Vector<cz::Str>* results,
 
             results->push(command);
         } else {
-            size_t old_len = key_chain->len();
-            CZ_DEFER(key_chain->set_len(old_len));
+            size_t old_len = key_chain->len;
+            CZ_DEFER(key_chain->len = old_len);
 
             key_chain->reserve(stringify_key_max_size + 1);
             stringify_key(key_chain, key);
@@ -105,12 +105,12 @@ static bool command_completion_engine(Editor* editor,
                                       bool is_initial_frame) {
     ZoneScoped;
 
-    if (!is_initial_frame && context->results.len() > 0) {
+    if (!is_initial_frame && context->results.len > 0) {
         return false;
     }
 
     context->results_buffer_array.clear();
-    context->results.set_len(0);
+    context->results.len = 0;
     context->results.reserve(128);
 
     cz::Allocator allocator = context->results_buffer_array.allocator();
@@ -119,8 +119,8 @@ static bool command_completion_engine(Editor* editor,
     CZ_DEFER(key_chain.drop());
     get_command_names(&context->results, allocator, &key_chain, editor->key_map);
 
-    context->results.reserve(editor->misc_commands.len());
-    for (size_t i = 0; i < editor->misc_commands.len(); ++i) {
+    context->results.reserve_exact(editor->misc_commands.len);
+    for (size_t i = 0; i < editor->misc_commands.len; ++i) {
         context->results.push(cz::Str{editor->misc_commands[i].string}.clone(allocator));
     }
 
@@ -131,7 +131,7 @@ static bool command_completion_engine(Editor* editor,
 }
 
 static Command_Function find_command(const Key_Map& key_map, cz::Str str) {
-    for (size_t i = 0; i < key_map.bindings.len(); ++i) {
+    for (size_t i = 0; i < key_map.bindings.len; ++i) {
         if (key_map.bindings[i].is_command) {
             if (str == key_map.bindings[i].v.command.string) {
                 return key_map.bindings[i].v.command.function;
@@ -168,7 +168,7 @@ static void command_run_command_by_name_callback(Editor* editor,
     }
 
     if (!command) {
-        for (size_t i = 0; i < editor->misc_commands.len(); ++i) {
+        for (size_t i = 0; i < editor->misc_commands.len; ++i) {
             if (str == editor->misc_commands[i].string) {
                 command = editor->misc_commands[i].function;
                 break;
@@ -254,7 +254,7 @@ void command_go_to_key_map_binding(Editor* editor, Command_Source source) {
         directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
     }
 
-    gnu_global::lookup_and_prompt(editor, source.client, directory.buffer(), query);
+    gnu_global::lookup_and_prompt(editor, source.client, directory.buffer, query);
 }
 
 }

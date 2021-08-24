@@ -171,39 +171,39 @@ void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
     process_line(".git", rules, &counter);
     process_line(".svn", rules, &counter);
 
-    size_t initial_len = path.len();
+    size_t initial_len = path.len;
     path.append(".ignore");
     path.null_terminate();
-    if (file.open(path.buffer())) {
+    if (file.open(path.buffer)) {
         CZ_DEFER(file.close());
 
         read_to_string(file, cz::heap_allocator(), &contents);
         parse_ignore_rules(contents, rules, &counter);
     }
 
-    path.set_len(initial_len);
+    path.len = initial_len;
     path.append(".hgignore");
     path.null_terminate();
-    if (file.open(path.buffer())) {
+    if (file.open(path.buffer)) {
         CZ_DEFER(file.close());
 
         read_to_string(file, cz::heap_allocator(), &contents);
         parse_ignore_rules(contents, rules, &counter);
     }
 
-    path.set_len(initial_len);
+    path.len = initial_len;
     path.append(".gitignore");
     path.null_terminate();
-    if (file.open(path.buffer())) {
+    if (file.open(path.buffer)) {
         CZ_DEFER(file.close());
 
         // Don't find files in Git submodules.
-        path.set_len(initial_len);
+        path.len = initial_len;
         path.append(".gitmodules");
         path.null_terminate();
-        try_ignore_git_modules(path.buffer(), rules, &counter);
+        try_ignore_git_modules(path.buffer, rules, &counter);
 
-        contents.set_len(0);
+        contents.len = 0;
         read_to_string(file, cz::heap_allocator(), &contents);
         parse_ignore_rules(contents, rules, &counter);
     }
@@ -219,7 +219,7 @@ bool file_matches(const Ignore_Rules& rules, cz::Str path) {
     rule.inverse = true;
 
     // Test the suffix rules.
-    for (size_t i = rules.suffix_rules.len(); i-- > 0;) {
+    for (size_t i = rules.suffix_rules.len; i-- > 0;) {
         if (path.ends_with(rules.suffix_rules[i].string)) {
             rule = rules.suffix_rules[i];
             break;
@@ -227,15 +227,15 @@ bool file_matches(const Ignore_Rules& rules, cz::Str path) {
     }
 
     // Test the exact rules.
-    for (size_t i = rules.exact_rules.len(); i-- > 0;) {
+    for (size_t i = rules.exact_rules.len; i-- > 0;) {
         if (rules.exact_rules[i].index < rule.index) {
             break;
         }
 
         if (path.starts_with(rules.exact_rules[i].string)) {
-            if (path.len == rules.exact_rules[i].string.len() ||
-                rules.exact_rules[i].string[rules.exact_rules[i].string.len() - 1] == '/' ||
-                path[rules.exact_rules[i].string.len()] == '/') {
+            if (path.len == rules.exact_rules[i].string.len ||
+                rules.exact_rules[i].string[rules.exact_rules[i].string.len - 1] == '/' ||
+                path[rules.exact_rules[i].string.len] == '/') {
                 rule = rules.exact_rules[i];
                 break;
             }
@@ -248,12 +248,12 @@ bool file_matches(const Ignore_Rules& rules, cz::Str path) {
 void Ignore_Rules::drop() {
     auto& rules = *this;
 
-    for (size_t i = 0; i < rules.suffix_rules.len(); ++i) {
+    for (size_t i = 0; i < rules.suffix_rules.len; ++i) {
         rules.suffix_rules[i].string.drop(cz::heap_allocator());
     }
     rules.suffix_rules.drop(cz::heap_allocator());
 
-    for (size_t i = 0; i < rules.exact_rules.len(); ++i) {
+    for (size_t i = 0; i < rules.exact_rules.len; ++i) {
         rules.exact_rules[i].string.drop(cz::heap_allocator());
     }
     rules.exact_rules.drop(cz::heap_allocator());

@@ -238,8 +238,8 @@ Run_Console_Command_Result run_console_command(Client* client,
     cz::String script = {};
     CZ_DEFER(script.drop(cz::heap_allocator()));
     cz::Process::escape_args(args, &script, cz::heap_allocator());
-    return run_console_command(client, editor, working_directory, script.buffer(), buffer_name,
-                               error, handle_out);
+    return run_console_command(client, editor, working_directory, script.buffer, buffer_name, error,
+                               handle_out);
 }
 
 }

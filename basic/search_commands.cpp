@@ -63,11 +63,11 @@ static bool get_file_to_open(const Buffer* buffer,
     }
 
     path->reserve(cz::heap_allocator(),
-                  buffer->directory.len() + relative_end.position - relative_start.position);
+                  buffer->directory.len + relative_end.position - relative_start.position);
     path->append(buffer->directory);
     buffer->contents.slice_into(relative_start, relative_end.position, path);
-    if (cz::path::is_absolute(path->slice_start(buffer->directory.len()))) {
-        path->remove_range(0, buffer->directory.len());
+    if (cz::path::is_absolute(path->slice_start(buffer->directory.len))) {
+        path->remove_range(0, buffer->directory.len);
     }
     return true;
 }
@@ -120,8 +120,8 @@ void command_search_reload(Editor* editor, Command_Source source) {
     kill_extra_cursors(window, source.client);
     window->cursors[0].point = window->cursors[0].mark = buffer->contents.len;
 
-    run_console_command_in(source.client, editor, handle, buffer->directory.buffer(),
-                           script.as_str(), "Failed to rerun script");
+    run_console_command_in(source.client, editor, handle, buffer->directory.buffer, script.as_str(),
+                           "Failed to rerun script");
 }
 
 static void search_open_selected_no_swap(Editor* editor, Client* client) {

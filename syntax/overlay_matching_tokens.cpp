@@ -96,7 +96,7 @@ static void overlay_matching_tokens_start_frame(Editor*,
     uint64_t cursor_point = window->cursors[window->selected_cursor].point;
 
     // The token cache is updated in the main render loop.
-    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len());
+    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.find_check_point(window->start_position, &check_point);
 

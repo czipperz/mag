@@ -208,7 +208,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
 static bool configurations_completion_engine(Editor* editor,
                                              Completion_Engine_Context* context,
                                              bool is_initial_frame) {
-    if (context->results.len() != 0) {
+    if (context->results.len != 0) {
         return false;
     }
 
@@ -300,7 +300,7 @@ void command_backward_line(Editor* editor, Command_Source source) {
 void command_forward_line_single_cursor_visual(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
-    if (window->cursors.len() == 1 && !window->show_marks) {
+    if (window->cursors.len == 1 && !window->show_marks) {
         TRANSFORM_POINTS(
             [&](Contents_Iterator* it) { forward_visual_line(window, buffer->mode, it); });
     } else {
@@ -311,7 +311,7 @@ void command_forward_line_single_cursor_visual(Editor* editor, Command_Source so
 void command_backward_line_single_cursor_visual(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
-    if (window->cursors.len() == 1 && !window->show_marks) {
+    if (window->cursors.len == 1 && !window->show_marks) {
         TRANSFORM_POINTS(
             [&](Contents_Iterator* it) { backward_visual_line(window, buffer->mode, it); });
     } else {
@@ -375,7 +375,7 @@ void command_unpop_jump(Editor* editor, Command_Source source) {
 }
 
 void command_pop_jump(Editor* editor, Command_Source source) {
-    if (source.client->jump_chain.index == source.client->jump_chain.jumps.len()) {
+    if (source.client->jump_chain.index == source.client->jump_chain.jumps.len) {
         WITH_CONST_SELECTED_BUFFER(source.client);
         push_jump(window, source.client, buffer);
         source.client->jump_chain.pop();
@@ -501,7 +501,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
 
     if (source.previous_command.function == command_delete_backward_char &&
         buffer->check_last_committer(command_delete_backward_char, window->cursors)) {
-        CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
+        CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len);
         Commit commit = buffer->commits[buffer->commit_index - 1];
         CZ_DEBUG_ASSERT(commit.edits.len > 0);
         size_t len = commit.edits[commit.edits.len - 1].value.len();
@@ -554,7 +554,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
 
     if (source.previous_command.function == command_delete_forward_char &&
         buffer->check_last_committer(command_delete_forward_char, window->cursors)) {
-        CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len());
+        CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len);
         Commit commit = buffer->commits[buffer->commit_index - 1];
         CZ_DEBUG_ASSERT(commit.edits.len > 0);
         size_t len = commit.edits[0].value.len();
@@ -944,7 +944,7 @@ void command_undo(Editor* editor, Command_Source source) {
         return;
     }
 
-    if (window->cursors.len() == 1) {
+    if (window->cursors.len == 1) {
         uint64_t position = buffer->changes.last().commit.edits[0].position;
         Contents_Iterator iterator = buffer->contents.iterator_at(position);
         if (!is_visible(window, buffer->mode, iterator)) {
@@ -961,7 +961,7 @@ void command_redo(Editor* editor, Command_Source source) {
         return;
     }
 
-    if (window->cursors.len() == 1) {
+    if (window->cursors.len == 1) {
         uint64_t position = buffer->changes.last().commit.edits[0].position;
         Contents_Iterator iterator = buffer->contents.iterator_at(position);
         if (!is_visible(window, buffer->mode, iterator)) {
@@ -985,7 +985,7 @@ void command_stop_action(Editor* editor, Command_Source source) {
         message = "Stop selecting region";
     }
 
-    if (!message && window->cursors.len() > 1) {
+    if (!message && window->cursors.len > 1) {
         kill_extra_cursors(window, source.client);
         message = "Stop multiple cursors";
     }
@@ -1026,7 +1026,7 @@ static void show_created_messages(Editor* editor, Client* client, int created) {
 static bool create_cursor_forward_line(Editor* editor,
                                        const Buffer* buffer,
                                        Window_Unified* window) {
-    CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
+    CZ_DEBUG_ASSERT(window->cursors.len >= 1);
     Contents_Iterator last_cursor_iterator =
         buffer->contents.iterator_at(window->cursors.last().point);
     Contents_Iterator new_cursor_iterator = last_cursor_iterator;
@@ -1055,7 +1055,7 @@ void command_create_cursor_forward_line(Editor* editor, Command_Source source) {
 static bool create_cursor_backward_line(Editor* editor,
                                         const Buffer* buffer,
                                         Window_Unified* window) {
-    CZ_DEBUG_ASSERT(window->cursors.len() >= 1);
+    CZ_DEBUG_ASSERT(window->cursors.len >= 1);
     Contents_Iterator first_cursor_iterator =
         buffer->contents.iterator_at(window->cursors[0].point);
     Contents_Iterator new_cursor_iterator = first_cursor_iterator;
@@ -1159,7 +1159,7 @@ void command_create_cursor_forward_search(Editor* editor, Command_Source source)
     int created = create_cursor_forward_search(buffer, window);
     show_created_messages(editor, source.client, created);
 
-    if (created == 1 && window->selected_cursor + 1 == window->cursors.len() - 1) {
+    if (created == 1 && window->selected_cursor + 1 == window->cursors.len - 1) {
         ++window->selected_cursor;
     }
 }
@@ -1213,7 +1213,7 @@ void command_create_cursor_forward(Editor* editor, Command_Source source) {
     }
     show_created_messages(editor, source.client, created);
 
-    if (created == 1 && window->selected_cursor + 1 == window->cursors.len() - 1) {
+    if (created == 1 && window->selected_cursor + 1 == window->cursors.len - 1) {
         ++window->selected_cursor;
     }
 }
@@ -1285,7 +1285,7 @@ static void command_filter_cursors_looking_at_callback(Editor* editor,
 
     // Calculate number remaining.
     size_t num_remaining = 0;
-    for (size_t i = 0; i < window->cursors.len(); ++i) {
+    for (size_t i = 0; i < window->cursors.len; ++i) {
         it.advance_to(window->cursors[i].point);
         num_remaining += looking_at(it, query);
     }
@@ -1298,7 +1298,7 @@ static void command_filter_cursors_looking_at_callback(Editor* editor,
 
     // Delete non-matching cursors.
     ++window->selected_cursor;
-    for (size_t i = window->cursors.len(); i-- > 0;) {
+    for (size_t i = window->cursors.len; i-- > 0;) {
         it.retreat_to(window->cursors[i].point);
         if (!looking_at(it, query)) {
             window->cursors.remove(i);
@@ -1322,7 +1322,7 @@ static void command_filter_cursors_not_looking_at_callback(Editor* editor,
 
     // Calculate number remaining.
     size_t num_remaining = 0;
-    for (size_t i = 0; i < window->cursors.len(); ++i) {
+    for (size_t i = 0; i < window->cursors.len; ++i) {
         it.advance_to(window->cursors[i].point);
         num_remaining += !looking_at(it, query);
     }
@@ -1335,7 +1335,7 @@ static void command_filter_cursors_not_looking_at_callback(Editor* editor,
 
     // Delete non-matching cursors.
     ++window->selected_cursor;
-    for (size_t i = window->cursors.len(); i-- > 0;) {
+    for (size_t i = window->cursors.len; i-- > 0;) {
         it.retreat_to(window->cursors[i].point);
         if (looking_at(it, query)) {
             window->cursors.remove(i);
@@ -1441,7 +1441,7 @@ void command_create_cursors_redo(Editor* editor, Command_Source source) {
 
 void command_create_cursors_last_change(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
-    if (buffer->changes.len() == 0) {
+    if (buffer->changes.len == 0) {
         return;
     }
 
@@ -1451,7 +1451,7 @@ void command_create_cursors_last_change(Editor* editor, Command_Source source) {
 void command_create_cursors_lines_in_region(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
-    if (window->cursors.len() > 1 || !window->show_marks) {
+    if (window->cursors.len > 1 || !window->show_marks) {
         uint64_t start = window->cursors[0].start();
         uint64_t end = window->cursors.last().end();
 
@@ -1559,20 +1559,20 @@ void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source
 
     size_t count_cursors = 0;
     Contents_Iterator iterator = buffer->contents.start();
-    for (size_t c = 0; c < window->cursors.len(); ++c) {
+    for (size_t c = 0; c < window->cursors.len; ++c) {
         iterator.advance_to(window->cursors[c].point);
         if (at_empty_line(iterator)) {
             ++count_cursors;
         }
     }
 
-    if (count_cursors == window->cursors.len()) {
+    if (count_cursors == window->cursors.len) {
         kill_extra_cursors(window, source.client);
         return;
     }
 
     iterator.go_to(window->cursors[0].point);
-    for (size_t c = 0; c < window->cursors.len();) {
+    for (size_t c = 0; c < window->cursors.len;) {
         iterator.advance_to(window->cursors[c].point);
         if (at_empty_line(iterator)) {
             window->cursors.remove(c);
@@ -1581,7 +1581,7 @@ void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source
         ++c;
     }
 
-    if (window->cursors.len() == 1) {
+    if (window->cursors.len == 1) {
         kill_extra_cursors(window, source.client);
     }
 }
@@ -1590,12 +1590,12 @@ void command_remove_selected_cursor(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
 
     // No cursor to kill.
-    if (window->cursors.len() == 1) {
+    if (window->cursors.len == 1) {
         return;
     }
 
     // When going down to 1 cursor we need to call `kill_extra_cursors` to cleanup various settings.
-    if (window->cursors.len() == 2) {
+    if (window->cursors.len == 2) {
         window->selected_cursor = 1 - window->selected_cursor;
         kill_extra_cursors(window, source.client);
         return;
@@ -1603,7 +1603,7 @@ void command_remove_selected_cursor(Editor* editor, Command_Source source) {
 
     // Remove the selected cursor and make sure it is still in bounds.
     window->cursors.remove(window->selected_cursor);
-    if (window->selected_cursor == window->cursors.len()) {
+    if (window->selected_cursor == window->cursors.len) {
         --window->selected_cursor;
     }
 }
@@ -1638,11 +1638,11 @@ static void interactive_search_response_callback(Editor* editor,
     // If the mini buffer hasn't changed then we're already at the result.
     {
         WITH_CONST_WINDOW_BUFFER(client->_mini_buffer);
-        if (data->mini_buffer_change_index == buffer->changes.len()) {
+        if (data->mini_buffer_change_index == buffer->changes.len) {
             return;
         }
 
-        data->mini_buffer_change_index = buffer->changes.len();
+        data->mini_buffer_change_index = buffer->changes.len;
     }
 
     Window_Unified* window = client->selected_normal_window;
@@ -1708,7 +1708,7 @@ static void command_search_forward_callback(Editor* editor,
             // or eob.  If we don't hit a result the cursor doesn't move so push_jump just
             // adds a useless jump.  If we are at sob or eob then there is already a jump
             // and we don't want to create an intermediary jump they have top page through.
-            if (window->cursors.len() == 1 && window->cursors[0].point != 0 &&
+            if (window->cursors.len == 1 && window->cursors[0].point != 0 &&
                 window->cursors[0].point != buffer->contents.len) {
                 push_jump(window, client, buffer);
             }
@@ -1739,7 +1739,7 @@ static void command_search_backward_callback(Editor* editor,
             // or eob.  If we don't hit a result the cursor doesn't move so push_jump just
             // adds a useless jump.  If we are at sob or eob then there is already a jump
             // and we don't want to create an intermediary jump they have top page through.
-            if (window->cursors.len() == 1 && window->cursors[0].point != 0 &&
+            if (window->cursors.len == 1 && window->cursors[0].point != 0 &&
                 window->cursors[0].point != buffer->contents.len) {
                 push_jump(window, client, buffer);
             }
@@ -1799,7 +1799,7 @@ void command_search_forward(Editor* editor, Command_Source source) {
         }
 
         // Interactive search.
-        if (window->cursors.len() == 1) {
+        if (window->cursors.len == 1) {
             Interactive_Search_Data* data = cz::heap_allocator().alloc<Interactive_Search_Data>();
             CZ_ASSERT(data);
             data->direction = 1;
@@ -1860,7 +1860,7 @@ void command_search_backward(Editor* editor, Command_Source source) {
         }
 
         // Interactive search.
-        if (window->cursors.len() == 1) {
+        if (window->cursors.len == 1) {
             Interactive_Search_Data* data = cz::heap_allocator().alloc<Interactive_Search_Data>();
             CZ_ASSERT(data);
             data->direction = 0;
@@ -1956,7 +1956,7 @@ static void command_goto_line_callback(Editor* editor, Client* client, cz::Str s
     parse_number(str, &lines);
 
     WITH_CONST_SELECTED_BUFFER(client);
-    if (window->cursors.len() > 1 ||
+    if (window->cursors.len > 1 ||
         (window->cursors[0].point != 0 && window->cursors[0].point != buffer->contents.len)) {
         push_jump(window, client, buffer);
     }
@@ -1974,7 +1974,7 @@ static void command_goto_position_callback(Editor* editor,
     parse_number(str, &position);
 
     WITH_CONST_SELECTED_BUFFER(client);
-    if (window->cursors.len() > 1 ||
+    if (window->cursors.len > 1 ||
         (window->cursors[0].point != 0 && window->cursors[0].point != buffer->contents.len)) {
         push_jump(window, client, buffer);
     }
@@ -2057,7 +2057,7 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
 
 void command_mark_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
-    if (window->cursors.len() > 1 ||
+    if (window->cursors.len > 1 ||
         (window->cursors[0].point != 0 && window->cursors[0].point != buffer->contents.len)) {
         push_jump(window, source.client, buffer);
     }
@@ -2192,8 +2192,8 @@ static void make_sorted_lines(cz::Vector<SSOStr>* sorted_lines,
         cz::sort(*sorted_lines,
                  [](SSOStr* left, SSOStr* right) { return left->as_str() > right->as_str(); });
     } else {  // Flip
-        for (size_t i = 0; i < sorted_lines->len() / 2; ++i) {
-            std::swap((*sorted_lines)[i], (*sorted_lines)[sorted_lines->len() - 1 - i]);
+        for (size_t i = 0; i < sorted_lines->len / 2; ++i) {
+            cz::swap(sorted_lines->get(i), sorted_lines->get(sorted_lines->len - 1 - i));
         }
     }
 }
@@ -2239,8 +2239,8 @@ static void sort_lines(Client* client, Buffer* buffer, Window_Unified* window, i
     Contents_Iterator it = buffer->contents.start();
     if (window->show_marks) {
         for (size_t i = 0; i < cursors.len; ++i) {
-            unsorted_lines.set_len(0);
-            sorted_lines.set_len(0);
+            unsorted_lines.len = 0;
+            sorted_lines.len = 0;
 
             it.advance_to(cursors[i].start());
             start_of_line(&it);
@@ -2324,7 +2324,7 @@ void command_restore_last_save_point(Editor* editor, Command_Source source) {
     }
 
     Commit_Id saved_commit_id = buffer->saved_commit_id.value;
-    for (size_t i = 0; i < buffer->commits.len(); ++i) {
+    for (size_t i = 0; i < buffer->commits.len; ++i) {
         if (buffer->commits[i].id == saved_commit_id) {
             while (i < buffer->commit_index) {
                 if (!buffer->undo()) {
@@ -2353,7 +2353,7 @@ static void command_run_command_for_result_callback(Editor* editor,
 
     WITH_CONST_SELECTED_BUFFER(client);
 
-    run_console_command(client, editor, buffer->directory.buffer(), script, buffer_name,
+    run_console_command(client, editor, buffer->directory.buffer, script, buffer_name,
                         "Shell error");
 }
 
@@ -2364,7 +2364,7 @@ static void command_run_command_ignore_result_callback(Editor* editor,
     WITH_CONST_SELECTED_BUFFER(client);
 
     cz::Process_Options options;
-    options.working_directory = buffer->directory.buffer();
+    options.working_directory = buffer->directory.buffer;
 
     cz::Process process;
     if (!process.launch_script(script, options)) {

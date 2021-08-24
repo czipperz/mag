@@ -37,7 +37,7 @@ static void overlay_indent_guides_start_frame(Editor*,
                                               Contents_Iterator start_position_iterator,
                                               void* _data) {
     Data* data = (Data*)_data;
-    data->columns.set_len(0);
+    data->columns.len = 0;
     data->column = 0;
     data->index = 0;
     data->has_saved_column = false;
@@ -64,20 +64,20 @@ static Face overlay_indent_guides_get_face_and_advance(const Buffer*,
         forward_through_whitespace(&end);
         uint64_t column = end.position - current_position_iterator.position;
         size_t i;
-        for (i = 0; i < data->columns.len(); ++i) {
+        for (i = 0; i < data->columns.len; ++i) {
             if (column <= data->columns[i]) {
                 break;
             }
         }
-        data->columns.set_len(i);
-        if (data->columns.len() == 0 || data->columns.last() < column) {
+        data->columns.len = i;
+        if (data->columns.len == 0 || data->columns.last() < column) {
             data->has_saved_column = true;
             data->saved_column = column;
         }
     }
 
     Face face = {};
-    for (size_t i = 0; i < data->columns.len(); ++i) {
+    for (size_t i = 0; i < data->columns.len; ++i) {
         if (data->columns[i] == data->column) {
             face = data->face;
             break;

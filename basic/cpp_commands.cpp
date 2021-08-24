@@ -174,7 +174,7 @@ static void change_indirection(Client* client,
 
     uint64_t offset = 0;
     Contents_Iterator iterator = buffer->contents.start();
-    for (size_t i = 0; i < window->cursors.len(); ++i) {
+    for (size_t i = 0; i < window->cursors.len; ++i) {
         iterator.advance_to(window->cursors[i].point);
         bool before_start = false;
         Contents_Iterator start = iterator;
@@ -379,7 +379,7 @@ void command_make_indirect(Editor* editor, Command_Source source) {
 void command_extract_variable(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    if (window->cursors.len() > 1) {
+    if (window->cursors.len > 1) {
         source.client->show_message("Multiple cursors aren't supported right now");
         return;
     }
@@ -396,10 +396,10 @@ void command_extract_variable(Editor* editor, Command_Source source) {
 
     cz::Vector<uint64_t> new_cursors = {};
     CZ_DEFER(new_cursors.drop(cz::heap_allocator()));
-    new_cursors.reserve(cz::heap_allocator(), window->cursors.len() * 2);
+    new_cursors.reserve(cz::heap_allocator(), window->cursors.len * 2);
 
     uint64_t offset = 0;
-    for (size_t c = 0; c < window->cursors.len(); ++c) {
+    for (size_t c = 0; c < window->cursors.len; ++c) {
         Contents_Iterator it = buffer->contents.start();
         it.advance_to(window->cursors[c].start());
 
@@ -457,8 +457,8 @@ void command_extract_variable(Editor* editor, Command_Source source) {
     window->update_cursors(buffer);
 
     // Create cursors.
-    window->cursors.reserve(cz::heap_allocator(), window->cursors.len());
-    for (size_t c = 0; c < new_cursors.len() / 2; ++c) {
+    window->cursors.reserve(cz::heap_allocator(), window->cursors.len);
+    for (size_t c = 0; c < new_cursors.len / 2; ++c) {
         Cursor& cursor1 = window->cursors[c];
         cursor1.point = cursor1.mark = new_cursors[c * 2];
 

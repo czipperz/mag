@@ -7,7 +7,7 @@ namespace mag {
 
 static bool lookup_index(const Key_Map* key_map, Key key, size_t* out) {
     size_t start = 0;
-    size_t end = key_map->bindings.len();
+    size_t end = key_map->bindings.len;
     while (start < end) {
         size_t mid = (start + end) / 2;
         if (key_map->bindings[mid].key == key) {
@@ -85,7 +85,7 @@ void Key_Map::bind(cz::Str description, Command command) {
 }
 
 void Key_Map::drop() {
-    for (size_t b = 0; b < bindings.len(); ++b) {
+    for (size_t b = 0; b < bindings.len; ++b) {
         if (!bindings[b].is_command) {
             bindings[b].v.map->drop();
             cz::heap_allocator().dealloc({bindings[b].v.map, sizeof(Key_Map)});

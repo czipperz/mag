@@ -7,6 +7,7 @@
 #include <cz/format.hpp>
 #include <cz/heap_string.hpp>
 #include <cz/path.hpp>
+#include <cz/util.hpp>
 #include <cz/working_directory.hpp>
 #include "command_macros.hpp"
 #include "config.hpp"
@@ -61,7 +62,7 @@ static void command_save_file_callback(Editor* editor, Client* client, cz::Str, 
     WITH_SELECTED_BUFFER(client);
 
     // This shouldn't happen unless the user switches which buffer they select mid prompt.
-    if (buffer->directory.len() == 0) {
+    if (buffer->directory.len == 0) {
         return;
     }
 
@@ -73,39 +74,39 @@ static void command_save_file_callback(Editor* editor, Client* client, cz::Str, 
     while (1) {
         // If we have hit the root then stop and create from there.
 #ifdef _WIN32
-        if (directory.len() == 2) {
+        if (directory.len == 2) {
             if (cz::is_alpha(directory[0]) && directory[1] == ':') {
                 break;
             }
         }
 #else
-        if (directory.len() == 0) {
+        if (directory.len == 0) {
             break;
         }
 #endif
 
         // If this part of the path exists then we can start creating from this point.
         directory.null_terminate();
-        if (cz::file::exists(directory.buffer())) {
+        if (cz::file::exists(directory.buffer)) {
             break;
         }
 
         stack.reserve(cz::heap_allocator(), 1);
-        stack.push(directory.len());
+        stack.push(directory.len);
         if (!cz::path::pop_component(&directory)) {
             break;
         }
     }
 
     // Create all the directories.
-    for (size_t i = stack.len(); i-- > 0;) {
+    for (size_t i = stack.len; i-- > 0;) {
         directory.push('/');
-        directory.set_len(stack[i]);
+        directory.len = stack[i];
 
         // Should be null terminated via the loop above.
         CZ_DEBUG_ASSERT(*directory.end() == '\0');
 
-        if (!cz::file::create_directory(directory.buffer())) {
+        if (!cz::file::create_directory(directory.buffer)) {
             client->show_message("Failed to create parent directory");
         }
     }
@@ -123,7 +124,7 @@ void command_save_file(Editor* editor, Command_Source source) {
         return;
     }
 
-    if (!cz::file::exists(buffer->directory.buffer())) {
+    if (!cz::file::exists(buffer->directory.buffer)) {
         Dialog dialog = {};
         dialog.prompt = "Submit to confirm create directory ";
         dialog.response_callback = command_save_file_callback;
@@ -240,7 +241,7 @@ void remove_windows_for_buffer(Client* client,
     }
 
     cz::Vector<Window_Unified*>& offscreen_windows = client->_offscreen_windows;
-    for (size_t i = offscreen_windows.len(); i-- > 0;) {
+    for (size_t i = offscreen_windows.len; i-- > 0;) {
         if (offscreen_windows[i]->buffer_handle.get() == buffer_handle.get()) {
             Window::drop_(offscreen_windows[i]);
             offscreen_windows.remove(i);
@@ -297,8 +298,8 @@ static void command_rename_buffer_callback(Editor* editor,
     CZ_DEFER(directory_clone.drop(cz::heap_allocator()));
 
     WITH_SELECTED_BUFFER(client);
-    std::swap(buffer->name, name_clone);
-    std::swap(buffer->directory, directory_clone);
+    cz::swap(buffer->name, name_clone);
+    cz::swap(buffer->directory, directory_clone);
     buffer->type = type;
 
     reset_mode(editor, buffer);
@@ -341,8 +342,8 @@ static void command_save_buffer_to_callback(Editor* editor,
     CZ_DEFER(directory_clone.drop(cz::heap_allocator()));
 
     WITH_SELECTED_BUFFER(client);
-    std::swap(buffer->name, name_clone);
-    std::swap(buffer->directory, directory_clone);
+    cz::swap(buffer->name, name_clone);
+    cz::swap(buffer->directory, directory_clone);
     buffer->type = type;
 
     // Force the buffer to be unsaved.
@@ -360,7 +361,7 @@ void command_save_buffer_to(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        path.reserve(cz::heap_allocator(), buffer->directory.len() + buffer->name.len());
+        path.reserve(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
         path.append(buffer->directory);
         path.append(buffer->name);
     }
@@ -405,7 +406,7 @@ void command_pretend_rename_buffer(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        path.reserve(cz::heap_allocator(), buffer->directory.len() + buffer->name.len());
+        path.reserve(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
         path.append(buffer->directory);
         path.append(buffer->name);
     }
@@ -443,7 +444,7 @@ static void command_diff_buffer_against_callback(Editor* editor,
 
     cz::Str args[] = {"diff", path, temp_file_buffer};
 
-    run_console_command(client, editor, buffer->directory.buffer(), args, name, "Diff error");
+    run_console_command(client, editor, buffer->directory.buffer, args, name, "Diff error");
 }
 
 void command_diff_buffer_against(Editor* editor, Command_Source source) {
@@ -451,7 +452,7 @@ void command_diff_buffer_against(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        path.reserve(cz::heap_allocator(), buffer->directory.len() + buffer->name.len());
+        path.reserve(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
         path.append(buffer->directory);
         if (buffer->type == Buffer::FILE) {
             path.append(buffer->name);

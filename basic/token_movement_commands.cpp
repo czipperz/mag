@@ -59,7 +59,7 @@ bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
         token_iterator.retreat_to(check_point.position);
         tokenize_recording_pairs(check_point, token_iterator, end_position, buffer, &tokens);
 
-        for (size_t i = tokens.len(); i-- > 0;) {
+        for (size_t i = tokens.len; i-- > 0;) {
             if (tokens[i].type == Token_Type::OPEN_PAIR) {
                 if (depth == 0) {
                     cursor->retreat_to(tokens[i].start);
@@ -79,7 +79,7 @@ bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor) {
         --check_point_index;
         end_position = check_point.position;
         check_point = buffer->token_cache.check_points[check_point_index];
-        tokens.set_len(0);
+        tokens.len = 0;
     }
 }
 
@@ -194,7 +194,7 @@ void command_backward_up_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
 
-    for (size_t cursor_index = window->cursors.len(); cursor_index-- > 0;) {
+    for (size_t cursor_index = window->cursors.len; cursor_index-- > 0;) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
         backward_up_token_pair(buffer, &it);
         window->cursors[cursor_index].point = it.position;
@@ -207,7 +207,7 @@ void command_forward_up_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
 
-    for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
+    for (size_t cursor_index = 0; cursor_index < window->cursors.len; ++cursor_index) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
         forward_up_token_pair(buffer, &it);
         window->cursors[cursor_index].point = it.position;
@@ -238,7 +238,7 @@ void command_forward_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
 
-    for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
+    for (size_t cursor_index = 0; cursor_index < window->cursors.len; ++cursor_index) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
         forward_token_pair(buffer, &it);
         window->cursors[cursor_index].point = it.position;
@@ -269,7 +269,7 @@ void command_backward_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
 
-    for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
+    for (size_t cursor_index = 0; cursor_index < window->cursors.len; ++cursor_index) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
         backward_token_pair(buffer, &it);
         window->cursors[cursor_index].point = it.position;
@@ -353,7 +353,7 @@ int backward_matching_token(Buffer* buffer, Contents_Iterator* iterator) {
 
 void command_backward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
+    for (size_t cursor_index = 0; cursor_index < window->cursors.len; ++cursor_index) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
         backward_matching_token(buffer, &it);
         window->cursors[cursor_index].point = it.position;
@@ -416,7 +416,7 @@ int forward_matching_token(Buffer* buffer, Contents_Iterator* iterator) {
 
 void command_forward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    for (size_t cursor_index = 0; cursor_index < window->cursors.len(); ++cursor_index) {
+    for (size_t cursor_index = 0; cursor_index < window->cursors.len; ++cursor_index) {
         Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
         forward_matching_token(buffer, &it);
         window->cursors[cursor_index].point = it.position;
@@ -446,7 +446,7 @@ static Cursor create_cursor_with_offsets(Cursor cursor, Contents_Iterator it) {
 }
 
 static int create_cursor_forward_matching_token(Buffer* buffer, Window_Unified* window) {
-    Cursor cursor = window->cursors[window->cursors.len() - 1];
+    Cursor cursor = window->cursors[window->cursors.len - 1];
     Contents_Iterator it = buffer->contents.iterator_at(cursor.point);
     int created = forward_matching_token(buffer, &it);
     if (created != 1) {
@@ -489,7 +489,7 @@ void command_create_cursor_forward_matching_token(Editor* editor, Command_Source
     int created = create_cursor_forward_matching_token(buffer, window);
     show_created_messages(source.client, created);
 
-    if (created == 1 && window->selected_cursor + 1 == window->cursors.len() - 1) {
+    if (created == 1 && window->selected_cursor + 1 == window->cursors.len - 1) {
         ++window->selected_cursor;
     }
 }
@@ -508,11 +508,11 @@ void command_create_cursors_to_end_matching_token(Editor* editor, Command_Source
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_matching_token(buffer, window);
     if (created == 1) {
-        if (window->selected_cursor + 1 == window->cursors.len() - 1) {
+        if (window->selected_cursor + 1 == window->cursors.len - 1) {
             ++window->selected_cursor;
         }
         while (create_cursor_forward_matching_token(buffer, window) == 1) {
-            if (window->selected_cursor + 1 == window->cursors.len() - 1) {
+            if (window->selected_cursor + 1 == window->cursors.len - 1) {
                 ++window->selected_cursor;
             }
         }

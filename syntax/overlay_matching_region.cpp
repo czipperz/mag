@@ -82,7 +82,7 @@ static void overlay_matching_region_start_frame(Editor* editor,
 
         Window_Unified* window = client->mini_buffer_window();
         WITH_CONST_WINDOW_BUFFER(window);
-        data->prompt.set_len(0);
+        data->prompt.len = 0;
         buffer->contents.stringify_into(cz::heap_allocator(), &data->prompt);
     }
 }
@@ -106,7 +106,7 @@ static Face overlay_matching_region_get_face_and_advance(const Buffer* buffer,
     if (data->countdown_cursor_region == 0) {
         if (data->use_prompt) {
             if (looking_at_cased(iterator, data->prompt, data->case_handling)) {
-                data->countdown_cursor_region = data->prompt.len();
+                data->countdown_cursor_region = data->prompt.len;
             }
         } else {
             uint64_t end_marked_region = window->cursors[window->selected_cursor].end();

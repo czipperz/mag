@@ -153,7 +153,7 @@ static bool get_path(const Buffer* buffer, cz::String* path, uint64_t point) {
     }
 
     path->reserve(cz::heap_allocator(),
-                  buffer->directory.len() + end.position - start.position + 1);
+                  buffer->directory.len + end.position - start.position + 1);
     path->append(buffer->directory);
     buffer->contents.slice_into(start, end.position, path);
     path->null_terminate();
@@ -165,18 +165,18 @@ static cz::Result for_each_file(cz::String* path,
                                 File_Callback file_callback,
                                 Directory_Start_Callback directory_start_callback,
                                 Directory_End_Callback directory_end_callback) {
-    if (cz::file::is_directory(path->buffer())) {
-        CZ_TRY(directory_start_callback(path->buffer()));
+    if (cz::file::is_directory(path->buffer)) {
+        CZ_TRY(directory_start_callback(path->buffer));
 
         cz::Heap_String file = {};
         CZ_DEFER(file.drop());
 
         cz::Directory_Iterator iterator;
-        CZ_TRY(iterator.init(path->buffer(), cz::heap_allocator(), &file));
+        CZ_TRY(iterator.init(path->buffer, cz::heap_allocator(), &file));
 
         while (!iterator.done()) {
-            size_t len = path->len();
-            path->reserve(cz::heap_allocator(), file.len() + 2);
+            size_t len = path->len;
+            path->reserve(cz::heap_allocator(), file.len + 2);
             path->push('/');
             path->append(file);
             path->null_terminate();
@@ -184,7 +184,7 @@ static cz::Result for_each_file(cz::String* path,
             cz::Result result = for_each_file(path, file_callback, directory_start_callback,
                                               directory_end_callback);
 
-            path->set_len(len);
+            path->len = len;
 
             if (result.is_err()) {
                 // ignore errors in destruction
@@ -192,7 +192,7 @@ static cz::Result for_each_file(cz::String* path,
                 return result;
             }
 
-            file.set_len(0);
+            file.len = 0;
             result = iterator.advance(cz::heap_allocator(), &file);
             if (result.is_err()) {
                 // ignore errors in destruction
@@ -204,9 +204,9 @@ static cz::Result for_each_file(cz::String* path,
         CZ_TRY(iterator.drop());
 
         path->null_terminate();
-        return directory_end_callback(path->buffer());
+        return directory_end_callback(path->buffer);
     } else {
-        return file_callback(path->buffer());
+        return file_callback(path->buffer);
     }
 }
 
@@ -271,11 +271,11 @@ void command_directory_delete_path(Editor* editor, Command_Source source) {
 }
 
 static cz::Result copy_path(cz::String* path, cz::String* new_path) {
-    size_t base = path->len();
+    size_t base = path->len;
 
-    size_t new_path_len = new_path->len();
+    size_t new_path_len = new_path->len;
     auto set_new_path = [&]() {
-        new_path->set_len(new_path_len);
+        new_path->len = new_path_len;
 
         cz::Str extra = path->as_str().slice_start(base);
         new_path->reserve(cz::heap_allocator(), extra.len + 1);
@@ -299,7 +299,7 @@ static cz::Result copy_path(cz::String* path, cz::String* new_path) {
 
             cz::Output_File output;
             CZ_DEFER(output.close());
-            if (!output.open(new_path->buffer())) {
+            if (!output.open(new_path->buffer)) {
                 cz::Result result;
                 result.code = 1;
                 return result;
@@ -327,7 +327,7 @@ static cz::Result copy_path(cz::String* path, cz::String* new_path) {
         [&](const char* src) {
             // directory
             set_new_path();
-            int res = cz::file::create_directory(new_path->buffer());
+            int res = cz::file::create_directory(new_path->buffer);
             if (res != 0) {
                 cz::Result result;
                 result.code = res;
@@ -357,7 +357,7 @@ static void command_directory_copy_path_callback(Editor* editor,
         new_path = standardize_path(cz::heap_allocator(), query);
     }
 
-    if (cz::file::is_directory(new_path.buffer())) {
+    if (cz::file::is_directory(new_path.buffer)) {
         cz::Str name;
         if (cz::path::name_component(path, &name)) {
             new_path.reserve(cz::heap_allocator(), name.len + 2);
@@ -414,7 +414,7 @@ static void command_directory_rename_path_callback(Editor* editor,
         new_path = standardize_path(cz::heap_allocator(), query);
     }
 
-    if (cz::file::is_directory(new_path.buffer())) {
+    if (cz::file::is_directory(new_path.buffer)) {
         cz::Str name;
         if (cz::path::name_component(path, &name)) {
             new_path.reserve(cz::heap_allocator(), name.len + 2);
@@ -426,7 +426,7 @@ static void command_directory_rename_path_callback(Editor* editor,
         }
     }
 
-    if (rename(path.buffer(), new_path.buffer()) != 0) {
+    if (rename(path.buffer, new_path.buffer) != 0) {
         client->show_message("Couldn't rename path");
         return;
     }
@@ -464,7 +464,7 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
         push_jump(window, source.client, buffer);
     }
 
-    if (path.len() > 0) {
+    if (path.len > 0) {
         open_file(editor, source.client, path);
     }
 }
@@ -482,7 +482,7 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
         WITH_CONST_SELECTED_BUFFER(source.client);
 
         // If there is no buffer then leave it null so we launch in the current working directory.
-        if (buffer->directory.len() > 0) {
+        if (buffer->directory.len > 0) {
             directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
         }
 
@@ -491,15 +491,15 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
 
     // As a backup (or if we're on the first line) then launch a terminal instead.
     if (!got_path) {
-        return launch_terminal_in(editor, source.client, directory.buffer());
+        return launch_terminal_in(editor, source.client, directory.buffer);
     }
 
-    if (path.len() == 0) {
+    if (path.len == 0) {
         return;
     }
 
     cz::Process_Options options;
-    options.working_directory = directory.buffer();
+    options.working_directory = directory.buffer;
 
     cz::Process process;
     bool success;
@@ -518,7 +518,7 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
         cz::String string = {};
         CZ_DEFER(string.drop(cz::heap_allocator()));
         cz::Str prefix = "Failed to run path ";
-        string.reserve(cz::heap_allocator(), prefix.len + path.len());
+        string.reserve(cz::heap_allocator(), prefix.len + path.len);
         string.append(prefix);
         string.append(path);
         source.client->show_message(string);
@@ -536,12 +536,12 @@ void command_launch_terminal(Editor* editor, Command_Source source) {
         WITH_CONST_SELECTED_BUFFER(source.client);
 
         // If there is no buffer then leave it null so we launch in the current working directory.
-        if (buffer->directory.len() > 0) {
+        if (buffer->directory.len > 0) {
             directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
         }
     }
 
-    launch_terminal_in(editor, source.client, directory.buffer());
+    launch_terminal_in(editor, source.client, directory.buffer);
 }
 
 void launch_terminal_in(Editor* editor, Client* client, const char* directory) {
@@ -581,13 +581,13 @@ static void command_create_directory_callback(Editor* editor,
     } else {
         WITH_SELECTED_BUFFER(client);
 
-        new_path.reserve(cz::heap_allocator(), buffer->directory.len() + query.len + 1);
+        new_path.reserve(cz::heap_allocator(), buffer->directory.len + query.len + 1);
         new_path.append(buffer->directory);
         new_path.append(query);
         new_path.null_terminate();
     }
 
-    int res = cz::file::create_directory(new_path.buffer());
+    int res = cz::file::create_directory(new_path.buffer);
     if (res == 1) {
         client->show_message("Couldn't create directory");
     } else if (res == 2) {

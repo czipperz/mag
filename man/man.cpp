@@ -92,7 +92,7 @@ bool man_completion_engine(Editor*, Completion_Engine_Context* context, bool is_
     }
 
     context->results_buffer_array.clear();
-    context->results.set_len(0);
+    context->results.len = 0;
 
     cz::Buffer_Array lba;
     lba.init();
@@ -115,7 +115,7 @@ bool man_completion_engine(Editor*, Completion_Engine_Context* context, bool is_
     for (size_t man_path_index = 0; man_path_index < man_paths.len(); ++man_path_index) {
         cz::Str directory_base = man_paths[man_path_index];
 
-        directory.set_len(0);
+        directory.len = 0;
         directory.reserve(cz::heap_allocator(), directory_base.len + 6);
         directory.append(directory_base);
         directory.append("/man0");
@@ -126,7 +126,7 @@ bool man_completion_engine(Editor*, Completion_Engine_Context* context, bool is_
             lba.restore(lbasp);
             directory[directory.len() - 1] = man_index + '0';
 
-            files.set_len(0);
+            files.len = 0;
             cz::Result files_result =
                 cz::files(cz::heap_allocator(), lba.allocator(), directory.buffer(), &files);
             if (files_result.is_err()) {
@@ -180,9 +180,9 @@ static bool decompress_gz(FILE* file, cz::String* out, cz::Allocator out_allocat
             stream.avail_out = out->cap() - out->len();
             ret = inflate(&stream, Z_NO_FLUSH);
             if (ret == Z_OK) {
-                out->set_len(out->cap() - stream.avail_out);
+                out->len = out->cap() - stream.avail_out;
             } else if (ret == Z_STREAM_END) {
-                out->set_len(out->cap() - stream.avail_out);
+                out->len = out->cap() - stream.avail_out;
                 inflateEnd(&stream);
                 return true;
             } else if (ret == Z_BUF_ERROR) {
@@ -227,7 +227,7 @@ static void lookup_specific_man_page(cz::Slice<cz::Str> man_paths,
     for (size_t man_path_index = 0; man_path_index < man_paths.len; ++man_path_index) {
         cz::Str directory_base = man_paths[man_path_index];
 
-        directory.set_len(0);
+        directory.len = 0;
         directory.reserve(cz::heap_allocator(), directory_base.len + 6);
         directory.append(directory_base);
         directory.append("/man");
@@ -236,7 +236,7 @@ static void lookup_specific_man_page(cz::Slice<cz::Str> man_paths,
 
         results_buffer_array->restore(rbasp);
 
-        files.set_len(0);
+        files.len = 0;
         cz::Result files_result = cz::files(cz::heap_allocator(), results_buffer_array->allocator(),
                                             directory.buffer(), &files);
         if (files_result.is_err()) {
@@ -272,12 +272,12 @@ static bool load_contents(cz::Slice<cz::Str> man_paths,
 
     while (contents->starts_with(".so ")) {
         cz::Str file_to_find = {contents->buffer() + 4, contents->len() - 5};
-        results->set_len(0);
+        results->len = 0;
         results_buffer_array->restore(rbasp);
         lookup_specific_man_page(man_paths, file_to_find, results, results_buffer_array);
 
         file_name = (*results)[0].buffer;
-        contents->set_len(0);
+        contents->len = 0;
         if (!decompress_gz_path(file_name, contents, cz::heap_allocator())) {
             return false;
         }
@@ -321,7 +321,7 @@ static void lookup_man_page(cz::Slice<cz::Str> man_paths,
     for (size_t man_path_index = 0; man_path_index < man_paths.len; ++man_path_index) {
         cz::Str directory_base = man_paths[man_path_index];
 
-        directory.set_len(0);
+        directory.len = 0;
         directory.reserve(cz::heap_allocator(), directory_base.len + 6);
         directory.append(directory_base);
         directory.append("/man0");
@@ -332,7 +332,7 @@ static void lookup_man_page(cz::Slice<cz::Str> man_paths,
             lba.restore(lbasp);
             directory[directory.len() - 1] = man_index + '0';
 
-            files.set_len(0);
+            files.len = 0;
             cz::Result files_result =
                 cz::files(cz::heap_allocator(), lba.allocator(), directory.buffer(), &files);
             if (files_result.is_err()) {

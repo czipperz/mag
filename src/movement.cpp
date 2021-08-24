@@ -386,7 +386,7 @@ Contents_Iterator start_of_line_position(const Contents& contents, uint64_t line
     it.index = 0;
 
     uint64_t pos = 0;
-    for (size_t i = 0; i < contents.buckets.len(); ++i) {
+    for (size_t i = 0; i < contents.buckets.len; ++i) {
         if (line <= contents.bucket_lfs[i]) {
             it.position = pos;
             it.bucket = i;
@@ -406,7 +406,7 @@ Contents_Iterator start_of_line_position(const Contents& contents, uint64_t line
 
     CZ_DEBUG_ASSERT(pos == contents.len);
     it.position = pos;
-    it.bucket = contents.buckets.len();
+    it.bucket = contents.buckets.len;
 
     return it;
 }

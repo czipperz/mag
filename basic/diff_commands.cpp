@@ -24,7 +24,7 @@ static void command_apply_diff_callback(Editor* editor,
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     cz::Input_File file;
-    if (!file.open(path.buffer())) {
+    if (!file.open(path.buffer)) {
         client->show_message("Error opening diff file");
         return;
     }
