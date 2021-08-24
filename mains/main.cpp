@@ -6,6 +6,7 @@
 #include <cz/env.hpp>
 #include <cz/file.hpp>
 #include <cz/heap.hpp>
+#include <cz/parse.hpp>
 #include <cz/path.hpp>
 #include <cz/str.hpp>
 #include <cz/util.hpp>
@@ -85,14 +86,12 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     if (!colon) {
         goto open;
     }
-    for (size_t i = 1; colon[i] != '\0'; ++i) {
-        if (!cz::is_digit(colon[i])) {
-            goto open;
-        }
-    }
 
+    cz::Str line_string = arg.slice_start(colon + 1);
     uint64_t line = 0;
-    sscanf(colon + 1, "%" PRIu64, &line);
+    if (cz::parse(line_string, &line) != line_string.len) {
+        goto open;
+    }
 
     cz::String path = arg.slice_end(colon).clone_null_terminate(cz::heap_allocator());
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -110,14 +109,10 @@ static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* open
     if (!colon) {
         goto open;
     }
-    for (size_t i = 1; colon[i] != '\0'; ++i) {
-        if (!cz::is_digit(colon[i])) {
-            goto open;
-        }
-    }
 
+    cz::Str column_string = path.slice_start(colon + 1);
     uint64_t column = 0;
-    if (sscanf(colon + 1, "%" PRIu64, &column) < 1) {
+    if (cz::parse(column_string, &column) != column_string.len) {
         goto open;
     }
     cz::swap(line, column);
@@ -173,8 +168,8 @@ int mag_main(int argc, char** argv) {
             DWORD count = GetModuleFileNameA(NULL, program_name_storage.buffer,
                                              (DWORD)program_name_storage.cap);
 #else
-            ssize_t count = readlink("/proc/self/exe", program_name_storage.buffer,
-                                     program_name_storage.cap);
+            ssize_t count =
+                readlink("/proc/self/exe", program_name_storage.buffer, program_name_storage.cap);
 #endif
             if (count <= 0) {
                 // Failure.
