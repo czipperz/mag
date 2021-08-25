@@ -30,8 +30,9 @@ bool splash_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
         Contents_Iterator start_embedded_text = start_of_line_position(*iterator->contents, 12);
 
         Contents_Iterator end_embedded_text = start_embedded_text;
-        find(&end_embedded_text, '.');
-        forward_char(&end_embedded_text);
+        if (find(&end_embedded_text, '.')) {
+            end_embedded_text.advance();
+        }
 
         bool in_embedded_text = iterator->position >= start_embedded_text.position &&
                                 iterator->position < end_embedded_text.position;
