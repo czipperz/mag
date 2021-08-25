@@ -1941,19 +1941,9 @@ void command_search_forward_expanding(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
-static void parse_number(cz::Str str, uint64_t* number) {
-    for (size_t i = 0; i < str.len; ++i) {
-        if (!cz::is_digit(str[i])) {
-            break;
-        }
-        *number *= 10;
-        *number += str[i] - '0';
-    }
-}
-
 static void command_goto_line_callback(Editor* editor, Client* client, cz::Str str, void* data) {
     uint64_t lines = 0;
-    parse_number(str, &lines);
+    cz::parse(str, &lines);
 
     WITH_CONST_SELECTED_BUFFER(client);
     if (window->cursors.len > 1 ||
@@ -1971,7 +1961,7 @@ static void command_goto_position_callback(Editor* editor,
                                            cz::Str str,
                                            void* data) {
     uint64_t position = 0;
-    parse_number(str, &position);
+    cz::parse(str, &position);
 
     WITH_CONST_SELECTED_BUFFER(client);
     if (window->cursors.len > 1 ||
