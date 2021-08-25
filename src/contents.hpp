@@ -2,8 +2,8 @@
 
 #include <stdint.h>
 #include <Tracy.hpp>
-#include <cz/assert.hpp>
 #include <cz/allocator.hpp>
+#include <cz/assert.hpp>
 #include <cz/slice.hpp>
 #include <cz/str.hpp>
 #include <cz/string.hpp>
@@ -87,6 +87,22 @@ struct Contents_Iterator {
         if (index == contents->buckets[bucket].len) {
             ++bucket;
             index = 0;
+        }
+    }
+
+    void retreat_most(uint64_t offset) {
+        if (offset >= position) {
+            retreat(offset);
+        } else {
+            *this = contents->start();
+        }
+    }
+
+    void advance_most(uint64_t offset) {
+        if (position + offset <= contents->len) {
+            advance(offset);
+        } else {
+            *this = contents->end();
         }
     }
 };

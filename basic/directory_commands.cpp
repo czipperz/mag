@@ -143,9 +143,7 @@ static bool get_path(const Buffer* buffer, cz::String* path, uint64_t point) {
     if (start.at_bob()) {
         return false;
     }
-    for (int i = 0; i < 22; ++i) {
-        forward_char(&start);
-    }
+    start.advance_most(22);
     end_of_line(&end);
 
     if (start.position >= end.position) {
