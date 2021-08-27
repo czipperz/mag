@@ -64,6 +64,7 @@ void command_open_line(Editor* editor, Command_Source source);
 void command_insert_newline_no_indent(Editor* editor, Command_Source source);
 
 void command_duplicate_line(Editor* editor, Command_Source source);
+void command_duplicate_line_prompt(Editor* editor, Command_Source source);
 void command_delete_line(Editor* editor, Command_Source source);
 void command_delete_end_of_line(Editor* editor, Command_Source source);
 void command_delete_start_of_line(Editor* editor, Command_Source source);

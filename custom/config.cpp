@@ -311,6 +311,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-k", command_delete_line);
     BIND(key_map, "C-k", command_duplicate_line);
     BIND(key_map, "C-A-k", command_delete_end_of_line);
+    BIND(key_map, "C-c C-k", command_duplicate_line_prompt);
 
     BIND(key_map, "C-t", command_transpose_characters);
     BIND(key_map, "A-t", command_transpose_words);

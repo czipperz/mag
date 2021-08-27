@@ -748,6 +748,66 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+static void command_duplicate_line_prompt_callback(Editor* editor,
+                                                   Client* client,
+                                                   cz::Str query,
+                                                   void* _data) {
+    uint64_t num = 0;
+    if (cz::parse(query, &num) != query.len) {
+        client->show_message("Error: Invalid input");
+        return;
+    }
+
+    WITH_SELECTED_BUFFER(client);
+    cz::Slice<Cursor> cursors = window->cursors;
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+
+    for (size_t c = 0; c < cursors.len; ++c) {
+        Contents_Iterator start;
+        Contents_Iterator end;
+        if (window->show_marks) {
+            start = buffer->contents.iterator_at(cursors[c].start());
+            end = buffer->contents.iterator_at(cursors[c].end());
+            if (end.position > start.position) {
+                end.retreat();
+            }
+        } else {
+            start = buffer->contents.iterator_at(cursors[c].point);
+            end = start;
+        }
+        start_of_line(&start);
+        end_of_line(&end);
+
+        size_t region_size = end.position - start.position + 1;
+        char* value = (char*)transaction.value_allocator().alloc({region_size, 1});
+        buffer->contents.slice_into(start, end.position, value);
+        value[region_size - 1] = '\n';
+
+        for (size_t n = 0; n < num; ++n) {
+            Edit edit;
+            edit.value = SSOStr::from_constant({value, region_size});
+            edit.position = start.position + offset;
+            offset += edit.value.len();
+            edit.flags = Edit::INSERT;
+            transaction.push(edit);
+        }
+    }
+
+    transaction.commit(client);
+}
+
+void command_duplicate_line_prompt(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Times to duplicate: ";
+    dialog.response_callback = command_duplicate_line_prompt_callback;
+    source.client->show_dialog(dialog);
+}
+
 void command_delete_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
