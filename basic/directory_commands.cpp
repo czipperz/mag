@@ -373,7 +373,7 @@ static void command_directory_copy_path_callback(Editor* editor,
     }
 }
 
-void command_directory_copy_path(Editor* editor, Command_Source source) {
+void command_directory_copy_path_complete_path(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
@@ -382,6 +382,23 @@ void command_directory_copy_path(Editor* editor, Command_Source source) {
             source.client->show_message("Cursor not on a valid path");
             return;
         }
+    }
+
+    Dialog dialog = {};
+    dialog.prompt = "Copy file to: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_directory_copy_path_callback;
+    dialog.mini_buffer_contents = path;
+    dialog.next_token = syntax::path_next_token;
+    source.client->show_dialog(dialog);
+}
+
+void command_directory_copy_path_complete_directory(Editor* editor, Command_Source source) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        path = buffer->directory.clone(cz::heap_allocator());
     }
 
     Dialog dialog = {};
@@ -430,7 +447,7 @@ static void command_directory_rename_path_callback(Editor* editor,
     }
 }
 
-void command_directory_rename_path(Editor* editor, Command_Source source) {
+void command_directory_rename_path_complete_path(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
@@ -439,6 +456,23 @@ void command_directory_rename_path(Editor* editor, Command_Source source) {
             source.client->show_message("Cursor not on a valid path");
             return;
         }
+    }
+
+    Dialog dialog = {};
+    dialog.prompt = "Rename file to: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_directory_rename_path_callback;
+    dialog.mini_buffer_contents = path;
+    dialog.next_token = syntax::path_next_token;
+    source.client->show_dialog(dialog);
+}
+
+void command_directory_rename_path_complete_directory(Editor* editor, Command_Source source) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        path = buffer->directory.clone(cz::heap_allocator());
     }
 
     Dialog dialog = {};

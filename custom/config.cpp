@@ -311,7 +311,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-k", command_delete_line);
     BIND(key_map, "C-k", command_duplicate_line);
     BIND(key_map, "C-A-k", command_delete_end_of_line);
-    BIND(key_map, "C-c C-k", command_duplicate_line_prompt);
+    BIND(key_map, "A-c k", command_duplicate_line_prompt);
 
     BIND(key_map, "C-t", command_transpose_characters);
     BIND(key_map, "A-t", command_transpose_words);
@@ -598,8 +598,10 @@ static void directory_key_map(Key_Map& key_map) {
     BIND(key_map, "A-j", command_directory_open_path);
     BIND(key_map, "s", command_directory_run_path);
     BIND(key_map, "d", command_directory_delete_path);
-    BIND(key_map, "c", command_directory_copy_path);
-    BIND(key_map, "r", command_directory_rename_path);
+    BIND(key_map, "c", command_directory_copy_path_complete_path);
+    BIND(key_map, "C", command_directory_copy_path_complete_directory);
+    BIND(key_map, "r", command_directory_rename_path_complete_path);
+    BIND(key_map, "R", command_directory_rename_path_complete_directory);
     BIND(key_map, "g", command_directory_reload);
     BIND(key_map, "TAB", command_directory_toggle_sort);
     BIND(key_map, "m", command_create_directory);
