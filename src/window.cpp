@@ -248,6 +248,8 @@ void kill_extra_cursors(Window_Unified* window, Client* client) {
         // Set the global copy chain to the top.
         client->global_copy_chain = window->cursors[0].local_copy_chain;
         window->cursors[0].local_copy_chain = nullptr;
+
+        client->set_system_clipboard(client->global_copy_chain->value.as_str());
     }
 }
 
