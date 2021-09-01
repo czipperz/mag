@@ -1,16 +1,19 @@
 # Mag
 
-Mag is a text editor.  It is designed to be fast and configurable.  Users of Mag are encouraged to
-edit the source code of the editor to customize it to fit their usages.  Mag is designed to be used
-primarily on C and C++ code, but coding in any language is supported.
+Mag is a text editor.  It is designed to be fast and configurable.  Users of Mag are encouraged
+to edit the source code of the editor to customize it to fit their usages.  Mag supports many
+programming languages, including C, C++, CMake, Go, HTML, CSS, JS, Markdown, and Shell / Bash.
+
+Tutorials are provided in the `tutorial` directory.
 
 Mag is licensed under GPL3.  If you wish to purchase a
 different license, email czipperz AT gmail DOT com.
 
 ## Builtin features
+* Graphical and console rendering.
 * Multiple cursors
   - Intuitively integrated with search and syntax highlighting functionality.
-* Syntax highlighting for C/C++, Markdown, CSS, diff files, and more.
+* Syntax highlighting is easily customizable.
 * File name completion (Control-P equivalent).
 * Built in support for `git grep`, `clang-format`, `man`, and other external programs.
 * Automatically updates files when edited externally.
