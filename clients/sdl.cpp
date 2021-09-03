@@ -419,7 +419,7 @@ static void process_event(Server* server,
         event.key.keysym.mod &= ~KMOD_NUM;
 
         if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_ALT)) == 0 &&
-            (key.code <= UCHAR_MAX && cz::is_print(key.code))) {
+            (key.code <= UCHAR_MAX && cz::is_print((unsigned char)key.code))) {
             // Ignore key presses
             return;
         }
@@ -462,7 +462,7 @@ static void process_event(Server* server,
 #undef UPPER
 
             default:
-                if (key.code <= UCHAR_MAX && cz::is_alpha(key.code)) {
+                if (key.code <= UCHAR_MAX && cz::is_alpha((unsigned char)key.code)) {
                     // It's already upper case
                 } else {
                     key.modifiers |= SHIFT;
@@ -471,7 +471,7 @@ static void process_event(Server* server,
             }
         } else {
             if (key.code <= UCHAR_MAX) {
-                key.code = cz::to_lower(key.code);
+                key.code = cz::to_lower((unsigned char)key.code);
             }
         }
 
@@ -754,7 +754,7 @@ void set_icon(SDL_Window* sdl_window) {
         HINSTANCE handle = ::GetModuleHandle(nullptr);
         HICON icon = ::LoadIcon(handle, "IDI_MAIN_ICON");
         if (icon != nullptr) {
-            ::SetClassLongPtr(hwnd, GCLP_HICON, (LONG)icon);
+            ::SetClassLongPtr(hwnd, GCLP_HICON, (LONG_PTR)icon);
         }
     }
 #else

@@ -1118,8 +1118,8 @@ static void draw_buffer(Cell* cells,
          client->mouse.client_row < start_row + window->rows())) {
         // Mark this window as the mouse's window.
         client->mouse.window = window;
-        client->mouse.window_row = client->mouse.client_row - start_row;
-        client->mouse.window_column = client->mouse.client_column - start_col;
+        client->mouse.window_row = (uint32_t)(client->mouse.client_row - start_row);
+        client->mouse.window_column = (uint32_t)(client->mouse.client_column - start_col);
     }
 
     Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
@@ -1232,8 +1232,8 @@ static void recalculate_mouse_recursive(Window* w,
             (start_row <= mouse->client_row && mouse->client_row < start_row + window->rows())) {
             // Mark this window as the mouse's window.
             mouse->window = window;
-            mouse->window_row = mouse->client_row - start_row;
-            mouse->window_column = mouse->client_column - start_col;
+            mouse->window_row = (uint32_t)(mouse->client_row - start_row);
+            mouse->window_column = (uint32_t)(mouse->client_column - start_col);
         }
         break;
     }

@@ -211,14 +211,14 @@ void Window_Split::set_children_size() {
 
         // Lose a column due to the separator (|).
         size_t avail_cols = total_cols - 1;
-        size_t left_cols = avail_cols * split_ratio;
+        size_t left_cols = (size_t)(avail_cols * split_ratio);
         size_t right_cols = avail_cols - left_cols;
 
         first->set_size(total_rows, left_cols);
         second->set_size(total_rows, right_cols);
     } else {
         size_t avail_rows = total_rows;
-        size_t top_rows = avail_rows * split_ratio;
+        size_t top_rows = (size_t)(avail_rows * split_ratio);
         size_t bottom_rows = avail_rows - top_rows;
 
         first->set_size(top_rows, total_cols);

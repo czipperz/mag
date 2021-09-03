@@ -30,7 +30,7 @@ static bool advance_whitespace(Contents_Iterator* iterator, bool* use_color) {
 bool color_test_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     ZoneScoped;
 
-    int16_t color = *state >> 1;
+    int16_t color = (int16_t)(*state >> 1);
     bool use_color = *state & 1;
 
     if (!advance_whitespace(iterator, &use_color)) {
@@ -59,7 +59,7 @@ bool color_test_next_token(Contents_Iterator* iterator, Token* token, uint64_t* 
         token->type = Token_Type::DEFAULT;
     }
 
-    *state = ((color << 1) | use_color);
+    *state = (((uint64_t)color << 1) | (uint64_t)use_color);
     token->end = iterator->position;
     return true;
 }
