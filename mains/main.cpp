@@ -135,7 +135,7 @@ static void switch_to_the_home_directory() {
     // Go home only we are in the program directory or we can't identify ourselves.
     cz::String wd = {};
     CZ_DEFER(wd.drop(cz::heap_allocator()));
-    if (cz::get_working_directory(cz::heap_allocator(), &wd).is_ok()) {
+    if (cz::get_working_directory(cz::heap_allocator(), &wd)) {
         cz::Str prog_dir = program_dir;
         // Get rid of the trailing / as it isn't in the working directory.
         prog_dir.len--;
