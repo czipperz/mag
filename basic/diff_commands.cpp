@@ -3,7 +3,6 @@
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
 #include <cz/heap.hpp>
-#include <cz/try.hpp>
 #include "buffer.hpp"
 #include "client.hpp"
 #include "command_macros.hpp"

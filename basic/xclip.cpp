@@ -55,7 +55,7 @@ bool set_clipboard(void*, cz::Str text) {
 
         // We have to completely write out our payload (the new clipboard's text)
         // before the xclip process starts because otherwise it never reads it.
-        int64_t result = cz::write_binary_loop(std_in, text);
+        int64_t result = cz::write_loop(std_in, text);
         CZ_DEBUG_ASSERT((size_t)result == text.len);
         std_in.close();
         std_in = {};

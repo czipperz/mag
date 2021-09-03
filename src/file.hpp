@@ -10,7 +10,6 @@ struct Str;
 struct String;
 struct Input_File;
 struct Output_File;
-struct Result;
 struct File_Time;
 }
 
@@ -24,7 +23,7 @@ struct Asynchronous_Job;
 
 bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* file_time);
 
-cz::Result reload_directory_buffer(Buffer* buffer);
+bool reload_directory_buffer(Buffer* buffer);
 
 /// If `user_path` isn't open, open it in a `Buffer` and replace the current `Window`.
 ///

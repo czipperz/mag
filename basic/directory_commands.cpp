@@ -9,8 +9,6 @@
 #include <cz/heap_string.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
-#include <cz/result.hpp>
-#include <cz/try.hpp>
 #include "buffer_commands.hpp"
 #include "client.hpp"
 #include "command.hpp"
@@ -70,7 +68,7 @@ static void reload_directory_window(Editor* editor,
     // :DirectorySortFormat
     const size_t offset = 22;
 
-    if (reload_directory_buffer(buffer).is_err()) {
+    if (!reload_directory_buffer(buffer)) {
         client->show_message("Couldn't reload directory");
         return;
     }
@@ -150,8 +148,7 @@ static bool get_path(const Buffer* buffer, cz::String* path, uint64_t point) {
         return false;
     }
 
-    path->reserve(cz::heap_allocator(),
-                  buffer->directory.len + end.position - start.position + 1);
+    path->reserve(cz::heap_allocator(), buffer->directory.len + end.position - start.position + 1);
     path->append(buffer->directory);
     buffer->contents.slice_into(start, end.position, path);
     path->null_terminate();
@@ -159,47 +156,55 @@ static bool get_path(const Buffer* buffer, cz::String* path, uint64_t point) {
 }
 
 template <class File_Callback, class Directory_Start_Callback, class Directory_End_Callback>
-static cz::Result for_each_file(cz::String* path,
-                                File_Callback file_callback,
-                                Directory_Start_Callback directory_start_callback,
-                                Directory_End_Callback directory_end_callback) {
+static bool for_each_file(cz::String* path,
+                          File_Callback file_callback,
+                          Directory_Start_Callback directory_start_callback,
+                          Directory_End_Callback directory_end_callback) {
     if (cz::file::is_directory(path->buffer)) {
-        CZ_TRY(directory_start_callback(path->buffer));
+        if (!directory_start_callback(path->buffer))
+            return false;
 
         cz::Heap_String file = {};
         CZ_DEFER(file.drop());
 
         cz::Directory_Iterator iterator;
-        CZ_TRY(iterator.init(path->buffer, cz::heap_allocator(), &file));
+        int result = iterator.init(path->buffer);
+        if (result <= 0)
+            return result == 0;
 
-        while (!iterator.done()) {
+        while (1) {
+            cz::Str file = iterator.str_name();
+
             size_t len = path->len;
             path->reserve(cz::heap_allocator(), file.len + 2);
             path->push('/');
             path->append(file);
             path->null_terminate();
 
-            cz::Result result = for_each_file(path, file_callback, directory_start_callback,
-                                              directory_end_callback);
+            bool success = for_each_file(path, file_callback, directory_start_callback,
+                                         directory_end_callback);
 
             path->len = len;
 
-            if (result.is_err()) {
+            if (!success) {
                 // ignore errors in destruction
                 iterator.drop();
-                return result;
+                return success;
             }
 
-            file.len = 0;
-            result = iterator.advance(cz::heap_allocator(), &file);
-            if (result.is_err()) {
-                // ignore errors in destruction
-                iterator.drop();
-                return result;
+            result = iterator.advance();
+            if (result <= 0) {
+                if (result == 0) {
+                    break;
+                } else {
+                    iterator.drop();
+                    return false;
+                }
             }
         }
 
-        CZ_TRY(iterator.drop());
+        if (!iterator.drop())
+            return false;
 
         path->null_terminate();
         return directory_end_callback(path->buffer);
@@ -208,41 +213,25 @@ static cz::Result for_each_file(cz::String* path,
     }
 }
 
-static cz::Result remove_empty_directory(const char* path) {
+static bool remove_empty_directory(const char* path) {
 #ifdef _WIN32
-    if (!RemoveDirectoryA(path)) {
-        cz::Result result;
-        result.code = GetLastError();
-        return result;
-    }
-    return cz::Result::ok();
+    return RemoveDirectoryA(path);
 #else
-    if (rmdir(path) != 0) {
-        return cz::Result::last_error();
-    }
-    return cz::Result::ok();
+    return rmdir(path) == 0;
 #endif
 }
 
-static cz::Result remove_file(const char* path) {
+static bool remove_file(const char* path) {
 #ifdef _WIN32
-    if (!DeleteFileA(path)) {
-        cz::Result result;
-        result.code = GetLastError();
-        return result;
-    }
-    return cz::Result::ok();
+    return DeleteFileA(path);
 #else
-    if (unlink(path) != 0) {
-        return cz::Result::last_error();
-    }
-    return cz::Result::ok();
+    return unlink(path) != 0;
 #endif
 }
 
-static cz::Result remove_path(cz::String* path) {
+static bool remove_path(cz::String* path) {
     return for_each_file(
-        path, remove_file, [](const char*) { return cz::Result::ok(); }, remove_empty_directory);
+        path, remove_file, [](const char*) { return true; }, remove_empty_directory);
 }
 
 static void command_directory_delete_path_callback(Editor* editor, Client* client, cz::Str, void*) {
@@ -255,7 +244,7 @@ static void command_directory_delete_path_callback(Editor* editor, Client* clien
         return;
     }
 
-    if (remove_path(&path).is_err()) {
+    if (!remove_path(&path)) {
         client->show_message("Couldn't delete path");
         return;
     }
@@ -268,7 +257,7 @@ void command_directory_delete_path(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
-static cz::Result copy_path(cz::String* path, cz::String* new_path) {
+static bool copy_path(cz::String* path, cz::String* new_path) {
     size_t base = path->len;
 
     size_t new_path_len = new_path->len;
@@ -290,35 +279,27 @@ static cz::Result copy_path(cz::String* path, cz::String* new_path) {
             cz::Input_File input;
             CZ_DEFER(input.close());
             if (!input.open(src)) {
-                cz::Result result;
-                result.code = 1;
-                return result;
+                return false;
             }
 
             cz::Output_File output;
             CZ_DEFER(output.close());
             if (!output.open(new_path->buffer)) {
-                cz::Result result;
-                result.code = 1;
-                return result;
+                return false;
             }
 
             char buffer[1024];
             while (1) {
-                int64_t read = input.read_binary(buffer, sizeof(buffer));
+                int64_t read = input.read(buffer, sizeof(buffer));
                 if (read > 0) {
-                    int64_t wrote = output.write_binary(buffer, read);
-                    if (wrote < 0) {
-                        cz::Result result;
-                        result.code = 1;
-                        return result;
+                    int64_t wrote = output.write(buffer, read);
+                    if (wrote != read) {
+                        return false;
                     }
                 } else if (read == 0) {
-                    return cz::Result::ok();
+                    return true;
                 } else {
-                    cz::Result result;
-                    result.code = 1;
-                    return result;
+                    return false;
                 }
             }
         },
@@ -326,14 +307,9 @@ static cz::Result copy_path(cz::String* path, cz::String* new_path) {
             // directory
             set_new_path();
             int res = cz::file::create_directory(new_path->buffer);
-            if (res != 0) {
-                cz::Result result;
-                result.code = res;
-                return result;
-            }
-            return cz::Result::ok();
+            return res;
         },
-        [](const char*) { return cz::Result::ok(); });
+        [](const char*) { return true; });
 }
 
 static void command_directory_copy_path_callback(Editor* editor,
@@ -367,7 +343,7 @@ static void command_directory_copy_path_callback(Editor* editor,
         }
     }
 
-    if (copy_path(&path, &new_path).is_err()) {
+    if (!copy_path(&path, &new_path)) {
         client->show_message("Couldn't copy path");
         return;
     }

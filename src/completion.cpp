@@ -102,7 +102,7 @@ struct Wildcard_Pattern {
 
     bool matches(cz::Str string) {
         size_t index = 0;
-        for (size_t j = 0; j < pieces.len;++j) {
+        for (size_t j = 0; j < pieces.len; ++j) {
             cz::Str piece = pieces[j];
 
             if (j == 0 && (!wild_start || !wild_start_component)) {
@@ -344,20 +344,20 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
     data->has_file_time = cz::get_file_time(data->directory.buffer, &data->file_time);
 
     do {
-        cz::Heap_String file = {};
-        CZ_DEFER(file.drop());
         cz::Heap_String query = {};
         CZ_DEFER(query.drop());
         query.reserve(data->directory.len);
         query.append(data->directory);
 
         cz::Directory_Iterator iterator;
-        if (iterator.init(data->directory.buffer, cz::heap_allocator(), &file).is_err()) {
+        if (!iterator.init(data->directory.buffer)) {
             break;
         }
         CZ_DEFER(iterator.drop());
 
-        while (!iterator.done()) {
+        while (1) {
+            cz::Str file = iterator.str_name();
+
             query.reserve(file.len + 1);
             query.append(file);
             query.null_terminate();
@@ -376,8 +376,8 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
             context->results.reserve(1);
             context->results.push(result);
 
-            file.len = 0;
-            if (iterator.advance(cz::heap_allocator(), &file).is_err()) {
+            if (iterator.advance() <= 0) {
+                // Ignore errors.
                 break;
             }
         }

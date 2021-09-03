@@ -27,7 +27,7 @@ bool get_root_directory(Editor* editor,
     cz::String temp = {};
     CZ_DEFER(temp.drop(cz::heap_allocator()));
 
-    if (cz::path::make_absolute(dir_cstr, cz::heap_allocator(), &temp).is_err()) {
+    if (!cz::path::make_absolute(dir_cstr, cz::heap_allocator(), &temp)) {
         client->show_message("Failed to get working directory");
         return false;
     }

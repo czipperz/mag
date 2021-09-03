@@ -412,7 +412,7 @@ static void command_man_response(Editor* editor, Client* client, cz::Str query, 
         size_t offset = 0;
         while (offset < contents.len()) {
             cz::Str s = contents.slice_start(offset);
-            int64_t result = out.write_binary(s.buffer, s.len);
+            int64_t result = out.write(s.buffer, s.len);
             if (result <= 0) {
                 if (result == 0) {
                     break;

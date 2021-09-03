@@ -41,7 +41,7 @@ void get_selected_window_directory(Editor* editor,
         }
     }
 
-    if (cz::get_working_directory(allocator, string).is_err()) {
+    if (!cz::get_working_directory(allocator, string)) {
         return;
     }
 

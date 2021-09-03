@@ -119,8 +119,8 @@ void stringify_key(cz::String* prefix, Key key) {
         prefix->append("A-");
     }
     if (key.modifiers & Modifiers::SHIFT) {
-        if (key.code <= UCHAR_MAX && cz::is_lower(key.code)) {
-            prefix->push(cz::to_upper(key.code));
+        if (key.code <= UCHAR_MAX && cz::is_lower((char)key.code)) {
+            prefix->push(cz::to_upper((char)key.code));
             return;
         } else {
             prefix->append("S-");

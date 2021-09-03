@@ -99,25 +99,7 @@ static bool load_directory(Find_File_Job_Data* data) {
     directory.save_point = data->entries_buffer_array.save();
     directory.entries = {};
 
-    cz::String entry = {};
-
-    // Start iterating in this directory.
-    cz::Directory_Iterator iterator;
-    if (iterator.init(data->path.buffer, entry_allocator, &entry).is_err()) {
-        return false;
-    }
-    CZ_DEFER(iterator.drop());
-
-    // Load all files.
-    while (!iterator.done()) {
-        directory.entries.reserve(cz::heap_allocator(), 1);
-        directory.entries.push(entry);
-
-        entry = {};
-        if (iterator.advance(entry_allocator, &entry).is_err()) {
-            break;
-        }
-    }
+    cz::files(cz::heap_allocator(), entry_allocator, data->path.buffer, &directory.entries);
 
     // Then sort it into reverse order because we pop them from the end first.
     cz::sort(directory.entries, [](cz::Str* left, cz::Str* right) { return *left > *right; });

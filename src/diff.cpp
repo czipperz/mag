@@ -5,8 +5,6 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
-#include <cz/result.hpp>
-#include <cz/try.hpp>
 #include "buffer.hpp"
 #include "client.hpp"
 #include "edit.hpp"
@@ -39,7 +37,7 @@ struct File_Wrapper {
         }
     }
 
-    bool advance() {
+    int advance() {
         ++index;
         return load_more();
     }
@@ -47,17 +45,27 @@ struct File_Wrapper {
     char get() const { return buffer[index]; }
 };
 
+static int eat(File_Wrapper& fw, char ch) {
+    char x = fw.get();
+    if (x != ch)
+        return -1;
+    return fw.advance();
+}
+
 static int parse_line(File_Wrapper& fw, cz::String& str, char start_char) {
+    int result;
     char x;
     while (1) {
         if ((x = fw.get()) != start_char) {
             return 0;
         }
-        CZ_TRY(fw.advance());
-        if ((x = fw.get()) != ' ') {
-            return -1;
-        }
-        CZ_TRY(fw.advance());
+        result = fw.advance();
+        if (result != 0)
+            return result;
+
+        result = eat(fw, ' ');
+        if (result != 0)
+            return result;
 
         bool keep_going = true;
         while (keep_going) {
@@ -74,7 +82,9 @@ static int parse_line(File_Wrapper& fw, cz::String& str, char start_char) {
             str.append({fw.buffer + fw.index, line_len});
             fw.index += line_len;
 
-            fw.load_more();
+            result = fw.load_more();
+            if (result != 0)
+                return result;
         }
     }
 }
@@ -105,11 +115,15 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
         while (cz::is_digit(x = fw.get())) {
             line *= 10;
             line += x - '0';
-            CZ_TRY(fw.advance());
+            result = fw.advance();
+            if (result != 0)
+                return result;
         }
 
         while (x = fw.get(), x == ',' || cz::is_digit(x)) {
-            CZ_TRY(fw.advance());
+            result = fw.advance();
+            if (result != 0)
+                return result;
         }
 
         bool has_remove;
@@ -143,9 +157,13 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
         }
 
         while ((x = fw.get()) != '\n') {
-            CZ_TRY(fw.advance());
+            result = fw.advance();
+            if (result != 0)
+                return result;
         }
-        CZ_TRY(fw.advance());
+        result = fw.advance();
+        if (result != 0)
+            return result;
 
         cz::String remove_str = {};
         cz::String insert_str = {};
@@ -166,22 +184,21 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
             remove.flags = Edit::REMOVE;
         }
         if (has_remove && has_insert) {
-            if ((x = fw.get()) != '-') {
-                return -1;
-            }
-            CZ_TRY(fw.advance());
-            if ((x = fw.get()) != '-') {
-                return -1;
-            }
-            CZ_TRY(fw.advance());
-            if ((x = fw.get()) != '-') {
-                return -1;
-            }
-            CZ_TRY(fw.advance());
-            if ((x = fw.get()) != '\n') {
-                return -1;
-            }
-            CZ_TRY(fw.advance());
+            result = eat(fw, '-');
+            if (result != 0)
+                return result;
+
+            result = eat(fw, '-');
+            if (result != 0)
+                return result;
+
+            result = eat(fw, '-');
+            if (result != 0)
+                return result;
+
+            result = eat(fw, '\n');
+            if (result != 0)
+                return result;
         }
         if (has_insert) {
             if (parse_line(fw, insert_str, '>') < 0) {
@@ -242,7 +259,7 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
 
 void reload_file(Editor* editor, Client* client, Buffer* buffer) {
     if (buffer->type == Buffer::DIRECTORY) {
-        if (reload_directory_buffer(buffer).is_err()) {
+        if (!reload_directory_buffer(buffer)) {
             client->show_message("Couldn't reload directory");
         }
         return;

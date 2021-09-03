@@ -15,7 +15,6 @@
 #include <cz/path.hpp>
 #include <cz/sort.hpp>
 #include <cz/string.hpp>
-#include <cz/try.hpp>
 #include <cz/util.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -75,7 +74,7 @@ bool open_existing(cz::Output_File* file, const char* path) {
 #endif
 }
 
-static cz::Result load_file(Buffer* buffer, const char* path) {
+static int load_file(Buffer* buffer, const char* path) {
     buffer->use_carriage_returns = custom::default_use_carriage_returns;
 
     // Determine if we can write to the file by trying to open it in write mode.
@@ -99,10 +98,10 @@ static cz::Result load_file(Buffer* buffer, const char* path) {
         if (dne) {
             // Doesn't exist.
             buffer->read_only = false;
-            return {1};
+            return 1;
         } else {
             // Either permission error or spurious failure.
-            return {2};
+            return 2;
         }
     }
     CZ_DEFER(file.close());
@@ -110,7 +109,7 @@ static cz::Result load_file(Buffer* buffer, const char* path) {
     cz::Carriage_Return_Carry carry;
     char buf[1024];
     while (1) {
-        int64_t res = file.read_binary(buf, sizeof(buf));
+        int64_t res = file.read(buf, sizeof(buf));
         if (res > 0) {
             cz::Str str = {buf, (size_t)res};
             const char* newline = str.find('\n');
@@ -129,9 +128,9 @@ static cz::Result load_file(Buffer* buffer, const char* path) {
             }
             buffer->contents.append(str);
         } else if (res == 0) {
-            return cz::Result::ok();
+            return 0;
         } else {
-            return {1};
+            return 1;
         }
     }
 
@@ -141,14 +140,14 @@ read_continue:
         if (res > 0) {
             buffer->contents.append({buf, (size_t)res});
         } else if (res == 0) {
-            return cz::Result::ok();
+            return 0;
         } else {
-            return {1};
+            return 1;
         }
     }
 }
 
-static cz::Result load_directory(Buffer* buffer, char* path, size_t path_len) {
+static bool load_directory(Buffer* buffer, char* path, size_t path_len) {
     if (path_len == 0 || path[path_len - 1] != '/') {
         path[path_len++] = '/';
     }
@@ -159,9 +158,9 @@ static cz::Result load_directory(Buffer* buffer, char* path, size_t path_len) {
     buffer->name = cz::Str(".").clone(cz::heap_allocator());
     buffer->read_only = true;
 
-    cz::Result result = reload_directory_buffer(buffer);
+    bool result = reload_directory_buffer(buffer);
 
-    if (result.is_err()) {
+    if (!result) {
         buffer->contents.drop();
         buffer->name.drop(cz::heap_allocator());
         buffer->directory.drop(cz::heap_allocator());
@@ -219,7 +218,7 @@ void format_date(const cz::Date& date, char buffer[20]) {
              date.hour, date.minute, date.second);
 }
 
-cz::Result reload_directory_buffer(Buffer* buffer) {
+bool reload_directory_buffer(Buffer* buffer) {
     cz::Buffer_Array buffer_array;
     buffer_array.init();
     CZ_DEFER(buffer_array.drop());
@@ -227,8 +226,10 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
     cz::Vector<cz::Str> files = {};
     CZ_DEFER(files.drop(cz::heap_allocator()));
 
-    CZ_TRY(cz::files(cz::heap_allocator(), buffer_array.allocator(), buffer->directory.buffer,
-                     &files));
+    if (!cz::files(cz::heap_allocator(), buffer_array.allocator(), buffer->directory.buffer,
+                   &files)) {
+        return false;
+    }
 
     cz::File_Time* file_times = cz::heap_allocator().alloc<cz::File_Time>(files.len);
     CZ_ASSERT(file_times);
@@ -292,15 +293,15 @@ cz::Result reload_directory_buffer(Buffer* buffer) {
         buffer->contents.append("\n");
     }
 
-    return cz::Result::ok();
+    return true;
 }
 
-cz::Result load_path_in_buffer(Buffer* buffer, char* path, size_t path_len) {
+static int load_path_in_buffer(Buffer* buffer, char* path, size_t path_len) {
     // Try reading it as a directory, then if that fails read it as a file.  On
     // linux, opening it as a file will succeed even if it is a directory.  Then
     // reading the file will cause an error.
-    if (load_directory(buffer, path, path_len).is_ok()) {
-        return cz::Result::ok();
+    if (load_directory(buffer, path, path_len)) {
+        return 0;
     }
 
     *buffer = {};
@@ -409,9 +410,9 @@ static Job_Tick_Result open_file_job_tick(Asynchronous_Job_Handler* handler, voi
     Open_File_Async_Data* data = (Open_File_Async_Data*)_data;
 
     Buffer buffer;
-    cz::Result result = load_path_in_buffer(&buffer, data->path.buffer, data->path.len);
-    if (result.is_err()) {
-        if (result.code == 1) {
+    int result = load_path_in_buffer(&buffer, data->path.buffer, data->path.len);
+    if (result != 0) {
+        if (result == 1) {
             handler->show_message("File not found");
             // Still open empty file buffer.
         } else {
@@ -451,13 +452,10 @@ Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column, 
     return job;
 }
 
-static cz::Result load_path(Editor* editor,
-                            char* path,
-                            size_t path_len,
-                            cz::Arc<Buffer_Handle>* handle) {
+static int load_path(Editor* editor, char* path, size_t path_len, cz::Arc<Buffer_Handle>* handle) {
     Buffer buffer;
-    cz::Result result = load_path_in_buffer(&buffer, path, path_len);
-    if (result.code != 2) {
+    int result = load_path_in_buffer(&buffer, path, path_len);
+    if (result != 2) {
         *handle = editor->create_buffer(buffer);
     }
     return result;
@@ -508,8 +506,7 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
             buffer.reserve(allocator, MAX_PATH);
             while (1) {
                 // Get the standardized file name.
-                DWORD res =
-                    GetFinalPathNameByHandleA(handle, buffer.buffer, (DWORD)buffer.cap, 0);
+                DWORD res = GetFinalPathNameByHandleA(handle, buffer.buffer, (DWORD)buffer.cap, 0);
 
                 if (res <= 0) {
                     // Failure so stop.
@@ -852,9 +849,9 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     cz::Arc<Buffer_Handle> handle;
     if (find_buffer_by_path(editor, client, path, &handle)) {
     } else {
-        cz::Result result = load_path(editor, path.buffer, path.len, &handle);
-        if (result.is_err()) {
-            if (result.code == 1) {
+        int result = load_path(editor, path.buffer, path.len, &handle);
+        if (result != 0) {
+            if (result == 1) {
                 client->show_message("File not found");
                 // Still open empty file buffer.
             } else {
@@ -907,8 +904,7 @@ bool save_contents(const Contents* contents, cz::Output_File file, bool use_carr
         return true;
     } else {
         for (size_t bucket = 0; bucket < contents->buckets.len; ++bucket) {
-            if (file.write_binary(contents->buckets[bucket].elems, contents->buckets[bucket].len) <
-                0) {
+            if (file.write(contents->buckets[bucket].elems, contents->buckets[bucket].len) < 0) {
                 return false;
             }
         }
