@@ -69,19 +69,7 @@ static bool get_man_paths(cz::Allocator path_allocator,
         buffer.pop();
     }
 
-    // Split by `:`.
-    cz::Str remaining = buffer;
-    while (1) {
-        cz::Str path = remaining;
-        bool split = remaining.split_excluding(':', &path, &remaining);
-
-        paths->reserve(paths_allocator, 1);
-        paths->push(path.clone(path_allocator));
-
-        if (!split)
-            break;
-    }
-
+    buffer.split_clone(':', paths_allocator, path_allocator, paths);
     return true;
 }
 
