@@ -70,17 +70,16 @@ static bool get_man_paths(cz::Allocator path_allocator,
     }
 
     // Split by `:`.
-    const char* start = buffer.start();
-    while (start < buffer.end()) {
-        const char* end = buffer.slice_start(start).find(':');
-        if (!end) {
-            end = buffer.end();
-        }
+    cz::Str remaining = buffer;
+    while (1) {
+        cz::Str path = remaining;
+        bool split = remaining.split_excluding(':', &path, &remaining);
 
         paths->reserve(paths_allocator, 1);
-        paths->push(buffer.slice(start, end).clone(path_allocator));
+        paths->push(path.clone(path_allocator));
 
-        start = end + 1;
+        if (!split)
+            break;
     }
 
     return true;

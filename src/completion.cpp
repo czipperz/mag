@@ -471,27 +471,21 @@ bool Run_Command_For_Completion_Results::iterate(Completion_Engine_Context* cont
     while (1) {
         int64_t len = data->stdout_read.read_text(buffer, sizeof(buffer), &data->carry);
         if (len > 0) {
-            for (size_t offset = 0; offset < (size_t)len; ++offset) {
-                const char* end = cz::Str{buffer + offset, len - offset}.find('\n');
+            cz::Str remaining = {buffer, (size_t)len};
+            while (1) {
+                cz::Str queued = remaining;
+                bool split = remaining.split_excluding('\n', &queued, &remaining);
 
-                size_t rlen;
-                if (end) {
-                    rlen = end - buffer - offset;
-                } else {
-                    rlen = len - offset;
-                }
+                data->result.reserve(context->results_buffer_array.allocator(), queued.len);
+                data->result.append(queued);
 
-                data->result.reserve(context->results_buffer_array.allocator(), rlen);
-                data->result.append({buffer + offset, rlen});
-
-                if (!end) {
+                if (!split) {
                     break;
                 }
 
                 context->results.reserve(1);
                 context->results.push(data->result);
                 data->result = {};
-                offset += rlen;
             }
         } else {
             done = len == 0;

@@ -95,13 +95,9 @@ const char* lookup(const char* directory,
 
     cz::Str rest = *buffer;
     while (1) {
-        const char* lf = rest.find('\n');
-        if (!lf) {
+        cz::Str line;
+        if (!rest.split_excluding('\n', &line, &rest))
             break;
-        }
-
-        cz::Str line = rest.slice_end(lf);
-        rest = rest.slice_start(lf + 1);
 
         const char* file_name_start = line.find('\t');
         if (!file_name_start || file_name_start + 1 >= line.end()) {

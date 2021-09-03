@@ -306,14 +306,15 @@ static int load_path_in_buffer(Buffer* buffer, char* path, size_t path_len) {
 
     *buffer = {};
     buffer->type = Buffer::FILE;
-    const char* end_dir = cz::Str(path, path_len).rfind('/');
+
+    cz::Str path_str = {path, path_len};
+    const char* end_dir = path_str.rfind('/');
     if (end_dir) {
         ++end_dir;
-        buffer->directory =
-            cz::Str(path, end_dir - path).clone_null_terminate(cz::heap_allocator());
-        buffer->name = cz::Str(end_dir, path + path_len - end_dir).clone(cz::heap_allocator());
+        buffer->directory = path_str.slice_end(end_dir).clone_null_terminate(cz::heap_allocator());
+        buffer->name = path_str.slice_start(end_dir).clone(cz::heap_allocator());
     } else {
-        buffer->name = cz::Str(path, path_len).clone(cz::heap_allocator());
+        buffer->name = path_str.clone(cz::heap_allocator());
     }
 
     return load_file(buffer, path);

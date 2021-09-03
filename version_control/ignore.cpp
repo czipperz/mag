@@ -83,22 +83,16 @@ static void process_line(cz::Str line, Ignore_Rules* rules, size_t* counter) {
 static void parse_ignore_rules(cz::Str contents, Ignore_Rules* rules, size_t* counter) {
     ZoneScoped;
 
-    size_t index = 0;
+    cz::Str remaining = contents;
     while (1) {
-        size_t end;
-        if (const char* endp = contents.slice_start(index).find('\n')) {
-            end = endp - contents.start();
-        } else {
-            end = contents.len;
-        }
+        cz::Str line = remaining;
+        bool split = remaining.split_excluding('\n', &line, &remaining);
 
-        process_line(contents.slice(index, end), rules, counter);
+        process_line(line, rules, counter);
 
-        index = end + 1;
-        if (index >= contents.len) {
+        if (!split) {
             break;
         }
-        continue;
     }
 }
 

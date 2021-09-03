@@ -348,8 +348,8 @@ static void run_paste_as_lines(Client* client, cz::Slice<Cursor> cursors, Buffer
 
     size_t offset = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
-        const char* newline = value.find('\n');
-        cz::Str line = newline ? value.slice_end(newline) : value;
+        cz::Str line = value;
+        bool next_line = line.split_after('\n', &line, &value);
 
         Edit edit;
         // :CopyLeak We sometimes use the value here, but we could also
@@ -361,10 +361,9 @@ static void run_paste_as_lines(Client* client, cz::Slice<Cursor> cursors, Buffer
         edit.flags = Edit::INSERT;
         transaction.push(edit);
 
-        if (!newline) {
+        if (!next_line) {
             break;
         }
-        value = value.slice_start(newline + 1);
     }
 
     transaction.commit(client);
