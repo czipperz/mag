@@ -307,15 +307,11 @@ static int load_path_in_buffer(Buffer* buffer, char* path, size_t path_len) {
     *buffer = {};
     buffer->type = Buffer::FILE;
 
-    cz::Str path_str = {path, path_len};
-    const char* end_dir = path_str.rfind('/');
-    if (end_dir) {
-        ++end_dir;
-        buffer->directory = path_str.slice_end(end_dir).clone_null_terminate(cz::heap_allocator());
-        buffer->name = path_str.slice_start(end_dir).clone(cz::heap_allocator());
-    } else {
-        buffer->name = path_str.clone(cz::heap_allocator());
+    cz::Str directory, name = {path, path_len};
+    if (name.split_after('/', &directory, &name)) {
+        buffer->directory = directory.clone_null_terminate(cz::heap_allocator());
     }
+    buffer->name = name.clone(cz::heap_allocator());
 
     return load_file(buffer, path);
 }
@@ -774,12 +770,7 @@ Buffer::Type parse_rendered_buffer_name(cz::Str path, cz::Str* name, cz::Str* di
 
         return Buffer::TEMPORARY;
     } else {
-        const char* ptr = path.rfind('/');
-        CZ_ASSERT(ptr);
-
-        *name = path.slice_start(ptr + 1);
-        *directory = path.slice_end(ptr + 1);
-
+        CZ_ASSERT(path.split_after('/', directory, name));
         if (*name == ".") {
             return Buffer::DIRECTORY;
         } else {
