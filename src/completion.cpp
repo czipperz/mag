@@ -350,7 +350,7 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
         query.append(data->directory);
 
         cz::Directory_Iterator iterator;
-        if (!iterator.init(data->directory.buffer)) {
+        if (iterator.init(data->directory.buffer) <= 0) {
             break;
         }
         CZ_DEFER(iterator.drop());
