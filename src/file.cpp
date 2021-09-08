@@ -308,7 +308,7 @@ static int load_path_in_buffer(Buffer* buffer, char* path, size_t path_len) {
     buffer->type = Buffer::FILE;
 
     cz::Str directory, name = {path, path_len};
-    if (name.split_after('/', &directory, &name)) {
+    if (name.split_after_last('/', &directory, &name)) {
         buffer->directory = directory.clone_null_terminate(cz::heap_allocator());
     }
     buffer->name = name.clone(cz::heap_allocator());
@@ -770,7 +770,7 @@ Buffer::Type parse_rendered_buffer_name(cz::Str path, cz::Str* name, cz::Str* di
 
         return Buffer::TEMPORARY;
     } else {
-        CZ_ASSERT(path.split_after('/', directory, name));
+        CZ_ASSERT(path.split_after_last('/', directory, name));
         if (*name == ".") {
             return Buffer::DIRECTORY;
         } else {
