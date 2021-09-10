@@ -134,6 +134,8 @@ void command_uncomment_hash(Editor* editor, Command_Source source);
 
 void command_sort_lines_ascending(Editor* editor, Command_Source source);
 void command_sort_lines_descending(Editor* editor, Command_Source source);
+void command_sort_lines_ascending_shortlex(Editor* editor, Command_Source source);
+void command_sort_lines_descending_shortlex(Editor* editor, Command_Source source);
 void command_flip_lines(Editor* editor, Command_Source source);
 
 void command_restore_last_save_point(Editor* editor, Command_Source source);

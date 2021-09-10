@@ -251,6 +251,8 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-c <", command_sort_lines_ascending);
     BIND(key_map, "A-c >", command_sort_lines_descending);
+    BIND(key_map, "A-c A-<", command_sort_lines_ascending_shortlex);
+    BIND(key_map, "A-c A->", command_sort_lines_descending_shortlex);
     BIND(key_map, "A-c |", command_flip_lines);
 
     BIND(key_map, "A-c @", command_insert_letters);

@@ -1,6 +1,7 @@
 #include "commands.hpp"
 
 #include <cz/char_type.hpp>
+#include <cz/compare.hpp>
 #include <cz/defer.hpp>
 #include <cz/format.hpp>
 #include <cz/option.hpp>
@@ -2241,6 +2242,14 @@ static void make_sorted_lines(cz::Vector<SSOStr>* sorted_lines,
     } else if (order == 1) {  // Descending
         cz::sort(*sorted_lines,
                  [](SSOStr* left, SSOStr* right) { return left->as_str() > right->as_str(); });
+    } else if (order == 2) {  // Ascending shortlex
+        cz::sort(*sorted_lines, [](SSOStr* left, SSOStr* right) {
+            return cz::Shortlex{}.compare(left->as_str(), right->as_str()) < 0;
+        });
+    } else if (order == 3) {  // Descending shortlex
+        cz::sort(*sorted_lines, [](SSOStr* left, SSOStr* right) {
+            return cz::Shortlex{}.compare(left->as_str(), right->as_str()) > 0;
+        });
     } else {  // Flip
         for (size_t i = 0; i < sorted_lines->len / 2; ++i) {
             cz::swap(sorted_lines->get(i), sorted_lines->get(sorted_lines->len - 1 - i));
@@ -2358,9 +2367,19 @@ void command_sort_lines_descending(Editor* editor, Command_Source source) {
     sort_lines(source.client, buffer, window, 1);
 }
 
-void command_flip_lines(Editor* editor, Command_Source source) {
+void command_sort_lines_ascending_shortlex(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     sort_lines(source.client, buffer, window, 2);
+}
+
+void command_sort_lines_descending_shortlex(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    sort_lines(source.client, buffer, window, 3);
+}
+
+void command_flip_lines(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    sort_lines(source.client, buffer, window, 4);
 }
 
 void command_restore_last_save_point(Editor* editor, Command_Source source) {
