@@ -43,7 +43,8 @@ void command_insert_numbers(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
-static void change_numbers(Client* client, Buffer* buffer, Window_Unified* window, int difference) {
+template <class Func>
+static void change_numbers(Client* client, Buffer* buffer, Window_Unified* window, Func&& func) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
@@ -96,7 +97,7 @@ static void change_numbers(Client* client, Buffer* buffer, Window_Unified* windo
         remove.flags = Edit::REMOVE;
         transaction.push(remove);
 
-        int len = snprintf(buf, sizeof(buf), "%d", val + difference);
+        int len = snprintf(buf, sizeof(buf), "%d", func(val));
         CZ_DEBUG_ASSERT(len > 0);
 
         Edit insert;
@@ -114,12 +115,12 @@ static void change_numbers(Client* client, Buffer* buffer, Window_Unified* windo
 
 void command_increment_numbers(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    change_numbers(source.client, buffer, window, +1);
+    change_numbers(source.client, buffer, window, [](int x) { return x + 1; });
 }
 
 void command_decrement_numbers(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    change_numbers(source.client, buffer, window, -1);
+    change_numbers(source.client, buffer, window, [](int x) { return x - 1; });
 }
 
 static void command_prompt_increase_numbers_callback(Editor* editor,
@@ -142,13 +143,43 @@ static void command_prompt_increase_numbers_callback(Editor* editor,
     }
 
     WITH_SELECTED_BUFFER(client);
-    change_numbers(client, buffer, window, num);
+    change_numbers(client, buffer, window, [&](int x) { return x + num; });
 }
 
 void command_prompt_increase_numbers(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Increase numbers by: ";
     dialog.response_callback = command_prompt_increase_numbers_callback;
+    source.client->show_dialog(dialog);
+}
+
+static void command_prompt_multiply_numbers_callback(Editor* editor,
+                                                     Client* client,
+                                                     cz::Str mini_buffer_contents,
+                                                     void* data) {
+    char buf[32];
+    if (mini_buffer_contents.len > sizeof(buf) - 1) {
+    parse_error:
+        client->show_message("Error: couldn't parse number to increase by");
+        return;
+    }
+
+    memcpy(buf, mini_buffer_contents.buffer, mini_buffer_contents.len);
+    buf[mini_buffer_contents.len] = '\0';
+
+    int num = 0;
+    if (sscanf(buf, "%d", &num) != 1) {
+        goto parse_error;
+    }
+
+    WITH_SELECTED_BUFFER(client);
+    change_numbers(client, buffer, window, [&](int x) { return x * num; });
+}
+
+void command_prompt_multiply_numbers(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Multiply numbers by: ";
+    dialog.response_callback = command_prompt_multiply_numbers_callback;
     source.client->show_dialog(dialog);
 }
 

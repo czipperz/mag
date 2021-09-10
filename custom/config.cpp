@@ -258,6 +258,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c @", command_insert_letters);
     BIND(key_map, "A-c #", command_insert_numbers);
     BIND(key_map, "A-c +", command_prompt_increase_numbers);
+    BIND(key_map, "A-c *", command_prompt_multiply_numbers);
     BIND(key_map, "A-c -", command_copy_selected_region_length);
 
     BIND(key_map, "A-<", command_start_of_buffer);
