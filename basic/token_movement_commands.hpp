@@ -33,11 +33,11 @@ void command_delete_token(Editor* editor, Command_Source source);
 void command_duplicate_token(Editor* editor, Command_Source source);
 void command_transpose_tokens(Editor* editor, Command_Source source);
 
-bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor);
-bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor);
+bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_pair);
+bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_pair);
 
-bool forward_token_pair(Buffer* buffer, Contents_Iterator* iterator);
-bool backward_token_pair(Buffer* buffer, Contents_Iterator* iterator);
+bool forward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_pair);
+bool backward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_pair);
 
 int forward_matching_token(Buffer* buffer, Contents_Iterator* iterator);
 int backward_matching_token(Buffer* buffer, Contents_Iterator* iterator);

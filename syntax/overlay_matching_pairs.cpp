@@ -86,7 +86,9 @@ static void overlay_matching_pairs_start_frame(Editor*,
         while (end_iterator.position >= token.end) {
             bool has_token = buffer->mode.next_token(&token_iterator, &token, &state);
             if (has_token) {
-                if (token.type == Token_Type::OPEN_PAIR || token.type == Token_Type::CLOSE_PAIR) {
+                if (token.type == Token_Type::OPEN_PAIR || token.type == Token_Type::CLOSE_PAIR ||
+                    token.type == Token_Type::PREPROCESSOR_IF ||
+                    token.type == Token_Type::PREPROCESSOR_ENDIF) {
                     tokens.reserve(cz::heap_allocator(), 1);
                     tokens.push(token);
                 }
@@ -108,9 +110,11 @@ static void overlay_matching_pairs_start_frame(Editor*,
             }
 
             size_t depth = 1;
-            if (tokens[token_index].type == Token_Type::OPEN_PAIR) {
+            if (tokens[token_index].type == Token_Type::OPEN_PAIR ||
+                tokens[token_index].type == Token_Type::PREPROCESSOR_IF) {
                 for (size_t i = token_index + 1; i < tokens.len; ++i) {
-                    if (tokens[i].type == Token_Type::OPEN_PAIR) {
+                    if (tokens[i].type == Token_Type::OPEN_PAIR ||
+                        tokens[i].type == Token_Type::PREPROCESSOR_IF) {
                         ++depth;
                     } else {
                         --depth;
@@ -126,7 +130,8 @@ static void overlay_matching_pairs_start_frame(Editor*,
                 }
             } else {
                 for (size_t i = token_index; i-- > 0;) {
-                    if (tokens[i].type == Token_Type::CLOSE_PAIR) {
+                    if (tokens[i].type == Token_Type::CLOSE_PAIR ||
+                        tokens[i].type == Token_Type::PREPROCESSOR_ENDIF) {
                         ++depth;
                     } else {
                         --depth;

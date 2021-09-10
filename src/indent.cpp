@@ -19,7 +19,7 @@ uint64_t find_indent_width(Buffer* buffer,
 
     switch (discover_indent_policy) {
     case Discover_Indent_Policy::UP_THEN_BACK_PAIR: {
-        if (!backward_up_token_pair(buffer, &it)) {
+        if (!backward_up_token_pair(buffer, &it, /*non_pair=*/false)) {
             return 0;
         }
 
@@ -78,7 +78,7 @@ uint64_t find_indent_width(Buffer* buffer,
 
             // Find the corresponding token.
             if (token.type == Token_Type::CLOSE_PAIR) {
-                backward_up_token_pair(buffer, &it);
+                backward_up_token_pair(buffer, &it, /*non_pair=*/false);
             }
         }
     }
