@@ -772,9 +772,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-x e", cpp::command_extract_variable);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
 
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
-                                               Token_Type::IDENTIFIER,
-                                               Token_Type::PREPROCESSOR_KEYWORD};
+            static const Token_Type types[] = {
+                Token_Type::KEYWORD, Token_Type::TYPE, Token_Type::IDENTIFIER,
+                Token_Type::PREPROCESSOR_KEYWORD, Token_Type::PREPROCESSOR_ELSE};
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
