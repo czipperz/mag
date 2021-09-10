@@ -3,6 +3,7 @@
 #include <cz/defer.hpp>
 #include "buffer.hpp"
 #include "command_macros.hpp"
+#include "editor.hpp"
 #include "movement.hpp"
 #include "ssostr.hpp"
 #include "transaction.hpp"
@@ -82,10 +83,10 @@ static bool can_merge_insert(cz::Str str, char code) {
 void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
-    do_command_insert_char(source.client, buffer, window, source);
+    do_command_insert_char(editor, buffer, window, source);
 }
 
-void do_command_insert_char(Client* client,
+void do_command_insert_char(Editor* editor,
                             Buffer* buffer,
                             Window_Unified* window,
                             Command_Source source) {
@@ -96,8 +97,56 @@ void do_command_insert_char(Client* client,
     // If temporarily showing marks then first delete the region then
     // type.  This makes 2 edits so you can redo inbetween these edits.
     if (window->show_marks == 2) {
-        delete_regions(client, buffer, window);
-        insert_char(client, buffer, window, code, command_insert_char);
+        delete_regions(source.client, buffer, window);
+        insert_char(source.client, buffer, window, code, command_insert_char);
+        return;
+    }
+
+    if (editor->theme.insert_replace) {
+        Transaction transaction;
+        transaction.init(buffer);
+        CZ_DEFER(transaction.drop());
+
+        cz::Slice<Cursor> cursors = window->cursors;
+        Contents_Iterator it = buffer->contents.start();
+        uint64_t offset = 0;
+        for (size_t c = 0; c < cursors.len; ++c) {
+            it.advance_to(cursors[c].point);
+
+            // The goal is to keep the visual columns the same.  Since tabs
+            // collapse automatically, we only remove them if they become 0 width.
+            bool should_remove = true;
+            if (!it.at_eob()) {
+                if (it.get() == '\n') {
+                    should_remove = false;
+                } else if (it.get() == '\t') {
+                    uint64_t start_column = get_visual_column(buffer->mode, it);
+                    uint64_t end_column = char_visual_columns(buffer->mode, '\t', start_column);
+                    should_remove = (start_column + 1 == end_column);
+                }
+            }
+
+            if (should_remove) {
+                Edit remove;
+                remove.position = it.position + offset;
+                remove.value =
+                    buffer->contents.slice(transaction.value_allocator(), it, it.position + 1);
+                remove.flags = Edit::REMOVE;
+                transaction.push(remove);
+            }
+
+            // Insert the character.
+            Edit insert;
+            insert.position = it.position + offset;
+            insert.value = SSOStr::from_char(code);
+            insert.flags = Edit::INSERT;
+            transaction.push(insert);
+
+            if (!should_remove)
+                ++offset;
+        }
+
+        transaction.commit(source.client);
         return;
     }
 
@@ -208,7 +257,7 @@ void do_command_insert_char(Client* client,
             }
 
             // Don't merge edits around tab replacement.
-            transaction.commit(client);
+            transaction.commit(source.client);
             return;
         }
     }

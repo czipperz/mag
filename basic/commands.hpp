@@ -18,6 +18,7 @@ void command_toggle_render_bucket_boundaries(Editor* editor, Command_Source sour
 void command_toggle_use_tabs(Editor* editor, Command_Source source);
 void command_toggle_animated_scrolling(Editor* editor, Command_Source source);
 void command_toggle_wrap_long_lines(Editor* editor, Command_Source source);
+void command_toggle_insert_replace(Editor* editor, Command_Source source);
 
 void command_show_marks(Editor* editor, Command_Source source);
 void command_set_mark(Editor* editor, Command_Source source);

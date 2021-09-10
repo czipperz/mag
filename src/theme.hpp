@@ -104,6 +104,9 @@ struct Theme {
     /// the left or right side of the `Window` then the `Window` scrolls horizontally.
     size_t scroll_outside_visual_columns = 0;
 
+    /// When inserting text, replace existing text.
+    bool insert_replace = false;
+
     void drop();
 };
 

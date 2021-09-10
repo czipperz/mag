@@ -89,6 +89,15 @@ void command_toggle_wrap_long_lines(Editor* editor, Command_Source source) {
     buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
 }
 
+void command_toggle_insert_replace(Editor* editor, Command_Source source) {
+    editor->theme.insert_replace = !editor->theme.insert_replace;
+    if (editor->theme.insert_replace) {
+        source.client->show_message("Insert replace on");
+    } else {
+        source.client->show_message("Insert replace off");
+    }
+}
+
 static void command_configure_callback(Editor* editor, Client* client, cz::Str query, void* _data) {
     if (query == "animated scrolling") {
         editor->theme.allow_animated_scrolling = !editor->theme.allow_animated_scrolling;
@@ -186,6 +195,13 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
         buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
     } else if (query == "draw line numbers") {
         editor->theme.draw_line_numbers = !editor->theme.draw_line_numbers;
+    } else if (query == "insert replace") {
+        editor->theme.insert_replace = !editor->theme.insert_replace;
+        if (editor->theme.insert_replace) {
+            client->show_message("Insert replace on");
+        } else {
+            client->show_message("Insert replace off");
+        }
     } else if (query == "font size") {
         Dialog dialog = {};
         dialog.prompt = "Set font size to: ";
@@ -213,7 +229,7 @@ static bool configurations_completion_engine(Editor* editor,
         return false;
     }
 
-    context->results.reserve(12);
+    context->results.reserve(13);
     context->results.push("buffer indent width");
     context->results.push("buffer tab width");
     context->results.push("buffer use tabs");
@@ -225,6 +241,7 @@ static bool configurations_completion_engine(Editor* editor,
     context->results.push("buffer wrap long lines");
     context->results.push("animated scrolling");
     context->results.push("draw line numbers");
+    context->results.push("insert replace");
     context->results.push("font size");
     return true;
 }

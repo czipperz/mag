@@ -24,7 +24,7 @@ void delete_regions(Client* client,
                     Command_Function committer = nullptr);
 
 void command_insert_char(Editor* editor, Command_Source source);
-void do_command_insert_char(Client* client,
+void do_command_insert_char(Editor* editor,
                             Buffer* buffer,
                             Window_Unified* window,
                             Command_Source source);
