@@ -719,6 +719,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::path_next_token;
             mini_buffer_key_map(buffer->mode.key_map);
             break;
+        } else if (buffer->name == "*scratch*") {
+            break;
         }
 
         // Don't bind "q" in the mini buffer.
