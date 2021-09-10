@@ -918,6 +918,13 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 preprocessor_state = PREPROCESSOR_AFTER_DEFINE;
                 goto done_no_skip;
             } else {
+                if (looking_at(start_iterator, "if")) {
+                    token->type = Token_Type::PREPROCESSOR_IF;
+                } else if (looking_at(start_iterator, "end")) {
+                    token->type = Token_Type::PREPROCESSOR_ENDIF;
+                } else if (looking_at(start_iterator, "el")) {
+                    token->type = Token_Type::PREPROCESSOR_ELSE;
+                }
                 preprocessor_state = PREPROCESSOR_GENERAL;
                 goto done;
             }
