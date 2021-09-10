@@ -2,6 +2,9 @@
 
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
+#include <cz/defer.hpp>
+#include <cz/heap.hpp>
+#include <cz/string.hpp>
 #include "contents.hpp"
 #include "match.hpp"
 #include "movement.hpp"
@@ -183,340 +186,518 @@ static bool is_identifier_continuation(char ch) {
         }                                                                                     \
     } while (0)
 
-// Keyword lookup table macros.
-#define LEN(L, BODY)  \
-    case L:           \
-        switch (ch) { \
-            BODY;     \
-        default:      \
-            break;    \
-        }             \
-        break
-
-#define CASE(CHAR, STR) \
-    case CHAR:          \
-        MATCHES(STR);   \
-        break
-
-#define MATCHES(STR)                                 \
-    if (looking_at_no_bounds_check(iterator, STR)) { \
-        return true;                                 \
-    }
-
-#define ADVANCE(CHAR, BODY)     \
-    case CHAR:                  \
-        iterator.advance();     \
-        switch (iterator.get()) \
-            BODY;               \
-        break
-
-#define AT_OFFSET(CHAR, OFFSET, BODY)    \
-    case CHAR: {                         \
-        Contents_Iterator mi = iterator; \
-        mi.advance(OFFSET);              \
-        switch (mi.get())                \
-            BODY;                        \
-        break;                           \
-    }
-
-static bool look_for_type_definition_keyword(Contents_Iterator iterator, uint64_t end, char ch) {
+static int look_for_keyword(cz::Str identifier_string) {
     ZoneScoped;
 
-    switch (ch) {
-    case 'c':
-        if (matches(iterator, end, "class")) {
-            return true;
-        }
-        break;
-    case 'e':
-        if (matches(iterator, end, "enum")) {
-            return true;
-        }
-        break;
-    case 'u':
-        if (matches(iterator, end, "union")) {
-            return true;
-        }
-        break;
-    case 's':
-        if (matches(iterator, end, "struct")) {
-            return true;
-        }
-        break;
+    switch ((identifier_string.len << 8) | (uint8_t)identifier_string[0]) {
+    case (2 << 8) | (uint8_t)'d':
+        if (identifier_string == "do")
+            return 2;
+        return 0;
+    case (2 << 8) | (uint8_t)'i':
+        if (identifier_string == "if")
+            return 2;
+        return 0;
+    case (2 << 8) | (uint8_t)'o':
+        if (identifier_string == "or")
+            return 2;
+        return 0;
+    case (3 << 8) | (uint8_t)'a':
+        if (identifier_string == "and")
+            return 2;
+        // return 0;
+        // case (3 << 8) | (uint8_t)'a':
+        if (identifier_string == "asm")
+            return 2;
+        return 0;
+    case (3 << 8) | (uint8_t)'f':
+        if (identifier_string == "for")
+            return 2;
+        return 0;
+    case (3 << 8) | (uint8_t)'i':
+        if (identifier_string == "int")
+            return 3;
+        return 0;
+    case (3 << 8) | (uint8_t)'n':
+        if (identifier_string == "new")
+            return 2;
+        // return 0;
+        // case (3 << 8) | (uint8_t)'n':
+        if (identifier_string == "not")
+            return 2;
+        return 0;
+    case (3 << 8) | (uint8_t)'t':
+        if (identifier_string == "try")
+            return 2;
+        return 0;
+    case (3 << 8) | (uint8_t)'x':
+        if (identifier_string == "xor")
+            return 2;
+        return 0;
+    case (4 << 8) | (uint8_t)'a':
+        if (identifier_string == "auto")
+            return 3;
+        return 0;
+    case (4 << 8) | (uint8_t)'b':
+        if (identifier_string == "bool")
+            return 3;
+        return 0;
+    case (4 << 8) | (uint8_t)'c':
+        if (identifier_string == "case")
+            return 2;
+        // return 0;
+        // case (4 << 8) | (uint8_t)'c':
+        if (identifier_string == "char")
+            return 3;
+        return 0;
+    case (4 << 8) | (uint8_t)'e':
+        if (identifier_string == "else")
+            return 2;
+        // return 0;
+        // case (4 << 8) | (uint8_t)'e':
+        if (identifier_string == "enum")
+            return 1;
+        return 0;
+    case (4 << 8) | (uint8_t)'g':
+        if (identifier_string == "goto")
+            return 2;
+        return 0;
+    case (4 << 8) | (uint8_t)'l':
+        if (identifier_string == "long")
+            return 3;
+        return 0;
+    case (4 << 8) | (uint8_t)'t':
+        if (identifier_string == "this")
+            return 2;
+        // return 0;
+        // case (4 << 8) | (uint8_t)'t':
+        if (identifier_string == "true")
+            return 2;
+        return 0;
+    case (4 << 8) | (uint8_t)'v':
+        if (identifier_string == "void")
+            return 3;
+        return 0;
+    case (5 << 8) | (uint8_t)'b':
+        if (identifier_string == "bitor")
+            return 2;
+        // return 0;
+        // case (5 << 8) | (uint8_t)'b':
+        if (identifier_string == "break")
+            return 2;
+        return 0;
+    case (5 << 8) | (uint8_t)'c':
+        if (identifier_string == "catch")
+            return 2;
+        // return 0;
+        // case (5 << 8) | (uint8_t)'c':
+        if (identifier_string == "class")
+            return 1;
+        // return 0;
+        // case (5 << 8) | (uint8_t)'c':
+        if (identifier_string == "compl")
+            return 2;
+        // return 0;
+        // case (5 << 8) | (uint8_t)'c':
+        if (identifier_string == "const")
+            return 2;
+        // return 0;
+        // case (5 << 8) | (uint8_t)'f':
+        if (identifier_string == "false")
+            return 2;
+        // return 0;
+        // case (5 << 8) | (uint8_t)'f':
+        if (identifier_string == "float")
+            return 3;
+        return 0;
+    case (5 << 8) | (uint8_t)'o':
+        if (identifier_string == "or_eq")
+            return 2;
+        return 0;
+    case (5 << 8) | (uint8_t)'s':
+        if (identifier_string == "short")
+            return 3;
+        return 0;
+    case (5 << 8) | (uint8_t)'t':
+        if (identifier_string == "throw")
+            return 2;
+        return 0;
+    case (5 << 8) | (uint8_t)'u':
+        if (identifier_string == "union")
+            return 1;
+        // return 0;
+        // case (5 << 8) | (uint8_t)'u':
+        if (identifier_string == "using")
+            return 2;
+        return 0;
+    case (5 << 8) | (uint8_t)'w':
+        if (identifier_string == "while")
+            return 2;
+        return 0;
+    case (6 << 8) | (uint8_t)'a':
+        if (identifier_string == "and_eq")
+            return 2;
+        return 0;
+    case (6 << 8) | (uint8_t)'b':
+        if (identifier_string == "bitand")
+            return 2;
+        return 0;
+    case (6 << 8) | (uint8_t)'d':
+        if (identifier_string == "delete")
+            return 2;
+        // return 0;
+        // case (6 << 8) | (uint8_t)'d':
+        if (identifier_string == "double")
+            return 3;
+        return 0;
+    case (6 << 8) | (uint8_t)'e':
+        if (identifier_string == "export")
+            return 2;
+        // return 0;
+        // case (6 << 8) | (uint8_t)'e':
+        if (identifier_string == "extern")
+            return 2;
+        return 0;
+    case (6 << 8) | (uint8_t)'f':
+        if (identifier_string == "friend")
+            return 2;
+        return 0;
+    case (6 << 8) | (uint8_t)'i':
+        if (identifier_string == "inline")
+            return 2;
+        // return 0;
+        // case (6 << 8) | (uint8_t)'i':
+        if (identifier_string == "int8_t")
+            return 3;
+        return 0;
+    case (6 << 8) | (uint8_t)'n':
+        if (identifier_string == "not_eq")
+            return 2;
+        return 0;
+    case (6 << 8) | (uint8_t)'p':
+        if (identifier_string == "public")
+            return 2;
+        return 0;
+    case (6 << 8) | (uint8_t)'r':
+        if (identifier_string == "return")
+            return 2;
+        return 0;
+    case (6 << 8) | (uint8_t)'s':
+        if (identifier_string == "signed")
+            return 3;
+        // return 0;
+        // case (6 << 8) | (uint8_t)'s':
+        if (identifier_string == "size_t")
+            return 3;
+        // return 0;
+        // case (6 << 8) | (uint8_t)'s':
+        if (identifier_string == "sizeof")
+            return 2;
+        // return 0;
+        // case (6 << 8) | (uint8_t)'s':
+        if (identifier_string == "static")
+            return 2;
+        // return 0;
+        // case (6 << 8) | (uint8_t)'s':
+        if (identifier_string == "struct")
+            return 1;
+        // return 0;
+        // case (6 << 8) | (uint8_t)'s':
+        if (identifier_string == "switch")
+            return 2;
+        return 0;
+    case (6 << 8) | (uint8_t)'t':
+        if (identifier_string == "typeid")
+            return 2;
+        return 0;
+    case (6 << 8) | (uint8_t)'x':
+        if (identifier_string == "xor_eq")
+            return 2;
+        return 0;
+    case (7 << 8) | (uint8_t)'a':
+        if (identifier_string == "alignas")
+            return 2;
+        // return 0;
+        // case (7 << 8) | (uint8_t)'a':
+        if (identifier_string == "alignof")
+            return 2;
+        return 0;
+    case (7 << 8) | (uint8_t)'c':
+        if (identifier_string == "char8_t")
+            return 3;
+        // return 0;
+        // case (7 << 8) | (uint8_t)'c':
+        if (identifier_string == "concept")
+            return 2;
+        return 0;
+    case (7 << 8) | (uint8_t)'d':
+        if (identifier_string == "default")
+            return 2;
+        return 0;
+    case (7 << 8) | (uint8_t)'i':
+        if (identifier_string == "int16_t")
+            return 3;
+        // return 0;
+        // case (7 << 8) | (uint8_t)'i':
+        if (identifier_string == "int32_t")
+            return 3;
+        // return 0;
+        // case (7 << 8) | (uint8_t)'i':
+        if (identifier_string == "int64_t")
+            return 3;
+        return 0;
+    case (7 << 8) | (uint8_t)'m':
+        if (identifier_string == "mutable")
+            return 2;
+        return 0;
+    case (7 << 8) | (uint8_t)'n':
+        if (identifier_string == "nullptr")
+            return 2;
+        return 0;
+    case (7 << 8) | (uint8_t)'p':
+        if (identifier_string == "private")
+            return 2;
+        return 0;
+    case (7 << 8) | (uint8_t)'t':
+        if (identifier_string == "typedef")
+            return 2;
+        return 0;
+    case (7 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint8_t")
+            return 3;
+        return 0;
+    case (7 << 8) | (uint8_t)'v':
+        if (identifier_string == "virtual")
+            return 2;
+        return 0;
+    case (7 << 8) | (uint8_t)'w':
+        if (identifier_string == "wchar_t")
+            return 3;
+        return 0;
+    case (8 << 8) | (uint8_t)'c':
+        if (identifier_string == "char16_t")
+            return 3;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'c':
+        if (identifier_string == "char32_t")
+            return 3;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'c':
+        if (identifier_string == "co_await")
+            return 2;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'c':
+        if (identifier_string == "co_yield")
+            return 2;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'c':
+        if (identifier_string == "continue")
+            return 2;
+        return 0;
+    case (8 << 8) | (uint8_t)'d':
+        if (identifier_string == "decltype")
+            return 2;
+        return 0;
+    case (8 << 8) | (uint8_t)'e':
+        if (identifier_string == "explicit")
+            return 2;
+        return 0;
+    case (8 << 8) | (uint8_t)'i':
+        if (identifier_string == "intmax_t")
+            return 3;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'i':
+        if (identifier_string == "intptr_t")
+            return 3;
+        return 0;
+    case (8 << 8) | (uint8_t)'n':
+        if (identifier_string == "noexcept")
+            return 2;
+        return 0;
+    case (8 << 8) | (uint8_t)'o':
+        if (identifier_string == "operator")
+            return 2;
+        return 0;
+    case (8 << 8) | (uint8_t)'r':
+        if (identifier_string == "reflexpr")
+            return 2;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'r':
+        if (identifier_string == "register")
+            return 2;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'r':
+        if (identifier_string == "requires")
+            return 2;
+        return 0;
+    case (8 << 8) | (uint8_t)'t':
+        if (identifier_string == "template")
+            return 2;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'t':
+        if (identifier_string == "typename")
+            return 2;
+        return 0;
+    case (8 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint16_t")
+            return 3;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint32_t")
+            return 3;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint64_t")
+            return 3;
+        // return 0;
+        // case (8 << 8) | (uint8_t)'u':
+        if (identifier_string == "unsigned")
+            return 3;
+        return 0;
+    case (8 << 8) | (uint8_t)'v':
+        if (identifier_string == "volatile")
+            return 2;
+        return 0;
+    case (9 << 8) | (uint8_t)'c':
+        if (identifier_string == "co_return")
+            return 2;
+        // return 0;
+        // case (9 << 8) | (uint8_t)'c':
+        if (identifier_string == "consteval")
+            return 2;
+        // return 0;
+        // case (9 << 8) | (uint8_t)'c':
+        if (identifier_string == "constexpr")
+            return 2;
+        // return 0;
+        // case (9 << 8) | (uint8_t)'c':
+        if (identifier_string == "constinit")
+            return 2;
+        return 0;
+    case (9 << 8) | (uint8_t)'n':
+        if (identifier_string == "namespace")
+            return 2;
+        return 0;
+    case (9 << 8) | (uint8_t)'p':
+        if (identifier_string == "protected")
+            return 2;
+        // return 0;
+        // case (9 << 8) | (uint8_t)'p':
+        if (identifier_string == "ptrdiff_t")
+            return 3;
+        return 0;
+    case (9 << 8) | (uint8_t)'u':
+        if (identifier_string == "uintmax_t")
+            return 3;
+        // return 0;
+        // case (9 << 8) | (uint8_t)'u':
+        if (identifier_string == "uintptr_t")
+            return 3;
+        return 0;
+    case (10 << 8) | (uint8_t)'c':
+        if (identifier_string == "const_cast")
+            return 2;
+        return 0;
+    case (11 << 8) | (uint8_t)'i':
+        if (identifier_string == "int_fast8_t")
+            return 3;
+        return 0;
+    case (11 << 8) | (uint8_t)'s':
+        if (identifier_string == "static_cast")
+            return 2;
+        return 0;
+    case (12 << 8) | (uint8_t)'d':
+        if (identifier_string == "dynamic_cast")
+            return 2;
+        return 0;
+    case (12 << 8) | (uint8_t)'i':
+        if (identifier_string == "int_fast16_t")
+            return 3;
+        // return 0;
+        // case (12 << 8) | (uint8_t)'i':
+        if (identifier_string == "int_fast32_t")
+            return 3;
+        // return 0;
+        // case (12 << 8) | (uint8_t)'i':
+        if (identifier_string == "int_fast64_t")
+            return 3;
+        // return 0;
+        // case (12 << 8) | (uint8_t)'i':
+        if (identifier_string == "int_least8_t")
+            return 3;
+        return 0;
+    case (12 << 8) | (uint8_t)'s':
+        if (identifier_string == "synchronized")
+            return 2;
+        return 0;
+    case (12 << 8) | (uint8_t)'t':
+        if (identifier_string == "thread_local")
+            return 2;
+        return 0;
+    case (12 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint_fast8_t")
+            return 3;
+        return 0;
+    case (13 << 8) | (uint8_t)'a':
+        if (identifier_string == "atomic_cancel")
+            return 2;
+        // return 0;
+        // case (13 << 8) | (uint8_t)'a':
+        if (identifier_string == "atomic_commit")
+            return 2;
+        return 0;
+    case (13 << 8) | (uint8_t)'i':
+        if (identifier_string == "int_least16_t")
+            return 3;
+        // return 0;
+        // case (13 << 8) | (uint8_t)'i':
+        if (identifier_string == "int_least32_t")
+            return 3;
+        // return 0;
+        // case (13 << 8) | (uint8_t)'i':
+        if (identifier_string == "int_least64_t")
+            return 3;
+        return 0;
+    case (13 << 8) | (uint8_t)'s':
+        if (identifier_string == "static_assert")
+            return 2;
+        return 0;
+    case (13 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint_fast16_t")
+            return 3;
+        // return 0;
+        // case (13 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint_fast32_t")
+            return 3;
+        // return 0;
+        // case (13 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint_fast64_t")
+            return 3;
+        return 0;
+    case (14 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint_least16_t")
+            return 3;
+        // return 0;
+        // case (14 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint_least32_t")
+            return 3;
+        // return 0;
+        // case (14 << 8) | (uint8_t)'u':
+        if (identifier_string == "uint_least64_t")
+            return 3;
+        return 0;
+    case (15 << 8) | (uint8_t)'a':
+        if (identifier_string == "atomic_noexcept")
+            return 2;
+        return 0;
+    case (16 << 8) | (uint8_t)'r':
+        if (identifier_string == "reinterpret_cast")
+            return 2;
+        return 0;
+
+    default:
+        return 0;
     }
-    return false;
-}
-
-static bool look_for_normal_keyword(Contents_Iterator iterator, uint64_t end, char ch) {
-    ZoneScoped;
-
-    switch (end - iterator.position) {
-        LEN(2, {
-            CASE('d', "do");
-            CASE('i', "if");
-            CASE('o', "or");
-        });
-
-        LEN(3, {
-            ADVANCE('a', {
-                CASE('n', "nd");
-                CASE('s', "sm");
-            });
-
-            CASE('f', "for");
-
-            ADVANCE('n', {
-                CASE('e', "ew");
-                CASE('o', "ot");
-            });
-
-            CASE('t', "try");
-            CASE('x', "xor");
-        });
-
-        LEN(4, {
-            CASE('c', "case");
-            CASE('e', "else");
-            CASE('g', "goto");
-
-            ADVANCE('t', {
-                CASE('h', "his");
-                CASE('r', "rue");
-            });
-        });
-
-        LEN(5, {
-            ADVANCE('b', {
-                CASE('i', "itor");
-                CASE('r', "reak");
-            });
-
-            AT_OFFSET('c', 4, {
-                CASE('h', "catch");
-                CASE('l', "compl");
-                CASE('t', "const");
-            });
-
-            CASE('f', "false");
-            CASE('o', "or_eq");
-            CASE('t', "throw");
-            CASE('u', "using");
-            CASE('w', "while");
-        });
-
-        LEN(6, {
-            CASE('a', "and_eq");
-            CASE('b', "bitand");
-            CASE('d', "delete");
-
-            ADVANCE('e', {
-                ADVANCE('x', {
-                    CASE('p', "port");
-                    CASE('t', "tern");
-                });
-            });
-
-            CASE('f', "friend");
-            CASE('i', "inline");
-            CASE('n', "not_eq");
-            CASE('p', "public");
-            CASE('r', "return");
-
-            ADVANCE('s', {
-                CASE('i', "izeof");
-                CASE('t', "tatic");
-                CASE('w', "witch");
-            });
-
-            CASE('t', "typeid");
-            CASE('x', "xor_eq");
-        });
-
-        LEN(7, {
-            AT_OFFSET('a', 5, {
-                CASE('a', "alignas");
-                CASE('o', "alignof");
-            });
-
-            CASE('c', "concept");
-            CASE('d', "default");
-            CASE('m', "mutable");
-            CASE('n', "nullptr");
-            CASE('p', "private");
-            CASE('t', "typedef");
-            CASE('v', "virtual");
-        });
-
-        LEN(8, {
-            AT_OFFSET('c', 3, {
-                CASE('a', "co_await");
-                CASE('y', "co_yield");
-                CASE('t', "continue");
-            });
-
-            CASE('d', "decltype");
-            CASE('e', "explicit");
-            CASE('n', "noexcept");
-            CASE('o', "operator");
-
-            AT_OFFSET('r', 2, {
-                CASE('f', "reflexpr");
-                CASE('g', "register");
-                CASE('q', "requires");
-            });
-
-            ADVANCE('t', {
-                CASE('e', "emplate");
-                CASE('y', "ypename");
-            });
-
-            CASE('v', "volatile");
-        });
-
-        LEN(9, {
-            AT_OFFSET('c', 6, {
-                CASE('u', "co_return");
-                CASE('v', "consteval");
-                CASE('x', "constexpr");
-                CASE('n', "constinit");
-            });
-
-            CASE('n', "namespace");
-            CASE('p', "protected");
-        });
-
-        LEN(10, CASE('c', "const_cast"));
-        LEN(11, CASE('s', "static_cast"));
-
-        LEN(12, {
-            CASE('d', "dynamic_cast");
-            CASE('s', "synchronized");
-            CASE('t', "thread_local");
-        });
-
-        LEN(13, {
-            AT_OFFSET('a', 8, {
-                CASE('a', "atomic_cancel");
-                CASE('o', "atomic_commit");
-            });
-
-            CASE('s', "static_assert");
-        });
-
-        LEN(15, CASE('a', "atomic_noexcept"));
-
-        LEN(16, CASE('r', "reinterpret_cast"));
-    }
-    return false;
-}
-
-static bool look_for_type_keyword(Contents_Iterator iterator, uint64_t end, char ch) {
-    ZoneScoped;
-
-    switch (end - iterator.position) {
-        LEN(3, CASE('i', "int"));
-        LEN(4, {
-            CASE('a', "auto");
-            CASE('b', "bool");
-            CASE('c', "char");
-            CASE('l', "long");
-            CASE('v', "void");
-        });
-
-        LEN(5, {
-            CASE('f', "float");
-            CASE('s', "short");
-        });
-
-        LEN(6, {
-            CASE('d', "double");
-            CASE('i', "int8_t");
-
-            AT_OFFSET('s', 2, {
-                CASE('g', "signed");
-                CASE('z', "size_t");
-            });
-        });
-
-        LEN(7, {
-            CASE('c', "char8_t");
-
-            AT_OFFSET('i', 3, {
-                CASE('1', "int16_t");
-                CASE('3', "int32_t");
-                CASE('6', "int64_t");
-            });
-
-            CASE('u', "uint8_t");
-            CASE('w', "wchar_t");
-        });
-
-        LEN(8, {
-            AT_OFFSET('c', 4, {
-                CASE('1', "char16_t");
-                CASE('3', "char32_t");
-            });
-
-            AT_OFFSET('i', 3, {
-                CASE('m', "intmax_t");
-                CASE('p', "intptr_t");
-            });
-
-            AT_OFFSET('u', 4, {
-                CASE('1', "uint16_t");
-                CASE('3', "uint32_t");
-                CASE('6', "uint64_t");
-                CASE('g', "unsigned");
-            });
-        });
-
-        LEN(9, {
-            CASE('p', "ptrdiff_t");
-
-            AT_OFFSET('u', 4, {
-                CASE('m', "uintmax_t");
-                CASE('p', "uintptr_t");
-            });
-        });
-
-        LEN(11, CASE('i', "int_fast8_t"));
-
-        LEN(12, {
-            AT_OFFSET('i', 8, {
-                CASE('1', "int_fast16_t");
-                CASE('3', "int_fast32_t");
-                CASE('6', "int_fast64_t");
-                CASE('t', "int_least8_t");
-            });
-
-            CASE('u', "uint_fast8_t");
-        });
-
-        LEN(13, {
-            AT_OFFSET('i', 9, {
-                CASE('1', "int_least16_t");
-                CASE('3', "int_least32_t");
-                CASE('6', "int_least64_t");
-            });
-
-            AT_OFFSET('u', 9, {
-                CASE('1', "uint_fast16_t");
-                CASE('3', "uint_fast32_t");
-                CASE('6', "uint_fast64_t");
-                CASE('t', "uint_least8_t");
-            });
-        });
-
-        LEN(14, {
-            AT_OFFSET('u', 10, {
-                CASE('1', "uint_least16_t");
-                CASE('3', "uint_least32_t");
-                CASE('6', "uint_least64_t");
-            });
-        });
-    }
-
-    return false;
 }
 
 static void continue_inside_oneline_comment(Contents_Iterator* iterator,
@@ -899,12 +1080,20 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
     if (cz::is_alpha(first_char) || first_char == '_') {
         ZoneScopedN("identifier");
 
+        cz::String identifier_string = {};
+        CZ_DEFER(identifier_string.drop(cz::heap_allocator()));
+
         Contents_Iterator start_iterator = *iterator;
         {
             ZoneScopedN("find end");
+            identifier_string.reserve(cz::heap_allocator(), 1);
+            identifier_string.push(first_char);
+            char ch;
             for (iterator->advance();
-                 !iterator->at_eob() && is_identifier_continuation(iterator->get());
+                 !iterator->at_eob() && is_identifier_continuation((ch = iterator->get()));
                  iterator->advance()) {
+                identifier_string.reserve(cz::heap_allocator(), 1);
+                identifier_string.push(ch);
             }
         }
 
@@ -938,13 +1127,15 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
             goto done;
         }
 
-        if (look_for_type_definition_keyword(start_iterator, iterator->position, first_char)) {
+        switch (look_for_keyword(identifier_string)) {
+        case 1:
+            // Type definition keyword.
             token->type = Token_Type::KEYWORD;
             normal_state = IN_TYPE_DEFINITION;
             goto done;
-        }
 
-        if (look_for_normal_keyword(start_iterator, iterator->position, first_char)) {
+        case 2:
+            // Normal keyword.
             token->type = Token_Type::KEYWORD;
             if (matches(start_iterator, iterator->position, "for")) {
                 normal_state = AFTER_FOR;
@@ -952,9 +1143,9 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 normal_state = IN_EXPR;
             }
             goto done;
-        }
 
-        if (look_for_type_keyword(start_iterator, iterator->position, first_char)) {
+        case 3:
+            // Type keyword.
             token->type = Token_Type::TYPE;
             if (normal_state == START_OF_PARAMETER || normal_state == IN_PARAMETER_TYPE) {
                 normal_state = IN_PARAMETER_TYPE;
@@ -962,6 +1153,9 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_c
                 normal_state = IN_VARIABLE_TYPE;
             }
             goto done;
+
+        default:
+            break;
         }
 
         // generic identifier
