@@ -399,7 +399,7 @@ static void run_command(Command command, Editor* editor, Command_Source source) 
             }
             message.append(")");
 
-            TracyMessage(message.buffer(), message.len);
+            TracyMessage(message.buffer, message.len);
         }
 #endif
 

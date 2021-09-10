@@ -323,7 +323,7 @@ static void start_syntax_highlighting(Editor* editor, cz::Arc<Buffer_Handle> han
         buffer->token_cache.generate_check_points_until(buffer, 0);
 
         TracyFormat(message, len, 1024, "Start syntax highlighting: %.*s", (int)buffer->name.len,
-                    buffer->name.buffer());
+                    buffer->name.buffer);
         TracyMessage(message, len);
     }
 

@@ -25,7 +25,7 @@ void Buffer_Handle::init(Buffer buffer) {
                                                           __LINE__, 0};
         return &srcloc;
     }());
-    context->CustomName(buffer.name.buffer(), buffer.name.len());
+    context->CustomName(buffer.name.buffer, buffer.name.len);
 #endif
 
 #ifndef NDEBUG
