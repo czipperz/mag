@@ -74,7 +74,7 @@ static bool load_completion_cache(Editor* editor,
         if (buffer->mode.wrap_long_lines ||                                                   \
             (column >= window->column_offset &&                                               \
              column < window->column_offset + window->cols() -                                \
-                          draw_line_numbers * line_number_buffer.cap)) {                    \
+                          draw_line_numbers * line_number_buffer.cap)) {                      \
             SET_BODY(FACE, CH);                                                               \
             ++x;                                                                              \
         }                                                                                     \
@@ -85,7 +85,7 @@ static bool load_completion_cache(Editor* editor,
                                                                                               \
             if (draw_line_numbers) {                                                          \
                 Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING]; \
-                for (size_t i = 0; i < line_number_buffer.cap - 1; ++i) {                   \
+                for (size_t i = 0; i < line_number_buffer.cap - 1; ++i) {                     \
                     SET_BODY(face, ' ');                                                      \
                     ++x;                                                                      \
                 }                                                                             \
@@ -1283,8 +1283,7 @@ static bool load_completion_cache(Editor* editor,
     cz::String selected_result = {};
     CZ_DEFER(selected_result.drop(cz::heap_allocator()));
     bool has_selected_result = false;
-    if (completion_cache->filter_context.selected <
-        completion_cache->filter_context.results.len) {
+    if (completion_cache->filter_context.selected < completion_cache->filter_context.results.len) {
         cz::Str selected_result_str =
             completion_cache->filter_context.results[completion_cache->filter_context.selected];
         selected_result.reserve(cz::heap_allocator(), selected_result_str.len);
