@@ -308,7 +308,7 @@ static void process_event(Server* server,
         client->mouse.has_client_position = true;
         client->mouse.client_row = event.motion.y / character_height;
         client->mouse.client_column = event.motion.x / character_width;
-        recalculate_mouse(client);
+        recalculate_mouse(server->editor.theme, client);
         break;
     }
 

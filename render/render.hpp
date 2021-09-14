@@ -25,7 +25,7 @@ void render_to_cells(Cell* cells,
                      Editor* editor,
                      Client* client);
 
-void recalculate_mouse(Client* client);
+void recalculate_mouse(const Theme& theme, Client* client);
 
 }
 }

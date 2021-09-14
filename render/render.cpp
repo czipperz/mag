@@ -20,6 +20,23 @@
 namespace mag {
 namespace render {
 
+static size_t line_number_columns(const Theme& theme,
+                                  const Window_Unified* window,
+                                  const Buffer* buffer) {
+    if (!theme.draw_line_numbers)
+        return 0;
+
+    size_t end_line_number = buffer->contents.get_line_number(buffer->contents.len) + 1;
+    size_t line_number_width = (size_t)log10(end_line_number) + 1;
+    size_t result = line_number_width + 1 /* space on right */;
+
+    // Enable drawing line numbers for non-mini buffer
+    // windows if they are enabled and fit on the screen.
+    if (result + 5 > window->cols())
+        return 0;
+    return result;
+}
+
 static bool load_completion_cache(Editor* editor,
                                   Completion_Cache* completion_cache,
                                   Completion_Filter completion_filter);
@@ -656,22 +673,17 @@ static void draw_buffer_contents(Cell* cells,
         overlay->start_frame(editor, client, buffer, window, iterator);
     }
 
-    uint64_t line_number = buffer->contents.get_line_number(iterator.position) + 1;
     cz::String line_number_buffer = {};
     CZ_DEFER(line_number_buffer.drop(cz::heap_allocator()));
-    {
-        Contents_Iterator end_position = iterator;
-        forward_visual_line(window, buffer->mode, &end_position, window->rows());
-
-        size_t end_line_number = buffer->contents.get_line_number(end_position.position) + 1;
-        size_t line_number_width = (size_t)log10(end_line_number) + 1;
-        line_number_buffer.reserve(cz::heap_allocator(), line_number_width + 1);
+    bool draw_line_numbers = false;
+    if (window != client->_mini_buffer) {
+        size_t cols = line_number_columns(editor->theme, window, buffer);
+        draw_line_numbers = (cols > 0);
+        if (draw_line_numbers)
+            line_number_buffer.reserve_exact(cz::heap_allocator(), cols);
     }
 
-    // Enable drawing line numbers for non-mini buffer
-    // windows if they are enabled and fit on the screen.
-    bool draw_line_numbers = client->_mini_buffer != window && editor->theme.draw_line_numbers &&
-                             line_number_buffer.cap + 5 <= window->cols();
+    uint64_t line_number = buffer->contents.get_line_number(iterator.position) + 1;
 
     // Draw line number for first line.
     if (draw_line_numbers) {
@@ -1110,18 +1122,6 @@ static void draw_buffer(Cell* cells,
                         size_t start_col) {
     ZoneScoped;
 
-    // Test if the mouse is in bounds.
-    if (client->mouse.has_client_position &&
-        (start_col <= client->mouse.client_column &&
-         client->mouse.client_column < start_col + window->cols()) &&
-        (start_row <= client->mouse.client_row &&
-         client->mouse.client_row < start_row + window->rows())) {
-        // Mark this window as the mouse's window.
-        client->mouse.window = window;
-        client->mouse.window_row = (uint32_t)(client->mouse.client_row - start_row);
-        client->mouse.window_column = (uint32_t)(client->mouse.client_column - start_col);
-    }
-
     Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
         editor, client, window, window->buffer_handle, buffer, window_cache);
 
@@ -1218,7 +1218,8 @@ static void draw_window(Cell* cells,
     }
 }
 
-static void recalculate_mouse_recursive(Window* w,
+static void recalculate_mouse_recursive(const Theme& theme,
+                                        Window* w,
                                         Mouse_Position* mouse,
                                         size_t start_row,
                                         size_t start_col) {
@@ -1231,9 +1232,11 @@ static void recalculate_mouse_recursive(Window* w,
              mouse->client_column < start_col + window->cols()) &&
             (start_row <= mouse->client_row && mouse->client_row < start_row + window->rows())) {
             // Mark this window as the mouse's window.
+            WITH_CONST_WINDOW_BUFFER(window);
             mouse->window = window;
             mouse->window_row = (uint32_t)(mouse->client_row - start_row);
-            mouse->window_column = (uint32_t)(mouse->client_column - start_col);
+            mouse->window_column = (uint32_t)(mouse->client_column - start_col -
+                                              line_number_columns(theme, window, buffer));
         }
         break;
     }
@@ -1241,13 +1244,13 @@ static void recalculate_mouse_recursive(Window* w,
     case Window::VERTICAL_SPLIT:
     case Window::HORIZONTAL_SPLIT: {
         Window_Split* window = (Window_Split*)w;
-        recalculate_mouse_recursive(window->first, mouse, start_row, start_col);
+        recalculate_mouse_recursive(theme, window->first, mouse, start_row, start_col);
         if (window->tag == Window::VERTICAL_SPLIT) {
             recalculate_mouse_recursive(
-                window->second, mouse, start_row,
+                theme, window->second, mouse, start_row,
                 start_col + window->total_cols - window->second->total_cols);
         } else {
-            recalculate_mouse_recursive(window->second, mouse,
+            recalculate_mouse_recursive(theme, window->second, mouse,
                                         start_row + window->total_rows - window->second->total_rows,
                                         start_col);
         }
@@ -1256,9 +1259,9 @@ static void recalculate_mouse_recursive(Window* w,
     }
 }
 
-void recalculate_mouse(Client* client) {
+void recalculate_mouse(const Theme& theme, Client* client) {
     client->mouse.window = nullptr;
-    recalculate_mouse_recursive(client->window, &client->mouse, 0, 0);
+    recalculate_mouse_recursive(theme, client->window, &client->mouse, 0, 0);
 }
 
 bool load_mini_buffer_completion_cache(Server* server, Client* client) {
@@ -1538,6 +1541,7 @@ void render_to_cells(Cell* cells,
     client->window->set_size(total_rows, total_cols);
     draw_window(cells, window_cache, total_cols, editor, client, client->window,
                 client->selected_normal_window, 0, 0);
+    recalculate_mouse(editor->theme, client);
 }
 
 }

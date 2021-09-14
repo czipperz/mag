@@ -188,7 +188,7 @@ static void process_mouse_event(Server* server, Client* client) {
     client->mouse.has_client_position = true;
     client->mouse.client_row = mevent.y;
     client->mouse.client_column = mevent.x;
-    recalculate_mouse(client);
+    recalculate_mouse(server->editor.theme, client);
 
     Key key = {};
     if (mevent.bstate & BUTTON_CTRL) {
