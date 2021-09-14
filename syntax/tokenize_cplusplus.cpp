@@ -301,8 +301,8 @@ static int look_for_keyword(cz::Str identifier_string) {
         // case (5 << 8) | (uint8_t)'c':
         if (identifier_string == "const")
             return 2;
-        // return 0;
-        // case (5 << 8) | (uint8_t)'f':
+        return 0;
+    case (5 << 8) | (uint8_t)'f':
         if (identifier_string == "false")
             return 2;
         // return 0;
