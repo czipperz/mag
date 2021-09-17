@@ -52,11 +52,31 @@ static int eat(File_Wrapper& fw, char ch) {
     return fw.advance();
 }
 
+static int eat_no_newline(File_Wrapper& fw, cz::String& str) {
+    cz::Str expected = "\\ No newline at end of file";
+    for (size_t i = 0; i < expected.len; ++i) {
+        int result = eat(fw, expected[i]);
+        if (result != 0) {
+            return result;
+        }
+    }
+
+    if (!str.ends_with('\n')) {
+        return -1;
+    }
+    str.pop();
+
+    return eat(fw, '\n');
+}
+
 static int parse_line(File_Wrapper& fw, cz::String& str, char start_char) {
     int result;
     char x;
     while (1) {
         if ((x = fw.get()) != start_char) {
+            if (x == '\\') {
+                return eat_no_newline(fw, str);
+            }
             return 0;
         }
         result = fw.advance();
