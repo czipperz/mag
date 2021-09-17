@@ -890,8 +890,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (name.ends_with(".cfg") || name == ".ignore" || name == ".gitignore" ||
-                   name == ".hgignore" || name == ".agignore") {
+        } else if (name.ends_with(".cfg") || name.ends_with(".json") || name.ends_with(".yaml") ||
+                   name == ".ignore" || name == ".gitignore" || name == ".hgignore" ||
+                   name == ".agignore") {
             // A bunch of miscellaneous file types that all use # for comments.
             buffer->mode.next_token = syntax::general_hash_comments_next_token;
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
