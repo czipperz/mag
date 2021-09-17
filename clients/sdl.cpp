@@ -197,7 +197,7 @@ static void process_event(Server* server,
         break;
 
     case SDL_TEXTINPUT:
-        if (!(SDL_GetModState() & ~(KMOD_SHIFT | KMOD_CAPS | KMOD_NUM))) {
+        if (!(SDL_GetModState() & ~(KMOD_SHIFT | KMOD_CAPS | KMOD_NUM | KMOD_GUI))) {
             for (char* p = event.text.text; *p; ++p) {
                 Key key = {};
                 key.code = *p;
