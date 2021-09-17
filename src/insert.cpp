@@ -113,26 +113,31 @@ void do_command_insert_char(Editor* editor,
         for (size_t c = 0; c < cursors.len; ++c) {
             it.advance_to(cursors[c].point);
 
-            // The goal is to keep the visual columns the same.  Since tabs
-            // collapse automatically, we only remove them if they become 0 width.
-            bool should_remove = true;
+            // The goal of insert mode is to keep text after our column at the same column.
+            bool should_remove = false;
             if (!it.at_eob()) {
                 if (it.get() == '\n') {
+                    // No text after our column so don't delete the newline.
                     should_remove = false;
                 } else if (it.get() == '\t') {
+                    // Tabs normally can collapse but if they are
+                    // currently 1 column wide then it can't.
                     uint64_t start_column = get_visual_column(buffer->mode, it);
                     uint64_t end_column = char_visual_columns(buffer->mode, '\t', start_column);
                     should_remove = (start_column + 1 == end_column);
+                } else {
+                    // Replace other text.
+                    should_remove = true;
                 }
-            }
 
-            if (should_remove) {
-                Edit remove;
-                remove.position = it.position + offset;
-                remove.value =
-                    buffer->contents.slice(transaction.value_allocator(), it, it.position + 1);
-                remove.flags = Edit::REMOVE;
-                transaction.push(remove);
+                if (should_remove) {
+                    Edit remove;
+                    remove.position = it.position + offset;
+                    remove.value =
+                        buffer->contents.slice(transaction.value_allocator(), it, it.position + 1);
+                    remove.flags = Edit::REMOVE;
+                    transaction.push(remove);
+                }
             }
 
             // Insert the character.
