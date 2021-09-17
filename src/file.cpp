@@ -724,7 +724,10 @@ bool find_buffer_by_path(Editor* editor,
 
     cz::Str directory;
     cz::Str name;
-    Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
+    Buffer::Type type;
+    if (!parse_rendered_buffer_name(path, &name, &directory, &type)) {
+        return false;
+    }
 
     for (size_t i = 0; i < editor->buffers.len; ++i) {
         cz::Arc<Buffer_Handle> handle = editor->buffers[i];
@@ -754,7 +757,10 @@ bool find_buffer_by_path(Editor* editor,
     return false;
 }
 
-Buffer::Type parse_rendered_buffer_name(cz::Str path, cz::Str* name, cz::Str* directory) {
+bool parse_rendered_buffer_name(cz::Str path,
+                                cz::Str* name,
+                                cz::Str* directory,
+                                Buffer::Type* type) {
     if (path.starts_with('*')) {
         const char* ptr = path.find("* (");
         if (ptr) {
@@ -765,17 +771,23 @@ Buffer::Type parse_rendered_buffer_name(cz::Str path, cz::Str* name, cz::Str* di
             *directory = {};
         }
 
-        CZ_ASSERT(name->starts_with('*'));
-        CZ_ASSERT(name->ends_with('*'));
+        *type = Buffer::TEMPORARY;
 
-        return Buffer::TEMPORARY;
+        return name->starts_with('*') && name->ends_with('*');
     } else {
-        CZ_ASSERT(path.split_after_last('/', directory, name));
-        if (*name == ".") {
-            return Buffer::DIRECTORY;
-        } else {
-            return Buffer::FILE;
+        if (!path.split_after_last('/', directory, name)) {
+            *name = path;
+            *directory = {};
+            *type = Buffer::FILE;
+            return false;
         }
+
+        if (*name == ".") {
+            *type = Buffer::DIRECTORY;
+        } else {
+            *type = Buffer::FILE;
+        }
+        return true;
     }
 }
 
@@ -785,9 +797,16 @@ bool find_temp_buffer(Editor* editor,
                       cz::Arc<Buffer_Handle>* handle_out) {
     cz::Str name;
     cz::Str directory;
+    Buffer::Type type;
+    if (!parse_rendered_buffer_name(path, &name, &directory, &type)) {
+        client->show_message("Error: invalid path");
+        return false;
+    }
 
-    Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
-    CZ_ASSERT(type == Buffer::TEMPORARY);
+    if (type != Buffer::TEMPORARY) {
+        client->show_message("Error: expected temporary file path");
+        return false;
+    }
 
     name.buffer++;
     name.len -= 2;

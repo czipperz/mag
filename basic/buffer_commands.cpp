@@ -290,7 +290,11 @@ static void command_rename_buffer_callback(Editor* editor,
                                            void* data) {
     cz::Str name;
     cz::Str directory;
-    Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
+    Buffer::Type type;
+    if (!parse_rendered_buffer_name(path, &name, &directory, &type)) {
+        client->show_message("Error: invalid path");
+        return;
+    }
 
     cz::String name_clone = name.clone(cz::heap_allocator());
     CZ_DEFER(name_clone.drop(cz::heap_allocator()));
@@ -330,7 +334,11 @@ static void command_save_buffer_to_callback(Editor* editor,
                                             void* data) {
     cz::Str name;
     cz::Str directory;
-    Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
+    Buffer::Type type;
+    if (!parse_rendered_buffer_name(path, &name, &directory, &type)) {
+        client->show_message("Error: invalid path");
+        return;
+    }
     if (type != Buffer::FILE) {
         client->show_message("Buffer name must be for a file");
         return;
@@ -382,7 +390,11 @@ static void command_pretend_rename_buffer_callback(Editor* editor,
     WITH_SELECTED_BUFFER(client);
 
     cz::Str name, directory;
-    Buffer::Type type = parse_rendered_buffer_name(path, &name, &directory);
+    Buffer::Type type;
+    if (!parse_rendered_buffer_name(path, &name, &directory, &type)) {
+        client->show_message("Error: invalid path");
+        return;
+    }
 
     Buffer::Type btype = buffer->type;
     buffer->type = type;
