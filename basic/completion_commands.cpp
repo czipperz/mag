@@ -174,9 +174,10 @@ static bool look_in(cz::Slice<char> bucket,
     return false;
 }
 
-static bool search_forward_and_backward(Contents_Iterator it,
-                                        uint64_t end,
-                                        Contents_Iterator* out) {
+bool find_nearest_matching_identifier(Contents_Iterator it,
+                                      uint64_t end,
+                                      size_t max_buckets,
+                                      Contents_Iterator* out) {
     Contents_Iterator backward, forward;
     backward = it;
     backward.retreat(backward.index);
@@ -195,7 +196,7 @@ static bool search_forward_and_backward(Contents_Iterator it,
         }
     }
 
-    for (size_t i = 0; i < it.contents->buckets.len; ++i) {
+    for (size_t i = 0; i < max_buckets; ++i) {
         // Search backward.
         if (backward.bucket >= 1) {
             cz::Slice<char> bucket = it.contents->buckets[backward.bucket - 1];
@@ -244,7 +245,7 @@ void command_complete_at_point_nearest_matching(Editor* editor, Command_Source s
     }
 
     Contents_Iterator match_start;
-    if (!search_forward_and_backward(it, end, &match_start)) {
+    if (!find_nearest_matching_identifier(it, end, buffer->contents.buckets.len, &match_start)) {
         source.client->show_message("No matches");
         return;
     }
