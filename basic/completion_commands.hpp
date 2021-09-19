@@ -18,5 +18,7 @@ void command_completion_up_page(Editor* editor, Command_Source source);
 void command_first_completion(Editor* editor, Command_Source source);
 void command_last_completion(Editor* editor, Command_Source source);
 
+void command_complete_at_point_nearest_matching(Editor* editor, Command_Source source);
+
 }
 }
