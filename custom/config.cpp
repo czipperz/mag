@@ -663,6 +663,7 @@ static void window_completion_key_map(Key_Map& key_map) {
 
     BIND(key_map, "ENTER", window_completion::command_finish_completion);
     BIND(key_map, "C-c", window_completion::command_finish_completion);
+    BIND(key_map, "C-A-c", window_completion::command_finish_completion);
 }
 
 static void git_edit_key_map(Key_Map& key_map) {
