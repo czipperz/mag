@@ -187,6 +187,31 @@ static bool look_in(cz::Slice<char> bucket,
     return false;
 }
 
+static bool choose_closer(uint64_t start,
+                          uint64_t end,
+                          bool match_backward,
+                          bool match_forward,
+                          Contents_Iterator backward,
+                          Contents_Iterator forward,
+                          Contents_Iterator* out) {
+    if (match_backward && match_forward) {
+        // Choose nearest.
+        if (start - (backward.position + end - start) <= forward.position - end) {
+            *out = backward;
+            return true;
+        } else {
+            *out = forward;
+            return true;
+        }
+    } else if (match_backward) {
+        *out = backward;
+        return true;
+    } else {
+        *out = forward;
+        return true;
+    }
+}
+
 bool find_nearest_matching_identifier(Contents_Iterator it,
                                       uint64_t end,
                                       size_t max_buckets,
@@ -199,40 +224,41 @@ bool find_nearest_matching_identifier(Contents_Iterator it,
     // Search in the shared bucket.
     if (it.bucket < it.contents->buckets.len) {
         cz::Slice<char> bucket = it.contents->buckets[it.bucket];
-        if (look_in({bucket.elems, it.index}, it, end, &backward, false)) {
-            *out = backward;
-            return true;
-        }
 
+        // Search backward.
+        bool match_backward = look_in({bucket.elems, it.index}, it, end, &backward, false);
+
+        // Search forward.
         Contents_Iterator temp = forward;
         temp.advance(it.index + 1);
         cz::Slice<char> after = {bucket.elems + it.index + 1, bucket.len - it.index - 1};
-        if (look_in(after, it, end, &temp, true)) {
-            *out = temp;
-            return true;
-        }
+        bool match_forward = look_in(after, it, end, &temp, true);
+
+        if (match_backward || match_forward)
+            return choose_closer(it.position, end, match_backward, match_forward, backward, temp,
+                                 out);
     }
 
     for (size_t i = 0; i < max_buckets; ++i) {
         // Search backward.
+        bool match_backward = false;
         if (backward.bucket >= 1) {
             cz::Slice<char> bucket = it.contents->buckets[backward.bucket - 1];
             backward.retreat(bucket.len);
-            if (look_in(bucket, it, end, &backward, false)) {
-                *out = backward;
-                return true;
-            }
+            match_backward = look_in(bucket, it, end, &backward, false);
         }
 
         // Search forward.
+        bool match_forward = false;
         if (forward.bucket + 1 < it.contents->buckets.len) {
             forward.advance(it.contents->buckets[forward.bucket].len);
             cz::Slice<char> bucket = it.contents->buckets[forward.bucket];
-            if (look_in(bucket, it, end, &forward, true)) {
-                *out = forward;
-                return true;
-            }
+            match_forward = look_in(bucket, it, end, &forward, true);
         }
+
+        if (match_backward || match_forward)
+            return choose_closer(it.position, end, match_backward, match_forward, backward, forward,
+                                 out);
     }
 
     return false;
