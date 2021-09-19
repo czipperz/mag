@@ -127,8 +127,10 @@ static bool look_in(cz::Slice<char> bucket,
     const cz::Str str = {bucket.elems, bucket.len};
     const char first = start.get();
     Contents_Iterator test_start = *out;
-    CZ_DEBUG_ASSERT(test_start.index == 0);
+    if (!forward)
+        test_start.advance(str.len);
     size_t index = forward ? 0 : str.len;
+    bool first_iteration = true;
     while (1) {
         // Find the start of the test identifier.
         const char* fst;
@@ -139,11 +141,21 @@ static bool look_in(cz::Slice<char> bucket,
         if (!fst)
             break;
 
+        size_t old_index = index;
         index = fst - str.buffer;
-        if (forward)
+        if (forward) {
             ++index;
+            if (first_iteration) {
+                first_iteration = false;
+            } else {
+                test_start.advance();
+            }
+        }
 
-        test_start.advance(fst - str.buffer - test_start.index);
+        if (forward)
+            test_start.advance(fst - (str.buffer + old_index));
+        else
+            test_start.retreat((str.buffer + old_index) - fst);
 
         // If character before is an identifier character then
         // `test_start` is not at the start of an identifier.
@@ -191,8 +203,12 @@ bool find_nearest_matching_identifier(Contents_Iterator it,
             *out = backward;
             return true;
         }
-        if (look_in({bucket.elems + it.index, bucket.len - it.index}, it, end, &backward, true)) {
-            *out = backward;
+
+        Contents_Iterator temp = forward;
+        temp.advance(it.index + 1);
+        cz::Slice<char> after = {bucket.elems + it.index + 1, bucket.len - it.index - 1};
+        if (look_in(after, it, end, &temp, true)) {
+            *out = temp;
             return true;
         }
     }
