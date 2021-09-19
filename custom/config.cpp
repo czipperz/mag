@@ -568,6 +568,10 @@ static void create_theme(Theme& theme) {
         {{}, {}, Face::BOLD}, "TODO", Case_Handling::CASE_SENSITIVE, Token_Type::COMMENT));
     theme.overlays.push(syntax::overlay_highlight_string(
         {{}, {}, Face::BOLD}, "TODO", Case_Handling::CASE_SENSITIVE, Token_Type::DOC_COMMENT));
+    theme.overlays.push(syntax::overlay_highlight_string(
+        {{}, {}, Face::BOLD}, "Note", Case_Handling::UPPERCASE_STICKY, Token_Type::COMMENT));
+    theme.overlays.push(syntax::overlay_highlight_string(
+        {{}, {}, Face::BOLD}, "Note", Case_Handling::UPPERCASE_STICKY, Token_Type::DOC_COMMENT));
 
     theme.max_completion_results = 10;
     theme.mini_buffer_max_height = 10;
