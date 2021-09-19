@@ -4,6 +4,7 @@
 #include "command_macros.hpp"
 #include "commands.hpp"
 #include "match.hpp"
+#include "movement.hpp"
 
 namespace mag {
 namespace basic {
@@ -230,14 +231,7 @@ void command_complete_at_point_nearest_matching(Editor* editor, Command_Source s
 
     // Retreat to start of identifier.
     uint64_t end = it.position;
-    while (!it.at_bob()) {
-        it.retreat();
-        char ch = it.get();
-        if (!cz::is_alnum(ch) && ch != '_') {
-            it.advance();
-            break;
-        }
-    }
+    backward_through_identifier(&it);
 
     if (it.position >= end) {
         source.client->show_message("Not at an identifier");
@@ -251,12 +245,7 @@ void command_complete_at_point_nearest_matching(Editor* editor, Command_Source s
     }
 
     Contents_Iterator match_end = match_start;
-    for (; !match_end.at_eob(); match_end.advance()) {
-        char ch = match_end.get();
-        if (!cz::is_alnum(ch) && ch != '_') {
-            break;
-        }
-    }
+    forward_through_identifier(&match_end);
 
     Transaction transaction;
     transaction.init(buffer);
@@ -272,14 +261,7 @@ void command_complete_at_point_nearest_matching(Editor* editor, Command_Source s
 
         // Retreat to start of identifier.
         uint64_t end = it.position;
-        while (!it.at_bob()) {
-            it.retreat();
-            char ch = it.get();
-            if (!cz::is_alnum(ch) && ch != '_') {
-                it.advance();
-                break;
-            }
-        }
+        backward_through_identifier(&it);
 
         Edit remove;
         remove.value = buffer->contents.slice(transaction.value_allocator(), it, end);

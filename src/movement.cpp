@@ -309,6 +309,27 @@ void backward_word(Contents_Iterator* iterator) {
     iterator->advance();
 }
 
+void forward_through_identifier(Contents_Iterator* iterator) {
+    while (!iterator->at_eob()) {
+        char ch = iterator->get();
+        if (!cz::is_alnum(ch) && ch != '_') {
+            break;
+        }
+        iterator->advance();
+    }
+}
+
+void backward_through_identifier(Contents_Iterator* iterator) {
+    while (!iterator->at_bob()) {
+        iterator->retreat();
+        char ch = iterator->get();
+        if (!cz::is_alnum(ch) && ch != '_') {
+            iterator->advance();
+            break;
+        }
+    }
+}
+
 void forward_char(Contents_Iterator* iterator) {
     if (!iterator->at_eob()) {
         iterator->advance();

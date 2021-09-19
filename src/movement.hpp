@@ -47,6 +47,9 @@ void backward_word(Contents_Iterator* iterator);
 void forward_char(Contents_Iterator* iterator);
 void backward_char(Contents_Iterator* iterator);
 
+void forward_through_identifier(Contents_Iterator* iterator);
+void backward_through_identifier(Contents_Iterator* iterator);
+
 void forward_paragraph(Contents_Iterator* iterator);
 void backward_paragraph(Contents_Iterator* iterator);
 
