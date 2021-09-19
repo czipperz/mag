@@ -14,6 +14,9 @@ namespace overlay_nearest_matching_identifier_impl {
 struct Data {
     Face face;
 
+    uint64_t cache_cursor_position;
+    uint64_t cache_change_index;
+
     uint64_t start;
     uint64_t end;
 };
@@ -29,6 +32,14 @@ static void overlay_nearest_matching_identifier_start_frame(Editor* editor,
     ZoneScoped;
 
     Data* data = (Data*)_data;
+
+    if (window->cursors[0].point == data->cache_cursor_position &&
+        buffer->changes.len == data->cache_change_index) {
+        return;
+    }
+
+    data->cache_cursor_position = window->cursors[0].point;
+    data->cache_change_index = buffer->changes.len;
 
     data->start = 0;
     data->end = 0;
