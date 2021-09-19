@@ -45,15 +45,18 @@ static void overlay_nearest_matching_identifier_start_frame(Editor* editor,
     data->end = 0;
 
     start.go_to(window->cursors[0].point);
-    Contents_Iterator end = start;
+    Contents_Iterator middle = start;
     backward_through_identifier(&start);
+    Contents_Iterator end = start;
+    forward_through_identifier(&end);
 
-    if (start.position >= end.position) {
+    if (start.position >= middle.position) {
         return;
     }
 
     Contents_Iterator it;
-    if (basic::find_nearest_matching_identifier(start, end.position, /*max_buckets=*/5, &it)) {
+    if (basic::find_nearest_matching_identifier(start, middle, end.position, /*max_buckets=*/5,
+                                                &it)) {
         data->start = it.position;
         forward_through_identifier(&it);
         data->end = it.position;

@@ -19,6 +19,7 @@ void command_first_completion(Editor* editor, Command_Source source);
 void command_last_completion(Editor* editor, Command_Source source);
 
 bool find_nearest_matching_identifier(Contents_Iterator it,
+                                      Contents_Iterator middle,
                                       uint64_t end,
                                       size_t max_buckets,
                                       Contents_Iterator* out);
