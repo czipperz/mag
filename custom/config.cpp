@@ -53,6 +53,7 @@
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
+#include "syntax/overlay_nearest_matching_identifier.hpp"
 #include "syntax/overlay_preferred_column.hpp"
 #include "syntax/overlay_trailing_spaces.hpp"
 #include "syntax/tokenize_cmake.hpp"
@@ -556,11 +557,12 @@ static void create_theme(Theme& theme) {
     theme.decorations.push(syntax::decoration_read_only_indicator());
     theme.decorations.push(syntax::decoration_pinned_indicator());
 
-    theme.overlays.reserve(6);
+    theme.overlays.reserve(7);
     theme.overlays.push(syntax::overlay_matching_region({{}, 237, 0}));
     theme.overlays.push(syntax::overlay_preferred_column({{}, 21, 0}));
     theme.overlays.push(syntax::overlay_trailing_spaces({{}, 208, 0}));
     theme.overlays.push(syntax::overlay_incorrect_indent({{}, 208, 0}));
+    theme.overlays.push(syntax::overlay_nearest_matching_identifier({{}, 27, 0}));
     theme.overlays.push(syntax::overlay_highlight_string(
         {{}, {}, Face::BOLD}, "TODO", Case_Handling::CASE_SENSITIVE, Token_Type::COMMENT));
     theme.overlays.push(syntax::overlay_highlight_string(
