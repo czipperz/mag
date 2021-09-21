@@ -33,6 +33,12 @@ static void overlay_nearest_matching_identifier_start_frame(Editor* editor,
 
     Data* data = (Data*)_data;
 
+    // Don't show completion if file is saved.  This cuts down on white noise while browsing.
+    if (buffer->is_unchanged()) {
+        data->start = 0;
+        data->end = 0;
+    }
+
     if (window->cursors[0].point == data->cache_cursor_position &&
         buffer->changes.len == data->cache_change_index) {
         return;
