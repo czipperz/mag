@@ -320,20 +320,26 @@ void command_complete_at_point_nearest_matching(Editor* editor, Command_Source s
         // Retreat to start of identifier.
         uint64_t middle = it.position;
         backward_through_identifier(&it);
+        uint64_t start = it.position;
 
-        Edit remove;
-        remove.value = buffer->contents.slice(transaction.value_allocator(), it, middle);
-        remove.position = it.position + offset;
-        remove.flags = Edit::REMOVE;
-        transaction.push(remove);
+        if (middle - it.position <= result.len() &&
+            matches(it, middle, result.as_str().slice_end(middle - it.position))) {
+            it.advance_to(middle);
+        } else {
+            Edit remove;
+            remove.value = buffer->contents.slice(transaction.value_allocator(), it, middle);
+            remove.position = it.position + offset;
+            remove.flags = Edit::REMOVE;
+            transaction.push(remove);
+        }
 
         Edit insert;
-        insert.value = result;
+        insert.value = SSOStr::from_constant(result.as_str().slice_start(it.position - start));
         insert.position = it.position + offset;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
 
-        offset += insert.value.len() - remove.value.len();
+        offset += insert.value.len() - (middle - it.position);
     }
 
     transaction.commit(source.client);
