@@ -277,6 +277,43 @@ bool find_nearest_matching_identifier(Contents_Iterator it,
     return false;
 }
 
+bool find_nearest_matching_identifier_before(Contents_Iterator it,
+                                             Contents_Iterator middle,
+                                             uint64_t end,
+                                             size_t max_buckets,
+                                             Contents_Iterator* out) {
+    Contents_Iterator backward, forward;
+    backward = it;
+    backward.retreat(backward.index);
+    forward = backward;
+
+    // Search in the shared bucket.
+    if (it.bucket < it.contents->buckets.len) {
+        cz::Slice<char> bucket = it.contents->buckets[it.bucket];
+        bool match_backward = look_in({bucket.elems, it.index}, it, middle, end, &backward, false);
+        if (match_backward) {
+            *out = backward;
+            return true;
+        }
+    }
+
+    for (size_t i = 0; i < max_buckets; ++i) {
+        // Search backward.
+        if (backward.bucket < 1)
+            break;
+
+        cz::Slice<char> bucket = it.contents->buckets[backward.bucket - 1];
+        backward.retreat(bucket.len);
+        bool match_backward = look_in(bucket, it, middle, end, &backward, false);
+        if (match_backward) {
+            *out = backward;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static void replace_identifier_with_identifier_start_at(Client* client,
                                                         Buffer* buffer,
                                                         Window_Unified* window,
@@ -346,6 +383,33 @@ void command_complete_at_point_nearest_matching(Editor* editor, Command_Source s
     Contents_Iterator match_start;
     if (!find_nearest_matching_identifier(it, middle, end.position, buffer->contents.buckets.len,
                                           &match_start)) {
+        source.client->show_message("No matches");
+        return;
+    }
+
+    replace_identifier_with_identifier_start_at(source.client, buffer, window, match_start);
+}
+
+void command_complete_at_point_nearest_matching_before(Editor* editor, Command_Source source) {
+    ZoneScoped;
+    WITH_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+
+    // Retreat to start of identifier.
+    Contents_Iterator middle = it;
+    Contents_Iterator end = it;
+    backward_through_identifier(&it);
+    forward_through_identifier(&end);
+
+    if (it.position >= middle.position) {
+        source.client->show_message("Not at an identifier");
+        return;
+    }
+
+    Contents_Iterator match_start;
+    if (!find_nearest_matching_identifier_before(it, middle, end.position,
+                                                 buffer->contents.buckets.len, &match_start)) {
         source.client->show_message("No matches");
         return;
     }
