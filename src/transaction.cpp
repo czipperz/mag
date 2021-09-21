@@ -27,6 +27,7 @@ cz::Allocator Transaction::value_allocator() {
 }
 
 void Transaction::push(Edit edit) {
+    CZ_DEBUG_ASSERT(edit.value.len() > 0);
     edits.reserve(cz::heap_allocator(), 1);
     edits.push(edit);
 }
