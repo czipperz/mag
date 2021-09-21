@@ -2,6 +2,7 @@
 
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
+#include <cz/env.hpp>
 #include <cz/file.hpp>
 #include <cz/heap.hpp>
 
@@ -110,7 +111,7 @@ static void try_ignore_git_modules(const char* path, Ignore_Rules* rules, size_t
 
     cz::String contents = {};
     CZ_DEFER(contents.drop(cz::heap_allocator()));
-    read_to_string(file, cz::heap_allocator(), &contents);
+    cz::read_to_string(file, cz::heap_allocator(), &contents);
 
     const char* start = contents.start();
     while (1) {
@@ -144,20 +145,31 @@ static void try_ignore_git_modules(const char* path, Ignore_Rules* rules, size_t
     }
 }
 
-void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
-    ZoneScoped;
-
-    cz::String path = {};
-    CZ_DEFER(path.drop(cz::heap_allocator()));
-
-    path.reserve(cz::heap_allocator(), root.len + 1 + 11 + 1);
-    path.append(root);
-    path.push('/');
-
-    cz::String contents = {};
-    CZ_DEFER(contents.drop(cz::heap_allocator()));
+static bool parse_ignore_file(cz::String* path,
+                              cz::Str name,
+                              cz::String* contents,
+                              Ignore_Rules* rules,
+                              size_t* counter) {
+    path->reserve(cz::heap_allocator(), name.len + 1);
+    path->append(name);
+    path->null_terminate();
 
     cz::Input_File file;
+    size_t initial_len = path->len;
+    bool opened = file.open(path->buffer);
+    path->len = initial_len;
+
+    if (opened) {
+        CZ_DEFER(file.close());
+        read_to_string(file, cz::heap_allocator(), contents);
+        parse_ignore_rules(*contents, rules, counter);
+        contents->len = 0;
+    }
+    return opened;
+}
+
+void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
+    ZoneScoped;
 
     size_t counter = 0;
 
@@ -165,41 +177,30 @@ void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
     process_line(".git", rules, &counter);
     process_line(".svn", rules, &counter);
 
-    size_t initial_len = path.len;
-    path.append(".ignore");
-    path.null_terminate();
-    if (file.open(path.buffer)) {
-        CZ_DEFER(file.close());
+    // Set path as project root.
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    path.reserve(cz::heap_allocator(), root.len + 1 + 11 + 1);
+    path.append(root);
+    path.push('/');
 
-        read_to_string(file, cz::heap_allocator(), &contents);
-        parse_ignore_rules(contents, rules, &counter);
-    }
+    // Reuse the buffer for file contents.
+    cz::String contents = {};
+    CZ_DEFER(contents.drop(cz::heap_allocator()));
 
-    path.len = initial_len;
-    path.append(".hgignore");
-    path.null_terminate();
-    if (file.open(path.buffer)) {
-        CZ_DEFER(file.close());
+    // Parse ignore files in project root.
+    parse_ignore_file(&path, ".ignore", &contents, rules, &counter);
+    parse_ignore_file(&path, ".agignore", &contents, rules, &counter);
+    parse_ignore_file(&path, ".hgignore", &contents, rules, &counter);
+    bool git = parse_ignore_file(&path, ".gitignore", &contents, rules, &counter);
 
-        read_to_string(file, cz::heap_allocator(), &contents);
-        parse_ignore_rules(contents, rules, &counter);
-    }
-
-    path.len = initial_len;
-    path.append(".gitignore");
-    path.null_terminate();
-    if (file.open(path.buffer)) {
-        CZ_DEFER(file.close());
-
-        // Don't find files in Git submodules.
-        path.len = initial_len;
+    // Ignore Git submodules.
+    if (git) {
+        size_t initial_len = path.len;
         path.append(".gitmodules");
         path.null_terminate();
         try_ignore_git_modules(path.buffer, rules, &counter);
-
-        contents.len = 0;
-        read_to_string(file, cz::heap_allocator(), &contents);
-        parse_ignore_rules(contents, rules, &counter);
+        path.len = initial_len;
     }
 
     // TODO: find and parse SVN ignore files
