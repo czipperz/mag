@@ -59,11 +59,13 @@ void Test_Runner::setup(cz::Str input) {
         window->cursors.remove(0);
     }
 
-    Edit edit;
-    edit.value = SSOStr::from_constant(contents);
-    edit.position = 0;
-    edit.flags = Edit::INSERT;
-    transaction.push(edit);
+    if (contents.len > 0) {
+        Edit edit;
+        edit.value = SSOStr::from_constant(contents);
+        edit.position = 0;
+        edit.flags = Edit::INSERT;
+        transaction.push(edit);
+    }
 
     transaction.commit(&client);
 
