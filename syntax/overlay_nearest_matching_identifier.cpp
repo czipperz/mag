@@ -37,6 +37,7 @@ static void overlay_nearest_matching_identifier_start_frame(Editor* editor,
     if (buffer->is_unchanged() || window->show_marks) {
         data->start = 0;
         data->end = 0;
+        return;
     }
 
     if (window->cursors[0].point == data->cache_cursor_position &&
