@@ -204,6 +204,16 @@ void find_ignore_rules(cz::Str root, Ignore_Rules* rules) {
     }
 
     // TODO: find and parse SVN ignore files
+
+    // Global configuration in home directory.
+    path.len = 0;
+    if (cz::env::get_home(cz::heap_allocator(), &path)) {
+        parse_ignore_file(&path, "/.ignore", &contents, rules, &counter);
+        parse_ignore_file(&path, "/.agignore", &contents, rules, &counter);
+        if (git) {
+            parse_ignore_file(&path, "/.gitignore", &contents, rules, &counter);
+        }
+    }
 }
 
 bool file_matches(const Ignore_Rules& rules, cz::Str path) {
