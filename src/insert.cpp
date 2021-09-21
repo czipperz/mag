@@ -60,6 +60,9 @@ void delete_regions(Client* client,
         uint64_t start = cursors[i].start();
         uint64_t end = cursors[i].end();
 
+        if (end == start)
+            continue;
+
         Edit edit;
         edit.value = buffer->contents.slice(transaction.value_allocator(),
                                             buffer->contents.iterator_at(start), end);
