@@ -277,43 +277,24 @@ bool find_nearest_matching_identifier(Contents_Iterator it,
     return false;
 }
 
-void command_complete_at_point_nearest_matching(Editor* editor, Command_Source source) {
-    ZoneScoped;
-    WITH_SELECTED_BUFFER(source.client);
-
-    cz::Slice<Cursor> cursors = window->cursors;
-    Contents_Iterator it = buffer->contents.iterator_at(cursors[0].point);
-
-    // Retreat to start of identifier.
-    Contents_Iterator middle = it;
-    Contents_Iterator end = it;
-    backward_through_identifier(&it);
-    forward_through_identifier(&end);
-
-    if (it.position >= middle.position) {
-        source.client->show_message("Not at an identifier");
-        return;
-    }
-
-    Contents_Iterator match_start;
-    if (!find_nearest_matching_identifier(it, middle, end.position, buffer->contents.buckets.len,
-                                          &match_start)) {
-        source.client->show_message("No matches");
-        return;
-    }
-
-    Contents_Iterator match_end = match_start;
-    forward_through_identifier(&match_end);
-
+static void replace_identifier_with_identifier_start_at(Client* client,
+                                                        Buffer* buffer,
+                                                        Window_Unified* window,
+                                                        Contents_Iterator match_start) {
     Transaction transaction;
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
+
+    Contents_Iterator match_end = match_start;
+    forward_through_identifier(&match_end);
 
     SSOStr result =
         buffer->contents.slice(transaction.value_allocator(), match_start, match_end.position);
 
     // Apply the completion to all cursors.
     uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    Contents_Iterator it = buffer->contents.start();
     for (size_t i = 0; i < cursors.len; ++i) {
         it.advance_to(cursors[i].point);
 
@@ -342,7 +323,34 @@ void command_complete_at_point_nearest_matching(Editor* editor, Command_Source s
         offset += insert.value.len() - (middle - it.position);
     }
 
-    transaction.commit(source.client);
+    transaction.commit(client);
+}
+
+void command_complete_at_point_nearest_matching(Editor* editor, Command_Source source) {
+    ZoneScoped;
+    WITH_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+
+    // Retreat to start of identifier.
+    Contents_Iterator middle = it;
+    Contents_Iterator end = it;
+    backward_through_identifier(&it);
+    forward_through_identifier(&end);
+
+    if (it.position >= middle.position) {
+        source.client->show_message("Not at an identifier");
+        return;
+    }
+
+    Contents_Iterator match_start;
+    if (!find_nearest_matching_identifier(it, middle, end.position, buffer->contents.buckets.len,
+                                          &match_start)) {
+        source.client->show_message("No matches");
+        return;
+    }
+
+    replace_identifier_with_identifier_start_at(source.client, buffer, window, match_start);
 }
 
 }
