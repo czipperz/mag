@@ -734,7 +734,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name == "*scratch*") {
             buffer->mode.overlays.reserve(1);
             buffer->mode.overlays.push(
-                syntax::overlay_nearest_matching_identifier_before({{}, 27, 0}));
+                syntax::overlay_nearest_matching_identifier_before({7, 27, 0}));
             break;
         }
 
@@ -766,7 +766,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         buffer->mode.decorations.push(syntax::decoration_line_ending_indicator());
 
         buffer->mode.overlays.reserve(1);
-        buffer->mode.overlays.push(syntax::overlay_nearest_matching_identifier_before({{}, 27, 0}));
+        buffer->mode.overlays.push(syntax::overlay_nearest_matching_identifier_before({7, 27, 0}));
 
         cz::Str name = buffer->name;
 
