@@ -1632,6 +1632,79 @@ void command_cursors_align(Editor* editor, Command_Source source) {
     transaction.commit(source.client, command_cursors_align);
 }
 
+void command_cursors_align_leftpad0(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+    if (cursors.len == 1) {
+        return;
+    }
+
+    Contents_Iterator iterator = buffer->contents.iterator_at(cursors[0].point);
+    uint64_t min_column = 0;
+    uint64_t max_column = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+
+        while (!iterator.at_eob()) {
+            if (!cz::is_digit(iterator.get()))
+                break;
+            iterator.advance();
+        }
+
+        uint64_t col = get_visual_column(buffer->mode, iterator);
+
+        if (i == 0 || col > max_column) {
+            max_column = col;
+        }
+        if (i == 0 || col < min_column) {
+            min_column = col;
+        }
+    }
+
+    if (max_column == min_column) {
+        return;
+    }
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    char* buf = (char*)transaction.value_allocator().alloc({max_column - min_column, 1});
+    CZ_DEBUG_ASSERT(buf);
+
+    // Note: we fill with spaces as this is supposed to be used not to correctly indent lines but
+    // rather to align things in those lines.  We don't want to start inserting tabs because then
+    // they might look different on a different users screen.
+    memset(buf, '0', max_column - min_column);
+
+    iterator.retreat_to(cursors[0].point);
+    uint64_t offset = 0;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        iterator.advance_to(cursors[i].point);
+
+        while (!iterator.at_eob()) {
+            if (!cz::is_digit(iterator.get()))
+                break;
+            iterator.advance();
+        }
+
+        uint64_t col = get_visual_column(buffer->mode, iterator);
+        if (col == max_column) {
+            continue;
+        }
+
+        Edit edit;
+        edit.value = SSOStr::from_constant(cz::Str{buf, max_column - col});
+        edit.position = cursors[i].point + offset;
+        offset += max_column - col;
+        edit.flags = Edit::INSERT_AFTER_POSITION;
+        transaction.push(edit);
+    }
+
+    transaction.commit(source.client, command_cursors_align);
+}
+
 void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 

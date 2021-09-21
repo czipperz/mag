@@ -241,6 +241,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c C-_", command_create_cursors_redo);
 
     BIND(key_map, "A-c a", command_cursors_align);
+    BIND(key_map, "A-c 0", command_cursors_align_leftpad0);
     BIND(key_map, "A-c l", command_create_cursors_lines_in_region);
     BIND(key_map, "A-c ENTER", command_remove_cursors_at_empty_lines);
     BIND(key_map, "A-c BACKSPACE", command_remove_selected_cursor);
