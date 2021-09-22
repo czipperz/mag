@@ -265,7 +265,6 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         }
 
         if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "if") ||
-                                             matches(start, iterator->position, "elif") ||
                                              matches(start, iterator->position, "while") ||
                                              matches(start, iterator->position, "until") ||
                                              matches(start, iterator->position, "."))) {
@@ -300,7 +299,8 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             token->type = Token_Type::KEYWORD;
             // Keep start of statement as the top.
             goto ret;
-        } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "fi") ||
+        } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "elif") ||
+                                                    matches(start, iterator->position, "fi") ||
                                                     matches(start, iterator->position, "done") ||
                                                     matches(start, iterator->position, "esac"))) {
             token->type = Token_Type::CLOSE_PAIR;
