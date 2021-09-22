@@ -170,6 +170,15 @@ bool matches_cased(Contents_Iterator it,
     return true;
 }
 
+bool matches_cased(Contents_Iterator it, uint64_t end, cz::Str query, Case_Handling case_handling) {
+    CZ_DEBUG_ASSERT(end >= it.position);
+    if (end - it.position != query.len) {
+        return false;
+    }
+
+    return looking_at_cased(it, query, case_handling);
+}
+
 bool find(Contents_Iterator* it, char ch) {
     ZoneScoped;
 

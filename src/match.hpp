@@ -41,6 +41,10 @@ bool matches_cased(Contents_Iterator start,
                    uint64_t end,
                    Contents_Iterator query,
                    Case_Handling case_handling);
+bool matches_cased(Contents_Iterator start,
+                   uint64_t end,
+                   cz::Str query,
+                   Case_Handling case_handling);
 
 /// Find a character at or after the point `it`.
 /// On success puts `it` at the start of the character.
