@@ -1,6 +1,8 @@
 #include "completion_commands.hpp"
 
 #include <cz/char_type.hpp>
+#include <cz/dedup.hpp>
+#include <cz/sort.hpp>
 #include "command_macros.hpp"
 #include "commands.hpp"
 #include "match.hpp"
@@ -519,6 +521,146 @@ void command_complete_at_point_nearest_matching_before_after(Editor* editor,
     }
 
     replace_identifier_with_identifier_start_at(source.client, buffer, window, match_start);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// command_complete_at_point_prompt_identifiers
+///////////////////////////////////////////////////////////////////////////////
+
+/// Look in the bucket for an identifier that starts with `query` and is longer than `query`.
+static bool list_all_in(cz::Slice<char> bucket,
+                        Contents_Iterator out,
+                        cz::Str query,
+                        cz::Allocator result_allocator,
+                        cz::Heap_Vector<cz::Str>* results) {
+    ZoneScoped;
+    const cz::Str str = {bucket.elems, bucket.len};
+    const char first = query[0];
+    Contents_Iterator test_start = out;
+    size_t index = 0;
+    bool first_iteration = true;
+    while (1) {
+        // Find the start of the test identifier.
+        const char* fst = str.slice_start(index).find(first);
+        if (!fst)
+            break;
+
+        size_t old_index = index;
+        index = fst - str.buffer;
+
+        ++index;
+        if (first_iteration) {
+            first_iteration = false;
+        } else {
+            test_start.advance();
+        }
+
+        test_start.advance(fst - (str.buffer + old_index));
+
+        // If character before is an identifier character then
+        // `test_start` is not at the start of an identifier.
+        if (!test_start.at_bob()) {
+            Contents_Iterator temp = test_start;
+            temp.retreat();
+            char before = temp.get();
+            if (cz::is_alnum(before) || before == '_')
+                continue;
+        }
+
+        // Check character after region is an identifier.
+        if (test_start.position + query.len >= test_start.contents->len)
+            continue;
+        Contents_Iterator test_middle = test_start;
+        test_middle.advance(query.len);
+        CZ_DEBUG_ASSERT(test_middle.position < test_middle.contents->len);
+        char after = test_middle.get();
+        if (!cz::is_alnum(after) && after != '_')
+            continue;
+
+        // Check prefix matches.
+        if (!looking_at(test_start, query))
+            continue;
+
+        Contents_Iterator test_end = test_start;
+        forward_through_identifier(&test_end);
+        cz::String result = {};
+        test_start.contents->slice_into(result_allocator, test_start, test_end.position, &result);
+
+        results->reserve(1);
+        results->push(result);
+    }
+    return false;
+}
+
+struct Identifier_Completion_Engine_Data {
+    cz::String query;
+    cz::Arc_Weak<Buffer_Handle> handle;
+};
+
+static bool identifier_completion_engine(Editor* editor,
+                                         Completion_Engine_Context* context,
+                                         bool is_initial_frame) {
+    ZoneScoped;
+    if (context->results.len > 0) {
+        return false;
+    }
+
+    context->results_buffer_array.clear();
+    context->results.len = 0;
+
+    auto data = (Identifier_Completion_Engine_Data*)context->data;
+    cz::Arc<Buffer_Handle> handle;
+    if (!data->handle.upgrade(&handle)) {
+        return false;
+    }
+    CZ_DEFER(handle.drop());
+
+    WITH_CONST_BUFFER_HANDLE(handle);
+
+    Contents_Iterator iterator = buffer->contents.start();
+    while (!iterator.at_eob()) {
+        cz::Slice<char> bucket = buffer->contents.buckets[iterator.bucket];
+        list_all_in(bucket, iterator, data->query, context->results_buffer_array.allocator(),
+                    &context->results);
+        iterator.advance(bucket.len);
+    }
+
+    cz::sort(context->results);
+    cz::dedup(&context->results);
+
+    return true;
+}
+
+void command_complete_at_point_prompt_identifiers(Editor* editor, Command_Source source) {
+    ZoneScoped;
+
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+
+    // Retreat to start of identifier.
+    Contents_Iterator middle = it;
+    backward_through_identifier(&it);
+
+    if (it.position >= middle.position) {
+        source.client->show_message("Not at an identifier");
+        return;
+    }
+
+    Identifier_Completion_Engine_Data* data =
+        cz::heap_allocator().alloc<Identifier_Completion_Engine_Data>();
+    data->query = {};
+    buffer->contents.slice_into(cz::heap_allocator(), it, middle.position, &data->query);
+    data->handle = handle.clone_downgrade();
+
+    window->start_completion(identifier_completion_engine);
+    window->completion_cache.engine_context.data = data;
+    window->completion_cache.engine_context.cleanup = [](void* _data) {
+        auto data = (Identifier_Completion_Engine_Data*)_data;
+        data->query.drop(cz::heap_allocator());
+        data->handle.drop();
+        cz::heap_allocator().dealloc(data);
+    };
 }
 
 }
