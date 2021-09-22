@@ -107,12 +107,6 @@ void command_cursors_align_leftpad0(Editor* editor, Command_Source source);
 void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source);
 void command_remove_selected_cursor(Editor* editor, Command_Source source);
 
-bool in_interactive_search(Client* client);
-void command_search_forward(Editor* editor, Command_Source source);
-void command_search_backward(Editor* editor, Command_Source source);
-void command_search_forward_expanding(Editor* editor, Command_Source source);
-void command_search_backward_expanding(Editor* editor, Command_Source source);
-
 void command_goto_line(Editor* editor, Command_Source source);
 void command_goto_position(Editor* editor, Command_Source source);
 void command_show_file_length_info(Editor* editor, Command_Source source);

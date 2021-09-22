@@ -5,7 +5,7 @@
 #include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/heap.hpp>
-#include "basic/commands.hpp"
+#include "basic/search_commands.hpp"
 #include "buffer.hpp"
 #include "client.hpp"
 #include "command_macros.hpp"

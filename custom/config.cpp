@@ -23,6 +23,7 @@
 #include "basic/reformat_commands.hpp"
 #include "basic/region_movement_commands.hpp"
 #include "basic/search_buffer_commands.hpp"
+#include "basic/search_commands.hpp"
 #include "basic/shift_commands.hpp"
 #include "basic/token_movement_commands.hpp"
 #include "basic/visible_region_commands.hpp"
