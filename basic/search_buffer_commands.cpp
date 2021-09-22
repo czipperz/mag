@@ -1,4 +1,4 @@
-#include "search_commands.hpp"
+#include "search_buffer_commands.hpp"
 
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
@@ -98,7 +98,7 @@ static void open_file_and_goto_position(Editor* editor,
     toggle_cycle_window(client);
 }
 
-void command_search_reload(Editor* editor, Command_Source source) {
+void command_search_buffer_reload(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     Contents_Iterator start = buffer->contents.start();
     Contents_Iterator end = start;
@@ -144,16 +144,16 @@ static void search_open_selected_no_swap(Editor* editor, Client* client) {
     open_file_and_goto_position(editor, client, path, line, column);
 }
 
-void command_search_open_selected_no_swap(Editor* editor, Command_Source source) {
+void command_search_buffer_open_selected_no_swap(Editor* editor, Command_Source source) {
     search_open_selected_no_swap(editor, source.client);
 }
 
-void command_search_open_selected(Editor* editor, Command_Source source) {
+void command_search_buffer_open_selected(Editor* editor, Command_Source source) {
     search_open_selected_no_swap(editor, source.client);
     toggle_cycle_window(source.client);
 }
 
-void command_search_continue_selected(Editor* editor, Command_Source source) {
+void command_search_buffer_continue_selected(Editor* editor, Command_Source source) {
     toggle_cycle_window(source.client);
     search_open_selected_no_swap(editor, source.client);
     toggle_cycle_window(source.client);
@@ -187,16 +187,16 @@ static void search_open_next_no_swap(Editor* editor, Client* client) {
     open_file_and_goto_position(editor, client, path, line, column);
 }
 
-void command_search_open_next_no_swap(Editor* editor, Command_Source source) {
+void command_search_buffer_open_next_no_swap(Editor* editor, Command_Source source) {
     search_open_next_no_swap(editor, source.client);
 }
 
-void command_search_open_next(Editor* editor, Command_Source source) {
+void command_search_buffer_open_next(Editor* editor, Command_Source source) {
     search_open_next_no_swap(editor, source.client);
     toggle_cycle_window(source.client);
 }
 
-void command_search_continue_next(Editor* editor, Command_Source source) {
+void command_search_buffer_continue_next(Editor* editor, Command_Source source) {
     toggle_cycle_window(source.client);
     search_open_next_no_swap(editor, source.client);
     toggle_cycle_window(source.client);
@@ -230,16 +230,16 @@ static void search_open_previous_no_swap(Editor* editor, Client* client) {
     open_file_and_goto_position(editor, client, path, line, column);
 }
 
-void command_search_open_previous_no_swap(Editor* editor, Command_Source source) {
+void command_search_buffer_open_previous_no_swap(Editor* editor, Command_Source source) {
     search_open_previous_no_swap(editor, source.client);
 }
 
-void command_search_open_previous(Editor* editor, Command_Source source) {
+void command_search_buffer_open_previous(Editor* editor, Command_Source source) {
     search_open_previous_no_swap(editor, source.client);
     toggle_cycle_window(source.client);
 }
 
-void command_search_continue_previous(Editor* editor, Command_Source source) {
+void command_search_buffer_continue_previous(Editor* editor, Command_Source source) {
     toggle_cycle_window(source.client);
     search_open_previous_no_swap(editor, source.client);
     toggle_cycle_window(source.client);
