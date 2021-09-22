@@ -635,11 +635,10 @@ static void command_search_backward_identifier_callback(Editor* editor,
     size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_backward_identifier_cased, {
-            cursors[c].point = new_cursor.point;
-            cursors[c].mark = new_cursor.mark;
+            cursors[c].point = new_cursor.mark;
         });
     }
-    window->show_marks = true;
+    window->show_marks = false;
 }
 
 static void command_search_forward_identifier_callback(Editor* editor,
@@ -658,11 +657,10 @@ static void command_search_forward_identifier_callback(Editor* editor,
     size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
         SEARCH_QUERY_THEN(search_forward_identifier_cased, {
-            cursors[c].point = new_cursor.point;
-            cursors[c].mark = new_cursor.mark;
+            cursors[c].point = new_cursor.mark;
         });
     }
-    window->show_marks = true;
+    window->show_marks = false;
 }
 
 void command_search_backward_identifier(Editor* editor, Command_Source source) {
