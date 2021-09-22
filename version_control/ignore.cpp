@@ -150,12 +150,12 @@ static bool parse_ignore_file(cz::String* path,
                               cz::String* contents,
                               Ignore_Rules* rules,
                               size_t* counter) {
+    size_t initial_len = path->len;
     path->reserve(cz::heap_allocator(), name.len + 1);
     path->append(name);
     path->null_terminate();
 
     cz::Input_File file;
-    size_t initial_len = path->len;
     bool opened = file.open(path->buffer);
     path->len = initial_len;
 
