@@ -17,12 +17,22 @@ static bool is_special(char ch) {
            ch == '}' || ch == ']' || ch == ')' || ch == '#' || cz::is_space(ch);
 }
 
-static bool looking_at_keyword(Contents_Iterator start, uint64_t length) {
+namespace cmake {
+enum kw {
+    kw_general = 1,
+    kw_if,
+    kw_else,
+    kw_endif,
+};
+};
+using namespace cmake;
+
+static int looking_at_keyword(Contents_Iterator start, uint64_t length) {
     Contents_Iterator test = start;
 
     switch (length) {
     case 2:
-        return looking_at_no_bounds_check(start, "if");
+        return looking_at_no_bounds_check(start, "if") ? kw_if : 0;
 
     case 3:
         return looking_at_no_bounds_check(start, "set");
@@ -30,7 +40,7 @@ static bool looking_at_keyword(Contents_Iterator start, uint64_t length) {
     case 4:
         switch (start.get()) {
         case 'e':
-            return looking_at_no_bounds_check(start, "else");
+            return looking_at_no_bounds_check(start, "else") ? kw_else : 0;
         case 'f':
             return looking_at_no_bounds_check(start, "file");
         case 'l':
@@ -46,13 +56,13 @@ static bool looking_at_keyword(Contents_Iterator start, uint64_t length) {
         case 'b':
             return looking_at_no_bounds_check(start, "break");
         case 'e':
-            return looking_at_no_bounds_check(start, "endif");
+            return looking_at_no_bounds_check(start, "endif") ? kw_endif : 0;
         case 'm':
-            return looking_at_no_bounds_check(start, "macro");
+            return looking_at_no_bounds_check(start, "macro") ? kw_if : 0;
         case 'u':
             return looking_at_no_bounds_check(start, "unset");
         case 'w':
-            return looking_at_no_bounds_check(start, "while");
+            return looking_at_no_bounds_check(start, "while") ? kw_if : 0;
         default:
             return false;
         }
@@ -63,7 +73,7 @@ static bool looking_at_keyword(Contents_Iterator start, uint64_t length) {
             test.advance(1);
             switch (test.get()) {
             case 'l':
-                return looking_at_no_bounds_check(start, "elseif");
+                return looking_at_no_bounds_check(start, "elseif") ? kw_else : 0;
             case 'x':
                 return looking_at_no_bounds_check(start, "export");
             default:
@@ -91,7 +101,7 @@ static bool looking_at_keyword(Contents_Iterator start, uint64_t length) {
         test.advance(3);
         switch (test.get()) {
         case 'e':
-            return looking_at_no_bounds_check(start, "foreach");
+            return looking_at_no_bounds_check(start, "foreach") ? kw_if : 0;
         case 'l':
             return looking_at_no_bounds_check(start, "include");
         case 't':
@@ -116,11 +126,11 @@ static bool looking_at_keyword(Contents_Iterator start, uint64_t length) {
         case 't':
             return looking_at_no_bounds_check(start, "continue");
         case 'm':
-            return looking_at_no_bounds_check(start, "endmacro");
+            return looking_at_no_bounds_check(start, "endmacro") ? kw_endif : 0;
         case 'w':
-            return looking_at_no_bounds_check(start, "endwhile");
+            return looking_at_no_bounds_check(start, "endwhile") ? kw_endif : 0;
         case 'c':
-            return looking_at_no_bounds_check(start, "function");
+            return looking_at_no_bounds_check(start, "function") ? kw_if : 0;
         default:
             return false;
         }
@@ -148,7 +158,7 @@ static bool looking_at_keyword(Contents_Iterator start, uint64_t length) {
         case 's':
             return looking_at_no_bounds_check(start, "ctest_test");
         case 'f':
-            return looking_at_no_bounds_check(start, "endforeach");
+            return looking_at_no_bounds_check(start, "endforeach") ? kw_endif : 0;
         case 'd':
             return looking_at_no_bounds_check(start, "load_cache");
         case 'w':
@@ -176,7 +186,7 @@ static bool looking_at_keyword(Contents_Iterator start, uint64_t length) {
                 return false;
             }
         case 'e':
-            return looking_at_no_bounds_check(start, "endfunction");
+            return looking_at_no_bounds_check(start, "endfunction") ? kw_endif : 0;
         case 'q':
             return looking_at_no_bounds_check(start, "qt_wrap_cpp");
         case 't':
@@ -498,8 +508,17 @@ bool cmake_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
             iterator->advance();
         }
 
-        if (looking_at_keyword(start, iterator->position - start.position)) {
-            token->type = Token_Type::KEYWORD;
+        int kw = looking_at_keyword(start, iterator->position - start.position);
+        if (kw) {
+            if (kw == kw_if) {
+                token->type = Token_Type::PREPROCESSOR_IF;
+            } else if (kw == kw_else) {
+                token->type = Token_Type::PREPROCESSOR_ELSE;
+            } else if (kw == kw_endif) {
+                token->type = Token_Type::PREPROCESSOR_ENDIF;
+            } else {
+                token->type = Token_Type::KEYWORD;
+            }
         } else {
             token->type = Token_Type::IDENTIFIER;
         }
