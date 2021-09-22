@@ -300,6 +300,9 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-R", command_search_forward_expanding);
     BIND(key_map, "C-R", command_search_backward_expanding);
 
+    BIND(key_map, "A-c A-r", command_search_forward_identifier);
+    BIND(key_map, "A-c C-r", command_search_backward_identifier);
+
     BIND(key_map, "INSERT", command_toggle_insert_replace);
 
     BIND(key_map, "BACKSPACE", command_delete_backward_char);

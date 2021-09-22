@@ -465,5 +465,219 @@ void command_search_forward_expanding(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// search_{backward/forward}_identifier implementation
+///////////////////////////////////////////////////////////////////////////////
+
+/// Find identifier in bucket.
+static bool look_in(cz::Slice<char> bucket,
+                    cz::Str identifier,
+                    Contents_Iterator* out,
+                    bool forward) {
+    ZoneScoped;
+    const cz::Str str = {bucket.elems, bucket.len};
+    const char first = identifier[0];
+    Contents_Iterator test_start = *out;
+    if (!forward)
+        test_start.advance(str.len);
+    size_t index = forward ? 0 : str.len;
+    bool first_iteration = true;
+    while (1) {
+        // Find the start of the test identifier.
+        const char* fst;
+        if (forward)
+            fst = str.slice_start(index).find(first);
+        else
+            fst = str.slice_end(index).rfind(first);
+        if (!fst)
+            break;
+
+        size_t old_index = index;
+        index = fst - str.buffer;
+        if (forward) {
+            ++index;
+            if (first_iteration) {
+                first_iteration = false;
+            } else {
+                test_start.advance();
+            }
+        }
+
+        if (forward)
+            test_start.advance(fst - (str.buffer + old_index));
+        else
+            test_start.retreat((str.buffer + old_index) - fst);
+
+        // If character before is an identifier character then
+        // `test_start` is not at the start of an identifier.
+        if (!test_start.at_bob()) {
+            Contents_Iterator temp = test_start;
+            temp.retreat();
+            char before = temp.get();
+            if (cz::is_alnum(before) || before == '_')
+                continue;
+        }
+
+        // Check character after region is not an identifier.
+        if (test_start.position + identifier.len >= test_start.contents->len) {
+            if (test_start.position + identifier.len > test_start.contents->len)
+                continue;
+        } else {
+            Contents_Iterator test_end = test_start;
+            test_end.advance(identifier.len);
+            CZ_DEBUG_ASSERT(test_end.position < test_end.contents->len);
+            char after = test_end.get();
+            if (cz::is_alnum(after) || after == '_')
+                continue;
+        }
+
+        // Check matches.
+        if (!looking_at(test_start, identifier))
+            continue;
+
+        *out = test_start;
+        return true;
+    }
+    return false;
+}
+
+static bool search_backward_identifier(Contents_Iterator* iterator, cz::Str query) {
+    iterator->bucket;
+
+    Contents_Iterator backward;
+    backward = *iterator;
+    backward.retreat(backward.index);
+
+    // Search in the shared bucket.
+    if (iterator->bucket < iterator->contents->buckets.len) {
+        cz::Slice<char> bucket = iterator->contents->buckets[iterator->bucket];
+        bool match_backward = look_in({bucket.elems, iterator->index}, query, &backward, false);
+        if (match_backward) {
+            *iterator = backward;
+            return true;
+        }
+    }
+
+    while (backward.bucket > 0) {
+        cz::Slice<char> bucket = iterator->contents->buckets[backward.bucket - 1];
+        backward.retreat(bucket.len);
+        bool match_backward = look_in(bucket, query, &backward, false);
+        if (match_backward) {
+            *iterator = backward;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool search_forward_identifier(Contents_Iterator* iterator, cz::Str query) {
+    Contents_Iterator forward;
+    forward = *iterator;
+    forward.retreat(forward.index);
+
+    // Search in the shared bucket.
+    if (iterator->bucket < iterator->contents->buckets.len) {
+        cz::Slice<char> bucket = iterator->contents->buckets[iterator->bucket];
+        Contents_Iterator temp = forward;
+        temp.advance(iterator->index + 1);
+        cz::Slice<char> after = {bucket.elems + iterator->index + 1,
+                                 bucket.len - iterator->index - 1};
+        bool match_forward = look_in(after, query, &temp, true);
+        if (match_forward) {
+            *iterator = temp;
+            return true;
+        }
+    }
+
+    while (forward.bucket + 1 < iterator->contents->buckets.len) {
+        forward.advance(iterator->contents->buckets[forward.bucket].len);
+        cz::Slice<char> bucket = iterator->contents->buckets[forward.bucket];
+        bool match_forward = look_in(bucket, query, &forward, true);
+        if (match_forward) {
+            *iterator = forward;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// search_{backward/forward}_identifier wrappers
+///////////////////////////////////////////////////////////////////////////////
+
+static bool search_backward_identifier_cased(Contents_Iterator* iterator,
+                                             cz::Str query,
+                                             Case_Handling case_handling) {
+    return search_backward_identifier(iterator, query);
+}
+
+static bool search_forward_identifier_cased(Contents_Iterator* iterator,
+                                            cz::Str query,
+                                            Case_Handling case_handling) {
+    return search_forward_identifier(iterator, query);
+}
+
+static void command_search_backward_identifier_callback(Editor* editor,
+                                                        Client* client,
+                                                        cz::Str query,
+                                                        void* _data) {
+    if (query.len == 0) {
+        client->show_message("Error: empty query");
+        return;
+    }
+
+    WITH_CONST_SELECTED_BUFFER(client);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+    size_t n = 1;
+    size_t i = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        SEARCH_QUERY_THEN(search_backward_identifier_cased, {
+            cursors[c].point = new_cursor.point;
+            cursors[c].mark = new_cursor.mark;
+        });
+    }
+    window->show_marks = true;
+}
+
+static void command_search_forward_identifier_callback(Editor* editor,
+                                                       Client* client,
+                                                       cz::Str query,
+                                                       void* _data) {
+    WITH_CONST_SELECTED_BUFFER(client);
+
+    if (query.len == 0) {
+        client->show_message("Error: empty query");
+        return;
+    }
+
+    cz::Slice<Cursor> cursors = window->cursors;
+    size_t n = 1;
+    size_t i = 0;
+    for (size_t c = 0; c < cursors.len; ++c) {
+        SEARCH_QUERY_THEN(search_forward_identifier_cased, {
+            cursors[c].point = new_cursor.point;
+            cursors[c].mark = new_cursor.mark;
+        });
+    }
+    window->show_marks = true;
+}
+
+void command_search_backward_identifier(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Search backward identifier: ";
+    dialog.response_callback = command_search_backward_identifier_callback;
+    source.client->show_dialog(dialog);
+}
+
+void command_search_forward_identifier(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Search forward identifier: ";
+    dialog.response_callback = command_search_forward_identifier_callback;
+    source.client->show_dialog(dialog);
+}
+
 }
 }
