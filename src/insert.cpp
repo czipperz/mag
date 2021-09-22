@@ -102,6 +102,7 @@ void do_command_insert_char(Editor* editor,
     if (window->show_marks == 2) {
         delete_regions(source.client, buffer, window);
         insert_char(source.client, buffer, window, code, command_insert_char);
+        window->show_marks = 0;
         return;
     }
 
