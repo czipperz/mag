@@ -53,7 +53,7 @@
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
-#include "syntax/overlay_nearest_matching_identifier_before.hpp"
+#include "syntax/overlay_nearest_matching_identifier_before_after.hpp"
 #include "syntax/overlay_preferred_column.hpp"
 #include "syntax/overlay_trailing_spaces.hpp"
 #include "syntax/tokenize_cmake.hpp"
@@ -431,7 +431,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-A-c", gnu_global::command_complete_at_point);
     BIND(key_map, "MOUSE3", gnu_global::command_move_mouse_and_lookup_at_point);
 
-    BIND(key_map, "C-c", command_complete_at_point_nearest_matching_before);
+    BIND(key_map, "C-c", command_complete_at_point_nearest_matching_before_after);
 
     BIND(key_map, "C-l", command_goto_center_of_window);
     BIND(key_map, "A-l", command_center_in_window);
@@ -734,7 +734,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name == "*scratch*") {
             buffer->mode.overlays.reserve(1);
             buffer->mode.overlays.push(
-                syntax::overlay_nearest_matching_identifier_before({7, 27, 0}));
+                syntax::overlay_nearest_matching_identifier_before_after({7, 27, 0}));
             break;
         }
 
@@ -766,7 +766,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         buffer->mode.decorations.push(syntax::decoration_line_ending_indicator());
 
         buffer->mode.overlays.reserve(1);
-        buffer->mode.overlays.push(syntax::overlay_nearest_matching_identifier_before({7, 27, 0}));
+        buffer->mode.overlays.push(
+            syntax::overlay_nearest_matching_identifier_before_after({7, 27, 0}));
 
         cz::Str name = buffer->name;
 
