@@ -363,9 +363,20 @@ int backward_matching_token(Buffer* buffer, Contents_Iterator* iterator) {
 void command_backward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     for (size_t cursor_index = 0; cursor_index < window->cursors.len; ++cursor_index) {
-        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
+        Cursor* cursor = &window->cursors[cursor_index];
+        Contents_Iterator it = buffer->contents.iterator_at(cursor->point);
         backward_matching_token(buffer, &it);
-        window->cursors[cursor_index].point = it.position;
+
+        int64_t mark_offset = cursor->mark - cursor->point;
+        cursor->point = it.position;
+        cursor->mark = cursor->point;
+
+        if (mark_offset < 0 && cursor->point < -mark_offset)
+            cursor->mark = 0;
+        else if (mark_offset > 0 && cursor->point + mark_offset > buffer->contents.len)
+            cursor->mark = buffer->contents.len;
+        else
+            cursor->mark += mark_offset;
     }
 
     sort_cursors(window->cursors);
@@ -426,9 +437,20 @@ int forward_matching_token(Buffer* buffer, Contents_Iterator* iterator) {
 void command_forward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     for (size_t cursor_index = 0; cursor_index < window->cursors.len; ++cursor_index) {
-        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
+        Cursor* cursor = &window->cursors[cursor_index];
+        Contents_Iterator it = buffer->contents.iterator_at(cursor->point);
         forward_matching_token(buffer, &it);
-        window->cursors[cursor_index].point = it.position;
+
+        int64_t mark_offset = cursor->mark - cursor->point;
+        cursor->point = it.position;
+        cursor->mark = cursor->point;
+
+        if (mark_offset < 0 && cursor->point < -mark_offset)
+            cursor->mark = 0;
+        else if (mark_offset > 0 && cursor->point + mark_offset > buffer->contents.len)
+            cursor->mark = buffer->contents.len;
+        else
+            cursor->mark += mark_offset;
     }
 
     sort_cursors(window->cursors);
