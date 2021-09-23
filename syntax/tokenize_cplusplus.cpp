@@ -13,6 +13,8 @@
 namespace mag {
 namespace syntax {
 
+#if 0
+
 namespace tokenize_cpp_impl {
 enum State : uint64_t {
     NORMAL_STATE_MASK = 0x000000000000000F,
@@ -1422,6 +1424,8 @@ done_no_skip:
     token->end = iterator->position;
     return true;
 }
+
+#endif
 
 }
 }
