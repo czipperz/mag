@@ -333,6 +333,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-m", command_open_line);
     BIND(key_map, "ENTER", command_insert_newline_indent);
+    BIND(key_map, "A-ENTER", command_insert_newline_copy_indent_and_modifiers);
     BIND(key_map, "TAB", command_increase_indent);
     BIND(key_map, "A-i", command_decrease_indent);
     BIND(key_map, "S-TAB", command_decrease_indent);

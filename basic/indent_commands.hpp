@@ -14,6 +14,7 @@ struct Mode;
 namespace basic {
 
 void command_insert_newline_indent(Editor* editor, Command_Source source);
+void command_insert_newline_copy_indent_and_modifiers(Editor* editor, Command_Source source);
 void command_increase_indent(Editor* editor, Command_Source source);
 void command_decrease_indent(Editor* editor, Command_Source source);
 

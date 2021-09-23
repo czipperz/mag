@@ -70,6 +70,59 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+void command_insert_newline_copy_indent_and_modifiers(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
+        // backward_through_whitespace(&it);
+
+        uint64_t removed = remove_spaces(&transaction, buffer, it, offset);
+
+        Contents_Iterator eol = it;
+        end_of_line(&eol);
+        bool at_eol = it.position == eol.position;
+        bool insert_backslash = false;
+        if (!eol.at_bob()) {
+            eol.retreat();
+            if (eol.get() == '\\')
+                insert_backslash = true;
+        }
+
+        if (insert_backslash && !at_eol) {
+            Edit bs;
+            bs.value = SSOStr::from_constant(" \\");
+            bs.position = it.position + offset;
+            bs.flags = Edit::INSERT;
+            transaction.push(bs);
+            offset += bs.value.len();
+        }
+
+        uint64_t columns =
+            find_indent_width(buffer, it, Discover_Indent_Policy::COPY_PREVIOUS_LINE);
+        insert_line_with_indent(&transaction, buffer->mode, it.position, &offset, columns);
+
+        if (insert_backslash && at_eol) {
+            Edit bs;
+            bs.value = SSOStr::from_constant(" \\");
+            bs.position = it.position + offset;
+            bs.flags = Edit::INSERT_AFTER_POSITION;
+            transaction.push(bs);
+            offset += bs.value.len();
+        }
+
+        offset -= removed;
+    }
+
+    transaction.commit(source.client);
+}
+
 struct Invalid_Indent_Data {
     bool invalid;
     uint64_t tabs, spaces;
