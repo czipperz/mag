@@ -80,6 +80,10 @@ bool Key::parse(Key* key, cz::Str description) {
         key->code = Key_Code::F11;
     } else if (d == "F12") {
         key->code = Key_Code::F12;
+    } else if (d == "MENU") {
+        key->code = Key_Code::MENU;
+    } else if (d == "SCROLL_LOCK") {
+        key->code = Key_Code::SCROLL_LOCK;
     } else if (d == "MOUSE1") {
         key->code = Key_Code::MOUSE1;
     } else if (d == "MOUSE2") {
@@ -161,6 +165,9 @@ void stringify_key(cz::String* prefix, Key key) {
         KEY_CODE_CASE(F10);
         KEY_CODE_CASE(F11);
         KEY_CODE_CASE(F12);
+
+        KEY_CODE_CASE(MENU);
+        KEY_CODE_CASE(SCROLL_LOCK);
 
         KEY_CODE_CASE(MOUSE1);
         KEY_CODE_CASE(MOUSE2);

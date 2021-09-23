@@ -396,6 +396,7 @@ static void process_event(Server* server,
             KEY_CASE(F11, Key_Code::F11);
             KEY_CASE(F12, Key_Code::F12);
             KEY_CASE(MENU, Key_Code::MENU);
+            KEY_CASE(SCROLLLOCK, Key_Code::SCROLL_LOCK);
 
 #undef KEY_CASE
 

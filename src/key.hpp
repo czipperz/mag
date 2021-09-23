@@ -55,6 +55,7 @@ enum Key_Code : uint16_t {
 
     // Miscellaneous keys
     MENU,
+    SCROLL_LOCK,
 
     // Mouse events
     MOUSE1,  // left mouse button

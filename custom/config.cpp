@@ -455,6 +455,9 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "C--", command_decrease_font_size);
     BIND(key_map, "C-+", command_increase_font_size);
+
+    BIND(key_map, "MENU", command_do_nothing);
+    BIND(key_map, "SCROLL_LOCK", command_do_nothing);
 }
 
 static void create_theme(Theme& theme) {
