@@ -1202,7 +1202,12 @@ static bool handle_line_comment_outside_multi_line(Contents_Iterator* iterator,
 }
 
 static bool handle_line_comment_doc(Contents_Iterator* iterator, Token* token, State* state) {
-    for (; !iterator->at_eob(); iterator->advance()) {
+    for (;; iterator->advance()) {
+        if (iterator->at_eob()) {
+            token->type = Token_Type::DOC_COMMENT;
+            break;
+        }
+
     retry:
         switch (iterator->get()) {
         case '`':
@@ -1463,7 +1468,12 @@ static bool handle_block_comment_outside_multi_line(Contents_Iterator* iterator,
 
 static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state) {
     bool first = true;
-    for (; !iterator->at_eob(); iterator->advance()) {
+    for (;; iterator->advance()) {
+        if (iterator->at_eob()) {
+            token->type = Token_Type::DOC_COMMENT;
+            break;
+        }
+
     retry:
         // Rate limit to one bucket (two at the start of the comment) to prevent
         // hanging when inserting '/**' at the start of a big buffer.  Align to
