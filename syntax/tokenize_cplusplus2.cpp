@@ -22,8 +22,18 @@ enum {
     COMMENT_LINE_INSIDE_INLINE = 1,
     COMMENT_LINE_INSIDE_MULTI_LINE = 2,
     COMMENT_LINE_RESUME_INSIDE = 3,
-    COMMENT_LINE_RESUME_OUTSIDE = 4,
-    COMMENT_LINE_OUTSIDE_MULTI_LINE = 5,
+    COMMENT_LINE_RESUME_OUTSIDE_SOL = 4,
+    COMMENT_LINE_RESUME_OUTSIDE_MOL = 5,
+    COMMENT_LINE_RESUME_OUTSIDE_HEADER = 6,
+    COMMENT_LINE_OUTSIDE_MULTI_LINE = 7,
+    COMMENT_BLOCK_INSIDE_INLINE = 8,
+    COMMENT_BLOCK_INSIDE_MULTI_LINE = 9,
+    COMMENT_BLOCK_RESUME_INSIDE = 10,
+    COMMENT_BLOCK_RESUME_OUTSIDE_SOL1 = 11,
+    COMMENT_BLOCK_RESUME_OUTSIDE_SOL2 = 12,
+    COMMENT_BLOCK_RESUME_OUTSIDE_MOL = 13,
+    COMMENT_BLOCK_RESUME_OUTSIDE_HEADER = 14,
+    COMMENT_BLOCK_OUTSIDE_MULTI_LINE = 15,
 };
 
 enum {
@@ -44,14 +54,14 @@ enum {
 };
 
 struct State {
-    uint64_t comment : 3;
+    uint64_t comment : 4;
     uint64_t comment_saved_preprocessor : 3;
     uint64_t comment_saved_preprocessor_saved_syntax : 3;
     uint64_t comment_saved_syntax : 3;
     uint64_t preprocessor : 3;
     uint64_t preprocessor_saved_syntax : 3;
     uint64_t syntax : 3;
-    uint64_t padding : 43;
+    uint64_t padding : 42;
 };
 static_assert(sizeof(State) == sizeof(uint64_t), "Must be able to cast between the two");
 }
@@ -75,21 +85,41 @@ bool cpp_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state_)
 
 static bool handle_preprocessor(Contents_Iterator* iterator, Token* token, State* state);
 static bool resume_line_comment_doc(Contents_Iterator* iterator, Token* token, State* state);
+static bool resume_line_comment_header(Contents_Iterator* iterator, Token* token, State* state);
 static bool handle_line_comment_outside_multi_line(Contents_Iterator* iterator,
                                                    Token* token,
                                                    State* state);
+static bool resume_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state);
+static bool resume_block_comment_header(Contents_Iterator* iterator, Token* token, State* state);
+static bool handle_block_comment_outside_multi_line(Contents_Iterator* iterator,
+                                                    Token* token,
+                                                    State* state);
 
 static bool handle_comment(Contents_Iterator* iterator, Token* token, State* state) {
     switch (state->comment) {
     case COMMENT_NULL:
     case COMMENT_LINE_INSIDE_INLINE:
     case COMMENT_LINE_INSIDE_MULTI_LINE:
+    case COMMENT_BLOCK_INSIDE_INLINE:
+    case COMMENT_BLOCK_INSIDE_MULTI_LINE:
         return handle_preprocessor(iterator, token, state);
     case COMMENT_LINE_RESUME_INSIDE:
-    case COMMENT_LINE_RESUME_OUTSIDE:
+    case COMMENT_LINE_RESUME_OUTSIDE_SOL:
+    case COMMENT_LINE_RESUME_OUTSIDE_MOL:
         return resume_line_comment_doc(iterator, token, state);
+    case COMMENT_LINE_RESUME_OUTSIDE_HEADER:
+        return resume_line_comment_header(iterator, token, state);
     case COMMENT_LINE_OUTSIDE_MULTI_LINE:
         return handle_line_comment_outside_multi_line(iterator, token, state);
+    case COMMENT_BLOCK_RESUME_INSIDE:
+    case COMMENT_BLOCK_RESUME_OUTSIDE_SOL1:
+    case COMMENT_BLOCK_RESUME_OUTSIDE_SOL2:
+    case COMMENT_BLOCK_RESUME_OUTSIDE_MOL:
+        return resume_block_comment_doc(iterator, token, state);
+    case COMMENT_BLOCK_RESUME_OUTSIDE_HEADER:
+        return resume_block_comment_header(iterator, token, state);
+    case COMMENT_BLOCK_OUTSIDE_MULTI_LINE:
+        return handle_block_comment_outside_multi_line(iterator, token, state);
     default:
         return false;
     }
@@ -100,12 +130,18 @@ static void comment_push(State* state, uint8_t comment) {
     state->comment_saved_preprocessor = state->preprocessor;
     state->comment_saved_preprocessor_saved_syntax = state->preprocessor_saved_syntax;
     state->comment_saved_syntax = state->syntax;
+    state->preprocessor = 0;
+    state->preprocessor_saved_syntax = 0;
+    state->syntax = 0;
 }
 static void comment_pop(State* state) {
     state->comment = COMMENT_NULL;
     state->preprocessor = state->comment_saved_preprocessor;
     state->preprocessor_saved_syntax = state->preprocessor_saved_syntax;
     state->syntax = state->comment_saved_syntax;
+    state->comment_saved_preprocessor = 0;
+    state->preprocessor_saved_syntax = 0;
+    state->comment_saved_syntax = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,10 +177,12 @@ static bool handle_preprocessor(Contents_Iterator* iterator, Token* token, State
 static void preprocessor_push(State* state, uint8_t preprocessor) {
     state->preprocessor = preprocessor;
     state->preprocessor_saved_syntax = state->syntax;
+    state->syntax = 0;
 }
 static void preprocessor_pop(State* state) {
     state->preprocessor = PREPROCESSOR_NULL;
     state->syntax = state->preprocessor_saved_syntax;
+    state->preprocessor_saved_syntax = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -331,6 +369,11 @@ retry:
             state->comment = COMMENT_LINE_RESUME_INSIDE;
             return resume_line_comment_doc(iterator, token, state);
         }
+        if (state->comment == COMMENT_BLOCK_INSIDE_INLINE ||
+            state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE) {
+            state->comment = COMMENT_BLOCK_RESUME_INSIDE;
+            return resume_block_comment_doc(iterator, token, state);
+        }
         iterator->advance();
         goto retry;
 
@@ -342,6 +385,14 @@ retry:
             state->comment == COMMENT_LINE_INSIDE_MULTI_LINE) {
             state->comment = COMMENT_LINE_RESUME_INSIDE;
             return resume_line_comment_doc(iterator, token, state);
+        }
+        if (state->comment == COMMENT_BLOCK_INSIDE_INLINE) {
+            state->comment = COMMENT_BLOCK_RESUME_INSIDE;
+            return resume_block_comment_doc(iterator, token, state);
+        }
+        if (state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE) {
+            state->comment = COMMENT_BLOCK_OUTSIDE_MULTI_LINE;
+            return handle_block_comment_outside_multi_line(iterator, token, state);
         }
         // fallthrough
 
@@ -1062,19 +1113,19 @@ static void punctuation_double_or_set(Contents_Iterator* iterator,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Comment
+// Line comment
 ///////////////////////////////////////////////////////////////////////////////
 
 static void handle_line_comment_normal(Contents_Iterator* iterator, Token* token, State* state);
 static bool handle_line_comment_doc(Contents_Iterator* iterator, Token* token, State* state);
-static void handle_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state);
-static void handle_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state);
+static void handle_line_comment_doc_tilde(Contents_Iterator* iterator, Token* token, State* state);
 
 static void handle_line_comment(Contents_Iterator* iterator, Token* token, State* state) {
     if (!iterator->at_eob()) {
         char ch = iterator->get();
         if (ch == '!' || ch == '/') {
             iterator->advance();
+            state->comment = COMMENT_LINE_RESUME_OUTSIDE_SOL;
             handle_line_comment_doc(iterator, token, state);
             return;
         }
@@ -1093,10 +1144,10 @@ static bool resume_line_comment_doc(Contents_Iterator* iterator, Token* token, S
     return handle_line_comment_doc(iterator, token, state);
 }
 
+// At end of line inside '/// ```' block.
 static bool handle_line_comment_outside_multi_line(Contents_Iterator* iterator,
                                                    Token* token,
                                                    State* state) {
-    // At end of line inside '/// ```' block.
     if (iterator->at_eob())
         return false;
     iterator->advance();
@@ -1142,38 +1193,61 @@ static bool handle_line_comment_outside_multi_line(Contents_Iterator* iterator,
 
 static bool handle_line_comment_doc(Contents_Iterator* iterator, Token* token, State* state) {
     for (; !iterator->at_eob(); iterator->advance()) {
+    retry:
         switch (iterator->get()) {
         case '`':
-            if (iterator->position == token->start) {
-                Contents_Iterator test = *iterator;
-                test.advance();
-                bool multiline = looking_at(test, "``");
-
-                // If resuming then handle the '```' as a multi-line code block.
-                if (state->comment == COMMENT_LINE_RESUME_OUTSIDE) {
-                    if (multiline) {
-                        comment_push(state, COMMENT_LINE_INSIDE_MULTI_LINE);
-                        // Most of the time `a * b` should be interpreted as an expression.
-                        state->syntax = SYNTAX_AT_STMT;
-                        iterator->advance(3);
-                    } else {
-                        comment_push(state, COMMENT_LINE_INSIDE_INLINE);
-                        // Most of the time `a * b` should be interpreted as an expression.
-                        state->syntax = SYNTAX_IN_EXPR;
-                        iterator->advance();
-                    }
-                    token->type = Token_Type::OPEN_PAIR;
-                } else {
-                    state->comment = COMMENT_LINE_RESUME_OUTSIDE;
-                    iterator->advance(multiline ? 3 : 1);
-                    token->type = Token_Type::CLOSE_PAIR;
-                }
-            } else {
-                // Already handled some text so return and wait for the next iteration.
-                state->comment = COMMENT_LINE_RESUME_OUTSIDE;
-                token->type = Token_Type::DOC_COMMENT;
-            }
+            handle_line_comment_doc_tilde(iterator, token, state);
             goto ret;
+
+        case '*': {
+            iterator->advance();
+            if (iterator->at_eob()) {
+                token->type = Token_Type::DOC_COMMENT;
+                goto ret;
+            }
+
+            if (iterator->get() == ' ') {
+                if (state->comment == COMMENT_LINE_RESUME_OUTSIDE_SOL) {
+                    if (iterator->position - 1 == token->start) {
+                        state->comment = COMMENT_LINE_RESUME_OUTSIDE_MOL;
+                        token->type = Token_Type::PUNCTUATION;
+                    } else {
+                        iterator->retreat();
+                        token->type = Token_Type::DOC_COMMENT;
+                    }
+                    goto ret;
+                }
+            }
+            goto retry;
+        }
+
+        case '#':
+            if (state->comment == COMMENT_LINE_RESUME_OUTSIDE_SOL) {
+                if (iterator->position == token->start) {
+                    state->comment = COMMENT_LINE_RESUME_OUTSIDE_HEADER;
+                    token->type = Token_Type::PUNCTUATION;
+                    iterator->advance();
+                } else {
+                    token->type = Token_Type::DOC_COMMENT;
+                }
+                goto ret;
+            }
+            break;
+
+        case '+':
+        case '-': {
+            if (state->comment == COMMENT_LINE_RESUME_OUTSIDE_SOL) {
+                if (iterator->position == token->start) {
+                    state->comment = COMMENT_LINE_RESUME_OUTSIDE_MOL;
+                    token->type = Token_Type::PUNCTUATION;
+                    iterator->advance();
+                } else {
+                    token->type = Token_Type::DOC_COMMENT;
+                }
+                goto ret;
+            }
+            break;
+        }
 
         case CZ_SPACE_LINE_CASES:
             if (state->comment == COMMENT_LINE_RESUME_INSIDE) {
@@ -1195,6 +1269,37 @@ static bool handle_line_comment_doc(Contents_Iterator* iterator, Token* token, S
             token->type = Token_Type::DOC_COMMENT;
             goto ret;
 
+        case CZ_BLANK_CASES:
+            break;
+
+        default:
+            state->comment = COMMENT_LINE_RESUME_OUTSIDE_MOL;
+            break;
+        }
+    }
+
+    if (iterator->position == token->start)
+        return false;
+
+ret:
+    token->end = iterator->position;
+    return true;
+}
+
+static bool resume_line_comment_header(Contents_Iterator* iterator, Token* token, State* state) {
+    token->type = Token_Type::TITLE;
+    token->start = iterator->position;
+
+    for (; !iterator->at_eob(); iterator->advance()) {
+        switch (iterator->get()) {
+        case '`':
+            handle_line_comment_doc_tilde(iterator, token, state);
+            goto ret;
+
+        case CZ_SPACE_LINE_CASES:
+            state->comment = COMMENT_LINE_RESUME_OUTSIDE_MOL;
+            goto ret;
+
         default:
             break;
         }
@@ -1208,11 +1313,51 @@ ret:
     return true;
 }
 
+static void handle_line_comment_doc_tilde(Contents_Iterator* iterator, Token* token, State* state) {
+    if (iterator->position == token->start) {
+        Contents_Iterator test = *iterator;
+        test.advance();
+        bool multiline = looking_at(test, "``");
+
+        // If resuming then handle the '```' as a multi-line code block.
+        if (state->comment != COMMENT_LINE_RESUME_INSIDE) {
+            if (multiline) {
+                comment_push(state, COMMENT_LINE_INSIDE_MULTI_LINE);
+                state->syntax = SYNTAX_AT_STMT;
+                iterator->advance(3);
+            } else {
+                comment_push(state, COMMENT_LINE_INSIDE_INLINE);
+                // Most of the time `a * b` should be interpreted as an expression.
+                state->syntax = SYNTAX_IN_EXPR;
+                iterator->advance();
+            }
+            token->type = Token_Type::OPEN_PAIR;
+        } else {
+            state->comment = COMMENT_LINE_RESUME_OUTSIDE_MOL;
+            iterator->advance(multiline ? 3 : 1);
+            token->type = Token_Type::CLOSE_PAIR;
+        }
+    } else {
+        // Already handled some text so return and wait for the next iteration.
+        state->comment = COMMENT_LINE_RESUME_OUTSIDE_MOL;
+        token->type = Token_Type::DOC_COMMENT;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Block comment
+///////////////////////////////////////////////////////////////////////////////
+
+static void handle_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state);
+static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state);
+static void handle_block_comment_doc_tilde(Contents_Iterator* iterator, Token* token, State* state);
+
 static void handle_block_comment(Contents_Iterator* iterator, Token* token, State* state) {
     if (!iterator->at_eob()) {
         char ch = iterator->get();
         if (ch == '!' || ch == '*') {
             iterator->advance();
+            state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_SOL2;
             handle_block_comment_doc(iterator, token, state);
             return;
         }
@@ -1229,13 +1374,206 @@ static void handle_block_comment_normal(Contents_Iterator* iterator, Token* toke
     token->end = iterator->position;
 }
 
-static void handle_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state) {
-    token->type = Token_Type::DOC_COMMENT;
-    CZ_PANIC("TODO");  // TODO
-    if (search_forward(iterator, "*/")) {
-        iterator->advance(2);
+static bool resume_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state) {
+    token->start = iterator->position;
+    return handle_block_comment_doc(iterator, token, state);
+}
+
+// At end of line inside '/* ```' block.
+static bool handle_block_comment_outside_multi_line(Contents_Iterator* iterator,
+                                                    Token* token,
+                                                    State* state) {
+    if (iterator->at_eob())
+        return false;
+    iterator->advance();
+
+    while (1) {
+        if (iterator->at_eob())
+            return false;
+
+        switch (iterator->get()) {
+        case CZ_BLANK_CASES:
+            // Skip indentation.
+            iterator->advance();
+            break;
+
+        case '*': {
+            // Ignore '* ' at start of lines.
+            Contents_Iterator test = *iterator;
+            test.advance();
+            if (!test.at_eob() && cz::is_blank(test.get())) {
+                state->comment = COMMENT_BLOCK_INSIDE_MULTI_LINE;
+                token->type = Token_Type::DOC_COMMENT;
+                token->start = iterator->position;
+                *iterator = test;
+                token->end = test.position;
+                return true;
+            }
+            // fallthrough
+        }
+
+        default:
+            return handle_syntax(iterator, token, state);
+        }
     }
+}
+
+static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state) {
+    for (; !iterator->at_eob(); iterator->advance()) {
+    retry:
+        switch (iterator->get()) {
+        case '`':
+            handle_block_comment_doc_tilde(iterator, token, state);
+            goto ret;
+
+        case '*': {
+            iterator->advance();
+            if (iterator->at_eob()) {
+                token->type = Token_Type::DOC_COMMENT;
+                goto ret;
+            }
+
+            char ch = iterator->get();
+            if (ch == ' ') {
+                if (state->comment == COMMENT_BLOCK_RESUME_OUTSIDE_SOL1) {
+                    state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_SOL2;
+                } else if (state->comment == COMMENT_BLOCK_RESUME_OUTSIDE_SOL2) {
+                    if (iterator->position - 1 == token->start) {
+                        state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_MOL;
+                        token->type = Token_Type::PUNCTUATION;
+                    } else {
+                        iterator->retreat();
+                        token->type = Token_Type::DOC_COMMENT;
+                    }
+                    goto ret;
+                }
+            } else if (ch == '/') {
+                state->comment = COMMENT_NULL;
+                iterator->advance();
+                token->type = Token_Type::DOC_COMMENT;
+                goto ret;
+            }
+            goto retry;
+        }
+
+        case '#':
+            if (state->comment == COMMENT_BLOCK_RESUME_OUTSIDE_SOL1 ||
+                state->comment == COMMENT_BLOCK_RESUME_OUTSIDE_SOL2) {
+                if (iterator->position == token->start) {
+                    state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_HEADER;
+                    token->type = Token_Type::PUNCTUATION;
+                    iterator->advance();
+                } else {
+                    token->type = Token_Type::DOC_COMMENT;
+                }
+                goto ret;
+            }
+            break;
+
+        case '+':
+        case '-': {
+            if (state->comment == COMMENT_BLOCK_RESUME_OUTSIDE_SOL1 ||
+                state->comment == COMMENT_BLOCK_RESUME_OUTSIDE_SOL2) {
+                if (iterator->position == token->start) {
+                    state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_MOL;
+                    token->type = Token_Type::PUNCTUATION;
+                    iterator->advance();
+                } else {
+                    token->type = Token_Type::DOC_COMMENT;
+                }
+                goto ret;
+            }
+            break;
+        }
+
+        case CZ_SPACE_LINE_CASES:
+            state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_SOL1;
+            break;
+
+        case CZ_BLANK_CASES:
+            break;
+
+        default:
+            state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_MOL;
+            break;
+        }
+    }
+
+    if (iterator->position == token->start)
+        return false;
+
+ret:
     token->end = iterator->position;
+    return true;
+}
+
+static bool resume_block_comment_header(Contents_Iterator* iterator, Token* token, State* state) {
+    token->type = Token_Type::TITLE;
+    token->start = iterator->position;
+
+    for (; !iterator->at_eob(); iterator->advance()) {
+        switch (iterator->get()) {
+        case '`':
+            handle_block_comment_doc_tilde(iterator, token, state);
+            goto ret;
+
+        case '*': {
+            // Stop before '*/'
+            Contents_Iterator test = *iterator;
+            test.advance();
+            if (test.at_eob() || test.get() == '/')
+                goto ret;
+            break;
+        }
+
+        case CZ_SPACE_LINE_CASES:
+            state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_MOL;
+            goto ret;
+
+        default:
+            break;
+        }
+    }
+
+    if (iterator->position == token->start)
+        return false;
+
+ret:
+    token->end = iterator->position;
+    return true;
+}
+
+static void handle_block_comment_doc_tilde(Contents_Iterator* iterator,
+                                           Token* token,
+                                           State* state) {
+    if (iterator->position == token->start) {
+        Contents_Iterator test = *iterator;
+        test.advance();
+        bool multiline = looking_at(test, "``");
+
+        // If resuming then handle the '```' as a multi-line code block.
+        if (state->comment != COMMENT_BLOCK_RESUME_INSIDE) {
+            if (multiline) {
+                comment_push(state, COMMENT_BLOCK_INSIDE_MULTI_LINE);
+                state->syntax = SYNTAX_AT_STMT;
+                iterator->advance(3);
+            } else {
+                comment_push(state, COMMENT_BLOCK_INSIDE_INLINE);
+                // Most of the time `a * b` should be interpreted as an expression.
+                state->syntax = SYNTAX_IN_EXPR;
+                iterator->advance();
+            }
+            token->type = Token_Type::OPEN_PAIR;
+        } else {
+            state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_MOL;
+            iterator->advance(multiline ? 3 : 1);
+            token->type = Token_Type::CLOSE_PAIR;
+        }
+    } else {
+        // Already handled some text so return and wait for the next iteration.
+        state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_MOL;
+        token->type = Token_Type::DOC_COMMENT;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
