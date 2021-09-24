@@ -1358,10 +1358,7 @@ static void handle_line_comment_doc_tilde(Contents_Iterator* iterator, Token* to
 // Block comment
 ///////////////////////////////////////////////////////////////////////////////
 
-static bool handle_block_comment_doc(Contents_Iterator* iterator,
-                                     Token* token,
-                                     State* state,
-                                     bool first);
+static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state);
 static void handle_block_comment_doc_tilde(Contents_Iterator* iterator, Token* token, State* state);
 static void handle_block_comment_normal(Contents_Iterator* iterator,
                                         Token* token,
@@ -1374,7 +1371,7 @@ static void handle_block_comment(Contents_Iterator* iterator, Token* token, Stat
         if (ch == '!' || ch == '*') {
             iterator->advance();
             state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_SOL2;
-            handle_block_comment_doc(iterator, token, state, true);
+            handle_block_comment_doc(iterator, token, state);
             return;
         }
     }
@@ -1414,7 +1411,7 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
 
 static bool resume_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state) {
     token->start = iterator->position;
-    return handle_block_comment_doc(iterator, token, state, false);
+    return handle_block_comment_doc(iterator, token, state);
 }
 
 // At end of line inside '/* ```' block.
@@ -1464,10 +1461,8 @@ static bool handle_block_comment_outside_multi_line(Contents_Iterator* iterator,
     }
 }
 
-static bool handle_block_comment_doc(Contents_Iterator* iterator,
-                                     Token* token,
-                                     State* state,
-                                     bool first) {
+static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state) {
+    bool first = true;
     for (; !iterator->at_eob(); iterator->advance()) {
     retry:
         // Rate limit to one bucket (two at the start of the comment) to prevent
@@ -1475,6 +1470,8 @@ static bool handle_block_comment_doc(Contents_Iterator* iterator,
         // bucket boundaries to allow token streams to merge, which allows us to
         // avoid re-tokenizing a buffer on a miscellaneous change near the beginning.
         if (iterator->index == 0) {
+            // Note: because this is checked before advancing, if we're resuming, we'll always
+            // resume at the start of a bucket so `first` will be set to `false` immediately.
             if (first) {
                 first = false;
             } else {
