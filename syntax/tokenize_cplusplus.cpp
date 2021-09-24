@@ -1358,9 +1358,15 @@ static void handle_line_comment_doc_tilde(Contents_Iterator* iterator, Token* to
 // Block comment
 ///////////////////////////////////////////////////////////////////////////////
 
-static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state);
+static bool handle_block_comment_doc(Contents_Iterator* iterator,
+                                     Token* token,
+                                     State* state,
+                                     bool first);
 static void handle_block_comment_doc_tilde(Contents_Iterator* iterator, Token* token, State* state);
-static void handle_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state);
+static void handle_block_comment_normal(Contents_Iterator* iterator,
+                                        Token* token,
+                                        State* state,
+                                        bool first);
 
 static void handle_block_comment(Contents_Iterator* iterator, Token* token, State* state) {
     if (!iterator->at_eob()) {
@@ -1368,40 +1374,47 @@ static void handle_block_comment(Contents_Iterator* iterator, Token* token, Stat
         if (ch == '!' || ch == '*') {
             iterator->advance();
             state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_SOL2;
-            handle_block_comment_doc(iterator, token, state);
+            handle_block_comment_doc(iterator, token, state, true);
             return;
         }
     }
-    handle_block_comment_normal(iterator, token, state);
+    handle_block_comment_normal(iterator, token, state, true);
 }
 
 static bool resume_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state) {
     token->start = iterator->position;
-    handle_block_comment_normal(iterator, token, state);
+    handle_block_comment_normal(iterator, token, state, false);
     return token->start != token->end;
 }
 
-static void handle_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state) {
+static void handle_block_comment_normal(Contents_Iterator* iterator,
+                                        Token* token,
+                                        State* state,
+                                        bool first) {
     state->comment = COMMENT_NULL;
     token->type = Token_Type::COMMENT;
-    for (int i = 0;; ++i) {
-        // Only look in 2 buckets at a time to prevent hanging
-        // when inserting '/*' at the start of a big file.
-        if (i == 2) {
-            state->comment = COMMENT_BLOCK_NORMAL;
-            break;
-        }
+    // Rate limit to one bucket (two at the start of the comment) to prevent
+    // hanging when inserting '/*' at the start of a big buffer.  Align to
+    // bucket boundaries to allow token streams to merge, which allows us to
+    // avoid re-tokenizing a buffer on a miscellaneous change near the beginning.
+    if (first) {
         if (search_forward_bucket(iterator, "*/")) {
             iterator->advance(2);
-            break;
+            token->end = iterator->position;
+            return;
         }
+    }
+    if (search_forward_bucket(iterator, "*/")) {
+        iterator->advance(2);
+    } else {
+        state->comment = COMMENT_BLOCK_NORMAL;
     }
     token->end = iterator->position;
 }
 
 static bool resume_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state) {
     token->start = iterator->position;
-    return handle_block_comment_doc(iterator, token, state);
+    return handle_block_comment_doc(iterator, token, state, false);
 }
 
 // At end of line inside '/* ```' block.
@@ -1451,9 +1464,25 @@ static bool handle_block_comment_outside_multi_line(Contents_Iterator* iterator,
     }
 }
 
-static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state) {
+static bool handle_block_comment_doc(Contents_Iterator* iterator,
+                                     Token* token,
+                                     State* state,
+                                     bool first) {
     for (; !iterator->at_eob(); iterator->advance()) {
     retry:
+        // Rate limit to one bucket (two at the start of the comment) to prevent
+        // hanging when inserting '/**' at the start of a big buffer.  Align to
+        // bucket boundaries to allow token streams to merge, which allows us to
+        // avoid re-tokenizing a buffer on a miscellaneous change near the beginning.
+        if (iterator->index == 0) {
+            if (first) {
+                first = false;
+            } else {
+                token->type = Token_Type::DOC_COMMENT;
+                break;
+            }
+        }
+
         switch (iterator->get()) {
         case '`':
             handle_block_comment_doc_tilde(iterator, token, state);
@@ -1521,12 +1550,6 @@ static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, 
 
         case CZ_SPACE_LINE_CASES:
             state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_SOL1;
-            // Break up massive comments.  This is useful to prevent
-            // hanging when a user types '/**' at the start of a big file.
-            if (iterator->position - token->start >= 4096) {
-                token->type = Token_Type::DOC_COMMENT;
-                goto ret;
-            }
             break;
 
         case CZ_BLANK_CASES:
