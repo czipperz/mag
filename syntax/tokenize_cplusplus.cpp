@@ -35,6 +35,7 @@ enum {
     COMMENT_BLOCK_RESUME_OUTSIDE_MOL = 13,
     COMMENT_BLOCK_RESUME_OUTSIDE_HEADER = 14,
     COMMENT_BLOCK_OUTSIDE_MULTI_LINE = 15,
+    COMMENT_BLOCK_NORMAL = 16,
 };
 
 enum {
@@ -55,14 +56,14 @@ enum {
 };
 
 struct State {
-    uint64_t comment : 4;
+    uint64_t comment : 5;
     uint64_t comment_saved_preprocessor : 3;
     uint64_t comment_saved_preprocessor_saved_syntax : 3;
     uint64_t comment_saved_syntax : 3;
     uint64_t preprocessor : 3;
     uint64_t preprocessor_saved_syntax : 3;
     uint64_t syntax : 3;
-    uint64_t padding : 42;
+    uint64_t padding : 41;
 };
 static_assert(sizeof(State) == sizeof(uint64_t), "Must be able to cast between the two");
 }
@@ -95,6 +96,7 @@ static bool resume_block_comment_header(Contents_Iterator* iterator, Token* toke
 static bool handle_block_comment_outside_multi_line(Contents_Iterator* iterator,
                                                     Token* token,
                                                     State* state);
+static bool resume_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state);
 
 static bool handle_comment(Contents_Iterator* iterator, Token* token, State* state) {
     switch (state->comment) {
@@ -121,6 +123,8 @@ static bool handle_comment(Contents_Iterator* iterator, Token* token, State* sta
         return resume_block_comment_header(iterator, token, state);
     case COMMENT_BLOCK_OUTSIDE_MULTI_LINE:
         return handle_block_comment_outside_multi_line(iterator, token, state);
+    case COMMENT_BLOCK_NORMAL:
+        return resume_block_comment_normal(iterator, token, state);
     default:
         return false;
     }
@@ -1354,9 +1358,9 @@ static void handle_line_comment_doc_tilde(Contents_Iterator* iterator, Token* to
 // Block comment
 ///////////////////////////////////////////////////////////////////////////////
 
-static void handle_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state);
 static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, State* state);
 static void handle_block_comment_doc_tilde(Contents_Iterator* iterator, Token* token, State* state);
+static void handle_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state);
 
 static void handle_block_comment(Contents_Iterator* iterator, Token* token, State* state) {
     if (!iterator->at_eob()) {
@@ -1371,11 +1375,26 @@ static void handle_block_comment(Contents_Iterator* iterator, Token* token, Stat
     handle_block_comment_normal(iterator, token, state);
 }
 
+static bool resume_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state) {
+    token->start = iterator->position;
+    handle_block_comment_normal(iterator, token, state);
+    return token->start != token->end;
+}
+
 static void handle_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state) {
+    state->comment = COMMENT_NULL;
     token->type = Token_Type::COMMENT;
-    // TODO: break up the search into chunks to avoid typing /* at start of large file from hanging.
-    if (search_forward(iterator, "*/")) {
-        iterator->advance(2);
+    for (int i = 0;; ++i) {
+        // Only look in 2 buckets at a time to prevent hanging
+        // when inserting '/*' at the start of a big file.
+        if (i == 2) {
+            state->comment = COMMENT_BLOCK_NORMAL;
+            break;
+        }
+        if (search_forward_bucket(iterator, "*/")) {
+            iterator->advance(2);
+            break;
+        }
     }
     token->end = iterator->position;
 }
@@ -1502,6 +1521,12 @@ static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, 
 
         case CZ_SPACE_LINE_CASES:
             state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_SOL1;
+            // Break up massive comments.  This is useful to prevent
+            // hanging when a user types '/**' at the start of a big file.
+            if (iterator->position - token->start >= 4096) {
+                token->type = Token_Type::DOC_COMMENT;
+                goto ret;
+            }
             break;
 
         case CZ_BLANK_CASES:
