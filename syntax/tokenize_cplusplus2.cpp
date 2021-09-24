@@ -12,6 +12,8 @@
 namespace mag {
 namespace syntax {
 
+#if 1
+
 ///////////////////////////////////////////////////////////////////////////////
 // Type definitions
 ///////////////////////////////////////////////////////////////////////////////
@@ -306,6 +308,8 @@ retry:
         iterator->advance();
         if (!iterator->at_eob() && iterator->get() == '*')  // .*
             iterator->advance();
+        if (looking_at(*iterator, ".."))  // ...
+            iterator->advance(2);
         token->end = iterator->position;
         state->syntax = SYNTAX_IN_EXPR;
         return true;
@@ -731,8 +735,7 @@ static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch
         // return 0;
         // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "switch"))
-            // return 2;
-            return 4;
+            return 2;
         return 0;
     case (6 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "typeid"))
@@ -740,6 +743,10 @@ static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch
         return 0;
     case (6 << 8) | (uint8_t)'x':
         if (looking_at_no_bounds_check(start, "xor_eq"))
+            return 2;
+        return 0;
+    case (7 << 8) | (uint8_t)'_':
+        if (looking_at_no_bounds_check(start, "_Pragma"))
             return 2;
         return 0;
     case (7 << 8) | (uint8_t)'a':
@@ -796,7 +803,7 @@ static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch
         return 0;
     case (7 << 8) | (uint8_t)'v':
         if (looking_at_no_bounds_check(start, "virtual"))
-            return 2;
+            return 4;
         return 0;
     case (7 << 8) | (uint8_t)'w':
         if (looking_at_no_bounds_check(start, "wchar_t"))
@@ -1877,6 +1884,8 @@ retry:
         return handle_syntax(iterator, token, state);
     }
 }
+
+#endif
 
 }
 }
