@@ -1403,6 +1403,13 @@ static bool handle_block_comment_outside_multi_line(Contents_Iterator* iterator,
             iterator->advance();
             break;
 
+        case '`':
+            token->start = iterator->position;
+            state->comment = COMMENT_BLOCK_RESUME_INSIDE;
+            handle_block_comment_doc_tilde(iterator, token, state);
+            token->end = iterator->position;
+            return true;
+
         case '*': {
             // Ignore '* ' at start of lines.
             Contents_Iterator test = *iterator;
