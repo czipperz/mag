@@ -402,6 +402,12 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
     data->working_directory = directory;
 
     window->start_completion(completion_engine);
+    if (window->completion_cache.engine_context.cleanup) {
+        window->completion_cache.engine_context.cleanup(
+            window->completion_cache.engine_context.data);
+        window->completion_cache.engine_context.results.len = 0;
+    }
+
     window->completion_cache.engine_context.data = data;
     window->completion_cache.engine_context.cleanup = [](void* _data) {
         auto data = (Completion_Engine_Data*)_data;
