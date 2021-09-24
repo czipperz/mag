@@ -331,6 +331,77 @@ bool rfind_cased(Contents_Iterator* it, char ch, Case_Handling case_handling) {
     }
 }
 
+bool find_bucket(Contents_Iterator* it, char ch) {
+    if (it->bucket >= it->contents->buckets.len)
+        return false;
+
+    cz::Slice<char> bucket = it->contents->buckets[it->bucket];
+    cz::Str str = {bucket.elems, bucket.len};
+    cz::Str slice = str.slice_start(it->index);
+    const char* ptr = slice.find(ch);
+    if (ptr) {
+        it->advance(ptr - slice.buffer);
+        return true;
+    } else {
+        it->advance(slice.len);
+        return false;
+    }
+}
+
+bool rfind_bucket(Contents_Iterator* it, char ch) {
+    // Search in the previous bucket if at the start of this one.
+    if (it->at_bob())
+        return false;
+    it->retreat();
+
+    cz::Slice<char> bucket = it->contents->buckets[it->bucket];
+    cz::Str str = {bucket.elems, bucket.len};
+    cz::Str slice = str.slice_end(it->index + 1);
+    const char* ptr = slice.rfind(ch);
+    if (ptr) {
+        it->retreat(str.buffer + it->index - ptr);
+        return true;
+    } else {
+        it->retreat(it->index);
+        return false;
+    }
+}
+
+bool search_forward_bucket(Contents_Iterator* it, cz::Str query) {
+    if (query.len == 0)
+        return true;
+
+    while (1) {
+        if (!find_bucket(it, query[0]))
+            return false;
+
+        if (looking_at(*it, query))
+            return true;
+
+        size_t bucket = it->bucket;
+        it->advance();
+        if (it->bucket != bucket)
+            return false;
+    }
+}
+
+bool search_backward_bucket(Contents_Iterator* it, cz::Str query) {
+    if (query.len == 0)
+        return true;
+
+    while (1) {
+        if (!rfind_bucket(it, query[0]))
+            return false;
+
+        if (looking_at(*it, query))
+            return true;
+
+        // Prevent going into previous bucket.
+        if (it->index == 0)
+            return false;
+    }
+}
+
 bool search_forward(Contents_Iterator* it, cz::Str query) {
     ZoneScoped;
 
