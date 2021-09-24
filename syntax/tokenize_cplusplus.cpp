@@ -1426,6 +1426,7 @@ static bool handle_block_comment_outside_multi_line(Contents_Iterator* iterator,
         }
 
         default:
+            state->comment = COMMENT_BLOCK_INSIDE_MULTI_LINE;
             return handle_syntax(iterator, token, state);
         }
     }
