@@ -409,7 +409,7 @@ static void command_directory_rename_path_callback(Editor* editor,
         cz::Str name;
         if (cz::path::name_component(path, &name)) {
             new_path.reserve(cz::heap_allocator(), name.len + 2);
-            if (!new_path.ends_with("/")) {
+            if (!new_path.ends_with('/')) {
                 new_path.push('/');
             }
             new_path.append(name);
@@ -418,8 +418,13 @@ static void command_directory_rename_path_callback(Editor* editor,
     }
 
     if (rename(path.buffer, new_path.buffer) != 0) {
-        client->show_message("Couldn't rename path");
-        return;
+        if (!remove_path(&new_path)) {
+            client->show_message("Couldn't remove destination");
+        }
+        if (rename(path.buffer, new_path.buffer) != 0) {
+            client->show_message("Couldn't rename path");
+            return;
+        }
     }
 }
 
