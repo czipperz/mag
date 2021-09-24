@@ -719,6 +719,10 @@ static void draw_buffer_contents(Cell* cells,
     Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
     for (; !iterator.at_eob(); iterator.advance()) {
         while (has_token && iterator.position >= token.end) {
+#ifndef NDEBUG
+            // Detect bugs in next_token implementations where they don't set all token fields.
+            memset(&token, 0xCC, sizeof(token));
+#endif
             has_token = buffer->mode.next_token(&token_iterator, &token, &state);
         }
 
@@ -1490,6 +1494,10 @@ void render_to_cells(Cell* cells,
                 Contents_Iterator iterator = contents.start();
                 uint64_t state = 0;
                 Token token;
+#ifndef NDEBUG
+                // Detect bugs in next_token implementations where they don't set all token fields.
+                memset(&token, 0xCC, sizeof(token));
+#endif
                 bool has_token = minibuffer_next_token(&iterator, &token, &state);
 
                 Face base_face = {};
@@ -1516,6 +1524,11 @@ void render_to_cells(Cell* cells,
                             break;
                         } else {
                             // Go to the next token.
+#ifndef NDEBUG
+                            // Detect bugs in next_token implementations
+                            // where they don't set all token fields.
+                            memset(&token, 0xCC, sizeof(token));
+#endif
                             has_token = minibuffer_next_token(&iterator, &token, &state);
                             continue;
                         }
