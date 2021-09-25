@@ -669,5 +669,58 @@ void command_complete_at_point_prompt_identifiers(Editor* editor, Command_Source
     };
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// command_copy_rest_of_line_from_nearest_matching_identifier
+///////////////////////////////////////////////////////////////////////////////
+
+void command_copy_rest_of_line_from_nearest_matching_identifier(Editor* editor,
+                                                                Command_Source source) {
+    ZoneScoped;
+    WITH_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+
+    // Retreat to start of identifier.
+    Contents_Iterator middle = it;
+    Contents_Iterator end = it;
+    backward_through_identifier(&it);
+    forward_through_identifier(&end);
+
+    if (it.position >= middle.position) {
+        source.client->show_message("Not at an identifier");
+        return;
+    }
+
+    Contents_Iterator match_start;
+    if (!find_nearest_matching_identifier_before_after(
+            it, middle, end.position, buffer->contents.buckets.len, &match_start)) {
+        source.client->show_message("No matches");
+        return;
+    }
+
+    match_start.advance(middle.position - it.position);
+
+    Contents_Iterator match_end = match_start;
+    end_of_line(&match_end);
+
+    // Insert from the identifier to the end of the line.
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    SSOStr value = buffer->contents.slice(transaction.value_allocator(), match_start, match_end.position);
+
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        Edit edit;
+        edit.value = value;
+        edit.position = cursors[i].point + i;
+        edit.flags = Edit::INSERT;
+        transaction.push(edit);
+    }
+
+    transaction.commit(source.client);
+}
+
 }
 }

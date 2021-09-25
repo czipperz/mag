@@ -48,5 +48,7 @@ void command_complete_at_point_nearest_matching_before_after(Editor* editor, Com
 
 void command_complete_at_point_prompt_identifiers(Editor* editor, Command_Source source);
 
+void command_copy_rest_of_line_from_nearest_matching_identifier(Editor* editor, Command_Source source);
+
 }
 }
