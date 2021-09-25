@@ -1689,26 +1689,34 @@ void command_goto_position(Editor* editor, Command_Source source) {
 void command_show_file_length_info(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
-    cz::String string = {};
-    CZ_DEFER(string.drop(cz::heap_allocator()));
+    uint64_t start = 0;
+    uint64_t end = buffer->contents.len;
+    if (window->cursors.len == 1 && window->show_marks) {
+        start = window->cursors[0].start();
+        end = window->cursors[0].end();
+    }
 
-    uint64_t lines = buffer->contents.get_line_number(buffer->contents.len) + 1;
+    uint64_t lines =
+        buffer->contents.get_line_number(end) - buffer->contents.get_line_number(start);
 
     uint64_t words = 0;
-    Contents_Iterator words_it = buffer->contents.start();
-    while (!words_it.at_eob()) {
+    Contents_Iterator words_it = buffer->contents.iterator_at(start);
+    while (words_it.position < end) {
         ++words;
         forward_word(&words_it);
     }
     --words;
-    if (!words_it.at_bob()) {
+    if (words_it.position > start) {
         words_it.retreat();
         if (cz::is_alnum(words_it.get())) {
             ++words;
         }
     }
 
-    cz::append(cz::heap_allocator(), &string, "Bytes: ", buffer->contents.len, ", lines: ", lines,
+    cz::String string = {};
+    CZ_DEFER(string.drop(cz::heap_allocator()));
+
+    cz::append(cz::heap_allocator(), &string, "Bytes: ", end - start, ", lines: ", lines,
                ", words: ", words);
 
     source.client->show_message(string);
