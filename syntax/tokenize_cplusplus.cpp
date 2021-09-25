@@ -1859,12 +1859,13 @@ static void handle_preprocessor_include_string(Contents_Iterator* iterator, Toke
             iterator->advance();
             goto ret;
 
-        case '\n':
+        case '\n': {
             Contents_Iterator prev = *iterator;
             prev.retreat();
             if (prev.get() != '\\')
                 goto ret;
             // fallthrough
+        }
 
         default:
             iterator->advance();
