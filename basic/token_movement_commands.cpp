@@ -371,7 +371,7 @@ void command_backward_matching_token(Editor* editor, Command_Source source) {
         cursor->point = it.position;
         cursor->mark = cursor->point;
 
-        if (mark_offset < 0 && cursor->point < -mark_offset)
+        if (mark_offset < 0 && cursor->point < (uint64_t)-mark_offset)
             cursor->mark = 0;
         else if (mark_offset > 0 && cursor->point + mark_offset > buffer->contents.len)
             cursor->mark = buffer->contents.len;
@@ -445,7 +445,7 @@ void command_forward_matching_token(Editor* editor, Command_Source source) {
         cursor->point = it.position;
         cursor->mark = cursor->point;
 
-        if (mark_offset < 0 && cursor->point < -mark_offset)
+        if (mark_offset < 0 && cursor->point < (uint64_t)-mark_offset)
             cursor->mark = 0;
         else if (mark_offset > 0 && cursor->point + mark_offset > buffer->contents.len)
             cursor->mark = buffer->contents.len;
