@@ -980,8 +980,8 @@ static void fill_spaces(Client* client, Buffer* buffer, Window_Unified* window, 
         } else {
             start = end = buffer->contents.iterator_at(cursors[c].point);
             func(&start);
-            if (start.position > end.position) {
-                cz::swap(start, end);
+            if (start.position >= end.position) {
+                continue;
             }
         }
 
