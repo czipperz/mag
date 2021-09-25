@@ -1791,7 +1791,7 @@ static int look_for_preprocessor_keyword(Contents_Iterator start, uint64_t len, 
         return 0;
     case (5 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "ifdef"))
-            return PREPROCESSOR_KW_ENDIF;
+            return PREPROCESSOR_KW_IF;
         return 0;
     case (6 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "define"))
@@ -1799,7 +1799,7 @@ static int look_for_preprocessor_keyword(Contents_Iterator start, uint64_t len, 
         return 0;
     case (6 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "ifndef"))
-            return PREPROCESSOR_KW_ENDIF;
+            return PREPROCESSOR_KW_IF;
         return 0;
     case (7 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "include"))
