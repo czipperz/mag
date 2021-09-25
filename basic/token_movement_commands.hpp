@@ -33,6 +33,9 @@ void command_delete_token(Editor* editor, Command_Source source);
 void command_duplicate_token(Editor* editor, Command_Source source);
 void command_transpose_tokens(Editor* editor, Command_Source source);
 
+void command_delete_backward_token(Editor* editor, Command_Source source);
+void command_delete_forward_token(Editor* editor, Command_Source source);
+
 bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_pair);
 bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_pair);
 

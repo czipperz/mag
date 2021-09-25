@@ -630,6 +630,70 @@ void command_delete_token(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+void command_delete_forward_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    Contents_Iterator it = buffer->contents.start();
+    for (size_t c = 0; c < cursors.len; ++c) {
+        it.go_to(cursors[c].point);
+
+        Token token;
+        uint64_t state;
+        if (!get_token_after_position(buffer, &it, &state, &token)) {
+            break;
+        }
+
+        it.retreat_to(cursors[c].point);
+
+        Edit edit;
+        edit.value = buffer->contents.slice(transaction.value_allocator(), it, token.end);
+        edit.flags = Edit::REMOVE;
+        edit.position = it.position - offset;
+        offset += token.end - it.position;
+        transaction.push(edit);
+    }
+
+    transaction.commit(source.client);
+}
+
+void command_delete_backward_token(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    Contents_Iterator it = buffer->contents.start();
+    for (size_t c = 0; c < cursors.len; ++c) {
+        it.go_to(cursors[c].point);
+
+        Token token;
+        uint64_t state;
+        if (!get_token_before_position(buffer, &it, &state, &token)) {
+            break;
+        }
+
+        it.retreat_to(token.start);
+
+        Edit edit;
+        edit.value = buffer->contents.slice(transaction.value_allocator(), it, cursors[c].point);
+        edit.flags = Edit::REMOVE;
+        edit.position = it.position - offset;
+        offset += cursors[c].point - it.position;
+        transaction.push(edit);
+    }
+
+    transaction.commit(source.client);
+}
+
 void command_duplicate_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
