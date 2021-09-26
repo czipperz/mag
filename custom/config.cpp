@@ -770,6 +770,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::splash_next_token;
         } else if (buffer->name.starts_with("*diff ")) {
             buffer->mode.next_token = syntax::diff_next_token;
+        } else if (buffer->name.starts_with("*git last-edit ")) {
+            buffer->mode.next_token = syntax::patch_next_token;
         }
         break;
 
