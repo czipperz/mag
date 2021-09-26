@@ -574,8 +574,6 @@ static void create_theme(Theme& theme) {
     theme.overlays.reserve(6);
     theme.overlays.push(syntax::overlay_matching_region({{}, 237, 0}));
     theme.overlays.push(syntax::overlay_preferred_column({{}, 21, 0}));
-    theme.overlays.push(syntax::overlay_trailing_spaces({{}, 208, 0}));
-    theme.overlays.push(syntax::overlay_incorrect_indent({{}, 208, 0}));
     theme.overlays.push(syntax::overlay_highlight_string(
         {{}, {}, Face::BOLD}, "TODO", Case_Handling::CASE_SENSITIVE, Token_Type::COMMENT));
     theme.overlays.push(syntax::overlay_highlight_string(
@@ -744,9 +742,11 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             mini_buffer_key_map(buffer->mode.key_map);
             break;
         } else if (buffer->name == "*scratch*") {
-            buffer->mode.overlays.reserve(1);
+            buffer->mode.overlays.reserve(3);
             buffer->mode.overlays.push(
                 syntax::overlay_nearest_matching_identifier_before_after({7, 27, 0}));
+            buffer->mode.overlays.push(syntax::overlay_trailing_spaces({{}, 208, 0}));
+            buffer->mode.overlays.push(syntax::overlay_incorrect_indent({{}, 208, 0}));
             break;
         }
 
@@ -780,6 +780,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         buffer->mode.overlays.reserve(1);
         buffer->mode.overlays.push(
             syntax::overlay_nearest_matching_identifier_before_after({7, 27, 0}));
+
+        bool add_indent_overlays = true;
 
         cz::Str name = buffer->name;
 
@@ -937,6 +939,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             if (name == "addp-hunk-edit.diff") {
                 git_edit_key_map(buffer->mode.key_map);
             }
+            add_indent_overlays = false;
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else if (name == "git-rebase-todo") {
             buffer->mode.next_token = syntax::git_rebase_todo_next_token;
@@ -997,6 +1000,13 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         }
+
+        if (add_indent_overlays) {
+            buffer->mode.overlays.reserve(2);
+            buffer->mode.overlays.push(syntax::overlay_trailing_spaces({{}, 208, 0}));
+            buffer->mode.overlays.push(syntax::overlay_incorrect_indent({{}, 208, 0}));
+        }
+
         break;
     }
     }
