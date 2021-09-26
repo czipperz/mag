@@ -1172,16 +1172,27 @@ static void handle_line_comment_normal(Contents_Iterator* iterator, Token* token
         end_of_line(iterator);
     } else {
         // Find the first '\n' or '`'.
+        bool look_for_end = (state->comment == COMMENT_BLOCK_INSIDE_INLINE ||
+                             state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE);
         bool multi_line = (state->comment == COMMENT_LINE_INSIDE_MULTI_LINE ||
                            state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE);
         while (1) {
             Contents_Iterator line_it = *iterator;
+            Contents_Iterator end_it = *iterator;
             Contents_Iterator tick_it = *iterator;
             bool found_line = find_bucket(&line_it, '\n');
+            bool found_end = (look_for_end ? search_forward_bucket(&end_it, "*/") : false);
             bool found_tick =
                 (multi_line ? search_forward_bucket(&tick_it, "```") : find_bucket(&tick_it, '`'));
-            if (found_line || found_tick) {
-                iterator->advance_to(cz::min(line_it.position, tick_it.position));
+            if (found_end || found_line || found_tick) {
+                uint64_t min = cz::min(line_it.position, tick_it.position);
+                if (found_end)
+                    min = cz::min(end_it.position, min);
+                iterator->advance_to(min);
+
+                // '/** `/// */' parse '*/' as end of outer comment.
+                if (found_end)
+                    state->comment = COMMENT_BLOCK_RESUME_INSIDE;
                 break;
             }
             *iterator = line_it;
