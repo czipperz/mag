@@ -30,6 +30,9 @@ bool patch_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
     case '@':
         token->type = Token_Type::PATCH_ANNOTATION;
         break;
+    case '#':
+        token->type = Token_Type::COMMENT;
+        break;
     default:
         token->type = Token_Type::DEFAULT;
         break;
