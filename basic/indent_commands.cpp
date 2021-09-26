@@ -4,6 +4,7 @@
 #include "command.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
+#include "match.hpp"
 #include "movement.hpp"
 #include "token.hpp"
 
@@ -465,6 +466,74 @@ void command_merge_lines(Editor* editor, Command_Source source) {
     }
 
     transaction.commit(source.client);
+}
+
+bool parse_indent_rules(const Contents& contents,
+                        uint32_t* indent_width,
+                        uint32_t* tab_width,
+                        bool* use_tabs) {
+    bool found_indent_width = false;
+    bool found_tab = false;
+
+    // If we find a line indented with spaces then that is the indent width.
+    Contents_Iterator it = contents.start();
+    for (int i = 0; i < 10; ++i) {
+        if (search_forward_bucket(&it, "\n ")) {
+            it.advance();
+            uint32_t num_spaces = 0;
+            while (looking_at(it, ' ')) {
+                ++num_spaces;
+                it.advance();
+            }
+
+            found_indent_width = true;
+            *indent_width = num_spaces;
+            break;
+        }
+    }
+
+    // Determine if tabs are used.
+    it = contents.start();
+    for (int i = 0; i < 10; ++i) {
+        if (search_forward_bucket(&it, "\n\t")) {
+            found_tab = true;
+            break;
+        }
+    }
+
+    // If no tabs are present then disable tabs.
+    if (found_indent_width && !found_tab) {
+        *use_tabs = false;
+        *tab_width = *indent_width;
+        return true;
+    }
+
+    // If there is '\n\t ' then indent_width != tab_width.
+    // Assume tab_width = 8, indent_width = num_spaces.
+    it = contents.start();
+    for (int i = 0; i < 10; ++i) {
+        if (search_forward_bucket(&it, "\n\t ")) {
+            uint32_t num_spaces = 0;
+            while (looking_at(it, ' ')) {
+                ++num_spaces;
+                it.advance();
+            }
+
+            *use_tabs = true;
+            *tab_width = 8;
+            *indent_width = num_spaces;
+            return true;
+        }
+    }
+
+    // Use tabs.  Set tab_width to default indent_width.
+    if (found_tab && !found_indent_width) {
+        *use_tabs = true;
+        *tab_width = *indent_width;
+        return true;
+    }
+
+    return false;
 }
 
 }

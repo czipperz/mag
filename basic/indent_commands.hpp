@@ -8,6 +8,7 @@ struct Command_Source;
 
 struct Buffer;
 struct Contents_Iterator;
+struct Contents;
 struct Transaction;
 struct Mode;
 
@@ -30,6 +31,18 @@ void insert_line_with_indent(Transaction* transaction,
                              uint64_t position,
                              uint64_t* offset,
                              uint64_t columns);
+
+/// Parse indent rules by attempting to understand the buffer's contents.
+/// Returns `false` if there are no indented lines.
+///
+/// Tries to understand:
+/// 1. Space indent
+/// 2. Tab indent
+/// 3. Space indent with 8-width tabs.
+bool parse_indent_rules(const Contents& contents,
+                        uint32_t* indent_width,
+                        uint32_t* tab_width,
+                        bool* use_tabs);
 
 }
 }

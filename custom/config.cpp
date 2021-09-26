@@ -776,6 +776,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         break;
 
     case Buffer::FILE: {
+        parse_indent_rules(buffer->contents, &buffer->mode.indent_width, &buffer->mode.tab_width,
+                           &buffer->mode.use_tabs);
+
         buffer->mode.decorations.reserve(1);
         buffer->mode.decorations.push(syntax::decoration_line_ending_indicator());
 
