@@ -18,7 +18,7 @@ struct Command {
     const char* string;
 };
 
-#define COMMAND(FUNC) (Command{FUNC, #FUNC})
+#define COMMAND(FUNC) (Command{FUNC, sans_namespaces(#FUNC)})
 
 struct Command_Source {
     Client* client;
@@ -29,6 +29,7 @@ struct Command_Source {
 extern cz::Heap_Vector<Command> global_commands;
 void register_global_command(Command command);
 void sort_global_commands();
+const char* sans_namespaces(const char* func);
 
 struct Command_Registrar {
     Command_Registrar(Command command) { register_global_command(command); }

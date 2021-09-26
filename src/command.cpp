@@ -18,4 +18,12 @@ void sort_global_commands() {
     });
 }
 
+const char* sans_namespaces(const char* func) {
+    const char* ptr = cz::Str{func}.rfind("::");
+    if (ptr)
+        return ptr + 2;
+    else
+        return func;
+}
+
 }
