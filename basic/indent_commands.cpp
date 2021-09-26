@@ -88,6 +88,13 @@ void command_insert_newline_copy_indent_and_modifiers(Editor* editor, Command_So
 
         uint64_t removed = remove_spaces(&transaction, buffer, it, offset);
 
+        Contents_Iterator sol = it;
+        start_of_line_text(&sol);
+        // bool at_sol = it.position == sol.position;
+        bool insert_comment_1 = looking_at(sol, "//!");
+        bool insert_comment_2 = looking_at(sol, "///");
+        bool insert_comment_3 = looking_at(sol, "//");
+
         Contents_Iterator eol = it;
         end_of_line(&eol);
         bool at_eol = it.position == eol.position;
@@ -110,6 +117,24 @@ void command_insert_newline_copy_indent_and_modifiers(Editor* editor, Command_So
         uint64_t columns =
             find_indent_width(buffer, it, Discover_Indent_Policy::COPY_PREVIOUS_LINE);
         insert_line_with_indent(&transaction, buffer->mode, it.position, &offset, columns);
+
+        // Insert comment.
+        Edit comment;
+        comment.position = it.position + offset;
+        comment.flags = Edit::INSERT;
+        if (insert_comment_1) {
+            comment.value = SSOStr::from_constant("//! ");
+            transaction.push(comment);
+            offset += comment.value.len();
+        } else if (insert_comment_2) {
+            comment.value = SSOStr::from_constant("/// ");
+            transaction.push(comment);
+            offset += comment.value.len();
+        } else if (insert_comment_3) {
+            comment.value = SSOStr::from_constant("// ");
+            transaction.push(comment);
+            offset += comment.value.len();
+        }
 
         if (insert_backslash && at_eol) {
             Edit bs;
