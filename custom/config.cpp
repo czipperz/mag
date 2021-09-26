@@ -609,14 +609,6 @@ void editor_created_callback(Editor* editor) {
     create_key_remap(editor->key_remap);
     create_key_map(editor->key_map);
     create_theme(editor->theme);
-
-    editor->misc_commands.reserve(6);
-    editor->misc_commands.push(COMMAND(command_swap_windows));
-    editor->misc_commands.push(COMMAND(command_restore_last_save_point));
-    editor->misc_commands.push(COMMAND(command_goto_top_of_window));
-    editor->misc_commands.push(COMMAND(command_goto_bottom_of_window));
-    editor->misc_commands.push(COMMAND(version_control::command_show_last_commit_to_file));
-    editor->misc_commands.push(COMMAND(version_control::command_show_commit));
 }
 
 static void directory_key_map(Key_Map& key_map) {

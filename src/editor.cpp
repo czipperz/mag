@@ -19,7 +19,6 @@ void Editor::drop() {
     }
     buffers.drop(cz::heap_allocator());
 
-    misc_commands.drop();
     key_map.drop();
     key_remap.drop();
     theme.drop();

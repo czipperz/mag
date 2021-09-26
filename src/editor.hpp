@@ -19,7 +19,6 @@ struct Editor {
 
     Key_Remap key_remap;
     Key_Map key_map;
-    cz::Heap_Vector<Command> misc_commands;
     Theme theme;
 
     cz::Buffer_Array copy_buffer;

@@ -164,9 +164,9 @@ static bool command_completion_engine(Editor* editor,
     CZ_DEFER(key_chain.drop());
     get_command_names(&context->results, allocator, &key_chain, editor->key_map);
 
-    context->results.reserve_exact(editor->misc_commands.len);
-    for (size_t i = 0; i < editor->misc_commands.len; ++i) {
-        context->results.push(cz::Str{editor->misc_commands[i].string}.clone(allocator));
+    context->results.reserve_exact(global_commands.len);
+    for (size_t i = 0; i < global_commands.len; ++i) {
+        context->results.push(global_commands[i].string);
     }
 
     cz::sort(context->results);
@@ -213,9 +213,9 @@ static void command_run_command_by_name_callback(Editor* editor,
     }
 
     if (!command) {
-        for (size_t i = 0; i < editor->misc_commands.len; ++i) {
-            if (str == editor->misc_commands[i].string) {
-                command = editor->misc_commands[i].function;
+        for (size_t i = 0; i < global_commands.len; ++i) {
+            if (str == global_commands[i].string) {
+                command = global_commands[i].function;
                 break;
             }
         }
