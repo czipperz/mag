@@ -480,6 +480,7 @@ bool parse_indent_rules(const Contents& contents,
                         bool* use_tabs) {
     bool found_indent_width = false;
     bool found_tab = false;
+    uint32_t min_indent_width = -1;
 
     // If we find a line indented with spaces then that is the indent width.
     Contents_Iterator it = contents.start();
@@ -493,10 +494,11 @@ bool parse_indent_rules(const Contents& contents,
             }
 
             found_indent_width = true;
-            *indent_width = num_spaces;
-            break;
+            min_indent_width = cz::min(min_indent_width, num_spaces);
         }
     }
+
+    *indent_width = min_indent_width;
 
     // Determine if tabs are used.
     it = contents.start();
@@ -527,7 +529,9 @@ bool parse_indent_rules(const Contents& contents,
 
             *use_tabs = true;
             *tab_width = 8;
-            *indent_width = num_spaces;
+            if (!found_indent_width) {
+                *indent_width = num_spaces;
+            }
             return true;
         }
     }
