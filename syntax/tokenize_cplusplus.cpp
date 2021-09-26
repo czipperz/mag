@@ -1154,7 +1154,7 @@ static bool handle_line_comment_doc(Contents_Iterator* iterator, Token* token, S
 static void handle_line_comment_doc_tilde(Contents_Iterator* iterator, Token* token, State* state);
 
 static void handle_line_comment(Contents_Iterator* iterator, Token* token, State* state) {
-    if (!iterator->at_eob()) {
+    if (state->comment == COMMENT_NULL && !iterator->at_eob()) {
         char ch = iterator->get();
         if (ch == '!' || ch == '/') {
             iterator->advance();
@@ -1168,7 +1168,25 @@ static void handle_line_comment(Contents_Iterator* iterator, Token* token, State
 
 static void handle_line_comment_normal(Contents_Iterator* iterator, Token* token, State* state) {
     token->type = Token_Type::COMMENT;
-    end_of_line(iterator);
+    if (state->comment == COMMENT_NULL) {
+        end_of_line(iterator);
+    } else {
+        // Find the first '\n' or '`'.
+        bool multi_line = (state->comment == COMMENT_LINE_INSIDE_MULTI_LINE ||
+                           state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE);
+        while (1) {
+            Contents_Iterator line_it = *iterator;
+            Contents_Iterator tick_it = *iterator;
+            bool found_line = find_bucket(&line_it, '\n');
+            bool found_tick =
+                (multi_line ? search_forward_bucket(&tick_it, "```") : find_bucket(&tick_it, '`'));
+            if (found_line || found_tick) {
+                iterator->advance_to(cz::min(line_it.position, tick_it.position));
+                break;
+            }
+            *iterator = line_it;
+        }
+    }
     token->end = iterator->position;
 }
 
@@ -1394,7 +1412,7 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
                                         bool first);
 
 static void handle_block_comment(Contents_Iterator* iterator, Token* token, State* state) {
-    if (!iterator->at_eob()) {
+    if (state->comment == COMMENT_NULL && !iterator->at_eob()) {
         char ch = iterator->get();
         if (ch == '!' || ch == '*') {
             iterator->advance();
@@ -1427,24 +1445,75 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
                                         Token* token,
                                         State* state,
                                         bool first) {
-    state->comment = COMMENT_NULL;
+    bool look_for_line = (state->comment == COMMENT_LINE_INSIDE_INLINE ||
+                          state->comment == COMMENT_LINE_INSIDE_MULTI_LINE);
+    bool found_line = false;
+    bool found_end = false;
+    bool found_tick = false;
+
     token->type = Token_Type::COMMENT;
+
     // Rate limit to one bucket (two at the start of the comment) to prevent
     // hanging when inserting '/*' at the start of a big buffer.  Align to
     // bucket boundaries to allow token streams to merge, which allows us to
     // avoid re-tokenizing a buffer on a miscellaneous change near the beginning.
-    if (first) {
-        if (search_forward_bucket(iterator, "*/")) {
-            iterator->advance(2);
-            token->end = iterator->position;
-            return;
+    if (state->comment == COMMENT_NULL) {
+        for (int i = 0; i < 1 + first; ++i) {
+            if (search_forward_bucket(iterator, "*/")) {
+                iterator->advance(2);
+                found_end = true;
+                break;
+            }
+        }
+    } else {
+        bool multi_line = (state->comment == COMMENT_LINE_INSIDE_MULTI_LINE ||
+                           state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE);
+        for (int i = 0; i < 1 + first; ++i) {
+            // Find the first '\n', '*/', or '`'.
+            Contents_Iterator line_it = *iterator;
+            Contents_Iterator end_it = *iterator;
+            Contents_Iterator tick_it = *iterator;
+            found_line = (look_for_line ? find_bucket(&line_it, '\n') : false);
+            found_end = search_forward_bucket(&end_it, "*/");
+            found_tick =
+                (multi_line ? search_forward_bucket(&tick_it, "```") : find_bucket(&tick_it, '`'));
+            if (found_line || found_end || found_tick) {
+                if (found_end)
+                    end_it.advance(2);
+
+                uint64_t min = cz::min(end_it.position, tick_it.position);
+                if (look_for_line) {
+                    min = cz::min(line_it.position, min);
+                    if (min == line_it.position) {
+                        found_end = false;
+                        found_tick = false;
+                    }
+                }
+                if (min == end_it.position) {
+                    found_line = false;
+                    found_tick = false;
+                }
+                if (min == tick_it.position) {
+                    found_line = false;
+                    found_end = false;
+                }
+
+                iterator->advance_to(min);
+                break;
+            }
         }
     }
-    if (search_forward_bucket(iterator, "*/")) {
-        iterator->advance(2);
-    } else {
-        state->comment = COMMENT_BLOCK_NORMAL;
+
+    if (found_line) {
+        state->comment = COMMENT_LINE_RESUME_INSIDE;
+    } else if (found_end) {
+        // '/* `/* */' should parse the final '*/' as ending the outer.
+        if (!look_for_line)
+            state->comment = COMMENT_NULL;
+    } else if (found_tick) {
+        state->comment = COMMENT_BLOCK_RESUME_INSIDE;
     }
+
     token->end = iterator->position;
 }
 
