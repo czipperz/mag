@@ -259,6 +259,7 @@ retry:
 
     case '!':
     case '~':
+    case '?':
         punctuation_simple(iterator, token, state);
         state->syntax = SYNTAX_IN_EXPR;
         return true;
