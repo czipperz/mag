@@ -258,9 +258,13 @@ retry:
 
     case '!':
     case '~':
-    case ',':
         punctuation_simple(iterator, token, state);
         state->syntax = SYNTAX_IN_EXPR;
+        return true;
+
+    case ',':
+        punctuation_simple(iterator, token, state);
+        // Don't change the state so parameters are all parsed the same way.
         return true;
 
     case ';':
