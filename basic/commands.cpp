@@ -959,8 +959,20 @@ static void fill_spaces(Client* client, Buffer* buffer, Window_Unified* window, 
 
     uint64_t max_region_size = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
-        if (max_region_size < cursors[c].end() - cursors[c].start()) {
-            max_region_size = cursors[c].end() - cursors[c].start();
+        uint64_t size = 0;
+        if (window->show_marks) {
+            size = cursors[c].end() - cursors[c].start();
+        } else {
+            Contents_Iterator start = buffer->contents.iterator_at(cursors[c].point);
+            func(&start);
+            if (start.position >= cursors[c].point) {
+                continue;
+            }
+            size = cursors[c].point - start.position;
+        }
+
+        if (max_region_size < size) {
+            max_region_size = size;
         }
     }
 
