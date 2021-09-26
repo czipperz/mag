@@ -236,8 +236,7 @@ static void command_run_command_by_name_callback(Editor* editor,
     Command_Source source;
     source.client = client;
     source.keys = {};
-    source.previous_command.function = command_run_command_by_name;
-    source.previous_command.string = "command_run_command_by_name";
+    source.previous_command = COMMAND(command_run_command_by_name);
     command(editor, source);
 }
 

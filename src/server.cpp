@@ -631,7 +631,7 @@ void Server::receive(Client* client, Key key) {
                                            &end, &max_depth)) {
             CZ_DEBUG_ASSERT(command.function != nullptr);
         } else {
-            command = {basic::command_invalid, "command_invalid"};
+            command = COMMAND(basic::command_invalid);
         }
 
         // Make the source of the command.
