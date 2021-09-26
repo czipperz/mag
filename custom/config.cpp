@@ -771,9 +771,6 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         break;
 
     case Buffer::FILE: {
-        parse_indent_rules(buffer->contents, &buffer->mode.indent_width, &buffer->mode.tab_width,
-                           &buffer->mode.use_tabs);
-
         buffer->mode.decorations.reserve(1);
         buffer->mode.decorations.push(syntax::decoration_line_ending_indicator());
 
@@ -952,6 +949,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
             git_edit_key_map(buffer->mode.key_map);
+            add_indent_overlays = false;
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else if (name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
@@ -1005,6 +1003,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_trailing_spaces({{}, 208, 0}));
             buffer->mode.overlays.push(syntax::overlay_incorrect_indent({{}, 208, 0}));
+
+            parse_indent_rules(buffer->contents, &buffer->mode.indent_width,
+                               &buffer->mode.tab_width, &buffer->mode.use_tabs);
         }
 
         break;
