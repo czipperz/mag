@@ -100,6 +100,50 @@ static void get_command_names(cz::Vector<cz::Str>* results,
     }
 }
 
+static cz::Str command_part(cz::Str string) {
+    return string.slice_end(string.find_index(' '));
+}
+
+static void dedup_commands(cz::Heap_Vector<cz::Str>* results_in, cz::Allocator allocator) {
+    if (results_in->len == 0)
+        return;
+
+    cz::Heap_Vector<cz::Str> results_out = {};
+    CZ_DEFER(results_out.drop());
+    results_out.reserve(1);
+    results_out.push((*results_in)[0]);
+
+    for (size_t i = 1; i < results_in->len; ++i) {
+        cz::Str previous_result = results_out.last();
+        cz::Str previous_command = command_part(previous_result);
+
+        cz::Str result = (*results_in)[i];
+        cz::Str command = command_part(result);
+
+        if (command != previous_command) {
+            results_out.reserve(1);
+            results_out.push(result);
+            continue;
+        }
+
+        bool previous_has_key = (previous_result.len != previous_command.len);
+        bool has_key = (result.len != command.len);
+        if (previous_has_key && has_key) {
+            cz::String combined = {};
+            combined.reserve_exact(allocator, result.len + previous_result.len - previous_command.len);
+            combined.append(result);
+            combined.append(previous_result.slice_start(previous_command.len));
+            results_out.last() = combined;
+        } else if (has_key) {
+            results_out.last() = result;
+        } else {
+            // Do nothing.
+        }
+    }
+
+    cz::swap(*results_in, results_out);
+}
+
 static bool command_completion_engine(Editor* editor,
                                       Completion_Engine_Context* context,
                                       bool is_initial_frame) {
@@ -125,7 +169,7 @@ static bool command_completion_engine(Editor* editor,
     }
 
     cz::sort(context->results);
-    cz::dedup(&context->results);
+    dedup_commands(&context->results, allocator);
 
     return true;
 }
