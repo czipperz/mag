@@ -1,6 +1,8 @@
 #include "help_commands.hpp"
 
+#include <cz/binary_search.hpp>
 #include <cz/char_type.hpp>
+#include <cz/compare.hpp>
 #include <cz/dedup.hpp>
 #include <cz/heap_string.hpp>
 #include <cz/sort.hpp>
@@ -131,7 +133,8 @@ static void dedup_commands(cz::Heap_Vector<cz::Str>* results_in, cz::Allocator a
         bool has_key = (result.len != command.len);
         if (previous_has_key && has_key) {
             cz::String combined = {};
-            combined.reserve_exact(allocator, result.len + previous_result.len - previous_command.len);
+            combined.reserve_exact(allocator,
+                                   result.len + previous_result.len - previous_command.len);
             combined.append(result);
             combined.append(previous_result.slice_start(previous_command.len));
             results_out.last() = combined;
@@ -213,11 +216,15 @@ static void command_run_command_by_name_callback(Editor* editor,
     }
 
     if (!command) {
-        for (size_t i = 0; i < global_commands.len; ++i) {
-            if (str == global_commands[i].string) {
-                command = global_commands[i].function;
-                break;
-            }
+        cz::String str2 = str.clone_null_terminate(cz::heap_allocator());
+        CZ_DEFER(str2.drop(cz::heap_allocator()));
+
+        size_t index;
+        if (cz::binary_search(global_commands.as_slice(), Command{nullptr, str2.buffer}, &index,
+                              [](Command left, Command right) {
+                                  return cz::compare(cz::Str{left.string}, cz::Str{right.string});
+                              })) {
+            command = global_commands[index].function;
         }
     }
 

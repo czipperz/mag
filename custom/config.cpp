@@ -3,6 +3,7 @@
 #include <Tracy.hpp>
 #include <cz/defer.hpp>
 #include <cz/path.hpp>
+#include <cz/sort.hpp>
 #include "basic/buffer_commands.hpp"
 #include "basic/build_commands.hpp"
 #include "basic/capitalization_commands.hpp"
@@ -609,6 +610,7 @@ void editor_created_callback(Editor* editor) {
     create_key_remap(editor->key_remap);
     create_key_map(editor->key_map);
     create_theme(editor->theme);
+    sort_global_commands();
 }
 
 static void directory_key_map(Key_Map& key_map) {

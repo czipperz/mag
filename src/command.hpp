@@ -28,6 +28,7 @@ struct Command_Source {
 
 extern cz::Heap_Vector<Command> global_commands;
 void register_global_command(Command command);
+void sort_global_commands();
 
 struct Command_Registrar {
     Command_Registrar(Command command) { register_global_command(command); }
