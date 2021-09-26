@@ -218,6 +218,7 @@ static void punctuation_double_or_set(Contents_Iterator* iterator,
 
 static void handle_line_comment(Contents_Iterator* iterator, Token* token, State* state);
 static void handle_block_comment(Contents_Iterator* iterator, Token* token, State* state);
+static bool at_end_of_block_comment(Contents_Iterator iterator, State state);
 
 static void handle_char(Contents_Iterator* iterator, Token* token, State* state);
 static void handle_string(Contents_Iterator* iterator, Token* token, State* state);
@@ -292,6 +293,13 @@ retry:
         return true;
 
     case '*':
+        // Parse '*/' inside an inline code block inside a block doc comment as end of comment.
+        if (at_end_of_block_comment(*iterator, *state)) {
+            state->comment = COMMENT_BLOCK_RESUME_INSIDE;
+            return resume_block_comment_doc(iterator, token, state);
+        }
+        // fallthrough
+
     case '=':
     case '^':
     case '%':
@@ -313,8 +321,13 @@ retry:
         token->type = Token_Type::PUNCTUATION;
         token->start = iterator->position;
         iterator->advance();
-        if (!iterator->at_eob() && iterator->get() == '*')  // .*
-            iterator->advance();
+        if (looking_at(*iterator, '*')) /* .* */ {
+            // Parse '.*/' inside an inline code block inside
+            // a block doc comment as '.' then end of comment.
+            if (!at_end_of_block_comment(*iterator, *state)) {
+                iterator->advance();
+            }
+        }
         if (looking_at(*iterator, ".."))  // ...
             iterator->advance(2);
         token->end = iterator->position;
@@ -332,8 +345,13 @@ retry:
                 iterator->advance();
             if (ch == '>') {  // ->
                 iterator->advance();
-                if (!iterator->at_eob() && ch == '*')  // ->*
-                    iterator->advance();
+                if (looking_at(*iterator, '*')) /* ->* */ {
+                    // Parse '->*/' inside an inline code block inside
+                    // a block doc comment as '->' then end of comment.
+                    if (!at_end_of_block_comment(*iterator, *state)) {
+                        iterator->advance();
+                    }
+                }
             }
         }
         token->end = iterator->position;
@@ -555,8 +573,8 @@ static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch
         return 0;
     case (3 << 8) | (uint8_t)'n':
         if (looking_at_no_bounds_check(start, "new")) {
-            // Note: treat as a type declaration keyword since it works pretty much the same way.
-            // return 2;
+            // Note: treat as a type declaration keyword since it works pretty much the same
+            // way. return 2;
             return 1;
         }
         // return 0;
@@ -1385,6 +1403,17 @@ static void handle_block_comment(Contents_Iterator* iterator, Token* token, Stat
         }
     }
     handle_block_comment_normal(iterator, token, state, true);
+}
+
+static bool at_end_of_block_comment(Contents_Iterator iterator, State state) {
+    if (state.comment == COMMENT_BLOCK_INSIDE_INLINE) {
+        Contents_Iterator test = iterator;
+        test.advance();
+        if (looking_at(test, '/')) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static bool resume_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state) {
