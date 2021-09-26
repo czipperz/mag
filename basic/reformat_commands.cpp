@@ -374,6 +374,7 @@ bool reformat_at(Client* client,
     return true;
 }
 
+REGISTER_COMMAND(command_reformat_paragraph);
 void command_reformat_paragraph(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -381,6 +382,7 @@ void command_reformat_paragraph(Editor* editor, Command_Source source) {
                 "");
 }
 
+REGISTER_COMMAND(command_reformat_comment_hash);
 void command_reformat_comment_hash(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

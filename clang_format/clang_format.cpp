@@ -293,6 +293,7 @@ static Asynchronous_Job job_clang_format(size_t change_index,
     return job;
 }
 
+REGISTER_COMMAND(command_clang_format_buffer);
 void command_clang_format_buffer(Editor* editor, Command_Source source) {
     ZoneScoped;
 

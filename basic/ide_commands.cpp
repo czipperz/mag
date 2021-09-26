@@ -1,4 +1,4 @@
-#include "indent_commands.hpp"
+#include "ide_commands.hpp"
 
 #include "basic/indent_commands.hpp"
 #include "basic/token_movement_commands.hpp"
@@ -12,6 +12,7 @@
 namespace mag {
 namespace basic {
 
+REGISTER_COMMAND(command_insert_open_pair);
 void command_insert_open_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -57,6 +58,7 @@ void command_insert_open_pair(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_insert_close_pair);
 void command_insert_close_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -105,6 +107,7 @@ void command_insert_close_pair(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_insert_newline_split_pairs);
 void command_insert_newline_split_pairs(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -150,6 +153,7 @@ void command_insert_newline_split_pairs(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_insert_pair);
 void command_insert_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

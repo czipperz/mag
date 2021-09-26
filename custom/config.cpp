@@ -111,7 +111,6 @@ bool default_use_carriage_returns = false;
 using namespace basic;
 
 #define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, COMMAND(FUNC)))
-#define COMMAND(FUNC) (Command{FUNC, #FUNC})
 
 void client_created_callback(Editor* editor, Client* client) {
     if (client->type == Client::NCURSES) {

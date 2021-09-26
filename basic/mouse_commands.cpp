@@ -74,6 +74,7 @@ static uint32_t mouse_click_row, mouse_click_column;
 static std::chrono::high_resolution_clock::time_point mouse_click_time;
 static const std::chrono::milliseconds mouse_click_elapsed{500};
 
+REGISTER_COMMAND(command_mouse_select_start);
 void command_mouse_select_start(Editor* editor, Command_Source source) {
     if (!source.client->mouse.window || source.client->mouse.window->tag != Window::UNIFIED) {
         return;
@@ -111,6 +112,7 @@ void command_mouse_select_start(Editor* editor, Command_Source source) {
     editor->add_synchronous_job(job);
 }
 
+REGISTER_COMMAND(command_copy_paste);
 void command_copy_paste(Editor* editor, Command_Source source) {
     bool copy;
     {

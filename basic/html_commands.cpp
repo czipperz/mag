@@ -6,6 +6,7 @@
 namespace mag {
 namespace html {
 
+REGISTER_COMMAND(command_comment);
 void command_comment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

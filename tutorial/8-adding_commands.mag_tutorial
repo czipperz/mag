@@ -31,12 +31,17 @@ reader/writer lock.  There are macros in the file "command_macros.hpp"
 that implement all the necessary interaction for you so you don't have
 to worry about it.  These macros are all prefixed with WITH_.
 
+The REGISTER_COMMAND macro will allow your command to be used with
+command_run_command_by_name (C-x), command_dump_key_map (F1), and
+other helpful commands even when it isn't bound to a key.
+
 
 Here is an example command that doesn't modify the buffer:
 
 #include "command_macros.hpp"
 #include "movement.hpp"
 
+REGISTER_COMMAND(command_forward_line);
 void command_forward_line(Editor* editor, Command_Source source) {
     // Lock the selected buffer in read mode.
     WITH_CONST_SELECTED_BUFFER(source.client);
@@ -64,6 +69,7 @@ void command_forward_line(Editor* editor, Command_Source source) {
 
 Here is an example command that does modify the buffer:
 
+REGISTER_COMMAND(command_insert_hello_world);
 void command_insert_hello_world(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

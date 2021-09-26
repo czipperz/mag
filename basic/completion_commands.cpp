@@ -11,6 +11,7 @@
 namespace mag {
 namespace basic {
 
+REGISTER_COMMAND(command_insert_completion);
 void command_insert_completion(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->mini_buffer_window();
     WITH_WINDOW_BUFFER(window);
@@ -57,11 +58,13 @@ void command_insert_completion(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_insert_completion_and_submit_mini_buffer);
 void command_insert_completion_and_submit_mini_buffer(Editor* editor, Command_Source source) {
     command_insert_completion(editor, source);
     command_submit_mini_buffer(editor, source);
 }
 
+REGISTER_COMMAND(command_next_completion);
 void command_next_completion(Editor* editor, Command_Source source) {
     Completion_Filter_Context* context =
         &source.client->mini_buffer_completion_cache.filter_context;
@@ -71,6 +74,7 @@ void command_next_completion(Editor* editor, Command_Source source) {
     ++context->selected;
 }
 
+REGISTER_COMMAND(command_previous_completion);
 void command_previous_completion(Editor* editor, Command_Source source) {
     Completion_Filter_Context* context =
         &source.client->mini_buffer_completion_cache.filter_context;
@@ -80,6 +84,7 @@ void command_previous_completion(Editor* editor, Command_Source source) {
     --context->selected;
 }
 
+REGISTER_COMMAND(command_completion_down_page);
 void command_completion_down_page(Editor* editor, Command_Source source) {
     Completion_Filter_Context* context =
         &source.client->mini_buffer_completion_cache.filter_context;
@@ -93,6 +98,7 @@ void command_completion_down_page(Editor* editor, Command_Source source) {
     context->selected += editor->theme.max_completion_results;
 }
 
+REGISTER_COMMAND(command_completion_up_page);
 void command_completion_up_page(Editor* editor, Command_Source source) {
     Completion_Filter_Context* context =
         &source.client->mini_buffer_completion_cache.filter_context;
@@ -103,12 +109,14 @@ void command_completion_up_page(Editor* editor, Command_Source source) {
     context->selected -= editor->theme.max_completion_results;
 }
 
+REGISTER_COMMAND(command_first_completion);
 void command_first_completion(Editor* editor, Command_Source source) {
     Completion_Filter_Context* context =
         &source.client->mini_buffer_completion_cache.filter_context;
     context->selected = 0;
 }
 
+REGISTER_COMMAND(command_last_completion);
 void command_last_completion(Editor* editor, Command_Source source) {
     Completion_Filter_Context* context =
         &source.client->mini_buffer_completion_cache.filter_context;
@@ -414,6 +422,7 @@ static void replace_identifier_with_identifier_start_at(Client* client,
     transaction.commit(client);
 }
 
+REGISTER_COMMAND(command_complete_at_point_nearest_matching);
 void command_complete_at_point_nearest_matching(Editor* editor, Command_Source source) {
     ZoneScoped;
     WITH_SELECTED_BUFFER(source.client);
@@ -441,6 +450,7 @@ void command_complete_at_point_nearest_matching(Editor* editor, Command_Source s
     replace_identifier_with_identifier_start_at(source.client, buffer, window, match_start);
 }
 
+REGISTER_COMMAND(command_complete_at_point_nearest_matching_before);
 void command_complete_at_point_nearest_matching_before(Editor* editor, Command_Source source) {
     ZoneScoped;
     WITH_SELECTED_BUFFER(source.client);
@@ -468,6 +478,7 @@ void command_complete_at_point_nearest_matching_before(Editor* editor, Command_S
     replace_identifier_with_identifier_start_at(source.client, buffer, window, match_start);
 }
 
+REGISTER_COMMAND(command_complete_at_point_nearest_matching_after);
 void command_complete_at_point_nearest_matching_after(Editor* editor, Command_Source source) {
     ZoneScoped;
     WITH_SELECTED_BUFFER(source.client);
@@ -495,6 +506,7 @@ void command_complete_at_point_nearest_matching_after(Editor* editor, Command_So
     replace_identifier_with_identifier_start_at(source.client, buffer, window, match_start);
 }
 
+REGISTER_COMMAND(command_complete_at_point_nearest_matching_before_after);
 void command_complete_at_point_nearest_matching_before_after(Editor* editor,
                                                              Command_Source source) {
     ZoneScoped;
@@ -631,6 +643,7 @@ static bool identifier_completion_engine(Editor* editor,
     return true;
 }
 
+REGISTER_COMMAND(command_complete_at_point_prompt_identifiers);
 void command_complete_at_point_prompt_identifiers(Editor* editor, Command_Source source) {
     ZoneScoped;
 
@@ -673,6 +686,7 @@ void command_complete_at_point_prompt_identifiers(Editor* editor, Command_Source
 // command_copy_rest_of_line_from_nearest_matching_identifier
 ///////////////////////////////////////////////////////////////////////////////
 
+REGISTER_COMMAND(command_copy_rest_of_line_from_nearest_matching_identifier);
 void command_copy_rest_of_line_from_nearest_matching_identifier(Editor* editor,
                                                                 Command_Source source) {
     ZoneScoped;

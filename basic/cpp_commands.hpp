@@ -7,6 +7,7 @@ struct Command_Source;
 namespace cpp {
 
 void command_comment(Editor* editor, Command_Source source);
+void command_comment_line_comments_only(Editor* editor, Command_Source source);
 void command_uncomment(Editor* editor, Command_Source source);
 
 void command_reformat_comment(Editor* editor, Command_Source source);

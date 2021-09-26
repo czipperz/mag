@@ -6,6 +6,7 @@
 namespace mag {
 namespace basic {
 
+REGISTER_COMMAND(command_shift_line_forward);
 void command_shift_line_forward(Editor* editor, Command_Source source) {
     // Logically shift a line forwards.  This works by physically shifting the opposite line
     // forward.
@@ -116,6 +117,7 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_shift_line_backward);
 void command_shift_line_backward(Editor* editor, Command_Source source) {
     // Logically shift a line backwards.  This works by physically shifting the opposite line
     // forward.

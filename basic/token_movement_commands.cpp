@@ -197,6 +197,7 @@ static void sort_cursors(cz::Slice<Cursor> cursors) {
              [](const Cursor* left, const Cursor* right) { return left->point < right->point; });
 }
 
+REGISTER_COMMAND(command_backward_up_token_pair);
 void command_backward_up_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
@@ -210,6 +211,7 @@ void command_backward_up_token_pair(Editor* editor, Command_Source source) {
     sort_cursors(window->cursors);
 }
 
+REGISTER_COMMAND(command_forward_up_token_pair);
 void command_forward_up_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
@@ -242,6 +244,7 @@ bool forward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_pa
     return true;
 }
 
+REGISTER_COMMAND(command_forward_token_pair);
 void command_forward_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
@@ -274,6 +277,7 @@ bool backward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_p
     return true;
 }
 
+REGISTER_COMMAND(command_backward_token_pair);
 void command_backward_token_pair(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
@@ -360,6 +364,7 @@ int backward_matching_token(Buffer* buffer, Contents_Iterator* iterator) {
     return 1;
 }
 
+REGISTER_COMMAND(command_backward_matching_token);
 void command_backward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     for (size_t cursor_index = 0; cursor_index < window->cursors.len; ++cursor_index) {
@@ -434,6 +439,7 @@ int forward_matching_token(Buffer* buffer, Contents_Iterator* iterator) {
     return 1;
 }
 
+REGISTER_COMMAND(command_forward_matching_token);
 void command_forward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     for (size_t cursor_index = 0; cursor_index < window->cursors.len; ++cursor_index) {
@@ -515,6 +521,7 @@ static void show_created_messages(Client* client, int created) {
     }
 }
 
+REGISTER_COMMAND(command_create_cursor_forward_matching_token);
 void command_create_cursor_forward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_matching_token(buffer, window);
@@ -525,6 +532,7 @@ void command_create_cursor_forward_matching_token(Editor* editor, Command_Source
     }
 }
 
+REGISTER_COMMAND(command_create_cursor_backward_matching_token);
 void command_create_cursor_backward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_matching_token(buffer, window);
@@ -535,6 +543,7 @@ void command_create_cursor_backward_matching_token(Editor* editor, Command_Sourc
     }
 }
 
+REGISTER_COMMAND(command_create_cursors_to_end_matching_token);
 void command_create_cursors_to_end_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_matching_token(buffer, window);
@@ -551,6 +560,7 @@ void command_create_cursors_to_end_matching_token(Editor* editor, Command_Source
     show_created_messages(source.client, created);
 }
 
+REGISTER_COMMAND(command_create_cursors_to_start_matching_token);
 void command_create_cursors_to_start_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_matching_token(buffer, window);
@@ -567,6 +577,7 @@ void command_create_cursors_to_start_matching_token(Editor* editor, Command_Sour
     show_created_messages(source.client, created);
 }
 
+REGISTER_COMMAND(command_create_all_cursors_matching_token);
 void command_create_all_cursors_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_matching_token(buffer, window);
@@ -587,6 +598,7 @@ void command_create_all_cursors_matching_token(Editor* editor, Command_Source so
     show_created_messages(source.client, created);
 }
 
+REGISTER_COMMAND(command_create_all_cursors_matching_token_or_search);
 void command_create_all_cursors_matching_token_or_search(Editor* editor, Command_Source source) {
     if (source.client->selected_window()->show_marks) {
         return command_create_cursors_all_search(editor, source);
@@ -595,6 +607,7 @@ void command_create_all_cursors_matching_token_or_search(Editor* editor, Command
     }
 }
 
+REGISTER_COMMAND(command_delete_token);
 void command_delete_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -630,6 +643,7 @@ void command_delete_token(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_delete_forward_token);
 void command_delete_forward_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -662,6 +676,7 @@ void command_delete_forward_token(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_delete_backward_token);
 void command_delete_backward_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -694,6 +709,7 @@ void command_delete_backward_token(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_duplicate_token);
 void command_duplicate_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -742,6 +758,7 @@ void command_duplicate_token(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_transpose_tokens);
 void command_transpose_tokens(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

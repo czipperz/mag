@@ -9,6 +9,7 @@
 namespace mag {
 namespace basic {
 
+REGISTER_COMMAND(command_build_debug_vc_root);
 void command_build_debug_vc_root(Editor* editor, Command_Source source) {
     cz::String top_level_path = {};
     CZ_DEFER(top_level_path.drop(cz::heap_allocator()));

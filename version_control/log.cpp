@@ -12,6 +12,7 @@ namespace version_control {
 // command_show_last_commit_to_file
 ///////////////////////////////////////////////////////////////////////////////
 
+REGISTER_COMMAND(command_show_last_commit_to_file);
 void command_show_last_commit_to_file(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -65,6 +66,7 @@ static void command_show_commit_callback(Editor* editor, Client* client, cz::Str
                         &handle);
 }
 
+REGISTER_COMMAND(command_show_commit);
 void command_show_commit(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Show commit: ";

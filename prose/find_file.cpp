@@ -365,10 +365,12 @@ static void find_file(Editor* editor,
     };
 }
 
+REGISTER_COMMAND(command_find_file_in_current_directory);
 void command_find_file_in_current_directory(Editor* editor, Command_Source source) {
     find_file(editor, source.client, "Find file in current directory: ", copy_buffer_directory);
 }
 
+REGISTER_COMMAND(command_find_file_in_version_control);
 void command_find_file_in_version_control(Editor* editor, Command_Source source) {
     find_file(editor, source.client,
               "Find file in version control: ", copy_version_control_directory);

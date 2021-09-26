@@ -26,8 +26,10 @@
 namespace mag {
 namespace basic {
 
+REGISTER_COMMAND(command_do_nothing);
 void command_do_nothing(Editor* editor, Command_Source source) {}
 
+REGISTER_COMMAND(command_invalid);
 void command_invalid(Editor* editor, Command_Source source) {
     // Print a message that this key press failed.
     cz::String message = {};
@@ -52,44 +54,53 @@ void command_invalid(Editor* editor, Command_Source source) {
     source.client->show_message(message);
 }
 
+REGISTER_COMMAND(command_toggle_read_only);
 void command_toggle_read_only(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     buffer->read_only = !buffer->read_only;
 }
 
+REGISTER_COMMAND(command_toggle_pinned);
 void command_toggle_pinned(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     window->pinned = !window->pinned;
 }
 
+REGISTER_COMMAND(command_toggle_draw_line_numbers);
 void command_toggle_draw_line_numbers(Editor* editor, Command_Source source) {
     editor->theme.draw_line_numbers = !editor->theme.draw_line_numbers;
 }
 
+REGISTER_COMMAND(command_toggle_line_feed);
 void command_toggle_line_feed(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     buffer->use_carriage_returns = !buffer->use_carriage_returns;
 }
 
+REGISTER_COMMAND(command_toggle_render_bucket_boundaries);
 void command_toggle_render_bucket_boundaries(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     buffer->mode.render_bucket_boundaries = !buffer->mode.render_bucket_boundaries;
 }
 
+REGISTER_COMMAND(command_toggle_use_tabs);
 void command_toggle_use_tabs(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     buffer->mode.use_tabs = !buffer->mode.use_tabs;
 }
 
+REGISTER_COMMAND(command_toggle_animated_scrolling);
 void command_toggle_animated_scrolling(Editor* editor, Command_Source source) {
     editor->theme.allow_animated_scrolling = !editor->theme.allow_animated_scrolling;
 }
 
+REGISTER_COMMAND(command_toggle_wrap_long_lines);
 void command_toggle_wrap_long_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
 }
 
+REGISTER_COMMAND(command_toggle_insert_replace);
 void command_toggle_insert_replace(Editor* editor, Command_Source source) {
     editor->theme.insert_replace = !editor->theme.insert_replace;
     if (editor->theme.insert_replace) {
@@ -247,6 +258,7 @@ static bool configurations_completion_engine(Editor* editor,
     return true;
 }
 
+REGISTER_COMMAND(command_configure);
 void command_configure(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Configuration to change: ";
@@ -255,11 +267,13 @@ void command_configure(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_show_marks);
 void command_show_marks(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     window->show_marks = true;
 }
 
+REGISTER_COMMAND(command_set_mark);
 void command_set_mark(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;
@@ -269,6 +283,7 @@ void command_set_mark(Editor* editor, Command_Source source) {
     window->show_marks = true;
 }
 
+REGISTER_COMMAND(command_swap_mark_point);
 void command_swap_mark_point(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;
@@ -280,42 +295,49 @@ void command_swap_mark_point(Editor* editor, Command_Source source) {
              [](const Cursor* left, const Cursor* right) { return left->point < right->point; });
 }
 
+REGISTER_COMMAND(command_forward_char);
 void command_forward_char(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(forward_char);
 }
 
+REGISTER_COMMAND(command_backward_char);
 void command_backward_char(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(backward_char);
 }
 
+REGISTER_COMMAND(command_forward_word);
 void command_forward_word(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(forward_word);
 }
 
+REGISTER_COMMAND(command_backward_word);
 void command_backward_word(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(backward_word);
 }
 
+REGISTER_COMMAND(command_forward_line);
 void command_forward_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS([&](Contents_Iterator* it) { forward_line(buffer->mode, it); });
 }
 
+REGISTER_COMMAND(command_backward_line);
 void command_backward_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(buffer->mode, it); });
 }
 
+REGISTER_COMMAND(command_forward_line_single_cursor_visual);
 void command_forward_line_single_cursor_visual(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
@@ -327,6 +349,7 @@ void command_forward_line_single_cursor_visual(Editor* editor, Command_Source so
     }
 }
 
+REGISTER_COMMAND(command_backward_line_single_cursor_visual);
 void command_backward_line_single_cursor_visual(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
@@ -338,18 +361,21 @@ void command_backward_line_single_cursor_visual(Editor* editor, Command_Source s
     }
 }
 
+REGISTER_COMMAND(command_forward_paragraph);
 void command_forward_paragraph(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(forward_paragraph);
 }
 
+REGISTER_COMMAND(command_backward_paragraph);
 void command_backward_paragraph(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(backward_paragraph);
 }
 
+REGISTER_COMMAND(command_end_of_buffer);
 void command_end_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     kill_extra_cursors(window, source.client);
@@ -360,6 +386,7 @@ void command_end_of_buffer(Editor* editor, Command_Source source) {
     window->cursors[0].point = buffer->contents.len;
 }
 
+REGISTER_COMMAND(command_start_of_buffer);
 void command_start_of_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     kill_extra_cursors(window, source.client);
@@ -370,11 +397,13 @@ void command_start_of_buffer(Editor* editor, Command_Source source) {
     window->cursors[0].point = 0;
 }
 
+REGISTER_COMMAND(command_push_jump);
 void command_push_jump(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     push_jump(window, source.client, buffer);
 }
 
+REGISTER_COMMAND(command_unpop_jump);
 void command_unpop_jump(Editor* editor, Command_Source source) {
     while (1) {
         Jump* jump = source.client->jump_chain.unpop();
@@ -393,6 +422,7 @@ void command_unpop_jump(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_pop_jump);
 void command_pop_jump(Editor* editor, Command_Source source) {
     if (source.client->jump_chain.index == source.client->jump_chain.jumps.len) {
         WITH_CONST_SELECTED_BUFFER(source.client);
@@ -416,30 +446,35 @@ void command_pop_jump(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_end_of_line);
 void command_end_of_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(end_of_line);
 }
 
+REGISTER_COMMAND(command_start_of_line);
 void command_start_of_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(start_of_line);
 }
 
+REGISTER_COMMAND(command_start_of_line_text);
 void command_start_of_line_text(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(start_of_line_text);
 }
 
+REGISTER_COMMAND(command_end_of_line_text);
 void command_end_of_line_text(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     TRANSFORM_POINTS(end_of_line_text);
 }
 
+REGISTER_COMMAND(command_delete_backward_char);
 void command_delete_backward_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -568,6 +603,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
     DELETE_BACKWARD(backward_char, command_delete_backward_char);
 }
 
+REGISTER_COMMAND(command_delete_forward_char);
 void command_delete_forward_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -614,16 +650,19 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
     DELETE_FORWARD(forward_char, command_delete_forward_char);
 }
 
+REGISTER_COMMAND(command_delete_backward_word);
 void command_delete_backward_word(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     DELETE_BACKWARD(backward_word, nullptr);
 }
 
+REGISTER_COMMAND(command_delete_forward_word);
 void command_delete_forward_word(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     DELETE_FORWARD(forward_word, nullptr);
 }
 
+REGISTER_COMMAND(command_transpose_characters);
 void command_transpose_characters(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -653,6 +692,7 @@ void command_transpose_characters(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_transpose_words);
 void command_transpose_words(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -713,6 +753,7 @@ void command_transpose_words(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_open_line);
 void command_open_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     insert_char(source.client, buffer, window, '\n');
@@ -720,11 +761,13 @@ void command_open_line(Editor* editor, Command_Source source) {
     TRANSFORM_POINTS(backward_char);
 }
 
+REGISTER_COMMAND(command_insert_newline_no_indent);
 void command_insert_newline_no_indent(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     insert_char(source.client, buffer, window, '\n');
 }
 
+REGISTER_COMMAND(command_duplicate_line);
 void command_duplicate_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -820,6 +863,7 @@ static void command_duplicate_line_prompt_callback(Editor* editor,
     transaction.commit(client);
 }
 
+REGISTER_COMMAND(command_duplicate_line_prompt);
 void command_duplicate_line_prompt(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Times to duplicate: ";
@@ -827,6 +871,7 @@ void command_duplicate_line_prompt(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_delete_line);
 void command_delete_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -859,6 +904,7 @@ void command_delete_line(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_delete_end_of_line);
 void command_delete_end_of_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -889,6 +935,7 @@ void command_delete_end_of_line(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_delete_start_of_line_text);
 void command_delete_start_of_line_text(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -919,6 +966,7 @@ void command_delete_start_of_line_text(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_delete_start_of_line);
 void command_delete_start_of_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -1013,6 +1061,7 @@ static void fill_spaces(Client* client, Buffer* buffer, Window_Unified* window, 
     transaction.commit(client);
 }
 
+REGISTER_COMMAND(command_fill_region_with_spaces);
 void command_fill_region_with_spaces(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!window->show_marks) {
@@ -1023,11 +1072,13 @@ void command_fill_region_with_spaces(Editor* editor, Command_Source source) {
                 [](Contents_Iterator*) { CZ_PANIC("Buffer mutated while locked"); });
 }
 
+REGISTER_COMMAND(command_fill_region_or_solt_with_spaces);
 void command_fill_region_or_solt_with_spaces(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     fill_spaces(source.client, buffer, window, start_of_line_text);
 }
 
+REGISTER_COMMAND(command_undo);
 void command_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->undo()) {
@@ -1045,6 +1096,7 @@ void command_undo(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_redo);
 void command_redo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->redo()) {
@@ -1062,6 +1114,7 @@ void command_redo(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_stop_action);
 void command_stop_action(Editor* editor, Command_Source source) {
     const char* message = nullptr;
 
@@ -1093,6 +1146,7 @@ void command_stop_action(Editor* editor, Command_Source source) {
     source.client->show_message(message);
 }
 
+REGISTER_COMMAND(command_quit);
 void command_quit(Editor* editor, Command_Source source) {
     source.client->queue_quit = true;
 }
@@ -1136,6 +1190,7 @@ static bool create_cursor_forward_line(Editor* editor,
     }
 }
 
+REGISTER_COMMAND(command_create_cursor_forward_line);
 void command_create_cursor_forward_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     if (!create_cursor_forward_line(editor, buffer, window)) {
@@ -1165,6 +1220,7 @@ static bool create_cursor_backward_line(Editor* editor,
     }
 }
 
+REGISTER_COMMAND(command_create_cursor_backward_line);
 void command_create_cursor_backward_line(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     if (!create_cursor_backward_line(editor, buffer, window)) {
@@ -1172,6 +1228,7 @@ void command_create_cursor_backward_line(Editor* editor, Command_Source source) 
     }
 }
 
+REGISTER_COMMAND(command_create_cursor_forward);
 void command_create_cursor_forward(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created;
@@ -1187,6 +1244,7 @@ void command_create_cursor_forward(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_create_cursor_backward);
 void command_create_cursor_backward(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created;
@@ -1202,6 +1260,7 @@ void command_create_cursor_backward(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_create_cursors_all_search);
 void command_create_cursors_all_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
@@ -1222,6 +1281,7 @@ void command_create_cursors_all_search(Editor* editor, Command_Source source) {
     show_created_messages(editor, source.client, created);
 }
 
+REGISTER_COMMAND(command_create_cursors_to_end_search);
 void command_create_cursors_to_end_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_search(buffer, window);
@@ -1232,6 +1292,7 @@ void command_create_cursors_to_end_search(Editor* editor, Command_Source source)
     show_created_messages(editor, source.client, created);
 }
 
+REGISTER_COMMAND(command_create_cursors_to_start_search);
 void command_create_cursors_to_start_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
@@ -1318,6 +1379,7 @@ static void command_filter_cursors_not_looking_at_callback(Editor* editor,
     }
 }
 
+REGISTER_COMMAND(command_filter_cursors_looking_at);
 void command_filter_cursors_looking_at(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Filter looking at: ";
@@ -1325,6 +1387,7 @@ void command_filter_cursors_looking_at(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_filter_cursors_not_looking_at);
 void command_filter_cursors_not_looking_at(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Filter not looking at: ";
@@ -1386,6 +1449,7 @@ static void create_cursors_last_change(Window_Unified* window,
     }
 }
 
+REGISTER_COMMAND(command_create_cursors_undo);
 void command_create_cursors_undo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->undo()) {
@@ -1397,6 +1461,7 @@ void command_create_cursors_undo(Editor* editor, Command_Source source) {
     create_cursors_last_change(window, buffer, source.client);
 }
 
+REGISTER_COMMAND(command_create_cursors_redo);
 void command_create_cursors_redo(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     if (!buffer->redo()) {
@@ -1408,6 +1473,7 @@ void command_create_cursors_redo(Editor* editor, Command_Source source) {
     create_cursors_last_change(window, buffer, source.client);
 }
 
+REGISTER_COMMAND(command_create_cursors_last_change);
 void command_create_cursors_last_change(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     if (buffer->changes.len == 0) {
@@ -1417,6 +1483,7 @@ void command_create_cursors_last_change(Editor* editor, Command_Source source) {
     create_cursors_last_change(window, buffer, source.client);
 }
 
+REGISTER_COMMAND(command_create_cursors_lines_in_region);
 void command_create_cursors_lines_in_region(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
@@ -1462,6 +1529,7 @@ void command_create_cursors_lines_in_region(Editor* editor, Command_Source sourc
     window->show_marks = false;
 }
 
+REGISTER_COMMAND(command_cursors_align);
 void command_cursors_align(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -1523,6 +1591,7 @@ void command_cursors_align(Editor* editor, Command_Source source) {
     transaction.commit(source.client, command_cursors_align);
 }
 
+REGISTER_COMMAND(command_cursors_align_leftpad0);
 void command_cursors_align_leftpad0(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -1596,6 +1665,7 @@ void command_cursors_align_leftpad0(Editor* editor, Command_Source source) {
     transaction.commit(source.client, command_cursors_align);
 }
 
+REGISTER_COMMAND(command_remove_cursors_at_empty_lines);
 void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
@@ -1628,6 +1698,7 @@ void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source
     }
 }
 
+REGISTER_COMMAND(command_remove_selected_cursor);
 void command_remove_selected_cursor(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
 
@@ -1684,6 +1755,7 @@ static void command_goto_position_callback(Editor* editor,
     center_in_window(window, buffer->mode, editor->theme, iterator);
 }
 
+REGISTER_COMMAND(command_goto_line);
 void command_goto_line(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Goto line: ";
@@ -1691,6 +1763,7 @@ void command_goto_line(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_goto_position);
 void command_goto_position(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Goto position: ";
@@ -1698,6 +1771,7 @@ void command_goto_position(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_show_file_length_info);
 void command_show_file_length_info(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
@@ -1734,6 +1808,7 @@ void command_show_file_length_info(Editor* editor, Command_Source source) {
     source.client->show_message(string);
 }
 
+REGISTER_COMMAND(command_path_up_directory);
 void command_path_up_directory(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -1762,6 +1837,7 @@ void command_path_up_directory(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_mark_buffer);
 void command_mark_buffer(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     if (window->cursors.len > 1 ||
@@ -1797,10 +1873,12 @@ void submit_mini_buffer(Editor* editor, Client* client) {
                               message.response_callback_data);
 }
 
+REGISTER_COMMAND(command_submit_mini_buffer);
 void command_submit_mini_buffer(Editor* editor, Command_Source source) {
     submit_mini_buffer(editor, source.client);
 }
 
+REGISTER_COMMAND(command_insert_home_directory);
 void command_insert_home_directory(Editor* editor, Command_Source source) {
     if (!user_home_path) {
         return;
@@ -1843,16 +1921,19 @@ void command_insert_home_directory(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_increase_font_size);
 void command_increase_font_size(Editor* editor, Command_Source source) {
     editor->theme.font_size += 2;
 }
 
+REGISTER_COMMAND(command_decrease_font_size);
 void command_decrease_font_size(Editor* editor, Command_Source source) {
     if (editor->theme.font_size >= 2) {
         editor->theme.font_size -= 2;
     }
 }
 
+REGISTER_COMMAND(command_show_date_of_build);
 void command_show_date_of_build(Editor* editor, Command_Source source) {
     char buffer[20];
     format_date(program_date, buffer);
@@ -1862,11 +1943,13 @@ void command_show_date_of_build(Editor* editor, Command_Source source) {
     source.client->show_message(message);
 }
 
+REGISTER_COMMAND(command_comment_hash);
 void command_comment_hash(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     generic_line_comment(source.client, buffer, window, "#", /*add=*/true);
 }
 
+REGISTER_COMMAND(command_uncomment_hash);
 void command_uncomment_hash(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     generic_line_comment(source.client, buffer, window, "#", /*add=*/false);
@@ -2013,31 +2096,37 @@ static void sort_lines(Client* client, Buffer* buffer, Window_Unified* window, i
     transaction.commit(client);
 }
 
+REGISTER_COMMAND(command_sort_lines_ascending);
 void command_sort_lines_ascending(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     sort_lines(source.client, buffer, window, 0);
 }
 
+REGISTER_COMMAND(command_sort_lines_descending);
 void command_sort_lines_descending(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     sort_lines(source.client, buffer, window, 1);
 }
 
+REGISTER_COMMAND(command_sort_lines_ascending_shortlex);
 void command_sort_lines_ascending_shortlex(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     sort_lines(source.client, buffer, window, 2);
 }
 
+REGISTER_COMMAND(command_sort_lines_descending_shortlex);
 void command_sort_lines_descending_shortlex(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     sort_lines(source.client, buffer, window, 3);
 }
 
+REGISTER_COMMAND(command_flip_lines);
 void command_flip_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     sort_lines(source.client, buffer, window, 4);
 }
 
+REGISTER_COMMAND(command_restore_last_save_point);
 void command_restore_last_save_point(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -2100,6 +2189,7 @@ static void command_run_command_ignore_result_callback(Editor* editor,
     editor->add_asynchronous_job(job_process_silent(process));
 }
 
+REGISTER_COMMAND(command_run_command_for_result);
 void command_run_command_for_result(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Shell buffer: ";
@@ -2107,6 +2197,7 @@ void command_run_command_for_result(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_run_command_ignore_result);
 void command_run_command_ignore_result(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Shell silent: ";

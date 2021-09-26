@@ -36,6 +36,7 @@ static bool is_block(Contents_Iterator start, Contents_Iterator end) {
     return block;
 }
 
+REGISTER_COMMAND(command_comment);
 void command_comment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -114,16 +115,19 @@ void command_comment(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_comment_line_comments_only);
 void command_comment_line_comments_only(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     generic_line_comment(source.client, buffer, window, "//", /*add=*/true);
 }
 
+REGISTER_COMMAND(command_uncomment);
 void command_uncomment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     generic_line_comment(source.client, buffer, window, "//", /*add=*/false);
 }
 
+REGISTER_COMMAND(command_reformat_comment);
 void command_reformat_comment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -150,6 +154,7 @@ void command_reformat_comment(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_reformat_comment_block_only);
 void command_reformat_comment_block_only(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -366,16 +371,19 @@ static void change_indirection(Client* client,
     transaction.commit(client);
 }
 
+REGISTER_COMMAND(command_make_direct);
 void command_make_direct(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     change_indirection(source.client, buffer, window, false);
 }
 
+REGISTER_COMMAND(command_make_indirect);
 void command_make_indirect(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     change_indirection(source.client, buffer, window, true);
 }
 
+REGISTER_COMMAND(command_extract_variable);
 void command_extract_variable(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

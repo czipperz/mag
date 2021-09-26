@@ -99,6 +99,7 @@ static void reload_directory_window(Editor* editor,
     window->cursors[0].point = window->cursors[0].mark = cursor_position;
 }
 
+REGISTER_COMMAND(command_directory_reload);
 void command_directory_reload(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -110,6 +111,7 @@ void command_directory_reload(Editor* editor, Command_Source source) {
     reload_directory_window(editor, source.client, window, buffer, has_entry, selected.as_str());
 }
 
+REGISTER_COMMAND(command_directory_toggle_sort);
 void command_directory_toggle_sort(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -250,6 +252,7 @@ static void command_directory_delete_path_callback(Editor* editor, Client* clien
     }
 }
 
+REGISTER_COMMAND(command_directory_delete_path);
 void command_directory_delete_path(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Submit to confirm delete path: ";
@@ -349,6 +352,7 @@ static void command_directory_copy_path_callback(Editor* editor,
     }
 }
 
+REGISTER_COMMAND(command_directory_copy_path_complete_path);
 void command_directory_copy_path_complete_path(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -369,6 +373,7 @@ void command_directory_copy_path_complete_path(Editor* editor, Command_Source so
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_directory_copy_path_complete_directory);
 void command_directory_copy_path_complete_directory(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -428,6 +433,7 @@ static void command_directory_rename_path_callback(Editor* editor,
     }
 }
 
+REGISTER_COMMAND(command_directory_rename_path_complete_path);
 void command_directory_rename_path_complete_path(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -448,6 +454,7 @@ void command_directory_rename_path_complete_path(Editor* editor, Command_Source 
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_directory_rename_path_complete_directory);
 void command_directory_rename_path_complete_directory(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -465,6 +472,7 @@ void command_directory_rename_path_complete_directory(Editor* editor, Command_So
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_directory_open_path);
 void command_directory_open_path(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -484,6 +492,7 @@ void command_directory_open_path(Editor* editor, Command_Source source) {
 
 const char* terminal_script = "xterm";
 
+REGISTER_COMMAND(command_directory_run_path);
 void command_directory_run_path(Editor* editor, Command_Source source) {
     cz::String directory = {};
     CZ_DEFER(directory.drop(cz::heap_allocator()));
@@ -541,6 +550,7 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
     editor->add_asynchronous_job(job_process_silent(process));
 }
 
+REGISTER_COMMAND(command_launch_terminal);
 void command_launch_terminal(Editor* editor, Command_Source source) {
     cz::String directory = {};
     CZ_DEFER(directory.drop(cz::heap_allocator()));
@@ -608,6 +618,7 @@ static void command_create_directory_callback(Editor* editor,
     }
 }
 
+REGISTER_COMMAND(command_create_directory);
 void command_create_directory(Editor* editor, Command_Source source) {
     cz::String selected_window_directory = {};
     CZ_DEFER(selected_window_directory.drop(cz::heap_allocator()));

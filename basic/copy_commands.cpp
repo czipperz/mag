@@ -39,6 +39,7 @@ static void cut_cursor(Cursor* cursor,
     save_copy(copy_chain, editor, edit.value, client);
 }
 
+REGISTER_COMMAND(command_cut);
 void command_cut(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -77,6 +78,7 @@ static void copy_cursor(Cursor* cursor,
               client);
 }
 
+REGISTER_COMMAND(command_copy);
 void command_copy(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -149,6 +151,7 @@ static void run_paste(Client* client, Window_Unified* window, Buffer* buffer) {
     }
 }
 
+REGISTER_COMMAND(command_paste);
 void command_paste(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     source.client->update_global_copy_chain(editor);
@@ -159,6 +162,7 @@ void command_paste(Editor* editor, Command_Source source) {
     run_paste(source.client, window, buffer);
 }
 
+REGISTER_COMMAND(command_paste_previous);
 void command_paste_previous(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;
@@ -215,6 +219,7 @@ static void copy_length_cursor(Cursor* cursor,
     save_copy(copy_chain, editor, SSOStr::from_constant({buffer, len}), client);
 }
 
+REGISTER_COMMAND(command_copy_selected_region_length);
 void command_copy_selected_region_length(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;
@@ -281,6 +286,7 @@ static cz::String copy_cursors_as_lines(Editor* editor,
     return string;
 }
 
+REGISTER_COMMAND(command_cursors_cut_as_lines);
 void command_cursors_cut_as_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -310,6 +316,7 @@ void command_cursors_cut_as_lines(Editor* editor, Command_Source source) {
     window->show_marks = false;
 }
 
+REGISTER_COMMAND(command_cursors_copy_as_lines);
 void command_cursors_copy_as_lines(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
@@ -369,6 +376,7 @@ static void run_paste_as_lines(Client* client, cz::Slice<Cursor> cursors, Buffer
     transaction.commit(client);
 }
 
+REGISTER_COMMAND(command_cursors_paste_as_lines);
 void command_cursors_paste_as_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     source.client->update_global_copy_chain(editor);
@@ -380,6 +388,7 @@ void command_cursors_paste_as_lines(Editor* editor, Command_Source source) {
     run_paste_as_lines(source.client, cursors, buffer);
 }
 
+REGISTER_COMMAND(command_cursors_paste_previous_as_lines);
 void command_cursors_paste_previous_as_lines(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_window();
     cz::Slice<Cursor> cursors = window->cursors;

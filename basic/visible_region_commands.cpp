@@ -13,6 +13,7 @@ void center_selected_cursor(Editor* editor, Window_Unified* window, const Buffer
                      buffer->contents.iterator_at(window->cursors[window->selected_cursor].point));
 }
 
+REGISTER_COMMAND(command_center_in_window);
 void command_center_in_window(Editor* editor, Command_Source source) {
     // If we have a one line mini buffer then we want to center the normal window 100% of the time.
     Window_Unified* window = source.client->selected_normal_window;
@@ -24,6 +25,7 @@ void command_center_in_window(Editor* editor, Command_Source source) {
     center_selected_cursor(editor, window, buffer);
 }
 
+REGISTER_COMMAND(command_goto_center_of_window);
 void command_goto_center_of_window(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
@@ -32,6 +34,7 @@ void command_goto_center_of_window(Editor* editor, Command_Source source) {
         center_of_window(window, buffer->mode, &buffer->contents).position;
 }
 
+REGISTER_COMMAND(command_goto_top_of_window);
 void command_goto_top_of_window(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
@@ -40,6 +43,7 @@ void command_goto_top_of_window(Editor* editor, Command_Source source) {
         top_of_window(window, buffer->mode, editor->theme, &buffer->contents).position;
 }
 
+REGISTER_COMMAND(command_goto_bottom_of_window);
 void command_goto_bottom_of_window(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
@@ -56,6 +60,7 @@ static size_t subtract_bounded(size_t left, size_t right) {
     }
 }
 
+REGISTER_COMMAND(command_up_page);
 void command_up_page(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
@@ -83,6 +88,7 @@ void command_up_page(Editor* editor, Command_Source source) {
     window->cursors[0].point = it.position;
 }
 
+REGISTER_COMMAND(command_down_page);
 void command_down_page(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
@@ -147,16 +153,20 @@ static void scroll_up(Editor* editor, Command_Source source, size_t num) {
     }
 }
 
+REGISTER_COMMAND(command_scroll_down);
 void command_scroll_down(Editor* editor, Command_Source source) {
     scroll_down(editor, source, editor->theme.mouse_scroll_rows);
 }
+REGISTER_COMMAND(command_scroll_up);
 void command_scroll_up(Editor* editor, Command_Source source) {
     scroll_up(editor, source, editor->theme.mouse_scroll_rows);
 }
 
+REGISTER_COMMAND(command_scroll_down_one);
 void command_scroll_down_one(Editor* editor, Command_Source source) {
     scroll_down(editor, source, 1);
 }
+REGISTER_COMMAND(command_scroll_up_one);
 void command_scroll_up_one(Editor* editor, Command_Source source) {
     scroll_up(editor, source, 1);
 }
@@ -245,9 +255,11 @@ static void scroll_right(Editor* editor, Command_Source source, size_t num) {
     }
 }
 
+REGISTER_COMMAND(command_scroll_left);
 void command_scroll_left(Editor* editor, Command_Source source) {
     scroll_left(editor, source, editor->theme.mouse_scroll_cols);
 }
+REGISTER_COMMAND(command_scroll_right);
 void command_scroll_right(Editor* editor, Command_Source source) {
     scroll_right(editor, source, editor->theme.mouse_scroll_cols);
 }

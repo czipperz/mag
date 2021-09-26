@@ -33,6 +33,7 @@ static void command_apply_diff_callback(Editor* editor,
     apply_diff_file(editor, client, buffer, file);
 }
 
+REGISTER_COMMAND(command_apply_diff);
 void command_apply_diff(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Diff to apply: ";

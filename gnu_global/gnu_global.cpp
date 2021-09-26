@@ -262,6 +262,7 @@ void lookup_and_prompt(Editor* editor, Client* client, const char* directory, cz
     prompt_open_tags(editor, client, tags, str_buffer);
 }
 
+REGISTER_COMMAND(command_lookup_at_point);
 void command_lookup_at_point(Editor* editor, Command_Source source) {
     ZoneScoped;
 
@@ -290,6 +291,7 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
     lookup_and_prompt(editor, source.client, directory.buffer, query.as_str());
 }
 
+REGISTER_COMMAND(command_move_mouse_and_lookup_at_point);
 void command_move_mouse_and_lookup_at_point(Editor* editor, Command_Source source) {
     if (!source.client->mouse.window || source.client->mouse.window->tag != Window::UNIFIED) {
         return;
@@ -327,6 +329,7 @@ static void command_lookup_prompt_callback(Editor* editor,
     lookup_and_prompt(editor, client, directory.buffer, query);
 }
 
+REGISTER_COMMAND(command_lookup_prompt);
 void command_lookup_prompt(Editor* editor, Command_Source source) {
     ZoneScoped;
 
@@ -370,6 +373,7 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
     };
 }
 
+REGISTER_COMMAND(command_complete_at_point);
 void command_complete_at_point(Editor* editor, Command_Source source) {
     ZoneScoped;
 
@@ -417,6 +421,7 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
     };
 }
 
+REGISTER_COMMAND(command_lookup_previous_command);
 void command_lookup_previous_command(Editor* editor, Command_Source source) {
     gnu_global::lookup_and_prompt(editor, source.client, mag_build_directory,
                                   source.previous_command.string);

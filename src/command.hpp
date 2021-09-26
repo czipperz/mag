@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cz/heap_vector.hpp>
 #include <cz/slice.hpp>
 
 namespace mag {
@@ -17,10 +18,19 @@ struct Command {
     const char* string;
 };
 
+#define COMMAND(FUNC) (Command{FUNC, #FUNC})
+
 struct Command_Source {
     Client* client;
     cz::Slice<const Key> keys;
     Command previous_command;
+};
+
+extern cz::Heap_Vector<Command> global_commands;
+void register_global_command(Command command);
+
+struct Command_Registrar {
+    Command_Registrar(Command command) { register_global_command(command); }
 };
 
 }

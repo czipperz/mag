@@ -50,6 +50,7 @@ bool get_root_directory(Editor* editor,
     return false;
 }
 
+REGISTER_COMMAND(command_save_and_quit);
 void command_save_and_quit(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);
@@ -62,6 +63,7 @@ void command_save_and_quit(Editor* editor, Command_Source source) {
     source.client->queue_quit = true;
 }
 
+REGISTER_COMMAND(command_abort_and_quit);
 void command_abort_and_quit(Editor* editor, Command_Source source) {
     {
         WITH_SELECTED_BUFFER(source.client);

@@ -26,6 +26,7 @@ namespace man {
 bool man_completion_engine(Editor*, Completion_Engine_Context* context, bool is_initial_frame) {
     return false;
 }
+REGISTER_COMMAND(command_man);
 void command_man(Editor* editor, Command_Source source) {
     source.client->show_message("Error: man isn't supported on Windows");
     return;
@@ -452,6 +453,7 @@ static void command_man_response(Editor* editor, Client* client, cz::Str query, 
         job_process_append(handle.clone_downgrade(), process, stdout_read));
 }
 
+REGISTER_COMMAND(command_man);
 void command_man(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Man: ";

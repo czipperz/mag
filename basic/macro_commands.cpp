@@ -1,16 +1,19 @@
 #include "macro_commands.hpp"
 
 #include "client.hpp"
+#include "command_macros.hpp"
 
 namespace mag {
 namespace basic {
 
+REGISTER_COMMAND(command_start_recording_macro);
 void command_start_recording_macro(Editor* editor, Command_Source source) {
     source.client->show_message("Start recording macro");
     source.client->record_key_presses = true;
     source.client->macro_key_chain.len = 0;
 }
 
+REGISTER_COMMAND(command_stop_recording_macro);
 void command_stop_recording_macro(Editor* editor, Command_Source source) {
     source.client->show_message("Stop recording macro");
     size_t end = source.client->key_chain_offset - source.keys.len;
@@ -19,6 +22,7 @@ void command_stop_recording_macro(Editor* editor, Command_Source source) {
     source.client->record_key_presses = false;
 }
 
+REGISTER_COMMAND(command_run_macro);
 void command_run_macro(Editor* editor, Command_Source source) {
     source.client->key_chain.reserve(cz::heap_allocator(), source.client->macro_key_chain.len);
     source.client->key_chain.insert_slice(source.client->key_chain_offset,

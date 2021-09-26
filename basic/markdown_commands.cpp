@@ -11,6 +11,7 @@
 namespace mag {
 namespace markdown {
 
+REGISTER_COMMAND(command_reformat_paragraph);
 void command_reformat_paragraph(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

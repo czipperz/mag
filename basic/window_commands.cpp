@@ -2,6 +2,7 @@
 
 #include <cz/util.hpp>
 #include "client.hpp"
+#include "command_macros.hpp"
 
 namespace mag {
 namespace basic {
@@ -27,6 +28,7 @@ static void save_other_windows(Client* client, Window* w, Window* selected_windo
     }
 }
 
+REGISTER_COMMAND(command_one_window);
 void command_one_window(Editor* editor, Command_Source source) {
     save_other_windows(source.client, source.client->window, source.client->selected_normal_window);
     source.client->window = source.client->selected_normal_window;
@@ -74,6 +76,7 @@ static Window* trickle_up(Client* client, Window* w, Window* selected_window) {
     CZ_PANIC("Invalid window tag");
 }
 
+REGISTER_COMMAND(command_one_window_except_pinned);
 void command_one_window_except_pinned(Editor* editor, Command_Source source) {
     Window* top =
         trickle_up(source.client, source.client->window, source.client->selected_normal_window);
@@ -81,6 +84,7 @@ void command_one_window_except_pinned(Editor* editor, Command_Source source) {
     source.client->window->parent = nullptr;
 }
 
+REGISTER_COMMAND(command_close_window);
 void command_close_window(Editor* editor, Command_Source source) {
     Window_Unified* child = source.client->selected_normal_window;
     Window_Split* parent = child->parent;
@@ -98,6 +102,7 @@ void command_close_window(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_quit_window);
 void command_quit_window(Editor* editor, Command_Source source) {
     Window_Unified* child = source.client->selected_normal_window;
     Window_Split* parent = child->parent;
@@ -108,14 +113,17 @@ void command_quit_window(Editor* editor, Command_Source source) {
     source.client->set_selected_buffer(editor->buffers[0]);
 }
 
+REGISTER_COMMAND(command_split_window_horizontal);
 void command_split_window_horizontal(Editor* editor, Command_Source source) {
     split_window(source.client, Window::HORIZONTAL_SPLIT);
 }
 
+REGISTER_COMMAND(command_split_window_vertical);
 void command_split_window_vertical(Editor* editor, Command_Source source) {
     split_window(source.client, Window::VERTICAL_SPLIT);
 }
 
+REGISTER_COMMAND(command_split_increase_ratio);
 void command_split_increase_ratio(Editor* editor, Command_Source source) {
     Window_Split* split = source.client->selected_normal_window->parent;
     if (!split) {
@@ -125,6 +133,7 @@ void command_split_increase_ratio(Editor* editor, Command_Source source) {
     split->set_children_size();
 }
 
+REGISTER_COMMAND(command_split_decrease_ratio);
 void command_split_decrease_ratio(Editor* editor, Command_Source source) {
     Window_Split* split = source.client->selected_normal_window->parent;
     if (!split) {
@@ -134,6 +143,7 @@ void command_split_decrease_ratio(Editor* editor, Command_Source source) {
     split->set_children_size();
 }
 
+REGISTER_COMMAND(command_split_reset_ratio);
 void command_split_reset_ratio(Editor* editor, Command_Source source) {
     Window_Split* split = source.client->selected_normal_window->parent;
     if (!split) {
@@ -143,14 +153,17 @@ void command_split_reset_ratio(Editor* editor, Command_Source source) {
     split->set_children_size();
 }
 
+REGISTER_COMMAND(command_cycle_window);
 void command_cycle_window(Editor* editor, Command_Source source) {
     cycle_window(source.client);
 }
 
+REGISTER_COMMAND(command_reverse_cycle_window);
 void command_reverse_cycle_window(Editor* editor, Command_Source source) {
     reverse_cycle_window(source.client);
 }
 
+REGISTER_COMMAND(command_swap_windows);
 void command_swap_windows(Editor* editor, Command_Source source) {
     Window_Split* split = source.client->selected_normal_window->parent;
     if (!split) {
@@ -214,15 +227,19 @@ static void shift_window(Client* client, bool want_first, Window::Tag want_tag) 
     }
 }
 
+REGISTER_COMMAND(command_shift_window_up);
 void command_shift_window_up(Editor* editor, Command_Source source) {
     return shift_window(source.client, true, Window::HORIZONTAL_SPLIT);
 }
+REGISTER_COMMAND(command_shift_window_down);
 void command_shift_window_down(Editor* editor, Command_Source source) {
     return shift_window(source.client, false, Window::HORIZONTAL_SPLIT);
 }
+REGISTER_COMMAND(command_shift_window_left);
 void command_shift_window_left(Editor* editor, Command_Source source) {
     return shift_window(source.client, true, Window::VERTICAL_SPLIT);
 }
+REGISTER_COMMAND(command_shift_window_right);
 void command_shift_window_right(Editor* editor, Command_Source source) {
     return shift_window(source.client, false, Window::VERTICAL_SPLIT);
 }

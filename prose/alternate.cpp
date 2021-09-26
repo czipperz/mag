@@ -75,6 +75,7 @@ static int test_extensions(cz::String& path,
     return 0;
 }
 
+REGISTER_COMMAND(command_alternate);
 void command_alternate(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));

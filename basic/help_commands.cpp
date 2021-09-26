@@ -43,6 +43,7 @@ static void add_key_map(Contents* contents, cz::String* prefix, const Key_Map& k
     }
 }
 
+REGISTER_COMMAND(command_dump_key_map);
 void command_dump_key_map(Editor* editor, Command_Source source) {
     cz::Arc<Buffer_Handle> handle;
     if (!find_temp_buffer(editor, source.client, "key map", {mag_build_directory}, &handle)) {
@@ -253,6 +254,7 @@ bool formatted_command_next_token(Contents_Iterator* it, Token* token, uint64_t*
     return true;
 }
 
+REGISTER_COMMAND(command_run_command_by_name);
 void command_run_command_by_name(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Run command: ";
@@ -262,6 +264,7 @@ void command_run_command_by_name(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_go_to_key_map_binding);
 void command_go_to_key_map_binding(Editor* editor, Command_Source source) {
     cz::String query = {};
     CZ_DEFER(query.drop(cz::heap_allocator()));

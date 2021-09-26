@@ -13,6 +13,7 @@
 namespace mag {
 namespace basic {
 
+REGISTER_COMMAND(command_uppercase_letter);
 void command_uppercase_letter(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -41,6 +42,7 @@ void command_uppercase_letter(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_lowercase_letter);
 void command_lowercase_letter(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -69,6 +71,7 @@ void command_lowercase_letter(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_uppercase_region_or_word);
 void command_uppercase_region_or_word(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -114,6 +117,7 @@ void command_uppercase_region_or_word(Editor* editor, Command_Source source) {
     window->show_marks = false;
 }
 
+REGISTER_COMMAND(command_lowercase_region_or_word);
 void command_lowercase_region_or_word(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -455,9 +459,9 @@ void to_skebab(cz::Str in, cz::Allocator allocator, cz::String* out) {
     cz::append(allocator, out, suffix);
 }
 
-void command_recapitalize_token_to(Editor* editor,
-                                   Client* client,
-                                   void (*convert)(cz::Str, cz::Allocator, cz::String*)) {
+void recapitalize_token_to(Editor* editor,
+                           Client* client,
+                           void (*convert)(cz::Str, cz::Allocator, cz::String*)) {
     WITH_SELECTED_BUFFER(client);
 
     Transaction transaction;
@@ -533,7 +537,7 @@ static void command_recapitalize_token_prompt_callback(Editor* editor,
         return;
     }
 
-    command_recapitalize_token_to(editor, client, convert);
+    recapitalize_token_to(editor, client, convert);
 }
 
 static bool recapitalize_to_completion_engine(Editor* editor,
@@ -556,6 +560,7 @@ static bool recapitalize_to_completion_engine(Editor* editor,
     return true;
 }
 
+REGISTER_COMMAND(command_recapitalize_token_prompt);
 void command_recapitalize_token_prompt(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Recapitalize to format: ";
@@ -565,29 +570,37 @@ void command_recapitalize_token_prompt(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_recapitalize_token_to_camel);
 void command_recapitalize_token_to_camel(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source.client, to_camel);
+    return recapitalize_token_to(editor, source.client, to_camel);
 }
+REGISTER_COMMAND(command_recapitalize_token_to_pascal);
 void command_recapitalize_token_to_pascal(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source.client, to_pascal);
+    return recapitalize_token_to(editor, source.client, to_pascal);
 }
+REGISTER_COMMAND(command_recapitalize_token_to_snake);
 void command_recapitalize_token_to_snake(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source.client, to_snake);
+    return recapitalize_token_to(editor, source.client, to_snake);
 }
+REGISTER_COMMAND(command_recapitalize_token_to_usnake);
 void command_recapitalize_token_to_usnake(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source.client, to_usnake);
+    return recapitalize_token_to(editor, source.client, to_usnake);
 }
+REGISTER_COMMAND(command_recapitalize_token_to_ssnake);
 void command_recapitalize_token_to_ssnake(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source.client, to_ssnake);
+    return recapitalize_token_to(editor, source.client, to_ssnake);
 }
+REGISTER_COMMAND(command_recapitalize_token_to_kebab);
 void command_recapitalize_token_to_kebab(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source.client, to_kebab);
+    return recapitalize_token_to(editor, source.client, to_kebab);
 }
+REGISTER_COMMAND(command_recapitalize_token_to_ukebab);
 void command_recapitalize_token_to_ukebab(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source.client, to_ukebab);
+    return recapitalize_token_to(editor, source.client, to_ukebab);
 }
+REGISTER_COMMAND(command_recapitalize_token_to_skebab);
 void command_recapitalize_token_to_skebab(Editor* editor, Command_Source source) {
-    return command_recapitalize_token_to(editor, source.client, to_skebab);
+    return recapitalize_token_to(editor, source.client, to_skebab);
 }
 
 }

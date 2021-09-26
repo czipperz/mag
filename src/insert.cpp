@@ -83,6 +83,7 @@ static bool can_merge_insert(cz::Str str, char code) {
     return last == code || (is_word_char(last) && is_word_char(code));
 }
 
+REGISTER_COMMAND(command_insert_char);
 void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

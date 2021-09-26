@@ -1,4 +1,4 @@
-#include "commands.hpp"
+#include "number_commands.hpp"
 
 #include <stdio.h>
 #include <cz/char_type.hpp>
@@ -15,6 +15,7 @@
 namespace mag {
 namespace basic {
 
+REGISTER_COMMAND(command_insert_numbers);
 void command_insert_numbers(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -113,11 +114,13 @@ static void change_numbers(Client* client, Buffer* buffer, Window_Unified* windo
     transaction.commit(client);
 }
 
+REGISTER_COMMAND(command_increment_numbers);
 void command_increment_numbers(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     change_numbers(source.client, buffer, window, [](int x) { return x + 1; });
 }
 
+REGISTER_COMMAND(command_decrement_numbers);
 void command_decrement_numbers(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     change_numbers(source.client, buffer, window, [](int x) { return x - 1; });
@@ -146,6 +149,7 @@ static void command_prompt_increase_numbers_callback(Editor* editor,
     change_numbers(client, buffer, window, [&](int x) { return x + num; });
 }
 
+REGISTER_COMMAND(command_prompt_increase_numbers);
 void command_prompt_increase_numbers(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Increase numbers by: ";
@@ -176,6 +180,7 @@ static void command_prompt_multiply_numbers_callback(Editor* editor,
     change_numbers(client, buffer, window, [&](int x) { return x * num; });
 }
 
+REGISTER_COMMAND(command_prompt_multiply_numbers);
 void command_prompt_multiply_numbers(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Multiply numbers by: ";
@@ -183,6 +188,7 @@ void command_prompt_multiply_numbers(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_insert_letters);
 void command_insert_letters(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

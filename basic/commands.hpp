@@ -83,8 +83,6 @@ void command_quit(Editor* editor, Command_Source source);
 
 void command_create_cursor_forward_line(Editor* editor, Command_Source source);
 void command_create_cursor_backward_line(Editor* editor, Command_Source source);
-void command_create_cursor_forward_search(Editor* editor, Command_Source source);
-void command_create_cursor_backward_search(Editor* editor, Command_Source source);
 void command_create_cursor_forward(Editor* editor, Command_Source source);
 void command_create_cursor_backward(Editor* editor, Command_Source source);
 

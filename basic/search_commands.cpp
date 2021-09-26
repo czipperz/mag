@@ -83,6 +83,7 @@ int create_cursor_forward_search(const Buffer* buffer, Window_Unified* window) {
     return created;
 }
 
+REGISTER_COMMAND(command_create_cursor_forward_search);
 void command_create_cursor_forward_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_search(buffer, window);
@@ -122,6 +123,7 @@ int create_cursor_backward_search(const Buffer* buffer, Window_Unified* window) 
     return created;
 }
 
+REGISTER_COMMAND(command_create_cursor_backward_search);
 void command_create_cursor_backward_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
@@ -279,6 +281,7 @@ bool in_interactive_search(Client* client) {
            client->_message.interactive_response_callback == interactive_search_response_callback;
 }
 
+REGISTER_COMMAND(command_search_forward);
 void command_search_forward(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_normal_window;
 
@@ -340,6 +343,7 @@ void command_search_forward(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_search_backward);
 void command_search_backward(Editor* editor, Command_Source source) {
     Window_Unified* window = source.client->selected_normal_window;
 
@@ -443,6 +447,7 @@ static void command_search_forward_expanding_callback(Editor* editor,
     window->show_marks = true;
 }
 
+REGISTER_COMMAND(command_search_backward_expanding);
 void command_search_backward_expanding(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Search backward expanding: ";
@@ -454,6 +459,7 @@ void command_search_backward_expanding(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_search_forward_expanding);
 void command_search_forward_expanding(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Search forward expanding: ";
@@ -663,6 +669,7 @@ static void command_search_forward_identifier_callback(Editor* editor,
     window->show_marks = false;
 }
 
+REGISTER_COMMAND(command_search_backward_identifier);
 void command_search_backward_identifier(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Search backward identifier: ";
@@ -670,6 +677,7 @@ void command_search_backward_identifier(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_search_forward_identifier);
 void command_search_forward_identifier(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Search forward identifier: ";

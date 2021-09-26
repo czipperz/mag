@@ -1,4 +1,4 @@
-#include "alternate.hpp"
+#include "search.hpp"
 
 #include <cz/heap_string.hpp>
 #include <cz/heap_vector.hpp>
@@ -65,6 +65,7 @@ static void command_search_in_current_directory_callback(Editor* editor,
     run_search(client, editor, directory.buffer, query, false);
 }
 
+REGISTER_COMMAND(command_search_in_current_directory_prompt);
 void command_search_in_current_directory_prompt(Editor* editor, Command_Source source) {
     cz::String selected_region = {};
     CZ_DEFER(selected_region.drop(cz::heap_allocator()));
@@ -94,6 +95,7 @@ static void command_search_in_version_control_callback(Editor* editor,
     run_search(client, editor, directory.buffer, query, false);
 }
 
+REGISTER_COMMAND(command_search_in_version_control_prompt);
 void command_search_in_version_control_prompt(Editor* editor, Command_Source source) {
     cz::String selected_region = {};
     CZ_DEFER(selected_region.drop(cz::heap_allocator()));
@@ -138,10 +140,12 @@ static void search_token_at_position(Editor* editor,
     run_search(client, editor, directory.buffer, query, true);
 }
 
+REGISTER_COMMAND(command_search_in_current_directory_token_at_position);
 void command_search_in_current_directory_token_at_position(Editor* editor, Command_Source source) {
     search_token_at_position(editor, source.client, copy_buffer_directory);
 }
 
+REGISTER_COMMAND(command_search_in_version_control_token_at_position);
 void command_search_in_version_control_token_at_position(Editor* editor, Command_Source source) {
     search_token_at_position(editor, source.client, copy_version_control_directory);
 }

@@ -37,6 +37,7 @@ static void command_open_file_callback(Editor* editor, Client* client, cz::Str q
     open_file(editor, client, query);
 }
 
+REGISTER_COMMAND(command_open_file);
 void command_open_file(Editor* editor, Command_Source source) {
     cz::String selected_window_directory = {};
     CZ_DEFER(selected_window_directory.drop(cz::heap_allocator()));
@@ -116,6 +117,7 @@ static void command_save_file_callback(Editor* editor, Client* client, cz::Str, 
     }
 }
 
+REGISTER_COMMAND(command_save_file);
 void command_save_file(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -162,6 +164,7 @@ static void command_switch_buffer_callback(Editor* editor,
     client->set_selected_buffer(handle);
 }
 
+REGISTER_COMMAND(command_switch_buffer);
 void command_switch_buffer(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Buffer to switch to: ";
@@ -275,6 +278,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
     remove_windows_for_buffer(client, buffer_handle, editor->buffers[0]);
 }
 
+REGISTER_COMMAND(command_kill_buffer);
 void command_kill_buffer(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Buffer to kill: ";
@@ -309,6 +313,7 @@ static void command_rename_buffer_callback(Editor* editor,
     reset_mode(editor, buffer);
 }
 
+REGISTER_COMMAND(command_rename_buffer);
 void command_rename_buffer(Editor* editor, Command_Source source) {
     bool is_temporary;
     cz::String path = {};
@@ -364,6 +369,7 @@ static void command_save_buffer_to_callback(Editor* editor,
     reset_mode(editor, buffer);
 }
 
+REGISTER_COMMAND(command_save_buffer_to);
 void command_save_buffer_to(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -413,6 +419,7 @@ static void command_pretend_rename_buffer_callback(Editor* editor,
     reset_mode(editor, buffer);
 }
 
+REGISTER_COMMAND(command_pretend_rename_buffer);
 void command_pretend_rename_buffer(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -459,6 +466,7 @@ static void command_diff_buffer_against_callback(Editor* editor,
     run_console_command(client, editor, buffer->directory.buffer, args, name, "Diff error");
 }
 
+REGISTER_COMMAND(command_diff_buffer_against);
 void command_diff_buffer_against(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));

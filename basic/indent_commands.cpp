@@ -47,6 +47,7 @@ void insert_line_with_indent(Transaction* transaction,
     *offset += insert.value.len();
 }
 
+REGISTER_COMMAND(command_insert_newline_indent);
 void command_insert_newline_indent(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -71,6 +72,7 @@ void command_insert_newline_indent(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_insert_newline_copy_indent_and_modifiers);
 void command_insert_newline_copy_indent_and_modifiers(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -382,15 +384,18 @@ static void change_indent(Client* client,
     transaction.commit(client);
 }
 
+REGISTER_COMMAND(command_increase_indent);
 void command_increase_indent(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     change_indent(source.client, window, buffer, buffer->mode.indent_width);
 }
+REGISTER_COMMAND(command_decrease_indent);
 void command_decrease_indent(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     change_indent(source.client, window, buffer, -(int64_t)buffer->mode.indent_width);
 }
 
+REGISTER_COMMAND(command_delete_whitespace);
 void command_delete_whitespace(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -427,6 +432,7 @@ void command_delete_whitespace(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_merge_lines);
 void command_merge_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 

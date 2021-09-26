@@ -49,9 +49,9 @@ void to_ukebab(cz::Str in, cz::Allocator allocator, cz::String* out);
 void to_skebab(cz::Str in, cz::Allocator allocator, cz::String* out);
 
 /// Generic command wrapper.
-void command_recapitalize_token_to(Editor* editor,
-                                   Client* client,
-                                   void (*convert)(cz::Str, cz::Allocator, cz::String*));
+void recapitalize_token_to(Editor* editor,
+                           Client* client,
+                           void (*convert)(cz::Str, cz::Allocator, cz::String*));
 
 /// Prompt for the output format.
 void command_recapitalize_token_prompt(Editor* editor, Command_Source source);
