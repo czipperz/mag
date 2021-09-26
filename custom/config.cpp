@@ -75,6 +75,7 @@
 #include "syntax/tokenize_search.hpp"
 #include "syntax/tokenize_shell_script.hpp"
 #include "syntax/tokenize_splash.hpp"
+#include "version_control/log.hpp"
 #include "version_control/tokenize_diff.hpp"
 #include "version_control/tokenize_git_commit_edit_message.hpp"
 #include "version_control/tokenize_patch.hpp"
@@ -612,11 +613,12 @@ void editor_created_callback(Editor* editor) {
     create_key_map(editor->key_map);
     create_theme(editor->theme);
 
-    editor->misc_commands.reserve(4);
+    editor->misc_commands.reserve(5);
     editor->misc_commands.push(COMMAND(command_swap_windows));
     editor->misc_commands.push(COMMAND(command_restore_last_save_point));
     editor->misc_commands.push(COMMAND(command_goto_top_of_window));
     editor->misc_commands.push(COMMAND(command_goto_bottom_of_window));
+    editor->misc_commands.push(COMMAND(version_control::command_show_last_commit_to_file));
 }
 
 static void directory_key_map(Key_Map& key_map) {
