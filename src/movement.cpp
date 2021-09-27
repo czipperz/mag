@@ -94,7 +94,7 @@ void forward_visual_line(const Window_Unified* window,
     end_of_line(&end);
 
     uint64_t column = count_visual_columns(mode, start, iterator->position);
-    uint64_t line_width = count_visual_columns(mode, start, end.position);
+    uint64_t line_width = count_visual_columns(mode, *iterator, end.position, column);
 
     while (rows-- > 0) {
         // If we have to go to the next line and there is no next line then stop.
