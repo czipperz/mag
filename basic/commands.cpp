@@ -331,13 +331,64 @@ void command_backward_line(Editor* editor, Command_Source source) {
     TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(buffer->mode, it); });
 }
 
+static uint64_t cursor_goal_column = 0;
+
 REGISTER_COMMAND(command_forward_line_single_cursor_visual);
 void command_forward_line_single_cursor_visual(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     if (window->cursors.len == 1 && !window->show_marks) {
-        TRANSFORM_POINTS(
-            [&](Contents_Iterator* it) { forward_visual_line(window, buffer->mode, it); });
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+        if (source.previous_command.function != command_forward_line_single_cursor_visual &&
+            source.previous_command.function !=
+                region_movement::command_forward_line_single_cursor_visual &&
+            source.previous_command.function != command_backward_line_single_cursor_visual &&
+            source.previous_command.function !=
+                region_movement::command_backward_line_single_cursor_visual) {
+            cursor_goal_column = get_visual_column(buffer->mode, it);
+        }
+
+        if (buffer->mode.wrap_long_lines) {
+            uint64_t column = get_visual_column(buffer->mode, it);
+            uint64_t new_goal = cursor_goal_column + window->cols();
+
+            // If we have a long line and are wrapping then go to the next column down.
+            while (1) {
+                if (it.at_eob()) {
+                eol:
+                    if (column >= new_goal - (new_goal % window->cols())) {
+                        cursor_goal_column = new_goal;
+                        goto finish;
+                    }
+                    break;
+                }
+
+                char ch = it.get();
+                if (ch == '\n')
+                    goto eol;
+
+                uint64_t column2 = char_visual_columns(buffer->mode, ch, column);
+                if (column2 > new_goal) {
+                    cursor_goal_column = new_goal;
+                    goto finish;
+                }
+                column = column2;
+                it.advance();
+            }
+
+            cursor_goal_column %= window->cols();
+            goto no_wrap;
+        } else {
+        no_wrap:
+            end_of_line(&it);
+            if (it.at_eob())
+                return;
+            it.advance();
+            go_to_visual_column(buffer->mode, &it, cursor_goal_column);
+        }
+
+    finish:
+        window->cursors[0].point = it.position;
     } else {
         TRANSFORM_POINTS([&](Contents_Iterator* it) { forward_line(buffer->mode, it); });
     }
@@ -348,8 +399,42 @@ void command_backward_line_single_cursor_visual(Editor* editor, Command_Source s
     WITH_CONST_SELECTED_BUFFER(source.client);
     window->clear_show_marks_temporarily();
     if (window->cursors.len == 1 && !window->show_marks) {
-        TRANSFORM_POINTS(
-            [&](Contents_Iterator* it) { backward_visual_line(window, buffer->mode, it); });
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+        if (source.previous_command.function != command_forward_line_single_cursor_visual &&
+            source.previous_command.function !=
+                region_movement::command_forward_line_single_cursor_visual &&
+            source.previous_command.function != command_backward_line_single_cursor_visual &&
+            source.previous_command.function !=
+                region_movement::command_backward_line_single_cursor_visual) {
+            cursor_goal_column = get_visual_column(buffer->mode, it);
+        }
+
+        if (buffer->mode.wrap_long_lines) {
+            if (cursor_goal_column < window->cols()) {
+                // Go to last visual line of previous line.
+                start_of_line(&it);
+                if (it.at_bob())
+                    return;
+                it.retreat();
+
+                uint64_t column = get_visual_column(buffer->mode, it);
+                column -= (column % window->cols());
+                column += (cursor_goal_column % window->cols());
+                cursor_goal_column = column;
+            } else {
+                // Go to previous visual line inside this line.
+                cursor_goal_column -= window->cols();
+            }
+        } else {
+            // Go to previous line.
+            start_of_line(&it);
+            if (it.at_bob())
+                return;
+            it.retreat();
+        }
+
+        go_to_visual_column(buffer->mode, &it, cursor_goal_column);
+        window->cursors[0].point = it.position;
     } else {
         TRANSFORM_POINTS([&](Contents_Iterator* it) { backward_line(buffer->mode, it); });
     }
