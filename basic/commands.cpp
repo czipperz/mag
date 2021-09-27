@@ -114,8 +114,15 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
     if (query == "animated scrolling") {
         editor->theme.allow_animated_scrolling = !editor->theme.allow_animated_scrolling;
     } else if (query == "buffer indent width") {
+        cz::Heap_String prompt = {};
+        CZ_DEFER(prompt.drop());
+        {
+            WITH_CONST_SELECTED_BUFFER(client);
+            prompt = cz::format("Set indent width to (", buffer->mode.indent_width, "): ");
+        }
+
         Dialog dialog = {};
-        dialog.prompt = "Set indent width to: ";
+        dialog.prompt = prompt;
         dialog.response_callback = [](Editor* editor, Client* client, cz::Str str, void*) {
             WITH_SELECTED_BUFFER(client);
             uint32_t value;
@@ -125,19 +132,17 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             }
             buffer->mode.indent_width = value;
         };
-
-        cz::Heap_String old = {};
-        CZ_DEFER(old.drop());
-        {
-            WITH_CONST_SELECTED_BUFFER(client);
-            old = cz::format(buffer->mode.indent_width);
-            dialog.mini_buffer_contents = old;
-        }
-
         client->show_dialog(dialog);
     } else if (query == "buffer tab width") {
+        cz::Heap_String prompt = {};
+        CZ_DEFER(prompt.drop());
+        {
+            WITH_CONST_SELECTED_BUFFER(client);
+            prompt = cz::format("Set tab width to (", buffer->mode.tab_width, "): ");
+        }
+
         Dialog dialog = {};
-        dialog.prompt = "Set tab width to: ";
+        dialog.prompt = prompt;
         dialog.response_callback = [](Editor* editor, Client* client, cz::Str str, void*) {
             WITH_SELECTED_BUFFER(client);
             uint32_t value;
@@ -147,15 +152,6 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             }
             buffer->mode.tab_width = value;
         };
-
-        cz::Heap_String old = {};
-        CZ_DEFER(old.drop());
-        {
-            WITH_CONST_SELECTED_BUFFER(client);
-            old = cz::format(buffer->mode.tab_width);
-            dialog.mini_buffer_contents = old;
-        }
-
         client->show_dialog(dialog);
     } else if (query == "buffer use tabs") {
         bool use_tabs;
@@ -175,8 +171,15 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
         Window_Unified* window = client->selected_window();
         window->pinned = !window->pinned;
     } else if (query == "buffer preferred column") {
+        cz::Heap_String prompt = {};
+        CZ_DEFER(prompt.drop());
+        {
+            WITH_CONST_SELECTED_BUFFER(client);
+            prompt = cz::format("Set preferred column to (", buffer->mode.preferred_column, ": ");
+        }
+
         Dialog dialog = {};
-        dialog.prompt = "Set preferred column to: ";
+        dialog.prompt = prompt;
         dialog.response_callback = [](Editor* editor, Client* client, cz::Str str, void*) {
             WITH_SELECTED_BUFFER(client);
             uint32_t value;
@@ -186,15 +189,6 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             }
             buffer->mode.preferred_column = value;
         };
-
-        cz::Heap_String old = {};
-        CZ_DEFER(old.drop());
-        {
-            WITH_CONST_SELECTED_BUFFER(client);
-            old = cz::format(buffer->mode.preferred_column);
-            dialog.mini_buffer_contents = old;
-        }
-
         client->show_dialog(dialog);
     } else if (query == "buffer read only") {
         WITH_SELECTED_BUFFER(client);
@@ -215,8 +209,11 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             client->show_message("Insert replace off");
         }
     } else if (query == "font size") {
+        cz::Heap_String prompt = cz::format("Set font size to (", editor->theme.font_size, "): ");
+        CZ_DEFER(prompt.drop());
+
         Dialog dialog = {};
-        dialog.prompt = "Set font size to: ";
+        dialog.prompt = prompt;
         dialog.response_callback = [](Editor* editor, Client* client, cz::Str str, void*) {
             uint32_t value;
             if (cz::parse(str, &value) <= 0 || value == 0) {
@@ -225,9 +222,6 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
             }
             editor->theme.font_size = value;
         };
-        cz::Heap_String old = cz::format(editor->theme.font_size);
-        CZ_DEFER(old.drop());
-        dialog.mini_buffer_contents = old;
         client->show_dialog(dialog);
     } else {
         client->show_message("Invalid configuration variable");
