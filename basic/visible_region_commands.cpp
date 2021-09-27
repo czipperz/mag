@@ -31,7 +31,7 @@ void command_goto_center_of_window(Editor* editor, Command_Source source) {
 
     kill_extra_cursors(window, source.client);
     window->cursors[window->selected_cursor].point =
-        center_of_window(window, buffer->mode, &buffer->contents).position;
+        center_of_window(window, buffer->mode, editor->theme, &buffer->contents).position;
 }
 
 REGISTER_COMMAND(command_goto_top_of_window);
@@ -78,11 +78,11 @@ void command_up_page(Editor* editor, Command_Source source) {
         get_scroll_outside(window->rows(), editor->theme.scroll_outside_visual_rows);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
-    backward_visual_line(window, buffer->mode, &it, window->rows() - scroll_outside);
+    backward_visual_line(window, buffer->mode, editor->theme, &it, window->rows() - scroll_outside);
     window->start_position = it.position;
 
     // Go to the start of 1 row from the end of the visible region.
-    forward_visual_line(window, buffer->mode, &it,
+    forward_visual_line(window, buffer->mode, editor->theme, &it,
                         subtract_bounded(window->rows(), scroll_outside + 1));
 
     window->cursors[0].point = it.position;
@@ -106,14 +106,14 @@ void command_down_page(Editor* editor, Command_Source source) {
         get_scroll_outside(window->rows(), editor->theme.scroll_outside_visual_rows);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
-    forward_visual_line(window, buffer->mode, &it, window->rows() - scroll_outside);
+    forward_visual_line(window, buffer->mode, editor->theme, &it, window->rows() - scroll_outside);
     window->start_position = it.position;
 
     // We move forward one line to prevent the start position from being overridden
     // in the rendering process.  But if we're at the start of the buffer then
     // going forward one line because looks weird and won't be overridden anyway.
     if (!it.at_bob()) {
-        forward_visual_line(window, buffer->mode, &it, scroll_outside);
+        forward_visual_line(window, buffer->mode, editor->theme, &it, scroll_outside);
     }
 
     window->cursors[0].point = it.position;
@@ -123,12 +123,12 @@ static void scroll_down(Editor* editor, Command_Source source, size_t num) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
-    forward_visual_line(window, buffer->mode, &it, num);
+    forward_visual_line(window, buffer->mode, editor->theme, &it, num);
     window->start_position = it.position;
 
     size_t scroll_outside =
         get_scroll_outside(window->rows(), editor->theme.scroll_outside_visual_rows);
-    forward_visual_line(window, buffer->mode, &it, scroll_outside);
+    forward_visual_line(window, buffer->mode, editor->theme, &it, scroll_outside);
     if (window->cursors[window->selected_cursor].point < it.position) {
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = it.position;
@@ -139,14 +139,15 @@ static void scroll_up(Editor* editor, Command_Source source, size_t num) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
-    backward_visual_line(window, buffer->mode, &it, num);
+    backward_visual_line(window, buffer->mode, editor->theme, &it, num);
     window->start_position = it.position;
 
     size_t scroll_outside =
         get_scroll_outside(window->rows(), editor->theme.scroll_outside_visual_rows);
-    forward_visual_line(window, buffer->mode, &it, window->rows() - scroll_outside - 1);
+    forward_visual_line(window, buffer->mode, editor->theme, &it,
+                        window->rows() - scroll_outside - 1);
     uint64_t start_of_last_line = it.position;
-    end_of_visual_line(window, buffer->mode, &it);
+    end_of_visual_line(window, buffer->mode, editor->theme, &it);
     if (window->cursors[window->selected_cursor].point > it.position) {
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = start_of_last_line;
@@ -184,9 +185,10 @@ static void scroll_left(Editor* editor, Command_Source source, size_t num) {
     Contents_Iterator it = buffer->contents.iterator_at(starting_position);
     uint64_t column = get_visual_column(buffer->mode, it);
     uint64_t scroll_outside = editor->theme.scroll_outside_visual_columns;
+    size_t cols = window->total_cols - line_number_cols(editor->theme, window, buffer);
 
     // If we will have to scroll right to fit the cursor then move the cursor left.
-    if (column + 2 + scroll_outside > window->column_offset + window->cols()) {
+    if (column + 2 + scroll_outside > window->column_offset + cols) {
         column = 0;
 
         start_of_line(&it);
@@ -198,7 +200,7 @@ static void scroll_left(Editor* editor, Command_Source source, size_t num) {
 
             column = char_visual_columns(buffer->mode, ch, column);
             it.advance();
-            if (column + 2 + scroll_outside > window->column_offset + window->cols()) {
+            if (column + 2 + scroll_outside > window->column_offset + cols) {
                 break;
             }
         }

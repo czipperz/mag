@@ -12,7 +12,9 @@
 namespace mag {
 namespace syntax {
 
-static bool decoration_read_only_indicator_append(const Buffer* buffer,
+static bool decoration_read_only_indicator_append(Editor*,
+                                                  Client*,
+                                                  const Buffer* buffer,
                                                   Window_Unified* window,
                                                   cz::Allocator allocator,
                                                   cz::String* string,

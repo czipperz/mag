@@ -51,34 +51,41 @@ void end_of_line_text(Contents_Iterator* iterator) {
 
 void start_of_visual_line(const Window_Unified* window,
                           const Mode& mode,
+                          const Theme& theme,
                           Contents_Iterator* iterator) {
     if (!mode.wrap_long_lines) {
         start_of_line(iterator);
         return;
     }
 
+    size_t window_cols = window->total_cols - line_number_cols(theme, window, iterator->contents);
+
     uint64_t end = iterator->position;
     start_of_line(iterator);
     uint64_t column = count_visual_columns(mode, *iterator, end);
-    go_to_visual_column(mode, iterator, column - (column % window->cols()));
+    go_to_visual_column(mode, iterator, column - (column % window_cols));
 }
 
 void end_of_visual_line(const Window_Unified* window,
                         const Mode& mode,
+                        const Theme& theme,
                         Contents_Iterator* iterator) {
     if (!mode.wrap_long_lines) {
         end_of_line(iterator);
         return;
     }
 
+    size_t window_cols = window->total_cols - line_number_cols(theme, window, iterator->contents);
+
     uint64_t end = iterator->position;
     start_of_line(iterator);
     uint64_t column = count_visual_columns(mode, *iterator, end);
-    go_to_visual_column(mode, iterator, column - (column % window->cols()) + (window->cols() - 1));
+    go_to_visual_column(mode, iterator, column - (column % window_cols) + (window_cols - 1));
 }
 
 void forward_visual_line(const Window_Unified* window,
                          const Mode& mode,
+                         const Theme& theme,
                          Contents_Iterator* iterator,
                          uint64_t rows) {
     if (!mode.wrap_long_lines) {
@@ -86,7 +93,8 @@ void forward_visual_line(const Window_Unified* window,
         return;
     }
 
-    uint64_t cols = window->cols();
+    size_t window_cols = window->total_cols - line_number_cols(theme, window, iterator->contents);
+    uint64_t cols = window_cols;
 
     Contents_Iterator start = *iterator;
     start_of_line(&start);
@@ -126,6 +134,7 @@ void forward_visual_line(const Window_Unified* window,
 
 void backward_visual_line(const Window_Unified* window,
                           const Mode& mode,
+                          const Theme& theme,
                           Contents_Iterator* iterator,
                           uint64_t rows) {
     if (!mode.wrap_long_lines) {
@@ -133,7 +142,8 @@ void backward_visual_line(const Window_Unified* window,
         return;
     }
 
-    uint64_t cols = window->cols();
+    size_t window_cols = window->total_cols - line_number_cols(theme, window, iterator->contents);
+    uint64_t cols = window_cols;
 
     Contents_Iterator start = *iterator;
     start_of_line(&start);

@@ -32,7 +32,7 @@ static size_t line_number_columns(const Theme& theme,
 
     // Enable drawing line numbers for non-mini buffer
     // windows if they are enabled and fit on the screen.
-    if (result + 5 > window->cols())
+    if (result + 5 > window->total_cols)
         return 0;
     return result;
 }
@@ -48,24 +48,24 @@ static bool load_completion_cache(Editor* editor,
         cell->code = CH;                                                     \
     } while (0)
 
-#define SET_BODY(FACE, CH)                   \
-    do {                                     \
-        CZ_DEBUG_ASSERT(y < window->rows()); \
-        CZ_DEBUG_ASSERT(x < window->cols()); \
-                                             \
-        SET_IND(FACE, CH);                   \
+#define SET_BODY(FACE, CH)                       \
+    do {                                         \
+        CZ_DEBUG_ASSERT(y < window->rows());     \
+        CZ_DEBUG_ASSERT(x < window->total_cols); \
+                                                 \
+        SET_IND(FACE, CH);                       \
     } while (0)
 
-#define ADD_NEWLINE(FACE)                 \
-    do {                                  \
-        for (; x < window->cols(); ++x) { \
-            SET_BODY(FACE, ' ');          \
-        }                                 \
-        ++y;                              \
-        x = 0;                            \
-        if (y == window->rows()) {        \
-            return;                       \
-        }                                 \
+#define ADD_NEWLINE(FACE)                     \
+    do {                                      \
+        for (; x < window->total_cols; ++x) { \
+            SET_BODY(FACE, ' ');              \
+        }                                     \
+        ++y;                                  \
+        x = 0;                                \
+        if (y == window->rows()) {            \
+            return;                           \
+        }                                     \
     } while (0)
 
 #define ADDCH(FACE, CH)                                                                       \
@@ -73,14 +73,14 @@ static bool load_completion_cache(Editor* editor,
         /* If we are between the start and end column then render. */                         \
         if (buffer->mode.wrap_long_lines ||                                                   \
             (column >= window->column_offset &&                                               \
-             column < window->column_offset + window->cols() -                                \
+             column < window->column_offset + window->total_cols -                            \
                           draw_line_numbers * line_number_buffer.cap)) {                      \
             SET_BODY(FACE, CH);                                                               \
             ++x;                                                                              \
         }                                                                                     \
         ++column;                                                                             \
                                                                                               \
-        if (buffer->mode.wrap_long_lines && x == window->cols()) {                            \
+        if (buffer->mode.wrap_long_lines && x == window->total_cols) {                        \
             ADD_NEWLINE({});                                                                  \
                                                                                               \
             if (draw_line_numbers) {                                                          \
@@ -111,6 +111,7 @@ static void apply_face(Face* face, Face layer) {
 static bool try_to_make_visible(Window_Unified* window,
                                 Window_Cache* window_cache,
                                 const Buffer* buffer,
+                                const Theme& theme,
                                 Contents_Iterator* iterator,
                                 size_t scroll_outside,
                                 uint64_t must_be_on_screen,
@@ -118,13 +119,13 @@ static bool try_to_make_visible(Window_Unified* window,
     // Get the start of the visible region if we put the
     // cursor within scroll_outside lines of the end.
     Contents_Iterator start_iterator = buffer->contents.iterator_at(goal);
-    backward_visual_line(window, buffer->mode, &start_iterator,
+    backward_visual_line(window, buffer->mode, theme, &start_iterator,
                          window->rows() - scroll_outside - 1);
-    start_of_visual_line(window, buffer->mode, &start_iterator);
+    start_of_visual_line(window, buffer->mode, theme, &start_iterator);
 
     // But the cursor must be within scroll_outside of the new top.
     Contents_Iterator test_iterator = start_iterator;
-    forward_visual_line(window, buffer->mode, &test_iterator, scroll_outside);
+    forward_visual_line(window, buffer->mode, theme, &test_iterator, scroll_outside);
 
     // The cursor must be on the screen and the screen must be moving down for us to reposition.
     // If the screen would move up then we already would've fit the cursor to the screen.
@@ -205,9 +206,9 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         uint64_t column = get_visual_column(buffer->mode, iterator);
 
         // If we delete more than 1/3 of the width then just go to the previous line.
-        column += window->cols() / 3;
+        column += window->total_cols / 3;
 
-        go_to_visual_column(buffer->mode, &iterator, column - (column % window->cols()));
+        go_to_visual_column(buffer->mode, &iterator, column - (column % window->total_cols));
     }
 
     if (window_cache) {
@@ -244,15 +245,16 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
         // Calculate the minimum cursor boundary.
         Contents_Iterator visible_start_iterator = iterator;
-        forward_visual_line(window, buffer->mode, &visible_start_iterator, scroll_outside - 1);
-        end_of_visual_line(window, buffer->mode, &visible_start_iterator);
+        forward_visual_line(window, buffer->mode, editor->theme, &visible_start_iterator,
+                            scroll_outside - 1);
+        end_of_visual_line(window, buffer->mode, editor->theme, &visible_start_iterator);
         forward_char(&visible_start_iterator);
 
         // Calculate the maximum cursor boundary.
         Contents_Iterator visible_end_iterator = iterator;
-        forward_visual_line(window, buffer->mode, &visible_end_iterator,
+        forward_visual_line(window, buffer->mode, editor->theme, &visible_end_iterator,
                             window->rows() - (scroll_outside + 1));
-        end_of_visual_line(window, buffer->mode, &visible_end_iterator);
+        end_of_visual_line(window, buffer->mode, editor->theme, &visible_end_iterator);
 
         // The visible_end_iterator is at the last visible character.  So if
         // we have scrolled past the entire screen then we should scroll up
@@ -270,23 +272,26 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
             if (selected_cursor_position > visible_end_iterator.position) {
                 // Scroll down such that the cursor is in bounds.
-                backward_visual_line(window, buffer->mode, &iterator,
+                backward_visual_line(window, buffer->mode, editor->theme, &iterator,
                                      window->rows() - (scroll_outside + 1));
             } else {
                 // Scroll up such that the cursor is in bounds.
-                backward_visual_line(window, buffer->mode, &iterator, scroll_outside);
+                backward_visual_line(window, buffer->mode, editor->theme, &iterator,
+                                     scroll_outside);
             }
 
             if (editor->theme.scroll_jump_half_page_when_outside_visible_region) {
                 if (selected_cursor_position > visible_end_iterator.position) {
                     Contents_Iterator it = visible_start_iterator;
-                    forward_visual_line(window, buffer->mode, &it, window->rows() / 2);
+                    forward_visual_line(window, buffer->mode, editor->theme, &it,
+                                        window->rows() / 2);
                     if (it.position > iterator.position) {
                         iterator = it;
                     }
                 } else {
                     Contents_Iterator it = visible_start_iterator;
-                    backward_visual_line(window, buffer->mode, &it, window->rows() / 2);
+                    backward_visual_line(window, buffer->mode, editor->theme, &it,
+                                         window->rows() / 2);
                     if (it.position < iterator.position) {
                         iterator = it;
                     }
@@ -294,7 +299,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
             }
 
             // Then go to the start of that line.
-            start_of_visual_line(window, buffer->mode, &iterator);
+            start_of_visual_line(window, buffer->mode, editor->theme, &iterator);
 
             // Save the scroll.
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
@@ -309,7 +314,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
             Contents_Iterator it = buffer->contents.iterator_at(selected_cursor_position);
             uint64_t column = get_visual_column(buffer->mode, it);
             uint64_t column_grace = editor->theme.scroll_outside_visual_columns;
-            if (column + 1 + column_grace > window->column_offset + window->cols()) {
+            if (column + 1 + column_grace > window->column_offset + window->total_cols) {
                 bool scroll = true;
 
                 // If we haven't scrolled yet then only start scrolling
@@ -320,16 +325,16 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                     uint64_t total_columns =
                         count_visual_columns(buffer->mode, it, eol_it.position, column);
                     // Add a column for the cursor at eol by using `>=`.
-                    scroll = total_columns >= window->cols();
+                    scroll = total_columns >= window->total_cols;
                 }
 
                 if (scroll) {
-                    window->column_offset = column + 1 - window->cols() + column_grace;
+                    window->column_offset = column + 1 - window->total_cols + column_grace;
                 }
             } else if (column < window->column_offset + column_grace) {
                 // Scroll left.  If we are within the grace or within half a screen
                 // width of the destination of the left border then just go there.
-                if (column < column_grace || column < window->cols() / 2) {
+                if (column < column_grace || column < window->total_cols / 2) {
                     window->column_offset = 0;
                 } else {
                     window->column_offset = column - column_grace;
@@ -341,8 +346,8 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         if (mark_changed && window->show_marks) {
             window_cache->v.unified.selected_cursor_mark =
                 window->cursors[window->selected_cursor].mark;
-            try_to_make_visible(window, window_cache, buffer, &iterator, scroll_outside,
-                                selected_cursor_position,
+            try_to_make_visible(window, window_cache, buffer, editor->theme, &iterator,
+                                scroll_outside, selected_cursor_position,
                                 window->cursors[window->selected_cursor].mark);
         }
 
@@ -360,12 +365,14 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
             }
 
             for (size_t c = window->cursors.len; c-- > window_cache->v.unified.cursor_count;) {
-                if (try_to_make_visible(window, window_cache, buffer, &iterator, scroll_outside,
-                                        first_visible_cursor_position, window->cursors[c].point)) {
+                if (try_to_make_visible(window, window_cache, buffer, editor->theme, &iterator,
+                                        scroll_outside, first_visible_cursor_position,
+                                        window->cursors[c].point)) {
                     // Fitting the point worked.  Try to also fit the mark.
                     if (window->show_marks && window->cursors[c].mark > window->cursors[c].point) {
-                        try_to_make_visible(window, window_cache, buffer, &iterator, scroll_outside,
-                                            first_visible_cursor_position, window->cursors[c].mark);
+                        try_to_make_visible(window, window_cache, buffer, editor->theme, &iterator,
+                                            scroll_outside, first_visible_cursor_position,
+                                            window->cursors[c].mark);
                     }
 
                     // If we made this one visible then all the ones before it are automatically.
@@ -448,7 +455,8 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                     // If we're within one page and over half way there then start breaking.
                     Contents_Iterator end_iterator = iterator;
                     end_iterator.retreat_to(window->start_position);
-                    forward_visual_line(window, buffer->mode, &end_iterator, window->rows() - 1);
+                    forward_visual_line(window, buffer->mode, editor->theme, &end_iterator,
+                                        window->rows() - 1);
 
                     // Tokenization happens from the top of the file to the bottom.  So if we want
                     // to move from the bottom to the top and the bottom isn't tokenized then we
@@ -491,7 +499,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                         // Go line by line.
                         for (float i = -speed_lines_to_shift; i > 0; --i) {
                             backward_char(&iterator);
-                            start_of_visual_line(window, buffer->mode, &iterator);
+                            start_of_visual_line(window, buffer->mode, editor->theme, &iterator);
                         }
                     } else {
                         // Teleport almost all the way there and start breaking.
@@ -517,7 +525,8 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                     // If we're within one page and over half way there then start breaking.
                     Contents_Iterator start_iterator = iterator;
                     start_iterator.advance_to(window->start_position);
-                    backward_visual_line(window, buffer->mode, &start_iterator, window->rows() - 1);
+                    backward_visual_line(window, buffer->mode, editor->theme, &start_iterator,
+                                         window->rows() - 1);
 
                     bool force_break = false;
                     float speed_loop_speed = speed_start;
@@ -547,7 +556,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                                              (float)window->rows())) {
                         // Go line by line.
                         for (float i = speed_lines_to_shift; i > 0; --i) {
-                            end_of_visual_line(window, buffer->mode, &iterator);
+                            end_of_visual_line(window, buffer->mode, editor->theme, &iterator);
                             forward_char(&iterator);
                         }
                     } else {
@@ -809,7 +818,7 @@ static void draw_buffer_contents(Cell* cells,
 
         char ch = iterator.get();
         if (ch == '\n') {
-            if (x < window->cols()) {
+            if (x < window->total_cols) {
                 SET_BODY(face, ' ');
             }
             ++x;
@@ -898,7 +907,7 @@ static void draw_buffer_contents(Cell* cells,
             apply_face(&face, editor->theme.special_faces[Face_Type::OTHER_CURSOR]);
         }
 
-        if (x < window->cols()) {
+        if (x < window->total_cols) {
             SET_BODY(face, ' ');
         }
         ++x;
@@ -906,7 +915,7 @@ static void draw_buffer_contents(Cell* cells,
 
     // Clear the rest of the window.
     for (; y < window->rows(); ++y) {
-        for (; x < window->cols(); ++x) {
+        for (; x < window->total_cols; ++x) {
             SET_BODY({}, ' ');
         }
         x = 0;
@@ -916,6 +925,7 @@ static void draw_buffer_contents(Cell* cells,
 static void draw_buffer_decoration(Cell* cells,
                                    size_t total_cols,
                                    Editor* editor,
+                                   Client* client,
                                    Window_Unified* window,
                                    const Buffer* buffer,
                                    bool is_selected_window,
@@ -941,18 +951,20 @@ static void draw_buffer_decoration(Cell* cells,
     cz::append(&string, ' ');
 
     for (size_t i = 0; i < editor->theme.decorations.len; ++i) {
-        if (editor->theme.decorations[i].append(buffer, window, cz::heap_allocator(), &string)) {
+        if (editor->theme.decorations[i].append(editor, client, buffer, window,
+                                                cz::heap_allocator(), &string)) {
             cz::append(&string, ' ');
         }
     }
     for (size_t i = 0; i < buffer->mode.decorations.len; ++i) {
-        if (buffer->mode.decorations[i].append(buffer, window, cz::heap_allocator(), &string)) {
+        if (buffer->mode.decorations[i].append(editor, client, buffer, window, cz::heap_allocator(),
+                                               &string)) {
             cz::append(&string, ' ');
         }
     }
 
     // Attempt to shorten the start of the string.
-    if (string.len > window->cols()) {
+    if (string.len > window->total_cols) {
         cz::Str rendered = string.slice_end(starting_len);
         if (buffer->type == Buffer::TEMPORARY) {
             // *identifier detail1 detail2 etc* => *identifier ...*
@@ -966,7 +978,7 @@ static void draw_buffer_decoration(Cell* cells,
             }
         }
 
-        if (string.len > window->cols() && buffer->directory.len != 0) {
+        if (string.len > window->total_cols && buffer->directory.len != 0) {
             // *name* (/path1/path2/path3) => *name* (.../path3)
             cz::Str dir = rendered;
             if (buffer->type == Buffer::TEMPORARY) {
@@ -981,7 +993,7 @@ static void draw_buffer_decoration(Cell* cells,
                 if (!slash) {
                     break;
                 }
-                if (string.len - (slash - dir.buffer) + 3 < window->cols()) {
+                if (string.len - (slash - dir.buffer) + 3 < window->total_cols) {
                     break;
                 }
             }
@@ -999,12 +1011,12 @@ static void draw_buffer_decoration(Cell* cells,
 
     size_t y = window->rows();
     size_t x = 0;
-    size_t max = cz::min<size_t>(string.len, window->cols());
+    size_t max = cz::min<size_t>(string.len, window->total_cols);
     for (size_t i = 0; i < max; ++i) {
         SET_IND(face, string[i]);
         ++x;
     }
-    for (; x < window->cols(); ++x) {
+    for (; x < window->total_cols; ++x) {
         SET_IND(face, ' ');
     }
 }
@@ -1065,12 +1077,12 @@ static void draw_window_completion(Cell* cells,
         size_t x = cursor_pos_x;
 
         bool narrow_line = false;
-        if (x + width > window->cols()) {
-            if (window->cols() >= width) {
-                x = window->cols() - width;
+        if (x + width > window->total_cols) {
+            if (window->total_cols >= width) {
+                x = window->total_cols - width;
             } else {
                 x = 0;
-                width = window->cols();
+                width = window->total_cols;
             }
             narrow_line = true;
         }
@@ -1132,8 +1144,8 @@ static void draw_buffer(Cell* cells,
     size_t cursor_pos_y, cursor_pos_x;
     draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
                          start_col, &cursor_pos_y, &cursor_pos_x, iterator);
-    draw_buffer_decoration(cells, total_cols, editor, window, buffer, is_selected_window, start_row,
-                           start_col);
+    draw_buffer_decoration(cells, total_cols, editor, client, window, buffer, is_selected_window,
+                           start_row, start_col);
     draw_window_completion(cells, editor, client, window, buffer, total_cols, start_row, start_col,
                            cursor_pos_y, cursor_pos_x);
 }
@@ -1233,7 +1245,7 @@ static void recalculate_mouse_recursive(const Theme& theme,
         // Test if the mouse is in bounds.
         if (mouse->has_client_position &&
             (start_col <= mouse->client_column &&
-             mouse->client_column < start_col + window->cols()) &&
+             mouse->client_column < start_col + window->total_cols) &&
             (start_row <= mouse->client_row && mouse->client_row < start_row + window->rows())) {
             // Mark this window as the mouse's window.
             WITH_CONST_WINDOW_BUFFER(window);
@@ -1397,14 +1409,14 @@ void render_to_cells(Cell* cells,
             Contents_Iterator it = buffer->contents.start();
 
             // Eat the first line.
-            end_of_visual_line(window, buffer->mode, &it);
+            end_of_visual_line(window, buffer->mode, editor->theme, &it);
             forward_char(&it);
 
             for (; mini_buffer_height < editor->theme.mini_buffer_max_height;
                  ++mini_buffer_height) {
                 // If there is no subsequent line then stop.
                 uint64_t backup = it.position;
-                end_of_visual_line(window, buffer->mode, &it);
+                end_of_visual_line(window, buffer->mode, editor->theme, &it);
                 forward_char(&it);
                 if (it.position == backup) {
                     break;

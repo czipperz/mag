@@ -8,6 +8,7 @@ struct Buffer;
 struct Contents_Iterator;
 struct Contents;
 struct Token;
+struct Theme;
 struct Mode;
 struct Window_Unified;
 
@@ -21,12 +22,17 @@ void forward_through_whitespace(Contents_Iterator* iterator);
 void backward_through_whitespace(Contents_Iterator* iterator);
 
 /// Visible lines are either wrapped at `window->cols()` or terminated by a newline.
-void start_of_visual_line(const Window_Unified*, const Mode&, Contents_Iterator*);
-void end_of_visual_line(const Window_Unified*, const Mode&, Contents_Iterator*);
-void forward_visual_line(const Window_Unified*, const Mode&, Contents_Iterator*, uint64_t rows = 1);
-void backward_visual_line(const Window_Unified*,
-                          const Mode&,
-                          Contents_Iterator*,
+void start_of_visual_line(const Window_Unified*, const Mode&, const Theme&, Contents_Iterator*);
+void end_of_visual_line(const Window_Unified*, const Mode&, const Theme&, Contents_Iterator*);
+void forward_visual_line(const Window_Unified* window,
+                         const Mode& mode,
+                         const Theme& theme,
+                         Contents_Iterator* it,
+                         uint64_t rows = 1);
+void backward_visual_line(const Window_Unified* window,
+                          const Mode& mode,
+                          const Theme& theme,
+                          Contents_Iterator* it,
                           uint64_t rows = 1);
 
 uint64_t char_visual_columns(const Mode& mode, char ch, uint64_t column);

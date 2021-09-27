@@ -12,6 +12,8 @@ struct Buffer;
 struct Buffer_Handle;
 struct Contents_Iterator;
 struct Client;
+struct Contents;
+struct Theme;
 
 struct Window_Split;
 
@@ -85,8 +87,10 @@ struct Window_Unified : Window {
     }
 
     size_t rows() const { return total_rows - 1; }
-    size_t cols() const { return total_cols; }
 };
+
+size_t line_number_cols(const Theme& theme, const Window_Unified* window, const Buffer* buffer);
+size_t line_number_cols(const Theme& theme, const Window_Unified* window, const Contents* contents);
 
 struct Window_Split : Window {
     Window* first;
@@ -114,6 +118,7 @@ void kill_extra_cursors(Window_Unified* window, Client* client);
 
 Contents_Iterator nearest_character(const Window_Unified* window,
                                     const Buffer* buffer,
+                                    const Theme& theme,
                                     uint32_t row,
                                     uint32_t column);
 

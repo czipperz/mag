@@ -148,7 +148,7 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
     } else if (iterator.position > old_point) {
         Contents_Iterator ve = iterator;
         ve.retreat_to(window->start_position);
-        forward_visual_line(window, buffer->mode, &ve, window->rows() - 1);
+        forward_visual_line(window, buffer->mode, editor->theme, &ve, window->rows() - 1);
         if (iterator.position < ve.position) {
             center_in_window(window, buffer->mode, editor->theme, iterator);
         } else {
@@ -301,8 +301,9 @@ void command_move_mouse_and_lookup_at_point(Editor* editor, Command_Source sourc
 
     {
         WITH_CONST_SELECTED_NORMAL_BUFFER(source.client);
-        Contents_Iterator iterator = nearest_character(
-            window, buffer, source.client->mouse.window_row, source.client->mouse.window_column);
+        Contents_Iterator iterator =
+            nearest_character(window, buffer, editor->theme, source.client->mouse.window_row,
+                              source.client->mouse.window_column);
         kill_extra_cursors(window, source.client);
         window->cursors[0].point = iterator.position;
     }

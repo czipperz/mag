@@ -9,6 +9,7 @@
 #include <cz/vector.hpp>
 #include "buffer.hpp"
 #include "decoration.hpp"
+#include "editor.hpp"
 #include "movement.hpp"
 #include "visible_region.hpp"
 #include "window.hpp"
@@ -16,7 +17,9 @@
 namespace mag {
 namespace syntax {
 
-static bool decoration_cursor_count_append(const Buffer* buffer,
+static bool decoration_cursor_count_append(Editor* editor,
+                                           Client* client,
+                                           const Buffer* buffer,
                                            Window_Unified* window,
                                            cz::Allocator allocator,
                                            cz::String* string,
@@ -29,7 +32,7 @@ static bool decoration_cursor_count_append(const Buffer* buffer,
 
     Contents_Iterator visible_start = buffer->contents.iterator_at(window->start_position);
     Contents_Iterator visible_end = visible_start;
-    forward_visual_line(window, buffer->mode, &visible_end, window->rows());
+    forward_visual_line(window, buffer->mode, editor->theme, &visible_end, window->rows());
 
     size_t visible = 0;
     for (size_t i = 0; i < window->cursors.len; ++i) {

@@ -350,13 +350,14 @@ void command_forward_line_single_cursor_visual(Editor* editor, Command_Source so
 
         if (buffer->mode.wrap_long_lines) {
             uint64_t column = get_visual_column(buffer->mode, it);
-            uint64_t new_goal = cursor_goal_column + window->cols();
+            size_t cols = window->total_cols - line_number_cols(editor->theme, window, buffer);
+            uint64_t new_goal = cursor_goal_column + cols;
 
             // If we have a long line and are wrapping then go to the next column down.
             while (1) {
                 if (it.at_eob()) {
                 eol:
-                    if (column >= new_goal - (new_goal % window->cols())) {
+                    if (column >= new_goal - (new_goal % cols)) {
                         cursor_goal_column = new_goal;
                         goto finish;
                     }
@@ -376,7 +377,7 @@ void command_forward_line_single_cursor_visual(Editor* editor, Command_Source so
                 it.advance();
             }
 
-            cursor_goal_column %= window->cols();
+            cursor_goal_column %= cols;
             goto no_wrap;
         } else {
         no_wrap:
@@ -410,7 +411,8 @@ void command_backward_line_single_cursor_visual(Editor* editor, Command_Source s
         }
 
         if (buffer->mode.wrap_long_lines) {
-            if (cursor_goal_column < window->cols()) {
+            size_t cols = window->total_cols - line_number_cols(editor->theme, window, buffer);
+            if (cursor_goal_column < cols) {
                 // Go to last visual line of previous line.
                 start_of_line(&it);
                 if (it.at_bob())
@@ -418,12 +420,12 @@ void command_backward_line_single_cursor_visual(Editor* editor, Command_Source s
                 it.retreat();
 
                 uint64_t column = get_visual_column(buffer->mode, it);
-                column -= (column % window->cols());
-                column += (cursor_goal_column % window->cols());
+                column -= (column % cols);
+                column += (cursor_goal_column % cols);
                 cursor_goal_column = column;
             } else {
                 // Go to previous visual line inside this line.
-                cursor_goal_column -= window->cols();
+                cursor_goal_column -= cols;
             }
         } else {
             // Go to previous line.
@@ -1168,7 +1170,7 @@ void command_undo(Editor* editor, Command_Source source) {
     if (window->cursors.len == 1) {
         uint64_t position = buffer->changes.last().commit.edits[0].position;
         Contents_Iterator iterator = buffer->contents.iterator_at(position);
-        if (!is_visible(window, buffer->mode, iterator)) {
+        if (!is_visible(window, buffer->mode, editor->theme, iterator)) {
             window->cursors[0].point = position;
             center_in_window(window, buffer->mode, editor->theme, iterator);
         }
@@ -1186,7 +1188,7 @@ void command_redo(Editor* editor, Command_Source source) {
     if (window->cursors.len == 1) {
         uint64_t position = buffer->changes.last().commit.edits[0].position;
         Contents_Iterator iterator = buffer->contents.iterator_at(position);
-        if (!is_visible(window, buffer->mode, iterator)) {
+        if (!is_visible(window, buffer->mode, editor->theme, iterator)) {
             window->cursors[0].point = position;
             center_in_window(window, buffer->mode, editor->theme, iterator);
         }

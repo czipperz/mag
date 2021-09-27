@@ -8,6 +8,7 @@
 #include <cz/sort.hpp>
 #include <cz/vector.hpp>
 #include "buffer.hpp"
+#include "editor.hpp"
 #include "movement.hpp"
 #include "overlay.hpp"
 #include "theme.hpp"
@@ -54,7 +55,7 @@ static bool binary_search(cz::Slice<Token> tokens, uint64_t position, size_t* to
     return false;
 }
 
-static void overlay_matching_pairs_start_frame(Editor*,
+static void overlay_matching_pairs_start_frame(Editor* editor,
                                                Client*,
                                                const Buffer* buffer,
                                                Window_Unified* window,
@@ -67,7 +68,7 @@ static void overlay_matching_pairs_start_frame(Editor*,
     data->points.len = 0;
 
     Contents_Iterator end_iterator = start_position_iterator;
-    forward_visual_line(window, buffer->mode, &end_iterator, window->rows() - 1);
+    forward_visual_line(window, buffer->mode, editor->theme, &end_iterator, window->rows() - 1);
 
     // Note: we update the token cache in the render loop.
     CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);

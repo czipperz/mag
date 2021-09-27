@@ -154,6 +154,26 @@ void Window_Unified::abort_completion() {
     completing = false;
 }
 
+size_t line_number_cols(const Theme& theme, const Window_Unified* window, const Buffer* buffer) {
+    return line_number_cols(theme, window, &buffer->contents);
+}
+size_t line_number_cols(const Theme& theme,
+                        const Window_Unified* window,
+                        const Contents* contents) {
+    if (!theme.draw_line_numbers)
+        return 0;
+
+    size_t end_line_number = contents->get_line_number(contents->len) + 1;
+    size_t line_number_width = (size_t)log10(end_line_number) + 1;
+    size_t result = line_number_width + 1 /* space on right */;
+
+    // Enable drawing line numbers for non-mini buffer
+    // windows if they are enabled and fit on the screen.
+    if (result + 5 > window->total_cols)
+        return 0;
+    return result;
+}
+
 void Window::drop_(Window* window) {
     switch (window->tag) {
     case UNIFIED: {
@@ -255,14 +275,15 @@ void kill_extra_cursors(Window_Unified* window, Client* client) {
 
 Contents_Iterator nearest_character(const Window_Unified* window,
                                     const Buffer* buffer,
+                                    const Theme& theme,
                                     uint32_t row,
                                     uint32_t column) {
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
 
     row = std::min(row, (uint32_t)window->rows() - 1);
-    column = std::min(column, (uint32_t)window->cols() - 1);
+    column = std::min(column, (uint32_t)window->total_cols - 1);
 
-    forward_visual_line(window, buffer->mode, &iterator, row);
+    forward_visual_line(window, buffer->mode, theme, &iterator, row);
 
     uint64_t line_column = window->column_offset;
     go_to_visual_column(buffer->mode, &iterator, line_column + column);

@@ -5,6 +5,7 @@
 #include <Tracy.hpp>
 #include <cz/heap.hpp>
 #include "buffer.hpp"
+#include "editor.hpp"
 #include "movement.hpp"
 #include "overlay.hpp"
 #include "theme.hpp"
@@ -65,7 +66,7 @@ static void set_token_matches(Data* data) {
     data->token_matches = true;
 }
 
-static void overlay_matching_tokens_start_frame(Editor*,
+static void overlay_matching_tokens_start_frame(Editor* editor,
                                                 Client*,
                                                 const Buffer* buffer,
                                                 Window_Unified* window,
@@ -86,8 +87,10 @@ static void overlay_matching_tokens_start_frame(Editor*,
 
     Contents_Iterator visible_start_iterator = iterator;
     Contents_Iterator visible_end_iterator = iterator;
-    forward_visual_line(window, buffer->mode, &visible_end_iterator, window->rows() - 1);
-    backward_visual_line(window, buffer->mode, &visible_start_iterator, window->rows() - 1);
+    forward_visual_line(window, buffer->mode, editor->theme, &visible_end_iterator,
+                        window->rows() - 1);
+    backward_visual_line(window, buffer->mode, editor->theme, &visible_start_iterator,
+                         window->rows() - 1);
     if (window->start_position < visible_start_iterator.position ||
         visible_end_iterator.position < window->start_position) {
         return;

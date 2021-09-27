@@ -21,8 +21,8 @@ static Job_Tick_Result mouse_motion_job_tick(Editor* editor, Client* client, voi
     }
 
     Contents_Iterator mark = buffer->contents.iterator_at(client->mouse.window_select_point);
-    Contents_Iterator point =
-        nearest_character(window, buffer, client->mouse.window_row, client->mouse.window_column);
+    Contents_Iterator point = nearest_character(
+        window, buffer, editor->theme, client->mouse.window_row, client->mouse.window_column);
 
     // Word and line selection.
     if (client->mouse.selecting > 1) {
@@ -83,8 +83,9 @@ void command_mouse_select_start(Editor* editor, Command_Source source) {
     source.client->selected_normal_window = (Window_Unified*)source.client->mouse.window;
 
     WITH_CONST_SELECTED_NORMAL_BUFFER(source.client);
-    Contents_Iterator iterator = nearest_character(window, buffer, source.client->mouse.window_row,
-                                                   source.client->mouse.window_column);
+    Contents_Iterator iterator =
+        nearest_character(window, buffer, editor->theme, source.client->mouse.window_row,
+                          source.client->mouse.window_column);
     kill_extra_cursors(window, source.client);
     window->cursors[0].point = window->cursors[0].mark = iterator.position;
 

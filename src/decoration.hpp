@@ -4,22 +4,32 @@
 
 namespace mag {
 struct Buffer;
+struct Client;
+struct Editor;
 struct Window_Unified;
 
 struct Decoration {
     struct VTable {
-        bool (*append)(const Buffer*, Window_Unified*, cz::Allocator, cz::String*, void*);
+        bool (*append)(Editor* editor,
+                       Client* client,
+                       const Buffer* buffer,
+                       Window_Unified* window,
+                       cz::Allocator allocator,
+                       cz::String* string,
+                       void* data);
         void (*cleanup)(void*);
     };
 
     const VTable* vtable;
     void* data;
 
-    bool append(const Buffer* buffer,
+    bool append(Editor* editor,
+                Client* client,
+                const Buffer* buffer,
                 Window_Unified* window,
                 cz::Allocator allocator,
                 cz::String* string) const {
-        return vtable->append(buffer, window, allocator, string, data);
+        return vtable->append(editor, client, buffer, window, allocator, string, data);
     }
 
     void cleanup() { vtable->cleanup(data); }
