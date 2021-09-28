@@ -23,6 +23,7 @@
 #include "basic/number_commands.hpp"
 #include "basic/reformat_commands.hpp"
 #include "basic/region_movement_commands.hpp"
+#include "basic/remote.hpp"
 #include "basic/search_buffer_commands.hpp"
 #include "basic/search_commands.hpp"
 #include "basic/shift_commands.hpp"
@@ -611,6 +612,8 @@ void editor_created_callback(Editor* editor) {
     create_key_map(editor->key_map);
     create_theme(editor->theme);
     sort_global_commands();
+
+    start_server(editor);
 }
 
 static void directory_key_map(Key_Map& key_map) {

@@ -11,6 +11,7 @@
 #include <cz/str.hpp>
 #include <cz/util.hpp>
 #include <cz/working_directory.hpp>
+#include "basic/remote.hpp"
 #include "client.hpp"
 #include "command.hpp"
 #include "command_macros.hpp"
@@ -42,12 +43,15 @@ Files should be one of the following forms:\n\
 Options:\n\
   --help             View the help page.\n\
   --client=CLIENT    Launches a specified client.\n\
+  --try-remote       Tries to open the files in an existing Mag server.\n\
+                     If no server is found then starts a client.\n\
 \n\
 Available clients:\n"
 #ifdef HAS_NCURSES
             "  ncurses   in terminal editing\n"
 #endif
-            "  sdl       grapical window (default)\n",
+            "  sdl       grapical window (default)\n"
+            "  remote    open in an existing Mag server\n",
             program_name);
     return 1;
 }
@@ -154,6 +158,60 @@ int mag_main(int argc, char** argv) {
     ZoneScoped;
 
     try {
+        cz::Vector<cz::Str> files = {};
+        CZ_DEFER(files.drop(cz::heap_allocator()));
+        int chosen_client = Client::SDL;
+        bool try_remote = false;
+        for (int i = 1; i < argc; ++i) {
+            cz::Str arg = argv[i];
+            if (arg == "--help") {
+                return usage();
+            } else if (arg.starts_with("--client=")) {
+#ifdef HAS_NCURSES
+                if (arg == "--client=ncurses") {
+                    chosen_client = Client::NCURSES;
+                    continue;
+                }
+#endif
+
+                if (arg == "--client=sdl") {
+                    chosen_client = Client::SDL;
+                    continue;
+                }
+
+                if (arg == "--client=remote") {
+                    chosen_client = Client::REMOTE;
+                    continue;
+                }
+
+                return usage();
+            } else if (arg == "--try-remote") {
+                try_remote = true;
+            } else {
+                files.reserve(cz::heap_allocator(), 1);
+                files.push(arg);
+            }
+        }
+
+        if (try_remote || chosen_client == Client::REMOTE) {
+            if (files.len > 0) {
+                cz::String path = standardize_path(cz::heap_allocator(), files[0]);
+                CZ_DEFER(path.drop(cz::heap_allocator()));
+
+                // TODO: send all arguments
+                if (basic::client_connect_and_open(path) == 0)
+                    return 0;
+            }
+
+            if (chosen_client == Client::REMOTE) {
+                if (files.len == 0)
+                    fprintf(stderr, "No files to send to the remote client");
+                else
+                    fprintf(stderr, "Failed to connect to the remote client");
+                return 1;
+            }
+        }
+
         // Set the program name.  First try to locate the executable and then if that fails use
         // argv[0].
         cz::String program_name_storage = {};
@@ -302,29 +360,9 @@ A-g     Project or directory commands\n\
         client.window->set_size(38, 88);
 
         uint32_t opened_count = 0;
-        int chosen_client = Client::SDL;
-        for (int i = 1; i < argc; ++i) {
-            cz::Str arg = argv[i];
-            if (arg == "--help") {
-                return usage();
-            } else if (arg.starts_with("--client=")) {
-#ifdef HAS_NCURSES
-                if (arg == "--client=ncurses") {
-                    chosen_client = Client::NCURSES;
-                    continue;
-                }
-#endif
-
-                if (arg == "--client=sdl") {
-                    chosen_client = Client::SDL;
-                    continue;
-                }
-
-                return usage();
-            } else {
-                open_arg(&server.editor, &client, arg, &opened_count);
-                server.slurp_jobs();
-            }
+        for (size_t i = 0; i < files.len; ++i) {
+            open_arg(&server.editor, &client, files[i], &opened_count);
+            server.slurp_jobs();
         }
 
         switch (chosen_client) {
@@ -337,6 +375,9 @@ A-g     Project or directory commands\n\
         case Client::SDL:
             client::sdl::run(&server, &client);
             break;
+
+        case Client::REMOTE:
+            CZ_PANIC("unreachable");
         }
         return 0;
     } catch (cz::PanicReachedException& ex) {

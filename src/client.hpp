@@ -34,6 +34,7 @@ struct Client {
     enum {
         NCURSES,
         SDL,
+        REMOTE,
     } type;
 
     bool record_key_presses;
