@@ -156,8 +156,8 @@ static int actually_start_server() {
     // Reuse port to allow for quick restarting.
     {
         int opt = 1;
-        result = setsockopt(server_data.socket_server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-                            &opt, sizeof(opt));
+        result = setsockopt(server_data.socket_server, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt,
+                            sizeof(opt));
         if (result < 0) {
             closesocket(server_data.socket_server);
             goto error;
