@@ -1329,7 +1329,7 @@ static bool handle_line_comment_doc(Contents_Iterator* iterator, Token* token, S
                 }
             }
 
-            state->comment = COMMENT_NULL;
+            comment_pop(state);
             if (iterator->position == token->start) {
                 return handle_syntax(iterator, token, state);
             }
@@ -1474,7 +1474,7 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
         }
 
         if (found_end)
-            state->comment = COMMENT_NULL;
+            comment_pop(state);
         else
             state->comment = COMMENT_BLOCK_NORMAL;
     } else {
@@ -1526,7 +1526,7 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
         } else if (found_end) {
             // '/* `/* */' should parse the final '*/' as ending the outer.
             if (!look_for_line)
-                state->comment = COMMENT_NULL;
+                comment_pop(state);
         } else if (found_tick) {
             state->comment = COMMENT_BLOCK_RESUME_INSIDE;
         }
@@ -1638,7 +1638,7 @@ static bool handle_block_comment_doc(Contents_Iterator* iterator, Token* token, 
                     goto ret;
                 }
             } else if (ch == '/') {
-                state->comment = COMMENT_NULL;
+                comment_pop(state);
                 iterator->advance();
                 token->type = Token_Type::DOC_COMMENT;
                 goto ret;
