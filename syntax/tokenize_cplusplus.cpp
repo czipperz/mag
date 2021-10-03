@@ -23,19 +23,21 @@ enum {
     COMMENT_LINE_INSIDE_INLINE = 1,
     COMMENT_LINE_INSIDE_MULTI_LINE = 2,
     COMMENT_LINE_RESUME_INSIDE = 3,
-    COMMENT_LINE_RESUME_OUTSIDE_SOL = 4,
-    COMMENT_LINE_RESUME_OUTSIDE_MOL = 5,
-    COMMENT_LINE_RESUME_OUTSIDE_HEADER = 6,
-    COMMENT_LINE_OUTSIDE_MULTI_LINE = 7,
-    COMMENT_BLOCK_INSIDE_INLINE = 8,
-    COMMENT_BLOCK_INSIDE_MULTI_LINE = 9,
-    COMMENT_BLOCK_RESUME_INSIDE = 10,
-    COMMENT_BLOCK_RESUME_OUTSIDE_SOL1 = 11,
-    COMMENT_BLOCK_RESUME_OUTSIDE_SOL2 = 12,
-    COMMENT_BLOCK_RESUME_OUTSIDE_MOL = 13,
-    COMMENT_BLOCK_RESUME_OUTSIDE_HEADER = 14,
-    COMMENT_BLOCK_OUTSIDE_MULTI_LINE = 15,
-    COMMENT_BLOCK_NORMAL = 16,
+    COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL = 4,
+    COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL = 5,
+    COMMENT_LINE_RESUME_OUTSIDE_SOL = 6,
+    COMMENT_LINE_RESUME_OUTSIDE_MOL = 7,
+    COMMENT_LINE_RESUME_OUTSIDE_HEADER = 8,
+    COMMENT_LINE_OUTSIDE_MULTI_LINE = 9,
+    COMMENT_BLOCK_INSIDE_INLINE = 10,
+    COMMENT_BLOCK_INSIDE_MULTI_LINE = 11,
+    COMMENT_BLOCK_RESUME_INSIDE = 12,
+    COMMENT_BLOCK_RESUME_OUTSIDE_SOL1 = 13,
+    COMMENT_BLOCK_RESUME_OUTSIDE_SOL2 = 14,
+    COMMENT_BLOCK_RESUME_OUTSIDE_MOL = 15,
+    COMMENT_BLOCK_RESUME_OUTSIDE_HEADER = 16,
+    COMMENT_BLOCK_OUTSIDE_MULTI_LINE = 17,
+    COMMENT_BLOCK_NORMAL = 18,
 };
 
 enum {
@@ -112,6 +114,7 @@ static bool handle_comment(Contents_Iterator* iterator, Token* token, State* sta
         return resume_line_comment_doc(iterator, token, state);
     case COMMENT_LINE_RESUME_OUTSIDE_HEADER:
         return resume_line_comment_header(iterator, token, state);
+    case COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL:
     case COMMENT_LINE_OUTSIDE_MULTI_LINE:
         return handle_line_comment_outside_multi_line(iterator, token, state);
     case COMMENT_BLOCK_RESUME_INSIDE:
@@ -123,6 +126,7 @@ static bool handle_comment(Contents_Iterator* iterator, Token* token, State* sta
         return resume_block_comment_header(iterator, token, state);
     case COMMENT_BLOCK_OUTSIDE_MULTI_LINE:
         return handle_block_comment_outside_multi_line(iterator, token, state);
+    case COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL:
     case COMMENT_BLOCK_NORMAL:
         return resume_block_comment_normal(iterator, token, state);
     default:
@@ -1226,7 +1230,10 @@ static bool handle_line_comment_outside_multi_line(Contents_Iterator* iterator,
                 test.advance();
                 char ch = test.get();
                 if (ch == '!' || ch == '/') {
-                    state->comment = COMMENT_LINE_INSIDE_MULTI_LINE;
+                    if (state->comment == COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL)
+                        state->comment = COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL;
+                    else
+                        state->comment = COMMENT_LINE_INSIDE_MULTI_LINE;
                     token->type = Token_Type::DOC_COMMENT;
                     token->start = iterator->position;
                     test.advance();
@@ -1479,13 +1486,15 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
             state->comment = COMMENT_BLOCK_NORMAL;
     } else {
         bool look_for_line = (state->comment == COMMENT_LINE_INSIDE_INLINE ||
-                              state->comment == COMMENT_LINE_INSIDE_MULTI_LINE);
+                              state->comment == COMMENT_LINE_INSIDE_MULTI_LINE ||
+                              state->comment == COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL);
         bool found_line = false;
         bool found_end = false;
         bool found_tick = false;
 
         bool multi_line = (state->comment == COMMENT_LINE_INSIDE_MULTI_LINE ||
-                           state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE);
+                           state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE ||
+                           state->comment == COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL);
         for (int i = 0; i < 1 + first; ++i) {
             // Find the first '\n', '*/', or '`'.
             Contents_Iterator line_it = *iterator;
@@ -1522,7 +1531,10 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
         }
 
         if (found_line) {
-            state->comment = COMMENT_LINE_RESUME_INSIDE;
+            if (state->comment == COMMENT_LINE_INSIDE_INLINE)
+                comment_pop(state);
+            else  // COMMENT_LINE_INSIDE_MULTI_LINE || COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL
+                state->comment = COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL;
         } else if (found_end) {
             // '/* `/* */' should parse the final '*/' as ending the outer.
             if (!look_for_line)
