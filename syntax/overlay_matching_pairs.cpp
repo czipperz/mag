@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 #include <Tracy.hpp>
-#include <algorithm>
+#include <cz/dedup.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/sort.hpp>
@@ -151,8 +151,15 @@ static void overlay_matching_pairs_start_frame(Editor* editor,
     }
 
     cz::sort(data->points);
-    auto new_end = std::unique(data->points.start(), data->points.end());
-    data->points.len = new_end - data->points.start();
+    cz::dedup(&data->points);
+
+    // Skip to the first on screen point.
+    size_t i = 0;
+    for (; i < data->points.len; ++i) {
+        if (data->points[i] >= start_position_iterator.position)
+            break;
+    }
+    data->index = i;
 }
 
 static Face overlay_matching_pairs_get_face_and_advance(const Buffer* buffer,
