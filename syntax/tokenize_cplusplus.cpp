@@ -1456,19 +1456,15 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
                                         Token* token,
                                         State* state,
                                         bool first) {
-    bool look_for_line = (state->comment == COMMENT_LINE_INSIDE_INLINE ||
-                          state->comment == COMMENT_LINE_INSIDE_MULTI_LINE);
-    bool found_line = false;
-    bool found_end = false;
-    bool found_tick = false;
-
     token->type = Token_Type::COMMENT;
 
     // Rate limit to one bucket (two at the start of the comment) to prevent
     // hanging when inserting '/*' at the start of a big buffer.  Align to
     // bucket boundaries to allow token streams to merge, which allows us to
     // avoid re-tokenizing a buffer on a miscellaneous change near the beginning.
-    if (state->comment == COMMENT_NULL) {
+    if (state->comment == COMMENT_NULL || state->comment == COMMENT_BLOCK_NORMAL) {
+        bool found_end = false;
+
         for (int i = 0; i < 1 + first; ++i) {
             if (search_forward_bucket(iterator, "*/")) {
                 iterator->advance(2);
@@ -1476,7 +1472,18 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
                 break;
             }
         }
+
+        if (found_end)
+            state->comment = COMMENT_NULL;
+        else
+            state->comment = COMMENT_BLOCK_NORMAL;
     } else {
+        bool look_for_line = (state->comment == COMMENT_LINE_INSIDE_INLINE ||
+                              state->comment == COMMENT_LINE_INSIDE_MULTI_LINE);
+        bool found_line = false;
+        bool found_end = false;
+        bool found_tick = false;
+
         bool multi_line = (state->comment == COMMENT_LINE_INSIDE_MULTI_LINE ||
                            state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE);
         for (int i = 0; i < 1 + first; ++i) {
@@ -1513,16 +1520,16 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
                 break;
             }
         }
-    }
 
-    if (found_line) {
-        state->comment = COMMENT_LINE_RESUME_INSIDE;
-    } else if (found_end) {
-        // '/* `/* */' should parse the final '*/' as ending the outer.
-        if (!look_for_line)
-            state->comment = COMMENT_NULL;
-    } else if (found_tick) {
-        state->comment = COMMENT_BLOCK_RESUME_INSIDE;
+        if (found_line) {
+            state->comment = COMMENT_LINE_RESUME_INSIDE;
+        } else if (found_end) {
+            // '/* `/* */' should parse the final '*/' as ending the outer.
+            if (!look_for_line)
+                state->comment = COMMENT_NULL;
+        } else if (found_tick) {
+            state->comment = COMMENT_BLOCK_RESUME_INSIDE;
+        }
     }
 
     token->end = iterator->position;
