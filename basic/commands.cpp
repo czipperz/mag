@@ -1870,14 +1870,24 @@ void command_show_file_length_info(Editor* editor, Command_Source source) {
     Contents_Iterator words_it = buffer->contents.iterator_at(start);
     while (words_it.position < end) {
         ++words;
+
         forward_word(&words_it);
-    }
-    if (words > 0) {
-        words_it.retreat();
-        if (!cz::is_alnum(words_it.get())) {
-            --words;
+
+        // Fix word at end of file not being counted.
+        if (words_it.position >= end) { // end of region so >=
+            words_it.retreat();
+            if (cz::is_alnum(words_it.get())) {
+                backward_word(&words_it);
+                if (words_it.position < end) { // beginning of region so <
+                    ++words;
+                }
+            }
+            break;
         }
     }
+
+    if (words > 0)
+        --words;
 
     cz::String string = {};
     CZ_DEFER(string.drop(cz::heap_allocator()));
