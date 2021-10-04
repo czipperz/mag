@@ -170,10 +170,25 @@ struct Scroll_State {
     double prev_pos;          // previous event's position
 };
 
+static uint16_t convert_key_modifiers(int mod) {
+    uint16_t modifiers = 0;
+    if (mod & KMOD_CTRL) {
+        modifiers |= CONTROL;
+    }
+    if (mod & KMOD_ALT) {
+        modifiers |= ALT;
+    }
+    if (mod & KMOD_SHIFT) {
+        modifiers |= SHIFT;
+    }
+    return modifiers;
+}
+
 static void process_event(Server* server,
                           Client* client,
                           SDL_Event event,
                           Scroll_State* scroll,
+                          int* mod_state,
                           int character_width,
                           int character_height,
                           bool* force_redraw,
@@ -197,7 +212,7 @@ static void process_event(Server* server,
         break;
 
     case SDL_TEXTINPUT:
-        if (!(SDL_GetModState() & ~(KMOD_SHIFT | KMOD_CAPS | KMOD_NUM | KMOD_GUI))) {
+        if (!(*mod_state & ~(KMOD_SHIFT | KMOD_CAPS | KMOD_NUM | KMOD_GUI))) {
             for (char* p = event.text.text; *p; ++p) {
                 Key key = {};
                 key.code = *p;
@@ -255,6 +270,7 @@ static void process_event(Server* server,
         client->_select_mini_buffer = false;
 
         Key key = {};
+        key.modifiers = convert_key_modifiers(*mod_state);
         if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
             event.wheel.y *= -1;
             event.wheel.x *= -1;
@@ -315,17 +331,7 @@ static void process_event(Server* server,
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP: {
         Key key = {};
-
-        SDL_Keymod mod = SDL_GetModState();
-        if (mod & KMOD_CTRL) {
-            key.modifiers |= CONTROL;
-        }
-        if (mod & KMOD_ALT) {
-            key.modifiers |= ALT;
-        }
-        if (mod & KMOD_SHIFT) {
-            key.modifiers |= SHIFT;
-        }
+        key.modifiers = convert_key_modifiers(*mod_state);
 
         if (event.button.button == SDL_BUTTON_LEFT) {
             key.code = Key_Code::MOUSE1;
@@ -352,15 +358,30 @@ static void process_event(Server* server,
     case SDL_KEYDOWN: {
         Key key = {};
         switch (event.key.keysym.sym) {
-        case SDLK_LALT:
-        case SDLK_RALT:
-        case SDLK_LSHIFT:
-        case SDLK_RSHIFT:
-        case SDLK_LGUI:
-        case SDLK_RGUI:
-        case SDLK_LCTRL:
-        case SDLK_RCTRL:
-            // Ignore non-text button presses.  These will be part of the `mod` of the actual key.
+#define MOD_CASE(name)             \
+    case SDLK_##name:              \
+        *mod_state |= KMOD_##name; \
+        return
+
+            // Held modifier keys.
+            MOD_CASE(LCTRL);
+            MOD_CASE(RCTRL);
+            MOD_CASE(LSHIFT);
+            MOD_CASE(RSHIFT);
+            MOD_CASE(LALT);
+            MOD_CASE(RALT);
+            MOD_CASE(LGUI);
+            MOD_CASE(RGUI);
+            MOD_CASE(MODE);
+
+#undef MOD_CASE
+
+            // Toggle modifiers keys.
+        case SDLK_NUMLOCKCLEAR:
+            *mod_state ^= KMOD_NUM;
+            return;
+        case SDLK_CAPSLOCK:
+            *mod_state ^= KMOD_CAPS;
             return;
 
 #define KEY_CASE(name, value) \
@@ -496,12 +517,35 @@ static void process_event(Server* server,
 
         server->receive(client, key);
     } break;
+
+    case SDL_KEYUP: {
+        switch (event.key.keysym.sym) {
+#define MOD_CASE(name)              \
+    case SDLK_##name:               \
+        *mod_state &= ~KMOD_##name; \
+        return
+
+            // Held modifier keys.
+            MOD_CASE(LCTRL);
+            MOD_CASE(RCTRL);
+            MOD_CASE(LSHIFT);
+            MOD_CASE(RSHIFT);
+            MOD_CASE(LALT);
+            MOD_CASE(RALT);
+            MOD_CASE(LGUI);
+            MOD_CASE(RGUI);
+            MOD_CASE(MODE);
+
+#undef MOD_CASE
+        }
+    } break;
     }
 }
 
 static void process_events(Server* server,
                            Client* client,
                            Scroll_State* scroll,
+                           int* mod_state,
                            int character_width,
                            int character_height,
                            bool* force_redraw,
@@ -512,7 +556,7 @@ static void process_events(Server* server,
 
     SDL_Event event;
     while (poll_event(&event)) {
-        process_event(server, client, event, scroll, character_width, character_height,
+        process_event(server, client, event, scroll, mod_state, character_width, character_height,
                       force_redraw, minimized, disable_key_presses, disable_key_presses_until);
         if (client->queue_quit) {
             return;
@@ -520,7 +564,10 @@ static void process_events(Server* server,
     }
 }
 
-static void process_scroll(Server* server, Client* client, Scroll_State* scroll) {
+static void process_scroll(Server* server,
+                           Client* client,
+                           Scroll_State* scroll,
+                           int mod_state) {
     if (scroll->scrolling) {
         if (scroll->acceleration > 0) {
             scroll->acceleration -= scroll->friction;
@@ -535,6 +582,7 @@ static void process_scroll(Server* server, Client* client, Scroll_State* scroll)
         scroll->y += scroll->sensitivity * scroll->acceleration;
 
         Key key = {};
+        key.modifiers = convert_key_modifiers(mod_state);
         while (scroll->y <= -1) {
             scroll->y += 1;
             key.code = Key_Code::SCROLL_DOWN_ONE;
@@ -940,6 +988,8 @@ void run(Server* server, Client* client) {
 
     Scroll_State scroll = {};
 
+    int mod_state = 0;
+
     bool minimized = false;
     bool force_redraw = false;
 
@@ -959,12 +1009,12 @@ void run(Server* server, Client* client) {
         bool any_asynchronous_jobs = server->slurp_jobs();
         bool any_synchronous_jobs = server->run_synchronous_jobs(client);
 
-        process_events(server, client, &scroll, character_width, character_height, &force_redraw,
-                       &minimized, &disable_key_presses, &disable_key_presses_until);
+        process_events(server, client, &scroll, &mod_state, character_width, character_height,
+                       &force_redraw, &minimized, &disable_key_presses, &disable_key_presses_until);
 
         any_asynchronous_jobs |= server->send_pending_asynchronous_jobs();
 
-        process_scroll(server, client, &scroll);
+        process_scroll(server, client, &scroll, mod_state);
 
         process_buffer_external_updates(&server->editor, client, client->window);
 
@@ -1030,8 +1080,8 @@ void run(Server* server, Client* client) {
             server->set_async_locked(true);
 
             if (result) {
-                process_event(server, client, event, &scroll, character_width, character_height,
-                              &force_redraw, &minimized, &disable_key_presses,
+                process_event(server, client, event, &scroll, &mod_state, character_width,
+                              character_height, &force_redraw, &minimized, &disable_key_presses,
                               &disable_key_presses_until);
             }
         }
