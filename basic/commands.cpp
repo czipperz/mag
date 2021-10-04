@@ -1872,11 +1872,10 @@ void command_show_file_length_info(Editor* editor, Command_Source source) {
         ++words;
         forward_word(&words_it);
     }
-    --words;
-    if (words_it.position > start) {
+    if (words > 0) {
         words_it.retreat();
-        if (cz::is_alnum(words_it.get())) {
-            ++words;
+        if (!cz::is_alnum(words_it.get())) {
+            --words;
         }
     }
 
