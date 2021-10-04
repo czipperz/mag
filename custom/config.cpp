@@ -416,8 +416,9 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-x m", man::command_man);
 
     BIND(key_map, "A-g A-g", command_goto_line);
-    BIND(key_map, "A-g g", command_goto_position);
-    BIND(key_map, "A-g c", command_show_file_length_info);
+    BIND(key_map, "A-g G", command_goto_position);
+    BIND(key_map, "A-g g", command_show_file_length_info);
+    BIND(key_map, "A-g c", command_goto_column);
 
     BIND(key_map, "A-g n", command_search_buffer_continue_next);
     BIND(key_map, "A-g p", command_search_buffer_continue_previous);

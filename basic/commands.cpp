@@ -1836,6 +1836,19 @@ static void command_goto_position_callback(Editor* editor,
     center_in_window(window, buffer->mode, editor->theme, iterator);
 }
 
+static void command_goto_column_callback(Editor* editor, Client* client, cz::Str str, void* data) {
+    uint64_t column = 0;
+    cz::parse(str, &column);
+
+    WITH_CONST_SELECTED_BUFFER(client);
+    Contents_Iterator iterator = buffer->contents.start();
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        iterator.go_to(window->cursors[i].point);
+        go_to_visual_column(buffer->mode, &iterator, column);
+        window->cursors[i].point = iterator.position;
+    }
+}
+
 REGISTER_COMMAND(command_goto_line);
 void command_goto_line(Editor* editor, Command_Source source) {
     Dialog dialog = {};
@@ -1849,6 +1862,14 @@ void command_goto_position(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Goto position: ";
     dialog.response_callback = command_goto_position_callback;
+    source.client->show_dialog(dialog);
+}
+
+REGISTER_COMMAND(command_goto_column);
+void command_goto_column(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Goto column: ";
+    dialog.response_callback = command_goto_column_callback;
     source.client->show_dialog(dialog);
 }
 
@@ -1874,11 +1895,11 @@ void command_show_file_length_info(Editor* editor, Command_Source source) {
         forward_word(&words_it);
 
         // Fix word at end of file not being counted.
-        if (words_it.position >= end) { // end of region so >=
+        if (words_it.position >= end) {  // end of region so >=
             words_it.retreat();
             if (cz::is_alnum(words_it.get())) {
                 backward_word(&words_it);
-                if (words_it.position < end) { // beginning of region so <
+                if (words_it.position < end) {  // beginning of region so <
                     ++words;
                 }
             }
