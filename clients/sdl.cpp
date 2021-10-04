@@ -398,6 +398,24 @@ static void process_event(Server* server,
             KEY_CASE(MENU, Key_Code::MENU);
             KEY_CASE(SCROLLLOCK, Key_Code::SCROLL_LOCK);
 
+            // Keypad keys
+            KEY_CASE(KP_DIVIDE, '/');
+            KEY_CASE(KP_MULTIPLY, '*');
+            KEY_CASE(KP_MINUS, '-');
+            KEY_CASE(KP_PLUS, '+');
+            KEY_CASE(KP_ENTER, '\n');
+            KEY_CASE(KP_1, '1');
+            KEY_CASE(KP_2, '2');
+            KEY_CASE(KP_3, '3');
+            KEY_CASE(KP_4, '4');
+            KEY_CASE(KP_5, '5');
+            KEY_CASE(KP_6, '6');
+            KEY_CASE(KP_7, '7');
+            KEY_CASE(KP_8, '8');
+            KEY_CASE(KP_9, '9');
+            KEY_CASE(KP_0, '0');
+            KEY_CASE(KP_PERIOD, '.');
+
 #undef KEY_CASE
 
         default: {
