@@ -1443,7 +1443,8 @@ static void handle_block_comment(Contents_Iterator* iterator, Token* token, Stat
 }
 
 static bool at_end_of_block_comment(Contents_Iterator iterator, State state) {
-    if (state.comment == COMMENT_BLOCK_INSIDE_INLINE) {
+    if (state.comment == COMMENT_BLOCK_INSIDE_INLINE ||
+        state.comment == COMMENT_BLOCK_INSIDE_MULTI_LINE) {
         Contents_Iterator test = iterator;
         test.advance();
         if (looking_at(test, '/')) {
