@@ -58,7 +58,12 @@ target_compile_definitions(${LIBRARY_NAME} PUBLIC MAG_BUILD_DIRECTORY=${CMAKE_SO
 
 # Build mag (mag.exe)
 file(GLOB_RECURSE CLIENT_SRCS clients/*.cpp)
-add_executable(${PROJECT_NAME} WIN32 mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+  add_executable(${PROJECT_NAME} mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
+  target_compile_definitions(${PROJECT_NAME} PUBLIC CONSOLE_MAIN)
+else()
+  add_executable(${PROJECT_NAME} WIN32 mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
+endif()
 target_link_libraries(${PROJECT_NAME} ${LIBRARY_NAME})
 target_link_libraries(${PROJECT_NAME} cz)
 target_include_directories(${PROJECT_NAME} PUBLIC clients render)
