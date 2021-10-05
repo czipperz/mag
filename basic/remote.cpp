@@ -104,7 +104,7 @@ static Job_Tick_Result server_tick(Editor* editor, Client* client, void*) {
             server_data.file_name.len += result;
             return Job_Tick_Result::MADE_PROGRESS;
         } else if (result == 0) {
-            open_file(editor, client, server_data.file_name);
+            open_file_arg(editor, client, server_data.file_name);
             server_data.file_name.len = 0;
 
             closesocket(server_data.socket_client);
