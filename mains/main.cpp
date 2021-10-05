@@ -153,11 +153,102 @@ static void switch_to_the_home_directory() {
     }
 }
 
+static void set_program_name(cz::String* program_name_storage, char* default_) {
+    // Set the program name.  First try to locate the executable and then if that fails use
+    // argv[0].
+#ifdef _WIN32
+    program_name_storage->reserve(cz::heap_allocator(), MAX_PATH);
+#else
+    program_name_storage->reserve(cz::heap_allocator(), PATH_MAX);
+#endif
+    while (1) {
+#ifdef _WIN32
+        DWORD count = GetModuleFileNameA(NULL, program_name_storage->buffer,
+                                         (DWORD)program_name_storage->cap);
+#else
+        ssize_t count =
+            readlink("/proc/self/exe", program_name_storage->buffer, program_name_storage->cap);
+#endif
+        if (count <= 0) {
+            // Failure.
+            break;
+        } else if ((size_t)count <= program_name_storage->cap) {
+            // Success.
+            program_name_storage->len = (size_t)count;
+
+            // String is already null terminated on Windows but we need to do it manually on
+            // Linux.
+#ifndef _WIN32
+            program_name_storage->reserve(cz::heap_allocator(), 1);
+            program_name_storage->null_terminate();
+#endif
+            break;
+        } else {
+            // Try again with more storage.
+            program_name_storage->reserve(cz::heap_allocator(), program_name_storage->cap * 2);
+        }
+    }
+
+    // If we never set the len then we couldn't get a valid path.
+    if (program_name_storage->len == 0) {
+        program_name = default_;
+    } else {
+        program_name = program_name_storage->buffer;
+    }
+}
+
+static void set_program_date() {
+    program_date = {};
+    cz::File_Time program_file_time;
+    if (cz::get_file_time(program_name, &program_file_time)) {
+        cz::file_time_to_date_local(program_file_time, &program_date);
+    }
+}
+
+static void set_program_dir(cz::String* program_dir_storage) {
+    *program_dir_storage = cz::Str(program_name).clone(cz::heap_allocator());
+    cz::path::convert_to_forward_slashes(program_dir_storage);
+    if (cz::path::pop_name(program_dir_storage)) {
+        program_dir_storage->null_terminate();
+        program_dir = program_dir_storage->buffer;
+    } else {
+        program_dir = ".";
+    }
+}
+
+static void set_home_directory(cz::String* home_directory_storage) {
+    if (cz::env::get_home(cz::heap_allocator(), home_directory_storage)) {
+        user_home_path = home_directory_storage->buffer;
+    }
+}
+
 int mag_main(int argc, char** argv) {
     tracy::SetThreadName("Mag main thread");
     ZoneScoped;
 
     try {
+        //
+        // Load general information.
+        //
+        cz::String program_name_storage = {};
+        CZ_DEFER(program_name_storage.drop(cz::heap_allocator()));
+        set_program_name(&program_name_storage, argv[0]);
+
+        set_program_date();
+
+        cz::String program_dir_storage = {};
+        CZ_DEFER(program_dir_storage.drop(cz::heap_allocator()));
+        set_program_dir(&program_dir_storage);
+
+        cz::String home_directory_storage = {};
+        CZ_DEFER(home_directory_storage.drop(cz::heap_allocator()));
+        set_home_directory(&home_directory_storage);
+
+        switch_to_the_home_directory();
+
+        //
+        // Parse command line arguments
+        //
         cz::Vector<cz::Str> files = {};
         CZ_DEFER(files.drop(cz::heap_allocator()));
         int chosen_client = Client::SDL;
@@ -212,75 +303,9 @@ int mag_main(int argc, char** argv) {
             }
         }
 
-        // Set the program name.  First try to locate the executable and then if that fails use
-        // argv[0].
-        cz::String program_name_storage = {};
-        CZ_DEFER(program_name_storage.drop(cz::heap_allocator()));
-#ifdef _WIN32
-        program_name_storage.reserve(cz::heap_allocator(), MAX_PATH);
-#else
-        program_name_storage.reserve(cz::heap_allocator(), PATH_MAX);
-#endif
-        while (1) {
-#ifdef _WIN32
-            DWORD count = GetModuleFileNameA(NULL, program_name_storage.buffer,
-                                             (DWORD)program_name_storage.cap);
-#else
-            ssize_t count =
-                readlink("/proc/self/exe", program_name_storage.buffer, program_name_storage.cap);
-#endif
-            if (count <= 0) {
-                // Failure.
-                break;
-            } else if ((size_t)count <= program_name_storage.cap) {
-                // Success.
-                program_name_storage.len = (size_t)count;
-
-                // String is already null terminated on Windows but we need to do it manually on
-                // Linux.
-#ifndef _WIN32
-                program_name_storage.reserve(cz::heap_allocator(), 1);
-                program_name_storage.null_terminate();
-#endif
-                break;
-            } else {
-                // Try again with more storage.
-                program_name_storage.reserve(cz::heap_allocator(), program_name_storage.cap * 2);
-            }
-        }
-
-        // If we never set the len then we couldn't get a valid path.
-        if (program_name_storage.len == 0) {
-            program_name = argv[0];
-        } else {
-            program_name = program_name_storage.buffer;
-        }
-
-        program_date = {};
-        cz::File_Time program_file_time;
-        if (cz::get_file_time(program_name, &program_file_time)) {
-            cz::file_time_to_date_local(program_file_time, &program_date);
-        }
-
-        cz::String program_dir_ = cz::Str(program_name).clone(cz::heap_allocator());
-        CZ_DEFER(program_dir_.drop(cz::heap_allocator()));
-        cz::path::convert_to_forward_slashes(&program_dir_);
-        if (cz::path::pop_name(&program_dir_)) {
-            program_dir_.null_terminate();
-            program_dir = program_dir_.buffer;
-        } else {
-            program_dir = ".";
-        }
-
-        // Get the home directory.
-        cz::String home_directory_storage = {};
-        CZ_DEFER(home_directory_storage.drop(cz::heap_allocator()));
-        if (cz::env::get_home(cz::heap_allocator(), &home_directory_storage)) {
-            user_home_path = home_directory_storage.buffer;
-        }
-
-        switch_to_the_home_directory();
-
+        //
+        // Initialize initial buffers.
+        //
         Server server = {};
         server.init();
         CZ_DEFER(server.drop());
@@ -386,7 +411,7 @@ A-g     Project or directory commands\n\
     }
 }
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(CONSOLE_MAIN)
 #include <windows.h>
 int WINAPI WinMain(_In_ HINSTANCE hInstance,
                    _In_opt_ HINSTANCE hPrevInstance,
