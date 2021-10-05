@@ -12,6 +12,7 @@
 #include <cz/defer.hpp>
 #include <cz/directory.hpp>
 #include <cz/file.hpp>
+#include <cz/parse.hpp>
 #include <cz/path.hpp>
 #include <cz/sort.hpp>
 #include <cz/string.hpp>
@@ -24,6 +25,7 @@
 #include "program_info.hpp"
 #include "server.hpp"
 #include "tracy_format.hpp"
+#include "visible_region.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -843,12 +845,12 @@ bool find_temp_buffer(Editor* editor,
     return false;
 }
 
-void open_file(Editor* editor, Client* client, cz::Str user_path) {
+bool open_file(Editor* editor, Client* client, cz::Str user_path) {
     ZoneScoped;
 
     if (user_path.len == 0) {
         client->show_message("File path must not be empty");
-        return;
+        return false;
     }
 
     cz::String path = standardize_path(cz::heap_allocator(), user_path);
@@ -867,7 +869,7 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
                 // Still open empty file buffer.
             } else {
                 client->show_message("Couldn't open file");
-                return;
+                return false;
             }
         }
     }
@@ -875,6 +877,84 @@ void open_file(Editor* editor, Client* client, cz::Str user_path) {
     client->set_selected_buffer(handle);
 
     start_syntax_highlighting(editor, handle);
+    return true;
+}
+
+void parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t* column_out) {
+    ZoneScoped;
+
+    // If the file exists then immediately open it.
+    if (cz::file::exists(arg.buffer)) {
+    open:
+        *file_out = arg;
+        return;
+    }
+
+    // Test FILE:LINE.  If these tests fail then it's not of this form.  If the FILE component
+    // doesn't exist then the file being opened just has a colon and a bunch of numbers in its path.
+    const char* colon = arg.rfind(':');
+    if (!colon) {
+        goto open;
+    }
+
+    cz::Str line_string = arg.slice_start(colon + 1);
+    uint64_t line = 0;
+    if (cz::parse(line_string, &line) != (int64_t)line_string.len) {
+        goto open;
+    }
+
+    cz::String path = arg.slice_end(colon).clone_null_terminate(cz::heap_allocator());
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+
+    if (cz::file::exists(path.buffer)) {
+        // Argument is of form FILE:LINE.
+        *file_out = arg.slice_end(path.len);
+        *line_out = line;
+        return;
+    }
+
+    // Test FILE:LINE:COLUMN.  If these tests fail then it's not of this
+    // form.  If the FILE component doesn't exist then the file being
+    // opened just has a colon and a bunch of numbers in its path.
+    colon = path.rfind(':');
+    if (!colon) {
+        goto open;
+    }
+
+    cz::Str column_string = path.slice_start(colon + 1);
+    uint64_t column = 0;
+    if (cz::parse(column_string, &column) != (int64_t)column_string.len) {
+        goto open;
+    }
+    cz::swap(line, column);
+
+    path.len = colon - path.buffer;
+    path.null_terminate();
+
+    if (cz::file::exists(path.buffer)) {
+        // Argument is of form FILE:LINE:COLUMN.
+        *file_out = arg.slice_end(path.len);
+        *line_out = line;
+        *column_out = column;
+        return;
+    }
+
+    goto open;
+}
+
+bool open_file_arg(Editor* editor, Client* client, cz::Str user_arg) {
+    cz::Str file;
+    uint64_t line = 0, column = 0;
+    parse_file_arg(user_arg, &file, &line, &column);
+
+    if (!open_file(editor, client, file))
+        return false;
+
+    WITH_CONST_SELECTED_BUFFER(client);
+    Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
+    window->cursors[0].point = iterator.position;
+    center_in_window(window, buffer->mode, editor->theme, iterator);
+    return true;
 }
 
 bool save_buffer(Buffer* buffer) {
