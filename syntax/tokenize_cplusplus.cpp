@@ -1552,6 +1552,8 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
                 // '/* `/* */' should parse the final '*/' as ending the outer.
                 if (!look_for_line)
                     comment_pop(state);
+                else
+                    state->comment = COMMENT_LINE_RESUME_OUTSIDE_MOL;
                 goto ret;
 
             case 3:  // '`'/'```'
