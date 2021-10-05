@@ -77,60 +77,10 @@ static void open_file_tiling(Editor* editor,
 static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* opened_count) {
     ZoneScoped;
 
-    // If the file exists then immediately open it.
-    if (cz::file::exists(arg.buffer)) {
-    open:
-        open_file_tiling(editor, client, arg, opened_count, 0, 0);
-        return;
-    }
-
-    // Test FILE:LINE.  If these tests fail then it's not of this form.  If the FILE component
-    // doesn't exist then the file being opened just has a colon and a bunch of numbers in its path.
-    const char* colon = arg.rfind(':');
-    if (!colon) {
-        goto open;
-    }
-
-    cz::Str line_string = arg.slice_start(colon + 1);
-    uint64_t line = 0;
-    if (cz::parse(line_string, &line) != (int64_t)line_string.len) {
-        goto open;
-    }
-
-    cz::String path = arg.slice_end(colon).clone_null_terminate(cz::heap_allocator());
-    CZ_DEFER(path.drop(cz::heap_allocator()));
-
-    if (cz::file::exists(path.buffer)) {
-        // Argument is of form FILE:LINE.
-        open_file_tiling(editor, client, path, opened_count, line, 0);
-        return;
-    }
-
-    // Test FILE:LINE:COLUMN.  If these tests fail then it's not of this
-    // form.  If the FILE component doesn't exist then the file being
-    // opened just has a colon and a bunch of numbers in its path.
-    colon = path.rfind(':');
-    if (!colon) {
-        goto open;
-    }
-
-    cz::Str column_string = path.slice_start(colon + 1);
-    uint64_t column = 0;
-    if (cz::parse(column_string, &column) != (int64_t)column_string.len) {
-        goto open;
-    }
-    cz::swap(line, column);
-
-    path.len = colon - path.buffer;
-    path.null_terminate();
-
-    if (cz::file::exists(path.buffer)) {
-        // Argument is of form FILE:LINE:COLUMN.
-        open_file_tiling(editor, client, path, opened_count, line, column);
-        return;
-    }
-
-    goto open;
+    uint64_t line = 0, column = 0;
+    cz::Str file;
+    parse_file_arg(arg, &file, &line, &column);
+    open_file_tiling(editor, client, file, opened_count, line, column);
 }
 
 static void switch_to_the_home_directory() {
