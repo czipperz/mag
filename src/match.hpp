@@ -72,19 +72,19 @@ bool rfind_bucket(Contents_Iterator* it, char ch);
 /// Find `query` at or after the point `it` (will not overlap).
 /// On success puts `it` at the start of the match.
 /// On failure puts `it` at eob and returns `false`.
-bool search_forward(Contents_Iterator* it, cz::Str query);
+bool find(Contents_Iterator* it, cz::Str query);
 /// Find `query` starting before the point `it` (the end may be after `it`).
 /// On success puts `it` at the start of the match.
 /// On failure puts `it` at sob and returns `false`.
-bool search_backward(Contents_Iterator* it, cz::Str query);
+bool rfind(Contents_Iterator* it, cz::Str query);
 
 /// Same as the functions above except handles case differences according to `case_handling`.
-bool search_forward_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling);
-bool search_backward_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling);
+bool find_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling);
+bool rfind_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling);
 
 /// Same as the functions above except only searches in the current bucket.
 /// See `find_bucket` / `rfind_bucket`.
-bool search_forward_bucket(Contents_Iterator* it, cz::Str query);
-bool search_backward_bucket(Contents_Iterator* it, cz::Str query);
+bool find_bucket(Contents_Iterator* it, cz::Str query);
+bool rfind_bucket(Contents_Iterator* it, cz::Str query);
 
 }

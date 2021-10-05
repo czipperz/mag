@@ -29,7 +29,7 @@ bool buffer_name_next_token(Contents_Iterator* iterator, Token* token, uint64_t*
     // Handle cases 2/3.
     if (*state == 0 && first_ch == '*') {
         // Go either to end of name or after the `*` in `* (`.
-        if (search_forward(iterator, "* (")) {
+        if (find(iterator, "* (")) {
             iterator->advance();
         }
 

@@ -367,7 +367,7 @@ bool rfind_bucket(Contents_Iterator* it, char ch) {
     }
 }
 
-bool search_forward_bucket(Contents_Iterator* it, cz::Str query) {
+bool find_bucket(Contents_Iterator* it, cz::Str query) {
     if (query.len == 0)
         return true;
 
@@ -385,7 +385,7 @@ bool search_forward_bucket(Contents_Iterator* it, cz::Str query) {
     }
 }
 
-bool search_backward_bucket(Contents_Iterator* it, cz::Str query) {
+bool rfind_bucket(Contents_Iterator* it, cz::Str query) {
     if (query.len == 0)
         return true;
 
@@ -402,7 +402,7 @@ bool search_backward_bucket(Contents_Iterator* it, cz::Str query) {
     }
 }
 
-bool search_forward(Contents_Iterator* it, cz::Str query) {
+bool find(Contents_Iterator* it, cz::Str query) {
     ZoneScoped;
 
     if (query.len == 0) {
@@ -424,10 +424,10 @@ bool search_forward(Contents_Iterator* it, cz::Str query) {
     return false;
 }
 
-bool search_forward_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling) {
+bool find_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling) {
     resolve_smart_case(query, &case_handling);
     if (case_handling == Case_Handling::CASE_SENSITIVE) {
-        return search_forward(it, query);
+        return find(it, query);
     }
 
     ZoneScoped;
@@ -451,7 +451,7 @@ bool search_forward_cased(Contents_Iterator* it, cz::Str query, Case_Handling ca
     return false;
 }
 
-bool search_backward(Contents_Iterator* it, cz::Str query) {
+bool rfind(Contents_Iterator* it, cz::Str query) {
     ZoneScoped;
 
     if (query.len > it->contents->len) {
@@ -479,10 +479,10 @@ bool search_backward(Contents_Iterator* it, cz::Str query) {
     return false;
 }
 
-bool search_backward_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling) {
+bool rfind_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling) {
     resolve_smart_case(query, &case_handling);
     if (case_handling == Case_Handling::CASE_SENSITIVE) {
-        return search_backward(it, query);
+        return rfind(it, query);
     }
 
     ZoneScoped;

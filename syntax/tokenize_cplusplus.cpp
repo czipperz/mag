@@ -1185,9 +1185,9 @@ static void handle_line_comment_normal(Contents_Iterator* iterator, Token* token
             Contents_Iterator end_it = *iterator;
             Contents_Iterator tick_it = *iterator;
             bool found_line = find_bucket(&line_it, '\n');
-            bool found_end = (look_for_end ? search_forward_bucket(&end_it, "*/") : false);
+            bool found_end = (look_for_end ? find_bucket(&end_it, "*/") : false);
             bool found_tick =
-                (multi_line ? search_forward_bucket(&tick_it, "```") : find_bucket(&tick_it, '`'));
+                (multi_line ? find_bucket(&tick_it, "```") : find_bucket(&tick_it, '`'));
             if (found_end || found_line || found_tick) {
                 uint64_t min = cz::min(line_it.position, tick_it.position);
                 if (found_end)
@@ -1473,7 +1473,7 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
         bool found_end = false;
 
         for (int i = 0; i < 1 + first; ++i) {
-            if (search_forward_bucket(iterator, "*/")) {
+            if (find_bucket(iterator, "*/")) {
                 iterator->advance(2);
                 found_end = true;
                 break;
@@ -1501,9 +1501,8 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
             Contents_Iterator end_it = *iterator;
             Contents_Iterator tick_it = *iterator;
             found_line = (look_for_line ? find_bucket(&line_it, '\n') : false);
-            found_end = search_forward_bucket(&end_it, "*/");
-            found_tick =
-                (multi_line ? search_forward_bucket(&tick_it, "```") : find_bucket(&tick_it, '`'));
+            found_end = find_bucket(&end_it, "*/");
+            found_tick = (multi_line ? find_bucket(&tick_it, "```") : find_bucket(&tick_it, '`'));
             if (found_line || found_end || found_tick) {
                 if (found_end)
                     end_it.advance(2);

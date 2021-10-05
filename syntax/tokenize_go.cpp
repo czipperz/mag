@@ -109,7 +109,7 @@ bool go_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     if (first_ch == '/' && !iterator->at_eob() && iterator->get() == '*') {
         // block comment
-        if (search_forward(iterator, "*/")) {
+        if (find(iterator, "*/")) {
             iterator->advance(2);
         }
 

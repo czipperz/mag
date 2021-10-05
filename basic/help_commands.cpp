@@ -247,7 +247,7 @@ bool formatted_command_next_token(Contents_Iterator* it, Token* token, uint64_t*
 
     token->start = it->position;
     if (it->position == 0) {
-        search_forward(it, " (");
+        find(it, " (");
         token->type = Token_Type::IDENTIFIER;
     } else {
         if (it->get() == ' ') {

@@ -40,7 +40,7 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
                     *iterator = it;
 
                     // block comment
-                    if (search_forward(iterator, "-->")) {
+                    if (find(iterator, "-->")) {
                         iterator->advance(3);
                     }
 

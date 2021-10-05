@@ -21,7 +21,7 @@ static bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start,
     CZ_DEFER(slice.drop(cz::heap_allocator()));
 
     start->advance_to(end);
-    return search_forward_cased(start, slice.as_str(), buffer->mode.search_continue_case_handling);
+    return find_cased(start, slice.as_str(), buffer->mode.search_continue_case_handling);
 }
 
 #define SEARCH_SLICE_THEN(FUNC, CREATED, THEN)                             \
@@ -42,13 +42,13 @@ static bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start,
         }                                                                  \
     } while (0)
 
-#define SEARCH_QUERY_THEN(FUNC, THEN)                                                 \
+#define SEARCH_QUERY_THEN(FUNC, FORWARD, THEN)                                        \
     do {                                                                              \
         uint64_t start = cursors[c].point;                                            \
         Contents_Iterator new_start = buffer->contents.iterator_at(start);            \
         for (i = 0; i < n; ++i) {                                                     \
             if (i > 0) {                                                              \
-                if (FUNC == search_forward_cased) {                                   \
+                if (FORWARD) {                                                        \
                     forward_char(&new_start);                                         \
                 } else {                                                              \
                     backward_char(&new_start);                                        \
@@ -105,7 +105,7 @@ static bool search_backward_slice(const Buffer* buffer, Contents_Iterator* start
     CZ_DEFER(slice.drop(cz::heap_allocator()));
 
     start->retreat(end - start->position);
-    return search_backward_cased(start, slice.as_str(), buffer->mode.search_continue_case_handling);
+    return rfind_cased(start, slice.as_str(), buffer->mode.search_continue_case_handling);
 }
 
 int create_cursor_backward_search(const Buffer* buffer, Window_Unified* window) {
@@ -181,7 +181,7 @@ static void interactive_search_response_callback(Editor* editor,
 retry:
     if (data->direction >= 1) {
         size_t n = data->direction;
-        SEARCH_QUERY_THEN(search_forward_cased, {
+        SEARCH_QUERY_THEN(find_cased, true, {
             cursors[0] = new_cursor;
             window->show_marks = true;
         });
@@ -197,7 +197,7 @@ retry:
         }
     } else {
         size_t n = 1 - data->direction;
-        SEARCH_QUERY_THEN(search_backward_cased, {
+        SEARCH_QUERY_THEN(rfind_cased, false, {
             cursors[0] = new_cursor;
             window->show_marks = true;
         });
@@ -229,7 +229,7 @@ static void command_search_forward_callback(Editor* editor,
     cz::Slice<Cursor> cursors = window->cursors;
     size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
-        SEARCH_QUERY_THEN(search_forward_cased, {
+        SEARCH_QUERY_THEN(find_cased, true, {
             // Only push jump if we hit a result, are the only cursor, and not at either sob
             // or eob.  If we don't hit a result the cursor doesn't move so push_jump just
             // adds a useless jump.  If we are at sob or eob then there is already a jump
@@ -260,7 +260,7 @@ static void command_search_backward_callback(Editor* editor,
     cz::Slice<Cursor> cursors = window->cursors;
     size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
-        SEARCH_QUERY_THEN(search_backward_cased, {
+        SEARCH_QUERY_THEN(rfind_cased, false, {
             // Only push jump if we hit a result, are the only cursor, and not at either sob
             // or eob.  If we don't hit a result the cursor doesn't move so push_jump just
             // adds a useless jump.  If we are at sob or eob then there is already a jump
@@ -421,7 +421,7 @@ static void command_search_backward_expanding_callback(Editor* editor,
     size_t n = 1;
     size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
-        SEARCH_QUERY_THEN(search_backward_cased, cursors[c].point = new_cursor.mark);
+        SEARCH_QUERY_THEN(rfind_cased, false, cursors[c].point = new_cursor.mark);
     }
     window->show_marks = true;
 }
@@ -442,7 +442,7 @@ static void command_search_forward_expanding_callback(Editor* editor,
     size_t n = 1;
     size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
-        SEARCH_QUERY_THEN(search_forward_cased, cursors[c].point = new_cursor.point);
+        SEARCH_QUERY_THEN(find_cased, true, cursors[c].point = new_cursor.point);
     }
     window->show_marks = true;
 }
@@ -547,7 +547,7 @@ static bool look_in(cz::Slice<char> bucket,
     return false;
 }
 
-static bool search_backward_identifier(Contents_Iterator* iterator, cz::Str query) {
+static bool rfind_identifier(Contents_Iterator* iterator, cz::Str query) {
     Contents_Iterator backward;
     backward = *iterator;
     backward.retreat(backward.index);
@@ -575,7 +575,7 @@ static bool search_backward_identifier(Contents_Iterator* iterator, cz::Str quer
     return false;
 }
 
-static bool search_forward_identifier(Contents_Iterator* iterator, cz::Str query) {
+static bool find_identifier(Contents_Iterator* iterator, cz::Str query) {
     Contents_Iterator forward;
     forward = *iterator;
     forward.retreat(forward.index);
@@ -611,16 +611,16 @@ static bool search_forward_identifier(Contents_Iterator* iterator, cz::Str query
 // search_{backward/forward}_identifier wrappers
 ///////////////////////////////////////////////////////////////////////////////
 
-static bool search_backward_identifier_cased(Contents_Iterator* iterator,
-                                             cz::Str query,
-                                             Case_Handling case_handling) {
-    return search_backward_identifier(iterator, query);
+static bool rfind_identifier_cased(Contents_Iterator* iterator,
+                                   cz::Str query,
+                                   Case_Handling case_handling) {
+    return rfind_identifier(iterator, query);
 }
 
-static bool search_forward_identifier_cased(Contents_Iterator* iterator,
-                                            cz::Str query,
-                                            Case_Handling case_handling) {
-    return search_forward_identifier(iterator, query);
+static bool find_identifier_cased(Contents_Iterator* iterator,
+                                  cz::Str query,
+                                  Case_Handling case_handling) {
+    return find_identifier(iterator, query);
 }
 
 static void command_search_backward_identifier_callback(Editor* editor,
@@ -638,9 +638,7 @@ static void command_search_backward_identifier_callback(Editor* editor,
     size_t n = 1;
     size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
-        SEARCH_QUERY_THEN(search_backward_identifier_cased, {
-            cursors[c].point = new_cursor.mark;
-        });
+        SEARCH_QUERY_THEN(rfind_identifier_cased, false, { cursors[c].point = new_cursor.mark; });
     }
     window->show_marks = false;
 }
@@ -660,9 +658,7 @@ static void command_search_forward_identifier_callback(Editor* editor,
     size_t n = 1;
     size_t i = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
-        SEARCH_QUERY_THEN(search_forward_identifier_cased, {
-            cursors[c].point = new_cursor.mark;
-        });
+        SEARCH_QUERY_THEN(find_identifier_cased, true, { cursors[c].point = new_cursor.mark; });
     }
     window->show_marks = false;
 }
