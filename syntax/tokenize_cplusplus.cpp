@@ -1181,17 +1181,31 @@ static void handle_line_comment_normal(Contents_Iterator* iterator, Token* token
         bool multi_line = (state->comment == COMMENT_LINE_INSIDE_MULTI_LINE ||
                            state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE);
         while (1) {
-            Contents_Iterator line_it = *iterator;
-            Contents_Iterator end_it = *iterator;
-            Contents_Iterator tick_it = *iterator;
-            bool found_line = find_bucket(&line_it, '\n');
-            bool found_end = (look_for_end ? find_bucket(&end_it, "*/") : false);
-            bool found_tick =
-                (multi_line ? find_bucket(&tick_it, "```") : find_bucket(&tick_it, '`'));
-            if (found_end || found_line || found_tick) {
-                uint64_t min = cz::min(line_it.position, tick_it.position);
-                if (found_end)
-                    min = cz::min(end_it.position, min);
+            // Find the first '\n', '*/'?, or '`'/'```'.
+            uint64_t min = -1;
+            Contents_Iterator temp = *iterator;
+            if (find_bucket(&temp, '\n')) {
+                if (min > temp.position)
+                    min = temp.position;
+            }
+
+            temp = *iterator;
+            if (multi_line ? find_bucket(&temp, "```") : find_bucket(&temp, '`')) {
+                if (min > temp.position)
+                    min = temp.position;
+            }
+
+            bool found_end = false;
+            temp = *iterator;
+            if (look_for_end && find_bucket(&temp, "*/")) {
+                temp.advance(2);
+                if (min > temp.position) {
+                    min = temp.position;
+                    found_end = true;
+                }
+            }
+
+            if (min < (uint64_t)-1) {
                 iterator->advance_to(min);
 
                 // '/** `/// */' parse '*/' as end of outer comment.
@@ -1199,7 +1213,6 @@ static void handle_line_comment_normal(Contents_Iterator* iterator, Token* token
                     state->comment = COMMENT_BLOCK_RESUME_INSIDE;
                 break;
             }
-            *iterator = line_it;
         }
     }
     token->end = iterator->position;
@@ -1489,61 +1502,70 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
         bool look_for_line = (state->comment == COMMENT_LINE_INSIDE_INLINE ||
                               state->comment == COMMENT_LINE_INSIDE_MULTI_LINE ||
                               state->comment == COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL);
-        bool found_line = false;
-        bool found_end = false;
-        bool found_tick = false;
-
         bool multi_line = (state->comment == COMMENT_LINE_INSIDE_MULTI_LINE ||
                            state->comment == COMMENT_BLOCK_INSIDE_MULTI_LINE ||
                            state->comment == COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL);
         for (int i = 0; i < 1 + first; ++i) {
-            // Find the first '\n', '*/', or '`'.
-            Contents_Iterator line_it = *iterator;
-            Contents_Iterator end_it = *iterator;
-            Contents_Iterator tick_it = *iterator;
-            found_line = (look_for_line ? find_bucket(&line_it, '\n') : false);
-            found_end = find_bucket(&end_it, "*/");
-            found_tick = (multi_line ? find_bucket(&tick_it, "```") : find_bucket(&tick_it, '`'));
-            if (found_line || found_end || found_tick) {
-                if (found_end)
-                    end_it.advance(2);
+            // Find the first '\n'?, '*/', or '`'.
+            uint64_t min = -1;
+            int minner = 0;
+            Contents_Iterator temp = *iterator;
+            if (look_for_line && find_bucket(&temp, '\n')) {
+                if (min > temp.position) {
+                    min = temp.position;
+                    minner = 1;
+                }
+            }
 
-                uint64_t min = cz::min(end_it.position, tick_it.position);
-                if (look_for_line) {
-                    min = cz::min(line_it.position, min);
-                    if (min == line_it.position) {
-                        found_end = false;
-                        found_tick = false;
-                    }
+            temp = *iterator;
+            if (find_bucket(&temp, "*/")) {
+                if (min > temp.position) {
+                    min = temp.position;
+                    minner = 2;
                 }
-                if (min == end_it.position) {
-                    found_line = false;
-                    found_tick = false;
-                }
-                if (min == tick_it.position) {
-                    found_line = false;
-                    found_end = false;
-                }
+            }
 
+            temp = *iterator;
+            if (multi_line ? find_bucket(&temp, "```") : find_bucket(&temp, '`')) {
+                if (min > temp.position) {
+                    min = temp.position;
+                    minner = 3;
+                }
+            }
+
+            switch (minner) {
+            case 1:  // '\n'
                 iterator->advance_to(min);
+                if (state->comment == COMMENT_LINE_INSIDE_INLINE) {
+                    comment_pop(state);
+                } else {
+                    // COMMENT_LINE_INSIDE_MULTI_LINE ||
+                    // COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL
+                    state->comment = COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL;
+                }
+                goto ret;
+
+            case 2:  // '*/'
+                // Include the '*/' in the comment.
+                iterator->advance_to(min + 2);
+
+                // '/* `/* */' should parse the final '*/' as ending the outer.
+                if (!look_for_line)
+                    comment_pop(state);
+                goto ret;
+
+            case 3:  // '`'/'```'
+                iterator->advance_to(min);
+                state->comment = COMMENT_BLOCK_RESUME_INSIDE;
+                goto ret;
+
+            default:
                 break;
             }
         }
-
-        if (found_line) {
-            if (state->comment == COMMENT_LINE_INSIDE_INLINE)
-                comment_pop(state);
-            else  // COMMENT_LINE_INSIDE_MULTI_LINE || COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL
-                state->comment = COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL;
-        } else if (found_end) {
-            // '/* `/* */' should parse the final '*/' as ending the outer.
-            if (!look_for_line)
-                comment_pop(state);
-        } else if (found_tick) {
-            state->comment = COMMENT_BLOCK_RESUME_INSIDE;
-        }
     }
 
+ret:
     token->end = iterator->position;
 }
 
