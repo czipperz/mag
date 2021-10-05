@@ -34,7 +34,7 @@ static void command_open_file_callback(Editor* editor, Client* client, cz::Str q
         push_jump(window, client, buffer);
     }
 
-    open_file(editor, client, query);
+    open_file_arg(editor, client, query);
 }
 
 REGISTER_COMMAND(command_open_file);
