@@ -829,9 +829,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".md") ||
-                   // .rst / ReStructured Text and .txt / Text files aren't
+                   // .rst / ReStructured Text files aren't
                    // really markdown but they're often pretty similar.
-                   name.ends_with(".rst") || name.ends_with(".txt")) {
+                   name.ends_with(".rst")) {
             buffer->mode.next_token = syntax::md_next_token;
             BIND(buffer->mode.key_map, "A-h", markdown::command_reformat_paragraph);
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
