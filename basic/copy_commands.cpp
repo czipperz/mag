@@ -356,7 +356,7 @@ static void run_paste_as_lines(Client* client, cz::Slice<Cursor> cursors, Buffer
     size_t offset = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
         cz::Str line = value;
-        bool next_line = line.split_after('\n', &line, &value);
+        bool next_line = line.split_excluding('\n', &line, &value);
 
         Edit edit;
         // :CopyLeak We sometimes use the value here, but we could also
