@@ -174,6 +174,40 @@ static Asynchronous_Job job_blame_append(cz::Arc_Weak<Buffer_Handle> handle,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// do_blame
+///////////////////////////////////////////////////////////////////////////////
+
+static void do_blame(Editor* editor,
+                     Client* client,
+                     cz::Str path,
+                     cz::Str root,
+                     cz::Arc<Buffer_Handle> handle) {
+    cz::Process_Options options;
+    options.working_directory = root.buffer;
+
+    cz::Input_File stdout_read;
+    if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
+        client->show_message("Error: I/O operation failed");
+        return;
+    }
+    stdout_read.set_non_blocking();
+    CZ_DEFER(options.std_out.close());
+
+    options.std_err = options.std_out;
+
+    cz::Str args[] = {"git", "blame", "--line-porcelain", "--", path};
+    cz::Process process;
+    if (!process.launch_program(args, options)) {
+        client->show_message("Git error");
+        stdout_read.close();
+        return;
+    }
+
+    editor->add_asynchronous_job(job_blame_append(handle.clone_downgrade(), process, stdout_read));
+    return;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // command_blame
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -202,8 +236,37 @@ void command_blame(Editor* editor, Command_Source source) {
 
     cz::Option<cz::Str> wd = {root};
     cz::Arc<Buffer_Handle> handle;
-    if (!find_temp_buffer(editor, source.client, buffer_name, wd, &handle)) {
+    if (find_temp_buffer(editor, source.client, buffer_name, wd, &handle)) {
+        WITH_BUFFER_HANDLE(handle);
+        buffer->contents.remove(0, buffer->contents.len);
+    } else {
         handle = editor->create_temp_buffer(buffer_name, wd);
+    }
+    source.client->set_selected_buffer(handle);
+
+    do_blame(editor, source.client, path, root, handle);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// command_blame_reload
+///////////////////////////////////////////////////////////////////////////////
+
+void command_blame_reload(Editor* editor, Command_Source source) {
+    Window_Unified* window = source.client->selected_window();
+    cz::Arc<Buffer_Handle> handle = window->buffer_handle;
+
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    cz::String root = {};
+    CZ_DEFER(root.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_BUFFER_HANDLE(handle);
+        if (!buffer->name.starts_with("*git blame ") || !buffer->name.ends_with('*')) {
+            source.client->show_message("Error: not a git blame buffer");
+            return;
+        }
+        path = buffer->name.slice(11, buffer->name.len - 1).clone(cz::heap_allocator());
+        root = buffer->directory.clone_null_terminate(cz::heap_allocator());
     }
 
     {
@@ -211,34 +274,7 @@ void command_blame(Editor* editor, Command_Source source) {
         buffer->contents.remove(0, buffer->contents.len);
     }
 
-    source.client->set_selected_buffer(handle);
-
-    {
-        cz::Process_Options options;
-        options.working_directory = root.buffer;
-
-        cz::Input_File stdout_read;
-        if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
-            source.client->show_message("Error: I/O operation failed");
-            return;
-        }
-        stdout_read.set_non_blocking();
-        CZ_DEFER(options.std_out.close());
-
-        options.std_err = options.std_out;
-
-        cz::Str args[] = {"git", "blame", "--line-porcelain", "--", path};
-        cz::Process process;
-        if (!process.launch_program(args, options)) {
-            source.client->show_message("Git error");
-            stdout_read.close();
-            return;
-        }
-
-        editor->add_asynchronous_job(
-            job_blame_append(handle.clone_downgrade(), process, stdout_read));
-        return;
-    }
+    do_blame(editor, source.client, path, root, handle);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
