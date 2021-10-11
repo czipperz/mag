@@ -77,6 +77,7 @@
 #include "syntax/tokenize_search.hpp"
 #include "syntax/tokenize_shell_script.hpp"
 #include "syntax/tokenize_splash.hpp"
+#include "version_control/blame.hpp"
 #include "version_control/log.hpp"
 #include "version_control/tokenize_diff.hpp"
 #include "version_control/tokenize_git_commit_edit_message.hpp"
@@ -564,6 +565,10 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::SPLASH_LOGO] = {46, {}, 0};
     theme.token_faces[Token_Type::SPLASH_KEY_BIND] = {213, {}, 0};
 
+    theme.token_faces[Token_Type::BLAME_COMMIT] = {{}, {}, Face::UNDERSCORE};
+    theme.token_faces[Token_Type::BLAME_DATE] = {46, {}, 0};
+    theme.token_faces[Token_Type::BLAME_CONTENTS] = {{}, {}, 0};
+
     theme.token_faces[Token_Type::BUFFER_TEMPORARY_NAME] = {177, {}, 0};
 
     theme.decorations.reserve(5);
@@ -771,6 +776,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.starts_with("*git last-edit ") ||
                    buffer->name.starts_with("*git show ")) {
             buffer->mode.next_token = syntax::patch_next_token;
+        } else if (buffer->name.starts_with("*git blame ")) {
+            buffer->mode.next_token = version_control::git_blame_next_token;
         }
         break;
 
