@@ -7,6 +7,7 @@
 #include "basic/buffer_commands.hpp"
 #include "basic/build_commands.hpp"
 #include "basic/capitalization_commands.hpp"
+#include "basic/cmake_commands.hpp"
 #include "basic/commands.hpp"
 #include "basic/completion_commands.hpp"
 #include "basic/copy_commands.hpp"
@@ -832,6 +833,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
+            BIND(buffer->mode.key_map, "C-A-c",
+                 command_complete_at_point_prompt_identifiers_or_cmake_keywords);
 
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
 

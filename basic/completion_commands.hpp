@@ -18,6 +18,13 @@ void command_completion_up_page(Editor* editor, Command_Source source);
 void command_first_completion(Editor* editor, Command_Source source);
 void command_last_completion(Editor* editor, Command_Source source);
 
+struct Identifier_Completion_Engine_Data {
+    cz::String query;
+    cz::Arc_Weak<Buffer_Handle> handle;
+
+    bool load(cz::Allocator allocator, cz::Heap_Vector<cz::Str>* results);
+};
+
 bool find_nearest_matching_identifier(Contents_Iterator it,
                                       Contents_Iterator middle,
                                       uint64_t end,
@@ -48,7 +55,8 @@ void command_complete_at_point_nearest_matching_before_after(Editor* editor, Com
 
 void command_complete_at_point_prompt_identifiers(Editor* editor, Command_Source source);
 
-void command_copy_rest_of_line_from_nearest_matching_identifier(Editor* editor, Command_Source source);
+void command_copy_rest_of_line_from_nearest_matching_identifier(Editor* editor,
+                                                                Command_Source source);
 
 }
 }

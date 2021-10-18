@@ -604,10 +604,31 @@ static bool list_all_in(cz::Slice<char> bucket,
     return false;
 }
 
-struct Identifier_Completion_Engine_Data {
-    cz::String query;
-    cz::Arc_Weak<Buffer_Handle> handle;
-};
+void all_identifiers_starting_with(const Contents& contents,
+                                   cz::Str query,
+                                   cz::Allocator allocator,
+                                   cz::Heap_Vector<cz::Str>* results) {
+    Contents_Iterator iterator = contents.start();
+    while (!iterator.at_eob()) {
+        cz::Slice<char> bucket = contents.buckets[iterator.bucket];
+        list_all_in(bucket, iterator, query, allocator, results);
+        iterator.advance(bucket.len);
+    }
+}
+
+bool Identifier_Completion_Engine_Data::load(cz::Allocator allocator,
+                                             cz::Heap_Vector<cz::Str>* results) {
+    Identifier_Completion_Engine_Data* data = this;
+    cz::Arc<Buffer_Handle> handle;
+    if (!data->handle.upgrade(&handle)) {
+        return false;
+    }
+    CZ_DEFER(handle.drop());
+
+    WITH_CONST_BUFFER_HANDLE(handle);
+    all_identifiers_starting_with(buffer->contents, data->query, allocator, results);
+    return true;
+}
 
 static bool identifier_completion_engine(Editor* editor,
                                          Completion_Engine_Context* context,
@@ -621,20 +642,8 @@ static bool identifier_completion_engine(Editor* editor,
     context->results.len = 0;
 
     auto data = (Identifier_Completion_Engine_Data*)context->data;
-    cz::Arc<Buffer_Handle> handle;
-    if (!data->handle.upgrade(&handle)) {
+    if (!data->load(context->results_buffer_array.allocator(), &context->results)) {
         return false;
-    }
-    CZ_DEFER(handle.drop());
-
-    WITH_CONST_BUFFER_HANDLE(handle);
-
-    Contents_Iterator iterator = buffer->contents.start();
-    while (!iterator.at_eob()) {
-        cz::Slice<char> bucket = buffer->contents.buckets[iterator.bucket];
-        list_all_in(bucket, iterator, data->query, context->results_buffer_array.allocator(),
-                    &context->results);
-        iterator.advance(bucket.len);
     }
 
     cz::sort(context->results);
@@ -722,7 +731,8 @@ void command_copy_rest_of_line_from_nearest_matching_identifier(Editor* editor,
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
-    SSOStr value = buffer->contents.slice(transaction.value_allocator(), match_start, match_end.position);
+    SSOStr value =
+        buffer->contents.slice(transaction.value_allocator(), match_start, match_end.position);
 
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t i = 0; i < cursors.len; ++i) {
