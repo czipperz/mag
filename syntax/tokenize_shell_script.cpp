@@ -299,7 +299,8 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                     matches(start, iterator->position, "exit") ||
                     matches(start, iterator->position, "return"))) {
             token->type = Token_Type::KEYWORD;
-        } else if (top == AT_START_OF_STATEMENT && matches(start, iterator->position, "export")) {
+        } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "export") ||
+                                                    matches(start, iterator->position, "local"))) {
             token->type = Token_Type::KEYWORD;
             // Keep start of statement as the top.
             goto ret;
