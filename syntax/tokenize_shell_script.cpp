@@ -269,7 +269,8 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "if") ||
                                              matches(start, iterator->position, "while") ||
                                              matches(start, iterator->position, "until") ||
-                                             matches(start, iterator->position, "."))) {
+                                             matches(start, iterator->position, ".") ||
+                                             matches(start, iterator->position, "else"))) {
             token->type = Token_Type::KEYWORD;
             top = AT_START_OF_STATEMENT;
             goto ret;
@@ -283,8 +284,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             token->type = Token_Type::KEYWORD;
             new_transient = TRANSIENT_AFTER_DOLLAR;
         } else if (top == AT_START_OF_STATEMENT &&
-                   (matches(start, iterator->position, "else") ||
-                    matches(start, iterator->position, "select") ||
+                   (matches(start, iterator->position, "select") ||
                     matches(start, iterator->position, "continue") ||
                     matches(start, iterator->position, "break") ||
                     matches(start, iterator->position, "shift") ||
