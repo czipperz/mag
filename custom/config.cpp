@@ -775,9 +775,11 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::splash_next_token;
         } else if (buffer->name.starts_with("*diff ")) {
             buffer->mode.next_token = syntax::diff_next_token;
+            BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
         } else if (buffer->name.starts_with("*git last-edit ") ||
                    buffer->name.starts_with("*git show ")) {
             buffer->mode.next_token = syntax::patch_next_token;
+            BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
         } else if (buffer->name.starts_with("*git blame ")) {
             buffer->mode.next_token = version_control::git_blame_next_token;
             BIND(buffer->mode.key_map, "ENTER", version_control::command_show_commit_at_sol);
