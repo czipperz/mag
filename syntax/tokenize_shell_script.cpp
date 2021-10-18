@@ -45,7 +45,7 @@ static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* top) {
 static bool is_separator(char ch) {
     return ch == '?' || ch == '*' || ch == ';' || ch == '<' || ch == '|' || ch == '>' ||
            ch == '&' || ch == '{' || ch == '(' || ch == '[' || ch == '}' || ch == ')' ||
-           ch == ']' || ch == '+';
+           ch == ']' || ch == '+' || ch == '=';
 }
 
 static bool is_general(char ch) {
@@ -217,6 +217,8 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                 iterator->advance();
             } else if (first_ch == '>' && iterator->get() == '|') {
                 iterator->advance();
+            } else if (first_ch == '+' && iterator->get() == '=') {
+                iterator->advance();
             }
         }
         token->type = Token_Type::PUNCTUATION;
@@ -252,13 +254,13 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                     break;
                 }
             } else {
-                if (!is_general(ch)) {
-                    break;
-                }
-                if (top == AT_START_OF_STATEMENT && ch == '=') {
+                if (top == AT_START_OF_STATEMENT && (ch == '=' || looking_at(*iterator, "+="))) {
                     token->type = Token_Type::IDENTIFIER;
                     top = NORMAL;
                     goto ret;
+                }
+                if (!is_general(ch)) {
+                    break;
                 }
             }
             iterator->advance();
