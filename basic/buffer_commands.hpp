@@ -19,7 +19,8 @@ void command_rename_buffer(Editor* editor, Command_Source source);
 void command_save_buffer_to(Editor* editor, Command_Source source);
 void command_pretend_rename_buffer(Editor* editor, Command_Source source);
 
-void command_diff_buffer_against(Editor* editor, Command_Source source);
+void command_diff_buffer_file_against(Editor* editor, Command_Source source);
+void command_diff_buffer_contents_against(Editor* editor, Command_Source source);
 
 }
 }

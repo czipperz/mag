@@ -439,10 +439,10 @@ void command_pretend_rename_buffer(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
-static void command_diff_buffer_against_callback(Editor* editor,
-                                                 Client* client,
-                                                 cz::Str path,
-                                                 void* data) {
+static void command_diff_buffer_contents_against_callback(Editor* editor,
+                                                          Client* client,
+                                                          cz::Str path,
+                                                          void* data) {
     WITH_CONST_SELECTED_BUFFER(client);
 
     char temp_file_buffer[L_tmpnam];
@@ -466,8 +466,38 @@ static void command_diff_buffer_against_callback(Editor* editor,
     run_console_command(client, editor, buffer->directory.buffer, args, name, "Diff error");
 }
 
-REGISTER_COMMAND(command_diff_buffer_against);
-void command_diff_buffer_against(Editor* editor, Command_Source source) {
+static void command_diff_buffer_file_against_callback(Editor* editor,
+                                                      Client* client,
+                                                      cz::Str input_path,
+                                                      void* data) {
+    {
+        WITH_SELECTED_BUFFER(client);
+        (void)save_buffer(buffer);
+    }
+
+    WITH_CONST_SELECTED_BUFFER(client);
+    cz::String buffer_path = {};
+    CZ_DEFER(buffer_path.drop(cz::heap_allocator()));
+
+    buffer_path.reserve(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
+    if (buffer->type != Buffer::FILE) {
+        client->show_message("Error: buffer must be a file");
+        return;
+    }
+    buffer_path.append(buffer->directory);
+    buffer_path.append(buffer->name);
+
+    cz::Heap_String name = {};
+    CZ_DEFER(name.drop());
+    name = cz::format("diff ", input_path, " ", buffer_path);
+
+    cz::Str args[] = {"diff", input_path, buffer_path};
+
+    run_console_command(client, editor, buffer->directory.buffer, args, name, "Diff error");
+}
+
+REGISTER_COMMAND(command_diff_buffer_contents_against);
+void command_diff_buffer_contents_against(Editor* editor, Command_Source source) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
@@ -482,7 +512,31 @@ void command_diff_buffer_against(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Diff buffer against: ";
     dialog.completion_engine = file_completion_engine;
-    dialog.response_callback = command_diff_buffer_against_callback;
+    dialog.response_callback = command_diff_buffer_contents_against_callback;
+    dialog.next_token = syntax::path_next_token;
+    dialog.mini_buffer_contents = path;
+    source.client->show_dialog(dialog);
+}
+
+REGISTER_COMMAND(command_diff_buffer_file_against);
+void command_diff_buffer_file_against(Editor* editor, Command_Source source) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        path.reserve(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
+        if (buffer->type != Buffer::FILE) {
+            source.client->show_message("Error: buffer must be a file");
+            return;
+        }
+        path.append(buffer->directory);
+        path.append(buffer->name);
+    }
+
+    Dialog dialog = {};
+    dialog.prompt = "Diff buffer file against: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_diff_buffer_file_against_callback;
     dialog.next_token = syntax::path_next_token;
     dialog.mini_buffer_contents = path;
     source.client->show_dialog(dialog);
