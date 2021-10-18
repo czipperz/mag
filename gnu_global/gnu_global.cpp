@@ -395,14 +395,7 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
 
     Window_Unified* window = source.client->selected_window();
 
-    // If data wasn't cleared by show_dialog then it needs to be cleaned up now.
-    auto data = (Completion_Engine_Data*)window->completion_cache.engine_context.data;
-    if (data) {
-        CZ_DEBUG_ASSERT(window->completion_cache.engine_context.cleanup);
-        window->completion_cache.engine_context.cleanup(data);
-    }
-
-    data = cz::heap_allocator().alloc<Completion_Engine_Data>();
+    Completion_Engine_Data* data = cz::heap_allocator().alloc<Completion_Engine_Data>();
     *data = {};
     data->working_directory = directory;
 
