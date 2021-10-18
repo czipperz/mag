@@ -704,6 +704,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
     buffer->mode.search_continue_case_handling = Case_Handling::CASE_SENSITIVE;
 
     buffer->mode.comment_break_tabs = true;
+    buffer->mode.tabs_for_alignment = false;
 
     buffer->mode.preferred_column = 100;
 

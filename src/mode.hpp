@@ -83,6 +83,11 @@ struct Mode {
     /// Uncommenting will coalesce spaces into tabs regardless of whether this is set.
     bool comment_break_tabs = true;
 
+    /// If `true` then tabs will be used for alignment (ex. `command_cursors_align`).
+    /// Otherwise, spaces will be used for alignment.
+    /// Note: this is different than if tabs are used for indentation (see `Mode::use_tabs`).
+    bool tabs_for_alignment = false;
+
     /// Used for debugging.
     bool render_bucket_boundaries = false;
 

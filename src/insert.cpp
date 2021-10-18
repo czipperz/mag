@@ -90,6 +90,8 @@ void command_insert_char(Editor* editor, Command_Source source) {
     do_command_insert_char(editor, buffer, window, source);
 }
 
+static bool try_merge_spaces_into_tabs(Window_Unified* window, Buffer* buffer, Client* client);
+
 void do_command_insert_char(Editor* editor,
                             Buffer* buffer,
                             Window_Unified* window,
@@ -161,115 +163,10 @@ void do_command_insert_char(Editor* editor,
     }
 
     // Merge spaces into tabs.
-    if (buffer->mode.use_tabs && code == ' ' && buffer->mode.tab_width > 0) {
-        // See if there are any cursors we want to merge at.
-        cz::Slice<Cursor> cursors = window->cursors;
-        Contents_Iterator it = buffer->contents.start();
-        size_t merge_tab = 0;
-        for (size_t e = 0; e < cursors.len; ++e) {
-            // No space before so we can't merge.
-            if (cursors[e].point == 0) {
-                continue;
-            }
-
-            it.advance_to(cursors[e].point);
-
-            uint64_t column = get_visual_column(buffer->mode, it);
-
-            // If the character before is not a space we can't merge.
-            it.retreat();
-            if (it.get() != ' ') {
-                continue;
-            }
-
-            uint64_t end = it.position + 1;
-            while (!it.at_bob() && end - it.position + 1 < buffer->mode.tab_width) {
-                it.retreat();
-                if (it.get() != ' ') {
-                    it.advance();
-                    break;
-                }
-            }
-
-            // And if we're not going to hit a tab level we can't use a tab.
-            if ((column + 1) % buffer->mode.tab_width == 0 &&
-                end - it.position + 1 == buffer->mode.tab_width) {
-                ++merge_tab;
-            }
-        }
-
-        if (merge_tab > 0) {
-            Transaction transaction;
-            transaction.init(buffer);
-            CZ_DEFER(transaction.drop());
-
-            char* buf = (char*)transaction.value_allocator().alloc({buffer->mode.tab_width - 1, 1});
-            memset(buf, ' ', buffer->mode.tab_width - 1);
-            SSOStr spaces = SSOStr::from_constant({buf, buffer->mode.tab_width - 1});
-
-            int64_t offset = 0;
-            if (cursors.len > 1) {
-                it.retreat_to(cursors[0].point);
-            }
-            for (size_t c = 0; c < cursors.len; ++c) {
-                it.advance_to(cursors[c].point);
-
-                if (it.position > 0) {
-                    uint64_t column = get_visual_column(buffer->mode, it);
-
-                    uint64_t end = it.position;
-                    it.retreat();
-
-                    // If the character before is not a space we can't merge.
-                    // And if we're not going to hit a tab level we can't use a tab.
-                    if (it.get() == ' ' && (column + 1) % buffer->mode.tab_width == 0) {
-                        while (!it.at_bob()) {
-                            it.retreat();
-                            if (it.get() != ' ') {
-                                it.advance();
-                                break;
-                            }
-                        }
-
-                        if (end - it.position + 1 == buffer->mode.tab_width) {
-                            // Remove the spaces.
-                            Edit remove;
-                            remove.position = it.position + offset;
-                            remove.value = spaces;
-                            remove.flags = Edit::REMOVE;
-                            transaction.push(remove);
-
-                            // Insert the character.
-                            Edit insert;
-                            insert.position = it.position + offset;
-                            insert.value = SSOStr::from_char('\t');
-                            insert.flags = Edit::INSERT;
-                            transaction.push(insert);
-
-                            offset -= end - it.position;
-                            ++offset;
-                            continue;
-                        }
-                    }
-
-                    // Reset if we arent replacing with a tab.
-                    it.advance_to(end);
-                }
-
-                // Insert the character.
-                Edit insert;
-                insert.position = it.position + offset;
-                insert.value = SSOStr::from_char(code);
-                insert.flags = Edit::INSERT;
-                transaction.push(insert);
-
-                ++offset;
-            }
-
-            // Don't merge edits around tab replacement.
-            transaction.commit(source.client);
+    if (code == ' ') {
+        CZ_ASSERT(buffer->mode.tab_width > 0);
+        if (try_merge_spaces_into_tabs(window, buffer, source.client))
             return;
-        }
     }
 
     if (source.previous_command.function == command_insert_char &&
@@ -306,6 +203,121 @@ void do_command_insert_char(Editor* editor,
     }
 
     insert_char(source.client, buffer, window, code, command_insert_char);
+}
+
+static bool should_merge_tab_at(const Mode& mode, Contents_Iterator it);
+
+static bool try_merge_spaces_into_tabs(Window_Unified* window, Buffer* buffer, Client* client) {
+    // See if there are any cursors we want to merge at.
+    cz::Slice<Cursor> cursors = window->cursors;
+    Contents_Iterator it = buffer->contents.start();
+
+    bool any_merge = false;
+    for (size_t e = 0; e < cursors.len; ++e) {
+        it.advance_to(cursors[e].point);
+        if (should_merge_tab_at(buffer->mode, it)) {
+            any_merge = true;
+            break;
+        }
+    }
+    if (!any_merge)
+        return false;
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    cz::String spaces_buffer = {};
+    spaces_buffer.reserve_exact(transaction.value_allocator(), buffer->mode.tab_width - 1);
+    spaces_buffer.push_many(' ', buffer->mode.tab_width - 1);
+    SSOStr spaces = SSOStr::from_constant(spaces_buffer);
+    if (spaces.is_short())
+        spaces_buffer.drop(transaction.value_allocator());
+
+    int64_t offset = 0;
+    if (cursors.len > 1) {
+        it.retreat_to(cursors[0].point);
+    }
+    for (size_t c = 0; c < cursors.len; ++c) {
+        it.advance_to(cursors[c].point);
+        if (should_merge_tab_at(buffer->mode, it)) {
+            Contents_Iterator start_spaces = it;
+            while (!start_spaces.at_bob() &&
+                   it.position - start_spaces.position <= buffer->mode.tab_width - 1) {
+                start_spaces.retreat();
+                if (start_spaces.get() != ' ') {
+                    start_spaces.advance();
+                    break;
+                }
+            }
+
+            uint64_t spaces_to_remove = it.position - start_spaces.position;
+
+            // Remove the spaces.
+            Edit remove;
+            remove.position = start_spaces.position + offset;
+            remove.value = SSOStr::from_constant(spaces.as_str().slice_end(spaces_to_remove));
+            remove.flags = Edit::REMOVE;
+            transaction.push(remove);
+
+            // Insert the character.
+            Edit insert;
+            insert.position = start_spaces.position + offset;
+            insert.value = SSOStr::from_char('\t');
+            insert.flags = Edit::INSERT;
+            transaction.push(insert);
+
+            offset -= spaces_to_remove;
+            ++offset;
+        } else {
+            // Insert the character.
+            Edit insert;
+            insert.position = it.position + offset;
+            insert.value = SSOStr::from_char(' ');
+            insert.flags = Edit::INSERT;
+            transaction.push(insert);
+            ++offset;
+        }
+    }
+
+    // Don't merge edits around tab replacement.
+    transaction.commit(client);
+    return true;
+}
+
+static bool should_merge_tab_at(const Mode& mode, Contents_Iterator it) {
+    Contents_Iterator sol = it;
+    backward_through_whitespace(&sol);
+    if (at_start_of_line(sol)) {
+        // use_tabs controls tabs for indentation.
+        if (!mode.use_tabs)
+            return false;
+    } else {
+        // tabs_for_alignment controls tabs for alignment.
+        if (!mode.tabs_for_alignment)
+            return false;
+    }
+
+    // Must be aligned to the tab width after adding the space.
+    uint64_t column = get_visual_column(mode, it);
+    if ((column + 1) % mode.tab_width != 0)
+        return false;
+
+    // We shouldn't put a tab after spaces so test if there are > tab_width spaces.
+    if (it.position > mode.tab_width - 1) {
+        Contents_Iterator start_spaces = it;
+        while (it.position - start_spaces.position <= mode.tab_width - 1) {
+            start_spaces.retreat();
+            if (start_spaces.get() != ' ') {
+                start_spaces.advance();
+                break;
+            }
+        }
+        if (it.position - start_spaces.position > mode.tab_width - 1)
+            return false;
+    }
+
+    return true;
 }
 
 }

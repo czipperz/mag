@@ -164,6 +164,17 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
         } else {
             client->show_message("Buffer now does not use tabs");
         }
+    } else if (query == "buffer tabs for alignment") {
+        bool tabs_for_alignment;
+        {
+            WITH_SELECTED_BUFFER(client);
+            tabs_for_alignment = buffer->mode.tabs_for_alignment = !buffer->mode.tabs_for_alignment;
+        }
+        if (tabs_for_alignment) {
+            client->show_message("Buffer now uses tabs for alignment");
+        } else {
+            client->show_message("Buffer now does not use tabs for alignment");
+        }
     } else if (query == "buffer line feed crlf") {
         WITH_SELECTED_BUFFER(client);
         buffer->use_carriage_returns = !buffer->use_carriage_returns;
@@ -239,6 +250,7 @@ static bool configurations_completion_engine(Editor* editor,
     context->results.push("buffer indent width");
     context->results.push("buffer tab width");
     context->results.push("buffer use tabs");
+    context->results.push("buffer tabs for alignment");
     context->results.push("buffer line feed crlf");
     context->results.push("buffer pinned");
     context->results.push("buffer preferred column");
