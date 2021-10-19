@@ -1039,6 +1039,11 @@ void run(Server* server, Client* client) {
         client->update_mini_buffer_completion_cache();
         load_mini_buffer_completion_cache(server, client);
 
+        if (client->_pending_raise) {
+            SDL_RaiseWindow(window);
+            client->_pending_raise = false;
+        }
+
         bool redrew_this_time = false;
         render(window, font, surface_cache, &old_width, &old_height, &total_rows, &total_cols,
                character_width, character_height, cellss, &window_cache, &mini_buffer_window_cache,

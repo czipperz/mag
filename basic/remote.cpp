@@ -107,6 +107,8 @@ static Job_Tick_Result server_tick(Editor* editor, Client* client, void*) {
             open_file_arg(editor, client, server_data.file_name);
             server_data.file_name.len = 0;
 
+            client->raise();
+
             closesocket(server_data.socket_client);
             server_data.socket_client = INVALID_SOCKET;
 

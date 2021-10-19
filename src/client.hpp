@@ -84,6 +84,8 @@ struct Client {
     std::chrono::system_clock::time_point _message_time;
     Message _message;
 
+    bool _pending_raise;
+
     /// Clones all inputs.
     void init(cz::Arc<Buffer_Handle> selected_buffer_handle,
               cz::Arc<Buffer_Handle> mini_buffer_handle,
@@ -133,6 +135,8 @@ struct Client {
     void dealloc_message();
 
     void restore_selected_buffer();
+
+    void raise() { _pending_raise = true; }
 };
 
 }
