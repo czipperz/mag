@@ -82,7 +82,9 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} tracy)
 
-if (NOT WIN32)
+if (WIN32)
+  target_link_libraries(${PROJECT_NAME} Shcore.lib)
+else()
   target_link_libraries(${PROJECT_NAME} pthread dl z)
 endif()
 

@@ -27,6 +27,7 @@
 #include "window_cache.hpp"
 
 #ifdef _WIN32
+#include <shellscalingapi.h>
 #include <windows.h>
 #include "res/resources.h"
 #endif
@@ -564,10 +565,7 @@ static void process_events(Server* server,
     }
 }
 
-static void process_scroll(Server* server,
-                           Client* client,
-                           Scroll_State* scroll,
-                           int mod_state) {
+static void process_scroll(Server* server, Client* client, Scroll_State* scroll, int mod_state) {
     if (scroll->scrolling) {
         if (scroll->acceleration > 0) {
             scroll->acceleration -= scroll->friction;
@@ -847,7 +845,8 @@ static bool load_font(cz::String* font_file,
                       int* character_height,
                       SDL_Surface**** surface_cache,
                       cz::Str new_font_file,
-                      uint32_t new_font_size) {
+                      uint32_t new_font_size,
+                      float dpi_scale) {
     ZoneScoped;
 
     // Set font config variables even if we fail to load the font
@@ -858,7 +857,7 @@ static bool load_font(cz::String* font_file,
     *font_size = new_font_size;
 
     // Load the font.
-    TTF_Font* new_font = TTF_OpenFont(font_file->buffer, *font_size);
+    TTF_Font* new_font = TTF_OpenFont(font_file->buffer, (int)(*font_size * dpi_scale));
     if (!new_font) {
         fprintf(stderr, "Failed to open the font file '%s': %s\n", font_file->buffer,
                 SDL_GetError());
@@ -883,6 +882,10 @@ static bool load_font(cz::String* font_file,
 void run(Server* server, Client* client) {
     server->set_async_locked(false);
     // @Unlocked No usage of server or client can be made in this region!!!
+
+#ifdef _WIN32
+    SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
+#endif
 
     int result;
 
@@ -917,6 +920,14 @@ void run(Server* server, Client* client) {
     }
     CZ_DEFER(IMG_Quit());
 
+    float dpi_scale = 1.0f;
+    {
+        const float dpi_default = 96.0f;
+        float dpi = 0;
+        if (SDL_GetDisplayDPI(0, &dpi, NULL, NULL) == 0)
+            dpi_scale = dpi / dpi_default;
+    }
+
     const char* window_name = "Mag";
 #ifndef NDEBUG
     window_name = "Mag [DEBUG]";
@@ -925,8 +936,9 @@ void run(Server* server, Client* client) {
     SDL_Window* window;
     {
         ZoneScopedN("SDL_CreateWindow");
-        window = SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                  800, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+        window = SDL_CreateWindow(
+            window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800 * dpi_scale,
+            800 * dpi_scale, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     }
     if (!window) {
         fprintf(stderr, "Failed to create a window: %s\n", SDL_GetError());
@@ -955,7 +967,8 @@ void run(Server* server, Client* client) {
 
     // Load the font.
     if (!load_font(&font_file, &font_size, &font, &character_width, &character_height,
-                   surface_cache, server->editor.theme.font_file, server->editor.theme.font_size)) {
+                   surface_cache, server->editor.theme.font_file, server->editor.theme.font_size,
+                   dpi_scale)) {
         return;
     }
 
@@ -1030,7 +1043,7 @@ void run(Server* server, Client* client) {
             // If loading the font fails then we print a message inside `load_font()` and continue.
             if (load_font(&font_file, &font_size, &font, &character_width, &character_height,
                           surface_cache, server->editor.theme.font_file,
-                          server->editor.theme.font_size)) {
+                          server->editor.theme.font_size, dpi_scale)) {
                 // Redraw the screen with the new font info.
                 force_redraw = true;
             }
