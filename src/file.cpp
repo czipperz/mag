@@ -71,8 +71,8 @@ bool open_existing(cz::Output_File* file, const char* path) {
     file->handle = h;
     return true;
 #else
-    file->fd = ::open(path, O_WRONLY);
-    return file->fd != -1;
+    file->handle = ::open(path, O_WRONLY);
+    return file->handle != -1;
 #endif
 }
 
