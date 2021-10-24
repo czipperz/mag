@@ -81,6 +81,7 @@ static void copy_cursor(Cursor* cursor,
 REGISTER_COMMAND(command_copy);
 void command_copy(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    source.client->update_global_copy_chain(editor);
     cz::Slice<Cursor> cursors = window->cursors;
     if (cursors.len == 1) {
         copy_cursor(&cursors[0], &source.client->global_copy_chain, editor, buffer, source.client);
@@ -319,6 +320,7 @@ void command_cursors_cut_as_lines(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_cursors_copy_as_lines);
 void command_cursors_copy_as_lines(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    source.client->update_global_copy_chain(editor);
     cz::Slice<Cursor> cursors = window->cursors;
 
     cz::String string = copy_cursors_as_lines(editor, buffer, cursors);
