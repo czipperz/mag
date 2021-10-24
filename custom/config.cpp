@@ -240,10 +240,10 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-c /", command_create_cursors_last_change);
     BIND(key_map, "A-c _", command_create_cursors_last_change);
-    BIND(key_map, "A-c A-/", command_create_cursors_undo);
-    BIND(key_map, "A-c A-_", command_create_cursors_undo);
-    BIND(key_map, "A-c C-/", command_create_cursors_redo);
-    BIND(key_map, "A-c C-_", command_create_cursors_redo);
+    BIND(key_map, "A-c A-/", command_create_cursors_undo_nono);
+    BIND(key_map, "A-c A-_", command_create_cursors_undo_nono);
+    BIND(key_map, "A-c C-/", command_create_cursors_redo_nono);
+    BIND(key_map, "A-c C-_", command_create_cursors_redo_nono);
 
     BIND(key_map, "A-c a", command_cursors_align);
     BIND(key_map, "A-c 0", command_cursors_align_leftpad0);

@@ -1509,37 +1509,67 @@ static void set_cursor_position_to_edit_undo(Cursor* cursor, const Edit* edit, i
     }
 }
 
+static void create_cursors_redo(Window_Unified* window,
+                                const Buffer* buffer,
+                                Client* client,
+                                cz::Slice<const Edit> edits) {
+    kill_extra_cursors(window, client);
+    window->cursors.reserve(cz::heap_allocator(), edits.len - 1);
+
+    set_cursor_position_to_edit_redo(&window->cursors[0], &edits[0]);
+
+    Copy_Chain* local_copy_chain = window->cursors[0].local_copy_chain;
+    for (size_t i = 1; i < edits.len; ++i) {
+        Cursor cursor = {};
+        set_cursor_position_to_edit_redo(&cursor, &edits[i]);
+        cursor.local_copy_chain = local_copy_chain;
+        window->cursors.push(cursor);
+    }
+}
+
+static void create_cursors_undo(Window_Unified* window,
+                                const Buffer* buffer,
+                                Client* client,
+                                cz::Slice<const Edit> edits) {
+    kill_extra_cursors(window, client);
+    window->cursors.reserve(cz::heap_allocator(), edits.len - 1);
+
+    int64_t offset = 0;
+    set_cursor_position_to_edit_undo(&window->cursors[0], &edits[0], &offset);
+
+    Copy_Chain* local_copy_chain = window->cursors[0].local_copy_chain;
+    for (size_t i = 1; i < edits.len; ++i) {
+        Cursor cursor = {};
+        set_cursor_position_to_edit_undo(&cursor, &edits[i], &offset);
+        cursor.local_copy_chain = local_copy_chain;
+        window->cursors.push(cursor);
+    }
+}
+
 static void create_cursors_last_change(Window_Unified* window,
                                        const Buffer* buffer,
                                        Client* client) {
-    kill_extra_cursors(window, client);
-
     const Change* change = &buffer->changes.last();
     cz::Slice<const Edit> edits = change->commit.edits;
-    window->cursors.reserve(cz::heap_allocator(), edits.len - 1);
 
     if (change->is_redo) {
-        set_cursor_position_to_edit_redo(&window->cursors[0], &edits[0]);
-
-        Copy_Chain* local_copy_chain = window->cursors[0].local_copy_chain;
-        for (size_t i = 1; i < edits.len; ++i) {
-            Cursor cursor = {};
-            set_cursor_position_to_edit_redo(&cursor, &edits[i]);
-            cursor.local_copy_chain = local_copy_chain;
-            window->cursors.push(cursor);
-        }
+        create_cursors_redo(window, buffer, client, edits);
     } else {
-        int64_t offset = 0;
-        set_cursor_position_to_edit_undo(&window->cursors[0], &edits[0], &offset);
-
-        Copy_Chain* local_copy_chain = window->cursors[0].local_copy_chain;
-        for (size_t i = 1; i < edits.len; ++i) {
-            Cursor cursor = {};
-            set_cursor_position_to_edit_undo(&cursor, &edits[i], &offset);
-            cursor.local_copy_chain = local_copy_chain;
-            window->cursors.push(cursor);
-        }
+        create_cursors_undo(window, buffer, client, edits);
     }
+}
+
+REGISTER_COMMAND(command_create_cursors_undo_nono);
+void command_create_cursors_undo_nono(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    if (buffer->commit_index == 0) {
+        source.client->show_message("Nothing to undo");
+        return;
+    }
+
+    Commit commit = buffer->commits[buffer->commit_index - 1];
+    window->update_cursors(buffer);
+    create_cursors_undo(window, buffer, source.client, commit.edits);
 }
 
 REGISTER_COMMAND(command_create_cursors_undo);
@@ -1552,6 +1582,19 @@ void command_create_cursors_undo(Editor* editor, Command_Source source) {
 
     window->update_cursors(buffer);
     create_cursors_last_change(window, buffer, source.client);
+}
+
+REGISTER_COMMAND(command_create_cursors_redo_nono);
+void command_create_cursors_redo_nono(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    if (buffer->commit_index + 1 >= buffer->commits.len) {
+        source.client->show_message("Nothing to redo");
+        return;
+    }
+
+    Commit commit = buffer->commits[buffer->commit_index - 1];
+    window->update_cursors(buffer);
+    create_cursors_redo(window, buffer, source.client, commit.edits);
 }
 
 REGISTER_COMMAND(command_create_cursors_redo);
