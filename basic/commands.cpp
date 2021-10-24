@@ -2278,6 +2278,20 @@ void command_restore_last_save_point(Editor* editor, Command_Source source) {
     }
 }
 
+REGISTER_COMMAND(command_undo_all);
+void command_undo_all(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    while (buffer->undo()) {
+    }
+}
+
+REGISTER_COMMAND(command_redo_all);
+void command_redo_all(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    while (buffer->redo()) {
+    }
+}
+
 static void command_run_command_for_result_callback(Editor* editor,
                                                     Client* client,
                                                     cz::Str script,
