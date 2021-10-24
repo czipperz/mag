@@ -880,14 +880,14 @@ bool open_file(Editor* editor, Client* client, cz::Str user_path) {
     return true;
 }
 
-void parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t* column_out) {
+bool parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t* column_out) {
     ZoneScoped;
 
     // If the file exists then immediately open it.
     if (cz::file::exists(arg.buffer)) {
     open:
         *file_out = arg;
-        return;
+        return false;
     }
 
     // Test FILE:LINE.  If these tests fail then it's not of this form.  If the FILE component
@@ -910,7 +910,7 @@ void parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t
         // Argument is of form FILE:LINE.
         *file_out = arg.slice_end(path.len);
         *line_out = line;
-        return;
+        return true;
     }
 
     // Test FILE:LINE:COLUMN.  If these tests fail then it's not of this
@@ -936,7 +936,7 @@ void parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t
         *file_out = arg.slice_end(path.len);
         *line_out = line;
         *column_out = column;
-        return;
+        return true;
     }
 
     goto open;
@@ -945,15 +945,17 @@ void parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t
 bool open_file_arg(Editor* editor, Client* client, cz::Str user_arg) {
     cz::Str file;
     uint64_t line = 0, column = 0;
-    parse_file_arg(user_arg, &file, &line, &column);
+    bool has_line = parse_file_arg(user_arg, &file, &line, &column);
 
     if (!open_file(editor, client, file))
         return false;
 
-    WITH_CONST_SELECTED_BUFFER(client);
-    Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
-    window->cursors[0].point = iterator.position;
-    center_in_window(window, buffer->mode, editor->theme, iterator);
+    if (has_line) {
+        WITH_CONST_SELECTED_BUFFER(client);
+        Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
+        window->cursors[0].point = iterator.position;
+        center_in_window(window, buffer->mode, editor->theme, iterator);
+    }
     return true;
 }
 

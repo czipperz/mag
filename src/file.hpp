@@ -32,10 +32,11 @@ bool open_file(Editor* editor, Client* client, cz::Str user_path);
 
 /// Parse a "file arg" of the form `file` or `file:line` or `file:line:column`.
 /// `*line` and `*column` are not modified if they are not present.
+/// Returns `true` if `*line` is present.
 ///
 /// Note that both lines and columns are formatted starting
 /// at 1 but are handled internally starting at 0.
-void parse_file_arg(cz::Str user_arg, cz::Str* file, uint64_t* line, uint64_t* column);
+bool parse_file_arg(cz::Str user_arg, cz::Str* file, uint64_t* line, uint64_t* column);
 
 /// Combines `parse_file_arg`, `open_file`, and then navigating to the requested point.
 bool open_file_arg(Editor* editor, Client* client, cz::Str user_arg);
