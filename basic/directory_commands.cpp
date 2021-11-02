@@ -570,6 +570,7 @@ void command_launch_terminal(Editor* editor, Command_Source source) {
 void launch_terminal_in(Editor* editor, Client* client, const char* directory) {
     cz::Process_Options options;
     options.working_directory = directory;
+    options.detach = true;
 
     cz::Process process;
     if (!process.launch_script(terminal_script, options)) {
