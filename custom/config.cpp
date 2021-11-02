@@ -416,6 +416,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-x t A-k", command_recapitalize_token_to_skebab);
 
     BIND(key_map, "A-x m", man::command_man);
+    BIND(key_map, "A-x A-m", man::command_man_at_point);
 
     BIND(key_map, "A-g A-g", command_goto_line);
     BIND(key_map, "A-g G", command_goto_position);

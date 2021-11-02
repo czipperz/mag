@@ -31,6 +31,11 @@ void command_man(Editor* editor, Command_Source source) {
     source.client->show_message("Error: man isn't supported on Windows");
     return;
 }
+REGISTER_COMMAND(command_man_at_point);
+void command_man_at_point(Editor* editor, Command_Source source) {
+    source.client->show_message("Error: man isn't supported on Windows");
+    return;
+}
 
 #else
 
@@ -460,6 +465,28 @@ void command_man(Editor* editor, Command_Source source) {
     dialog.completion_engine = man_completion_engine;
     dialog.response_callback = command_man_response;
     source.client->show_dialog(dialog);
+}
+
+REGISTER_COMMAND(command_man_at_point);
+void command_man_at_point(Editor* editor, Command_Source source) {
+    SSOStr query = {};
+    CZ_DEFER(query.drop(cz::heap_allocator()));
+
+    {
+        WITH_SELECTED_BUFFER(source.client);
+
+        Contents_Iterator iterator =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+        Token token;
+        if (!get_token_at_position(buffer, &iterator, &token)) {
+            source.client->show_message("Cursor is not positioned at a token");
+            return;
+        }
+
+        query = buffer->contents.slice(cz::heap_allocator(), iterator, token.end);
+    }
+
+    command_man_response(editor, source.client, query, nullptr);
 }
 
 #endif
