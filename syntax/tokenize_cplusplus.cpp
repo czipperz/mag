@@ -245,16 +245,23 @@ retry:
 
     case '{':
         state->syntax = SYNTAX_AT_STMT;
-    case '(':
+        goto open_pair;
     case '[':
+        state->syntax = SYNTAX_IN_EXPR;
+    case '(':
+    open_pair:
         token->type = Token_Type::OPEN_PAIR;
         token->start = iterator->position;
         iterator->advance();
         token->end = iterator->position;
         return true;
     case '}':
+        state->syntax = SYNTAX_AT_STMT;
+        goto close_pair;
     case ')':
     case ']':
+        state->syntax = SYNTAX_IN_EXPR;
+    close_pair:
         token->type = Token_Type::CLOSE_PAIR;
         token->start = iterator->position;
         iterator->advance();
