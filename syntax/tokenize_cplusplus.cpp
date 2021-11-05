@@ -1810,12 +1810,22 @@ static void handle_char(Contents_Iterator* iterator, Token* token, State* state)
     token->type = Token_Type::STRING;
     token->start = iterator->position;
 
-    iterator->advance();                                 // opening '\''
-    if (!iterator->at_eob() && iterator->get() == '\\')  // optional '\\'
-        iterator->advance();
-    forward_char(iterator);  // body character
-    forward_char(iterator);  // closing '\''
+    iterator->advance();  // opening '\''
+    if (looking_at(*iterator, '\\'))
+        forward_char(iterator);  // skip escaped character
+    forward_char(iterator);      // body character
+    while (!iterator->at_eob()) {
+        switch (iterator->get()) {
+        case '\'':
+            iterator->advance();  // closing '\''
+            goto ret;
+        default:
+            iterator->advance();
+            break;
+        }
+    }
 
+ret:
     token->end = iterator->position;
     state->syntax = SYNTAX_IN_EXPR;
 }
