@@ -278,6 +278,10 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
 }
 
 void reload_file(Editor* editor, Client* client, Buffer* buffer) {
+    bool old_read_only = buffer->read_only;
+    buffer->read_only = false;
+    CZ_DEFER(buffer->read_only = old_read_only);
+
     if (buffer->type == Buffer::DIRECTORY) {
         if (!reload_directory_buffer(buffer)) {
             client->show_message("Couldn't reload directory");
