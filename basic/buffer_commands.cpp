@@ -276,6 +276,10 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
     editor->kill(buffer_handle.get());
 
     remove_windows_for_buffer(client, buffer_handle, editor->buffers[0]);
+
+    if (client->window->tag == Window::UNIFIED) {
+        (void)pop_jump(editor, client);
+    }
 }
 
 REGISTER_COMMAND(command_kill_buffer);
