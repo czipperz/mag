@@ -50,6 +50,9 @@ bool completion_engine(Editor* editor, Completion_Engine_Context* context, bool 
     Completion_Engine_Data* data = (Completion_Engine_Data*)context->data;
     cz::Process_Options options;
     options.working_directory = data->working_directory;
+#ifdef _WIN32
+    options.hide_window = true;
+#endif
     return data->runner.iterate(context, args, options, is_initial_frame);
 }
 
@@ -72,6 +75,9 @@ const char* lookup(const char* directory,
     {
         cz::Process_Options options;
         options.working_directory = directory;
+#ifdef _WIN32
+        options.hide_window = true;
+#endif
 
         if (!create_process_output_pipe(&options.std_out, &std_out_read)) {
             return "Error: I/O operation failed";

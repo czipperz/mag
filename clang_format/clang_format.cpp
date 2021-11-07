@@ -320,6 +320,10 @@ void command_clang_format_buffer(Editor* editor, Command_Source source) {
 
     cz::Process_Options options;
     options.std_in = input_file;
+#ifdef _WIN32
+    options.hide_window = true;
+#endif
+
     cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
         source.client->show_message("Error: I/O operation failed");

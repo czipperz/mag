@@ -205,6 +205,9 @@ bool run_console_command_in(Client* client,
 
     cz::Process_Options options;
     options.working_directory = working_directory;
+#ifdef _WIN32
+    options.hide_window = true;
+#endif
 
     cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {

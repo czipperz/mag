@@ -297,6 +297,9 @@ void reload_file(Editor* editor, Client* client, Buffer* buffer) {
         }
 
         cz::Process_Options options;
+#ifdef _WIN32
+        options.hide_window = true;
+#endif
         if (!save_buffer_to_temp_file(buffer, &options.std_in)) {
             client->show_message("Error saving buffer to temp file");
             return;

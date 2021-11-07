@@ -185,6 +185,9 @@ static void do_blame(Editor* editor,
                      cz::Arc<Buffer_Handle> handle) {
     cz::Process_Options options;
     options.working_directory = root.buffer;
+#ifdef _WIN32
+    options.hide_window = true;
+#endif
 
     cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
