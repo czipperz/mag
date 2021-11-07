@@ -61,5 +61,6 @@ struct Buffer;
 struct Editor;
 void push_jump(Window_Unified* window, Client* client, const Buffer* buffer);
 bool goto_jump(Editor* editor, Client* client, Jump* jump);
+bool pop_jump(Editor* editor, Client* client);
 
 }

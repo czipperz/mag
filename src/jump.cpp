@@ -70,4 +70,20 @@ bool goto_jump(Editor* editor, Client* client, Jump* jump) {
     return true;
 }
 
+bool pop_jump(Editor* editor, Client* client) {
+    while (1) {
+        Jump* jump = client->jump_chain.pop();
+        if (!jump) {
+            return false;
+        }
+
+        if (goto_jump(editor, client, jump)) {
+            return true;
+        }
+
+        // Invalid jump so kill it and retry.
+        client->jump_chain.kill_this_jump();
+    }
+}
+
 }

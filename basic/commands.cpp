@@ -523,19 +523,8 @@ void command_pop_jump(Editor* editor, Command_Source source) {
         source.client->jump_chain.pop();
     }
 
-    while (1) {
-        Jump* jump = source.client->jump_chain.pop();
-        if (!jump) {
-            source.client->show_message("No more jumps");
-            break;
-        }
-
-        if (goto_jump(editor, source.client, jump)) {
-            break;
-        }
-
-        // Invalid jump so kill it and retry.
-        source.client->jump_chain.kill_this_jump();
+    if (!pop_jump(editor, source.client)) {
+        source.client->show_message("No more jumps");
     }
 }
 
