@@ -404,11 +404,12 @@ void command_extract_variable(Editor* editor, Command_Source source) {
 
     // Delete all the regions.
     for (size_t c = 0; c < window->cursors.len; ++c) {
-        it.advance_to(window->cursors[c].start());
+        Cursor* cursor = &window->cursors[c];
+        it.advance_to(cursor->start());
         Edit remove_region;
         remove_region.value =
-            buffer->contents.slice(transaction.value_allocator(), it, window->cursors[c].end());
-        remove_region.position = window->cursors[c].start() + offset;
+            buffer->contents.slice(transaction.value_allocator(), it, cursor->end());
+        remove_region.position = cursor->start() + offset;
         remove_region.flags = Edit::REMOVE;
         transaction.push(remove_region);
         offset -= remove_region.value.len();
@@ -468,7 +469,7 @@ void command_extract_variable(Editor* editor, Command_Source source) {
     // Adjust cursors around the template.
     uint64_t offset2 = 0;
     for (size_t c = 1; c < window->cursors.len; ++c) {
-        auto* cursor = &window->cursors[c];
+        Cursor* cursor = &window->cursors[c];
         uint64_t removed = cursor->end() - cursor->start();
         cursor->point = cursor->start() + offset - offset2;
         cursor->mark = cursor->point;
