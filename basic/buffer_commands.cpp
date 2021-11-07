@@ -205,6 +205,8 @@ static int remove_windows_matching(Window** w,
 
             *w = window->second;
             window->second->parent = window->parent;
+            window->second->total_rows = window->total_rows;
+            window->second->total_cols = window->total_cols;
             Window_Split::drop_non_recursive(window);
 
             if (left_matches == 2) {
@@ -217,6 +219,8 @@ static int remove_windows_matching(Window** w,
 
             *w = window->first;
             window->first->parent = window->parent;
+            window->first->total_rows = window->total_rows;
+            window->first->total_cols = window->total_cols;
             Window_Split::drop_non_recursive(window);
 
             if (right_matches == 2) {
@@ -238,9 +242,12 @@ void remove_windows_for_buffer(Client* client,
                                cz::Arc<Buffer_Handle> replacement) {
     if (remove_windows_matching(&client->window, buffer_handle, &client->selected_normal_window)) {
         // Every buffer matches the killed buffer id
+        Window_Unified* win = Window_Unified::create(replacement);
+        win->total_rows = client->window->total_rows;
+        win->total_cols = client->window->total_cols;
         Window::drop_(client->window);
-        client->selected_normal_window = Window_Unified::create(replacement);
-        client->window = client->selected_normal_window;
+        client->window = win;
+        client->selected_normal_window = win;
     }
 
     cz::Vector<Window_Unified*>& offscreen_windows = client->_offscreen_windows;
