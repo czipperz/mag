@@ -5,6 +5,7 @@
 #include <SDL_syswm.h>
 #include <SDL_ttf.h>
 #include <inttypes.h>
+#include <math.h>
 #include <Tracy.hpp>
 #include <command_macros.hpp>
 #include <cz/char_type.hpp>
@@ -146,7 +147,7 @@ void drop_surface_cache(SDL_Surface**** surface_cache) {
     }
 }
 
-static Face_Color get_face_color_or(uint32_t* colors, Face_Color fc, int16_t deflt) {
+static Face_Color get_face_color_or(Face_Color fc, int16_t deflt) {
     // int16_t max_colors = sizeof(colors) / sizeof(colors[0]);
     int16_t max_colors = 256;
     if (fc.is_themed) {
@@ -599,6 +600,108 @@ static void blit_surface(SDL_Surface* surface, SDL_Surface* rendered_char, SDL_R
     SDL_BlitSurface(rendered_char, nullptr, surface, rect);
 }
 
+static void draw_corner(SDL_Surface* bg,
+                        SDL_Color color,
+                        int x,
+                        int y,
+                        int radius,
+                        int radiusp12,
+                        int radius2) {
+    //    rx ->
+    // ry     |
+    // |    .^
+    // v  -^
+    for (int ry = 0; ry < radius; ++ry) {
+        for (int rx = 0; rx < radius; ++rx) {
+            int rad = rx * rx + ry * ry;
+            if (rad < radius2) {
+                // Totally Inside
+                continue;
+            }
+
+            char* iter = (char*)bg->pixels;
+            if (y)
+                iter += (y + ry) * bg->pitch;
+            else
+                iter += (radius - ry - 1) * bg->pitch;
+            if (x)
+                iter += (x + rx) * bg->format->BytesPerPixel;
+            else
+                iter += (radius - rx - 1) * bg->format->BytesPerPixel;
+
+            // Totally Outside
+            if (rad >= radiusp12) {
+                *(uint32_t*)iter = 0;
+                continue;
+            }
+
+            uint8_t a = (uint8_t)((color.a * (radiusp12 - rad)) / (radiusp12 - radius2));
+            uint32_t mp = SDL_MapRGBA(bg->format, color.r, color.g, color.b, a);
+            *(uint32_t*)iter = mp;
+        }
+    }
+}
+
+static void render_background(SDL_Surface* surface,
+                              SDL_Color color,
+                              SDL_Rect rect,
+                              SDL_Color default_background,
+                              bool round_top_left,
+                              bool round_top_right,
+                              bool round_bottom_left,
+                              bool round_bottom_right) {
+    ZoneScoped;
+
+    uint32_t color32 = SDL_MapRGBA(surface->format, color.r, color.g, color.b, color.a);
+    uint32_t default_background32 =
+        SDL_MapRGBA(surface->format, default_background.r, default_background.g,
+                    default_background.b, default_background.a);
+
+    if (color32 == default_background32 ||
+        (!round_top_left && !round_top_right && !round_bottom_left && !round_bottom_right)) {
+        SDL_FillRect(surface, &rect, color32);
+        return;
+    }
+
+    SDL_FillRect(surface, &rect, default_background32);
+
+    // TODO cache the surfaces
+    SDL_Surface* bg = SDL_CreateRGBSurfaceWithFormat(0, rect.w, rect.h, 32, SDL_PIXELFORMAT_RGBA32);
+    SDL_SetSurfaceBlendMode(bg, SDL_BLENDMODE_BLEND);
+
+    SDL_FillRect(bg, nullptr, SDL_MapRGBA(bg->format, color.r, color.g, color.b, color.a));
+
+    int radius = (int)((float)rect.w / 2.0f);
+    int radius2 = (radius - 1) * (radius - 1);
+    int radiusp12 = radius * radius;
+    if (round_top_left) {
+        draw_corner(bg, color, 0, 0, radius, radiusp12, radius2);
+    }
+    if (round_top_right) {
+        draw_corner(bg, color, rect.w - radius, 0, radius, radiusp12, radius2);
+    }
+    if (round_bottom_left) {
+        draw_corner(bg, color, 0, rect.h - radius, radius, radiusp12, radius2);
+    }
+    if (round_bottom_right) {
+        draw_corner(bg, color, rect.w - radius, rect.h - radius, radius, radiusp12, radius2);
+    }
+
+    blit_surface(surface, bg, &rect);
+
+    SDL_FreeSurface(bg);
+}
+
+static Face_Color bg_color_of(const Cell& new_cell) {
+    if (new_cell.face.flags & Face::REVERSE) {
+        Face_Color bg = new_cell.face.foreground;
+        return get_face_color_or(bg, 7);
+    } else {
+        Face_Color bg = new_cell.face.background;
+        return get_face_color_or(bg, 0);
+    }
+}
+
 static void render(SDL_Window* window,
                    TTF_Font* font,
                    SDL_Surface**** surface_cache,
@@ -667,6 +770,7 @@ static void render(SDL_Window* window,
     render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client);
 
     bool any_changes = false;
+    const SDL_Color default_background = make_color(editor->theme.colors, {0});
 
     {
         ZoneScopedN("draw cells");
@@ -676,7 +780,9 @@ static void render(SDL_Window* window,
                 Cell* new_cell = &cellss[1][index];
                 if (!force_redraw && cellss[0][index] == *new_cell &&
                     (x == 0 || cellss[0][index - 1] == cellss[1][index - 1]) &&
-                    (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1])) {
+                    (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1]) &&
+                    (y == 0 || cellss[0][index - cols] == cellss[1][index - cols]) &&
+                    (y + 1 == rows || cellss[0][index + cols] == cellss[1][index + cols])) {
                     continue;
                 }
 
@@ -684,10 +790,19 @@ static void render(SDL_Window* window,
 
                 ZoneScopedN("draw cell background");
 
-                Face_Color bg = (new_cell->face.flags & Face::REVERSE) ? new_cell->face.foreground
-                                                                       : new_cell->face.background;
-                bg = get_face_color_or(editor->theme.colors, bg,
-                                       (new_cell->face.flags & Face::REVERSE) ? 7 : 0);
+                Face_Color bg = bg_color_of(*new_cell);
+
+                // clang-format off
+                bool match_left   = (x     != 0    && bg_color_of(cellss[1][index - 1])    == bg);
+                bool match_right  = (x + 1 != cols && bg_color_of(cellss[1][index + 1])    == bg);
+                bool match_top    = (y     != 0    && bg_color_of(cellss[1][index - cols]) == bg);
+                bool match_bottom = (y + 1 != rows && bg_color_of(cellss[1][index + cols]) == bg);
+
+                bool round_top_left     = !match_top    && !match_left;
+                bool round_top_right    = !match_top    && !match_right;
+                bool round_bottom_left  = !match_bottom && !match_left;
+                bool round_bottom_right = !match_bottom && !match_right;
+                // clang-format on
 
                 SDL_Rect rect;
                 rect.x = x * character_width;
@@ -697,11 +812,9 @@ static void render(SDL_Window* window,
 
                 SDL_Color bgc = make_color(editor->theme.colors, bg);
 
-                {
-                    ZoneScopedN("SDL_FillRect");
-                    SDL_FillRect(surface, &rect,
-                                 SDL_MapRGBA(surface->format, bgc.r, bgc.g, bgc.b, bgc.a));
-                }
+                render_background(surface, bgc, rect, default_background, round_top_left,
+                                  round_top_right, round_bottom_left, round_bottom_right);
+                bgc = {};
             }
         }
 
@@ -710,7 +823,9 @@ static void render(SDL_Window* window,
                 Cell* new_cell = &cellss[1][index];
                 if (!force_redraw && cellss[0][index] == *new_cell &&
                     (x == 0 || cellss[0][index - 1] == cellss[1][index - 1]) &&
-                    (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1])) {
+                    (x + 1 == cols || cellss[0][index + 1] == cellss[1][index + 1]) &&
+                    (y == 0 || cellss[0][index - cols] == cellss[1][index - cols]) &&
+                    (y + 1 == rows || cellss[0][index + cols] == cellss[1][index + cols])) {
                     continue;
                 }
 
@@ -718,8 +833,7 @@ static void render(SDL_Window* window,
 
                 Face_Color fg = (new_cell->face.flags & Face::REVERSE) ? new_cell->face.background
                                                                        : new_cell->face.foreground;
-                fg = get_face_color_or(editor->theme.colors, fg,
-                                       (new_cell->face.flags & Face::REVERSE) ? 0 : 7);
+                fg = get_face_color_or(fg, (new_cell->face.flags & Face::REVERSE) ? 0 : 7);
 
                 SDL_Rect rect;
                 rect.x = x * character_width;
