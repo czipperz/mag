@@ -367,6 +367,52 @@ bool rfind_bucket(Contents_Iterator* it, char ch) {
     }
 }
 
+bool find_bucket_cased(Contents_Iterator* it, char ch, Case_Handling case_handling) {
+    resolve_find_case(ch, &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE || !cz::is_alpha(ch)) {
+        return find_bucket(it, ch);
+    }
+
+    Contents_Iterator test1 = *it;
+    if (find_bucket(&test1, cz::to_lower(ch))) {
+        Contents_Iterator test2 = *it;
+        if (find_bucket(&test2, cz::to_upper(ch))) {
+            if (test2.position < test1.position) {
+                *it = test2;
+                return true;
+            }
+        }
+
+        *it = test1;
+        return true;
+    }
+
+    return find_bucket(it, cz::to_upper(ch));
+}
+
+bool rfind_bucket_cased(Contents_Iterator* it, char ch, Case_Handling case_handling) {
+    resolve_find_case(ch, &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE || !cz::is_alpha(ch)) {
+        return rfind_bucket(it, ch);
+    }
+
+    Contents_Iterator test1 = *it;
+    if (rfind_bucket(&test1, cz::to_lower(ch))) {
+        Contents_Iterator test2 = *it;
+        if (rfind_bucket(&test2, cz::to_upper(ch))) {
+            if (test2.position > test1.position) {
+                *it = test2;
+                return true;
+            }
+        }
+
+        *it = test1;
+        return true;
+    }
+
+    return rfind_bucket(it, cz::to_upper(ch));
+}
+
 bool find_bucket(Contents_Iterator* it, cz::Str query) {
     if (query.len == 0)
         return true;
@@ -394,6 +440,51 @@ bool rfind_bucket(Contents_Iterator* it, cz::Str query) {
             return false;
 
         if (looking_at(*it, query))
+            return true;
+
+        // Prevent going into previous bucket.
+        if (it->index == 0)
+            return false;
+    }
+}
+
+bool find_bucket_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling) {
+    resolve_smart_case(query, &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE) {
+        return find_bucket(it, query);
+    }
+
+    if (query.len == 0)
+        return true;
+
+    while (1) {
+        if (!find_bucket_cased(it, query[0], case_handling))
+            return false;
+
+        if (looking_at_cased(*it, query, case_handling))
+            return true;
+
+        size_t bucket = it->bucket;
+        it->advance();
+        if (it->bucket != bucket)
+            return false;
+    }
+}
+
+bool rfind_bucket_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling) {
+    resolve_smart_case(query, &case_handling);
+    if (case_handling == Case_Handling::CASE_SENSITIVE) {
+        return rfind_bucket(it, query);
+    }
+
+    if (query.len == 0)
+        return true;
+
+    while (1) {
+        if (!rfind_bucket_cased(it, query[0], case_handling))
+            return false;
+
+        if (looking_at_cased(*it, query, case_handling))
             return true;
 
         // Prevent going into previous bucket.

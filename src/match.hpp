@@ -69,6 +69,10 @@ bool find_bucket(Contents_Iterator* it, char ch);
 /// On failure puts `it` at the start of the bucket and returns `false`.
 bool rfind_bucket(Contents_Iterator* it, char ch);
 
+/// Same as the functions above except handles case differences according to `case_handling`.
+bool find_bucket_cased(Contents_Iterator* it, char ch, Case_Handling case_handling);
+bool rfind_bucket_cased(Contents_Iterator* it, char ch, Case_Handling case_handling);
+
 /// Find `query` at or after the point `it` (will not overlap).
 /// On success puts `it` at the start of the match.
 /// On failure puts `it` at eob and returns `false`.
@@ -86,5 +90,9 @@ bool rfind_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handli
 /// See `find_bucket` / `rfind_bucket`.
 bool find_bucket(Contents_Iterator* it, cz::Str query);
 bool rfind_bucket(Contents_Iterator* it, cz::Str query);
+
+/// Same as the functions above except handles case differences according to `case_handling`.
+bool find_bucket_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling);
+bool rfind_bucket_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling);
 
 }
