@@ -186,7 +186,7 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
         CZ_DEFER(prompt.drop());
         {
             WITH_CONST_SELECTED_BUFFER(client);
-            prompt = cz::format("Set preferred column to (", buffer->mode.preferred_column, ": ");
+            prompt = cz::format("Set preferred column to (", buffer->mode.preferred_column, "): ");
         }
 
         Dialog dialog = {};
