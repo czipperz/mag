@@ -901,8 +901,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".sh") || name.ends_with(".bash") || name.ends_with(".zsh") ||
-                   name == ".bashrc" || name == ".zshrc" || name == "Makefile" ||
-                   name == ".gitconfig" || name == ".gitmodules" ||
+                   name == ".bashrc" || name == ".teshrc" || name == ".zshrc" ||
+                   name == "Makefile" || name == ".gitconfig" || name == ".gitmodules" ||
                    // Powershell isn't really a shell script but it pretty much works.
                    name.ends_with(".ps1") ||
                    // Perl isn't really a shell script but it pretty much works.
