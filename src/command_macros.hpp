@@ -7,7 +7,7 @@
 #include "ssostr.hpp"
 #include "transaction.hpp"
 
-#define REGISTER_COMMAND(FUNC) Command_Registrar CZ_TOKEN_CONCAT(register_, FUNC)(COMMAND(FUNC));
+#define REGISTER_COMMAND(FUNC) Command_Registrar CZ_TOKEN_CONCAT(register_, FUNC)(COMMAND(FUNC))
 
 #define WITH_SELECTED_NORMAL_BUFFER(CLIENT)                    \
     Window_Unified* window = (CLIENT)->selected_normal_window; \
