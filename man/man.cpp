@@ -13,6 +13,7 @@
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "file.hpp"
+#include "movement.hpp"
 
 #ifndef _WIN32
 #include <zlib.h>
@@ -486,7 +487,7 @@ void command_man_at_point(Editor* editor, Command_Source source) {
         query = buffer->contents.slice(cz::heap_allocator(), iterator, token.end);
     }
 
-    command_man_response(editor, source.client, query, nullptr);
+    command_man_response(editor, source.client, query.as_str(), nullptr);
 }
 
 #endif
