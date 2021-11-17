@@ -344,6 +344,15 @@ static void change_indirection(Client* client,
                     goto just_remove_star;
                 }
 
+                if (!start2.at_bob()) {
+                    Contents_Iterator start3 = start2;
+                    start3.retreat();
+                    if (cz::is_alnum(start3.get())) {
+                        // `x(*y)` becomes `x(y)` instead of `xy`.
+                        goto just_remove_star;
+                    }
+                }
+
                 if (end.at_eob() || end.get() != ')') {
                     // `(*a + b)` becomes `(a + b)`
                     goto just_remove_star;
