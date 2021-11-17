@@ -31,6 +31,8 @@
 #include <shellscalingapi.h>
 #include <windows.h>
 #include "res/resources.h"
+#else
+#include <unistd.h>
 #endif
 
 using namespace mag::render;
@@ -996,6 +998,14 @@ static bool load_font(cz::String* font_file,
 void run(Server* server, Client* client) {
     server->set_async_locked(false);
     // @Unlocked No usage of server or client can be made in this region!!!
+
+#if !defined(_WIN32) && defined(NDEBUG)
+    // In release builds on linux detach so:
+    // 1. We don't get killed when the parent process exits.
+    // 2. We don't hang the shell.
+    // Windows does an equivalent of setsid automatically.
+    setsid();
+#endif
 
 #ifdef _WIN32
     SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
