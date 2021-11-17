@@ -735,12 +735,14 @@ void command_copy_rest_of_line_from_nearest_matching_identifier(Editor* editor,
         buffer->contents.slice(transaction.value_allocator(), match_start, match_end.position);
 
     cz::Slice<Cursor> cursors = window->cursors;
+    uint64_t offset = 0;
     for (size_t i = 0; i < cursors.len; ++i) {
         Edit edit;
         edit.value = value;
-        edit.position = cursors[i].point + i;
+        edit.position = cursors[i].point + i + offset;
         edit.flags = Edit::INSERT;
         transaction.push(edit);
+        offset += value.len();
     }
 
     transaction.commit(source.client);
