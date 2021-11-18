@@ -554,16 +554,16 @@ bool rfind(Contents_Iterator* it, cz::Str query) {
     }
 
     if (it->contents->len - query.len < it->position) {
-        it->retreat_to(it->contents->len - query.len);
+        it->retreat_to(it->contents->len - query.len + 1);
     }
 
     while (1) {
-        if (looking_at(*it, query)) {
-            return true;
-        }
-
         if (!rfind(it, query[0])) {
             break;
+        }
+
+        if (looking_at(*it, query)) {
+            return true;
         }
     }
 
@@ -587,16 +587,16 @@ bool rfind_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handli
     }
 
     if (it->contents->len - query.len < it->position) {
-        it->retreat_to(it->contents->len - query.len);
+        it->retreat_to(it->contents->len - query.len + 1);
     }
 
     while (1) {
-        if (looking_at_cased(*it, query, case_handling)) {
-            return true;
-        }
-
         if (!rfind_cased(it, query[0], case_handling)) {
             break;
+        }
+
+        if (looking_at_cased(*it, query, case_handling)) {
+            return true;
         }
     }
 
