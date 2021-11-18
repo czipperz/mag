@@ -111,6 +111,10 @@ void command_quit_window(Editor* editor, Command_Source source) {
     }
 
     source.client->set_selected_buffer(editor->buffers[0]);
+
+    if (source.client->window->tag == Window::UNIFIED) {
+        (void)pop_jump(editor, source.client);
+    }
 }
 
 REGISTER_COMMAND(command_split_window_horizontal);
