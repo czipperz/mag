@@ -237,11 +237,13 @@ static int remove_windows_matching(Window** w,
     CZ_PANIC("");
 }
 
-void remove_windows_for_buffer(Client* client,
-                               cz::Arc<Buffer_Handle> buffer_handle,
-                               cz::Arc<Buffer_Handle> replacement) {
+static bool remove_windows_for_buffer(Client* client,
+                                      cz::Arc<Buffer_Handle> buffer_handle,
+                                      cz::Arc<Buffer_Handle> replacement) {
+    bool everything = false;
     if (remove_windows_matching(&client->window, buffer_handle, &client->selected_normal_window)) {
         // Every buffer matches the killed buffer id
+        everything = true;
         Window_Unified* win = Window_Unified::create(replacement);
         win->total_rows = client->window->total_rows;
         win->total_cols = client->window->total_cols;
@@ -258,6 +260,7 @@ void remove_windows_for_buffer(Client* client,
             break;
         }
     }
+    return everything;
 }
 
 static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str path, void*) {
@@ -282,9 +285,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
 
     editor->kill(buffer_handle.get());
 
-    remove_windows_for_buffer(client, buffer_handle, editor->buffers[0]);
-
-    if (client->window->tag == Window::UNIFIED) {
+    if (remove_windows_for_buffer(client, buffer_handle, editor->buffers[0])) {
         (void)pop_jump(editor, client);
     }
 }
