@@ -457,6 +457,49 @@ void command_delete_whitespace(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+REGISTER_COMMAND(command_one_whitespace);
+void command_one_whitespace(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    cz::Slice<Cursor> cursors = window->cursors;
+    for (size_t i = 0; i < cursors.len; ++i) {
+        Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
+        forward_through_whitespace(&it);
+        uint64_t end = it.position;
+        backward_through_whitespace(&it);
+        uint64_t count = end - it.position;
+        if (count == 0) {
+            continue;
+        }
+
+        char* value = (char*)transaction.value_allocator().alloc({count, 1});
+        for (Contents_Iterator x = it; x.position < end; x.advance()) {
+            value[x.position - it.position] = x.get();
+        }
+
+        Edit remove;
+        remove.value = SSOStr::from_constant({value, count});
+        remove.position = it.position - offset;
+        remove.flags = Edit::REMOVE;
+        transaction.push(remove);
+
+        Edit insert;
+        insert.value = SSOStr::from_char(' ');
+        insert.position = it.position - offset;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+
+        offset += count - 1;
+    }
+
+    transaction.commit(source.client);
+}
+
 REGISTER_COMMAND(command_merge_lines);
 void command_merge_lines(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
