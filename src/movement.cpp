@@ -226,21 +226,14 @@ void go_to_visual_column(const Mode& mode, Contents_Iterator* iterator, uint64_t
         char ch = iterator->get();
         if (ch == '\n') {
             break;
-        } else if (ch == '\t') {
-            uint64_t col = current;
-            col += mode.tab_width;
-            col -= col % mode.tab_width;
-            if (col > column) {
-                if (col - column <= column - current) {
-                    iterator->advance();
-                }
-                break;
-            }
-            current = col;
-        } else {
-            current++;
         }
+
+        uint64_t col = char_visual_columns(mode, ch, current);
+        if (col > column)
+            break;
+
         iterator->advance();
+        current = col;
     }
 }
 
