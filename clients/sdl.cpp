@@ -172,6 +172,18 @@ struct Scroll_State {
     double prev_pos;          // previous event's position
 };
 
+static float get_dpi_scale(SDL_Window* window) {
+    int display = SDL_GetWindowDisplayIndex(window);
+    if (display == -1)
+        display = 0;
+
+    const float dpi_default = 96.0f;
+    float dpi = 0;
+    if (SDL_GetDisplayDPI(display, &dpi, NULL, NULL) != 0)
+        return 1.0f;  // failure so assume no scaling
+    return dpi / dpi_default;
+}
+
 static uint16_t convert_key_modifiers(int mod) {
     uint16_t modifiers = 0;
     if (mod & KMOD_CTRL) {
@@ -190,6 +202,8 @@ static void process_event(Server* server,
                           Client* client,
                           SDL_Event event,
                           Scroll_State* scroll,
+                          SDL_Window* window,
+                          float* dpi_scale,
                           int* mod_state,
                           int character_width,
                           int character_height,
@@ -236,10 +250,23 @@ static void process_event(Server* server,
 
     case SDL_WINDOWEVENT: {
         switch (event.window.event) {
+        case SDL_WINDOWEVENT_MOVED:
         case SDL_WINDOWEVENT_SIZE_CHANGED:
-        case SDL_WINDOWEVENT_EXPOSED:
+        case SDL_WINDOWEVENT_EXPOSED: {
+            float new_dpi_scale = get_dpi_scale(window);
+            bool dpi_changed = (*dpi_scale + 0.01f < new_dpi_scale ||  //
+                                *dpi_scale - 0.01f > new_dpi_scale);
+            if (dpi_changed) {
+                int w, h;
+                SDL_GetWindowSize(window, &w, &h);
+                w = (int)(w * (new_dpi_scale / *dpi_scale));
+                h = (int)(h * (new_dpi_scale / *dpi_scale));
+                // TODO does this infinite loop?
+                SDL_SetWindowSize(window, w, h);
+                *dpi_scale = new_dpi_scale;
+            }
             *force_redraw = true;
-            break;
+        } break;
         case SDL_WINDOWEVENT_FOCUS_GAINED:
             // See comment on disable_key_presses's declaration.
             *disable_key_presses = true;
@@ -547,6 +574,8 @@ static void process_event(Server* server,
 static void process_events(Server* server,
                            Client* client,
                            Scroll_State* scroll,
+                           SDL_Window* window,
+                           float* dpi_scale,
                            int* mod_state,
                            int character_width,
                            int character_height,
@@ -558,8 +587,9 @@ static void process_events(Server* server,
 
     SDL_Event event;
     while (poll_event(&event)) {
-        process_event(server, client, event, scroll, mod_state, character_width, character_height,
-                      force_redraw, minimized, disable_key_presses, disable_key_presses_until);
+        process_event(server, client, event, scroll, window, dpi_scale, mod_state, character_width,
+                      character_height, force_redraw, minimized, disable_key_presses,
+                      disable_key_presses_until);
         if (client->queue_quit) {
             return;
         }
@@ -998,7 +1028,7 @@ void run(Server* server, Client* client) {
     // @Unlocked No usage of server or client can be made in this region!!!
 
 #ifdef _WIN32
-    SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
+    SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 #endif
 
     int result;
@@ -1034,13 +1064,8 @@ void run(Server* server, Client* client) {
     }
     CZ_DEFER(IMG_Quit());
 
-    float dpi_scale = 1.0f;
-    {
-        const float dpi_default = 96.0f;
-        float dpi = 0;
-        if (SDL_GetDisplayDPI(0, &dpi, NULL, NULL) == 0)
-            dpi_scale = dpi / dpi_default;
-    }
+    float dpi_scale = get_dpi_scale(NULL);
+    float old_dpi_scale = dpi_scale;
 
     const char* window_name = "Mag";
 #ifndef NDEBUG
@@ -1050,9 +1075,10 @@ void run(Server* server, Client* client) {
     SDL_Window* window;
     {
         ZoneScopedN("SDL_CreateWindow");
-        window = SDL_CreateWindow(
-            window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800 * dpi_scale,
-            800 * dpi_scale, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+        window =
+            SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                             (int)(800 * dpi_scale), (int)(800 * dpi_scale),
+                             SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     }
     if (!window) {
         fprintf(stderr, "Failed to create a window: %s\n", SDL_GetError());
@@ -1136,8 +1162,9 @@ void run(Server* server, Client* client) {
         bool any_asynchronous_jobs = server->slurp_jobs();
         bool any_synchronous_jobs = server->run_synchronous_jobs(client);
 
-        process_events(server, client, &scroll, &mod_state, character_width, character_height,
-                       &force_redraw, &minimized, &disable_key_presses, &disable_key_presses_until);
+        process_events(server, client, &scroll, window, &dpi_scale, &mod_state, character_width,
+                       character_height, &force_redraw, &minimized, &disable_key_presses,
+                       &disable_key_presses_until);
 
         any_asynchronous_jobs |= server->send_pending_asynchronous_jobs();
 
@@ -1151,7 +1178,8 @@ void run(Server* server, Client* client) {
 
         // If the font info was updated then reload the font.
         cz::Str new_font_file = server->editor.theme.font_file;
-        if (font_file != new_font_file || font_size != server->editor.theme.font_size) {
+        if (font_file != new_font_file || font_size != server->editor.theme.font_size ||
+            dpi_scale != old_dpi_scale) {
             font_file.len = 0;
 
             // If loading the font fails then we print a message inside `load_font()` and continue.
@@ -1212,9 +1240,9 @@ void run(Server* server, Client* client) {
             server->set_async_locked(true);
 
             if (result) {
-                process_event(server, client, event, &scroll, &mod_state, character_width,
-                              character_height, &force_redraw, &minimized, &disable_key_presses,
-                              &disable_key_presses_until);
+                process_event(server, client, event, &scroll, window, &dpi_scale, &mod_state,
+                              character_width, character_height, &force_redraw, &minimized,
+                              &disable_key_presses, &disable_key_presses_until);
             }
         }
 
