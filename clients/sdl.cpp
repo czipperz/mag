@@ -261,7 +261,6 @@ static void process_event(Server* server,
                 SDL_GetWindowSize(window, &w, &h);
                 w = (int)(w * (new_dpi_scale / *dpi_scale));
                 h = (int)(h * (new_dpi_scale / *dpi_scale));
-                // TODO does this infinite loop?
                 SDL_SetWindowSize(window, w, h);
                 *dpi_scale = new_dpi_scale;
             }
