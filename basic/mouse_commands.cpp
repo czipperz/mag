@@ -7,6 +7,15 @@
 namespace mag {
 namespace basic {
 
+static int word_char_category(char ch) {
+    if (cz::is_alnum(ch))
+        return 1;
+    else if (cz::is_space(ch))
+        return 2;
+    else
+        return 3;
+}
+
 static Job_Tick_Result mouse_motion_job_tick(Editor* editor, Client* client, void*) {
     // Moved the mouse out of bounds.
     if (!client->mouse.window) {
@@ -37,9 +46,39 @@ static Job_Tick_Result mouse_motion_job_tick(Editor* editor, Client* client, voi
         }
 
         if (client->mouse.selecting == 2) {
-            forward_char(start);
-            backward_word(start);
-            forward_word(end);
+            // Expand backwards while in the same category or until we hit a newline.
+            int cat = -1;
+            while (!start->at_bob()) {
+                start->retreat();
+                char ch = start->get();
+                if (ch == '\n') {
+                    start->advance();
+                    break;
+                }
+                int ncat = word_char_category(ch);
+                if (cat == -1)
+                    cat = ncat;
+                if (ncat != cat) {
+                    start->advance();
+                    break;
+                }
+            }
+
+            // Expand forwards while in the same category or until we hit a newline.
+            cat = -1;
+            while (!end->at_eob()) {
+                char ch = end->get();
+                if (ch == '\n') {
+                    break;
+                }
+                int ncat = word_char_category(ch);
+                if (cat == -1)
+                    cat = ncat;
+                if (ncat != cat) {
+                    break;
+                }
+                end->advance();
+            }
         } else {
             start_of_line(start);
             end_of_line(end);
