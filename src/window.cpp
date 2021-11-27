@@ -286,8 +286,13 @@ Contents_Iterator nearest_character(const Window_Unified* window,
 
     forward_visual_line(window, buffer->mode, theme, &iterator, row);
 
-    uint64_t line_column = window->column_offset;
-    go_to_visual_column(buffer->mode, &iterator, line_column + column);
+    if (buffer->mode.wrap_long_lines) {
+        uint64_t line_column = get_visual_column(buffer->mode, iterator);
+        go_to_visual_column(buffer->mode, &iterator, line_column + column);
+    } else {
+        uint64_t line_column = window->column_offset;
+        go_to_visual_column(buffer->mode, &iterator, line_column + column);
+    }
 
     return iterator;
 }
