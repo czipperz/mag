@@ -171,10 +171,7 @@ static bool for_each_file(cz::String* path,
 
         cz::Directory_Iterator iterator;
         int result = iterator.init(path->buffer);
-        if (result <= 0)
-            return result == 0;
-
-        while (1) {
+        while (result > 0) {
             cz::Str file = iterator.str_name();
 
             size_t len = path->len;
@@ -196,17 +193,11 @@ static bool for_each_file(cz::String* path,
 
             result = iterator.advance();
             if (result <= 0) {
-                if (result == 0) {
-                    break;
-                } else {
-                    iterator.drop();
-                    return false;
-                }
+                if (!iterator.drop())
+                    result = -1;
+                break;
             }
         }
-
-        if (!iterator.drop())
-            return false;
 
         path->null_terminate();
         return directory_end_callback(path->buffer);
@@ -310,7 +301,7 @@ static bool copy_path(cz::String* path, cz::String* new_path) {
             // directory
             set_new_path();
             int res = cz::file::create_directory(new_path->buffer);
-            return res;
+            return res == 0;
         },
         [](const char*) { return true; });
 }
