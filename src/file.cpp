@@ -215,7 +215,7 @@ static void sort_files(cz::Slice<cz::Str> files,
     }
 }
 
-void format_date(const cz::Date& date, char buffer[20]) {
+void format_date(const cz::Date& date, char buffer[21]) {
     snprintf(buffer, 21, "%04d/%02d/%02d %02d:%02d:%02d", date.year, date.month, date.day_of_month,
              date.hour, date.minute, date.second);
 }
