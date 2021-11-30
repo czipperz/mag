@@ -814,7 +814,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         if (name.ends_with(".c") || name.ends_with(".h") || name.ends_with(".cc") ||
             name.ends_with(".hh") || name.ends_with(".cpp") || name.ends_with(".hpp") ||
             name.ends_with(".cxx") || name.ends_with(".hxx") || name.ends_with(".tpp") ||
-            name.ends_with(".glsl")) {
+            name.ends_with(".glsl") ||
+            // Java / C# aren't really C but meh they're close.
+            // Note: '.idl' = C# Interface Definition Language.
+            name.ends_with(".java") || name.ends_with(".cs") || name.ends_with(".idl")) {
         cpp:
             buffer->mode.next_token = syntax::cpp_next_token;
             BIND(buffer->mode.key_map, "A-x A-f", clang_format::command_clang_format_buffer);
