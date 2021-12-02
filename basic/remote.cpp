@@ -86,6 +86,7 @@ static int winsock_start() {
 ///////////////////////////////////////////////////////////////////////////////
 
 static int make_non_blocking(SOCKET socket);
+static void select_window_for_file(Editor* editor, Client* client, cz::Str file_name);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Server job
@@ -111,6 +112,7 @@ static Job_Tick_Result server_tick(Editor* editor, Client* client, void*) {
                 push_jump(window, client, buffer);
             }
 
+            select_window_for_file(editor, client, server_data.file_name);
             open_file_arg(editor, client, server_data.file_name);
             server_data.file_name.len = 0;
 
@@ -142,6 +144,80 @@ static Job_Tick_Result server_tick(Editor* editor, Client* client, void*) {
 
 static void server_kill(void*) {
     kill_server();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Server Utility
+///////////////////////////////////////////////////////////////////////////////
+
+static bool test_buffer(Window_Unified* window, cz::Str file, int mode) {
+    WITH_CONST_WINDOW_BUFFER(window);
+
+    if (mode == 1) {
+        return buffer->type == Buffer::FILE;
+    } else if (mode == 2) {
+        return buffer->type == Buffer::DIRECTORY;
+    } else {
+        cz::String path = {};
+        CZ_DEFER(path.drop(cz::heap_allocator()));
+        if (!buffer->get_path(cz::heap_allocator(), &path))
+            return false;
+
+        if (path.ends_with("/."))
+            path.len -= 2;
+
+        return path == file;
+    }
+}
+
+static Window_Unified* test_tree(Window* window, cz::Str file, int mode) {
+    if (window->tag == Window::UNIFIED) {
+        Window_Unified* unif = (Window_Unified*)window;
+        if (test_buffer(unif, file, mode))
+            return unif;
+        else
+            return nullptr;
+    }
+
+    Window_Split* split = (Window_Split*)window;
+    Window_Unified* sel = test_tree(split->first, file, mode);
+    if (sel)
+        return sel;
+    return test_tree(split->second, file, mode);
+}
+
+static void select_window_for_file(Editor* editor, Client* client, cz::Str file_arg) {
+    cz::Str user_path;
+    uint64_t line, column;
+    parse_file_arg(file_arg, &user_path, &line, &column);
+
+    cz::String path = standardize_path(cz::heap_allocator(), user_path);
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+
+    client->hide_mini_buffer(editor);
+
+    cz::String path_buf = {};
+    {
+        for (int mode = 0; mode < 3; ++mode) {
+            if (test_buffer(client->selected_normal_window, path, mode))
+                return;
+
+            Window* child = client->selected_normal_window;
+            Window_Split* parent = child->parent;
+            while (parent) {
+                Window_Unified* sel =
+                    (parent->first == child ? test_tree(parent->second, path, mode)
+                                            : test_tree(parent->first, path, mode));
+                if (sel) {
+                    client->selected_normal_window = sel;
+                    return;
+                }
+
+                child = parent;
+                parent = child->parent;
+            }
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
