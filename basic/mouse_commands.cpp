@@ -47,6 +47,7 @@ static Job_Tick_Result mouse_motion_job_tick(Editor* editor, Client* client, voi
 
         if (client->mouse.selecting == 2) {
             // Expand backwards while in the same category or until we hit a newline.
+            forward_char(start);
             int cat = -1;
             while (!start->at_bob()) {
                 start->retreat();
