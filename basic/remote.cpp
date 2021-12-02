@@ -196,26 +196,22 @@ static void select_window_for_file(Editor* editor, Client* client, cz::Str file_
 
     client->hide_mini_buffer(editor);
 
-    cz::String path_buf = {};
-    {
-        for (int mode = 0; mode < 3; ++mode) {
-            if (test_buffer(client->selected_normal_window, path, mode))
+    for (int mode = 0; mode < 3; ++mode) {
+        if (test_buffer(client->selected_normal_window, path, mode))
+            return;
+
+        Window* child = client->selected_normal_window;
+        Window_Split* parent = child->parent;
+        while (parent) {
+            Window_Unified* sel = (parent->first == child ? test_tree(parent->second, path, mode)
+                                                          : test_tree(parent->first, path, mode));
+            if (sel) {
+                client->selected_normal_window = sel;
                 return;
-
-            Window* child = client->selected_normal_window;
-            Window_Split* parent = child->parent;
-            while (parent) {
-                Window_Unified* sel =
-                    (parent->first == child ? test_tree(parent->second, path, mode)
-                                            : test_tree(parent->first, path, mode));
-                if (sel) {
-                    client->selected_normal_window = sel;
-                    return;
-                }
-
-                child = parent;
-                parent = child->parent;
             }
+
+            child = parent;
+            parent = child->parent;
         }
     }
 }
