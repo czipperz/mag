@@ -31,8 +31,29 @@ uint64_t find_indent_width(Buffer* buffer,
             token.end = it.position;
         }
         token_iterator.retreat_to(token.end);
-        if (!at_end_of_line(token_iterator) && token.end != start_position) {
-            return get_visual_column(buffer->mode, token_iterator);
+        forward_through_whitespace(&token_iterator);  // Account for trailing whitespace.
+        bool will_be_eol = (token.end != start_position);
+        if (!at_end_of_line(token_iterator) && will_be_eol) {
+            // Ignore trailing comments, but we care `/*a=*/a` because it's not a trailing comment.
+            Contents_Iterator eol = token_iterator;
+            end_of_line(&eol);
+            Contents_Iterator tokit2 = token_iterator;
+            bool stuff_after_brace = true;
+            while (1) {
+                if (buffer->mode.next_token(&tokit2, &token, &state)) {
+                    if (token.start >= eol.position) {
+                        stuff_after_brace = false;
+                        break;
+                    }
+
+                    if (token.type == Token_Type::COMMENT || token.type == Token_Type::DOC_COMMENT)
+                        continue;
+                }
+                break;
+            }
+
+            if (stuff_after_brace)
+                return get_visual_column(buffer->mode, token_iterator);
         }
     }  // fallthrough
 
