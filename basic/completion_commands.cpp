@@ -739,7 +739,7 @@ void command_copy_rest_of_line_from_nearest_matching_identifier(Editor* editor,
     for (size_t i = 0; i < cursors.len; ++i) {
         Edit edit;
         edit.value = value;
-        edit.position = cursors[i].point + i + offset;
+        edit.position = cursors[i].point + offset;
         edit.flags = Edit::INSERT;
         transaction.push(edit);
         offset += value.len();
