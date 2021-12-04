@@ -200,7 +200,9 @@ static bool for_each_file(cz::String* path,
         }
 
         path->null_terminate();
-        return directory_end_callback(path->buffer);
+        if (!directory_end_callback(path->buffer))
+            return false;
+        return result >= 0;
     } else {
         return file_callback(path->buffer);
     }
@@ -218,7 +220,7 @@ static bool remove_file(const char* path) {
 #ifdef _WIN32
     return DeleteFileA(path);
 #else
-    return unlink(path) != 0;
+    return unlink(path) == 0;
 #endif
 }
 
