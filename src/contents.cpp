@@ -114,8 +114,6 @@ void Contents::remove(uint64_t start, uint64_t len) {
 }
 
 static void insert_empty(Contents* contents, cz::Str str) {
-    CZ_DEBUG_ASSERT(contents->buckets.len == 0);
-
     if (str.len == 0) {
         return;
     }
@@ -238,7 +236,7 @@ void Contents::insert(uint64_t start, cz::Str str) {
 void Contents::append(cz::Str str) {
     ZoneScoped;
 
-    if (str.len >= CONTENTS_BUCKET_DESIRED_LEN && str.len < CONTENTS_BUCKET_MAX_SIZE) {
+    if (str.len >= CONTENTS_BUCKET_DESIRED_LEN && str.len <= CONTENTS_BUCKET_MAX_SIZE) {
         insert_empty(this, str);
         return;
     }
