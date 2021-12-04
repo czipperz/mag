@@ -109,7 +109,7 @@ static int load_file(Buffer* buffer, const char* path) {
     CZ_DEFER(file.close());
 
     cz::Carriage_Return_Carry carry;
-    char buf[1024];
+    char buf[4096];
     while (1) {
         int64_t res = file.read(buf, sizeof(buf));
         if (res > 0) {

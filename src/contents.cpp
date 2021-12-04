@@ -122,15 +122,15 @@ static void insert_empty(Contents* contents, cz::Str str) {
 
     contents->len += str.len;
 
-    size_t num_buckets = (str.len + CONTENTS_BUCKET_DESIRED_LEN - 1) / CONTENTS_BUCKET_DESIRED_LEN;
+    size_t num_buckets = (str.len + CONTENTS_BUCKET_MAX_SIZE - 1) / CONTENTS_BUCKET_MAX_SIZE;
     contents->buckets.reserve(cz::heap_allocator(), num_buckets);
     contents->bucket_lfs.reserve(cz::heap_allocator(), num_buckets);
     do {
         cz::Slice<char> bucket = bucket_alloc();
-        if (str.len > CONTENTS_BUCKET_DESIRED_LEN) {
-            bucket_append(&bucket, {str.buffer, CONTENTS_BUCKET_DESIRED_LEN});
-            str.buffer += CONTENTS_BUCKET_DESIRED_LEN;
-            str.len -= CONTENTS_BUCKET_DESIRED_LEN;
+        if (str.len > CONTENTS_BUCKET_MAX_SIZE) {
+            bucket_append(&bucket, {str.buffer, CONTENTS_BUCKET_MAX_SIZE});
+            str.buffer += CONTENTS_BUCKET_MAX_SIZE;
+            str.len -= CONTENTS_BUCKET_MAX_SIZE;
         } else {
             bucket_append(&bucket, {str.buffer, str.len});
             str.len = 0;
@@ -238,11 +238,18 @@ void Contents::insert(uint64_t start, cz::Str str) {
 void Contents::append(cz::Str str) {
     ZoneScoped;
 
-    if (buckets.len == 0) {
-        CZ_DEBUG_ASSERT(len == 0);
+    if (str.len >= CONTENTS_BUCKET_DESIRED_LEN && str.len < CONTENTS_BUCKET_MAX_SIZE) {
         insert_empty(this, str);
-    } else {
-        insert_at(this, end(), str);
+        return;
+    }
+
+    if (str.len < CONTENTS_BUCKET_DESIRED_LEN) {
+        if (buckets.len == 0) {
+            CZ_DEBUG_ASSERT(len == 0);
+            insert_empty(this, str);
+        } else {
+            insert_at(this, end(), str);
+        }
     }
 }
 
