@@ -71,6 +71,8 @@ void Window_Unified::update_cursors(const Buffer* buffer) {
         position_after_changes(new_changes, &cursors[c].mark);
     }
 
+    clear_show_marks_temporarily();
+
     bool was_0 = start_position == 0;
     position_after_changes(new_changes, &start_position);
     if (was_0) {
