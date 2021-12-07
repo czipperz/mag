@@ -17,6 +17,10 @@ void command_shift_line_forward(Editor* editor, Command_Source source) {
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
+    if (window->show_marks) {
+        window->show_marks = 1;
+    }
+
     bool override_start = false;
     Contents_Iterator start;
     cz::Slice<Cursor> cursors = window->cursors;
@@ -127,6 +131,10 @@ void command_shift_line_backward(Editor* editor, Command_Source source) {
     Transaction transaction;
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
+
+    if (window->show_marks) {
+        window->show_marks = 1;
+    }
 
     bool override_end = false;
     Contents_Iterator end;

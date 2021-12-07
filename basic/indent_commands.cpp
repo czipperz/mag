@@ -319,6 +319,7 @@ static void change_indent(Client* client,
     // Only use marks if at least one region is non-empty.
     bool use_marks = false;
     if (window->show_marks) {
+        window->show_marks = 1;
         for (size_t i = 0; i < cursors.len; ++i) {
             if (cursors[i].point != cursors[i].mark) {
                 use_marks = true;

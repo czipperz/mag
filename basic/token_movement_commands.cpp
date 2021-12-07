@@ -600,7 +600,8 @@ void command_create_all_cursors_matching_token(Editor* editor, Command_Source so
 
 REGISTER_COMMAND(command_create_all_cursors_matching_token_or_search);
 void command_create_all_cursors_matching_token_or_search(Editor* editor, Command_Source source) {
-    if (source.client->selected_window()->show_marks) {
+    Window_Unified* window = source.client->selected_window();
+    if (window->show_marks) {
         return command_create_cursors_all_search(editor, source);
     } else {
         return command_create_all_cursors_matching_token(editor, source);

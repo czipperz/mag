@@ -75,6 +75,7 @@ int create_cursor_forward_search(const Buffer* buffer, Window_Unified* window) {
     if (!window->show_marks || cursors[c].mark == cursors[c].point) {
         return -1;
     }
+    window->show_marks = 1;
     bool created;
     SEARCH_SLICE_THEN(search_forward_slice, created, {
         window->cursors.reserve(cz::heap_allocator(), 1);
@@ -115,6 +116,7 @@ int create_cursor_backward_search(const Buffer* buffer, Window_Unified* window) 
     if (!window->show_marks || cursors[c].mark == cursors[c].point) {
         return -1;
     }
+    window->show_marks = 1;
     bool created;
     SEARCH_SLICE_THEN(search_backward_slice, created, {
         window->cursors.reserve(cz::heap_allocator(), 1);
@@ -308,6 +310,7 @@ void command_search_forward(Editor* editor, Command_Source source) {
     }
 
     if (window->show_marks) {
+        window->show_marks = 1;
         // Search using the matching region.
         cz::Slice<Cursor> cursors = window->cursors;
         WITH_CONST_WINDOW_BUFFER(window);
@@ -370,6 +373,7 @@ void command_search_backward(Editor* editor, Command_Source source) {
     }
 
     if (window->show_marks) {
+        window->show_marks = 1;
         // Search using the matching region.
         cz::Slice<Cursor> cursors = window->cursors;
         WITH_CONST_WINDOW_BUFFER(window);

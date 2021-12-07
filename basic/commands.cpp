@@ -864,6 +864,7 @@ void command_duplicate_line(Editor* editor, Command_Source source) {
         Contents_Iterator start;
         Contents_Iterator end;
         if (window->show_marks) {
+            window->show_marks = 1;
             start = buffer->contents.iterator_at(cursors[c].start());
             end = buffer->contents.iterator_at(cursors[c].end());
             if (end.position > start.position) {
@@ -915,6 +916,7 @@ static void command_duplicate_line_prompt_callback(Editor* editor,
         Contents_Iterator start;
         Contents_Iterator end;
         if (window->show_marks) {
+            window->show_marks = 1;
             start = buffer->contents.iterator_at(cursors[c].start());
             end = buffer->contents.iterator_at(cursors[c].end());
             if (end.position > start.position) {
