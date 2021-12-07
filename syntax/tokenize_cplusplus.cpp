@@ -1180,7 +1180,23 @@ static void handle_line_comment(Contents_Iterator* iterator, Token* token, State
 static void handle_line_comment_normal(Contents_Iterator* iterator, Token* token, State* state) {
     token->type = Token_Type::COMMENT;
     if (state->comment == COMMENT_NULL) {
-        end_of_line(iterator);
+        while (!iterator->at_eob()) {
+            end_of_line(iterator);
+
+            Contents_Iterator test = *iterator;
+            uint64_t backslashes = 0;
+            while (test.position > 0) {
+                test.retreat();
+                if (test.get() == '\\')
+                    ++backslashes;
+                else
+                    break;
+            }
+            if (backslashes % 2 == 0)
+                break;
+
+            forward_char(iterator);
+        }
     } else {
         // Find the first '\n' or '`'.
         bool look_for_end = (state->comment == COMMENT_BLOCK_INSIDE_INLINE ||
@@ -1191,9 +1207,28 @@ static void handle_line_comment_normal(Contents_Iterator* iterator, Token* token
             // Find the first '\n', '*/'?, or '`'/'```'.
             uint64_t min = -1;
             Contents_Iterator temp = *iterator;
-            if (find_bucket(&temp, '\n')) {
-                if (min > temp.position)
-                    min = temp.position;
+            while (find_bucket(&temp, '\n')) {
+                // Check there isn't an unescaped backslash before us.
+                // If there is then this is '\\\n' which is deleted.
+                Contents_Iterator test = temp;
+                uint64_t backslashes = 0;
+                while (test.position > 0) {
+                    test.retreat();
+                    if (test.get() == '\\')
+                        ++backslashes;
+                    else
+                        break;
+                }
+
+                if (backslashes % 2 == 0) {
+                    if (min > temp.position)
+                        min = temp.position;
+                    break;
+                }
+
+                temp.advance();
+                if (temp.index == 0)
+                    break;  // Went into next bucket so stop.
             }
 
             temp = *iterator;
@@ -1454,6 +1489,13 @@ static void handle_block_comment(Contents_Iterator* iterator, Token* token, Stat
         char ch = iterator->get();
         if (ch == '!' || ch == '*') {
             iterator->advance();
+            if (ch == '*' && looking_at(*iterator, '/')) {
+                // /**/
+                iterator->advance();
+                token->type = Token_Type::COMMENT;
+                token->end = iterator->position;
+                return;
+            }
             state->comment = COMMENT_BLOCK_RESUME_OUTSIDE_SOL2;
             handle_block_comment_doc(iterator, token, state);
             return;
