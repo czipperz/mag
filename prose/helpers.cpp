@@ -32,7 +32,8 @@ bool copy_version_control_directory(Editor* editor,
     }
 
     directory->reserve(cz::heap_allocator(), 2);
-    directory->push('/');
+    if (!directory->ends_with('/'))
+        directory->push('/');
     directory->null_terminate();
     return true;
 }
