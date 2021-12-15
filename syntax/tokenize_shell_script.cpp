@@ -292,6 +292,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                     matches(start, iterator->position, "set") ||
                     matches(start, iterator->position, "unset") ||
                     matches(start, iterator->position, "cd") ||
+                    matches(start, iterator->position, "builtin") ||
                     matches(start, iterator->position, "mv") ||
                     matches(start, iterator->position, "cp") ||
                     matches(start, iterator->position, "test") ||
