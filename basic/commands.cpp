@@ -689,6 +689,13 @@ REGISTER_COMMAND(command_delete_forward_char);
 void command_delete_forward_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
+    // If temporarily showing marks then just delete the region instead.
+    if (window->show_marks == 2) {
+        delete_regions(source.client, buffer, window);
+        window->show_marks = false;
+        return;
+    }
+
     if (source.previous_command.function == command_delete_forward_char &&
         buffer->check_last_committer(command_delete_forward_char, window->cursors)) {
         CZ_DEBUG_ASSERT(buffer->commit_index == buffer->commits.len);
