@@ -213,6 +213,57 @@ static void process_event(Server* server,
                           uint32_t* disable_key_presses_until) {
     ZoneScoped;
 
+    // Handle modifier changes before the timeout check.
+    if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+#define MOD_CASE(name)             \
+    case SDLK_##name:              \
+        *mod_state |= KMOD_##name; \
+        return
+
+            // Held modifier keys.
+            MOD_CASE(LCTRL);
+            MOD_CASE(RCTRL);
+            MOD_CASE(LSHIFT);
+            MOD_CASE(RSHIFT);
+            MOD_CASE(LALT);
+            MOD_CASE(RALT);
+            MOD_CASE(LGUI);
+            MOD_CASE(RGUI);
+            MOD_CASE(MODE);
+
+#undef MOD_CASE
+
+            // Toggle modifiers keys.
+        case SDLK_NUMLOCKCLEAR:
+            *mod_state ^= KMOD_NUM;
+            return;
+        case SDLK_CAPSLOCK:
+            *mod_state ^= KMOD_CAPS;
+            return;
+        }
+    } else if (event.type == SDL_KEYUP) {
+        switch (event.key.keysym.sym) {
+#define MOD_CASE(name)              \
+    case SDLK_##name:               \
+        *mod_state &= ~KMOD_##name; \
+        return
+
+            // Held modifier keys.
+            MOD_CASE(LCTRL);
+            MOD_CASE(RCTRL);
+            MOD_CASE(LSHIFT);
+            MOD_CASE(RSHIFT);
+            MOD_CASE(LALT);
+            MOD_CASE(RALT);
+            MOD_CASE(LGUI);
+            MOD_CASE(RGUI);
+            MOD_CASE(MODE);
+
+#undef MOD_CASE
+        }
+    }
+
     // See comment on disable_key_presses's declaration.
     if (*disable_key_presses && event.type != SDL_QUIT) {
         if (event.text.timestamp > *disable_key_presses_until) {
@@ -222,6 +273,7 @@ static void process_event(Server* server,
         }
     }
 
+    // Handle the event.
     switch (event.type) {
     case SDL_QUIT:
         client->queue_quit = true;
@@ -386,32 +438,6 @@ static void process_event(Server* server,
     case SDL_KEYDOWN: {
         Key key = {};
         switch (event.key.keysym.sym) {
-#define MOD_CASE(name)             \
-    case SDLK_##name:              \
-        *mod_state |= KMOD_##name; \
-        return
-
-            // Held modifier keys.
-            MOD_CASE(LCTRL);
-            MOD_CASE(RCTRL);
-            MOD_CASE(LSHIFT);
-            MOD_CASE(RSHIFT);
-            MOD_CASE(LALT);
-            MOD_CASE(RALT);
-            MOD_CASE(LGUI);
-            MOD_CASE(RGUI);
-            MOD_CASE(MODE);
-
-#undef MOD_CASE
-
-            // Toggle modifiers keys.
-        case SDLK_NUMLOCKCLEAR:
-            *mod_state ^= KMOD_NUM;
-            return;
-        case SDLK_CAPSLOCK:
-            *mod_state ^= KMOD_CAPS;
-            return;
-
 #define KEY_CASE(name, value) \
     case SDLK_##name:         \
         key.code = value;     \
@@ -544,28 +570,6 @@ static void process_event(Server* server,
         }
 
         server->receive(client, key);
-    } break;
-
-    case SDL_KEYUP: {
-        switch (event.key.keysym.sym) {
-#define MOD_CASE(name)              \
-    case SDLK_##name:               \
-        *mod_state &= ~KMOD_##name; \
-        return
-
-            // Held modifier keys.
-            MOD_CASE(LCTRL);
-            MOD_CASE(RCTRL);
-            MOD_CASE(LSHIFT);
-            MOD_CASE(RSHIFT);
-            MOD_CASE(LALT);
-            MOD_CASE(RALT);
-            MOD_CASE(LGUI);
-            MOD_CASE(RGUI);
-            MOD_CASE(MODE);
-
-#undef MOD_CASE
-        }
     } break;
     }
 }
