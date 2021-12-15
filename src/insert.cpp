@@ -25,12 +25,14 @@ void insert(Client* client,
     CZ_DEFER(transaction.drop());
 
     cz::Slice<Cursor> cursors = window->cursors;
+    uint64_t offset = 0;
     for (size_t i = 0; i < cursors.len; ++i) {
         Edit edit;
         edit.value = value;
-        edit.position = cursors[i].point + i;
+        edit.position = cursors[i].point + offset;
         edit.flags = Edit::INSERT;
         transaction.push(edit);
+        offset += value.len();
     }
 
     transaction.commit(client, committer);

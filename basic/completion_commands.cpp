@@ -373,10 +373,10 @@ bool find_nearest_matching_identifier_before_after(Contents_Iterator it,
     return false;
 }
 
-static void replace_identifier_with_identifier_start_at(Client* client,
-                                                        Buffer* buffer,
-                                                        Window_Unified* window,
-                                                        Contents_Iterator match_start) {
+static void append_identifier_suffix(Client* client,
+                                     Buffer* buffer,
+                                     Window_Unified* window,
+                                     Contents_Iterator match_start) {
     Transaction transaction;
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
@@ -387,36 +387,24 @@ static void replace_identifier_with_identifier_start_at(Client* client,
     SSOStr result =
         buffer->contents.slice(transaction.value_allocator(), match_start, match_end.position);
 
+    Contents_Iterator it = buffer->contents.start();
+    cz::Slice<Cursor> cursors = window->cursors;
+    it.advance_to(cursors[window->selected_cursor].point);
+    uint64_t middle = it.position;
+    backward_through_identifier(&it);
+    uint64_t start = it.position;
+    cz::Str result_str = result.as_str().slice_start(cz::min(result.len(), middle - start));
+
     // Apply the completion to all cursors.
     uint64_t offset = 0;
-    cz::Slice<Cursor> cursors = window->cursors;
-    Contents_Iterator it = buffer->contents.start();
     for (size_t i = 0; i < cursors.len; ++i) {
-        it.advance_to(cursors[i].point);
-
-        // Retreat to start of identifier.
-        uint64_t middle = it.position;
-        backward_through_identifier(&it);
-        uint64_t start = it.position;
-
-        if (middle - it.position <= result.len() &&
-            matches(it, middle, result.as_str().slice_end(middle - it.position))) {
-            it.advance_to(middle);
-        } else {
-            Edit remove;
-            remove.value = buffer->contents.slice(transaction.value_allocator(), it, middle);
-            remove.position = it.position + offset;
-            remove.flags = Edit::REMOVE;
-            transaction.push(remove);
-        }
-
         Edit insert;
-        insert.value = SSOStr::from_constant(result.as_str().slice_start(it.position - start));
-        insert.position = it.position + offset;
+        insert.value = SSOStr::from_constant(result_str);
+        insert.position = cursors[i].point + offset;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
 
-        offset += insert.value.len() - (middle - it.position);
+        offset += result_str.len;
     }
 
     transaction.commit(client);
@@ -447,7 +435,7 @@ void command_complete_at_point_nearest_matching(Editor* editor, Command_Source s
         return;
     }
 
-    replace_identifier_with_identifier_start_at(source.client, buffer, window, match_start);
+    append_identifier_suffix(source.client, buffer, window, match_start);
 }
 
 REGISTER_COMMAND(command_complete_at_point_nearest_matching_before);
@@ -475,7 +463,7 @@ void command_complete_at_point_nearest_matching_before(Editor* editor, Command_S
         return;
     }
 
-    replace_identifier_with_identifier_start_at(source.client, buffer, window, match_start);
+    append_identifier_suffix(source.client, buffer, window, match_start);
 }
 
 REGISTER_COMMAND(command_complete_at_point_nearest_matching_after);
@@ -503,7 +491,7 @@ void command_complete_at_point_nearest_matching_after(Editor* editor, Command_So
         return;
     }
 
-    replace_identifier_with_identifier_start_at(source.client, buffer, window, match_start);
+    append_identifier_suffix(source.client, buffer, window, match_start);
 }
 
 REGISTER_COMMAND(command_complete_at_point_nearest_matching_before_after);
@@ -532,7 +520,7 @@ void command_complete_at_point_nearest_matching_before_after(Editor* editor,
         return;
     }
 
-    replace_identifier_with_identifier_start_at(source.client, buffer, window, match_start);
+    append_identifier_suffix(source.client, buffer, window, match_start);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
