@@ -201,7 +201,7 @@ int mag_main(int argc, char** argv) {
         //
         cz::Vector<cz::Str> files = {};
         CZ_DEFER(files.drop(cz::heap_allocator()));
-        int chosen_client = Client::SDL;
+        Client::Type chosen_client = Client::SDL;
         bool try_remote = false;
         for (int i = 1; i < argc; ++i) {
             cz::Str arg = argv[i];
@@ -326,6 +326,7 @@ A-g     Project or directory commands\n\
         custom::editor_created_callback(&server.editor);
 
         Client client = server.make_client();
+        client.type = chosen_client;
         CZ_DEFER(client.drop());
 
         server.setup_async_context(&client);

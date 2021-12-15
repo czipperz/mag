@@ -31,7 +31,7 @@ struct Mouse_Position {
 };
 
 struct Client {
-    enum {
+    enum Type {
         NCURSES,
         SDL,
         REMOTE,
