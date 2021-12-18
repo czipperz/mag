@@ -13,11 +13,12 @@ namespace syntax {
 
 enum : uint64_t {
     AT_START_OF_STATEMENT,
+    AFTER_EXPORT,
     NORMAL,
     IN_CURLY_VAR,
     IN_STRING,
 
-    IN_BACKTICK_MASK = 4,
+    IN_BACKTICK_MASK = 8,
 };
 
 enum : uint64_t {
@@ -56,29 +57,29 @@ static bool is_general(char ch) {
 bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     ZoneScoped;
 
-    // 63-60    59-58     57-48       47-0
-    // depth  transient  reserved  state stack
+    // 63-60    59-58       57-0
+    // depth  transient  state stack
     uint64_t depth = *state >> 60;
-    uint64_t transient = (*state >> 58) & 3;
-    uint64_t prev = (*state >> (depth - 1) * 3) & 7;
-    uint64_t top = (*state >> depth * 3) & 7;
+    uint64_t transient = (*state >> 58) & 0x3;
+    uint64_t prev = (*state >> (depth - 1) * 4) & 0x7;
+    uint64_t top = (*state >> depth * 4) & 0xf;
     // The transient state is reset if not handled manually to prevent weird states.
     uint64_t new_transient = TRANSIENT_NORMAL;
 
-#define PUSH()                                 \
-    do {                                       \
-        *state &= ~((uint64_t)7 << depth * 3); \
-        *state |= (top << depth * 3);          \
-        depth += 1;                            \
-        prev = top;                            \
+#define PUSH()                                   \
+    do {                                         \
+        *state &= ~((uint64_t)0xf << depth * 4); \
+        *state |= (top << depth * 4);            \
+        depth += 1;                              \
+        prev = top;                              \
     } while (0)
 
-#define POP()                                   \
-    do {                                        \
-        CZ_DEBUG_ASSERT(depth > 0);             \
-        depth -= 1;                             \
-        top = prev;                             \
-        prev = (*state >> (depth - 1) * 3) & 7; \
+#define POP()                                     \
+    do {                                          \
+        CZ_DEBUG_ASSERT(depth > 0);               \
+        depth -= 1;                               \
+        top = prev;                               \
+        prev = (*state >> (depth - 1) * 4) & 0xf; \
     } while (0)
 
     if (!advance_whitespace(iterator, &top)) {
@@ -165,7 +166,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             token->type = Token_Type::CLOSE_PAIR;
             POP();
             top &= ~IN_BACKTICK_MASK;
-            if (top == AT_START_OF_STATEMENT) {
+            if (top == AT_START_OF_STATEMENT || top == AFTER_EXPORT) {
                 top = NORMAL;
             }
         } else {
@@ -254,12 +255,16 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                     break;
                 }
             } else {
-                if (top == AT_START_OF_STATEMENT && (ch == '=' || looking_at(*iterator, "+="))) {
+                if ((top == AT_START_OF_STATEMENT || top == AFTER_EXPORT) &&
+                    (ch == '=' || looking_at(*iterator, "+="))) {
+                assignment:
                     token->type = Token_Type::IDENTIFIER;
                     top = NORMAL;
                     goto ret;
                 }
                 if (!is_general(ch)) {
+                    if (top == AFTER_EXPORT)
+                        goto assignment;
                     break;
                 }
             }
@@ -303,7 +308,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "export") ||
                                                     matches(start, iterator->position, "local"))) {
             token->type = Token_Type::KEYWORD;
-            // Keep start of statement as the top.
+            top = AFTER_EXPORT;
             goto ret;
         } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "elif") ||
                                                     matches(start, iterator->position, "fi") ||
@@ -314,7 +319,7 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
             token->type = Token_Type::DEFAULT;
         }
 
-        if (top == AT_START_OF_STATEMENT) {
+        if (top == AT_START_OF_STATEMENT || top == AFTER_EXPORT) {
             top = NORMAL;
         }
 
@@ -358,8 +363,8 @@ ret:
     *state |= (depth << 60);
     *state &= 0xF3FFFFFFFFFFFFFF;
     *state |= (new_transient << 58);
-    *state &= ~((uint64_t)7 << depth * 3);
-    *state |= (top << depth * 3);
+    *state &= ~((uint64_t)0xf << depth * 4);
+    *state |= (top << depth * 4);
     return true;
 }
 
