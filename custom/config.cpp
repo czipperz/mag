@@ -164,6 +164,9 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-y", command_paste_previous);
     BIND(key_map, "C-INSERT", command_copy);
     BIND(key_map, "S-INSERT", command_paste);
+    BIND(key_map, "C-X", command_cut);
+    BIND(key_map, "C-C", command_copy);
+    BIND(key_map, "C-V", command_paste);
 
     BIND(key_map, "C-f", command_forward_char);
     BIND(key_map, "C-b", command_backward_char);
