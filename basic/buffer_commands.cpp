@@ -11,6 +11,7 @@
 #include <cz/working_directory.hpp>
 #include "command_macros.hpp"
 #include "config.hpp"
+#include "diff.hpp"
 #include "file.hpp"
 #include "syntax/tokenize_buffer_name.hpp"
 #include "syntax/tokenize_path.hpp"
@@ -552,6 +553,12 @@ void command_diff_buffer_file_against(Editor* editor, Command_Source source) {
     dialog.next_token = syntax::path_next_token;
     dialog.mini_buffer_contents = path;
     source.client->show_dialog(dialog);
+}
+
+REGISTER_COMMAND(command_reload_buffer);
+void command_reload_buffer(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    reload_file(editor, source.client, buffer);
 }
 
 }
