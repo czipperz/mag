@@ -279,6 +279,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-S-END", region_movement::command_end_of_buffer);
 
     BIND(key_map, "MOUSE1", command_mouse_select_start);
+    BIND(key_map, "S-MOUSE1", command_mouse_select_continue);
     BIND(key_map, "MOUSE2", command_copy_paste);
 
     BIND(key_map, "A-x A-p", command_pop_jump);

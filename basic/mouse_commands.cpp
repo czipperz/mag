@@ -114,43 +114,54 @@ static uint32_t mouse_click_row, mouse_click_column;
 static std::chrono::high_resolution_clock::time_point mouse_click_time;
 static const std::chrono::milliseconds mouse_click_elapsed{500};
 
-REGISTER_COMMAND(command_mouse_select_start);
-void command_mouse_select_start(Editor* editor, Command_Source source) {
-    if (!source.client->mouse.window || source.client->mouse.window->tag != Window::UNIFIED) {
+static void start_selecting(Editor* editor, Client* client, bool set_selection_start) {
+    if (!client->mouse.window || client->mouse.window->tag != Window::UNIFIED) {
         return;
     }
 
-    source.client->selected_normal_window = (Window_Unified*)source.client->mouse.window;
+    client->selected_normal_window = (Window_Unified*)client->mouse.window;
 
-    WITH_CONST_SELECTED_NORMAL_BUFFER(source.client);
-    Contents_Iterator iterator =
-        nearest_character(window, buffer, editor->theme, source.client->mouse.window_row,
-                          source.client->mouse.window_column);
-    kill_extra_cursors(window, source.client);
+    WITH_CONST_SELECTED_NORMAL_BUFFER(client);
+    Contents_Iterator iterator = nearest_character(
+        window, buffer, editor->theme, client->mouse.window_row, client->mouse.window_column);
+    kill_extra_cursors(window, client);
     window->cursors[0].point = window->cursors[0].mark = iterator.position;
 
     // Reset click chain if too much time has elapsed or mouse moved.
     auto now = std::chrono::high_resolution_clock::now();
     if (now - mouse_click_time > mouse_click_elapsed ||
-        mouse_click_row != source.client->mouse.window_row ||
-        mouse_click_column != source.client->mouse.window_column) {
+        mouse_click_row != client->mouse.window_row ||
+        mouse_click_column != client->mouse.window_column) {
         mouse_click_length = 0;
     }
 
     // Record click.
     ++mouse_click_length;
-    mouse_click_row = source.client->mouse.window_row;
-    mouse_click_column = source.client->mouse.window_column;
     mouse_click_time = now;
+    client->mouse.selecting = (mouse_click_length - 1) % 3 + 1;
 
-    source.client->mouse.selecting = (mouse_click_length - 1) % 3 + 1;
-    source.client->mouse.window_select_point = iterator.position;
+    // Set the selection start position.
+    if (set_selection_start) {
+        mouse_click_row = client->mouse.window_row;
+        mouse_click_column = client->mouse.window_column;
+        client->mouse.window_select_point = iterator.position;
+    }
 
     Synchronous_Job job;
     job.tick = mouse_motion_job_tick;
     job.kill = mouse_motion_job_kill;
     job.data = nullptr;
     editor->add_synchronous_job(job);
+}
+
+REGISTER_COMMAND(command_mouse_select_start);
+void command_mouse_select_start(Editor* editor, Command_Source source) {
+    start_selecting(editor, source.client, true);
+}
+
+REGISTER_COMMAND(command_mouse_select_continue);
+void command_mouse_select_continue(Editor* editor, Command_Source source) {
+    start_selecting(editor, source.client, false);
 }
 
 REGISTER_COMMAND(command_copy_paste);
