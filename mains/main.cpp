@@ -174,49 +174,10 @@ static void set_home_directory(cz::String* home_directory_storage) {
 }
 
 int mag_main(int argc, char** argv) {
-#if !defined(CONSOLE_MAIN)
-    if (argc <= 1 || strcmp(argv[1], "--no-fork") != 0) {
-        cz::Vector<cz::Str> args = {};
-        args.reserve_exact(cz::heap_allocator(), argc + 1);
-        for (int i = 0; i < argc; ++i) {
-            args.push(argv[i]);
-        }
-        args.insert(1, "--no-fork");
-
-        cz::Process_Options options;
-        options.detach = true;
-
-        cz::Process process;
-        if (process.launch_program(args, options)) {
-            process.detach();
-            exit(0);
-        }
-    }
-#endif
-
     tracy::SetThreadName("Mag main thread");
     ZoneScoped;
 
     try {
-        //
-        // Load general information.
-        //
-        cz::String program_name_storage = {};
-        CZ_DEFER(program_name_storage.drop(cz::heap_allocator()));
-        set_program_name(&program_name_storage, argv[0]);
-
-        set_program_date();
-
-        cz::String program_dir_storage = {};
-        CZ_DEFER(program_dir_storage.drop(cz::heap_allocator()));
-        set_program_dir(&program_dir_storage);
-
-        cz::String home_directory_storage = {};
-        CZ_DEFER(home_directory_storage.drop(cz::heap_allocator()));
-        set_home_directory(&home_directory_storage);
-
-        switch_to_the_home_directory();
-
         //
         // Parse command line arguments
         //
@@ -224,6 +185,7 @@ int mag_main(int argc, char** argv) {
         CZ_DEFER(files.drop(cz::heap_allocator()));
         Client::Type chosen_client = Client::SDL;
         bool try_remote = false;
+        bool allow_fork = true;
         for (int i = 1; i < argc; ++i) {
             cz::Str arg = argv[i];
             if (arg == "--help") {
@@ -250,7 +212,7 @@ int mag_main(int argc, char** argv) {
             } else if (arg == "--try-remote") {
                 try_remote = true;
             } else if (arg == "--no-fork") {
-                // Ignore
+                allow_fork = false;
             } else {
                 files.reserve(cz::heap_allocator(), 1);
                 files.push(arg);
@@ -275,6 +237,45 @@ int mag_main(int argc, char** argv) {
                 return 1;
             }
         }
+
+#if !defined(CONSOLE_MAIN)
+        if (allow_fork && chosen_client != Client::NCURSES) {
+            cz::Vector<cz::Str> args = {};
+            args.reserve_exact(cz::heap_allocator(), argc + 1);
+            for (int i = 0; i < argc; ++i) {
+                args.push(argv[i]);
+            }
+            args.insert(1, "--no-fork");
+
+            cz::Process_Options options;
+            options.detach = true;
+
+            cz::Process process;
+            if (process.launch_program(args, options)) {
+                process.detach();
+                exit(0);
+            }
+        }
+#endif
+
+        //
+        // Load general information.
+        //
+        cz::String program_name_storage = {};
+        CZ_DEFER(program_name_storage.drop(cz::heap_allocator()));
+        set_program_name(&program_name_storage, argv[0]);
+
+        set_program_date();
+
+        cz::String program_dir_storage = {};
+        CZ_DEFER(program_dir_storage.drop(cz::heap_allocator()));
+        set_program_dir(&program_dir_storage);
+
+        cz::String home_directory_storage = {};
+        CZ_DEFER(home_directory_storage.drop(cz::heap_allocator()));
+        set_home_directory(&home_directory_storage);
+
+        switch_to_the_home_directory();
 
         //
         // Initialize initial buffers.
