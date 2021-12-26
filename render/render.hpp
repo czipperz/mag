@@ -23,7 +23,8 @@ void render_to_cells(Cell* cells,
                      size_t total_rows,
                      size_t total_cols,
                      Editor* editor,
-                     Client* client);
+                     Client* client,
+                     bool* any_animated_scrolling);
 
 void recalculate_mouse(const Theme& theme, Client* client);
 

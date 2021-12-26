@@ -128,7 +128,8 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                                                                    Window_Unified* window,
                                                                    cz::Arc<Buffer_Handle> handle,
                                                                    const Buffer* buffer,
-                                                                   Window_Cache* window_cache) {
+                                                                   Window_Cache* window_cache,
+                                                                   bool* any_animated_scrolling) {
     ZoneScoped;
 
     window->update_cursors(buffer);
@@ -424,6 +425,8 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
             // Scroll window based on animated scrolling state.
             if (window_cache->v.unified.animated_scrolling.speed != 0) {
                 ZoneScopedN("run animated_scrolling");
+
+                *any_animated_scrolling = true;
 
                 // If we are out of bounds because the user directly modified the `Contents`
                 // without making a `Change` then go back into bounds so we don't crash.
@@ -1114,6 +1117,7 @@ static void draw_buffer(Cell* cells,
                         size_t total_cols,
                         Editor* editor,
                         Client* client,
+                        bool* any_animated_scrolling,
                         Window_Unified* window,
                         const Buffer* buffer,
                         bool is_selected_window,
@@ -1121,8 +1125,9 @@ static void draw_buffer(Cell* cells,
                         size_t start_col) {
     ZoneScoped;
 
-    Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
-        editor, client, window, window->buffer_handle, buffer, window_cache);
+    Contents_Iterator iterator =
+        update_cursors_and_run_animated_scrolling(editor, client, window, window->buffer_handle,
+                                                  buffer, window_cache, any_animated_scrolling);
 
     size_t cursor_pos_y, cursor_pos_x;
     draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
@@ -1154,6 +1159,7 @@ static void draw_window(Cell* cells,
                         size_t total_cols,
                         Editor* editor,
                         Client* client,
+                        bool* any_animated_scrolling,
                         Window* w,
                         Window* selected_window,
                         size_t start_row,
@@ -1168,8 +1174,8 @@ static void draw_window(Cell* cells,
 
         setup_unified_window_cache(editor, window, buffer, window_cache);
 
-        draw_buffer(cells, *window_cache, total_cols, editor, client, window, buffer,
-                    window == selected_window, start_row, start_col);
+        draw_buffer(cells, *window_cache, total_cols, editor, client, any_animated_scrolling,
+                    window, buffer, window == selected_window, start_row, start_col);
         break;
     }
 
@@ -1190,7 +1196,8 @@ static void draw_window(Cell* cells,
 
         if (window->tag == Window::VERTICAL_SPLIT) {
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, client,
-                        window->first, selected_window, start_row, start_col);
+                        any_animated_scrolling, window->first, selected_window, start_row,
+                        start_col);
 
             {
                 size_t x = window->first->total_cols;
@@ -1200,16 +1207,17 @@ static void draw_window(Cell* cells,
             }
 
             draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, client,
-                        window->second, selected_window, start_row,
+                        any_animated_scrolling, window->second, selected_window, start_row,
                         start_col + window->total_cols - window->second->total_cols);
         } else {
             draw_window(cells, &(*window_cache)->v.split.first, total_cols, editor, client,
-                        window->first, selected_window, start_row, start_col);
+                        any_animated_scrolling, window->first, selected_window, start_row,
+                        start_col);
 
             // No separator as the window title acts as it.
 
             draw_window(cells, &(*window_cache)->v.split.second, total_cols, editor, client,
-                        window->second, selected_window,
+                        any_animated_scrolling, window->second, selected_window,
                         start_row + window->total_rows - window->second->total_rows, start_col);
         }
         break;
@@ -1353,7 +1361,8 @@ void render_to_cells(Cell* cells,
                      size_t total_rows,
                      size_t total_cols,
                      Editor* editor,
-                     Client* client) {
+                     Client* client,
+                     bool* any_animated_scrolling) {
     ZoneScoped;
 
     size_t mini_buffer_height = 0;
@@ -1442,7 +1451,8 @@ void render_to_cells(Cell* cells,
             start_col = x;
 
             Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
-                editor, client, window, handle, buffer, *mini_buffer_window_cache);
+                editor, client, window, handle, buffer, *mini_buffer_window_cache,
+                any_animated_scrolling);
             size_t cursor_pos_y, cursor_pos_x;
             draw_buffer_contents(cells, *mini_buffer_window_cache, total_cols, editor, client,
                                  buffer, window, start_row, start_col, &cursor_pos_y, &cursor_pos_x,
@@ -1546,8 +1556,8 @@ void render_to_cells(Cell* cells,
     }
 
     client->window->set_size(total_rows, total_cols);
-    draw_window(cells, window_cache, total_cols, editor, client, client->window,
-                client->selected_normal_window, 0, 0);
+    draw_window(cells, window_cache, total_cols, editor, client, any_animated_scrolling,
+                client->window, client->selected_normal_window, 0, 0);
     recalculate_mouse(editor->theme, client);
 }
 

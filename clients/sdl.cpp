@@ -800,9 +800,11 @@ static void render(SDL_Window* window,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client);
+    bool any_animated_scrolling = false;
+    render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client,
+                    &any_animated_scrolling);
 
-    bool any_changes = false;
+    bool any_changes = any_animated_scrolling;
     const SDL_Color default_background = make_color(editor->theme.colors, {0});
 
     {

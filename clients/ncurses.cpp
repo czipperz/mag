@@ -122,9 +122,10 @@ static void render(int* total_rows,
         }
     }
 
-    render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client);
+    bool any_animated_scrolling = false;
+    render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client, &any_animated_scrolling);
 
-    bool any = false;
+    bool any = any_animated_scrolling;
     {
         ZoneScopedN("blit cells");
         int index = 0;
