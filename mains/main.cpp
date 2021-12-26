@@ -8,6 +8,7 @@
 #include <cz/heap.hpp>
 #include <cz/parse.hpp>
 #include <cz/path.hpp>
+#include <cz/process.hpp>
 #include <cz/str.hpp>
 #include <cz/util.hpp>
 #include <cz/working_directory.hpp>
@@ -173,6 +174,26 @@ static void set_home_directory(cz::String* home_directory_storage) {
 }
 
 int mag_main(int argc, char** argv) {
+#if !defined(CONSOLE_MAIN)
+    if (__argc <= 1 || strcmp(__argv[1], "--no-fork") != 0) {
+        cz::Vector<cz::Str> args = {};
+        args.reserve_exact(cz::heap_allocator(), __argc + 1);
+        for (int i = 0; i < __argc; ++i) {
+            args.push(__argv[i]);
+        }
+        args.insert(1, "--no-fork");
+
+        cz::Process_Options options;
+        options.detach = true;
+
+        cz::Process process;
+        if (process.launch_program(args, options)) {
+            process.detach();
+            exit(0);
+        }
+    }
+#endif
+
     tracy::SetThreadName("Mag main thread");
     ZoneScoped;
 
@@ -228,6 +249,8 @@ int mag_main(int argc, char** argv) {
                 return usage();
             } else if (arg == "--try-remote") {
                 try_remote = true;
+            } else if (arg == "--no-fork") {
+                // Ignore
             } else {
                 files.reserve(cz::heap_allocator(), 1);
                 files.push(arg);
