@@ -175,11 +175,11 @@ static void set_home_directory(cz::String* home_directory_storage) {
 
 int mag_main(int argc, char** argv) {
 #if !defined(CONSOLE_MAIN)
-    if (__argc <= 1 || strcmp(__argv[1], "--no-fork") != 0) {
+    if (argc <= 1 || strcmp(argv[1], "--no-fork") != 0) {
         cz::Vector<cz::Str> args = {};
-        args.reserve_exact(cz::heap_allocator(), __argc + 1);
-        for (int i = 0; i < __argc; ++i) {
-            args.push(__argv[i]);
+        args.reserve_exact(cz::heap_allocator(), argc + 1);
+        for (int i = 0; i < argc; ++i) {
+            args.push(argv[i]);
         }
         args.insert(1, "--no-fork");
 
