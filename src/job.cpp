@@ -2,6 +2,7 @@
 
 #include <cz/arc.hpp>
 #include <cz/defer.hpp>
+#include <cz/format.hpp>
 #include <cz/process.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
@@ -63,7 +64,7 @@ static void process_append_job_kill(void* _data) {
     cz::heap_allocator().dealloc(data);
 }
 
-static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler*, void* _data) {
+static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler* handler, void* _data) {
     ZoneScoped;
 
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
@@ -83,6 +84,26 @@ static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler*, void* 
             continue;
         } else if (read_result == 0) {
             // End of file
+
+            // Show a message that the command finished.
+            {
+                cz::Arc<Buffer_Handle> handle;
+                if (!data->buffer_handle.upgrade(&handle)) {
+                    process_append_job_kill(data);
+                    return Job_Tick_Result::FINISHED;
+                }
+                CZ_DEFER(handle.drop());
+
+                cz::String message = {};
+                CZ_DEFER(message.drop(cz::heap_allocator()));
+                {
+                    WITH_CONST_BUFFER_HANDLE(handle);
+                    message = cz::format("Finished: ", buffer->name);
+                }
+                handler->show_message(message);
+            }
+
+            // Cleanup.
             data->std_out.close();
             data->process.join();
             data->buffer_handle.drop();
