@@ -1200,6 +1200,8 @@ void run(Server* server, Client* client) {
         load_mini_buffer_completion_cache(server, client);
 
         if (client->_pending_raise) {
+            if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)
+                SDL_RestoreWindow(window);
             SDL_RaiseWindow(window);
             client->_pending_raise = false;
         }
