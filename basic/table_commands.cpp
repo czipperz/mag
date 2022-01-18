@@ -101,13 +101,21 @@ void command_realign_table(Editor* editor, Command_Source source) {
     for (size_t i = 1; i < max_pipes_per_line; ++i) {
         desired_widths.push(0);
     }
+    it.retreat_to(start.position);
     for (size_t l = 0; l < line_pipe_index.len - 1; ++l) {
         size_t base_index = line_pipe_index[l];
+        size_t end_index = line_pipe_index[l + 1];
+        end_of_line(&it);
         for (size_t i = 1; i < max_pipes_per_line; ++i) {
-            uint64_t width = pipe_positions[base_index + i] - pipe_positions[base_index + i - 1];
+            uint64_t start = (base_index + i - 1 < end_index ? pipe_positions[base_index + i - 1]
+                                                             : it.position - 1);
+            uint64_t end = (base_index + i < end_index ? pipe_positions[base_index + i]  //
+                                                       : it.position);
+            uint64_t width = end - start;
             if (width > desired_widths[i - 1])
                 desired_widths[i - 1] = width;
         }
+        forward_char(&it);
     }
 
     // Find the biggest desired width.
@@ -157,7 +165,7 @@ void command_realign_table(Editor* editor, Command_Source source) {
         for (size_t i = 1; i < max_pipes_per_line; ++i) {
             // Find the start and end of the column.
             uint64_t start = (base_index + i - 1 < end_index ? pipe_positions[base_index + i - 1]
-                                                             : pipe_positions[end_index - 1]);
+                                                             : it.position - 1);
             uint64_t end = (base_index + i < end_index ? pipe_positions[base_index + i]  //
                                                        : it.position);
             bool has_pipe = (base_index + i < end_index);
