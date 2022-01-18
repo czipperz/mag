@@ -105,13 +105,46 @@ void command_realign_table(Editor* editor, Command_Source source) {
     for (size_t l = 0; l < line_pipe_index.len - 1; ++l) {
         size_t base_index = line_pipe_index[l];
         size_t end_index = line_pipe_index[l + 1];
-        end_of_line(&it);
+        Contents_Iterator it2 = it;
+
+        // Look for any non-dash characters in the line.
+        bool all_dashes = true;
+        while (!it.at_eob()) {
+            char ch = it.get();
+            if (ch == '\n')
+                break;
+            if (ch != '|' && ch != '-') {
+                all_dashes = false;
+                end_of_line(&it);
+                break;
+            }
+            it.advance();
+        }
+        if (all_dashes) {
+            forward_char(&it);
+            continue;  // don't count all dash lines
+        }
+
         for (size_t i = 1; i < max_pipes_per_line; ++i) {
             uint64_t start = (base_index + i - 1 < end_index ? pipe_positions[base_index + i - 1]
                                                              : it.position - 1);
             uint64_t end = (base_index + i < end_index ? pipe_positions[base_index + i]  //
                                                        : it.position);
+
+            if (base_index + i < end_index) {
+                it2.advance_to(end);
+                while (!it2.at_bob()) {
+                    it2.retreat();
+                    if (it2.get() != ' ') {
+                        it2.advance();
+                        break;
+                    }
+                }
+                end = it2.position;
+            }
+
             uint64_t width = end - start;
+            // width++;  // extra padding space
             if (width > desired_widths[i - 1])
                 desired_widths[i - 1] = width;
         }
@@ -164,29 +197,50 @@ void command_realign_table(Editor* editor, Command_Source source) {
 
         for (size_t i = 1; i < max_pipes_per_line; ++i) {
             // Find the start and end of the column.
-            uint64_t start = (base_index + i - 1 < end_index ? pipe_positions[base_index + i - 1]
-                                                             : it.position - 1);
+            uint64_t start = (base_index + i - 1 < end_index ? pipe_positions[base_index + i - 1] + 1
+                                                             : it.position);
             uint64_t end = (base_index + i < end_index ? pipe_positions[base_index + i]  //
                                                        : it.position);
             bool has_pipe = (base_index + i < end_index);
 
             uint64_t width = end - start;
-            if (has_pipe && width == desired_widths[i - 1])
+            uint64_t desired = desired_widths[i - 1];
+            if (has_pipe && width == desired)
                 break;
 
-            // Make the padding string.
-            uint64_t padding = desired_widths[i - 1] - width;
-            cz::Str str = (has_pipe ? base_string.slice_end(padding)
-                                    : base_string.slice_start(base_string.len - padding - 1));
+            if (width > desired) {
+                // Make the padding string.
+                uint64_t padding = width - desired;
+                cz::Str str = base_string.slice_end(padding);
 
-            // Insert padding.
-            Edit edit;
-            edit.flags = Edit::INSERT;
-            edit.position = end + offset;
-            edit.value = SSOStr::from_constant(str);
-            transaction.push(edit);
+                // Remove padding.
+                Edit edit;
+                edit.flags = Edit::REMOVE;
+                edit.position = end + offset - str.len;
+                edit.value = SSOStr::from_constant(str);
+                transaction.push(edit);
 
-            offset += str.len;
+                offset -= str.len;
+
+                if (!has_pipe)
+                    width = desired;
+            }
+
+            if (width < desired || !has_pipe) {
+                // Make the padding string.
+                uint64_t padding = desired - width;
+                cz::Str str = (has_pipe ? base_string.slice_end(padding)
+                                        : base_string.slice_start(base_string.len - padding - 1));
+
+                // Insert padding.
+                Edit edit;
+                edit.flags = Edit::INSERT;
+                edit.position = end + offset;
+                edit.value = SSOStr::from_constant(str);
+                transaction.push(edit);
+
+                offset += str.len;
+            }
         }
 
         forward_char(&it);
