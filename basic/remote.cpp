@@ -347,7 +347,7 @@ static int connect_timeout(SOCKET sock, const sockaddr* addr, socklen_t len, tim
     FD_ZERO(&set_except);
     FD_SET(sock, &set_except);
 
-    result = select(sock + 1, NULL, &set_write, &set_except, timeout);
+    result = select((int)sock + 1, NULL, &set_write, &set_except, timeout);
     if (result <= 0)
         return -1;
 
