@@ -28,6 +28,7 @@
 #include "basic/search_buffer_commands.hpp"
 #include "basic/search_commands.hpp"
 #include "basic/shift_commands.hpp"
+#include "basic/table_commands.hpp"
 #include "basic/token_movement_commands.hpp"
 #include "basic/visible_region_commands.hpp"
 #include "basic/window_commands.hpp"
@@ -859,6 +860,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    name.ends_with(".rst")) {
             buffer->mode.next_token = syntax::md_next_token;
             BIND(buffer->mode.key_map, "A-h", markdown::command_reformat_paragraph);
+            BIND(buffer->mode.key_map, "A-x A-f", command_realign_table);
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else if (name.ends_with(".css")) {
             buffer->mode.next_token = syntax::css_next_token;
