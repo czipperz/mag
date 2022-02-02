@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <Tracy.hpp>
 #include <algorithm>
+#include <chrono>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
@@ -595,8 +596,17 @@ void Server::receive(Client* client, Key key) {
     default:
         break;
     }
+}
 
+void Server::process_key_chain(Client* client) {
+    ZoneScoped;
+
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     while (client->key_chain_offset < client->key_chain.len) {
+        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > 100)
+            break;
+
         Command command;
         size_t end;
         size_t max_depth = 1;

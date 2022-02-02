@@ -1177,6 +1177,8 @@ void run(Server* server, Client* client) {
 
         process_buffer_external_updates(&server->editor, client, client->window);
 
+        server->process_key_chain(client);
+
         if (client->queue_quit) {
             break;
         }

@@ -433,6 +433,7 @@ void run(Server* server, Client* client) {
         }
 
         process_key_presses(server, client, ch);
+        server->process_key_chain(client);
 
         if (client->queue_quit) {
             return;
