@@ -215,6 +215,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "F9", command_start_recording_macro);
     BIND(key_map, "F10", command_stop_recording_macro);
     BIND(key_map, "F11", command_run_macro);
+    BIND(key_map, "F12", command_run_macro_forall_lines_in_search);
 
     BIND(key_map, "C-A-u", command_backward_up_token_pair);
     BIND(key_map, "C-A-d", command_forward_up_token_pair);
