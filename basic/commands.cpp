@@ -1375,17 +1375,24 @@ void command_create_cursors_all_search(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_create_cursors_to_end_search);
 void command_create_cursors_to_end_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    bool is_last = (window->selected_cursor == window->cursors.len - 1);
     int created = create_cursor_forward_search(buffer, window);
     if (created == 1) {
         while (create_cursor_forward_search(buffer, window) == 1) {
         }
     }
+
     show_created_messages(editor, source.client, created);
+
+    if (created == 1 && is_last) {
+        window->selected_cursor = window->cursors.len - 1;
+    }
 }
 
 REGISTER_COMMAND(command_create_cursors_to_start_search);
 void command_create_cursors_to_start_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
+    bool is_first = (window->selected_cursor == 0);
     int created = create_cursor_backward_search(buffer, window);
     if (created == 1) {
         ++window->selected_cursor;
@@ -1393,7 +1400,12 @@ void command_create_cursors_to_start_search(Editor* editor, Command_Source sourc
             ++window->selected_cursor;
         }
     }
+
     show_created_messages(editor, source.client, created);
+
+    if (created == 1 && is_first) {
+        window->selected_cursor = 0;
+    }
 }
 
 static void command_filter_cursors_looking_at_callback(Editor* editor,
