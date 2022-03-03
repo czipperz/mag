@@ -192,17 +192,6 @@ static bool look_in(cz::Slice<char> bucket,
         if (!matches(start, middle.position, test_start))
             continue;
 
-        // Don't complete exact matches.
-        if (matches(middle, end, test_middle)) {
-            Contents_Iterator test_end = test_middle;
-            test_end.advance(end - middle.position);
-            if (test_end.at_eob())
-                continue;
-            char after_end = test_end.get();
-            if (!cz::is_alnum(after_end) && after_end != '_')
-                continue;
-        }
-
         *out = test_start;
         return true;
     }
