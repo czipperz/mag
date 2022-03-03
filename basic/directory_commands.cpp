@@ -208,25 +208,10 @@ static bool for_each_file(cz::String* path,
     }
 }
 
-static bool remove_empty_directory(const char* path) {
-#ifdef _WIN32
-    return RemoveDirectoryA(path);
-#else
-    return rmdir(path) == 0;
-#endif
-}
-
-static bool remove_file(const char* path) {
-#ifdef _WIN32
-    return DeleteFileA(path);
-#else
-    return unlink(path) == 0;
-#endif
-}
-
 static bool remove_path(cz::String* path) {
     return for_each_file(
-        path, remove_file, [](const char*) { return true; }, remove_empty_directory);
+        path, cz::file::remove_file, [](const char*) { return true; },
+        cz::file::remove_empty_directory);
 }
 
 static void command_directory_delete_path_callback(Editor* editor, Client* client, cz::Str, void*) {
