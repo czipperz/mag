@@ -284,6 +284,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
         }
     }
 
+    // @KillBuffer
     editor->kill(buffer_handle.get());
 
     if (remove_windows_for_buffer(client, buffer_handle, editor->buffers[0])) {
@@ -449,6 +450,50 @@ void command_pretend_rename_buffer(Editor* editor, Command_Source source) {
     dialog.response_callback = command_pretend_rename_buffer_callback;
     dialog.next_token = syntax::path_next_token;
     dialog.mini_buffer_contents = path;
+    source.client->show_dialog(dialog);
+}
+
+static void command_delete_file_and_kill_buffer_callback(Editor* editor,
+                                                         Client* client,
+                                                         cz::Str,
+                                                         void* data) {
+    Window_Unified* window = client->selected_normal_window;
+
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_WINDOW_BUFFER(window);
+
+        // Prevent killing special buffers (*scratch*, *splash
+        // page*, *client messages*, and *client mini buffer*).
+        if (buffer->id.value < 4) {
+            return;
+        }
+
+        if (!buffer->get_path(cz::heap_allocator(), &path)) {
+            client->show_message("Couldn't remove temporary file");
+            return;
+        }
+    }
+
+    if (!cz::file::remove_file(path.buffer)) {
+        client->show_message("Failed to remove file");
+        return;
+    }
+
+    // @KillBuffer
+    editor->kill(window->buffer_handle.get());
+
+    if (remove_windows_for_buffer(client, window->buffer_handle, editor->buffers[0])) {
+        (void)pop_jump(editor, client);
+    }
+}
+
+REGISTER_COMMAND(command_delete_file_and_kill_buffer);
+void command_delete_file_and_kill_buffer(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Confirm deleting file: ";
+    dialog.response_callback = command_delete_file_and_kill_buffer_callback;
     source.client->show_dialog(dialog);
 }
 
