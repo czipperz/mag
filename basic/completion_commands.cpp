@@ -489,7 +489,7 @@ void command_complete_at_point_nearest_matching_before_after(Editor* editor,
     ZoneScoped;
     WITH_SELECTED_BUFFER(source.client);
 
-    Contents_Iterator it = buffer->contents.iterator_at(window->cursors[0].point);
+    Contents_Iterator it = buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
 
     // Retreat to start of identifier.
     Contents_Iterator middle = it;
