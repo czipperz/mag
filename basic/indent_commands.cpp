@@ -84,9 +84,11 @@ void command_insert_newline_copy_indent_and_modifiers(Editor* editor, Command_So
     cz::Slice<Cursor> cursors = window->cursors;
     for (size_t i = 0; i < cursors.len; ++i) {
         Contents_Iterator it = buffer->contents.iterator_at(cursors[i].point);
-        // backward_through_whitespace(&it);
 
-        uint64_t removed = remove_spaces(&transaction, buffer, it, offset);
+        // Calculate at_eol here before it changes.
+        Contents_Iterator eol = it;
+        end_of_line(&eol);
+        bool at_eol = it.position == eol.position;
 
         Contents_Iterator sol = it;
         start_of_line_text(&sol);
@@ -95,14 +97,17 @@ void command_insert_newline_copy_indent_and_modifiers(Editor* editor, Command_So
         bool insert_comment_2 = looking_at(sol, "///");
         bool insert_comment_3 = looking_at(sol, "//");
 
-        Contents_Iterator eol = it;
-        end_of_line(&eol);
-        bool at_eol = it.position == eol.position;
         bool insert_backslash = false;
         if (!eol.at_bob()) {
             eol.retreat();
             if (eol.get() == '\\')
                 insert_backslash = true;
+        }
+
+        uint64_t removed = 0;
+        if (!insert_backslash) {
+            backward_through_whitespace(&it);
+            removed = remove_spaces(&transaction, buffer, it, offset);
         }
 
         if (insert_backslash && !at_eol) {
