@@ -20,6 +20,7 @@
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "config.hpp"
+#include "diff.hpp"
 #include "editor.hpp"
 #include "movement.hpp"
 #include "program_info.hpp"
@@ -875,6 +876,16 @@ bool open_file(Editor* editor, Client* client, cz::Str user_path) {
     }
 
     client->set_selected_buffer(handle);
+
+    {
+        WITH_CONST_BUFFER_HANDLE(handle);
+        cz::File_Time file_time = buffer->file_time;
+        if (check_out_of_date_and_update_file_time(path.buffer, &file_time)) {
+            Buffer* buffer_mut = handle->increase_reading_to_writing();
+            buffer_mut->file_time = file_time;
+            reload_file(editor, client, buffer_mut);
+        }
+    }
 
     start_syntax_highlighting(editor, handle);
     return true;
