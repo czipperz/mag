@@ -131,6 +131,7 @@ void command_last_completion(Editor* editor, Command_Source source) {
 static bool look_in(cz::Slice<char> bucket,
                     Contents_Iterator start,
                     Contents_Iterator middle,
+                    cz::Slice<uint64_t> ignored_positions,
                     Contents_Iterator* out,
                     bool forward) {
     ZoneScoped;
@@ -191,6 +192,21 @@ static bool look_in(cz::Slice<char> bucket,
         if (!matches(start, middle.position, test_start))
             continue;
 
+        Contents_Iterator test_end = test_middle;
+        forward_through_identifier(&test_end);
+
+        // Check it is not in the ignored list.
+        bool in_ignore_list = false;
+        for (size_t i = 0; i < ignored_positions.len; ++i) {
+            if (test_start.position < ignored_positions[i] &&
+                test_end.position > ignored_positions[i]) {
+                in_ignore_list = true;
+                break;
+            }
+        }
+        if (in_ignore_list)
+            continue;
+
         *out = test_start;
         return true;
     }
@@ -225,6 +241,7 @@ static bool choose_closer(uint64_t start,
 bool find_nearest_matching_identifier(Contents_Iterator it,
                                       Contents_Iterator middle,
                                       size_t max_buckets,
+                                      cz::Slice<uint64_t> ignored_positions,
                                       Contents_Iterator* out) {
     Contents_Iterator backward, forward;
     backward = it;
@@ -236,13 +253,14 @@ bool find_nearest_matching_identifier(Contents_Iterator it,
         cz::Slice<char> bucket = it.contents->buckets[it.bucket];
 
         // Search backward.
-        bool match_backward = look_in({bucket.elems, it.index}, it, middle, &backward, false);
+        bool match_backward =
+            look_in({bucket.elems, it.index}, it, middle, ignored_positions, &backward, false);
 
         // Search forward.
         Contents_Iterator temp = forward;
         temp.advance(it.index + 1);
         cz::Slice<char> after = {bucket.elems + it.index + 1, bucket.len - it.index - 1};
-        bool match_forward = look_in(after, it, middle, &temp, true);
+        bool match_forward = look_in(after, it, middle, ignored_positions, &temp, true);
 
         if (match_backward || match_forward)
             return choose_closer(it.position, middle.position, match_backward, match_forward,
@@ -255,7 +273,7 @@ bool find_nearest_matching_identifier(Contents_Iterator it,
         if (backward.bucket >= 1) {
             cz::Slice<char> bucket = it.contents->buckets[backward.bucket - 1];
             backward.retreat(bucket.len);
-            match_backward = look_in(bucket, it, middle, &backward, false);
+            match_backward = look_in(bucket, it, middle, ignored_positions, &backward, false);
         }
 
         // Search forward.
@@ -263,7 +281,7 @@ bool find_nearest_matching_identifier(Contents_Iterator it,
         if (forward.bucket + 1 < it.contents->buckets.len) {
             forward.advance(it.contents->buckets[forward.bucket].len);
             cz::Slice<char> bucket = it.contents->buckets[forward.bucket];
-            match_forward = look_in(bucket, it, middle, &forward, true);
+            match_forward = look_in(bucket, it, middle, ignored_positions, &forward, true);
         }
 
         if (match_backward || match_forward)
@@ -277,6 +295,7 @@ bool find_nearest_matching_identifier(Contents_Iterator it,
 bool find_nearest_matching_identifier_before(Contents_Iterator it,
                                              Contents_Iterator middle,
                                              size_t max_buckets,
+                                             cz::Slice<uint64_t> ignored_positions,
                                              Contents_Iterator* out) {
     Contents_Iterator backward;
     backward = it;
@@ -285,7 +304,8 @@ bool find_nearest_matching_identifier_before(Contents_Iterator it,
     // Search in the shared bucket.
     if (it.bucket < it.contents->buckets.len) {
         cz::Slice<char> bucket = it.contents->buckets[it.bucket];
-        bool match_backward = look_in({bucket.elems, it.index}, it, middle, &backward, false);
+        bool match_backward =
+            look_in({bucket.elems, it.index}, it, middle, ignored_positions, &backward, false);
         if (match_backward) {
             *out = backward;
             return true;
@@ -299,7 +319,7 @@ bool find_nearest_matching_identifier_before(Contents_Iterator it,
 
         cz::Slice<char> bucket = it.contents->buckets[backward.bucket - 1];
         backward.retreat(bucket.len);
-        bool match_backward = look_in(bucket, it, middle, &backward, false);
+        bool match_backward = look_in(bucket, it, middle, ignored_positions, &backward, false);
         if (match_backward) {
             *out = backward;
             return true;
@@ -312,6 +332,7 @@ bool find_nearest_matching_identifier_before(Contents_Iterator it,
 bool find_nearest_matching_identifier_after(Contents_Iterator it,
                                             Contents_Iterator middle,
                                             size_t max_buckets,
+                                            cz::Slice<uint64_t> ignored_positions,
                                             Contents_Iterator* out) {
     Contents_Iterator forward;
     forward = it;
@@ -323,7 +344,7 @@ bool find_nearest_matching_identifier_after(Contents_Iterator it,
         Contents_Iterator temp = forward;
         temp.advance(it.index + 1);
         cz::Slice<char> after = {bucket.elems + it.index + 1, bucket.len - it.index - 1};
-        bool match_forward = look_in(after, it, middle, &temp, true);
+        bool match_forward = look_in(after, it, middle, ignored_positions, &temp, true);
         if (match_forward) {
             *out = temp;
             return true;
@@ -336,7 +357,7 @@ bool find_nearest_matching_identifier_after(Contents_Iterator it,
 
         forward.advance(it.contents->buckets[forward.bucket].len);
         cz::Slice<char> bucket = it.contents->buckets[forward.bucket];
-        bool match_forward = look_in(bucket, it, middle, &forward, true);
+        bool match_forward = look_in(bucket, it, middle, ignored_positions, &forward, true);
         if (match_forward) {
             *out = forward;
             return true;
@@ -349,10 +370,11 @@ bool find_nearest_matching_identifier_after(Contents_Iterator it,
 bool find_nearest_matching_identifier_before_after(Contents_Iterator it,
                                                    Contents_Iterator middle,
                                                    size_t max_buckets,
+                                                   cz::Slice<uint64_t> ignored_positions,
                                                    Contents_Iterator* out) {
-    if (find_nearest_matching_identifier_before(it, middle, max_buckets, out))
+    if (find_nearest_matching_identifier_before(it, middle, max_buckets, ignored_positions, out))
         return true;
-    if (find_nearest_matching_identifier_after(it, middle, max_buckets, out))
+    if (find_nearest_matching_identifier_after(it, middle, max_buckets, ignored_positions, out))
         return true;
     return false;
 }
@@ -410,8 +432,16 @@ void command_complete_at_point_nearest_matching(Editor* editor, Command_Source s
         return;
     }
 
+    cz::Vector<uint64_t> cursor_positions = {};
+    CZ_DEFER(cursor_positions.drop(cz::heap_allocator()));
+    cursor_positions.reserve_exact(cz::heap_allocator(), window->cursors.len);
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        cursor_positions.push(window->cursors[i].point);
+    }
+
     Contents_Iterator match_start;
-    if (!find_nearest_matching_identifier(it, middle, buffer->contents.buckets.len, &match_start)) {
+    if (!find_nearest_matching_identifier(it, middle, buffer->contents.buckets.len,
+                                          /*ignored_positions=*/cursor_positions, &match_start)) {
         source.client->show_message("No matches");
         return;
     }
@@ -435,8 +465,16 @@ void command_complete_at_point_nearest_matching_before(Editor* editor, Command_S
         return;
     }
 
+    cz::Vector<uint64_t> cursor_positions = {};
+    CZ_DEFER(cursor_positions.drop(cz::heap_allocator()));
+    cursor_positions.reserve_exact(cz::heap_allocator(), window->cursors.len);
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        cursor_positions.push(window->cursors[i].point);
+    }
+
     Contents_Iterator match_start;
     if (!find_nearest_matching_identifier_before(it, middle, buffer->contents.buckets.len,
+                                                 /*ignored_positions=*/cursor_positions,
                                                  &match_start)) {
         source.client->show_message("No matches");
         return;
@@ -461,8 +499,16 @@ void command_complete_at_point_nearest_matching_after(Editor* editor, Command_So
         return;
     }
 
+    cz::Vector<uint64_t> cursor_positions = {};
+    CZ_DEFER(cursor_positions.drop(cz::heap_allocator()));
+    cursor_positions.reserve_exact(cz::heap_allocator(), window->cursors.len);
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        cursor_positions.push(window->cursors[i].point);
+    }
+
     Contents_Iterator match_start;
     if (!find_nearest_matching_identifier_after(it, middle, buffer->contents.buckets.len,
+                                                /*ignored_positions=*/cursor_positions,
                                                 &match_start)) {
         source.client->show_message("No matches");
         return;
@@ -489,8 +535,16 @@ void command_complete_at_point_nearest_matching_before_after(Editor* editor,
         return;
     }
 
+    cz::Vector<uint64_t> cursor_positions = {};
+    CZ_DEFER(cursor_positions.drop(cz::heap_allocator()));
+    cursor_positions.reserve_exact(cz::heap_allocator(), window->cursors.len);
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        cursor_positions.push(window->cursors[i].point);
+    }
+
     Contents_Iterator match_start;
     if (!find_nearest_matching_identifier_before_after(it, middle, buffer->contents.buckets.len,
+                                                       /*ignored_positions=*/cursor_positions,
                                                        &match_start)) {
         source.client->show_message("No matches");
         return;
@@ -676,8 +730,16 @@ void command_copy_rest_of_line_from_nearest_matching_identifier(Editor* editor,
         return;
     }
 
+    cz::Vector<uint64_t> cursor_positions = {};
+    CZ_DEFER(cursor_positions.drop(cz::heap_allocator()));
+    cursor_positions.reserve_exact(cz::heap_allocator(), window->cursors.len);
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        cursor_positions.push(window->cursors[i].point);
+    }
+
     Contents_Iterator match_start;
     if (!find_nearest_matching_identifier_before_after(it, middle, buffer->contents.buckets.len,
+                                                       /*ignored_positions=*/cursor_positions,
                                                        &match_start)) {
         source.client->show_message("No matches");
         return;

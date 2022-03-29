@@ -1,6 +1,7 @@
 #include "overlay_matching_tokens.hpp"
 
 #include <Tracy.hpp>
+#include <cz/defer.hpp>
 #include "basic/completion_commands.hpp"
 #include "match.hpp"
 #include "movement.hpp"
@@ -59,9 +60,17 @@ static void overlay_nearest_matching_identifier_before_start_frame(Editor* edito
         return;
     }
 
+    cz::Vector<uint64_t> cursor_positions = {};
+    CZ_DEFER(cursor_positions.drop(cz::heap_allocator()));
+    cursor_positions.reserve_exact(cz::heap_allocator(), window->cursors.len);
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        cursor_positions.push(window->cursors[i].point);
+    }
+
     Contents_Iterator it;
-    if (basic::find_nearest_matching_identifier_before(start, middle,
-                                                       /*max_buckets=*/5, &it)) {
+    if (basic::find_nearest_matching_identifier_before(start, middle, /*max_buckets=*/5,
+                                                       /*ignored_positions=*/cursor_positions,
+                                                       &it)) {
         data->start = it.position;
         forward_through_identifier(&it);
         data->end = it.position;

@@ -28,24 +28,28 @@ struct Identifier_Completion_Engine_Data {
 bool find_nearest_matching_identifier(Contents_Iterator it,
                                       Contents_Iterator middle,
                                       size_t max_buckets,
+                                      cz::Slice<uint64_t> ignored_positions,
                                       Contents_Iterator* out);
 void command_complete_at_point_nearest_matching(Editor* editor, Command_Source source);
 
 bool find_nearest_matching_identifier_before(Contents_Iterator it,
                                              Contents_Iterator middle,
                                              size_t max_buckets,
+                                             cz::Slice<uint64_t> ignored_positions,
                                              Contents_Iterator* out);
 void command_complete_at_point_nearest_matching_before(Editor* editor, Command_Source source);
 
 bool find_nearest_matching_identifier_after(Contents_Iterator it,
                                             Contents_Iterator middle,
                                             size_t max_buckets,
+                                            cz::Slice<uint64_t> ignored_positions,
                                             Contents_Iterator* out);
 void command_complete_at_point_nearest_matching_after(Editor* editor, Command_Source source);
 
 bool find_nearest_matching_identifier_before_after(Contents_Iterator it,
                                                    Contents_Iterator middle,
                                                    size_t max_buckets,
+                                                   cz::Slice<uint64_t> ignored_positions,
                                                    Contents_Iterator* out);
 void command_complete_at_point_nearest_matching_before_after(Editor* editor, Command_Source source);
 
