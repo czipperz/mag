@@ -120,7 +120,10 @@ void command_down_page(Editor* editor, Command_Source source) {
 }
 
 static void scroll_down(Editor* editor, Command_Source source, size_t num) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
+    Window_Unified * window = source.client->mouse.window;
+    if (!window)
+        window = source.client->selected_window();
+    WITH_CONST_WINDOW_BUFFER(window);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     forward_visual_line(window, buffer->mode, editor->theme, &it, num);
@@ -136,7 +139,10 @@ static void scroll_down(Editor* editor, Command_Source source, size_t num) {
 }
 
 static void scroll_up(Editor* editor, Command_Source source, size_t num) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
+    Window_Unified * window = source.client->mouse.window;
+    if (!window)
+        window = source.client->selected_window();
+    WITH_CONST_WINDOW_BUFFER(window);
 
     Contents_Iterator it = buffer->contents.iterator_at(window->start_position);
     backward_visual_line(window, buffer->mode, editor->theme, &it, num);
@@ -173,7 +179,10 @@ void command_scroll_up_one(Editor* editor, Command_Source source) {
 }
 
 static void scroll_left(Editor* editor, Command_Source source, size_t num) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
+    Window_Unified * window = source.client->mouse.window;
+    if (!window)
+        window = source.client->selected_window();
+    WITH_CONST_WINDOW_BUFFER(window);
 
     if (window->column_offset < num) {
         window->column_offset = 0;
@@ -216,7 +225,10 @@ static void scroll_left(Editor* editor, Command_Source source, size_t num) {
 }
 
 static void scroll_right(Editor* editor, Command_Source source, size_t num) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
+    Window_Unified * window = source.client->mouse.window;
+    if (!window)
+        window = source.client->selected_window();
+    WITH_CONST_WINDOW_BUFFER(window);
 
     // Scroll right.
     window->column_offset += num;
