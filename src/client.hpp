@@ -21,7 +21,7 @@ struct Mouse_Position {
     uint32_t client_row;
     uint32_t client_column;
 
-    Window* window;  // optional
+    Window_Unified* window;  // optional
     uint32_t window_row;
     uint32_t window_column;
 
