@@ -1083,7 +1083,7 @@ static void handle_number(Contents_Iterator* iterator, Token* token, State* stat
 
     while (!iterator->at_eob()) {
         char ch = iterator->get();
-        if (!cz::is_alnum(ch) && ch != '_')
+        if (!cz::is_alnum(ch) && ch != '_' && ch != '\'')
             break;
         iterator->advance();
     }
