@@ -62,7 +62,7 @@ static size_t judge_word_column_goal_score(cz::Slice<SSOStr> words,
                 score += (word_column_limit - current_column + offset) *
                          (word_column_limit - current_column + offset);
 
-                *max_column_length = std::max(*max_column_length, current_column);
+                *max_column_length = cz::max(*max_column_length, current_column);
             }
 
             current_column = word.len();
@@ -88,7 +88,7 @@ static size_t judge_word_column_goal_score(cz::Slice<SSOStr> words,
     if (current_column <= word_column_goal) {
         score += (word_column_limit - current_column) * (word_column_limit - current_column);
 
-        *max_column_length = std::max(*max_column_length, current_column);
+        *max_column_length = cz::max(*max_column_length, current_column);
     }
 
     return score;

@@ -1390,7 +1390,7 @@ void render_to_cells(Cell* cells,
         WITH_CONST_WINDOW_BUFFER(window);
         Tokenizer minibuffer_next_token = buffer->mode.next_token;
 
-        size_t message_width = std::min(client->_message.end - client->_message.start, total_cols);
+        size_t message_width = std::min(client->_message.end - client->_message.start, (uint64_t)total_cols);
         // Add 1 for the title bar even though the mini buffer doesn't have a title bar.
         window->total_rows = 1 + mini_buffer_height;
         window->total_cols = total_cols - message_width;

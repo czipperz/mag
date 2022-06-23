@@ -399,7 +399,7 @@ static void append_identifier_suffix(Client* client,
     uint64_t middle = it.position;
     backward_through_identifier(&it);
     uint64_t start = it.position;
-    cz::Str result_str = result.as_str().slice_start(cz::min(result.len(), middle - start));
+    cz::Str result_str = result.as_str().slice_start(cz::min((uint64_t)result.len(), middle - start));
 
     // Apply the completion to all cursors.
     uint64_t offset = 0;

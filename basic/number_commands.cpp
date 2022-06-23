@@ -33,7 +33,7 @@ void command_insert_numbers(Editor* editor, Command_Source source) {
 
         Edit insert;
         insert.value =
-            SSOStr::from_constant({buffer, std::min((size_t)len, SSOStr::MAX_SHORT_LEN)});
+            SSOStr::from_constant({buffer, cz::min((size_t)len, SSOStr::MAX_SHORT_LEN)});
         insert.position = cursors[i].point + offset;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
@@ -102,7 +102,7 @@ static void change_numbers(Client* client, Buffer* buffer, Window_Unified* windo
         CZ_DEBUG_ASSERT(len > 0);
 
         Edit insert;
-        insert.value = SSOStr::from_constant({buf, std::min((size_t)len, SSOStr::MAX_SHORT_LEN)});
+        insert.value = SSOStr::from_constant({buf, cz::min((size_t)len, SSOStr::MAX_SHORT_LEN)});
         insert.position = iterator.position + offset;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
