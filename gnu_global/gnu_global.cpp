@@ -14,6 +14,7 @@
 #include <movement.hpp>
 #include <token.hpp>
 #include "program_info.hpp"
+#include "syntax/tokenize_path.hpp"
 #include "visible_region.hpp"
 
 namespace mag {
@@ -242,6 +243,7 @@ void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::
     dialog.prompt = "Open tag: ";
     dialog.completion_engine = tag_completion_engine;
     dialog.response_callback = prompt_open_tags_callback;
+    dialog.next_token = syntax::path_next_token;
     client->show_dialog(dialog);
 
     if (client->mini_buffer_completion_cache.engine_context.data) {
