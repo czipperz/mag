@@ -363,6 +363,9 @@ static void process_event(Server* server,
 #ifndef _WIN32
         event.wheel.x *= -1;
 #endif
+#ifdef __APPLE__
+        event.wheel.y *= -1;
+#endif
 
         for (int y = 0; y < event.wheel.y; ++y) {
             key.code = Key_Code::SCROLL_UP;
