@@ -79,9 +79,13 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 
     if (*state == START_OF_LINE && (first_ch == '*' || first_ch == '+' || first_ch == '-')) {
         iterator->advance();
-        token->type = Token_Type::PUNCTUATION;
-        *state = MIDDLE_OF_LINE;
-        goto ret;
+        if (first_ch == '*' && !iterator->at_eob() && !cz::is_blank(iterator->get())) {
+            // `\n*hello world*` should be parsed as italics not a list element.
+        } else {
+            token->type = Token_Type::PUNCTUATION;
+            *state = MIDDLE_OF_LINE;
+            goto ret;
+        }
     }
 
     if (*state == START_OF_LINE && first_ch == '#') {
