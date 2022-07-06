@@ -170,6 +170,12 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-C", command_copy);
     BIND(key_map, "C-V", command_paste);
 
+#ifdef __APPLE__
+    BIND(key_map, "G-x", command_cut);
+    BIND(key_map, "G-c", command_copy);
+    BIND(key_map, "G-v", command_paste);
+#endif
+
     BIND(key_map, "C-f", command_forward_char);
     BIND(key_map, "C-b", command_backward_char);
     BIND(key_map, "A-f", command_forward_word);
