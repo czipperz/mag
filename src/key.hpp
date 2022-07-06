@@ -12,13 +12,21 @@ struct Str;
 namespace mag {
 
 enum Modifiers : uint_fast8_t {
-    CONTROL           = 1,
-    ALT               = 2,
-    CONTROL_ALT       = 3,
-    SHIFT             = 4,
-    CONTROL_SHIFT     = 5,
-    ALT_SHIFT         = 6,
-    CONTROL_ALT_SHIFT = 7,
+    CONTROL               = 1,
+    ALT                   = 2,
+    CONTROL_ALT           = 3,
+    SHIFT                 = 4,
+    CONTROL_SHIFT         = 5,
+    ALT_SHIFT             = 6,
+    CONTROL_ALT_SHIFT     = 7,
+    GUI                   = 8,
+    GUI_CONTROL           = 9,
+    GUI_ALT               = 10,
+    GUI_CONTROL_ALT       = 11,
+    GUI_SHIFT             = 12,
+    GUI_CONTROL_SHIFT     = 13,
+    GUI_ALT_SHIFT         = 14,
+    GUI_CONTROL_ALT_SHIFT = 15,
 };
 
 namespace Key_Code_ {
@@ -101,7 +109,7 @@ struct Key {
     /// `A-b` -- `Key { ALT, 'b' }`
     /// `C-SPACE` -- `Key { CONTROL, ' ' }`
     /// `S-BACKSPACE` -- `Key { SHIFT, BACKSPACE }`
-    /// `C-A-S-\` -- `Key { CONTROL | ALT | SHIFT, '\\' }`
+    /// `G-C-A-S-\` -- `Key { GUI | CONTROL | ALT | SHIFT, '\\' }`
     static bool parse(Key* key, cz::Str description);
 };
 

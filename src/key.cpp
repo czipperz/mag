@@ -10,6 +10,10 @@ bool Key::parse(Key* key, cz::Str description) {
 
     // Parse key modifiers.
     key->modifiers = 0;
+    if (i + 1 < description.len && description[i] == 'G' && description[i + 1] == '-') {
+        key->modifiers |= GUI;
+        i += 2;
+    }
     if (i + 1 < description.len && description[i] == 'C' && description[i + 1] == '-') {
         key->modifiers |= CONTROL;
         i += 2;
@@ -116,6 +120,9 @@ bool Key::parse(Key* key, cz::Str description) {
 }
 
 void stringify_key(cz::String* prefix, Key key) {
+    if (key.modifiers & Modifiers::GUI) {
+        prefix->append("G-");
+    }
     if (key.modifiers & Modifiers::CONTROL) {
         prefix->append("C-");
     }

@@ -195,6 +195,9 @@ static uint16_t convert_key_modifiers(int mod) {
     if (mod & KMOD_SHIFT) {
         modifiers |= SHIFT;
     }
+    if (mod & KMOD_GUI) {
+        modifiers |= GUI;
+    }
     return modifiers;
 }
 
@@ -512,12 +515,15 @@ static void process_event(Server* server,
         // Ignore numlock.
         event.key.keysym.mod &= ~KMOD_NUM;
 
-        if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_ALT)) == 0 &&
+        if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_ALT | KMOD_GUI)) == 0 &&
             (key.code <= UCHAR_MAX && cz::is_print((unsigned char)key.code))) {
             // Ignore key presses
             return;
         }
 
+        if (event.key.keysym.mod & KMOD_GUI) {
+            key.modifiers |= GUI;
+        }
         if (event.key.keysym.mod & KMOD_CTRL) {
             key.modifiers |= CONTROL;
         }
