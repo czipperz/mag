@@ -41,18 +41,18 @@ static void overlay_nearest_matching_identifier_before_start_frame(Editor* edito
         return;
     }
 
-    if (window->cursors[0].point == data->cache_cursor_position &&
+    if (window->cursors[window->selected_cursor].point == data->cache_cursor_position &&
         buffer->changes.len == data->cache_change_index) {
         return;
     }
 
-    data->cache_cursor_position = window->cursors[0].point;
+    data->cache_cursor_position = window->cursors[window->selected_cursor].point;
     data->cache_change_index = buffer->changes.len;
 
     data->start = 0;
     data->end = 0;
 
-    start.go_to(window->cursors[0].point);
+    start.go_to(window->cursors[window->selected_cursor].point);
     Contents_Iterator middle = start;
     backward_through_identifier(&start);
 
