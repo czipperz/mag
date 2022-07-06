@@ -4,6 +4,7 @@
 #include <cz/ptr.hpp>
 #include "contents.hpp"
 #include "match.hpp"
+#include "movement.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -87,13 +88,30 @@ restart:
     } break;
 
     case '+':
-    case '*':
+    case '*': {
+        token->type = Token_Type::PUNCTUATION;
+        token->start = iterator->position;
+        iterator->advance();
+        if (looking_at(*iterator, '=')) {
+            iterator->advance();
+        }
+        token->end = iterator->position;
+    } break;
+
     case '/': {
         token->type = Token_Type::PUNCTUATION;
         token->start = iterator->position;
         iterator->advance();
         if (looking_at(*iterator, '=')) {
             iterator->advance();
+        } else if (looking_at(*iterator, '/')) {
+            token->type = Token_Type::COMMENT;
+            end_of_line(iterator);
+        } else if (looking_at(*iterator, '*')) {
+            token->type = Token_Type::COMMENT;
+            iterator->advance();
+            if (find(iterator, "*/"))
+                iterator->advance(2);
         }
         token->end = iterator->position;
     } break;
@@ -155,6 +173,10 @@ restart:
         iterator->advance();
         while (!iterator->at_eob()) {
             char ch = iterator->get();
+            if (ch == '.' && !looking_at(*iterator, "..")) {
+                iterator->advance();
+                continue;
+            }
             if (!cz::is_alnum(ch))
                 break;
             iterator->advance();
