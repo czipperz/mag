@@ -76,6 +76,7 @@
 #include "syntax/tokenize_path.hpp"
 #include "syntax/tokenize_process.hpp"
 #include "syntax/tokenize_python.hpp"
+#include "syntax/tokenize_rust.hpp"
 #include "syntax/tokenize_search.hpp"
 #include "syntax/tokenize_shell_script.hpp"
 #include "syntax/tokenize_splash.hpp"
@@ -905,6 +906,18 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             // Go uses tabs for alignment.
             buffer->mode.tab_width = buffer->mode.indent_width;
             buffer->mode.use_tabs = true;
+
+            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
+                                               Token_Type::IDENTIFIER};
+            buffer->mode.overlays.reserve(2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+        } else if (name.ends_with(".rs")) {
+            buffer->mode.next_token = syntax::rust_next_token;
+            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
+            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
+            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
+            BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
