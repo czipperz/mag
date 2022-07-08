@@ -18,7 +18,8 @@ restart:
     char first = iterator->get();
     switch (first) {
     case CZ_ALPHA_CASES:
-    case '_': {
+    case '_':
+    case '$': {
         Contents_Iterator start = *iterator;
         token->start = iterator->position;
         iterator->advance();
@@ -124,7 +125,6 @@ restart:
     case ';':
     case '?':
     case ',':
-    case '$':
     case '\'':
     case '#':
     case '!': {
