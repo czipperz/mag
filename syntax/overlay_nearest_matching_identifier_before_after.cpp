@@ -18,8 +18,11 @@ struct Data {
     uint64_t cache_cursor_position;
     uint64_t cache_change_index;
 
-    uint64_t start;
+    Contents_Iterator start;
     uint64_t end;
+
+    uint64_t countdown;
+    bool countdown_highlight;
 };
 }
 using namespace overlay_nearest_matching_identifier_before_after_impl;
@@ -33,10 +36,12 @@ static void overlay_nearest_matching_identifier_before_after_start_frame(Editor*
     ZoneScoped;
 
     Data* data = (Data*)_data;
+    data->countdown = 0;
+    data->countdown_highlight = false;
 
     // Don't show completion if file is saved.  This cuts down on white noise while browsing.
     if (buffer->is_unchanged() || window->show_marks) {
-        data->start = 0;
+        data->start = {};
         data->end = 0;
         return;
     }
@@ -49,7 +54,7 @@ static void overlay_nearest_matching_identifier_before_after_start_frame(Editor*
     data->cache_cursor_position = window->cursors[window->selected_cursor].point;
     data->cache_change_index = buffer->changes.len;
 
-    data->start = 0;
+    data->start = {};
     data->end = 0;
 
     start.go_to(window->cursors[window->selected_cursor].point);
@@ -71,7 +76,7 @@ static void overlay_nearest_matching_identifier_before_after_start_frame(Editor*
     if (basic::find_nearest_matching_identifier_before_after(start, middle, /*max_buckets=*/5,
                                                              /*ignored_positions=*/cursor_positions,
                                                              &it)) {
-        data->start = it.position;
+        data->start = it;
         forward_through_identifier(&it);
         data->end = it.position;
     }
@@ -84,10 +89,25 @@ static Face overlay_nearest_matching_identifier_before_after_get_face_and_advanc
     void* _data) {
     Data* data = (Data*)_data;
 
-    if (iterator.position >= data->start && iterator.position < data->end) {
-        return data->face;
+    if (data->end == 0)
+        return {};
+
+    if (data->countdown == 0) {
+        char first = iterator.get();
+        if (!cz::is_alnum(first) && first != '_')
+            return {};
+
+        Contents_Iterator end = iterator;
+        forward_through_identifier(&end);
+        data->countdown = end.position - iterator.position;
+        data->countdown_highlight = matches(data->start, data->end, iterator, end.position);
     }
-    return {};
+
+    --data->countdown;
+    if (data->countdown_highlight)
+        return data->face;
+    else
+        return {};
 }
 
 static Face overlay_nearest_matching_identifier_before_after_get_face_newline_padding(
