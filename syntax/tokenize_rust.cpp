@@ -24,18 +24,21 @@ restart:
         iterator->advance();
         while (!iterator->at_eob()) {
             auto ch = iterator->get();
-            if (!cz::is_alnum(ch) && ch != '_')
-                break;
+            if (!cz::is_alnum(ch) && ch != '_') {
+                // `r#name` is an identifier
+                if (!(ch == '#' && iterator->position == token->start + 1 && first == 'r'))
+                    break;
+            }
             iterator->advance();
         }
         token->end = iterator->position;
 
         token->type = Token_Type::IDENTIFIER;
-        const cz::Str keywords[] = {"use",  "let",    "loop",   "fn",     "mut",   "pub",
-                                    "mod",  "struct", "static", "extern", "crate", "unsafe",
-                                    "for",  "while",  "ref",    "move",   "const", "in",
-                                    "impl", "trait",  "self",   "if",     "else",  "match",
-                                    "enum", "return", "where",  "async",  "await"};
+        const cz::Str keywords[] = {
+            "use",    "let",   "loop",   "fn",    "mut",   "pub",      "mod",  "struct", "static",
+            "extern", "crate", "unsafe", "for",   "while", "ref",      "move", "const",  "in",
+            "impl",   "trait", "self",   "if",    "else",  "match",    "enum", "return", "where",
+            "async",  "await", "true",   "false", "break", "continue", "type", "as"};
         for (size_t i = 0; i < CZ_DIM(keywords); ++i) {
             if (matches(start, iterator->position, keywords[i]))
                 token->type = Token_Type::KEYWORD;
@@ -89,6 +92,7 @@ restart:
     } break;
 
     case '+':
+    case '%':
     case '*': {
         token->type = Token_Type::PUNCTUATION;
         token->start = iterator->position;
