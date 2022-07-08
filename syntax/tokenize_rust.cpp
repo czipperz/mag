@@ -11,6 +11,8 @@
 namespace mag {
 namespace syntax {
 
+static bool is_type_identifer(Contents_Iterator start, uint64_t end);
+
 bool rust_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 restart:
     if (iterator->at_eob())
@@ -64,6 +66,9 @@ restart:
         token->end = iterator->position;
 
         token->type = Token_Type::IDENTIFIER;
+        if (is_type_identifer(start, iterator->position)) {
+            token->type = Token_Type::TYPE;
+        }
         const cz::Str keywords[] = {
             "use",    "let",   "loop",   "fn",    "mut",   "pub",      "mod",  "struct", "static",
             "extern", "crate", "unsafe", "for",   "while", "ref",      "move", "const",  "in",
@@ -228,6 +233,32 @@ restart:
     }
     }
     return true;
+}
+
+static bool is_type_identifer(Contents_Iterator start, uint64_t end) {
+    // Skip $ or r# prefix.
+    if (start.get() == '$') {
+        start.advance();
+        if (start.position == end)
+            return false;
+    } else if (looking_at(start, "r#")) {
+        start.advance(2);
+    }
+
+    // First character must be upper case.
+    if (cz::is_lower(start.get()))
+        return false;
+
+    bool any_lowercase = false;
+    for (Contents_Iterator it = start; it.position < end; it.advance()) {
+        char ch = it.get();
+        if (ch == '_')
+            return false;
+        if (cz::is_lower(ch))
+            any_lowercase = true;
+    }
+
+    return any_lowercase;
 }
 
 }
