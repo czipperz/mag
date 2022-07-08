@@ -85,8 +85,7 @@ restart:
     case '&':
     case '.':
     case '|':
-    case ':':
-    case '=': {
+    case ':': {
         token->type = Token_Type::PUNCTUATION;
         token->start = iterator->position;
         iterator->advance();
@@ -96,7 +95,8 @@ restart:
         token->end = iterator->position;
     } break;
 
-    case '-': {
+    case '-':
+    case '=': {
         token->type = Token_Type::PUNCTUATION;
         token->start = iterator->position;
         iterator->advance();
