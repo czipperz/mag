@@ -70,10 +70,11 @@ restart:
             token->type = Token_Type::TYPE;
         }
         const cz::Str keywords[] = {
-            "use",    "let",   "loop",   "fn",    "mut",   "pub",      "mod",  "struct", "static",
-            "extern", "crate", "unsafe", "for",   "while", "ref",      "move", "const",  "in",
-            "impl",   "trait", "self",   "if",    "else",  "match",    "enum", "return", "where",
-            "async",  "await", "true",   "false", "break", "continue", "type", "as"};
+            "use",      "let",    "loop",  "fn",     "mut",   "pub",   "mod",   "struct",
+            "static",   "extern", "crate", "unsafe", "for",   "while", "ref",   "move",
+            "const",    "in",     "impl",  "trait",  "self",  "if",    "else",  "match",
+            "enum",     "return", "where", "async",  "await", "true",  "false", "break",
+            "continue", "type",   "as",    "dyn",    "enum"};
         for (size_t i = 0; i < CZ_DIM(keywords); ++i) {
             if (matches(start, iterator->position, keywords[i]))
                 token->type = Token_Type::KEYWORD;
