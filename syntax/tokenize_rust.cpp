@@ -1,6 +1,7 @@
 #include "tokenize_rust.hpp"
 
 #include <cz/char_type.hpp>
+#include <cz/heap.hpp>
 #include <cz/ptr.hpp>
 #include "contents.hpp"
 #include "match.hpp"
@@ -20,6 +21,34 @@ restart:
     case CZ_ALPHA_CASES:
     case '_':
     case '$': {
+        if (first == 'r') {
+            uint64_t num_hashes = 0;
+            Contents_Iterator it2 = *iterator;
+            it2.advance();
+            while (looking_at(it2, '#')) {
+                ++num_hashes;
+                it2.advance();
+            }
+
+            if (looking_at(it2, '"')) {
+                cz::String end = {};
+                end.reserve_exact(cz::heap_allocator(), num_hashes + 1);
+                end.push('"');
+                end.push_many('#', num_hashes);
+
+                it2.advance();
+                if (find(&it2, end)) {
+                    it2.advance(end.len);
+                }
+
+                token->start = iterator->position;
+                *iterator = it2;
+                token->end = iterator->position;
+                token->type = Token_Type::STRING;
+                return true;
+            }
+        }
+
         Contents_Iterator start = *iterator;
         token->start = iterator->position;
         iterator->advance();
