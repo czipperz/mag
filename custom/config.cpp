@@ -24,6 +24,7 @@
 #include "basic/number_commands.hpp"
 #include "basic/reformat_commands.hpp"
 #include "basic/region_movement_commands.hpp"
+#include "basic/rust_commands.hpp"
 #include "basic/remote.hpp"
 #include "basic/search_buffer_commands.hpp"
 #include "basic/search_commands.hpp"
@@ -923,6 +924,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
             BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
+            BIND(buffer->mode.key_map, "A-x e", rust::command_extract_variable);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
