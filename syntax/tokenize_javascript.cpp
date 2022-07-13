@@ -52,11 +52,12 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         return false;
     }
 
-    // *state = aabbccdd1000...000e (little endian)
-    // bs_depth = 4, bs_top = dd, expect_type = e
+    // *state = aabbccdd1000...00ef (binary little endian)
+    // bs_depth = 4, bs_top = dd, expect_type = e, inside_script_tag = f
 
-    bool expect_type = (*state & ((uint64_t)1 << 63)) >> 63;
-    uint32_t bs_depth = (log2_u64(*state & 0x7FFFFFFFFFFFFFFF) + 1) / 2;
+    bool inside_script_tag = (*state & ((uint64_t)1 << 63)) >> 63;
+    bool expect_type = (*state & ((uint64_t)1 << 62)) >> 62;
+    uint32_t bs_depth = (log2_u64(*state & 0x3FFFFFFFFFFFFFFF) + 1) / 2;
     int bs_top = -1;
     if (bs_depth > 0) {
         bs_top = ((*state & ((uint64_t)3 << ((bs_depth - 1) * 2))) >> ((bs_depth - 1) * 2));
@@ -171,12 +172,20 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
     if (first_ch == '+' || first_ch == '-' || first_ch == '*' || first_ch == '/' ||
-        first_ch == '%' || first_ch == '<' || first_ch == '>') {
+        first_ch == '%' || first_ch == '>') {
+    punctuation:
         if (!iterator->at_eob() && iterator->get() == '=') {
             iterator->advance();
         }
         token->type = Token_Type::PUNCTUATION;
         goto ret;
+    }
+    if (first_ch == '<') {
+        if (inside_script_tag && looking_at(*iterator, '/')) {
+            iterator->retreat();
+            return false;
+        }
+        goto punctuation;
     }
 
     if (first_ch == '(' || first_ch == '[') {
@@ -274,9 +283,9 @@ ret2:
     token->end = iterator->position;
 
     uint64_t old_state = *state;
-    *state = 0;
+    *state = (old_state & ((uint64_t)1 << 63));
     if (expect_type) {
-        *state |= ((uint64_t)1 << 63);
+        *state |= ((uint64_t)1 << 62);
     }
     if (bs_depth > 0) {
         *state |= ((uint64_t)1 << (bs_depth * 2));

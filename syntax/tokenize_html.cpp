@@ -7,6 +7,7 @@
 #include "face.hpp"
 #include "match.hpp"
 #include "token.hpp"
+#include "tokenize_javascript.hpp"
 
 namespace mag {
 namespace syntax {
@@ -15,17 +16,41 @@ static bool islabelch(char ch) {
     return cz::is_alnum(ch) || ch == '-' || ch == '_';
 }
 
+enum Location : uint64_t {
+    Default = 0,
+    StartOfTag = 1,
+    InAttributesList = 2,
+};
+
 bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     ZoneScoped;
+
+    if (*state >> 63) {
+        if (js_next_token(iterator, token, state)) {
+            return true;
+        } else {
+            if (looking_at(*iterator, "</")) {
+                // Set only in_script_tag.
+                *state = 1 << 4;
+            }
+        }
+    }
 
     if (!advance_whitespace(iterator)) {
         return false;
     }
 
     token->start = iterator->position;
-
+    Contents_Iterator start = *iterator;
     char first_ch = iterator->get();
     iterator->advance();
+
+    // Where in the xml structure are we.
+    uint64_t location = (*state & 3);
+    // If inside a script tag.  IE the region `<script>` not the javascript
+    // portion.  This is used because we need to save the state until the
+    // `>` is reached because we can't backtrack to get the tag name.
+    uint64_t in_script_tag = (*state & 4) != 0;
 
     if (first_ch == '<') {
         if (!iterator->at_eob() && iterator->get() == '/') {
@@ -50,16 +75,21 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
             }
         }
         token->type = Token_Type::OPEN_PAIR;
-        *state = 1;
+        location = StartOfTag;
         goto ret;
     } else if (first_ch == '>') {
         token->type = Token_Type::CLOSE_PAIR;
-        *state = 0;
+        location = Default;
+        if (in_script_tag) {
+            *state = ((uint64_t)1 << 63);
+            token->end = iterator->position;
+            return true;
+        }
         goto ret;
     } else if (first_ch == '/' && !iterator->at_eob() && iterator->get() == '>') {
         iterator->advance();
         token->type = Token_Type::CLOSE_PAIR;
-        *state = 0;
+        location = Default;
         goto ret;
     } else if (first_ch == '&') {
         Contents_Iterator backup = *iterator;
@@ -81,7 +111,7 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
         goto ret;
     }
 
-    if (*state == 1) {
+    if (location == StartOfTag) {
         while (!iterator->at_eob()) {
             if (!islabelch(iterator->get())) {
                 break;
@@ -89,12 +119,16 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
             iterator->advance();
         }
 
+        if (matches(start, iterator->position, "script")) {
+            in_script_tag = !in_script_tag;
+        }
+
         token->type = Token_Type::HTML_TAG_NAME;
-        *state = 2;
+        location = InAttributesList;
         goto ret;
     }
 
-    if (*state == 2) {
+    if (location == InAttributesList) {
         if (islabelch(first_ch)) {
             while (!iterator->at_eob()) {
                 if (!islabelch(iterator->get())) {
@@ -137,6 +171,8 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
     token->type = Token_Type::DEFAULT;
 
 ret:
+    *state = (location | (in_script_tag << 2));
+
     token->end = iterator->position;
     return true;
 }
