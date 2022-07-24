@@ -672,6 +672,10 @@ void command_search_backward_identifier(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Search backward identifier: ";
     dialog.response_callback = command_search_backward_identifier_callback;
+    {
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        dialog.next_token = buffer->mode.next_token;
+    }
     source.client->show_dialog(dialog);
 }
 
@@ -680,6 +684,10 @@ void command_search_forward_identifier(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Search forward identifier: ";
     dialog.response_callback = command_search_forward_identifier_callback;
+    {
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        dialog.next_token = buffer->mode.next_token;
+    }
     source.client->show_dialog(dialog);
 }
 
