@@ -13,13 +13,15 @@ namespace mag {
 namespace syntax {
 
 static bool islabelch(char ch) {
-    return cz::is_alnum(ch) || ch == '-' || ch == '_';
+    // Every character except whitespace and a couple punctuation characters are allowed.
+    return !(cz::Str("\t\n\f />\"'=").contains(ch));
 }
 
 enum Location : uint64_t {
     Default = 0,
     StartOfTag = 1,
     InAttributesList = 2,
+    InAttributesListValue = 3,
 };
 
 bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
@@ -128,7 +130,7 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
         goto ret;
     }
 
-    if (location == InAttributesList) {
+    if (location == InAttributesList || location == InAttributesListValue) {
         if (islabelch(first_ch)) {
             while (!iterator->at_eob()) {
                 if (!islabelch(iterator->get())) {
@@ -137,10 +139,14 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
                 iterator->advance();
             }
 
-            token->type = Token_Type::HTML_ATTRIBUTE_NAME;
+            if (location == InAttributesList)
+                token->type = Token_Type::HTML_ATTRIBUTE_NAME;
+            else
+                token->type = Token_Type::STRING;
             goto ret;
         } else if (first_ch == '=') {
             token->type = Token_Type::PUNCTUATION;
+            location = InAttributesListValue;
             goto ret;
         } else if (first_ch == '"') {
             while (!iterator->at_eob()) {
