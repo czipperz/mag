@@ -29,12 +29,23 @@ static void process_line(cz::Str line, Ignore_Rules* rules, size_t* counter) {
     if (line[0] == '!') {
         line = line.slice_start(1);
         rule.inverse = true;
+        if (line.len == 0)
+            return; // Ignore invalid lines.
     }
+
 
     // If the line starts with a backslash then the next character is
     // treated literally.  This isn't really exactly correct but it's close.
     if (line[0] == '\\') {
         line = line.slice_start(1);
+        if (line.len == 0)
+            return; // Ignore invalid lines.
+    }
+
+    // Ignore trailing '/'.  This is supposed to detect directories, but it is
+    // slow to do that and in practice nobody cares if it picks up files too.
+    if (line.last() == '/') {
+        --line.len;
     }
 
     // If the line starts with * then we assume it is a rule like `*.txt` for now.
