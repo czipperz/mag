@@ -55,7 +55,8 @@ struct Find_File_Job_Data {
     cz::Buffer_Array results_buffer_array;
 
     bool already_started;
-    version_control::Ignore_Rules ignore_rules;
+    cz::Vector<size_t> ignore_rules_offsets;
+    cz::Vector<version_control::Ignore_Rules> ignore_rules_rules;
 
     cz::Arc_Weak<Find_File_Shared_Data> shared;
 
@@ -64,7 +65,11 @@ struct Find_File_Job_Data {
 
         data->results_buffer_array.drop();
 
-        data->ignore_rules.drop();
+        for (size_t i = 0; i < ignore_rules_rules.len; ++i) {
+            data->ignore_rules_rules[i].drop();
+        }
+        data->ignore_rules_offsets.drop(cz::heap_allocator());
+        data->ignore_rules_rules.drop(cz::heap_allocator());
 
         for (size_t i = data->directories.len; i-- > 0;) {
             (void)data->directories[i].entries.drop(cz::heap_allocator());
@@ -105,6 +110,14 @@ static bool load_directory(Find_File_Job_Data* data) {
     cz::sort(directory.entries, [](cz::Str* left, cz::Str* right) { return *left > *right; });
     data->directories.push(directory);
 
+    // Load ignore rules.
+    version_control::Ignore_Rules rules = {};
+    version_control::find_ignore_rules(data->path.buffer, &rules);
+    data->ignore_rules_offsets.reserve(cz::heap_allocator(), 1);
+    data->ignore_rules_rules.reserve(cz::heap_allocator(), 1);
+    data->ignore_rules_offsets.push(data->path.len - data->path_initial_len);
+    data->ignore_rules_rules.push(rules);
+
     data->path.push('/');
 
     return true;
@@ -132,8 +145,6 @@ static Job_Tick_Result find_file_job_tick(Asynchronous_Job_Handler* handler, voi
 
         data->results_buffer_array.init();
 
-        version_control::find_ignore_rules(data->path.buffer, &data->ignore_rules);
-
         // Load first directory.
         if (!load_directory(data)) {
             {
@@ -153,11 +164,17 @@ static Job_Tick_Result find_file_job_tick(Asynchronous_Job_Handler* handler, voi
     results.reserve(cz::heap_allocator(), 128);
 
     while (results.remaining() > 0) {
+    next_file:
         // Pop empty entries.
         while (data->directories.len > 0 && data->directories.last().entries.len == 0) {
             // Pop last name and trailing `/`.  Ex. `/home/abc/` -> `/home/`.
             data->path.pop();
             cz::path::pop_name(&data->path);
+
+            // Delete the ignore rules for the directory.
+            data->ignore_rules_offsets.pop();
+            data->ignore_rules_rules.last().drop();
+            data->ignore_rules_rules.pop();
 
             // Cleanup the directory.
             Directory directory = data->directories.pop();
@@ -179,10 +196,13 @@ static Job_Tick_Result find_file_job_tick(Asynchronous_Job_Handler* handler, voi
         data->path.null_terminate();
 
         // Skip ignored files.
-        if (version_control::file_matches(data->ignore_rules,
-                                          data->path.slice_start(data->path_initial_len))) {
-            data->path.len = old_len;
-            continue;
+        for (size_t i = 0; i < data->ignore_rules_rules.len; ++i) {
+            cz::Str relpath =
+                data->path.slice_start(data->path_initial_len + data->ignore_rules_offsets[i]);
+            if (version_control::file_matches(data->ignore_rules_rules[i], relpath)) {
+                data->path.len = old_len;
+                goto next_file;
+            }
         }
 
         // Non-directories are listed literally.  Don't follow symlinks so count them as files.
