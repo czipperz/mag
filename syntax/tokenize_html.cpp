@@ -33,7 +33,7 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
         } else {
             if (looking_at(*iterator, "</")) {
                 // Set only in_script_tag.
-                *state = 1 << 4;
+                *state = (1 << 4);
             }
         }
     }
