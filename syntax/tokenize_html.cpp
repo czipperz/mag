@@ -163,6 +163,7 @@ bool html_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state)
                 }
             }
             token->type = Token_Type::STRING;
+            location = InAttributesList;
             goto ret;
         }
     }
