@@ -38,7 +38,7 @@ bool git_commit_edit_message_next_token(Contents_Iterator* iterator,
     }
 
     for (size_t i = 0;; ++i) {
-        if (i >= 16 && iterator->at_eob()) {
+        if (i >= 16 || iterator->at_eob()) {
             *state = 1;
             break;
         }
