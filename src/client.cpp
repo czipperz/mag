@@ -101,9 +101,7 @@ static bool binary_search_offscreen_windows(cz::Slice<Window_Unified*> offscreen
     return false;
 }
 
-static bool find_matching_window(Window* w,
-                                 cz::Arc<Buffer_Handle> buffer_handle,
-                                 Window_Unified** out) {
+bool find_window_for_buffer(Window* w, cz::Arc<Buffer_Handle> buffer_handle, Window_Unified** out) {
     switch (w->tag) {
     case Window::UNIFIED: {
         Window_Unified* window = (Window_Unified*)w;
@@ -118,8 +116,8 @@ static bool find_matching_window(Window* w,
     case Window::VERTICAL_SPLIT:
     case Window::HORIZONTAL_SPLIT: {
         Window_Split* window = (Window_Split*)w;
-        return find_matching_window(window->first, buffer_handle, out) ||
-               find_matching_window(window->second, buffer_handle, out);
+        return find_window_for_buffer(window->first, buffer_handle, out) ||
+               find_window_for_buffer(window->second, buffer_handle, out);
     }
     }
 
@@ -136,7 +134,7 @@ Window_Unified* Client::make_window_for_buffer(cz::Arc<Buffer_Handle> buffer_han
         return window;
     }
 
-    if (find_matching_window(this->window, buffer_handle, &window)) {
+    if (find_window_for_buffer(this->window, buffer_handle, &window)) {
         return window->clone();
     } else {
         return Window_Unified::create(buffer_handle);
@@ -157,7 +155,7 @@ void Client::save_offscreen_window(Window_Unified* window) {
 
 void Client::save_removed_window(Window_Unified* removed_window) {
     Window_Unified* matching_window;
-    if (find_matching_window(this->window, removed_window->buffer_handle, &matching_window)) {
+    if (find_window_for_buffer(this->window, removed_window->buffer_handle, &matching_window)) {
         // Delete the window because another window is currently open
         Window::drop_(removed_window);
     } else {
