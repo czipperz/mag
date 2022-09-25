@@ -11,9 +11,12 @@
 #include "match.hpp"
 #include "movement.hpp"
 #include "version_control.hpp"
+#include "visible_region.hpp"
 
 namespace mag {
 namespace version_control {
+
+static Synchronous_Job job_goto_line(cz::Arc_Weak<Buffer_Handle> handle, uint64_t line);
 
 ///////////////////////////////////////////////////////////////////////////////
 // blame job
@@ -24,6 +27,7 @@ struct Job_Blame_Append_Data {
     cz::Process process;
     cz::Input_File stdout_read;
     cz::String buffer;
+    uint64_t line;
 };
 
 enum Parse_Status {
@@ -85,6 +89,10 @@ static Job_Tick_Result job_blame_append_tick(Asynchronous_Job_Handler* handler, 
             }
 
             buffer->contents.append(line);
+        }
+
+        if (done) {
+            handler->add_synchronous_job(job_goto_line(data->handle.clone_downgrade(), data->line));
         }
     }
 
@@ -160,16 +168,68 @@ static void job_blame_append_kill(void* _data) {
 
 static Asynchronous_Job job_blame_append(cz::Arc_Weak<Buffer_Handle> handle,
                                          cz::Process process,
-                                         cz::Input_File stdout_read) {
+                                         cz::Input_File stdout_read,
+                                         uint64_t line) {
     Job_Blame_Append_Data* data = cz::heap_allocator().alloc<Job_Blame_Append_Data>();
     data->handle = handle;
     data->process = process;
     data->stdout_read = stdout_read;
+    data->line = line;
     data->buffer = {};
 
     Asynchronous_Job job;
     job.tick = job_blame_append_tick;
     job.kill = job_blame_append_kill;
+    job.data = data;
+    return job;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// goto line job
+///////////////////////////////////////////////////////////////////////////////
+
+struct Job_Goto_Line {
+    cz::Arc_Weak<Buffer_Handle> handle;
+    uint64_t line;
+};
+
+static void job_goto_line_kill(void* _data) {
+    Job_Goto_Line* data = (Job_Goto_Line*)_data;
+    data->handle.drop();
+    cz::heap_allocator().dealloc(data);
+}
+
+static Job_Tick_Result job_goto_line_tick(Editor* editor, Client* client, void* _data) {
+    Job_Goto_Line* data = (Job_Goto_Line*)_data;
+    CZ_DEFER(job_goto_line_kill(data));
+
+    cz::Arc<Buffer_Handle> handle;
+    if (!data->handle.upgrade(&handle)) {
+        return Job_Tick_Result::FINISHED;
+    }
+    CZ_DEFER(handle.drop());
+
+    Window_Unified* window = nullptr;
+    if (find_window_for_buffer(client->window, handle, &window)) {
+        kill_extra_cursors(window, client);
+
+        WITH_CONST_BUFFER_HANDLE(handle);
+        Contents_Iterator iterator = start_of_line_position(buffer->contents, data->line + 1);
+        window->cursors[0].point = iterator.position;
+        center_in_window(window, buffer->mode, editor->theme, iterator);
+    }
+
+    return Job_Tick_Result::FINISHED;
+}
+
+static Synchronous_Job job_goto_line(cz::Arc_Weak<Buffer_Handle> handle, uint64_t line) {
+    Job_Goto_Line* data = cz::heap_allocator().alloc<Job_Goto_Line>();
+    data->handle = handle;
+    data->line = line;
+
+    Synchronous_Job job;
+    job.tick = job_goto_line_tick;
+    job.kill = job_goto_line_kill;
     job.data = data;
     return job;
 }
@@ -182,7 +242,8 @@ static void do_blame(Editor* editor,
                      Client* client,
                      cz::Str path,
                      cz::Str root,
-                     cz::Arc<Buffer_Handle> handle) {
+                     cz::Arc<Buffer_Handle> handle,
+                     uint64_t line) {
     cz::Process_Options options;
     options.working_directory = root.buffer;
 #ifdef _WIN32
@@ -207,7 +268,8 @@ static void do_blame(Editor* editor,
         return;
     }
 
-    editor->add_asynchronous_job(job_blame_append(handle.clone_downgrade(), process, stdout_read));
+    editor->add_asynchronous_job(
+        job_blame_append(handle.clone_downgrade(), process, stdout_read, line));
     return;
 }
 
@@ -221,6 +283,7 @@ void command_blame(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
     cz::String root = {};
     CZ_DEFER(root.drop(cz::heap_allocator()));
+    uint64_t line = 0;
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
         if (!buffer->get_path(cz::heap_allocator(), &path)) {
@@ -233,6 +296,8 @@ void command_blame(Editor* editor, Command_Source source) {
             source.client->show_message("Error: couldn't find vc root");
             return;
         }
+
+        line = buffer->contents.get_line_number(window->cursors[window->selected_cursor].point);
     }
 
     cz::Heap_String buffer_name = cz::format("git blame ", path);
@@ -248,7 +313,7 @@ void command_blame(Editor* editor, Command_Source source) {
     }
     source.client->set_selected_buffer(handle);
 
-    do_blame(editor, source.client, path, root, handle);
+    do_blame(editor, source.client, path, root, handle, line);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -263,6 +328,7 @@ void command_blame_reload(Editor* editor, Command_Source source) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
     cz::String root = {};
     CZ_DEFER(root.drop(cz::heap_allocator()));
+    uint64_t line = 0;
     {
         WITH_CONST_BUFFER_HANDLE(handle);
         if (!buffer->name.starts_with("*git blame ") || !buffer->name.ends_with('*')) {
@@ -271,6 +337,7 @@ void command_blame_reload(Editor* editor, Command_Source source) {
         }
         path = buffer->name.slice(11, buffer->name.len - 1).clone(cz::heap_allocator());
         root = buffer->directory.clone_null_terminate(cz::heap_allocator());
+        line = buffer->contents.get_line_number(window->cursors[window->selected_cursor].point);
     }
 
     {
@@ -278,7 +345,7 @@ void command_blame_reload(Editor* editor, Command_Source source) {
         buffer->contents.remove(0, buffer->contents.len);
     }
 
-    do_blame(editor, source.client, path, root, handle);
+    do_blame(editor, source.client, path, root, handle, line);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
