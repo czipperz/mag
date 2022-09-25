@@ -298,6 +298,8 @@ void command_blame(Editor* editor, Command_Source source) {
         }
 
         line = buffer->contents.get_line_number(window->cursors[window->selected_cursor].point);
+
+        push_jump(window, source.client, buffer);
     }
 
     cz::Heap_String buffer_name = cz::format("git blame ", path);
