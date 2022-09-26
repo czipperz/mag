@@ -1,7 +1,7 @@
 #pragma once
 
-#include "editor.hpp"
 #include "command.hpp"
+#include "editor.hpp"
 
 namespace mag {
 namespace version_control {

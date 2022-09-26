@@ -26,8 +26,7 @@ void command_show_last_commit_to_file(Editor* editor, Command_Source source) {
             return;
         }
 
-        if (!get_root_directory(editor, source.client, buffer->directory.buffer,
-                                cz::heap_allocator(), &root)) {
+        if (!get_root_directory(buffer->directory.buffer, cz::heap_allocator(), &root)) {
             source.client->show_message("Error: couldn't find vc root");
             return;
         }
@@ -51,8 +50,7 @@ static void command_show_commit_callback(Editor* editor, Client* client, cz::Str
     CZ_DEFER(root.drop(cz::heap_allocator()));
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (!get_root_directory(editor, client, buffer->directory.buffer, cz::heap_allocator(),
-                                &root)) {
+        if (!get_root_directory(buffer->directory.buffer, cz::heap_allocator(), &root)) {
             client->show_message("Error: couldn't find vc root");
             return;
         }

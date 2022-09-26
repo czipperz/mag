@@ -16,8 +16,9 @@ void command_build_debug_vc_root(Editor* editor, Command_Source source) {
 
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        if (!version_control::get_root_directory(editor, source.client, buffer->directory.buffer,
-                                                 cz::heap_allocator(), &top_level_path)) {
+        if (!version_control::get_root_directory(buffer->directory.buffer, cz::heap_allocator(),
+                                                 &top_level_path)) {
+            source.client->show_message("No version control repository found");
             return;
         }
     }

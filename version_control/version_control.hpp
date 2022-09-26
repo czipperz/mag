@@ -6,9 +6,9 @@
 namespace mag {
 namespace version_control {
 
-bool get_root_directory(Editor* editor,
-                        Client* client,
-                        const char* dir_cstr,
+/// Get the root directory for a version control repo that contains `file`.
+/// Returns `false` if no repo is found.
+bool get_root_directory(cz::Str file,
                         cz::Allocator allocator,
                         cz::String* top_level_path);
 

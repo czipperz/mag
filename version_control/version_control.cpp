@@ -14,21 +14,13 @@
 namespace mag {
 namespace version_control {
 
-bool get_root_directory(Editor* editor,
-                        Client* client,
-                        const char* dir_cstr,
+bool get_root_directory(cz::Str directory,
                         cz::Allocator allocator,
                         cz::String* top_level_path) {
-    // Use the current working directory if none is provided.
-    if (!dir_cstr) {
-        dir_cstr = ".";
-    }
-
     cz::String temp = {};
     CZ_DEFER(temp.drop(cz::heap_allocator()));
 
-    if (!cz::path::make_absolute(dir_cstr, cz::heap_allocator(), &temp)) {
-        client->show_message("Failed to get working directory");
+    if (!cz::path::make_absolute(directory, cz::heap_allocator(), &temp)) {
         return false;
     }
 

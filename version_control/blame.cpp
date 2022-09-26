@@ -291,8 +291,7 @@ void command_blame(Editor* editor, Command_Source source) {
             return;
         }
 
-        if (!get_root_directory(editor, source.client, buffer->directory.buffer,
-                                cz::heap_allocator(), &root)) {
+        if (!get_root_directory(buffer->directory.buffer, cz::heap_allocator(), &root)) {
             source.client->show_message("Error: couldn't find vc root");
             return;
         }
