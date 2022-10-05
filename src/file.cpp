@@ -561,20 +561,52 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
 #ifdef _WIN32
     // TODO: support symbolic links on Windows.
 
-    // Append drive as uppercase.
-    CZ_DEBUG_ASSERT(cz::is_alpha(path[0]));
-    CZ_DEBUG_ASSERT(path[1] == ':');
-    CZ_DEBUG_ASSERT(path.len == 2 || path[2] == '/');
-    result.push(cz::to_upper(path[0]));
-    result.push(':');
+    size_t start = 0;
 
-    // Only append the forward slash now if there are no components.
-    if (path.len <= 3) {
-        result.push('/');
+    if (cz::is_alpha(path[0])) {
+        // Path looks like X:/path
+        start = 3;
+
+        // Append drive as uppercase.
+        CZ_DEBUG_ASSERT(cz::is_alpha(path[0]));
+        CZ_DEBUG_ASSERT(path[1] == ':');
+        CZ_DEBUG_ASSERT(path.len == 2 || path[2] == '/');
+        result.push(cz::to_upper(path[0]));
+        result.push(':');
+
+        // Only append the forward slash now if there are no components.
+        if (path.len <= 3) {
+            result.push('/');
+        }
+    } else {
+        // UNC path; looks like //server/share/path (we only care about //server/ here).
+        for (; start < path.len; ++start) {
+            if (path[start] != '/')
+                break;
+        }
+        size_t start_server = start;
+        for (; start < path.len; ++start) {
+            if (path[start] == '/')
+                break;
+        }
+        size_t end_server = start;
+        for (; start < path.len; ++start) {
+            if (path[start] != '/')
+                break;
+        }
+
+        cz::Str server = path.slice(start_server, end_server);
+        result.append("//");
+        for (size_t i = 0; i < server.len; ++i) {
+            result.push(cz::to_lower(server[i]));
+        }
+
+        // Only append the forward slash now if there are no components.
+        if (start == path.len)
+            result.push('/');
     }
 
     // Step through each component of the path and fix the capitalization.
-    size_t start = 3;
     while (1) {
         // Advance over forward slashes.
         while (start < path.len && path[start] == '/') {
