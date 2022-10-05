@@ -515,8 +515,11 @@ cz::String standardize_path(cz::Allocator allocator, cz::Str user_path) {
                     // Success.
                     buffer.len = res;
 
-                    // Remove the "\\?\" prefix.
-                    buffer.remove_many(0, 4);
+                    // Remove the "\\?\UNC\" or "\\?\" prefix.
+                    if (buffer.starts_with("\\\\?\\UNC\\"))
+                        buffer.remove_many(2, 6); // Remove the '?\UNC\'.
+                    else
+                        buffer.remove_many(0, 4);
 
                     cz::path::convert_to_forward_slashes(&buffer);
 
