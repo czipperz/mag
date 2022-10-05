@@ -300,6 +300,15 @@ bool rfind_cased(Contents_Iterator* it, char ch, Case_Handling case_handling) {
     char lower = cz::to_lower(ch);
     char upper = cz::to_upper(ch);
 
+    // It's valid to have bucket 1 off the end so account
+    // for that so we can access the bucket below.
+    if (it->bucket == it->contents->buckets.len) {
+        if (it->position == 0)
+            return false;
+        it->retreat();
+        it->position++;
+    }
+
     while (1) {
         auto bucket = it->contents->buckets[it->bucket];
         cz::Str str = cz::Str{bucket.elems, bucket.len}.slice_end(it->index);
