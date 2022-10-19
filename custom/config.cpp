@@ -18,14 +18,15 @@
 #include "basic/html_commands.hpp"
 #include "basic/ide_commands.hpp"
 #include "basic/indent_commands.hpp"
+#include "basic/javascript_commands.hpp"
 #include "basic/macro_commands.hpp"
 #include "basic/markdown_commands.hpp"
 #include "basic/mouse_commands.hpp"
 #include "basic/number_commands.hpp"
 #include "basic/reformat_commands.hpp"
 #include "basic/region_movement_commands.hpp"
-#include "basic/rust_commands.hpp"
 #include "basic/remote.hpp"
+#include "basic/rust_commands.hpp"
 #include "basic/search_buffer_commands.hpp"
 #include "basic/search_commands.hpp"
 #include "basic/shift_commands.hpp"
@@ -980,6 +981,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
             BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+
+            if (name.ends_with(".json")) {
+                BIND(buffer->mode.key_map, "A-x A-f", javascript::command_jq_format_buffer);
+            }
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
