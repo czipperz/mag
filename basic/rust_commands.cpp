@@ -1,5 +1,6 @@
 #include "rust_commands.hpp"
 
+#include <cz/process.hpp>
 #include "command.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
@@ -103,6 +104,30 @@ void command_extract_variable(Editor* editor, Command_Source source) {
 
     // We manually fixed the cursors so the window doesn't need to do any updates.
     window->change_index = buffer->changes.len;
+}
+
+REGISTER_COMMAND(command_rust_format_buffer);
+void command_rust_format_buffer(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    cz::Process_Options options;
+    options.working_directory = buffer->directory.buffer;
+
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    if (!buffer->get_path(cz::heap_allocator(), &path)) {
+        source.client->show_message("Can only format file buffers");
+        return;
+    }
+
+    cz::Process process;
+    cz::Str args[] = {"rustfmt", path};
+    if (!process.launch_program(args, options)) {
+        source.client->show_message("Shell error");
+        return;
+    }
+
+    editor->add_asynchronous_job(job_process_silent(process));
 }
 
 }
