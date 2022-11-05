@@ -252,7 +252,13 @@ bool js_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                    matches(start, iterator->position, "true") ||
                    matches(start, iterator->position, "of") ||
                    matches(start, iterator->position, "in") ||
-                   matches(start, iterator->position, "static")) {
+                   matches(start, iterator->position, "static") ||
+                   matches(start, iterator->position, "type") ||
+                   matches(start, iterator->position, "switch") ||
+                   matches(start, iterator->position, "case") ||
+                   matches(start, iterator->position, "throw") ||
+                   matches(start, iterator->position, "try") ||
+                   matches(start, iterator->position, "catch")) {
             token->type = Token_Type::KEYWORD;
         } else if (matches(start, iterator->position, "class") ||
                    matches(start, iterator->position, "new")) {
