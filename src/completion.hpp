@@ -33,6 +33,9 @@ struct Completion_Engine_Context {
 
     void init() { results_buffer_array.init(); }
     void drop();
+
+    /// Delete the results and cleanup `data`.
+    void reset();
 };
 
 typedef bool (*Completion_Engine)(Editor* editor,

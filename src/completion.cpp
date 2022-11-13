@@ -35,6 +35,16 @@ void Completion_Engine_Context::drop() {
     query.drop(cz::heap_allocator());
 }
 
+void Completion_Engine_Context::reset() {
+    if (cleanup) {
+        cleanup(data);
+    }
+    cleanup = nullptr;
+    data = nullptr;
+    results_buffer_array.clear();
+    results.len = 0;
+}
+
 bool Completion_Cache::update(size_t changes_len) {
     if (change_index != changes_len) {
         change_index = changes_len;
@@ -53,13 +63,7 @@ void Completion_Cache::set_engine(Completion_Engine new_engine) {
 
     engine = new_engine;
     state = Completion_Cache::INITIAL;
-    if (engine_context.cleanup) {
-        engine_context.cleanup(engine_context.data);
-    }
-    engine_context.cleanup = nullptr;
-    engine_context.data = nullptr;
-    engine_context.results_buffer_array.clear();
-    engine_context.results.len = 0;
+    engine_context.reset();
 }
 
 void prefix_completion_filter(Editor* editor,

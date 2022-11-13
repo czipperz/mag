@@ -694,11 +694,7 @@ void command_complete_at_point_prompt_identifiers(Editor* editor, Command_Source
     data->handle = handle.clone_downgrade();
 
     window->start_completion(identifier_completion_engine);
-    if (window->completion_cache.engine_context.cleanup) {
-        window->completion_cache.engine_context.cleanup(
-            window->completion_cache.engine_context.data);
-        window->completion_cache.engine_context.results.len = 0;
-    }
+    window->completion_cache.engine_context.reset();
 
     window->completion_cache.engine_context.data = data;
     window->completion_cache.engine_context.cleanup = [](void* _data) {
