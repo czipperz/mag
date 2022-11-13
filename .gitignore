@@ -12,5 +12,6 @@ res/logo.ico
 GPATH
 GRTAGS
 GTAGS
+TAGS
 compile_commands.json
 out

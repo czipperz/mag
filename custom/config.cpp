@@ -38,7 +38,7 @@
 #include "basic/xclip.hpp"
 #include "clang_format/clang_format.hpp"
 #include "decoration.hpp"
-#include "gnu_global/gnu_global.hpp"
+#include "gnu_global/generic.hpp"
 #include "man/man.hpp"
 #include "match.hpp"
 #include "movement.hpp"
@@ -156,7 +156,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "F1", command_dump_key_map);
     BIND(key_map, "C-x", command_run_command_by_name);
-    BIND(key_map, "F2", gnu_global::command_lookup_previous_command);
+    BIND(key_map, "F2", tags::command_lookup_previous_command);
 
     BIND(key_map, "C-SPACE", command_set_mark);
     BIND(key_map, "A-x A-x", command_swap_mark_point);
@@ -453,10 +453,10 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-g A-r", prose::command_search_in_current_directory_token_at_position);
     BIND(key_map, "A-g h", prose::command_find_file_in_current_directory);
 
-    BIND(key_map, "A-g A-t", gnu_global::command_lookup_at_point);
-    BIND(key_map, "A-g t", gnu_global::command_lookup_prompt);
-    BIND(key_map, "A-g A-c", gnu_global::command_complete_at_point);
-    BIND(key_map, "MOUSE3", gnu_global::command_move_mouse_and_lookup_at_point);
+    BIND(key_map, "A-g A-t", tags::command_lookup_at_point);
+    BIND(key_map, "A-g t", tags::command_lookup_prompt);
+    BIND(key_map, "A-g A-c", tags::command_complete_at_point);
+    BIND(key_map, "MOUSE3", tags::command_move_mouse_and_lookup_at_point);
 
     BIND(key_map, "C-c", command_complete_at_point_nearest_matching_before_after);
     BIND(key_map, "C-A-c", command_complete_at_point_prompt_identifiers);

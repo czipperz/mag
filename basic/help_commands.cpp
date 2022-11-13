@@ -10,7 +10,7 @@
 #include "command_macros.hpp"
 #include "editor.hpp"
 #include "file.hpp"
-#include "gnu_global/gnu_global.hpp"
+#include "gnu_global/generic.hpp"
 #include "match.hpp"
 #include "movement.hpp"
 #include "program_info.hpp"
@@ -307,7 +307,7 @@ void command_go_to_key_map_binding(Editor* editor, Command_Source source) {
         directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
     }
 
-    gnu_global::lookup_and_prompt(editor, source.client, directory.buffer, query);
+    tags::lookup_and_prompt(editor, source.client, directory.buffer, query);
 }
 
 }
