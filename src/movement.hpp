@@ -44,8 +44,8 @@ uint64_t get_visual_column(const Mode& mode, Contents_Iterator iterator);
 void go_to_visual_column(const Mode& mode, Contents_Iterator* iterator, uint64_t column);
 void analyze_indent(const Mode& mode, uint64_t columns, uint64_t* num_tabs, uint64_t* num_spaces);
 
-void forward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines = 1);
-void backward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines = 1);
+bool forward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines = 1);
+bool backward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines = 1);
 
 void forward_word(Contents_Iterator* iterator);
 void backward_word(Contents_Iterator* iterator);

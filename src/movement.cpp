@@ -247,7 +247,7 @@ void analyze_indent(const Mode& mode, uint64_t columns, uint64_t* num_tabs, uint
     }
 }
 
-void forward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines) {
+bool forward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines) {
     uint64_t column = get_visual_column(mode, *iterator);
 
     for (uint64_t i = 0; i < lines; ++i) {
@@ -256,22 +256,25 @@ void forward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines)
 
         if (iterator->at_eob()) {
             *iterator = backup;
-            break;
+            return false;
         }
 
         iterator->advance();
     }
 
     go_to_visual_column(mode, iterator, column);
+    return true;
 }
 
-void backward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines) {
+bool backward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines) {
     uint64_t column = get_visual_column(mode, *iterator);
 
+    bool first_line = false;
     for (uint64_t i = 0; i < lines; ++i) {
         start_of_line(iterator);
 
         if (iterator->at_bob()) {
+            first_line = true;
             break;
         }
 
@@ -279,6 +282,7 @@ void backward_line(const Mode& mode, Contents_Iterator* iterator, uint64_t lines
     }
 
     go_to_visual_column(mode, iterator, column);
+    return first_line;
 }
 
 void forward_word(Contents_Iterator* iterator) {

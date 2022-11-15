@@ -1263,22 +1263,19 @@ static bool create_cursor_forward_line(Editor* editor,
                                        const Buffer* buffer,
                                        Window_Unified* window) {
     CZ_DEBUG_ASSERT(window->cursors.len >= 1);
-    Contents_Iterator last_cursor_iterator =
+    Contents_Iterator new_cursor_iterator =
         buffer->contents.iterator_at(window->cursors.last().point);
-    Contents_Iterator new_cursor_iterator = last_cursor_iterator;
-    forward_line(buffer->mode, &new_cursor_iterator);
-    if (new_cursor_iterator.position != last_cursor_iterator.position) {
-        Cursor cursor = {};
-        cursor.point = new_cursor_iterator.position;
-        cursor.mark = cursor.point;
-        cursor.local_copy_chain = window->cursors.last().local_copy_chain;
-
-        window->cursors.reserve(cz::heap_allocator(), 1);
-        window->cursors.push(cursor);
-        return true;
-    } else {
+    if (!forward_line(buffer->mode, &new_cursor_iterator))
         return false;
-    }
+
+    Cursor cursor = {};
+    cursor.point = new_cursor_iterator.position;
+    cursor.mark = cursor.point;
+    cursor.local_copy_chain = window->cursors.last().local_copy_chain;
+
+    window->cursors.reserve(cz::heap_allocator(), 1);
+    window->cursors.push(cursor);
+    return true;
 }
 
 REGISTER_COMMAND(command_create_cursor_forward_line);
@@ -1655,7 +1652,9 @@ void command_create_cursors_lines_in_region(Editor* editor, Command_Source sourc
 
     Contents_Iterator iterator = buffer->contents.iterator_at(start);
     while (true) {
-        forward_line(buffer->mode, &iterator);
+        if (!forward_line(buffer->mode, &iterator)) {
+            break;
+        }
         if (iterator.position >= end) {
             break;
         }
