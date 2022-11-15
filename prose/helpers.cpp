@@ -25,8 +25,7 @@ bool copy_version_control_directory(Editor* editor,
                                     Client* client,
                                     const Buffer* buffer,
                                     cz::String* directory) {
-    if (!version_control::get_root_directory(buffer->directory.buffer, cz::heap_allocator(),
-                                             directory)) {
+    if (!version_control::get_root_directory(buffer->directory, cz::heap_allocator(), directory)) {
         client->show_message("No version control repository found");
         return false;
     }
