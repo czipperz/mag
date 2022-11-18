@@ -1252,7 +1252,7 @@ static void handle_line_comment_normal(Contents_Iterator* iterator, Token* token
 
                 // '/** `/// */' parse '*/' as end of outer comment.
                 if (found_end)
-                    state->comment = COMMENT_BLOCK_RESUME_INSIDE;
+                    comment_pop(state);
                 break;
             }
         }
@@ -1601,7 +1601,7 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
                 // '/* `/* */' should parse the final '*/' as ending the outer.
                 if (!look_for_line)
                     comment_pop(state);
-                else
+                else if (!multi_line)
                     state->comment = COMMENT_LINE_RESUME_OUTSIDE_MOL;
                 goto ret;
 
