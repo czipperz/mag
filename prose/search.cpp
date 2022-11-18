@@ -87,7 +87,7 @@ static void command_search_in_version_control_callback(Editor* editor,
 
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (!copy_version_control_directory(editor, client, buffer, &directory)) {
+        if (!copy_version_control_directory(client, buffer, &directory)) {
             return;
         }
     }
