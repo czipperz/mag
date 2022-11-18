@@ -105,6 +105,10 @@ struct Contents_Iterator {
             *this = contents->end();
         }
     }
+
+    uint64_t get_line_number() const {
+        return contents->get_line_number(position);
+    }
 };
 
 inline Contents_Iterator Contents::start() const {
