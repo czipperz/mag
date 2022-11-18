@@ -46,6 +46,7 @@
 #include "program_info.hpp"
 #include "prose/alternate.hpp"
 #include "prose/find_file.hpp"
+#include "prose/repository.hpp"
 #include "prose/search.hpp"
 #include "solarized_dark.hpp"
 #include "syntax/decoration_column_number.hpp"
@@ -452,6 +453,8 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-g r", prose::command_search_in_current_directory_prompt);
     BIND(key_map, "A-g A-r", prose::command_search_in_current_directory_token_at_position);
     BIND(key_map, "A-g h", prose::command_find_file_in_current_directory);
+
+    BIND(key_map, "A-g u", prose::command_open_file_on_repo_site);
 
     BIND(key_map, "A-g A-t", tags::command_lookup_at_point);
     BIND(key_map, "A-g t", tags::command_lookup_prompt);
