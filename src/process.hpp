@@ -1,0 +1,19 @@
+#pragma once
+
+#include <cz/slice.hpp>
+#include <cz/string.hpp>
+
+namespace mag {
+struct Client;
+
+/// Run a process.  Fails on I/O error, or if stderr is produced, or if the
+/// process produces an error.  On error, shows a message to the client and
+/// returns `false`.  On success, writes stdout to `out` and returns `true`.
+bool run_process_for_output(Client* client,
+                            cz::Slice<cz::Str> args,
+                            cz::Str pretty_name,
+                            const char* working_directory,
+                            cz::Allocator allocator,
+                            cz::String* out);
+
+}
