@@ -87,6 +87,10 @@ struct Window_Unified : Window {
     }
 
     size_t rows() const { return total_rows - 1; }
+
+    /// Get the selected cursor.
+    Cursor& sel() { return cursors[selected_cursor]; }
+    const Cursor& sel() const { return cursors[selected_cursor]; }
 };
 
 size_t line_number_cols(const Theme& theme, const Window_Unified* window, const Buffer* buffer);
