@@ -83,6 +83,7 @@
 #include "syntax/tokenize_search.hpp"
 #include "syntax/tokenize_shell_script.hpp"
 #include "syntax/tokenize_splash.hpp"
+#include "syntax/tokenize_zig.hpp"
 #include "version_control/blame.hpp"
 #include "version_control/log.hpp"
 #include "version_control/tokenize_diff.hpp"
@@ -930,6 +931,18 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
             BIND(buffer->mode.key_map, "A-x e", rust::command_extract_variable);
             BIND(buffer->mode.key_map, "A-x A-f", rust::command_rust_format_buffer);
+            BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
+
+            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
+                                               Token_Type::IDENTIFIER};
+            buffer->mode.overlays.reserve(2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+        } else if (name.ends_with(".zig")) {
+            buffer->mode.next_token = syntax::zig_next_token;
+            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
+            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
+            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
