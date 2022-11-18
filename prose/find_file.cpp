@@ -359,7 +359,7 @@ static void find_file(Editor* editor,
     cz::String directory = {};
     {
         WITH_CONST_SELECTED_NORMAL_BUFFER(client);
-        if (!copy_directory(editor, client, buffer, &directory)) {
+        if (!copy_directory(client, buffer, &directory)) {
             return;
         }
     }

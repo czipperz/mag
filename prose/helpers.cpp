@@ -6,7 +6,7 @@
 namespace mag {
 namespace prose {
 
-bool copy_buffer_directory(Editor*, Client* client, const Buffer* buffer, cz::String* out) {
+bool copy_buffer_directory(Client* client, const Buffer* buffer, cz::String* out) {
     if (buffer->directory.len > 0) {
         out->reserve(cz::heap_allocator(), buffer->directory.len + 1);
         out->append(buffer->directory);
@@ -21,10 +21,7 @@ bool copy_buffer_directory(Editor*, Client* client, const Buffer* buffer, cz::St
     }
 }
 
-bool copy_version_control_directory(Editor* editor,
-                                    Client* client,
-                                    const Buffer* buffer,
-                                    cz::String* directory) {
+bool copy_version_control_directory(Client* client, const Buffer* buffer, cz::String* directory) {
     if (!version_control::get_root_directory(buffer->directory, cz::heap_allocator(), directory)) {
         client->show_message("No version control repository found");
         return false;

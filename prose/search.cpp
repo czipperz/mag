@@ -57,7 +57,7 @@ static void command_search_in_current_directory_callback(Editor* editor,
 
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (!copy_buffer_directory(editor, client, buffer, &directory)) {
+        if (!copy_buffer_directory(client, buffer, &directory)) {
             return;
         }
     }
@@ -121,7 +121,7 @@ static void search_token_at_position(Editor* editor,
     {
         WITH_SELECTED_BUFFER(client);
 
-        if (!copy_directory(editor, client, buffer, &directory)) {
+        if (!copy_directory(client, buffer, &directory)) {
             return;
         }
 
