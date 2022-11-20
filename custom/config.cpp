@@ -450,9 +450,11 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-g s", prose::command_search_in_version_control_prompt);
     BIND(key_map, "A-g A-s", prose::command_search_in_version_control_token_at_position);
+    BIND(key_map, "A-g C-s", prose::command_search_in_version_control_word_prompt);
     BIND(key_map, "A-g f", prose::command_find_file_in_version_control);
     BIND(key_map, "A-g r", prose::command_search_in_current_directory_prompt);
     BIND(key_map, "A-g A-r", prose::command_search_in_current_directory_token_at_position);
+    BIND(key_map, "A-g C-r", prose::command_search_in_current_directory_word_prompt);
     BIND(key_map, "A-g h", prose::command_find_file_in_current_directory);
 
     BIND(key_map, "A-g u", prose::command_open_file_on_repo_site);
