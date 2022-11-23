@@ -32,6 +32,9 @@ static bool advance_whitespace(Contents_Iterator* iterator, uint64_t* state) {
         if (!cz::is_space(ch)) {
             return true;
         }
+        if (*state == AFTER_LINK_TITLE) {
+            *state = MIDDLE_OF_LINE;
+        }
         if (ch == '\n') {
             *state = START_OF_LINE;
         }
