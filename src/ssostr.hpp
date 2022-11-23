@@ -64,6 +64,11 @@ struct ShortStr {
 
 }
 
+/// Short String Optimized Str (const & non-owning String slice).  Useful for strings
+/// where you expect the length to be < 16 bytes because it saves space and an allocation.
+///
+/// If the string is short, the first 15 bytes are the value and the
+/// last byte is the 7 bits of the length and 1 bit the value 1.
 struct SSOStr {
     constexpr static const size_t MAX_SHORT_LEN = impl::ShortStr::MAX;
 
@@ -72,6 +77,8 @@ struct SSOStr {
         impl::ShortStr short_;
     };
 
+    /// Construct as a reference to `str`.  May maintain
+    /// a pointer to `str.buffer`.  Never allocates.
     static SSOStr from_constant(cz::Str str) {
         SSOStr self;
         if (str.len <= impl::ShortStr::MAX) {
@@ -84,6 +91,7 @@ struct SSOStr {
         return self;
     }
 
+    /// Construct representing the character `c`.  Never allocates.
     static SSOStr from_char(char c) {
         SSOStr self;
         new (&self.short_) impl::ShortStr;
@@ -91,6 +99,7 @@ struct SSOStr {
         return self;
     }
 
+    /// Construct using `str` as a basis.  If `str` doesn't fit inline, clones it using `allocator`.
     static SSOStr as_duplicate(cz::Allocator allocator, cz::Str str) {
         SSOStr self;
         if (str.len <= impl::ShortStr::MAX) {
@@ -105,6 +114,7 @@ struct SSOStr {
         return self;
     }
 
+    /// Deallocates if the string is out of line.
     void drop(cz::Allocator allocator) {
         if (!is_short()) {
             allocated.drop(allocator);

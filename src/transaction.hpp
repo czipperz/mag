@@ -13,8 +13,22 @@ struct Edit;
 struct Client;
 struct Asynchronous_Job_Handler;
 
-/// A builder for a `Commit`.  The .  The `Buffer` must remain
+/// A builder for a `Commit`.  The `Buffer` must remain
 /// locked during the lifetime of the `Transaction`!
+///
+/// ```
+/// Transaction transaction;
+/// transaction.init(buffer);
+/// CZ_DEFER(transaction.drop());
+///
+/// Edit insert;
+/// insert.position = 0;
+/// insert.value = SSOStr::from_constant("hello");
+/// insert.flags = Edit::INSERT;
+/// transaction.push(insert);
+///
+/// transaction.commit(client);
+/// ```
 struct Transaction {
     Buffer* buffer;
     cz::Buffer_Array::Save_Point save_point;

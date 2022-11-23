@@ -7,7 +7,15 @@
 #include "ssostr.hpp"
 #include "transaction.hpp"
 
+///////////////////////////////////////////////////////////////////////////////
+// Register a command
+///////////////////////////////////////////////////////////////////////////////
+
 #define REGISTER_COMMAND(FUNC) Command_Registrar CZ_TOKEN_CONCAT(register_, FUNC)(COMMAND(FUNC))
+
+///////////////////////////////////////////////////////////////////////////////
+// Macros for locking a file in read/write mode
+///////////////////////////////////////////////////////////////////////////////
 
 #define WITH_SELECTED_NORMAL_BUFFER(CLIENT)                    \
     Window_Unified* window = (CLIENT)->selected_normal_window; \
@@ -26,6 +34,10 @@
     Buffer* buffer = (HANDLE)->lock_writing(); \
     CZ_DEFER((HANDLE)->unlock())
 
+///////////////////////////////////////////////////////////////////////////////
+// Macros for locking a file in read/only mode
+///////////////////////////////////////////////////////////////////////////////
+
 #define WITH_CONST_SELECTED_NORMAL_BUFFER(CLIENT)              \
     Window_Unified* window = (CLIENT)->selected_normal_window; \
     WITH_CONST_WINDOW_BUFFER(window)
@@ -43,6 +55,10 @@
     const Buffer* buffer = (HANDLE)->lock_reading(); \
     CZ_DEFER((HANDLE)->unlock())
 
+///////////////////////////////////////////////////////////////////////////////
+// Utility function for movement wrapper commands
+///////////////////////////////////////////////////////////////////////////////
+
 #define TRANSFORM_POINTS(FUNC)                                                           \
     do {                                                                                 \
         cz::Slice<Cursor> cursors = window->cursors;                                     \
@@ -52,6 +68,10 @@
             cursors[i].point = iterator.position;                                        \
         }                                                                                \
     } while (0)
+
+///////////////////////////////////////////////////////////////////////////////
+// Utility function for deletion + movement wrapper commands
+///////////////////////////////////////////////////////////////////////////////
 
 #define DELETE_BACKWARD(FUNC, COMMITTER)                                                        \
     do {                                                                                        \

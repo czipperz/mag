@@ -8,8 +8,11 @@ namespace mag {
 struct Client;
 struct Editor;
 struct Key;
-
 struct Command_Source;
+
+///////////////////////////////////////////////////////////////////////////////
+// Command definition
+///////////////////////////////////////////////////////////////////////////////
 
 using Command_Function = void (*)(Editor*, Command_Source);
 
@@ -26,10 +29,15 @@ struct Command_Source {
     Command previous_command;
 };
 
+const char* sans_namespaces(const char* func);
+
+///////////////////////////////////////////////////////////////////////////////
+// Command registration
+///////////////////////////////////////////////////////////////////////////////
+
 extern cz::Heap_Vector<Command> global_commands;
 void register_global_command(Command command);
 void sort_global_commands();
-const char* sans_namespaces(const char* func);
 
 struct Command_Registrar {
     Command_Registrar(Command command) { register_global_command(command); }
