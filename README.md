@@ -22,9 +22,21 @@ different license, email czipperz AT gmail DOT com.
   programs are ran on a background thread to prevent stalls.
 * Easy to add new commands and visual enhancements.
 
+## Customizing
+
+The `custom` folder can be customized to fit your needs.  In particular `config.cpp`'s
+`create_key_map()` has all bindings for normal operation.
+
+
+
+
+
+
 ## Building
 
-1. Clone the repository and the submodules.
+1. Install the dependencies (see below).
+
+2. Clone the repository and the submodules.
 
 ```
 git clone https://github.com/czipperz/mag
@@ -32,8 +44,6 @@ cd mag
 git submodule init
 git submodule update
 ```
-
-2. Install the dependencies (see below).
 
 3. Build Mag by running (on all platforms):
 
@@ -74,11 +84,13 @@ Next, to build the project you can either use the Visual Studio gui or the Windo
 
 After building, Mag can be ran via `.\build\release\mag.exe`.
 
-## Customizing
-The `custom` folder can be customized to fit your needs.  In particular `config.cpp`'s
-`create_key_map()` has all bindings for normal operation.
+
+
+
+
 
 ## Optimizing
+
 We use Tracy to optimize Mag.  See the
 [manual](https://bitbucket.com/wolfpld/tracy/downloads/tracy.pdf) for more information.
 
