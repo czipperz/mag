@@ -15,7 +15,7 @@ different license, email czipperz AT gmail DOT com.
   - Intuitively integrated with search and syntax highlighting functionality.
 * Syntax highlighting is easily customizable.
 * File name completion (Control-P equivalent).
-* Built in support for `git grep`, `clang-format`, `man`, and other external programs.
+* Built in support for `ag`, `clang-format`, `man`, `gtags`, `ctags`, and other external programs.
 * Automatically updates files when edited externally.
 * Animated scrolling even over large distances.
 * Multi threaded architecture -- syntax highlighting and external
