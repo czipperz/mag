@@ -78,6 +78,7 @@
 #include "syntax/tokenize_markdown.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "syntax/tokenize_process.hpp"
+#include "syntax/tokenize_protobuf.hpp"
 #include "syntax/tokenize_python.hpp"
 #include "syntax/tokenize_rust.hpp"
 #include "syntax/tokenize_search.hpp"
@@ -952,6 +953,23 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+        } else if (name.ends_with(".proto")) {
+            buffer->mode.next_token = syntax::protobuf_next_token;
+            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
+            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
+            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
+            BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
+
+            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
+                                               Token_Type::IDENTIFIER};
+            buffer->mode.overlays.reserve(2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+
+            // Style guide says 2 spaces, 80 characters.
+            buffer->mode.indent_width = buffer->mode.tab_width = 2;
+            buffer->mode.use_tabs = false;
+            buffer->mode.preferred_column = 80;
         } else if (name.ends_with(".sh") || name.ends_with(".bash") || name.ends_with(".zsh") ||
                    name == ".bashrc" || name == ".teshrc" || name == ".zshrc" ||
                    name == "Makefile" || name == ".gitconfig" || name == ".gitmodules" ||
