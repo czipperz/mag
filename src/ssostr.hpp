@@ -25,9 +25,9 @@ struct AllocatedStr {
     void init(cz::Str str) {
         _buffer = str.buffer;
         if (is_big_endian()) {
-            _len = (str.len << 1);
+            _len = ((str.len << 1) | 1);
         } else {
-            _len = (str.len & LEN_MASK);
+            _len = (str.len | ~LEN_MASK);
         }
     }
 
@@ -51,15 +51,16 @@ struct ShortStr {
 
     void init(cz::Str str) {
         memcpy(_buffer, str.buffer, str.len);
+        _buffer[str.len] = 0;
         set_len(str.len);
     }
 
     const char* buffer() const { return _buffer; }
 
-    void set_len(size_t len) { _buffer[MAX] = (char)((len << 1) | 1); }
+    void set_len(size_t len) { _buffer[MAX] = (char)(len << 1); }
     size_t len() const { return _buffer[MAX] >> 1; }
 
-    bool is_short() const { return _buffer[MAX] & 1; }
+    bool is_short() const { return !(_buffer[MAX] & 1); }
 };
 
 }
@@ -68,7 +69,8 @@ struct ShortStr {
 /// where you expect the length to be < 16 bytes because it saves space and an allocation.
 ///
 /// If the string is short, the first 15 bytes are the value and the
-/// last byte is the 7 bits of the length and 1 bit the value 1.
+/// last byte is the 7 bits of the length and 1 bit the value 0.
+/// This allows inline strings to be null terminated.
 struct SSOStr {
     constexpr static const size_t MAX_SHORT_LEN = impl::ShortStr::MAX;
 
