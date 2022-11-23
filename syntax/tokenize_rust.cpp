@@ -11,7 +11,7 @@
 namespace mag {
 namespace syntax {
 
-static bool is_type_identifer(Contents_Iterator start, uint64_t end);
+static bool is_type_identifier(Contents_Iterator start, uint64_t end);
 
 bool rust_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
 restart:
@@ -66,7 +66,7 @@ restart:
         token->end = iterator->position;
 
         token->type = Token_Type::IDENTIFIER;
-        if (is_type_identifer(start, iterator->position)) {
+        if (is_type_identifier(start, iterator->position)) {
             token->type = Token_Type::TYPE;
         }
         const cz::Str keywords[] = {
@@ -236,7 +236,7 @@ restart:
     return true;
 }
 
-static bool is_type_identifer(Contents_Iterator start, uint64_t end) {
+static bool is_type_identifier(Contents_Iterator start, uint64_t end) {
     // Skip $ or r# prefix.
     if (start.get() == '$') {
         start.advance();
