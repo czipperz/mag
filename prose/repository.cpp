@@ -117,18 +117,24 @@ void command_open_file_on_repo_site(Editor* editor, Command_Source source) {
 static void find_common_branch(cz::Heap_String* branch, const char* vc_dir) {
     cz::Str git_args[] = {"git", "merge-base", "origin/HEAD", "HEAD"};
     if (run_process_for_output(git_args, "git", vc_dir, branch, /*err=*/nullptr) == 0) {
+        if (branch->ends_with('\n'))
+            branch->pop();
         return;
     }
     branch->len = 0;
 
     git_args[2] = "origin/master";
     if (run_process_for_output(git_args, "git", vc_dir, branch, /*err=*/nullptr) == 0) {
+        if (branch->ends_with('\n'))
+            branch->pop();
         return;
     }
     branch->len = 0;
 
     cz::Str git_args2[] = {"git", "rev-parse", "HEAD"};
     if (run_process_for_output(git_args2, "git", vc_dir, branch, /*err=*/nullptr) == 0) {
+        if (branch->ends_with('\n'))
+            branch->pop();
         return;
     }
     branch->len = 0;
