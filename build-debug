@@ -6,4 +6,4 @@ cd "$(dirname "$0")"
 
 ./run-build.sh build/debug Debug
 
-./build/debug/test --use-colour=no
+./build/debug/mag-test --use-colour=no
