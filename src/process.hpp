@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cz/slice.hpp>
-#include <cz/string.hpp>
+#include <cz/heap_string.hpp>
 
 namespace mag {
 struct Client;
@@ -13,7 +13,14 @@ bool run_process_for_output(Client* client,
                             cz::Slice<cz::Str> args,
                             cz::Str pretty_name,
                             const char* working_directory,
-                            cz::Allocator allocator,
-                            cz::String* out);
+                            cz::Heap_String* out);
+
+/// Run a process.  Fails on I/O error, returns 128, and writes
+/// an error message to `err`.  Otherwise returns the exit code.
+int run_process_for_output(cz::Slice<cz::Str> args,
+                           cz::Str pretty_name,
+                           const char* working_directory,
+                           cz::Heap_String* out,
+                           cz::Heap_String* err);
 
 }
