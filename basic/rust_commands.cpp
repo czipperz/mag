@@ -1,5 +1,7 @@
 #include "rust_commands.hpp"
 
+#include <cz/find_file.hpp>
+#include <cz/format.hpp>
 #include <cz/process.hpp>
 #include "command.hpp"
 #include "command_macros.hpp"
@@ -120,9 +122,40 @@ void command_rust_format_buffer(Editor* editor, Command_Source source) {
         return;
     }
 
+    // Try to get the edition from Cargo.toml.
+    cz::Str edition = {};
+    cz::String toml_path = path.clone(cz::heap_allocator());
+    CZ_DEFER(toml_path.drop(cz::heap_allocator()));
+    cz::String toml_contents = {};
+    CZ_DEFER(toml_contents.drop(cz::heap_allocator()));
+    if (cz::find_file_up(cz::heap_allocator(), &toml_path, "Cargo.toml")) {
+        if (cz::read_to_string(toml_path.buffer, cz::heap_allocator(), &toml_contents)) {
+            cz::Str pattern = "\nedition = \"";
+            if (const char* point = toml_contents.find(pattern)) {
+                cz::Str ed = toml_contents.slice_start(point + pattern.len);
+                // Check that the edition string is terminated and capture it.
+                const char* end = ed.find('"');
+                const char* nl = ed.find('\n');
+                if (end && end < nl)
+                    edition = ed.slice_end(end);
+            }
+        }
+    }
+
+    // Run rustfmt on the path.  If we found an edition then use it.
     cz::Process process;
-    cz::Str args[] = {"rustfmt", path};
-    if (!process.launch_program(args, options)) {
+    bool success = 0;
+    if (edition.len > 0) {
+        cz::String edition_arg = cz::format("--edition=", edition);
+        CZ_DEFER(edition_arg.drop(cz::heap_allocator()));
+        cz::Str args[] = {"rustfmt", edition_arg, path};
+        success = process.launch_program(args, options);
+    } else {
+        cz::Str args[] = {"rustfmt", path};
+        success = process.launch_program(args, options);
+    }
+
+    if (!success) {
         source.client->show_message("Shell error");
         return;
     }
