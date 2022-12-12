@@ -10,6 +10,8 @@
 namespace mag {
 namespace prose {
 
+static void find_common_branch(cz::Heap_String* branch, const char* vc_dir);
+
 void command_open_file_on_repo_site(Editor* editor, Command_Source source) {
     cz::String buffer_path = {};
     CZ_DEFER(buffer_path.drop(cz::heap_allocator()));
@@ -40,15 +42,22 @@ void command_open_file_on_repo_site(Editor* editor, Command_Source source) {
     }
 
     ///////////////////////////////////////////////////////
+    // Get branch
+    ///////////////////////////////////////////////////////
+
+    cz::Heap_String branch = {};
+    CZ_DEFER(branch.drop());
+    find_common_branch(&branch, vc_dir.buffer);
+
+    ///////////////////////////////////////////////////////
     // Get repository origin
     ///////////////////////////////////////////////////////
 
-    cz::String origin = {};
-    CZ_DEFER(origin.drop(cz::heap_allocator()));
+    cz::Heap_String origin = {};
+    CZ_DEFER(origin.drop());
 
     cz::Str git_args[] = {"git", "config", "remote.origin.url"};
-    if (!run_process_for_output(source.client, git_args, "git", vc_dir.buffer,
-                                cz::heap_allocator(), &origin))
+    if (!run_process_for_output(source.client, git_args, "git", vc_dir.buffer, &origin))
         return;
 
     if (origin.ends_with('\n'))
@@ -61,7 +70,7 @@ void command_open_file_on_repo_site(Editor* editor, Command_Source source) {
             *colon = '/';
         }
         cz::Str to_insert = "https://";
-        origin.reserve_exact(cz::heap_allocator(), to_insert.len + 1);
+        origin.reserve_exact(to_insert.len + 1);
         origin.insert(0, to_insert);
     }
 
@@ -75,7 +84,7 @@ void command_open_file_on_repo_site(Editor* editor, Command_Source source) {
     ///////////////////////////////////////////////////////
 
     cz::Str relpath = buffer_path.slice_start(vc_dir.len);
-    cz::Heap_String url = cz::format(origin, "/blob/master/", relpath);
+    cz::Heap_String url = cz::format(origin, "/blob/", branch, '/', relpath);
     CZ_DEFER(url.drop());
     cz::append(&url, "#L", start);
     if (start != end)
@@ -103,6 +112,28 @@ void command_open_file_on_repo_site(Editor* editor, Command_Source source) {
     cz::String message = cz::format("Opening ", url);
     CZ_DEFER(message.drop(cz::heap_allocator()));
     source.client->show_message(message);
+}
+
+static void find_common_branch(cz::Heap_String* branch, const char* vc_dir) {
+    cz::Str git_args[] = {"git", "merge-base", "origin/HEAD", "HEAD"};
+    if (run_process_for_output(git_args, "git", vc_dir, branch, /*err=*/nullptr) == 0) {
+        return;
+    }
+    branch->len = 0;
+
+    git_args[2] = "origin/master";
+    if (run_process_for_output(git_args, "git", vc_dir, branch, /*err=*/nullptr) == 0) {
+        return;
+    }
+    branch->len = 0;
+
+    cz::Str git_args2[] = {"git", "rev-parse", "HEAD"};
+    if (run_process_for_output(git_args2, "git", vc_dir, branch, /*err=*/nullptr) == 0) {
+        return;
+    }
+    branch->len = 0;
+
+    cz::append(branch, "master");
 }
 
 }
