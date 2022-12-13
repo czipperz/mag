@@ -61,6 +61,7 @@
 #include "syntax/overlay_matching_pairs.hpp"
 #include "syntax/overlay_matching_region.hpp"
 #include "syntax/overlay_matching_tokens.hpp"
+#include "syntax/overlay_merge_conflicts.hpp"
 #include "syntax/overlay_nearest_matching_identifier_before_after.hpp"
 #include "syntax/overlay_preferred_column.hpp"
 #include "syntax/overlay_trailing_spaces.hpp"
@@ -816,9 +817,11 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         buffer->mode.decorations.reserve(1);
         buffer->mode.decorations.push(syntax::decoration_line_ending_indicator());
 
-        buffer->mode.overlays.reserve(1);
+        buffer->mode.overlays.reserve(2);
         buffer->mode.overlays.push(
             syntax::overlay_nearest_matching_identifier_before_after({7, 27, 0}));
+        buffer->mode.overlays.push(syntax::overlay_merge_conflicts(
+            {-1, Color{9, 19, 59}, 0}, {-1, Color{40, 0, 0}, 0}, {-1, Color{0, 40, 0}, 0}));
 
         bool add_indent_overlays = true;
 
