@@ -4,7 +4,7 @@
 #include <cz/sort.hpp>
 #include "command.hpp"
 #include "command_macros.hpp"
-#include "commands.hpp"
+#include "cursor_commands.hpp"
 #include "editor.hpp"
 #include "match.hpp"
 #include "movement.hpp"
@@ -512,7 +512,7 @@ static int create_cursor_backward_matching_token(Buffer* buffer, Window_Unified*
     return 1;
 }
 
-static void show_created_messages(Client* client, int created) {
+static void show_created_messages_token(Client* client, int created) {
     if (created == -1) {
         client->show_message("Cursor is not positioned at a token");
     }
@@ -525,7 +525,7 @@ REGISTER_COMMAND(command_create_cursor_forward_matching_token);
 void command_create_cursor_forward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_matching_token(buffer, window);
-    show_created_messages(source.client, created);
+    show_created_messages_token(source.client, created);
 
     if (created == 1 && window->selected_cursor + 1 == window->cursors.len - 1) {
         ++window->selected_cursor;
@@ -536,7 +536,7 @@ REGISTER_COMMAND(command_create_cursor_backward_matching_token);
 void command_create_cursor_backward_matching_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_matching_token(buffer, window);
-    show_created_messages(source.client, created);
+    show_created_messages_token(source.client, created);
 
     if (created == 1 && window->selected_cursor > 0) {
         ++window->selected_cursor;
@@ -557,7 +557,7 @@ void command_create_cursors_to_end_matching_token(Editor* editor, Command_Source
             }
         }
     }
-    show_created_messages(source.client, created);
+    show_created_messages_token(source.client, created);
 }
 
 REGISTER_COMMAND(command_create_cursors_to_start_matching_token);
@@ -574,7 +574,7 @@ void command_create_cursors_to_start_matching_token(Editor* editor, Command_Sour
             }
         }
     }
-    show_created_messages(source.client, created);
+    show_created_messages_token(source.client, created);
 }
 
 REGISTER_COMMAND(command_create_all_cursors_matching_token);
@@ -595,7 +595,7 @@ void command_create_all_cursors_matching_token(Editor* editor, Command_Source so
         }
     }
 
-    show_created_messages(source.client, created);
+    show_created_messages_token(source.client, created);
 }
 
 REGISTER_COMMAND(command_create_all_cursors_matching_token_or_search);

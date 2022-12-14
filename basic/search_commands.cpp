@@ -1,6 +1,7 @@
 #include "search_commands.hpp"
 
 #include "command_macros.hpp"
+#include "cursor_commands.hpp"
 #include "match.hpp"
 #include "movement.hpp"
 
@@ -8,7 +9,6 @@ namespace mag {
 namespace basic {
 
 void submit_mini_buffer(Editor* editor, Client* client);
-void show_created_messages(Editor* editor, Client* client, int created);
 
 static bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start, uint64_t end) {
     CZ_DEBUG_ASSERT(end >= start->position);
@@ -88,7 +88,7 @@ REGISTER_COMMAND(command_create_cursor_forward_search);
 void command_create_cursor_forward_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_forward_search(buffer, window);
-    show_created_messages(editor, source.client, created);
+    show_created_messages(source.client, created);
 
     if (created == 1 && window->selected_cursor + 1 == window->cursors.len - 1) {
         ++window->selected_cursor;
@@ -129,7 +129,7 @@ REGISTER_COMMAND(command_create_cursor_backward_search);
 void command_create_cursor_backward_search(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     int created = create_cursor_backward_search(buffer, window);
-    show_created_messages(editor, source.client, created);
+    show_created_messages(source.client, created);
 
     if (created == 1 && window->selected_cursor > 0) {
         ++window->selected_cursor;
