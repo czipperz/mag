@@ -1385,5 +1385,49 @@ void command_replace_region(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+static void command_insert_num_callback(Editor* editor,
+                                        Client* client,
+                                        cz::Str replacement,
+                                        void*) {
+    size_t num;
+    cz::Str string;
+    if (cz::parse(replacement, &num, ' ', cz::rest(&string)) != replacement.len) {
+        client->show_message("Error: invalid input; must match format 'NUM STRING'.");
+        return;
+    }
+
+    WITH_SELECTED_BUFFER(client);
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    // Build the string to be inserted.
+    cz::String builder = {};
+    builder.reserve_exact(transaction.value_allocator(), num * string.len);
+    for (size_t i = 0; i < num; ++i)
+        builder.append(string);
+
+    SSOStr to_insert = SSOStr::from_constant(builder);
+
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        Edit insert;
+        insert.value = to_insert;
+        insert.position = window->cursors[i].point + i * to_insert.len();
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+    }
+
+    transaction.commit(client);
+}
+
+REGISTER_COMMAND(command_insert_num);
+void command_insert_num(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Insert repeated.  Use format 'NUM STRING': ";
+    dialog.response_callback = command_insert_num_callback;
+    source.client->show_dialog(dialog);
+}
+
 }
 }

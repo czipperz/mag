@@ -82,6 +82,7 @@ void command_run_command_for_result(Editor* editor, Command_Source source);
 void command_run_command_ignore_result(Editor* editor, Command_Source source);
 
 void command_replace_region(Editor* editor, Command_Source source);
+void command_insert_num(Editor* editor, Command_Source source);
 
 }
 }
