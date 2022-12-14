@@ -22,6 +22,7 @@
 #include "basic/macro_commands.hpp"
 #include "basic/markdown_commands.hpp"
 #include "basic/mouse_commands.hpp"
+#include "basic/movement_commands.hpp"
 #include "basic/number_commands.hpp"
 #include "basic/reformat_commands.hpp"
 #include "basic/region_movement_commands.hpp"

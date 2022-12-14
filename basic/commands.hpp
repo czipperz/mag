@@ -24,33 +24,9 @@ void command_show_marks(Editor* editor, Command_Source source);
 void command_set_mark(Editor* editor, Command_Source source);
 void command_swap_mark_point(Editor* editor, Command_Source source);
 
-void command_forward_char(Editor* editor, Command_Source source);
-void command_backward_char(Editor* editor, Command_Source source);
-
-void command_forward_word(Editor* editor, Command_Source source);
-void command_backward_word(Editor* editor, Command_Source source);
-
-void command_forward_line(Editor* editor, Command_Source source);
-void command_backward_line(Editor* editor, Command_Source source);
-
-void command_forward_line_single_cursor_visual(Editor* editor, Command_Source source);
-void command_backward_line_single_cursor_visual(Editor* editor, Command_Source source);
-
-void command_forward_paragraph(Editor* editor, Command_Source source);
-void command_backward_paragraph(Editor* editor, Command_Source source);
-
-void command_end_of_buffer(Editor* editor, Command_Source source);
-void command_start_of_buffer(Editor* editor, Command_Source source);
-
 void command_push_jump(Editor* editor, Command_Source source);
 void command_unpop_jump(Editor* editor, Command_Source source);
 void command_pop_jump(Editor* editor, Command_Source source);
-
-void command_end_of_line(Editor* editor, Command_Source source);
-void command_start_of_line(Editor* editor, Command_Source source);
-
-void command_end_of_line_text(Editor* editor, Command_Source source);
-void command_start_of_line_text(Editor* editor, Command_Source source);
 
 void command_delete_backward_char(Editor* editor, Command_Source source);
 void command_delete_forward_char(Editor* editor, Command_Source source);

@@ -1,6 +1,7 @@
 #include <czt/test_base.hpp>
 
 #include "basic/commands.hpp"
+#include "basic/movement_commands.hpp"
 #include "basic/shift_commands.hpp"
 #include "test_runner.hpp"
 
