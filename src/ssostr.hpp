@@ -31,7 +31,7 @@ struct AllocatedStr {
         }
     }
 
-    void drop(cz::Allocator allocator) { allocator.dealloc({(char*)_buffer, _len}); }
+    void drop(cz::Allocator allocator) { allocator.dealloc({(char*)_buffer, len()}); }
 
     const char* buffer() const { return _buffer; }
 
