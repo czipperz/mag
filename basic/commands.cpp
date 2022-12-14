@@ -82,7 +82,6 @@ void command_swap_mark_point(Editor* editor, Command_Source source) {
              [](const Cursor* left, const Cursor* right) { return left->point < right->point; });
 }
 
-
 REGISTER_COMMAND(command_push_jump);
 void command_push_jump(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
@@ -1332,6 +1331,57 @@ void command_run_command_ignore_result(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Shell silent: ";
     dialog.response_callback = command_run_command_ignore_result_callback;
+    source.client->show_dialog(dialog);
+}
+
+static void command_replace_region_callback(Editor* editor,
+                                            Client* client,
+                                            cz::Str replacement,
+                                            void*) {
+    if (replacement.len != 1) {
+        client->show_message("Error: must be a single character replacement");
+        return;
+    }
+
+    WITH_SELECTED_BUFFER(client);
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    Contents_Iterator it = buffer->contents.start();
+
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        uint64_t start = window->cursors[i].start();
+        uint64_t end = window->cursors[i].end();
+        if (i + 1 < window->cursors.len)
+            end = cz::min(end, window->cursors[i + 1].start());
+        it.advance_to(start);
+
+        Edit remove;
+        remove.value = buffer->contents.slice(transaction.value_allocator(), it, end);
+        remove.position = start;
+        remove.flags = Edit::REMOVE;
+        transaction.push(remove);
+
+        SSOStr value = remove.value.clone(transaction.value_allocator());
+        memset((char*)value.buffer(), replacement[0], value.len());
+
+        Edit insert;
+        insert.value = value;
+        insert.position = start;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+    }
+
+    transaction.commit(client);
+}
+
+REGISTER_COMMAND(command_replace_region);
+void command_replace_region(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Replace region with character: ";
+    dialog.response_callback = command_replace_region_callback;
     source.client->show_dialog(dialog);
 }
 
