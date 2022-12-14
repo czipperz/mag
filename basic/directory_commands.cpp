@@ -399,15 +399,42 @@ static void command_directory_rename_path_callback(Editor* editor,
             new_path.null_terminate();
         }
     }
+    if (cz::file::is_directory(new_path.buffer)) {
+        auto message = cz::format("Cannot overwrite directory ", new_path);
+        CZ_DEFER(message.drop());
+        client->show_message(message);
+        return;
+    }
 
     if (rename(path.buffer, new_path.buffer) != 0) {
         if (!remove_path(&new_path)) {
             client->show_message("Couldn't remove destination");
+            return;
         }
         if (rename(path.buffer, new_path.buffer) != 0) {
             client->show_message("Couldn't rename path");
             return;
         }
+    }
+
+    cz::Arc<Buffer_Handle> handle = {};
+    if (find_buffer_by_path(editor, client, path, &handle)) {
+        WITH_BUFFER_HANDLE(handle);
+
+        cz::Str directory = new_path;
+        (void)cz::path::pop_name(new_path, &directory);
+
+        cz::Str name = ".";
+        (void)cz::path::name_component(new_path, &name);
+
+        buffer->directory.len = 0;
+        buffer->directory.reserve(cz::heap_allocator(), directory.len + 1);
+        buffer->directory.append(directory);
+        buffer->directory.null_terminate();
+
+        buffer->name.len = 0;
+        buffer->name.reserve(cz::heap_allocator(), name.len);
+        buffer->name.append(name);
     }
 }
 
