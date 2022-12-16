@@ -556,7 +556,7 @@ static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch
     switch ((len << 8) | (uint8_t)first_ch) {
     case (2 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "do"))
-            return 2;
+            return 4;
         return 0;
     case (2 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "if"))
@@ -620,7 +620,7 @@ static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch
         return 0;
     case (4 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "else"))
-            return 2;
+            return 4;
         // return 0;
         // case (4 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "enum"))
