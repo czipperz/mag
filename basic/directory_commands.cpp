@@ -293,6 +293,47 @@ static bool copy_path(cz::String* path, cz::String* new_path) {
         [](const char*) { return true; });
 }
 
+static bool make_parent_directories(cz::Str path) {
+    cz::Str directory = path;
+    if (!cz::path::pop_component(&directory))
+        return true;
+
+    cz::Heap_String storage = {};
+    CZ_DEFER(storage.len);
+
+    while (1) {
+        cz::Str base = directory;
+        cz::Str prev = directory;
+
+        // Loop popping directories until we reach the first directory that exists.
+        while (1) {
+            storage.len = 0;
+            storage.reserve_exact(base.len + 1);
+            storage.append(base);
+            storage.null_terminate();
+            if (cz::file::exists(storage.buffer))
+                break;
+
+            prev = base;
+            if (!cz::path::pop_component(&base)) {
+                // Root directory doesn't exist.  Fail.
+                return false;
+            }
+        }
+
+        if (base.len == directory.len)
+            break;
+
+        storage.len = 0;
+        storage.reserve_exact(prev.len + 1);
+        storage.append(prev);
+        storage.null_terminate();
+        if (cz::file::create_directory(storage.buffer) != 0)
+            return false;
+    }
+    return true;
+}
+
 static void command_directory_copy_path_callback(Editor* editor,
                                                  Client* client,
                                                  cz::Str query,
@@ -322,6 +363,11 @@ static void command_directory_copy_path_callback(Editor* editor,
             new_path.append(name);
             new_path.null_terminate();
         }
+    }
+
+    if (!make_parent_directories(new_path)) {
+        client->show_message("Failed to make parent directories for destination");
+        return;
     }
 
     if (!copy_path(&path, &new_path)) {
@@ -403,6 +449,11 @@ static void command_directory_rename_path_callback(Editor* editor,
         auto message = cz::format("Cannot overwrite directory ", new_path);
         CZ_DEFER(message.drop());
         client->show_message(message);
+        return;
+    }
+
+    if (!make_parent_directories(new_path)) {
+        client->show_message("Failed to make parent directories for destination");
         return;
     }
 
