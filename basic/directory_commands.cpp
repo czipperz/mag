@@ -353,7 +353,8 @@ static void command_directory_copy_path_callback(Editor* editor,
         new_path = standardize_path(cz::heap_allocator(), query);
     }
 
-    if (cz::file::is_directory(new_path.buffer)) {
+    if (cz::file::is_directory(new_path.buffer) ||
+        (!cz::file::is_directory(path.buffer) && query.ends_with('/'))) {
         cz::Str name;
         if (cz::path::name_component(path, &name)) {
             new_path.reserve(cz::heap_allocator(), name.len + 2);
@@ -434,7 +435,8 @@ static void command_directory_rename_path_callback(Editor* editor,
         new_path = standardize_path(cz::heap_allocator(), query);
     }
 
-    if (cz::file::is_directory(new_path.buffer)) {
+    if (cz::file::is_directory(new_path.buffer) ||
+        (!cz::file::is_directory(path.buffer) && query.ends_with('/'))) {
         cz::Str name;
         if (cz::path::name_component(path, &name)) {
             new_path.reserve(cz::heap_allocator(), name.len + 2);
