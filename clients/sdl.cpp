@@ -213,8 +213,11 @@ static void process_event(Server* server,
                           bool* force_redraw,
                           bool* minimized,
                           bool* disable_key_presses,
+                          bool* previous_alt_u,
                           uint32_t* disable_key_presses_until) {
     ZoneScoped;
+
+    bool is_alt_u = false;
 
     // Handle modifier changes before the timeout check.
     if (event.type == SDL_KEYDOWN) {
@@ -284,6 +287,84 @@ static void process_event(Server* server,
 
     case SDL_TEXTINPUT:
         if (!(*mod_state & ~(KMOD_SHIFT | KMOD_CAPS | KMOD_NUM | KMOD_GUI))) {
+#ifdef __APPLE__
+            // On mac, A-u will try to push an umlaut on the next character.  We don't like
+            // this behavior because 1.  we don't have utf8 support, and 2.  we use A-u often.
+            if (*previous_alt_u) {
+                // Character after A-u doesn't work with an umlaut so
+                // the mac will emit an umlaut (U+00A8) by itself.  Ignore it.
+                if (event.text.text[0] == -62 && event.text.text[1] == -88)
+                    break;
+
+                // Try to remove the umlaut.
+                if (event.text.text[0] == -61) {
+                    switch (event.text.text[1]) {
+                    case -124:
+                        // A with umlaut (U+00C4)
+                        event.text.text[0] = 'A';
+                        event.text.text[1] = '\0';
+                        break;
+                    case -117:
+                        // E with umlaut (U+00CB)
+                        event.text.text[0] = 'E';
+                        event.text.text[1] = '\0';
+                        break;
+                    case -113:
+                        // I with umlaut (U+00CF)
+                        event.text.text[0] = 'I';
+                        event.text.text[1] = '\0';
+                        break;
+                    case -106:
+                        // O with umlaut (U+00D6)
+                        event.text.text[0] = 'O';
+                        event.text.text[1] = '\0';
+                        break;
+                    case -100:
+                        // U with umlaut (U+00DC)
+                        event.text.text[0] = 'U';
+                        event.text.text[1] = '\0';
+                        break;
+                    case -92:
+                        // a with umlaut (U+00E4)
+                        event.text.text[0] = 'a';
+                        event.text.text[1] = '\0';
+                        break;
+                    case -85:
+                        // e with umlaut (U+00EB)
+                        event.text.text[0] = 'e';
+                        event.text.text[1] = '\0';
+                        break;
+                    case -81:
+                        // i with umlaut (U+00EF)
+                        event.text.text[0] = 'i';
+                        event.text.text[1] = '\0';
+                        break;
+                    case -74:
+                        // o with umlaut (U+00F6)
+                        event.text.text[0] = 'o';
+                        event.text.text[1] = '\0';
+                        break;
+                    case -68:
+                        // u with umlaut (U+00FC)
+                        event.text.text[0] = 'u';
+                        event.text.text[1] = '\0';
+                        break;
+                    case -65:
+                        // y with umlaut (U+00FF)
+                        event.text.text[0] = 'y';
+                        event.text.text[1] = '\0';
+                        break;
+                    }
+                } else if (event.text.text[0] == -59) {
+                    if (event.text.text[1] == -72) {
+                        // Y with umlaut (U+0178)
+                        event.text.text[0] = 'Y';
+                        event.text.text[1] = '\0';
+                    }
+                }
+            }
+#endif
+
             for (char* p = event.text.text; *p; ++p) {
                 Key key = {};
                 key.code = *p;
@@ -294,6 +375,7 @@ static void process_event(Server* server,
 
     case SDL_TEXTEDITING:
         if (event.edit.length == 0) {
+            is_alt_u = *previous_alt_u;
             break;
         }
 
@@ -578,9 +660,17 @@ static void process_event(Server* server,
             }
         }
 
+        is_alt_u = (key.modifiers == ALT && key.code == 'u');
+
         server->receive(client, key);
     } break;
+
+    case SDL_KEYUP:
+        is_alt_u = *previous_alt_u;
+        break;
     }
+
+    *previous_alt_u = is_alt_u;
 }
 
 static void process_events(Server* server,
@@ -593,6 +683,7 @@ static void process_events(Server* server,
                            int character_height,
                            bool* force_redraw,
                            bool* minimized,
+                           bool* previous_alt_u,
                            bool* disable_key_presses,
                            uint32_t* disable_key_presses_until) {
     ZoneScoped;
@@ -600,8 +691,8 @@ static void process_events(Server* server,
     SDL_Event event;
     while (poll_event(&event)) {
         process_event(server, client, event, scroll, window, dpi_scale, mod_state, character_width,
-                      character_height, force_redraw, minimized, disable_key_presses,
-                      disable_key_presses_until);
+                      character_height, force_redraw, minimized, previous_alt_u,
+                      disable_key_presses, disable_key_presses_until);
         if (client->queue_quit) {
             return;
         }
@@ -1159,6 +1250,7 @@ void run(Server* server, Client* client) {
 
     bool minimized = false;
     bool force_redraw = false;
+    bool previous_alt_u = false;
 
     // There is a super freaking annoying bug that we will gain focus and get
     // a key press that the user was pressing on another window.  So just
@@ -1177,8 +1269,8 @@ void run(Server* server, Client* client) {
         bool any_synchronous_jobs = server->run_synchronous_jobs(client);
 
         process_events(server, client, &scroll, window, &dpi_scale, &mod_state, character_width,
-                       character_height, &force_redraw, &minimized, &disable_key_presses,
-                       &disable_key_presses_until);
+                       character_height, &force_redraw, &minimized, &previous_alt_u,
+                       &disable_key_presses, &disable_key_presses_until);
 
         any_asynchronous_jobs |= server->send_pending_asynchronous_jobs();
 
@@ -1260,7 +1352,7 @@ void run(Server* server, Client* client) {
             if (result) {
                 process_event(server, client, event, &scroll, window, &dpi_scale, &mod_state,
                               character_width, character_height, &force_redraw, &minimized,
-                              &disable_key_presses, &disable_key_presses_until);
+                              &previous_alt_u, &disable_key_presses, &disable_key_presses_until);
             }
         }
 
