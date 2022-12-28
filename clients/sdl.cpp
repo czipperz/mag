@@ -660,14 +660,23 @@ static void process_event(Server* server,
             }
         }
 
-        is_alt_u = (key.modifiers == ALT && key.code == 'u');
+        is_alt_u = *previous_alt_u;
 
         server->receive(client, key);
     } break;
 
-    case SDL_KEYUP:
-        is_alt_u = *previous_alt_u;
-        break;
+    case SDL_KEYUP: {
+        // Get the key name.  If the length is one then it's a printable character ('A' or '1').
+        //
+        // Otherwise, it's a button like 'TAB', in which case
+        // we want to ignore it because it's not part of 'A-u'.
+        cz::Str key_name = SDL_GetKeyName(event.key.keysym.sym);
+        if (key_name.len != 1)
+            break;
+
+        bool only_alt = (event.key.keysym.mod & KMOD_ALT) && !(event.key.keysym.mod & !KMOD_ALT);
+        is_alt_u = (only_alt && key_name[0] == 'U');
+    } break;
     }
 
     *previous_alt_u = is_alt_u;
