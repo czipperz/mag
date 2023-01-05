@@ -14,6 +14,7 @@
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
 #include <cz/str.hpp>
+#include <cz/utf.hpp>
 #include <cz/working_directory.hpp>
 #include "basic/copy_commands.hpp"
 #include "cell.hpp"
