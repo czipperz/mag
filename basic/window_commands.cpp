@@ -60,16 +60,15 @@ static Window* trickle_up(Client* client, Window* w, Window* selected_window) {
             return w;
         }
 
+        Window* sel = first;
+        if (!first)
+            sel = second;
+
+        if (sel)
+            sel->set_size(window->total_rows, window->total_cols);
+
         Window_Split::drop_non_recursive(window);
-        if (first) {
-            first->set_size(window->total_rows, window->total_cols);
-            return first;
-        }
-        if (second) {
-            second->set_size(window->total_rows, window->total_cols);
-            return second;
-        }
-        return nullptr;
+        return sel;
     }
     }
 
