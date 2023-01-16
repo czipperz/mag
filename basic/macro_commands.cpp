@@ -15,6 +15,10 @@ void command_start_recording_macro(Editor* editor, Command_Source source) {
 
 REGISTER_COMMAND(command_stop_recording_macro);
 void command_stop_recording_macro(Editor* editor, Command_Source source) {
+    if (!source.client->record_key_presses) {
+        source.client->show_message("No macro to stop recording");
+        return;
+    }
     source.client->show_message("Stop recording macro");
     size_t end = source.client->key_chain_offset - source.keys.len;
     source.client->macro_key_chain.reserve(cz::heap_allocator(), end);
