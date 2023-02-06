@@ -314,8 +314,10 @@ bool reformat_at(Client* client,
     for (size_t i = 0; i < words.len; ++i) {
         auto& word = words[i];
 
-        // Test if the word fits on this line.
-        if (current_column + previous_spaces + word.len() <= word_column_goal) {
+        // Test if the word fits on this line or this is the
+        // first word (which has to be on the first line).
+        if (current_column + previous_spaces + word.len() <= word_column_goal ||
+            current_column == 0) {
             // If so then add it.
             new_region.reserve(cz::heap_allocator(), previous_spaces + word.len());
             for (size_t j = 0; j < previous_spaces; ++j) {
