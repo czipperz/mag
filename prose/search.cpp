@@ -36,6 +36,8 @@ static void run_search(Client* client,
     buffer_name.append("ag ");
     buffer_name.append(query);
 
+    client->close_fused_paired_windows();
+
     cz::Arc<Buffer_Handle> handle;
     if (run_console_command(client, editor, directory, args, buffer_name, "Ag error", &handle) ==
         Run_Console_Command_Result::SUCCESS_NEW_BUFFER) {

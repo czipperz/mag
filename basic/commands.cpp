@@ -1294,6 +1294,8 @@ static void command_run_command_for_result_callback(Editor* editor,
     buffer_name.append("shell ");
     buffer_name.append(script);
 
+    client->close_fused_paired_windows();
+
     WITH_CONST_SELECTED_BUFFER(client);
 
     run_console_command(client, editor, buffer->directory.buffer, script, buffer_name,

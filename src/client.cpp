@@ -175,7 +175,28 @@ void Client::set_selected_buffer(cz::Arc<Buffer_Handle> buffer_handle) {
     save_removed_window(old_selected_window);
 }
 
-void Client::replace_window(Window* o, Window* n) {
+void Client::close_fused_paired_windows() {
+    Window_Unified* selected = selected_normal_window;
+    Window_Split* parent = selected->parent;
+    if (parent && parent->fused) {
+        Window* other_child = (selected == parent->first ? parent->second : parent->first);
+        replace_window(parent, selected);
+        recursively_save_removed_window(other_child);
+    }
+}
+
+void Client::recursively_save_removed_window(Window* window) {
+    if (window->tag == Window::UNIFIED) {
+        save_removed_window((Window_Unified*)window);
+    } else {
+        Window_Split* split = (Window_Split*)window;
+        recursively_save_removed_window(split->first);
+        recursively_save_removed_window(split->second);
+        Window_Split::drop_non_recursive(split);
+    }
+}
+
+void Client::replace_window(const Window* o, Window* n) {
     if (o->parent) {
         CZ_DEBUG_ASSERT(o->parent->tag == Window::VERTICAL_SPLIT ||
                         o->parent->tag == Window::HORIZONTAL_SPLIT);

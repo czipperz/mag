@@ -114,7 +114,10 @@ struct Client {
     /// Clones the handle.
     void set_selected_buffer(cz::Arc<Buffer_Handle> buffer_handle);
 
-    void replace_window(Window* o, Window* n);
+    void replace_window(const Window* o, Window* n);
+
+    void close_fused_paired_windows();
+    void recursively_save_removed_window(Window* window);
 
     /// Set the prompt's text without changing the callbacks.
     void set_prompt_text(cz::Str text);
