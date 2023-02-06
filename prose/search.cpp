@@ -21,7 +21,7 @@ static void run_search(Client* client,
     cz::Heap_Vector<cz::Str> args = {};
     CZ_DEFER(args.drop());
     {
-        cz::Str defargs[] = {"ag", "--column", "--fixed-strings", "--case-sensitive", "--", query};
+        cz::Str defargs[] = {"ag", "--hidden", "--column", "--fixed-strings", "--case-sensitive", "--", query};
         args.reserve(cz::len(defargs) + query_word);
         args.append(defargs);
 
