@@ -232,6 +232,11 @@ void remove_line_comments(Transaction* transaction,
 
         Contents_Iterator after = start;
         after.advance(comment_start.len);
+
+        if (after.get() == ' ') {
+            after.advance();
+        }
+        
         if (after.at_eob() || after.get() == '\n') {
             // Delete all indent and the comment.
             Edit remove_line;
@@ -242,10 +247,6 @@ void remove_line_comments(Transaction* transaction,
             transaction->push(remove_line);
             *offset -= remove_line.value.len();
             goto next_line;
-        }
-
-        if (after.get() == ' ') {
-            after.advance();
         }
 
         // Remove the comment.
@@ -278,7 +279,7 @@ void remove_line_comments(Transaction* transaction,
         it.advance_to(after.position);
         for (;; it.advance()) {
             char ch = it.get();
-            if (!cz::is_space(ch)) {
+            if (!cz::is_blank(ch)) {
                 break;
             }
             if (ch == ' ') {
