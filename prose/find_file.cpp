@@ -348,7 +348,7 @@ static void command_find_file_response(Editor* editor, Client* client, cz::Str f
     path.append(file);
     path.null_terminate();
 
-    open_file(editor, client, path);
+    open_file_arg(editor, client, path);
 }
 
 template <class Copy_Directory>
