@@ -2,6 +2,7 @@
 
 #include <cz/char_type.hpp>
 #include <cz/sort.hpp>
+#include "basic/commands.hpp"
 #include "command_macros.hpp"
 #include "comment.hpp"
 #include "editor.hpp"
@@ -487,6 +488,19 @@ void command_extract_variable(Editor* editor, Command_Source source) {
 
     // We manually fixed the cursors so the window doesn't need to do any updates.
     window->change_index = buffer->changes.len;
+}
+
+REGISTER_COMMAND(command_insert_divider_60);
+void command_insert_divider_60(Editor* editor, Command_Source source) {
+    basic::insert_divider_helper(editor, source, '/', 60);
+}
+REGISTER_COMMAND(command_insert_divider_70);
+void command_insert_divider_70(Editor* editor, Command_Source source) {
+    basic::insert_divider_helper(editor, source, '/', 70);
+}
+REGISTER_COMMAND(command_insert_divider_80);
+void command_insert_divider_80(Editor* editor, Command_Source source) {
+    basic::insert_divider_helper(editor, source, '/', 80);
 }
 
 }

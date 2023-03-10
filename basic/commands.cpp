@@ -1431,5 +1431,43 @@ void command_insert_num(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+void insert_divider_helper(Editor* editor, Command_Source source, char ch, uint64_t target_column) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator it = buffer->contents.start();
+    uint64_t min_column = -1;
+    for (size_t c = 0; c < window->cursors.len; ++c) {
+        it.advance_to(window->cursors[c].point);
+        min_column = cz::min(min_column, get_visual_column(buffer->mode, it));
+    }
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    cz::String divider = {};
+    divider.reserve_exact(transaction.value_allocator(), target_column - min_column + 1);
+    divider.push_many(ch, target_column - min_column);
+    divider.push('\n');
+
+    uint64_t offset = 0;
+    for (size_t c = 0; c < window->cursors.len; ++c) {
+        it.advance_to(window->cursors[c].point);
+        uint64_t column = get_visual_column(buffer->mode, it);
+        if (column >= target_column)
+            continue;
+
+        Edit insert;
+        cz::print(divider.len - target_column + column, '\n');
+        insert.value = SSOStr::from_constant(divider.slice_start(divider.len - target_column + column));
+        insert.position = it.position + offset;
+        insert.flags = Edit::INSERT;
+        transaction.push(insert);
+        offset += insert.value.len();
+    }
+
+    transaction.commit(source.client);
+}
+
 }
 }

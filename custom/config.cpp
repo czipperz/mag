@@ -16,6 +16,7 @@
 #include "basic/cursor_commands.hpp"
 #include "basic/diff_commands.hpp"
 #include "basic/directory_commands.hpp"
+#include "basic/hash_commands.hpp"
 #include "basic/help_commands.hpp"
 #include "basic/html_commands.hpp"
 #include "basic/ide_commands.hpp"
@@ -718,6 +719,24 @@ static void git_edit_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c A-k", version_control::command_abort_and_quit);
 }
 
+static void hash_comments_key_map(Key_Map& key_map) {
+    BIND(key_map, "A-h", basic::command_reformat_comment_hash);
+    BIND(key_map, "A-;", basic::command_comment_hash);
+    BIND(key_map, "A-:", basic::command_uncomment_hash);
+    BIND(key_map, "A-c d 6", hash::command_insert_divider_60);
+    BIND(key_map, "A-c d 7", hash::command_insert_divider_70);
+    BIND(key_map, "A-c d 8", hash::command_insert_divider_80);
+}
+
+static void cpp_comments_key_map(Key_Map& key_map) {
+    BIND(key_map, "A-;", cpp::command_comment);
+    BIND(key_map, "A-:", cpp::command_uncomment);
+    BIND(key_map, "A-h", cpp::command_reformat_comment);
+    BIND(key_map, "A-c d 6", cpp::command_insert_divider_60);
+    BIND(key_map, "A-c d 7", cpp::command_insert_divider_70);
+    BIND(key_map, "A-c d 8", cpp::command_insert_divider_80);
+}
+
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
     ZoneScoped;
 
@@ -849,9 +868,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         cpp:
             buffer->mode.next_token = syntax::cpp_next_token;
             BIND(buffer->mode.key_map, "A-x A-f", clang_format::command_clang_format_buffer);
-            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
-            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
-            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
+            cpp_comments_key_map(buffer->mode.key_map);
             BIND(buffer->mode.key_map, "A-x *", cpp::command_make_indirect);
             BIND(buffer->mode.key_map, "A-x &", cpp::command_make_direct);
             BIND(buffer->mode.key_map, "A-x e", cpp::command_extract_variable);
@@ -865,9 +882,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name == "CMakeLists.txt" || name.ends_with(".cmake")) {
             buffer->mode.next_token = syntax::cmake_next_token;
-            BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
-            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
-            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
+            hash_comments_key_map(buffer->mode.key_map);
             BIND(buffer->mode.key_map, "C-A-c",
                  command_complete_at_point_prompt_identifiers_or_cmake_keywords);
 
@@ -909,9 +924,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (name.ends_with(".js")) {
         javascript:
             buffer->mode.next_token = syntax::js_next_token;
-            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
-            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
-            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
+            cpp_comments_key_map(buffer->mode.key_map);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
@@ -920,9 +933,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".go")) {
             buffer->mode.next_token = syntax::go_next_token;
-            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
-            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
-            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
+            cpp_comments_key_map(buffer->mode.key_map);
 
             // Go uses tabs for alignment.
             buffer->mode.tab_width = buffer->mode.indent_width;
@@ -935,9 +946,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".rs")) {
             buffer->mode.next_token = syntax::rust_next_token;
-            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
-            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
-            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
+            cpp_comments_key_map(buffer->mode.key_map);
             BIND(buffer->mode.key_map, "A-x e", rust::command_extract_variable);
             BIND(buffer->mode.key_map, "A-x A-f", rust::command_rust_format_buffer);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
@@ -949,9 +958,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".zig")) {
             buffer->mode.next_token = syntax::zig_next_token;
-            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
-            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
-            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
+            cpp_comments_key_map(buffer->mode.key_map);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
@@ -961,9 +968,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".proto")) {
             buffer->mode.next_token = syntax::protobuf_next_token;
-            BIND(buffer->mode.key_map, "A-;", cpp::command_comment);
-            BIND(buffer->mode.key_map, "A-:", cpp::command_uncomment);
-            BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment);
+            cpp_comments_key_map(buffer->mode.key_map);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
@@ -994,9 +999,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             }
 
             buffer->mode.next_token = syntax::sh_next_token;
-            BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
-            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
-            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
+            hash_comments_key_map(buffer->mode.key_map);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -1005,9 +1008,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (name.ends_with(".py")) {
         python:
             buffer->mode.next_token = syntax::python_next_token;
-            BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
-            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
-            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
+            hash_comments_key_map(buffer->mode.key_map);
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
@@ -1019,9 +1020,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    name == ".agignore") {
             // A bunch of miscellaneous file types that all use # for comments.
             buffer->mode.next_token = syntax::general_hash_comments_next_token;
-            BIND(buffer->mode.key_map, "A-h", basic::command_reformat_comment_hash);
-            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
-            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
+            hash_comments_key_map(buffer->mode.key_map);
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
 
             if (name.ends_with(".json")) {
@@ -1041,14 +1040,12 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else if (name == "git-rebase-todo") {
             buffer->mode.next_token = syntax::git_rebase_todo_next_token;
-            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
-            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
+            hash_comments_key_map(buffer->mode.key_map);
             git_edit_key_map(buffer->mode.key_map);
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
         } else if (name == "COMMIT_EDITMSG" || name == "MERGE_MSG") {
             buffer->mode.next_token = syntax::git_commit_edit_message_next_token;
-            BIND(buffer->mode.key_map, "A-;", basic::command_comment_hash);
-            BIND(buffer->mode.key_map, "A-:", basic::command_uncomment_hash);
+            hash_comments_key_map(buffer->mode.key_map);
             git_edit_key_map(buffer->mode.key_map);
             add_indent_overlays = false;
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
