@@ -1446,9 +1446,8 @@ void insert_divider_helper(Editor* editor, Command_Source source, char ch, uint6
     CZ_DEFER(transaction.drop());
 
     cz::String divider = {};
-    divider.reserve_exact(transaction.value_allocator(), target_column - min_column + 1);
+    divider.reserve_exact(transaction.value_allocator(), target_column - min_column);
     divider.push_many(ch, target_column - min_column);
-    divider.push('\n');
 
     uint64_t offset = 0;
     for (size_t c = 0; c < window->cursors.len; ++c) {
@@ -1458,8 +1457,7 @@ void insert_divider_helper(Editor* editor, Command_Source source, char ch, uint6
             continue;
 
         Edit insert;
-        cz::print(divider.len - target_column + column, '\n');
-        insert.value = SSOStr::from_constant(divider.slice_start(divider.len - target_column + column));
+        insert.value = SSOStr::from_constant(divider.slice_end(target_column - column));
         insert.position = it.position + offset;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
