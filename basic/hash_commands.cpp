@@ -9,15 +9,15 @@ namespace hash {
 
 REGISTER_COMMAND(command_insert_divider_60);
 void command_insert_divider_60(Editor* editor, Command_Source source) {
-    basic::insert_divider_helper(editor, source, '/', 60);
+    basic::insert_divider_helper(editor, source, '#', 60);
 }
 REGISTER_COMMAND(command_insert_divider_70);
 void command_insert_divider_70(Editor* editor, Command_Source source) {
-    basic::insert_divider_helper(editor, source, '/', 70);
+    basic::insert_divider_helper(editor, source, '#', 70);
 }
 REGISTER_COMMAND(command_insert_divider_80);
 void command_insert_divider_80(Editor* editor, Command_Source source) {
-    basic::insert_divider_helper(editor, source, '/', 80);
+    basic::insert_divider_helper(editor, source, '#', 80);
 }
 
 }
