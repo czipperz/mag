@@ -85,6 +85,11 @@ void command_replace_region(Editor* editor, Command_Source source);
 void command_insert_num(Editor* editor, Command_Source source);
 
 void insert_divider_helper(Editor* editor, Command_Source source, char ch, uint64_t target_column);
+void insert_header_helper(Editor* editor,
+                          Command_Source source,
+                          char ch,
+                          uint64_t min_num,
+                          uint64_t target_column);
 
 }
 }

@@ -1467,5 +1467,98 @@ void insert_divider_helper(Editor* editor, Command_Source source, char ch, uint6
     transaction.commit(source.client);
 }
 
+void insert_header_helper(Editor* editor,
+                          Command_Source source,
+                          char ch,
+                          uint64_t min_num,
+                          uint64_t target_column) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator it = buffer->contents.start();
+    uint64_t min_column = -1;
+    for (size_t c = 0; c < window->cursors.len; ++c) {
+        it.advance_to(window->cursors[c].point);
+        min_column = cz::min(min_column, get_visual_column(buffer->mode, it));
+    }
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    cz::String divider = {};
+    divider.reserve_exact(transaction.value_allocator(), target_column - min_column + 1);
+    divider.push_many(ch, target_column - min_column);
+    divider.push('\n');
+
+    cz::String starter = {};
+    starter.reserve_exact(transaction.value_allocator(), min_num + 2);
+    starter.push_many(ch, min_num);
+    starter.push(' ');
+    starter.push('\n');
+
+    cz::Vector<uint64_t> cursor_outputs = {};
+    CZ_DEFER(cursor_outputs.drop(cz::heap_allocator()));
+    cursor_outputs.reserve_exact(cz::heap_allocator(), window->cursors.len);
+
+    uint64_t offset = 0;
+    for (size_t c = 0; c < window->cursors.len; ++c) {
+        it.advance_to(window->cursors[c].point);
+        uint64_t column = get_visual_column(buffer->mode, it);
+        if (column >= target_column)
+            continue;
+
+        Edit top;
+        top.value =
+            SSOStr::from_constant(divider.slice_start(divider.len - 1 - (target_column - column)));
+        top.position = it.position + offset;
+        top.flags = Edit::INSERT;
+        transaction.push(top);
+        offset += top.value.len();
+
+        Contents_Iterator sol = it;
+        start_of_line(&sol);
+        SSOStr indent = buffer->contents.slice(transaction.value_allocator(), sol, it.position);
+
+        Edit indent_middle;
+        indent_middle.value = indent;
+        indent_middle.position = it.position + offset;
+        indent_middle.flags = Edit::INSERT;
+        transaction.push(indent_middle);
+        offset += indent_middle.value.len();
+
+        Edit middle;
+        middle.value = SSOStr::from_constant(starter);
+        middle.position = it.position + offset;
+        middle.flags = Edit::INSERT;
+        transaction.push(middle);
+        offset += middle.value.len();
+
+        cursor_outputs.push(window->cursors[c].point + offset - 1);
+
+        Edit indent_bottom;
+        indent_bottom.value = indent;
+        indent_bottom.position = it.position + offset;
+        indent_bottom.flags = Edit::INSERT;
+        transaction.push(indent_bottom);
+        offset += indent_bottom.value.len();
+
+        Edit bottom;
+        // Don't include the newline in the bottom edit.
+        bottom.value = SSOStr::from_constant(divider.slice_end(target_column - column));
+        bottom.position = it.position + offset;
+        bottom.flags = Edit::INSERT;
+        transaction.push(bottom);
+        offset += bottom.value.len();
+    }
+
+    if (!transaction.commit(source.client))
+        return;
+
+    window->update_cursors(buffer);
+    for (size_t c = 0; c < window->cursors.len; ++c) {
+        window->cursors[c].point = cursor_outputs[c];
+    }
+}
+
 }
 }

@@ -726,6 +726,9 @@ static void hash_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c d 6", hash::command_insert_divider_60);
     BIND(key_map, "A-c d 7", hash::command_insert_divider_70);
     BIND(key_map, "A-c d 8", hash::command_insert_divider_80);
+    BIND(key_map, "A-c h 6", hash::command_insert_header_60);
+    BIND(key_map, "A-c h 7", hash::command_insert_header_70);
+    BIND(key_map, "A-c h 8", hash::command_insert_header_80);
 }
 
 static void cpp_comments_key_map(Key_Map& key_map) {
@@ -735,6 +738,9 @@ static void cpp_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c d 6", cpp::command_insert_divider_60);
     BIND(key_map, "A-c d 7", cpp::command_insert_divider_70);
     BIND(key_map, "A-c d 8", cpp::command_insert_divider_80);
+    BIND(key_map, "A-c h 6", cpp::command_insert_header_60);
+    BIND(key_map, "A-c h 7", cpp::command_insert_header_70);
+    BIND(key_map, "A-c h 8", cpp::command_insert_header_80);
 }
 
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
