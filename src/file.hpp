@@ -2,6 +2,7 @@
 
 #include <cz/arc.hpp>
 #include <cz/option.hpp>
+#include <cz/path.hpp>
 #include "buffer.hpp"
 
 namespace cz {
@@ -60,15 +61,7 @@ bool save_contents_to_temp_file(const Contents* contents,
                                 cz::Input_File* fd,
                                 bool use_carriage_returns);
 
-/// Standardize the path so there is one exact way to spell each path.
-///
-/// This is done by making the path absolute, converting back slashes
-/// to forward slashes, and then dereferencing all symbolic links.
-///
-/// If the path starts with `~` then the `~` is replaced with the user home directory.
-///
-/// This also standardizes the capitalization of the path on Windows.
-cz::String standardize_path(cz::Allocator allocator, cz::Str user_path);
+using cz::path::standardize_path;
 
 /// Find a buffer by its path.  The path must be standardized with `standardize_path`.
 ///
