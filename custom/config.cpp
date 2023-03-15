@@ -723,24 +723,44 @@ static void hash_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-h", basic::command_reformat_comment_hash);
     BIND(key_map, "A-;", basic::command_comment_hash);
     BIND(key_map, "A-:", basic::command_uncomment_hash);
+
     BIND(key_map, "A-c d 6", hash::command_insert_divider_60);
     BIND(key_map, "A-c d 7", hash::command_insert_divider_70);
     BIND(key_map, "A-c d 8", hash::command_insert_divider_80);
+    BIND(key_map, "A-c d 9", hash::command_insert_divider_90);
+    BIND(key_map, "A-c d 0", hash::command_insert_divider_100);
+    BIND(key_map, "A-c d 1", hash::command_insert_divider_110);
+    BIND(key_map, "A-c d 2", hash::command_insert_divider_120);
+
     BIND(key_map, "A-c h 6", hash::command_insert_header_60);
     BIND(key_map, "A-c h 7", hash::command_insert_header_70);
     BIND(key_map, "A-c h 8", hash::command_insert_header_80);
+    BIND(key_map, "A-c h 9", hash::command_insert_header_90);
+    BIND(key_map, "A-c h 0", hash::command_insert_header_100);
+    BIND(key_map, "A-c h 1", hash::command_insert_header_110);
+    BIND(key_map, "A-c h 2", hash::command_insert_header_120);
 }
 
 static void cpp_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-;", cpp::command_comment);
     BIND(key_map, "A-:", cpp::command_uncomment);
     BIND(key_map, "A-h", cpp::command_reformat_comment);
+
     BIND(key_map, "A-c d 6", cpp::command_insert_divider_60);
     BIND(key_map, "A-c d 7", cpp::command_insert_divider_70);
     BIND(key_map, "A-c d 8", cpp::command_insert_divider_80);
+    BIND(key_map, "A-c d 9", cpp::command_insert_divider_90);
+    BIND(key_map, "A-c d 0", cpp::command_insert_divider_100);
+    BIND(key_map, "A-c d 1", cpp::command_insert_divider_110);
+    BIND(key_map, "A-c d 2", cpp::command_insert_divider_120);
+
     BIND(key_map, "A-c h 6", cpp::command_insert_header_60);
     BIND(key_map, "A-c h 7", cpp::command_insert_header_70);
     BIND(key_map, "A-c h 8", cpp::command_insert_header_80);
+    BIND(key_map, "A-c h 9", cpp::command_insert_header_90);
+    BIND(key_map, "A-c h 0", cpp::command_insert_header_100);
+    BIND(key_map, "A-c h 1", cpp::command_insert_header_110);
+    BIND(key_map, "A-c h 2", cpp::command_insert_header_120);
 }
 
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
