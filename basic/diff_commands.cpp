@@ -30,7 +30,9 @@ static void command_apply_diff_callback(Editor* editor,
     CZ_DEFER(file.close());
 
     WITH_SELECTED_BUFFER(client);
-    apply_diff_file(client, buffer, file);
+    const char* message = apply_diff_file(buffer, file);
+    if (message)
+        client->show_message(message);
 }
 
 REGISTER_COMMAND(command_apply_diff);

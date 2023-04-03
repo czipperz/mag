@@ -603,7 +603,9 @@ void command_diff_buffer_file_against(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_reload_buffer);
 void command_reload_buffer(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    reload_file(source.client, buffer);
+    const char* message = reload_file(buffer);
+    if (message)
+        source.client->show_message(message);
 }
 
 }

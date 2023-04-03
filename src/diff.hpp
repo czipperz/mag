@@ -8,8 +8,14 @@ namespace mag {
 struct Client;
 struct Buffer;
 
-int apply_diff_file(Client* client, Buffer* buffer, cz::Input_File file);
+/// Apply a diff file to the buffer.
+///
+/// Returns an error message to show to the user or `nullptr` on success.
+const char* apply_diff_file(Buffer* buffer, cz::Input_File file);
 
-void reload_file(Client* client, Buffer* buffer);
+/// Reload the file if it has changed.
+///
+/// Returns an error message to show to the user or `nullptr` on success.
+const char* reload_file(Buffer* buffer);
 
 }

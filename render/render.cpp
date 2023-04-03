@@ -1340,7 +1340,9 @@ void process_buffer_external_updates(Client* client, Window* window) {
         if (check_out_of_date_and_update_file_time(path.buffer, &file_time)) {
             Buffer* buffer_mut = handle->increase_reading_to_writing();
             buffer_mut->file_time = file_time;
-            reload_file(client, buffer_mut);
+            const char* message = reload_file(buffer_mut);
+            if (message)
+                client->show_message(message);
         }
 
         break;
@@ -1390,7 +1392,8 @@ void render_to_cells(Cell* cells,
         WITH_CONST_WINDOW_BUFFER(window);
         Tokenizer minibuffer_next_token = buffer->mode.next_token;
 
-        size_t message_width = std::min(client->_message.end - client->_message.start, (uint64_t)total_cols);
+        size_t message_width =
+            std::min(client->_message.end - client->_message.start, (uint64_t)total_cols);
         // Add 1 for the title bar even though the mini buffer doesn't have a title bar.
         window->total_rows = 1 + mini_buffer_height;
         window->total_cols = total_cols - message_width;

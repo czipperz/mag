@@ -244,7 +244,7 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
     }
 }
 
-int apply_diff_file(Client* client, Buffer* buffer, cz::Input_File file) {
+const char* apply_diff_file(Buffer* buffer, cz::Input_File file) {
     cz::Vector<Edit> edits = {};
     CZ_DEFER(edits.drop(cz::heap_allocator()));
     CZ_DEFER({
@@ -255,11 +255,9 @@ int apply_diff_file(Client* client, Buffer* buffer, cz::Input_File file) {
 
     int ret = parse_file(buffer->contents.start(), file, &edits);
     if (ret < 0) {
-        client->show_message("Error reading diff file");
-        return ret;
+        return "Error reading diff file";
     } else if (ret > 0) {
-        client->show_message("Error diff file is truncated");
-        return ret;
+        return "Error diff file is truncated";
     }
 
     Transaction transaction;
@@ -273,27 +271,28 @@ int apply_diff_file(Client* client, Buffer* buffer, cz::Input_File file) {
         transaction.push(edit);
     }
 
-    transaction.commit(client);
-    return 0;
+    const char* message = nullptr;
+    transaction.commit(&message);
+    return message;
 }
 
-void reload_file(Client* client, Buffer* buffer) {
+const char* reload_file(Buffer* buffer) {
     bool old_read_only = buffer->read_only;
     buffer->read_only = false;
     CZ_DEFER(buffer->read_only = old_read_only);
 
     if (buffer->type == Buffer::DIRECTORY) {
         if (!reload_directory_buffer(buffer)) {
-            client->show_message("Couldn't reload directory");
+            return "Couldn't reload directory";
         }
-        return;
+        return nullptr;
     }
 
     char diff_file[L_tmpnam];
     {
         if (!tmpnam(diff_file)) {
             // Couldn't create a temp file.
-            return;
+            return "Error: couldn't create a temp file";
         }
 
         cz::Process_Options options;
@@ -301,14 +300,12 @@ void reload_file(Client* client, Buffer* buffer) {
         options.hide_window = true;
 #endif
         if (!save_buffer_to_temp_file(buffer, &options.std_in)) {
-            client->show_message("Error saving buffer to temp file");
-            return;
+            return "Error saving buffer to temp file";
         }
         CZ_DEFER(options.std_in.close());
 
         if (!options.std_out.open(diff_file)) {
-            client->show_message("Error creating temp file to store diff in");
-            return;
+            return "Error creating temp file to store diff in";
         }
         CZ_DEFER(options.std_out.close());
 
@@ -322,22 +319,22 @@ void reload_file(Client* client, Buffer* buffer) {
 
         cz::Process process;
         if (!process.launch_program(args, options)) {
-            client->show_message("Error launching diff");
-            return;
+            return "Error launching diff";
         }
         process.join();
     }
 
     cz::Input_File file;
     if (!file.open(diff_file)) {
-        client->show_message("Error opening diff file");
-        return;
+        return "Error opening diff file";
     }
     CZ_DEFER(file.close());
 
-    if (apply_diff_file(client, buffer, file) == 0) {
+    const char* error = apply_diff_file(buffer, file);
+    if (!error) {
         buffer->mark_saved();
     }
+    return error;
 }
 
 }

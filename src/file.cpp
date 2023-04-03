@@ -627,7 +627,9 @@ bool open_file(Editor* editor, Client* client, cz::Str user_path) {
         if (check_out_of_date_and_update_file_time(path.buffer, &file_time)) {
             Buffer* buffer_mut = handle->increase_reading_to_writing();
             buffer_mut->file_time = file_time;
-            reload_file(client, buffer_mut);
+            const char* message = reload_file(buffer_mut);
+            if (message)
+                client->show_message(message);
         }
     }
 
