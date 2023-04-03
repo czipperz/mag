@@ -603,7 +603,7 @@ void command_diff_buffer_file_against(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_reload_buffer);
 void command_reload_buffer(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    reload_file(editor, source.client, buffer);
+    reload_file(source.client, buffer);
 }
 
 }

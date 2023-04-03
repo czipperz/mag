@@ -1363,7 +1363,7 @@ void run(Server* server, Client* client) {
 
         process_scroll(server, client, &scroll, mod_state);
 
-        process_buffer_external_updates(&server->editor, client, client->window);
+        process_buffer_external_updates(client, client->window);
 
         server->process_key_chain(client);
 

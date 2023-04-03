@@ -1318,7 +1318,7 @@ static bool load_completion_cache(Editor* editor,
     return true;
 }
 
-void process_buffer_external_updates(Editor* editor, Client* client, Window* window) {
+void process_buffer_external_updates(Client* client, Window* window) {
     ZoneScoped;
 
     switch (window->tag) {
@@ -1340,7 +1340,7 @@ void process_buffer_external_updates(Editor* editor, Client* client, Window* win
         if (check_out_of_date_and_update_file_time(path.buffer, &file_time)) {
             Buffer* buffer_mut = handle->increase_reading_to_writing();
             buffer_mut->file_time = file_time;
-            reload_file(editor, client, buffer_mut);
+            reload_file(client, buffer_mut);
         }
 
         break;
@@ -1348,8 +1348,8 @@ void process_buffer_external_updates(Editor* editor, Client* client, Window* win
 
     default: {
         auto w = (Window_Split*)window;
-        process_buffer_external_updates(editor, client, w->first);
-        process_buffer_external_updates(editor, client, w->second);
+        process_buffer_external_updates(client, w->first);
+        process_buffer_external_updates(client, w->second);
         break;
     }
     }

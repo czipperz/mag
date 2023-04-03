@@ -15,7 +15,7 @@ namespace render {
 
 bool load_mini_buffer_completion_cache(Server* server, Client* client);
 
-void process_buffer_external_updates(Editor* editor, Client* client, Window* window);
+void process_buffer_external_updates(Client* client, Window* window);
 
 void render_to_cells(Cell* cells,
                      Window_Cache** window_cache,

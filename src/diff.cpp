@@ -244,7 +244,7 @@ static int parse_file(Contents_Iterator iterator, cz::Input_File file, cz::Vecto
     }
 }
 
-int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_File file) {
+int apply_diff_file(Client* client, Buffer* buffer, cz::Input_File file) {
     cz::Vector<Edit> edits = {};
     CZ_DEFER(edits.drop(cz::heap_allocator()));
     CZ_DEFER({
@@ -277,7 +277,7 @@ int apply_diff_file(Editor* editor, Client* client, Buffer* buffer, cz::Input_Fi
     return 0;
 }
 
-void reload_file(Editor* editor, Client* client, Buffer* buffer) {
+void reload_file(Client* client, Buffer* buffer) {
     bool old_read_only = buffer->read_only;
     buffer->read_only = false;
     CZ_DEFER(buffer->read_only = old_read_only);
@@ -335,7 +335,7 @@ void reload_file(Editor* editor, Client* client, Buffer* buffer) {
     }
     CZ_DEFER(file.close());
 
-    if (apply_diff_file(editor, client, buffer, file) == 0) {
+    if (apply_diff_file(client, buffer, file) == 0) {
         buffer->mark_saved();
     }
 }
