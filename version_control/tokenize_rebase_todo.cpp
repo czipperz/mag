@@ -22,9 +22,9 @@ bool git_rebase_todo_next_token(Contents_Iterator* iterator, Token* token, uint6
         return true;
     }
 
-    while (1) {
+    while (!iterator->at_eob()) {
         ch = iterator->get();
-        if (iterator->at_eob() || ch == '#') {
+        if (ch == '#') {
             break;
         }
         if (ch == ' ' && *state < 2) {
