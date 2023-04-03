@@ -162,6 +162,7 @@ restart:
     case ',':
     case '\'':
     case '#':
+    case '@':
     case '!': {
         token->type = Token_Type::PUNCTUATION;
         token->start = iterator->position;
