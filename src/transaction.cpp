@@ -52,6 +52,10 @@ bool Transaction::commit(Asynchronous_Job_Handler* handler, Command_Function com
     }
     return message == nullptr;
 }
+bool Transaction::commit(const char** message, Command_Function committer) {
+    *message = commit_get_message(committer);
+    return *message == nullptr;
+}
 
 const char* Transaction::commit_get_message(Command_Function committer) {
     // Only commit if edits were made.

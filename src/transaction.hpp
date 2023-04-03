@@ -50,6 +50,7 @@ struct Transaction {
     /// Commit the changes to the buffer.
     bool commit(Client* client, Command_Function committer = nullptr);
     bool commit(Asynchronous_Job_Handler* handler, Command_Function committer = nullptr);
+    bool commit(const char** error, Command_Function committer = nullptr);
     const char* commit_get_message(Command_Function committer = nullptr);
 };
 
