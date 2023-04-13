@@ -2,16 +2,103 @@
 
 #include <cz/find_file.hpp>
 #include <cz/format.hpp>
+#include <cz/path.hpp>
 #include <cz/process.hpp>
 #include "command.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
+#include "job.hpp"
 #include "movement.hpp"
 
 namespace mag {
 namespace rust {
 
 REGISTER_COMMAND(command_extract_variable);
+
+namespace {
+
+// TODO: deduplicate with Process_Show_Message_With_File_Contents_Job lol
+
+struct Rustfmt_Process_Show_Message_With_File_Contents_Job {
+    cz::Process process;
+    cz::Carriage_Return_Carry carry;
+    cz::Input_File file;
+    cz::String string;
+    size_t prefix_length;
+};
+}
+
+static void process_show_message_with_file_contents_job_kill(void* _data) {
+    Rustfmt_Process_Show_Message_With_File_Contents_Job* data =
+        (Rustfmt_Process_Show_Message_With_File_Contents_Job*)_data;
+    data->process.kill();
+    data->file.close();
+    data->string.drop(cz::heap_allocator());
+    cz::heap_allocator().dealloc(data);
+}
+
+static Job_Tick_Result process_show_message_with_file_contents_job_tick(
+    Asynchronous_Job_Handler* handler,
+    void* _data) {
+    Rustfmt_Process_Show_Message_With_File_Contents_Job* data =
+        (Rustfmt_Process_Show_Message_With_File_Contents_Job*)_data;
+
+    (void)cz::read_to_string(data->file, cz::heap_allocator(), &data->string);
+
+    int ret;
+    if (data->process.try_join(&ret)) {
+        if (data->string.len > data->prefix_length) {
+            size_t newline = data->string.find_index('\n');
+            cz::Str error = data->string.slice_end(newline);
+
+            if (newline < data->string.len)
+                ++newline;
+
+            cz::Str path = data->string.slice_start(newline).slice_end(
+                data->string.slice_start(newline).find_index('\n'));
+            if (path.starts_with(" --> "))
+                path = path.slice_start(strlen(" --> "));
+            if (path.starts_with("\\\\?\\"))
+                path = path.slice_start(strlen("\\\\?\\"));
+
+            cz::Heap_String message =
+                cz::format(data->string.slice_end(data->prefix_length), path, ": ", error);
+            CZ_DEFER(message.drop());
+            cz::path::convert_to_forward_slashes(message.buffer + data->prefix_length, path.len);
+            handler->show_message(message);
+        }
+
+        data->file.close();
+        data->string.drop(cz::heap_allocator());
+        cz::heap_allocator().dealloc(data);
+        return Job_Tick_Result::FINISHED;
+    } else {
+        return Job_Tick_Result::STALLED;
+    }
+}
+
+static Asynchronous_Job job_rustfmt_process_show_message_with_file_contents(
+    cz::Process process,
+    cz::Input_File file,
+    cz::Str message_prefix) {
+    Rustfmt_Process_Show_Message_With_File_Contents_Job* data =
+        cz::heap_allocator().alloc<Rustfmt_Process_Show_Message_With_File_Contents_Job>();
+    CZ_ASSERT(data);
+    data->process = process;
+    data->carry = {};
+    data->file = file;
+    data->string = {};
+    data->string.reserve(cz::heap_allocator(), cz::max((size_t)1024, message_prefix.len));
+    data->string.append(message_prefix);
+    data->prefix_length = message_prefix.len;
+
+    Asynchronous_Job job;
+    job.tick = process_show_message_with_file_contents_job_tick;
+    job.kill = process_show_message_with_file_contents_job_kill;
+    job.data = data;
+    return job;
+}
+
 void command_extract_variable(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
@@ -142,6 +229,19 @@ void command_rust_format_buffer(Editor* editor, Command_Source source) {
         }
     }
 
+    cz::Input_File std_err;
+    if (!cz::create_process_output_pipe(&options.std_err, &std_err)) {
+        source.client->show_message("Couldn't create output pipe");
+        return;
+    }
+    CZ_DEFER(options.std_err.close());
+    CZ_DEFER(std_err.close());
+
+    if (!std_err.set_non_blocking()) {
+        source.client->show_message("Couldn't set output reader to non-blocking");
+        return;
+    }
+
     // Run rustfmt on the path.  If we found an edition then use it.
     cz::Process process;
     bool success = 0;
@@ -160,7 +260,9 @@ void command_rust_format_buffer(Editor* editor, Command_Source source) {
         return;
     }
 
-    editor->add_asynchronous_job(job_process_silent(process));
+    editor->add_asynchronous_job(
+        job_rustfmt_process_show_message_with_file_contents(process, std_err, "rustfmt failed: "));
+    std_err = {};
 }
 
 }
