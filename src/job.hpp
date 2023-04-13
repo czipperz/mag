@@ -108,6 +108,12 @@ Asynchronous_Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
 /// A job that joins the process when it completes and does nothing until that point.
 Asynchronous_Job job_process_silent(cz::Process process);
 
+/// A job that joins the process when it completes and if
+/// there is any output from the file, shows it to the user.
+Asynchronous_Job job_process_show_message_with_file_contents(cz::Process process,
+                                                             cz::Input_File file,
+                                                             cz::Str message_prefix);
+
 namespace Run_Console_Command_Result_ {
 enum Run_Console_Command_Result {
     FAILED,

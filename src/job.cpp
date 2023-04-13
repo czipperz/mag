@@ -4,6 +4,7 @@
 #include <cz/defer.hpp>
 #include <cz/format.hpp>
 #include <cz/process.hpp>
+#include <cz/util.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"
@@ -48,6 +49,10 @@ void Asynchronous_Job_Handler::show_message(cz::Str message) {
     job.data = data;
     add_synchronous_job(job);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Job process append
+////////////////////////////////////////////////////////////////////////////////
 
 struct Process_Append_Job_Data {
     cz::Arc_Weak<Buffer_Handle> buffer_handle;
@@ -136,6 +141,10 @@ Asynchronous_Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
     return job;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Job process silent
+////////////////////////////////////////////////////////////////////////////////
+
 struct Process_Silent_Job_Data {
     cz::Process process;
 };
@@ -168,6 +177,76 @@ Asynchronous_Job job_process_silent(cz::Process process) {
     job.data = data;
     return job;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Job process stderr show message
+////////////////////////////////////////////////////////////////////////////////
+
+struct Process_Show_Message_With_File_Contents_Job {
+    cz::Process process;
+    cz::Carriage_Return_Carry carry;
+    cz::Input_File file;
+    cz::String string;
+    size_t prefix_length;
+};
+
+static void process_show_message_with_file_contents_job_kill(void* _data) {
+    Process_Show_Message_With_File_Contents_Job* data =
+        (Process_Show_Message_With_File_Contents_Job*)_data;
+    data->process.kill();
+    data->file.close();
+    data->string.drop(cz::heap_allocator());
+    cz::heap_allocator().dealloc(data);
+}
+
+static Job_Tick_Result process_show_message_with_file_contents_job_tick(
+    Asynchronous_Job_Handler* handler,
+    void* _data) {
+    Process_Show_Message_With_File_Contents_Job* data =
+        (Process_Show_Message_With_File_Contents_Job*)_data;
+
+    (void)cz::read_to_string(data->file, cz::heap_allocator(), &data->string);
+
+    int ret;
+    if (data->process.try_join(&ret)) {
+        if (data->string.len > data->prefix_length) {
+            size_t newline = data->string.find_index('\n');
+            handler->show_message(data->string.slice_end(newline));
+        }
+
+        data->file.close();
+        data->string.drop(cz::heap_allocator());
+        cz::heap_allocator().dealloc(data);
+        return Job_Tick_Result::FINISHED;
+    } else {
+        return Job_Tick_Result::STALLED;
+    }
+}
+
+Asynchronous_Job job_process_show_message_with_file_contents(cz::Process process,
+                                                             cz::Input_File file,
+                                                             cz::Str message_prefix) {
+    Process_Show_Message_With_File_Contents_Job* data =
+        cz::heap_allocator().alloc<Process_Show_Message_With_File_Contents_Job>();
+    CZ_ASSERT(data);
+    data->process = process;
+    data->carry = {};
+    data->file = file;
+    data->string = {};
+    data->string.reserve(cz::heap_allocator(), cz::max((size_t)1024, message_prefix.len));
+    data->string.append(message_prefix);
+    data->prefix_length = message_prefix.len;
+
+    Asynchronous_Job job;
+    job.tick = process_show_message_with_file_contents_job_tick;
+    job.kill = process_show_message_with_file_contents_job_kill;
+    job.data = data;
+    return job;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Run console command
+////////////////////////////////////////////////////////////////////////////////
 
 Run_Console_Command_Result run_console_command(Client* client,
                                                Editor* editor,
