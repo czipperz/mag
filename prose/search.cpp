@@ -6,8 +6,8 @@
 #include "file.hpp"
 #include "movement.hpp"
 #include "overlay.hpp"
+#include "overlays/overlay_highlight_string.hpp"
 #include "prose/helpers.hpp"
-#include "syntax/overlay_highlight_string.hpp"
 #include "token.hpp"
 
 namespace mag {
@@ -21,7 +21,8 @@ static void run_search(Client* client,
     cz::Heap_Vector<cz::Str> args = {};
     CZ_DEFER(args.drop());
     {
-        cz::Str defargs[] = {"ag", "--hidden", "--column", "--fixed-strings", "--case-sensitive", "--", query};
+        cz::Str defargs[] = {"ag", "--hidden", "--column", "--fixed-strings", "--case-sensitive",
+                             "--", query};
         args.reserve(cz::len(defargs) + query_word);
         args.append(defargs);
 
@@ -81,9 +82,9 @@ void command_search_in_current_directory_prompt(Editor* editor, Command_Source s
 }
 
 static void command_search_in_current_directory_word_callback(Editor* editor,
-                                                         Client* client,
-                                                         cz::Str query,
-                                                         void*) {
+                                                              Client* client,
+                                                              cz::Str query,
+                                                              void*) {
     cz::String directory = {};
     CZ_DEFER(directory.drop(cz::heap_allocator()));
 
@@ -141,9 +142,9 @@ void command_search_in_version_control_prompt(Editor* editor, Command_Source sou
 }
 
 static void command_search_in_version_control_word_callback(Editor* editor,
-                                                       Client* client,
-                                                       cz::Str query,
-                                                       void*) {
+                                                            Client* client,
+                                                            cz::Str query,
+                                                            void*) {
     cz::String directory = {};
     CZ_DEFER(directory.drop(cz::heap_allocator()));
 

@@ -51,7 +51,8 @@ endif()
 # Build all sources as library magl (so we don't double build to make testing program)
 set(LIBRARY_NAME ${PROJECT_NAME}l)
 file(GLOB_RECURSE SRCS src/*.cpp custom/*.cpp basic/*.cpp prose/*.cpp clang_format/*.cpp
-                       version_control/*.cpp gnu_global/*.cpp syntax/*.cpp man/*.cpp render/*.cpp)
+                       version_control/*.cpp gnu_global/*.cpp syntax/*.cpp man/*.cpp render/*.cpp
+                       overlays/*.cpp decorations/*.cpp)
 add_library(${LIBRARY_NAME} ${SRCS})
 target_include_directories(${LIBRARY_NAME} PUBLIC custom)
 target_compile_definitions(${LIBRARY_NAME} PUBLIC MAG_BUILD_DIRECTORY=${CMAKE_SOURCE_DIR})
