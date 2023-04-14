@@ -10,6 +10,7 @@
 #include "file.hpp"
 #include "match.hpp"
 #include "movement.hpp"
+#include "search_commands.hpp"
 #include "visible_region.hpp"
 #include "window_commands.hpp"
 
@@ -189,8 +190,33 @@ static void search_open_next_no_swap(Editor* editor, Client* client) {
 
         Contents_Iterator it =
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-        forward_line(buffer->mode, &it);
-        window->cursors[window->selected_cursor].point = it.position;
+
+        if (window->cursors.len > 1) {
+            // In multi-cursor mode, go to the result at the next cursor.
+            if (window->selected_cursor + 1 >= window->cursors.len)
+                return;
+            ++window->selected_cursor;
+            it.advance_to(window->cursors[window->selected_cursor].point);
+        } else if (window->show_marks) {
+            // Search for next result & open that.
+            Cursor& cursor = window->cursors[window->selected_cursor];
+            it.retreat_to(cursor.start());
+            if (!search_forward_slice(buffer, &it, cursor.end()))
+                return;
+
+            uint64_t selection_len = (cursor.end() - cursor.start());
+            if (cursor.point == cursor.start()) {
+                cursor.point = it.position;
+                cursor.mark = it.position + selection_len;
+            } else {
+                cursor.point = it.position + selection_len;
+                cursor.mark = it.position;
+            }
+        } else {
+            // Default case, just go to result on next line.
+            forward_line(buffer->mode, &it);
+            window->cursors[window->selected_cursor].point = it.position;
+        }
 
         found = get_file_to_open(buffer, it, &path, &line, &column);
     }
@@ -235,8 +261,33 @@ static void search_open_previous_no_swap(Editor* editor, Client* client) {
 
         Contents_Iterator it =
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-        backward_line(buffer->mode, &it);
-        window->cursors[window->selected_cursor].point = it.position;
+
+        if (window->cursors.len > 1) {
+            // In multi-cursor mode, go to the result at the previous cursor.
+            if (window->selected_cursor == 0)
+                return;
+            --window->selected_cursor;
+            it.retreat_to(window->cursors[window->selected_cursor].point);
+        } else if (window->show_marks) {
+            // Search for previous result & open that.
+            Cursor& cursor = window->cursors[window->selected_cursor];
+            it.retreat_to(cursor.start());
+            if (!search_backward_slice(buffer, &it, cursor.end()))
+                return;
+
+            uint64_t selection_len = (cursor.end() - cursor.start());
+            if (cursor.point == cursor.start()) {
+                cursor.point = it.position;
+                cursor.mark = it.position + selection_len;
+            } else {
+                cursor.point = it.position + selection_len;
+                cursor.mark = it.position;
+            }
+        } else {
+            // Default case, just go to result on previous line.
+            backward_line(buffer->mode, &it);
+            window->cursors[window->selected_cursor].point = it.position;
+        }
 
         found = get_file_to_open(buffer, it, &path, &line, &column);
     }

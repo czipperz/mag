@@ -10,7 +10,7 @@ namespace basic {
 
 void submit_mini_buffer(Editor* editor, Client* client);
 
-static bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start, uint64_t end) {
+bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start, uint64_t end) {
     CZ_DEBUG_ASSERT(end >= start->position);
     if (end + (end - start->position) > start->contents->len) {
         return {};
@@ -95,7 +95,7 @@ void command_create_cursor_forward_search(Editor* editor, Command_Source source)
     }
 }
 
-static bool search_backward_slice(const Buffer* buffer, Contents_Iterator* start, uint64_t end) {
+bool search_backward_slice(const Buffer* buffer, Contents_Iterator* start, uint64_t end) {
     CZ_DEBUG_ASSERT(end >= start->position);
     if (start->position < end - start->position) {
         return {};

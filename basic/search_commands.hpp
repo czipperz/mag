@@ -1,11 +1,14 @@
 #pragma once
 
+#include <stdint.h>
+
 namespace mag {
 struct Client;
 struct Editor;
 struct Command_Source;
 struct Buffer;
 struct Window_Unified;
+struct Contents_Iterator;
 
 namespace basic {
 
@@ -23,6 +26,9 @@ void command_search_backward_identifier(Editor* editor, Command_Source source);
 
 int create_cursor_forward_search(const Buffer* buffer, Window_Unified* window);
 int create_cursor_backward_search(const Buffer* buffer, Window_Unified* window);
+
+bool search_forward_slice(const Buffer* buffer, Contents_Iterator* start, uint64_t end);
+bool search_backward_slice(const Buffer* buffer, Contents_Iterator* start, uint64_t end);
 
 }
 }
