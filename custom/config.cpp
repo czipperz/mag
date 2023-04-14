@@ -948,7 +948,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (name.ends_with(".js")) {
+        } else if (name.ends_with(".js") || name.ends_with(".ts")) {
         javascript:
             buffer->mode.next_token = syntax::js_next_token;
             cpp_comments_key_map(buffer->mode.key_map);
@@ -1044,7 +1044,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".cfg") || name.ends_with(".json") || name.ends_with(".yaml") ||
                    name == ".ignore" || name == ".gitignore" || name == ".hgignore" ||
-                   name == ".agignore") {
+                   name == ".agignore" || name == "config") {
             // A bunch of miscellaneous file types that all use # for comments.
             buffer->mode.next_token = syntax::general_hash_comments_next_token;
             hash_comments_key_map(buffer->mode.key_map);
