@@ -42,9 +42,9 @@ static bool decoration_cursor_count_append(Editor* editor,
         }
     }
 
-    cz::append(allocator, string, '(', visible);
+    cz::append(allocator, string, '(', window->selected_cursor + 1, '/', window->cursors.len);
     if (visible != window->cursors.len) {
-        cz::append(allocator, string, '/', window->cursors.len);
+        cz::append(allocator, string, " V:", visible);
     }
     cz::append(allocator, string, ')');
     return true;
