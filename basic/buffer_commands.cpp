@@ -54,6 +54,29 @@ void command_open_file(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_open_file_full_path);
+void command_open_file_full_path(Editor* editor, Command_Source source) {
+    cz::String selected_window_path = {};
+    CZ_DEFER(selected_window_path.drop(cz::heap_allocator()));
+    get_selected_window_directory(editor, source.client, cz::heap_allocator(),
+                                  &selected_window_path);
+
+    {
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        selected_window_path.reserve_exact(cz::heap_allocator(), buffer->name.len + 1);
+        selected_window_path.append(buffer->name);
+        selected_window_path.null_terminate();
+    }
+
+    Dialog dialog = {};
+    dialog.prompt = "Open file: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_open_file_callback;
+    dialog.mini_buffer_contents = selected_window_path;
+    dialog.next_token = syntax::path_next_token;
+    source.client->show_dialog(dialog);
+}
+
 static void command_save_file_callback(Editor* editor, Client* client, cz::Str, void*) {
     cz::String directory = {};
     CZ_DEFER(directory.drop(cz::heap_allocator()));

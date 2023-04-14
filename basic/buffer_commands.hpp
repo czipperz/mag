@@ -8,6 +8,7 @@ namespace mag {
 namespace basic {
 
 void command_open_file(Editor* editor, Command_Source source);
+void command_open_file_full_path(Editor* editor, Command_Source source);
 void command_save_file(Editor* editor, Command_Source source);
 
 void command_switch_buffer(Editor* editor, Command_Source source);
