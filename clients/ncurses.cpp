@@ -418,7 +418,7 @@ void run(Server* server, Client* client) {
         has_jobs |= server->slurp_jobs();
         has_jobs |= server->run_synchronous_jobs(client);
 
-        process_buffer_external_updates(&server->editor, client, client->window);
+        process_buffer_external_updates(client, client->window);
 
         int ch;
         if (has_jobs) {
