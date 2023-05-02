@@ -63,6 +63,14 @@ bool save_contents_to_temp_file(const Contents* contents,
 
 using cz::path::standardize_path;
 
+/// Find or open a buffer.  Returns 0 on success.  Returns 1 if the file
+/// doesn't exist but it was successfully opened.  Returns 2 on failure.
+///
+/// Doesn't increment the reference count.
+///
+/// Standardizes the user_path internally.
+int open_file_buffer(Editor* editor, cz::Str user_path, cz::Arc<Buffer_Handle>* handle_out);
+
 /// Find a buffer by its path.  The path must be standardized with `standardize_path`.
 ///
 /// Doesn't increment the reference count.

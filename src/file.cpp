@@ -150,14 +150,14 @@ read_continue:
     }
 }
 
-static bool load_directory(Buffer* buffer, char* path, size_t path_len) {
-    if (path_len == 0 || path[path_len - 1] != '/') {
-        path[path_len++] = '/';
+static bool load_directory(Buffer* buffer, cz::String* path) {
+    if (!path->ends_with('/')) {
+        path->push('/');
     }
 
     *buffer = {};
     buffer->type = Buffer::DIRECTORY;
-    buffer->directory = cz::Str(path, path_len).clone_null_terminate(cz::heap_allocator());
+    buffer->directory = path->clone_null_terminate(cz::heap_allocator());
     buffer->name = cz::Str(".").clone(cz::heap_allocator());
     buffer->read_only = true;
 
@@ -167,7 +167,8 @@ static bool load_directory(Buffer* buffer, char* path, size_t path_len) {
         buffer->contents.drop();
         buffer->name.drop(cz::heap_allocator());
         buffer->directory.drop(cz::heap_allocator());
-        path[--path_len] = '\0';
+        path->pop();
+        path->null_terminate();
     }
 
     return result;
@@ -299,24 +300,24 @@ bool reload_directory_buffer(Buffer* buffer) {
     return true;
 }
 
-static int load_path_in_buffer(Buffer* buffer, char* path, size_t path_len) {
+static int load_path_in_buffer(Buffer* buffer, cz::String* path) {
     // Try reading it as a directory, then if that fails read it as a file.  On
     // linux, opening it as a file will succeed even if it is a directory.  Then
     // reading the file will cause an error.
-    if (load_directory(buffer, path, path_len)) {
+    if (load_directory(buffer, path)) {
         return 0;
     }
 
     *buffer = {};
     buffer->type = Buffer::FILE;
 
-    cz::Str directory, name = {path, path_len};
+    cz::Str directory, name = *path;
     if (name.split_after_last('/', &directory, &name)) {
         buffer->directory = directory.clone_null_terminate(cz::heap_allocator());
     }
     buffer->name = name.clone(cz::heap_allocator());
 
-    return load_file(buffer, path);
+    return load_file(buffer, path->buffer);
 }
 
 static void start_syntax_highlighting(Editor* editor, cz::Arc<Buffer_Handle> handle) {
@@ -410,7 +411,7 @@ static Job_Tick_Result open_file_job_tick(Asynchronous_Job_Handler* handler, voi
     Open_File_Async_Data* data = (Open_File_Async_Data*)_data;
 
     Buffer buffer;
-    int result = load_path_in_buffer(&buffer, data->path.buffer, data->path.len);
+    int result = load_path_in_buffer(&buffer, &data->path);
     if (result != 0) {
         if (result == 1) {
             handler->show_message("File not found");
@@ -452,18 +453,16 @@ Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column, 
     return job;
 }
 
-static int load_path(Editor* editor, char* path, size_t path_len, cz::Arc<Buffer_Handle>* handle) {
+static int load_path(Editor* editor, cz::String* path, cz::Arc<Buffer_Handle>* handle) {
     Buffer buffer;
-    int result = load_path_in_buffer(&buffer, path, path_len);
+    int result = load_path_in_buffer(&buffer, path);
     if (result != 2) {
         *handle = editor->create_buffer(buffer);
     }
     return result;
 }
 
-bool find_buffer_by_path(Editor* editor,
-                         cz::Str path,
-                         cz::Arc<Buffer_Handle>* handle_out) {
+bool find_buffer_by_path(Editor* editor, cz::Str path, cz::Arc<Buffer_Handle>* handle_out) {
     if (path.len == 0) {
         return false;
     }
@@ -589,6 +588,22 @@ bool find_temp_buffer(Editor* editor,
     return false;
 }
 
+int open_file_buffer(Editor* editor, cz::Str user_path, cz::Arc<Buffer_Handle>* handle_out) {
+    ZoneScoped;
+
+    cz::String path = standardize_path(cz::heap_allocator(), user_path);
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+
+    TracyFormat(message, len, 1024, "open_file_buffer: %s", path.buffer);
+    TracyMessage(message, len);
+
+    if (find_buffer_by_path(editor, path, handle_out)) {
+        return 0;  // Success
+    }
+
+    return load_path(editor, &path, handle_out);
+}
+
 bool open_file(Editor* editor, Client* client, cz::Str user_path) {
     ZoneScoped;
 
@@ -600,22 +615,14 @@ bool open_file(Editor* editor, Client* client, cz::Str user_path) {
     cz::String path = standardize_path(cz::heap_allocator(), user_path);
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
-    TracyFormat(message, len, 1024, "open_path: %s", path.buffer);
-    TracyMessage(message, len);
-
     cz::Arc<Buffer_Handle> handle;
-    if (find_buffer_by_path(editor, path, &handle)) {
-    } else {
-        int result = load_path(editor, path.buffer, path.len, &handle);
-        if (result != 0) {
-            if (result == 1) {
-                client->show_message("File not found");
-                // Still open empty file buffer.
-            } else {
-                client->show_message("Couldn't open file");
-                return false;
-            }
-        }
+    int result = open_file_buffer(editor, path, &handle);
+    if (result == 1) {
+        client->show_message("File not found");
+        // Still open empty file buffer.
+    } else if (result == 2) {
+        client->show_message("Couldn't open file");
+        return false;
     }
 
     client->set_selected_buffer(handle);
