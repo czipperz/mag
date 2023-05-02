@@ -6,8 +6,10 @@
 #include "command_macros.hpp"
 #include "comment.hpp"
 #include "editor.hpp"
+#include "file.hpp"
 #include "match.hpp"
 #include "movement.hpp"
+#include "prose/alternate.hpp"
 #include "reformat_commands.hpp"
 #include "transaction.hpp"
 #include "window.hpp"
@@ -488,6 +490,66 @@ void command_extract_variable(Editor* editor, Command_Source source) {
 
     // We manually fixed the cursors so the window doesn't need to do any updates.
     window->change_index = buffer->changes.len;
+}
+
+REGISTER_COMMAND(command_insert_source_template_from_header);
+void command_insert_source_template_from_header(Editor* editor, Command_Source source) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+
+        if (!buffer->get_path(cz::heap_allocator(), &path)) {
+            return;
+        }
+    }
+
+    int result = prose::find_alternate_file(&path);
+    if (result != 2) {
+        source.client->show_message("No alternate file found");
+        return;
+    }
+
+    // Capture namespaces from header.
+    cz::Arc<Buffer_Handle> handle;
+    result = open_file_buffer(editor, path, &handle);
+    if (result == 1) {
+        source.client->show_message("File not found");
+        return;
+    } else if (result == 2) {
+        source.client->show_message("Couldn't open file");
+        return;
+    }
+
+    cz::String contents = {};
+    CZ_DEFER(contents.drop(cz::heap_allocator()));
+
+    {
+        WITH_CONST_BUFFER_HANDLE(handle);
+        contents = buffer->contents.stringify(cz::heap_allocator());
+    }
+    {
+        WITH_SELECTED_BUFFER(source.client);
+
+        Transaction transaction;
+        transaction.init(buffer);
+        CZ_DEFER(transaction.drop());
+
+        Edit remove;
+        remove.value = buffer->contents.slice(transaction.value_allocator(),
+                                              buffer->contents.start(), buffer->contents.len);
+        remove.position = 0;
+        remove.flags = Edit::REMOVE;
+        transaction.push(remove);
+
+        Edit insert;
+        insert.value = SSOStr::as_duplicate(transaction.value_allocator(), contents);
+        insert.position = 0;
+        insert.flags = Edit::INSERT_AFTER_POSITION;
+        transaction.push(insert);
+
+        transaction.commit(source.client);
+    }
 }
 
 REGISTER_COMMAND(command_insert_divider_60);
