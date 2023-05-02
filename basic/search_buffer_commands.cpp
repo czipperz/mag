@@ -56,16 +56,16 @@ static bool get_file_to_open(const Buffer* buffer,
     }
 
     Contents_Iterator relative_end = relative_start;
-    if (!find(&relative_end, ':')) {
-        return false;
-    }
+    (void)find_this_line(&relative_end, ':');
 
     Contents_Iterator iterator = relative_end;
-    if (!parse_number(&iterator, line)) {
-        return false;
-    }
-    if (!parse_number(&iterator, column)) {
-        *column = 0;
+    if (!at_end_of_line(iterator)) {
+        if (!parse_number(&iterator, line)) {
+            return false;
+        }
+        if (!parse_number(&iterator, column)) {
+            *column = 0;
+        }
     }
 
     path->reserve(cz::heap_allocator(),
