@@ -7,9 +7,6 @@
 namespace mag {
 namespace basic {
 
-// TODO put this in match.hpp
-bool find_before(Contents_Iterator* it, uint64_t end, char ch);
-
 REGISTER_COMMAND(command_realign_table);
 void command_realign_table(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
@@ -247,24 +244,6 @@ void command_realign_table(Editor* editor, Command_Source source) {
     }
 
     transaction.commit(source.client);
-}
-
-// TODO put this in match.cpp
-bool find_before(Contents_Iterator* it, uint64_t end, char ch) {
-    CZ_DEBUG_ASSERT(end <= it->contents->len);
-    if (it->position >= end)
-        return false;
-
-    while (1) {
-        bool found = find_bucket(it, ch);
-        if (it->position >= end) {
-            // Automatic failure.
-            it->retreat_to(end);
-            return false;
-        }
-        if (found)
-            return true;
-    }
 }
 
 }

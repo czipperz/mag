@@ -95,4 +95,15 @@ bool rfind_bucket(Contents_Iterator* it, cz::Str query);
 bool find_bucket_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling);
 bool rfind_bucket_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handling);
 
+/// Find the character within the bounds of `[*it, end)`
+/// (for find_before) or `[start, *it)` (for rfind_after).
+bool find_before(Contents_Iterator* it, uint64_t end, char ch);
+bool rfind_after(Contents_Iterator* it, uint64_t start, char ch);
+
+/// Find the character on the line the iterator is on.
+/// Note: this will recalculate the start or end of the line so it is faster to
+/// pull that computation out to avoid repeating if doing multiple searches.
+bool find_this_line(Contents_Iterator* it, char ch);
+bool rfind_this_line(Contents_Iterator* it, char ch);
+
 }

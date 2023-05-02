@@ -2,6 +2,7 @@
 
 #include <Tracy.hpp>
 #include "contents.hpp"
+#include "movement.hpp"
 
 namespace mag {
 
@@ -610,6 +611,52 @@ bool rfind_cased(Contents_Iterator* it, cz::Str query, Case_Handling case_handli
     }
 
     return false;
+}
+
+bool find_before(Contents_Iterator* it, uint64_t end, char ch) {
+    CZ_DEBUG_ASSERT(end <= it->contents->len);
+    if (it->position >= end)
+        return false;
+
+    while (1) {
+        bool found = find_bucket(it, ch);
+        if (it->position >= end) {
+            // Automatic failure.
+            it->retreat_to(end);
+            return false;
+        }
+        if (found)
+            return true;
+    }
+}
+
+bool rfind_after(Contents_Iterator* it, uint64_t start, char ch) {
+    CZ_DEBUG_ASSERT(start <= it->contents->len);
+    if (it->position < start)
+        return false;
+
+    while (1) {
+        bool found = rfind_bucket(it, ch);
+        if (it->position < start) {
+            // Automatic failure.
+            it->advance_to(start);
+            return false;
+        }
+        if (found)
+            return true;
+    }
+}
+
+bool find_this_line(Contents_Iterator* it, char ch) {
+    Contents_Iterator eol = *it;
+    end_of_line(&eol);
+    return find_before(it, eol.position, ch);
+}
+
+bool rfind_this_line(Contents_Iterator* it, char ch) {
+    Contents_Iterator sol = *it;
+    start_of_line(&sol);
+    return rfind_after(it, sol.position, ch);
 }
 
 }
