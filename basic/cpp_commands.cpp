@@ -1,6 +1,7 @@
 #include "cpp_commands.hpp"
 
 #include <cz/char_type.hpp>
+#include <cz/format.hpp>
 #include <cz/sort.hpp>
 #include "basic/commands.hpp"
 #include "command_macros.hpp"
@@ -526,21 +527,30 @@ void command_insert_source_template_from_header(Editor* editor, Command_Source s
 
     {
         WITH_CONST_BUFFER_HANDLE(handle);
-        contents = buffer->contents.stringify(cz::heap_allocator());
+
+        cz::append(cz::heap_allocator(), &contents, "#include \"", buffer->name, "\"\n\n");
+
+        Contents_Iterator it = buffer->contents.start();
+        if (looking_at(it, "#pragma once\n"))
+            it.advance(strlen("#pragma once\n"));
+        while (looking_at(it, '\n'))
+            it.advance();
+        while (looking_at(it, "#include")) {
+            end_of_line(&it);
+            forward_char(&it);
+        }
+        while (looking_at(it, '\n'))
+            it.advance();
+
+        buffer->contents.slice_into(cz::heap_allocator(), it, buffer->contents.len, &contents);
     }
+
     {
         WITH_SELECTED_BUFFER(source.client);
 
         Transaction transaction;
         transaction.init(buffer);
         CZ_DEFER(transaction.drop());
-
-        Edit remove;
-        remove.value = buffer->contents.slice(transaction.value_allocator(),
-                                              buffer->contents.start(), buffer->contents.len);
-        remove.position = 0;
-        remove.flags = Edit::REMOVE;
-        transaction.push(remove);
 
         Edit insert;
         insert.value = SSOStr::as_duplicate(transaction.value_allocator(), contents);
