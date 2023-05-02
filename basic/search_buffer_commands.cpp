@@ -17,10 +17,6 @@
 namespace mag {
 namespace basic {
 
-static bool eat_until_colon(Contents_Iterator* iterator) {
-    return find(iterator, ':');
-}
-
 static bool parse_number(Contents_Iterator* iterator, uint64_t* num) {
     iterator->advance();
     while (1) {
@@ -60,7 +56,7 @@ static bool get_file_to_open(const Buffer* buffer,
     }
 
     Contents_Iterator relative_end = relative_start;
-    if (!eat_until_colon(&relative_end)) {
+    if (!find(&relative_end, ':')) {
         return false;
     }
 
