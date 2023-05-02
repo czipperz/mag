@@ -471,7 +471,7 @@ static void command_directory_rename_path_callback(Editor* editor,
     }
 
     cz::Arc<Buffer_Handle> handle = {};
-    if (find_buffer_by_path(editor, client, path, &handle)) {
+    if (find_buffer_by_path(editor, path, &handle)) {
         WITH_BUFFER_HANDLE(handle);
 
         cz::Str directory = new_path;

@@ -67,7 +67,6 @@ using cz::path::standardize_path;
 ///
 /// Doesn't increment the reference count.
 bool find_buffer_by_path(Editor* editor,
-                         Client* client,
                          cz::Str path,
                          cz::Arc<Buffer_Handle>* handle_out);
 

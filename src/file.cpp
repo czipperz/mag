@@ -462,7 +462,6 @@ static int load_path(Editor* editor, char* path, size_t path_len, cz::Arc<Buffer
 }
 
 bool find_buffer_by_path(Editor* editor,
-                         Client* client,
                          cz::Str path,
                          cz::Arc<Buffer_Handle>* handle_out) {
     if (path.len == 0) {
@@ -605,7 +604,7 @@ bool open_file(Editor* editor, Client* client, cz::Str user_path) {
     TracyMessage(message, len);
 
     cz::Arc<Buffer_Handle> handle;
-    if (find_buffer_by_path(editor, client, path, &handle)) {
+    if (find_buffer_by_path(editor, path, &handle)) {
     } else {
         int result = load_path(editor, path.buffer, path.len, &handle);
         if (result != 0) {
