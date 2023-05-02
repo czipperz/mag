@@ -63,6 +63,7 @@ const char* lookup_symbol(const char* directory,
     case CTAGS:
         return ctags::lookup_symbol(directory, query, allocator, tags);
     }
+    CZ_PANIC("Invalid engine type");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
