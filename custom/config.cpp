@@ -742,6 +742,14 @@ static void hash_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c h 2", hash::command_insert_header_120);
 }
 
+static void indent_based_hierarchy_mode(Mode& mode) {
+    mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+    BIND(mode.key_map, "C-A-u", command_backward_up_token_pair_or_indent);
+    BIND(mode.key_map, "C-A-d", command_forward_up_token_pair_or_indent);
+    BIND(mode.key_map, "C-A-U", region_movement::command_backward_up_token_pair_or_indent);
+    BIND(mode.key_map, "C-A-D", region_movement::command_forward_up_token_pair_or_indent);
+}
+
 static void cpp_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-;", cpp::command_comment);
     BIND(key_map, "A-:", cpp::command_uncomment);
@@ -913,7 +921,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "C-A-c",
                  command_complete_at_point_prompt_identifiers_or_cmake_keywords);
 
-            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+            indent_based_hierarchy_mode(buffer->mode);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -926,7 +934,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::md_next_token;
             BIND(buffer->mode.key_map, "A-h", markdown::command_reformat_paragraph);
             BIND(buffer->mode.key_map, "A-x A-f", command_realign_table);
-            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+            indent_based_hierarchy_mode(buffer->mode);
         } else if (name.ends_with(".css")) {
             buffer->mode.next_token = syntax::css_next_token;
             BIND(buffer->mode.key_map, "A-h", cpp::command_reformat_comment_block_only);
@@ -941,7 +949,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (name.ends_with(".html")) {
             buffer->mode.next_token = syntax::html_next_token;
             BIND(buffer->mode.key_map, "A-;", html::command_comment);
-            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+            indent_based_hierarchy_mode(buffer->mode);
 
             static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
                                                Token_Type::HTML_ATTRIBUTE_NAME};
@@ -1022,7 +1030,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                 buffer->mode.use_tabs = true;
                 // Indent based on the previous line instead of based
                 // on the paren level since there aren't braces.
-                buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+                indent_based_hierarchy_mode(buffer->mode);
             }
 
             buffer->mode.next_token = syntax::sh_next_token;
@@ -1036,12 +1044,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         python:
             buffer->mode.next_token = syntax::python_next_token;
             hash_comments_key_map(buffer->mode.key_map);
-            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
-
-            BIND(buffer->mode.key_map, "C-A-u", command_backward_up_token_pair_or_indent);
-            BIND(buffer->mode.key_map, "C-A-d", command_forward_up_token_pair_or_indent);
-            BIND(buffer->mode.key_map, "C-A-U", region_movement::command_backward_up_token_pair_or_indent);
-            BIND(buffer->mode.key_map, "C-A-D", region_movement::command_forward_up_token_pair_or_indent);
+            indent_based_hierarchy_mode(buffer->mode);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
@@ -1053,7 +1056,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             // A bunch of miscellaneous file types that all use # for comments.
             buffer->mode.next_token = syntax::general_hash_comments_next_token;
             hash_comments_key_map(buffer->mode.key_map);
-            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+            indent_based_hierarchy_mode(buffer->mode);
 
             if (name.ends_with(".json")) {
                 BIND(buffer->mode.key_map, "A-x A-f", javascript::command_jq_format_buffer);
@@ -1069,21 +1072,21 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                 git_edit_key_map(buffer->mode.key_map);
             }
             add_indent_overlays = false;
-            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+            indent_based_hierarchy_mode(buffer->mode);
         } else if (name == "git-rebase-todo") {
             buffer->mode.next_token = syntax::git_rebase_todo_next_token;
             hash_comments_key_map(buffer->mode.key_map);
             git_edit_key_map(buffer->mode.key_map);
-            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+            indent_based_hierarchy_mode(buffer->mode);
         } else if (name == "COMMIT_EDITMSG" || name == "MERGE_MSG") {
             buffer->mode.next_token = syntax::git_commit_edit_message_next_token;
             hash_comments_key_map(buffer->mode.key_map);
             git_edit_key_map(buffer->mode.key_map);
             add_indent_overlays = false;
-            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+            indent_based_hierarchy_mode(buffer->mode);
         } else if (name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
-            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+            indent_based_hierarchy_mode(buffer->mode);
         } else {
             // Get the first line of the file.
             Contents_Iterator start = buffer->contents.start();
@@ -1120,7 +1123,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             }
 
             buffer->mode.next_token = syntax::general_next_token;
-            buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
+            indent_based_hierarchy_mode(buffer->mode);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
