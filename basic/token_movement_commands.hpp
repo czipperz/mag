@@ -14,6 +14,9 @@ namespace basic {
 void command_backward_up_token_pair(Editor* editor, Command_Source source);
 void command_forward_up_token_pair(Editor* editor, Command_Source source);
 
+void command_backward_up_token_pair_or_indent(Editor* editor, Command_Source source);
+void command_forward_up_token_pair_or_indent(Editor* editor, Command_Source source);
+
 void command_forward_token_pair(Editor* editor, Command_Source source);
 void command_backward_token_pair(Editor* editor, Command_Source source);
 
@@ -38,6 +41,9 @@ void command_delete_forward_token(Editor* editor, Command_Source source);
 
 bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_pair);
 bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_pair);
+
+bool backward_up_token_pair_or_indent(Buffer* buffer, Contents_Iterator* cursor, bool non_pairs);
+bool forward_up_token_pair_or_indent(Buffer* buffer, Contents_Iterator* cursor, bool non_pairs);
 
 bool forward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_pair);
 bool backward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_pair);

@@ -2,8 +2,8 @@
 
 #include "client.hpp"
 #include "command_macros.hpp"
-#include "movement_commands.hpp"
 #include "movement.hpp"
+#include "movement_commands.hpp"
 #include "token_movement_commands.hpp"
 
 namespace mag {
@@ -163,6 +163,19 @@ REGISTER_COMMAND(command_backward_up_token_pair);
 void command_backward_up_token_pair(Editor* editor, Command_Source source) {
     set_marks(source.client->selected_window());
     basic::command_backward_up_token_pair(editor, source);
+    show_marks_temporarily(source.client->selected_window());
+}
+
+REGISTER_COMMAND(command_forward_up_token_pair_or_indent);
+void command_forward_up_token_pair_or_indent(Editor* editor, Command_Source source) {
+    set_marks(source.client->selected_window());
+    basic::command_forward_up_token_pair_or_indent(editor, source);
+    show_marks_temporarily(source.client->selected_window());
+}
+REGISTER_COMMAND(command_backward_up_token_pair_or_indent);
+void command_backward_up_token_pair_or_indent(Editor* editor, Command_Source source) {
+    set_marks(source.client->selected_window());
+    basic::command_backward_up_token_pair_or_indent(editor, source);
     show_marks_temporarily(source.client->selected_window());
 }
 

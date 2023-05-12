@@ -13,6 +13,10 @@
 namespace mag {
 namespace basic {
 
+////////////////////////////////////////////////////////////////////////////////
+// Backward up token pair
+////////////////////////////////////////////////////////////////////////////////
+
 static void tokenize_recording_pairs(Tokenizer_Check_Point check_point,
                                      Contents_Iterator token_iterator,
                                      uint64_t end_position,
@@ -88,6 +92,10 @@ bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Get token before/after position
+////////////////////////////////////////////////////////////////////////////////
+
 bool get_token_after_position(Buffer* buffer,
                               Contents_Iterator* token_iterator,
                               uint64_t* state,
@@ -161,6 +169,10 @@ bool get_token_before_position(Buffer* buffer,
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Forward up token pair
+////////////////////////////////////////////////////////////////////////////////
+
 bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_pair) {
     Contents_Iterator token_iterator = *cursor;
 
@@ -191,6 +203,10 @@ bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_p
         }
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Forward/backward up token pair command wrappers
+////////////////////////////////////////////////////////////////////////////////
 
 static void sort_cursors(cz::Slice<Cursor> cursors) {
     cz::sort(cursors,
@@ -225,6 +241,100 @@ void command_forward_up_token_pair(Editor* editor, Command_Source source) {
     sort_cursors(window->cursors);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Forward/backward up token pair respecting indent
+////////////////////////////////////////////////////////////////////////////////
+
+bool backward_up_token_pair_or_indent(Buffer* buffer, Contents_Iterator* cursor, bool non_pairs) {
+    if (backward_up_token_pair(buffer, cursor, non_pairs))
+        return true;
+
+    Contents_Iterator it = *cursor;
+    start_of_line(&it);
+
+    Contents_Iterator sol = it;
+    start_of_line_text(&sol);
+    uint64_t start = get_visual_column(buffer->mode, sol);
+    if (start == 0)
+        return false;
+
+    while (!it.at_bob()) {
+        it.retreat();
+        start_of_line(&it);
+
+        Contents_Iterator sol = it;
+        start_of_line_text(&sol);
+        uint64_t col = get_visual_column(buffer->mode, sol);
+        if (col < start) {
+            *cursor = sol;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool forward_up_token_pair_or_indent(Buffer* buffer, Contents_Iterator* cursor, bool non_pairs) {
+    if (forward_up_token_pair(buffer, cursor, non_pairs))
+        return true;
+
+    Contents_Iterator it = *cursor;
+    start_of_line(&it);
+
+    Contents_Iterator sol = it;
+    start_of_line_text(&sol);
+    uint64_t start = get_visual_column(buffer->mode, sol);
+    if (start == 0)
+        return false;
+
+    while (1) {
+        end_of_line(&it);
+        forward_char(&it);
+        if (it.at_eob())
+            break;
+
+        Contents_Iterator sol = it;
+        start_of_line_text(&sol);
+        uint64_t col = get_visual_column(buffer->mode, sol);
+        if (col < start) {
+            *cursor = sol;
+            return true;
+        }
+    }
+    return false;
+}
+
+REGISTER_COMMAND(command_backward_up_token_pair_or_indent);
+void command_backward_up_token_pair_or_indent(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
+
+    for (size_t cursor_index = window->cursors.len; cursor_index-- > 0;) {
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
+        backward_up_token_pair_or_indent(buffer, &it, /*non_pair=*/true);
+        window->cursors[cursor_index].point = it.position;
+    }
+
+    sort_cursors(window->cursors);
+}
+
+REGISTER_COMMAND(command_forward_up_token_pair_or_indent);
+void command_forward_up_token_pair_or_indent(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    window->clear_show_marks_temporarily();
+
+    for (size_t cursor_index = 0; cursor_index < window->cursors.len; ++cursor_index) {
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[cursor_index].point);
+        forward_up_token_pair_or_indent(buffer, &it, /*non_pair=*/true);
+        window->cursors[cursor_index].point = it.position;
+    }
+
+    sort_cursors(window->cursors);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Token pair
+////////////////////////////////////////////////////////////////////////////////
+
 bool forward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_pair) {
     Token token;
     uint64_t state;
@@ -258,6 +368,8 @@ void command_forward_token_pair(Editor* editor, Command_Source source) {
     sort_cursors(window->cursors);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 bool backward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_pair) {
     Token token;
     uint64_t state;
@@ -290,6 +402,10 @@ void command_backward_token_pair(Editor* editor, Command_Source source) {
 
     sort_cursors(window->cursors);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Matching token
+////////////////////////////////////////////////////////////////////////////////
 
 int find_backward_matching_token(Buffer* buffer,
                                  Contents_Iterator iterator,
@@ -387,6 +503,8 @@ void command_backward_matching_token(Editor* editor, Command_Source source) {
     sort_cursors(window->cursors);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 int find_forward_matching_token(Buffer* buffer,
                                 Contents_Iterator iterator,
                                 Token* this_token,
@@ -461,6 +579,10 @@ void command_forward_matching_token(Editor* editor, Command_Source source) {
 
     sort_cursors(window->cursors);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Create cursor matching token
+////////////////////////////////////////////////////////////////////////////////
 
 static Cursor create_cursor_with_offsets(Cursor cursor, Contents_Iterator it) {
     Cursor new_cursor = {};
@@ -608,6 +730,10 @@ void command_create_all_cursors_matching_token_or_search(Editor* editor, Command
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Delete token
+////////////////////////////////////////////////////////////////////////////////
+
 REGISTER_COMMAND(command_delete_token);
 void command_delete_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
@@ -710,6 +836,10 @@ void command_delete_backward_token(Editor* editor, Command_Source source) {
     transaction.commit(source.client);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Duplicate token
+////////////////////////////////////////////////////////////////////////////////
+
 REGISTER_COMMAND(command_duplicate_token);
 void command_duplicate_token(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
@@ -758,6 +888,10 @@ void command_duplicate_token(Editor* editor, Command_Source source) {
 
     transaction.commit(source.client);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Transpose token
+////////////////////////////////////////////////////////////////////////////////
 
 REGISTER_COMMAND(command_transpose_tokens);
 void command_transpose_tokens(Editor* editor, Command_Source source) {

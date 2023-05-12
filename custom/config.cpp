@@ -1038,6 +1038,11 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             hash_comments_key_map(buffer->mode.key_map);
             buffer->mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
 
+            BIND(buffer->mode.key_map, "C-A-u", command_backward_up_token_pair_or_indent);
+            BIND(buffer->mode.key_map, "C-A-d", command_forward_up_token_pair_or_indent);
+            BIND(buffer->mode.key_map, "C-A-U", region_movement::command_backward_up_token_pair_or_indent);
+            BIND(buffer->mode.key_map, "C-A-D", region_movement::command_forward_up_token_pair_or_indent);
+
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));

@@ -36,6 +36,9 @@ void command_backward_token_pair(Editor* editor, Command_Source source);
 void command_forward_up_token_pair(Editor* editor, Command_Source source);
 void command_backward_up_token_pair(Editor* editor, Command_Source source);
 
+void command_forward_up_token_pair_or_indent(Editor* editor, Command_Source source);
+void command_backward_up_token_pair_or_indent(Editor* editor, Command_Source source);
+
 }
 }
 }
