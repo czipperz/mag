@@ -1241,6 +1241,101 @@ void command_flip_lines(Editor* editor, Command_Source source) {
     sort_lines(source.client, buffer, window, 4);
 }
 
+REGISTER_COMMAND(command_deduplicate_lines);
+void command_deduplicate_lines(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    Contents_Iterator it = buffer->contents.start();
+
+    cz::String prev = {}, next = {};
+    CZ_DEFER(prev.drop(cz::heap_allocator()));
+    CZ_DEFER(next.drop(cz::heap_allocator()));
+
+    uint64_t offset = 0;
+
+    if (window->show_marks) {
+        for (size_t i = 0; i < window->cursors.len; ++i) {
+            it.advance_to(window->cursors[i].start());
+            start_of_line(&it);
+
+            prev.len = 0;
+
+            bool first = true;
+            while (it.position < window->cursors[i].end()) {
+                Contents_Iterator eol = it;
+                end_of_line(&eol);
+
+                next.len = 0;
+                buffer->contents.slice_into(cz::heap_allocator(), it, eol.position, &next);
+
+                if (first) {
+                    first = false;
+                } else if (prev == next) {
+                    Edit remove;
+                    it.retreat();  // Delete the newline from the previous line.
+                    remove.value =
+                        buffer->contents.slice(transaction.value_allocator(), it, eol.position);
+                    remove.position = it.position - offset;
+                    remove.flags = Edit::REMOVE;
+                    transaction.push(remove);
+
+                    offset += remove.value.len();
+                }
+
+                cz::swap(prev, next);
+
+                it = eol;
+                forward_char(&it);
+            }
+        }
+    } else {
+        bool first = true;
+        uint64_t prev_position = 0;
+        for (size_t i = 0; i < window->cursors.len; ++i) {
+            it.advance_to(window->cursors[i].point);
+            start_of_line(&it);
+
+            // Don't consider a line as a duplicate with itself.
+            if (!first && it.position == prev_position)
+                continue;
+            prev_position = it.position;
+
+            Contents_Iterator eol = it;
+            end_of_line(&eol);
+
+            next.len = 0;
+            buffer->contents.slice_into(cz::heap_allocator(), it, eol.position, &next);
+
+            if (first) {
+                first = false;
+            } else if (prev == next) {
+                Edit remove;
+                it.retreat();  // Delete the newline from the previous line.
+                remove.value =
+                    buffer->contents.slice(transaction.value_allocator(), it, eol.position);
+                remove.position = it.position - offset;
+                remove.flags = Edit::REMOVE;
+                transaction.push(remove);
+
+                offset += remove.value.len();
+                window->cursors.remove(i);
+                --i;
+            }
+
+            cz::swap(prev, next);
+
+            it = eol;
+            forward_char(&it);
+        }
+    }
+
+    transaction.commit(source.client);
+}
+
 REGISTER_COMMAND(command_restore_last_save_point);
 void command_restore_last_save_point(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);

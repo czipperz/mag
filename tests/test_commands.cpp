@@ -175,3 +175,57 @@ TEST_CASE("command_transpose_words normal cases") {
         CHECK(tr.stringify() == "word2 word1|");
     }
 }
+
+TEST_CASE("command_deduplicate_lines cursors") {
+    SECTION("no duplicates") {
+        Test_Runner tr;
+        tr.setup("wor|d1\nwor|d2\nwor|d3\nwor|d4");
+        tr.run(command_deduplicate_lines);
+        CHECK(tr.stringify() == "wor|d1\nwor|d2\nwor|d3\nwor|d4");
+    }
+    SECTION("first duplicate") {
+        Test_Runner tr;
+        tr.setup("wor|d1\nwor|d1\nwor|d3\nwor|d4");
+        tr.run(command_deduplicate_lines);
+        CHECK(tr.stringify() == "wor|d1\nwor|d3\nwor|d4");
+    }
+    SECTION("last duplicate") {
+        Test_Runner tr;
+        tr.setup("wor|d1\nwor|d2\nwor|d4\nwor|d4");
+        tr.run(command_deduplicate_lines);
+        CHECK(tr.stringify() == "wor|d1\nwor|d2\nwor|d4");
+    }
+    SECTION("multiple duplicate") {
+        Test_Runner tr;
+        tr.setup("word1\nwor|d1\nword|1\nwor|d1\nw|ord1\nword1");
+        tr.run(command_deduplicate_lines);
+        CHECK(tr.stringify() == "word1\nwor|d1\nword1");
+    }
+}
+
+TEST_CASE("command_deduplicate_lines regions") {
+    SECTION("no duplicates") {
+        Test_Runner tr;
+        tr.setup_region("(word1\nword2\nword3\nword4|");
+        tr.run(command_deduplicate_lines);
+        CHECK(tr.stringify() == "(word1\nword2\nword3\nword4|");
+    }
+    SECTION("first duplicate") {
+        Test_Runner tr;
+        tr.setup_region("(word1\nword1\nword3\nword4|");
+        tr.run(command_deduplicate_lines);
+        CHECK(tr.stringify() == "(word1\nword3\nword4|");
+    }
+    SECTION("last duplicate") {
+        Test_Runner tr;
+        tr.setup_region("(word1\nword2\nword4\nword4|");
+        tr.run(command_deduplicate_lines);
+        CHECK(tr.stringify() == "(word1\nword2\nword4|");
+    }
+    SECTION("last duplicate") {
+        Test_Runner tr;
+        tr.setup_region("word1\n(word1\nword1\nword1\n|word1");
+        tr.run(command_deduplicate_lines);
+        CHECK(tr.stringify() == "word1\n(word1\n|word1");
+    }
+}
