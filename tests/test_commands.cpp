@@ -201,6 +201,14 @@ TEST_CASE("command_deduplicate_lines cursors") {
         tr.run(command_deduplicate_lines);
         CHECK(tr.stringify() == "word1\nwor|d1\nword1");
     }
+    SECTION("multiple duplicate start") {
+        Test_Runner tr;
+        tr.setup("w|ord1\nwor|d1\nword|1\nwor|d1\nword1\nword1");
+        tr.client.selected_normal_window->selected_cursor = 2;
+        tr.run(command_deduplicate_lines);
+        CHECK(tr.stringify() == "w|ord1\nword1\nword1");
+        CHECK(tr.client.selected_normal_window->selected_cursor == 0);
+    }
 }
 
 TEST_CASE("command_deduplicate_lines regions") {

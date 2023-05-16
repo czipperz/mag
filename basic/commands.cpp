@@ -1323,6 +1323,8 @@ void command_deduplicate_lines(Editor* editor, Command_Source source) {
 
                 offset += remove.value.len();
                 window->cursors.remove(i);
+                if (window->selected_cursor >= i)
+                    --window->selected_cursor;
                 --i;
             }
 
