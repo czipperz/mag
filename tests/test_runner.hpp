@@ -26,6 +26,11 @@ struct Test_Runner {
     /// other characters will be inserted into the buffer.
     void setup(cz::Str input);
 
+    /// `input` should have `|` to represent cursor points
+    /// and `(` or `)` to specify the the cursor's mark.
+    /// For example `a(bc|d` will make a cursor with mark at position 1 and point at position 3.
+    void setup_region(cz::Str input);
+
     /// Stringify the buffer's contents, adding `|` for each cursor.
     cz::String stringify();
 
