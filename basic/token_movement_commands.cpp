@@ -250,6 +250,12 @@ bool backward_up_token_pair_or_indent(Buffer* buffer, Contents_Iterator* cursor,
         return true;
 
     Contents_Iterator it = *cursor;
+
+    // When at an empty line, assume it is part of the prefix for the next statement.
+    while (!it.at_eob() && at_empty_line(it)) {
+        it.advance();
+    }
+
     start_of_line(&it);
 
     Contents_Iterator sol = it;
@@ -260,14 +266,26 @@ bool backward_up_token_pair_or_indent(Buffer* buffer, Contents_Iterator* cursor,
 
     while (!it.at_bob()) {
         it.retreat();
+
+        // Skip empty lines because they aren't top level declarations.
+        while (!it.at_bob() && at_empty_line(it)) {
+            it.retreat();
+        }
+
         start_of_line(&it);
 
         Contents_Iterator sol = it;
         start_of_line_text(&sol);
         uint64_t col = get_visual_column(buffer->mode, sol);
         if (col < start) {
-            *cursor = sol;
-            return true;
+            if (sol.position < cursor->position) {
+                *cursor = sol;
+                return true;
+            } else {
+                // If we go forward then just abort.  This happens when
+                // at an empty line between two top level declarations.
+                return false;
+            }
         }
     }
     return false;
