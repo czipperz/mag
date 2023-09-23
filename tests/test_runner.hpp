@@ -34,10 +34,31 @@ struct Test_Runner {
     /// Stringify the buffer's contents, adding `|` for each cursor.
     cz::String stringify();
 
+    /// Get a section of the buffer's contents.  Doesn't track cursors.
+    cz::String slice(uint64_t start, uint64_t end);
+
     /// Run a command.
     void run(Command_Function command);
+
+    /// Tokenize the buffer.  Uses `tokenizer` if provided
+    /// otherwise uses the tokenizer set by `set_tokenizer`.
+    struct TToken {
+        cz::Str str;
+        Token token;
+
+        bool operator==(const TToken& other) const;
+        bool operator!=(const TToken& other) const;
+    };
+    cz::Vector<TToken> tokenize(Tokenizer tokenizer = nullptr);
+
+    /// Tokenize the buffer and print code to assert all tokens are correct.
+    void tokenize_print_tests(Tokenizer tokenizer = nullptr);
 
     cz::Allocator allocator() { return buffer_array.allocator(); }
 };
 
+}
+
+namespace cz {
+void append(cz::Allocator allocator, cz::String* string, const mag::Test_Runner::TToken &token);
 }

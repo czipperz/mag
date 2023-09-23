@@ -1,7 +1,7 @@
 #include "test_runner.hpp"
 
-#include "syntax/tokenize_general.hpp"
 #include <cz/sort.hpp>
+#include "syntax/tokenize_general.hpp"
 
 namespace mag {
 
@@ -145,7 +145,8 @@ cz::String Test_Runner::stringify() {
     };
 
     cz::Vector<Separator> separators = {};
-    separators.reserve_exact(cz::heap_allocator(), window->cursors.len * (window->show_marks ? 2 : 1));
+    separators.reserve_exact(cz::heap_allocator(),
+                             window->cursors.len * (window->show_marks ? 2 : 1));
     CZ_DEFER(separators.drop(cz::heap_allocator()));
     for (size_t i = 0; i < window->cursors.len; ++i) {
         separators.push({window->cursors[i].point, '|'});
@@ -181,10 +182,78 @@ cz::String Test_Runner::stringify() {
     return output;
 }
 
+cz::String Test_Runner::slice(uint64_t start, uint64_t end) {
+    Window_Unified* window = client.selected_window();
+    WITH_CONST_WINDOW_BUFFER(window);
+
+    cz::String string = {};
+    string.reserve_exact(buffer_array.allocator(), end - start);
+    Contents_Iterator it = buffer->contents.iterator_at(start);
+    buffer->contents.slice_into(it, end, &string);
+    return string;
+}
+
 void Test_Runner::run(Command_Function command) {
     Command_Source source = {};
     source.client = &client;
     command(&server.editor, source);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Tokenization utils
+////////////////////////////////////////////////////////////////////////////////
+
+bool Test_Runner::TToken::operator==(const TToken& other) const {
+    return str == other.str &&  //
+           token.start == other.token.start && token.end == other.token.end &&
+           token.type == other.token.type;
+}
+bool Test_Runner::TToken::operator!=(const TToken& other) const {
+    return !(*this == other);
+}
+
+cz::Vector<Test_Runner::TToken> Test_Runner::tokenize(Tokenizer tokenizer) {
+    Window_Unified* window = client.selected_window();
+    WITH_CONST_WINDOW_BUFFER(window);
+
+    if (!tokenizer) {
+        tokenizer = buffer->mode.next_token;
+    }
+
+    cz::Vector<TToken> tokens = {};
+
+    Contents_Iterator it = buffer->contents.start();
+    Token token;
+    uint64_t state = 0;
+    while (tokenizer(&it, &token, &state)) {
+        tokens.reserve(buffer_array.allocator(), 1);
+        tokens.push({{}, token});
+    }
+
+    // Allocate strings after first loop to allow the vector to reallocate.
+    for (TToken& token : tokens) {
+        token.str = slice(token.token.start, token.token.end);
+    }
+
+    return tokens;
+}
+
+void Test_Runner::tokenize_print_tests(Tokenizer tokenizer) {
+    cz::Buffer_Array::Save_Point sp = buffer_array.save();
+    CZ_DEFER(buffer_array.restore(sp));
+
+    cz::Vector<TToken> tokens = tokenize(tokenizer);
+    cz::print("    auto tokens = tr.tokenize();\n");
+    cz::print("    REQUIRE(tokens.len == ", tokens.len, ");\n");
+    for (size_t i = 0; i < tokens.len; ++i) {
+        cz::print("    CHECK(tokens[", i, "] == Test_Runner::TToken", tokens[i], ");\n");
+    }
+}
+
+}
+
+namespace cz {
+void append(cz::Allocator allocator, cz::String* string, const mag::Test_Runner::TToken& token) {
+    cz::append(allocator, string, "{", cz::dbg(token.str), ", ", token.token, "}");
+}
 }
