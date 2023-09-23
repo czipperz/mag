@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <cz/string.hpp>
 
 namespace mag {
 
@@ -57,4 +58,11 @@ struct Face {
         : foreground(foreground), background(background), flags(flags) {}
 };
 
+}
+
+namespace cz {
+void append(cz::Allocator allocator, cz::String* string, const mag::Face& face);
+void append(cz::Allocator allocator, cz::String* string, const mag::Face_Color& face_color);
+void append(cz::Allocator allocator, cz::String* string, const mag::Color& color);
+void append(cz::Allocator allocator, cz::String* string, mag::Face::Flags face_flags);
 }

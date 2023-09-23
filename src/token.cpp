@@ -1,9 +1,16 @@
 #include "token.hpp"
 
+#include <cz/format.hpp>
 #include "face.hpp"
 
 namespace mag {
 namespace Token_Type_ {
+
+extern const char* const names[/*Token_Type::length*/] = {
+#define X(name) #name,
+    MAG_TOKEN_TYPES(X)
+#undef X
+};
 
 Token_Type encode(Face face) {
     uint64_t type = CUSTOM;
@@ -64,5 +71,22 @@ Face decode(Token_Type type) {
     return face;
 }
 
+}
+}
+
+namespace cz {
+void append(cz::Allocator allocator, cz::String* string, const mag::Token& token) {
+    cz::append(allocator, string, "{", token.start, ", ", token.end, ", ", token.type, "}");
+}
+
+void append(cz::Allocator allocator, cz::String* string, mag::Token_Type type) {
+    if (type & mag::Token_Type::CUSTOM) {
+        // The type is an encoded Face.  Decode it and format it as a Face.
+        cz::append(allocator, string, mag::Token_Type_::decode(type));
+    } else if (type < mag::Token_Type::length) {
+        cz::append(allocator, string, "Token_Type::", mag::Token_Type_::names[type]);
+    } else {
+        cz::append(allocator, string, "<invalid Token_Type>");
+    }
 }
 }
