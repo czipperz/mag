@@ -171,7 +171,6 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         bool bold = false;
 
         auto assign_bold_and_italic = [&]() {
-            iterator->advance();
             if (!iterator->at_eob() && (iterator->get() == '*' || iterator->get() == '_')) {
                 iterator->advance();
                 if (!iterator->at_eob() && (iterator->get() == '*' || iterator->get() == '_')) {
@@ -225,11 +224,13 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
                     goto normal_character;
                 }
 
+                iterator->advance();
                 assign_bold_and_italic();
                 if (!bold && !italic) {
                     break;
                 }
-                iterator->advance();
+                if (!iterator->at_eob())
+                    iterator->advance();
             }
 
             if (!bold && !italic) {
