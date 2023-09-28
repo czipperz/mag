@@ -94,5 +94,49 @@ void command_show_commit_at_sol(Editor* editor, Command_Source source) {
     command_show_commit_callback(editor, source.client, commit.as_str(), nullptr);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Line history
+////////////////////////////////////////////////////////////////////////////////
+
+REGISTER_COMMAND(command_line_history);
+void command_line_history(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+    uint64_t line_number_start = iterator.get_line_number() + 1;
+    uint64_t line_number_end = line_number_start;
+
+    if (window->show_marks) {
+        iterator.go_to(window->cursors[0].mark);
+        uint64_t mark_line_number = iterator.get_line_number() + 1;
+        if (mark_line_number > line_number_end)
+            line_number_end = mark_line_number;
+        else
+            line_number_start = mark_line_number;
+    }
+
+    cz::String root = {};
+    CZ_DEFER(root.drop(cz::heap_allocator()));
+    if (!get_root_directory(buffer->directory.buffer, cz::heap_allocator(), &root)) {
+        source.client->show_message("Error: couldn't find vc root");
+        return;
+    }
+
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    cz::append(cz::heap_allocator(), &path, line_number_start, ',', line_number_end, ':');
+    if (!buffer->get_path(cz::heap_allocator(), &path)) {
+        source.client->show_message("Error: couldn't get buffer path");
+        return;
+    }
+
+    cz::Heap_String buffer_name = cz::format("git line-history ", path);
+    CZ_DEFER(buffer_name.drop());
+
+    cz::Str args[] = {"git", "log", "-L", path};
+    run_console_command(source.client, editor, root.buffer, args, buffer_name, "Git error",
+                        nullptr);
+}
+
 }
 }
