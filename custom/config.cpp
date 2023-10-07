@@ -855,6 +855,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.starts_with("*git last-edit ") ||
                    buffer->name.starts_with("*git show ") ||
                    buffer->name.starts_with("*git line-history ") ||
+                   buffer->name.starts_with("*git log ") ||
                    buffer->name.starts_with("*shell git log ") ||
                    buffer->name == "*shell git log*" ||
                    buffer->name.starts_with("*shell git show ") ||

@@ -95,6 +95,41 @@ void command_show_commit_at_sol(Editor* editor, Command_Source source) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// File history
+////////////////////////////////////////////////////////////////////////////////
+
+REGISTER_COMMAND(command_git_log);
+void command_git_log(Editor* editor, Command_Source source) {
+    return command_file_history(editor, source);
+}
+
+REGISTER_COMMAND(command_file_history);
+void command_file_history(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    cz::String root = {};
+    CZ_DEFER(root.drop(cz::heap_allocator()));
+    if (!get_root_directory(buffer->directory.buffer, cz::heap_allocator(), &root)) {
+        source.client->show_message("Error: couldn't find vc root");
+        return;
+    }
+
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    if (!buffer->get_path(cz::heap_allocator(), &path)) {
+        source.client->show_message("Error: couldn't get buffer path");
+        return;
+    }
+
+    cz::Heap_String buffer_name = cz::format("git log ", path);
+    CZ_DEFER(buffer_name.drop());
+
+    cz::Str args[] = {"git", "log", path};
+    run_console_command(source.client, editor, root.buffer, args, buffer_name, "Git error",
+                        nullptr);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Line history
 ////////////////////////////////////////////////////////////////////////////////
 
