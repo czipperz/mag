@@ -842,15 +842,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         // Don't bind "q" in the mini buffer.
         BIND(buffer->mode.key_map, "q", command_quit_window);
 
-        if (buffer->name.starts_with("*git grep ") || buffer->name.starts_with("*ag ") ||
-            buffer->name.starts_with("*shell ")) {
-            buffer->mode.next_token = syntax::search_next_token;
-            search_key_map(buffer->mode.key_map);
-        } else if (buffer->name.starts_with("*build ")) {
-            // Build will eventually get its own tokenizer and key map.
-            buffer->mode.next_token = syntax::search_next_token;
-            search_key_map(buffer->mode.key_map);
-        } else if (buffer->name.starts_with("*man ")) {
+        if (buffer->name.starts_with("*man ")) {
             buffer->mode.next_token = syntax::process_next_token;
         } else if (buffer->name == "*key map*") {
             buffer->mode.next_token = syntax::key_map_next_token;
@@ -862,7 +854,11 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
         } else if (buffer->name.starts_with("*git last-edit ") ||
                    buffer->name.starts_with("*git show ") ||
-                   buffer->name.starts_with("*git line-history ")) {
+                   buffer->name.starts_with("*git line-history ") ||
+                   buffer->name.starts_with("*shell git log ") ||
+                   buffer->name == "*shell git log*" ||
+                   buffer->name.starts_with("*shell git show ") ||
+                   buffer->name == "*shell git show*") {
             buffer->mode.next_token = syntax::patch_next_token;
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
         } else if (buffer->name.starts_with("*git blame ")) {
@@ -870,6 +866,12 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "ENTER", version_control::command_show_commit_at_sol);
             BIND(buffer->mode.key_map, "A-j", version_control::command_show_commit_at_sol);
             BIND(buffer->mode.key_map, "g", version_control::command_blame_reload);
+        } else if (buffer->name.starts_with("*git grep ") || buffer->name.starts_with("*ag ") ||
+                   buffer->name.starts_with("*shell ") ||
+                   // Build will eventually get its own tokenizer and key map.
+                   buffer->name.starts_with("*build ")) {
+            buffer->mode.next_token = syntax::search_next_token;
+            search_key_map(buffer->mode.key_map);
         }
         break;
 
