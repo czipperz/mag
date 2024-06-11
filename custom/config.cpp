@@ -799,8 +799,11 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
     buffer->mode.next_token = default_next_token;
 
+    bool dynamic_indent_rules = true;
+
     if (cz::path::has_component(buffer->directory, "mag") ||
         cz::path::has_component(buffer->directory, "cz")) {
+        dynamic_indent_rules = false;
         buffer->mode.indent_width = buffer->mode.tab_width = 4;
         buffer->mode.use_tabs = false;
         buffer->mode.preferred_column = 100;
@@ -1142,7 +1145,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_trailing_spaces({{}, 208, 0}));
             buffer->mode.overlays.push(syntax::overlay_incorrect_indent({{}, 208, 0}));
+        }
 
+        if (add_indent_overlays && dynamic_indent_rules) {
             parse_indent_rules(buffer->contents, &buffer->mode.indent_width,
                                &buffer->mode.tab_width, &buffer->mode.use_tabs);
         }
