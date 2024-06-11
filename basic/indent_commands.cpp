@@ -566,7 +566,9 @@ bool parse_indent_rules(const Contents& contents,
                 it.advance();
             }
 
-            if (num_spaces <= 4) {
+            // I don't think anyone does anything but 2 or 4 space indent.
+            // This also bypasses the block comment case `/*\n * My comment\n*/`.
+            if (num_spaces >= 2 && num_spaces <= 4) {
                 found_indent_width = true;
                 *indent_width = num_spaces;
                 break;
@@ -595,18 +597,23 @@ bool parse_indent_rules(const Contents& contents,
     it = contents.start();
     for (int i = 0; i < 10; ++i) {
         if (find_bucket(&it, "\n\t ")) {
+            it.advance(2);
             uint32_t num_spaces = 0;
             while (looking_at(it, ' ')) {
                 ++num_spaces;
                 it.advance();
             }
 
-            *use_tabs = true;
-            *tab_width = 8;
-            if (!found_indent_width) {
-                *indent_width = num_spaces;
+            // I don't think anyone does anything but 2 or 4 space indent.
+            // This also bypasses the block comment case `/*\n * My comment\n*/`.
+            if (num_spaces >= 2 && num_spaces <= 4) {
+                *use_tabs = true;
+                *tab_width = 8;
+                if (!found_indent_width) {
+                    *indent_width = num_spaces;
+                }
+                return true;
             }
-            return true;
         }
     }
 
