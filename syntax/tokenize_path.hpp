@@ -10,9 +10,7 @@ struct Token;
 
 namespace syntax {
 
-bool path_next_token(Contents_Iterator* iterator,
-                     Token* token,
-                     uint64_t* state);
+bool path_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state);
 
 }
 }

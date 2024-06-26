@@ -13,14 +13,14 @@ void append(cz::Allocator allocator, cz::String* string, const mag::Face& face) 
                (mag::Face::Flags)face.flags, "}");
 }
 
-void append(cz::Allocator allocator, cz::String* string, const mag::Face_Color &face_color) {
+void append(cz::Allocator allocator, cz::String* string, const mag::Face_Color& face_color) {
     if (face_color.is_themed)
         cz::append(allocator, string, face_color.x.theme_index);
     else
         cz::append(allocator, string, face_color.x.color);
 }
 
-void append(cz::Allocator allocator, cz::String* string, const mag::Color &color) {
+void append(cz::Allocator allocator, cz::String* string, const mag::Color& color) {
     cz::append_sprintf(allocator, string, "0x%02X%02X%02X", color.r, color.g, color.b);
 }
 

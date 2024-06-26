@@ -10,7 +10,9 @@ struct Token;
 
 namespace syntax {
 
-bool general_c_block_comments_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state);
+bool general_c_block_comments_next_token(Contents_Iterator* iterator,
+                                         Token* token,
+                                         uint64_t* state);
 
 }
 }

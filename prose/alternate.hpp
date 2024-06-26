@@ -27,8 +27,8 @@ extern cz::Str alternate_extensions_2[];
 extern size_t alternate_extensions_len;
 
 /// Find the alternate file.
-/// Returns 0 if `path` doesn't match any rules.  Note that `path` may be changed by this function in this case!
-/// Returns 1 if a match is guessed.  This happens when creating a new alternate file.
+/// Returns 0 if `path` doesn't match any rules.  Note that `path` may be changed by this function
+/// in this case!  Returns 1 if a match is guessed.  This happens when creating a new alternate file.
 /// Returns 2 if an exact match is found on disk.
 int find_alternate_file(cz::String* path);
 

@@ -236,7 +236,7 @@ void remove_line_comments(Transaction* transaction,
         if (after.get() == ' ') {
             after.advance();
         }
-        
+
         if (after.at_eob() || after.get() == '\n') {
             // Delete all indent and the comment.
             Edit remove_line;

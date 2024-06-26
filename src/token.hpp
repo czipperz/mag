@@ -81,7 +81,6 @@ struct Face;
     MAG_TOKEN_TYPE(BUFFER_TEMPORARY_NAME)
 // clang-format on
 
-
 namespace Token_Type_ {
 enum Token_Type : uint64_t {
 #define X(name) name,
@@ -98,7 +97,7 @@ enum Token_Type : uint64_t {
 };
 
 /// Token_Type -> string lookup table for simple token types.
-extern const char *const names[/*Token_Type::length*/];
+extern const char* const names[/*Token_Type::length*/];
 
 Token_Type encode(Face face);
 Face decode(Token_Type type);

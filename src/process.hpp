@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cz/slice.hpp>
 #include <cz/heap_string.hpp>
+#include <cz/slice.hpp>
 
 namespace mag {
 struct Client;

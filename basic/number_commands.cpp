@@ -32,8 +32,7 @@ void command_insert_numbers(Editor* editor, Command_Source source) {
         CZ_DEBUG_ASSERT(len > 0);
 
         Edit insert;
-        insert.value =
-            SSOStr::from_constant({buffer, cz::min((size_t)len, SSOStr::MAX_SHORT_LEN)});
+        insert.value = SSOStr::from_constant({buffer, cz::min((size_t)len, SSOStr::MAX_SHORT_LEN)});
         insert.position = cursors[i].point + offset;
         insert.flags = Edit::INSERT;
         transaction.push(insert);

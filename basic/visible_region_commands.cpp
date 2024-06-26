@@ -120,7 +120,7 @@ void command_down_page(Editor* editor, Command_Source source) {
 }
 
 static void scroll_down(Editor* editor, Command_Source source, size_t num) {
-    Window_Unified * window = source.client->mouse.window;
+    Window_Unified* window = source.client->mouse.window;
     if (!window)
         window = source.client->selected_window();
     WITH_CONST_WINDOW_BUFFER(window);
@@ -139,7 +139,7 @@ static void scroll_down(Editor* editor, Command_Source source, size_t num) {
 }
 
 static void scroll_up(Editor* editor, Command_Source source, size_t num) {
-    Window_Unified * window = source.client->mouse.window;
+    Window_Unified* window = source.client->mouse.window;
     if (!window)
         window = source.client->selected_window();
     WITH_CONST_WINDOW_BUFFER(window);
@@ -179,7 +179,7 @@ void command_scroll_up_one(Editor* editor, Command_Source source) {
 }
 
 static void scroll_left(Editor* editor, Command_Source source, size_t num) {
-    Window_Unified * window = source.client->mouse.window;
+    Window_Unified* window = source.client->mouse.window;
     if (!window)
         window = source.client->selected_window();
     WITH_CONST_WINDOW_BUFFER(window);
@@ -225,7 +225,7 @@ static void scroll_left(Editor* editor, Command_Source source, size_t num) {
 }
 
 static void scroll_right(Editor* editor, Command_Source source, size_t num) {
-    Window_Unified * window = source.client->mouse.window;
+    Window_Unified* window = source.client->mouse.window;
     if (!window)
         window = source.client->selected_window();
     WITH_CONST_WINDOW_BUFFER(window);

@@ -14,9 +14,7 @@
 namespace mag {
 namespace version_control {
 
-bool get_root_directory(cz::Str directory,
-                        cz::Allocator allocator,
-                        cz::String* top_level_path) {
+bool get_root_directory(cz::Str directory, cz::Allocator allocator, cz::String* top_level_path) {
     cz::String temp = {};
     CZ_DEFER(temp.drop(cz::heap_allocator()));
 

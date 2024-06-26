@@ -194,8 +194,9 @@ void command_realign_table(Editor* editor, Command_Source source) {
 
         for (size_t i = 1; i < max_pipes_per_line; ++i) {
             // Find the start and end of the column.
-            uint64_t start = (base_index + i - 1 < end_index ? pipe_positions[base_index + i - 1] + 1
-                                                             : it.position);
+            uint64_t start =
+                (base_index + i - 1 < end_index ? pipe_positions[base_index + i - 1] + 1
+                                                : it.position);
             uint64_t end = (base_index + i < end_index ? pipe_positions[base_index + i]  //
                                                        : it.position);
             bool has_pipe = (base_index + i < end_index);

@@ -1,7 +1,7 @@
 #include "movement_commands.hpp"
 
-#include "movement.hpp"
 #include "command_macros.hpp"
+#include "movement.hpp"
 #include "region_movement_commands.hpp"
 
 namespace mag {

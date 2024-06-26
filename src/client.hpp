@@ -142,6 +142,8 @@ struct Client {
     void raise() { _pending_raise = true; }
 };
 
-bool find_window_for_buffer(Window* root, cz::Arc<Buffer_Handle> buffer_handle, Window_Unified** out);
+bool find_window_for_buffer(Window* root,
+                            cz::Arc<Buffer_Handle> buffer_handle,
+                            Window_Unified** out);
 
 }

@@ -60,5 +60,5 @@ struct Test_Runner {
 }
 
 namespace cz {
-void append(cz::Allocator allocator, cz::String* string, const mag::Test_Runner::TToken &token);
+void append(cz::Allocator allocator, cz::String* string, const mag::Test_Runner::TToken& token);
 }
