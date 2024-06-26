@@ -301,7 +301,7 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
         Window_Unified* window = source.client->selected_normal_window;
         WITH_CONST_WINDOW_BUFFER(window);
 
-        if (!pick_engine(buffer->directory, &engine)){
+        if (!pick_engine(buffer->directory, &engine)) {
             source.client->show_message("Error: no tags file found");
             return;
         }

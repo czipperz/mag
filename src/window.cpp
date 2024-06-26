@@ -107,7 +107,8 @@ void Window_Unified::update_completion_cache(const Buffer* buffer) {
 
         completion_cache.engine_context.query.reserve(cz::heap_allocator(),
                                                       middle.position - iterator.position);
-        buffer->contents.slice_into(iterator, middle.position, &completion_cache.engine_context.query);
+        buffer->contents.slice_into(iterator, middle.position,
+                                    &completion_cache.engine_context.query);
     }
 }
 

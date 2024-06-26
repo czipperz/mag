@@ -19,7 +19,9 @@ static bool is_id_cont(char ch) {
     return is_id_start(ch) || cz::is_digit(ch);
 }
 
-bool general_c_block_comments_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+bool general_c_block_comments_next_token(Contents_Iterator* iterator,
+                                         Token* token,
+                                         uint64_t* state) {
     ZoneScoped;
 
     if (!advance_whitespace(iterator)) {
@@ -87,9 +89,9 @@ bool general_c_block_comments_next_token(Contents_Iterator* iterator, Token* tok
         goto ret;
     }
     if (first_ch == ':' || first_ch == '=' || first_ch == '!' || first_ch == '+' ||
-        first_ch == '-' || first_ch == '*' || first_ch == '%' ||
-        first_ch == '^' || first_ch == '|' || first_ch == '&') {
-        punct:
+        first_ch == '-' || first_ch == '*' || first_ch == '%' || first_ch == '^' ||
+        first_ch == '|' || first_ch == '&') {
+    punct:
         if (!iterator->at_eob() && iterator->get() == '=') {
             iterator->advance();
         } else if ((first_ch == '+' || first_ch == '-' || first_ch == '|' || first_ch == '&') &&

@@ -28,11 +28,11 @@ struct Data {
 using namespace overlay_nearest_matching_identifier_impl;
 
 static void overlay_nearest_matching_identifier_start_frame(Editor* editor,
-                                                                   Client* client,
-                                                                   const Buffer* buffer,
-                                                                   Window_Unified* window,
-                                                                   Contents_Iterator start,
-                                                                   void* _data) {
+                                                            Client* client,
+                                                            const Buffer* buffer,
+                                                            Window_Unified* window,
+                                                            Contents_Iterator start,
+                                                            void* _data) {
     ZoneScoped;
 
     Data* data = (Data*)_data;
@@ -74,19 +74,17 @@ static void overlay_nearest_matching_identifier_start_frame(Editor* editor,
 
     Contents_Iterator it;
     if (basic::find_nearest_matching_identifier(start, middle, /*max_buckets=*/5,
-                                                       /*ignored_positions=*/cursor_positions,
-                                                       &it)) {
+                                                /*ignored_positions=*/cursor_positions, &it)) {
         data->start = it;
         forward_through_identifier(&it);
         data->end = it.position;
     }
 }
 
-static Face overlay_nearest_matching_identifier_get_face_and_advance(
-    const Buffer* buffer,
-    Window_Unified* window,
-    Contents_Iterator iterator,
-    void* _data) {
+static Face overlay_nearest_matching_identifier_get_face_and_advance(const Buffer* buffer,
+                                                                     Window_Unified* window,
+                                                                     Contents_Iterator iterator,
+                                                                     void* _data) {
     Data* data = (Data*)_data;
 
     if (data->end == 0)
@@ -110,11 +108,10 @@ static Face overlay_nearest_matching_identifier_get_face_and_advance(
         return {};
 }
 
-static Face overlay_nearest_matching_identifier_get_face_newline_padding(
-    const Buffer* buffer,
-    Window_Unified* window,
-    Contents_Iterator iterator,
-    void* _data) {
+static Face overlay_nearest_matching_identifier_get_face_newline_padding(const Buffer* buffer,
+                                                                         Window_Unified* window,
+                                                                         Contents_Iterator iterator,
+                                                                         void* _data) {
     return {};
 }
 

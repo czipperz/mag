@@ -123,7 +123,8 @@ static void render(int* total_rows,
     }
 
     bool any_animated_scrolling = false;
-    render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client, &any_animated_scrolling);
+    render_to_cells(cellss[1], window_cache, mini_buffer_window_cache, rows, cols, editor, client,
+                    &any_animated_scrolling);
 
     bool any = any_animated_scrolling;
     {

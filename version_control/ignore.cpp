@@ -30,16 +30,15 @@ static void process_line(cz::Str line, Ignore_Rules* rules, size_t* counter) {
         line = line.slice_start(1);
         rule.inverse = true;
         if (line.len == 0)
-            return; // Ignore invalid lines.
+            return;  // Ignore invalid lines.
     }
-
 
     // If the line starts with a backslash then the next character is
     // treated literally.  This isn't really exactly correct but it's close.
     if (line[0] == '\\') {
         line = line.slice_start(1);
         if (line.len == 0)
-            return; // Ignore invalid lines.
+            return;  // Ignore invalid lines.
     }
 
     // Ignore trailing '/'.  This is supposed to detect directories, but it is
