@@ -130,9 +130,12 @@ void Test_Runner::setup_region(cz::Str input) {
 }
 
 cz::String Test_Runner::stringify() {
-    cz::String output = {};
-
     WITH_CONST_SELECTED_BUFFER(&client);
+    return stringify(window, buffer);
+}
+
+cz::String Test_Runner::stringify(const Window_Unified *window, const Buffer *buffer) {
+    cz::String output = {};
 
     struct Separator {
         uint64_t position;

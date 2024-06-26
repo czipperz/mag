@@ -33,6 +33,9 @@ struct Test_Runner {
 
     /// Stringify the buffer's contents, adding `|` for each cursor.
     cz::String stringify();
+    /// Same as `stringify()` but useful for when the buffer
+    /// is already locked to avoid recursive deadlock.
+    cz::String stringify(const Window_Unified* window, const Buffer* buffer);
 
     /// Get a section of the buffer's contents.  Doesn't track cursors.
     cz::String slice(uint64_t start, uint64_t end);
