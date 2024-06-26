@@ -80,7 +80,7 @@ Buffer* Buffer_Handle::lock_writing() {
         size_t index;
         if (already_locked(associated_threads, &index)) {
             CZ_PANIC(
-                "Buffer_Handle::lock_writing: This thread has already"
+                "Buffer_Handle::lock_writing: This thread has already "
                 "locked the Buffer_Handle so we are deadlocking");
         }
 #endif
@@ -124,7 +124,7 @@ const Buffer* Buffer_Handle::lock_reading() {
             size_t index;
             if (already_locked(associated_threads, &index)) {
                 CZ_PANIC(
-                    "Buffer_Handle::lock_reading: This thread has already"
+                    "Buffer_Handle::lock_reading: This thread has already "
                     "locked the Buffer_Handle so we are deadlocking");
             }
         }
