@@ -70,18 +70,23 @@ TEST_CASE("reformat_at markdown reformat normal paragraph") {
         WITH_SELECTED_BUFFER(&tr.client);
         buffer->mode.preferred_column = 80;
 
+        // Midpoint won't match the pattern because it's at an empty line.
+        bool expected = i != midpoint;
+
         Contents_Iterator it = buffer->contents.iterator_at(i);
-        CHECK(reformat_at(&tr.client, buffer, it, "", ""));
+        CHECK(reformat_at(&tr.client, buffer, it, "", "") == expected);
         cz::String contents = buffer->contents.stringify(tr.allocator());
-        if (i <= midpoint) {
+        if (i < midpoint) {
             CHECK(contents == result1);
+        } else if (i == midpoint) {
+            CHECK(contents == body);
         } else {
             CHECK(contents == result2);
         }
 
         // Reformat again and make sure that we have no changes.
         it = buffer->contents.iterator_at(i);
-        CHECK(reformat_at(&tr.client, buffer, it, "", ""));
+        CHECK(reformat_at(&tr.client, buffer, it, "", "") == expected);
         CHECK(buffer->contents.stringify(tr.allocator()) == contents);
     }
 }

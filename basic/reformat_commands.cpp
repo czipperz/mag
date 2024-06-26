@@ -147,7 +147,10 @@ bool reformat_at(Client* client,
     bool stop_on_empty_lines = acceptable_start.len == 0;
     bool detect_start = acceptable_start != acceptable_continuation;
     bool at_start = false;
-    if (looking_at(iterator, acceptable_start)) {
+
+    if (stop_on_empty_lines && at_end_of_line(iterator)) {
+        return false;
+    } else if (looking_at(iterator, acceptable_start)) {
         at_start = true;
         if (any_patterns_match(iterator, acceptable_start.len, rejected_patterns)) {
             return false;
