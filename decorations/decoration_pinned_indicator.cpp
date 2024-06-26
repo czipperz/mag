@@ -1,10 +1,10 @@
 #include "decoration_pinned_indicator.hpp"
 
 #include <stdlib.h>
-#include <Tracy.hpp>
 #include <cz/format.hpp>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
+#include <tracy/Tracy.hpp>
 #include "buffer.hpp"
 #include "decoration.hpp"
 #include "window.hpp"

@@ -1,9 +1,9 @@
 #include "contents.hpp"
 
 #include <string.h>
-#include <Tracy.hpp>
 #include <cz/heap.hpp>
 #include <cz/util.hpp>
+#include <tracy/Tracy.hpp>
 #include "movement.hpp"
 #include "ssostr.hpp"
 

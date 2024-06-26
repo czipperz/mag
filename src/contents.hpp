@@ -1,13 +1,13 @@
 #pragma once
 
 #include <stdint.h>
-#include <Tracy.hpp>
 #include <cz/allocator.hpp>
 #include <cz/assert.hpp>
 #include <cz/slice.hpp>
 #include <cz/str.hpp>
 #include <cz/string.hpp>
 #include <cz/vector.hpp>
+#include <tracy/Tracy.hpp>
 
 namespace mag {
 

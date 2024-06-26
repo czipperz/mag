@@ -1,11 +1,11 @@
 #include "clang_format.hpp"
 
 #include <stdio.h>
-#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
 #include <cz/vector.hpp>
+#include <tracy/Tracy.hpp>
 #include "command.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"

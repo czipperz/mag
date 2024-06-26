@@ -1,10 +1,10 @@
 #include "buffer.hpp"
 
 #include <stdio.h>
-#include <Tracy.hpp>
 #include <cz/bit_array.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include <tracy/Tracy.hpp>
 #include "cursor.hpp"
 #include "diff.hpp"
 #include "file.hpp"

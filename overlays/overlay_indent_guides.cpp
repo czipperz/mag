@@ -1,12 +1,12 @@
 #include "overlay_indent_guides.hpp"
 
 #include <stdlib.h>
-#include <Tracy.hpp>
 #include <algorithm>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/sort.hpp>
 #include <cz/vector.hpp>
+#include <tracy/Tracy.hpp>
 #include "buffer.hpp"
 #include "movement.hpp"
 #include "overlay.hpp"

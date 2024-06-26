@@ -1,8 +1,8 @@
 #include "overlay_highlight_string.hpp"
 
-#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/heap.hpp>
+#include <tracy/Tracy.hpp>
 #include "buffer.hpp"
 #include "contents.hpp"
 #include "face.hpp"

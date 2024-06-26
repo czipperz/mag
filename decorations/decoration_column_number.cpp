@@ -1,11 +1,11 @@
 #include "decoration_column_number.hpp"
 
 #include <stdlib.h>
-#include <Tracy.hpp>
 #include <algorithm>
 #include <cz/format.hpp>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
+#include <tracy/Tracy.hpp>
 #include "buffer.hpp"
 #include "decoration.hpp"
 #include "movement.hpp"

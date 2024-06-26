@@ -2,7 +2,6 @@
 
 #include <inttypes.h>
 #include <stdio.h>
-#include <Tracy.hpp>
 #include <command_macros.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
@@ -15,6 +14,7 @@
 #include <limits>
 #include <movement.hpp>
 #include <token.hpp>
+#include <tracy/Tracy.hpp>
 #include "ctags.hpp"
 #include "gnu_global.hpp"
 #include "program_info.hpp"

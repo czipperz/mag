@@ -1,6 +1,6 @@
 #include "match.hpp"
 
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 #include "contents.hpp"
 #include "movement.hpp"
 

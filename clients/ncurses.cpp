@@ -3,12 +3,12 @@
 #include "ncurses.hpp"
 
 #include <ncurses.h>
-#include <Tracy.hpp>
 #include <algorithm>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <thread>
+#include <tracy/Tracy.hpp>
 #include "cell.hpp"
 #include "client.hpp"
 #include "completion.hpp"

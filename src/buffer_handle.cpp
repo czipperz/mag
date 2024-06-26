@@ -1,8 +1,8 @@
 #include "buffer_handle.hpp"
 
-#include <Tracy.hpp>
 #include <cz/assert.hpp>
 #include <cz/defer.hpp>
+#include <tracy/Tracy.hpp>
 
 namespace mag {
 

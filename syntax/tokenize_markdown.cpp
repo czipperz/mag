@@ -1,7 +1,7 @@
 #include "tokenize_markdown.hpp"
 
-#include <Tracy.hpp>
 #include <cz/char_type.hpp>
+#include <tracy/Tracy.hpp>
 #include "contents.hpp"
 #include "match.hpp"
 #include "movement.hpp"

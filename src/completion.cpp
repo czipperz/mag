@@ -1,6 +1,5 @@
 #include "completion.hpp"
 
-#include <Tracy.hpp>
 #include <algorithm>
 #include <cz/defer.hpp>
 #include <cz/directory.hpp>
@@ -11,6 +10,7 @@
 #include <cz/process.hpp>
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
+#include <tracy/Tracy.hpp>
 #include "buffer.hpp"
 #include "command_macros.hpp"
 #include "editor.hpp"

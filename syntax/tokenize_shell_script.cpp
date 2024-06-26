@@ -1,7 +1,7 @@
 #include "tokenize_shell_script.hpp"
 
-#include <Tracy.hpp>
 #include <cz/char_type.hpp>
+#include <tracy/Tracy.hpp>
 #include "contents.hpp"
 #include "face.hpp"
 #include "match.hpp"

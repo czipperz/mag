@@ -2,8 +2,8 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <Tracy.hpp>
 #include <cz/heap.hpp>
+#include <tracy/Tracy.hpp>
 #include "buffer.hpp"
 #include "editor.hpp"
 #include "movement.hpp"

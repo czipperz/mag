@@ -1,7 +1,7 @@
 #include "overlay_nearest_matching_identifier.hpp"
 
-#include <Tracy.hpp>
 #include <cz/defer.hpp>
+#include <tracy/Tracy.hpp>
 #include "basic/completion_commands.hpp"
 #include "match.hpp"
 #include "movement.hpp"

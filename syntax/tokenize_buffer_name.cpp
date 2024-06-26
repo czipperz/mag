@@ -1,7 +1,7 @@
 #include "tokenize_path.hpp"
 
-#include <Tracy.hpp>
 #include <cz/path.hpp>
+#include <tracy/Tracy.hpp>
 #include "contents.hpp"
 #include "match.hpp"
 #include "movement.hpp"

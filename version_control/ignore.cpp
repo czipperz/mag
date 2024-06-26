@@ -1,10 +1,10 @@
 #include "ignore.hpp"
 
-#include <Tracy.hpp>
 #include <cz/defer.hpp>
 #include <cz/env.hpp>
 #include <cz/file.hpp>
 #include <cz/heap.hpp>
+#include <tracy/Tracy.hpp>
 
 namespace mag {
 namespace version_control {

@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Define TRACY_INCLUDE_DIRS for cz to use.
-set(TRACY_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/tracy)
+set(TRACY_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/tracy/public)
 
 add_subdirectory(cz)
 
@@ -165,7 +165,7 @@ else()
   endif()
 endif()
 
-add_library(tracy tracy/TracyClient.cpp)
+add_library(tracy tracy/public/TracyClient.cpp)
 
 if(MSVC)
   add_definitions(-D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1)

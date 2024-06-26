@@ -2,10 +2,10 @@
 
 #include <math.h>
 #include <stdio.h>
-#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/format.hpp>
 #include <cz/sort.hpp>
+#include <tracy/Tracy.hpp>
 #include "command_macros.hpp"
 #include "decoration.hpp"
 #include "diff.hpp"

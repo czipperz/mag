@@ -4,7 +4,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <time.h>
-#include <Tracy.hpp>
 #include <algorithm>
 #include <cz/allocator.hpp>
 #include <cz/bit_array.hpp>
@@ -17,6 +16,7 @@
 #include <cz/sort.hpp>
 #include <cz/string.hpp>
 #include <cz/util.hpp>
+#include <tracy/Tracy.hpp>
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "config.hpp"

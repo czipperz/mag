@@ -1,6 +1,6 @@
 #include "tokenize_process.hpp"
 
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 #include "contents.hpp"
 #include "token.hpp"
 

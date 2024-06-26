@@ -1,6 +1,6 @@
 #include "rebase.hpp"
 
-#include <Tracy.hpp>
+#include <tracy/Tracy.hpp>
 #include "change.hpp"
 #include "edit.hpp"
 

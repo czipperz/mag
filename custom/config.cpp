@@ -1,9 +1,9 @@
 #include "config.hpp"
 
-#include <Tracy.hpp>
 #include <cz/defer.hpp>
 #include <cz/path.hpp>
 #include <cz/sort.hpp>
+#include <tracy/Tracy.hpp>
 #include "basic/buffer_commands.hpp"
 #include "basic/build_commands.hpp"
 #include "basic/capitalization_commands.hpp"

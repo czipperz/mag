@@ -1,12 +1,12 @@
 #include "overlay_matching_pairs.hpp"
 
 #include <stdlib.h>
-#include <Tracy.hpp>
 #include <cz/dedup.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/sort.hpp>
 #include <cz/vector.hpp>
+#include <tracy/Tracy.hpp>
 #include "buffer.hpp"
 #include "editor.hpp"
 #include "movement.hpp"

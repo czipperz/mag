@@ -6,7 +6,6 @@
 #include <SDL_ttf.h>
 #include <inttypes.h>
 #include <math.h>
-#include <Tracy.hpp>
 #include <command_macros.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
@@ -16,6 +15,7 @@
 #include <cz/str.hpp>
 #include <cz/utf.hpp>
 #include <cz/working_directory.hpp>
+#include <tracy/Tracy.hpp>
 #include "basic/copy_commands.hpp"
 #include "cell.hpp"
 #include "client.hpp"

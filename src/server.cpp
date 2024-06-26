@@ -2,7 +2,6 @@
 
 #include <limits.h>
 #include <stdio.h>
-#include <Tracy.hpp>
 #include <algorithm>
 #include <chrono>
 #include <cz/char_type.hpp>
@@ -11,6 +10,7 @@
 #include <cz/mutex.hpp>
 #include <cz/semaphore.hpp>
 #include <cz/util.hpp>
+#include <tracy/Tracy.hpp>
 #include "basic/commands.hpp"
 #include "client.hpp"
 #include "command_macros.hpp"

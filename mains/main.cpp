@@ -1,6 +1,5 @@
 #include <inttypes.h>
 #include <stdio.h>
-#include <Tracy.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/env.hpp>
@@ -12,6 +11,7 @@
 #include <cz/str.hpp>
 #include <cz/util.hpp>
 #include <cz/working_directory.hpp>
+#include <tracy/Tracy.hpp>
 #include "basic/remote.hpp"
 #include "client.hpp"
 #include "command.hpp"

@@ -1,7 +1,7 @@
 #include "tokenize_general.hpp"
 
-#include <Tracy.hpp>
 #include <cz/char_type.hpp>
+#include <tracy/Tracy.hpp>
 #include "common.hpp"
 #include "contents.hpp"
 #include "face.hpp"
