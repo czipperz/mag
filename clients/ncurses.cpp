@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
+#include <cz/format.hpp>
 #include <cz/heap.hpp>
 #include <thread>
 #include <tracy/Tracy.hpp>
@@ -252,7 +253,10 @@ static void process_key_press(Server* server, Client* client, int ch) {
 
     Key key = {};
 rerun:
-    if (ch == '\n' || ch == '\t') {
+    if (ch == ERR) {
+        // No actual key, just return.
+        return;
+    } else if (ch == '\n' || ch == '\t') {
         key.code = ch;
     } else if (ch == 0) {
         // C-@, C-\\ .
@@ -298,6 +302,9 @@ rerun:
         process_mouse_event(server, client);
         return;
     } else {
+        cz::String message = cz::format("Ignoring unknown key code: ", ch);
+        CZ_DEFER(message.drop(cz::heap_allocator()));
+        client->show_message(message);
         return;
     }
 
