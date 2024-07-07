@@ -284,8 +284,7 @@ rerun:
         // C-_, C-/
         key.modifiers |= CONTROL;
         key.code = '_';
-    } else if (ch == 127) {
-        // BACKSPACE (\\-), C-?
+    } else if (ch == 127 /*(\\-), C-?*/ || ch == KEY_BACKSPACE) {
         key.code = Key_Code::BACKSPACE;
     } else if (ch >= 0 && ch < 128) {
         // normal keys
