@@ -248,6 +248,65 @@ static void process_mouse_event(Server* server, Client* client) {
 #endif
 }
 
+static bool handle_arrow_keys(int ch, Key& key) {
+    if (ch == KEY_UP) {
+        key.code = Key_Code::UP;
+    } else if (ch == KEY_DOWN) {
+        key.code = Key_Code::DOWN;
+    } else if (ch == KEY_LEFT) {
+        key.code = Key_Code::LEFT;
+    } else if (ch == KEY_RIGHT) {
+        key.code = Key_Code::RIGHT;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+static bool handle_function_keys(int ch, Key& key) {
+    if (ch >= 265 && ch <= 315) {
+        // Main block of function keys (F1-F12).
+        if (ch < 277) {
+            key.code = Key_Code::F1 + (ch - 265);
+        } else if (ch < 289) {
+            key.code = Key_Code::F1 + (ch - 277);
+            key.modifiers |= SHIFT;
+        } else if (ch < 301) {
+            key.code = Key_Code::F1 + (ch - 289);
+            key.modifiers |= CONTROL;
+        } else if (ch < 313) {
+            key.code = Key_Code::F1 + (ch - 301);
+            key.modifiers |= (CONTROL | SHIFT);
+        } else {
+            // Only A-F1 to A-F3 are bound.
+            key.code = Key_Code::F1 + (ch - 313);
+            key.modifiers |= ALT;
+        }
+    } else if (ch >= 325 && ch <= 327) {
+        // Only A-S-F1 to A-S-F3 are bound.
+        key.code = Key_Code::F1 + (ch - 313);
+        key.modifiers |= (ALT | SHIFT);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+static bool handle_side_special_keys(int ch, Key& key) {
+    if (ch == KEY_HOME) {
+        key.code = Key_Code::HOME;
+    } else if (ch == KEY_END) {
+        key.code = Key_Code::END;
+    } else if (ch == KEY_NPAGE) {
+        key.code = Key_Code::PAGE_DOWN;
+    } else if (ch == KEY_PPAGE) {
+        key.code = Key_Code::PAGE_UP;
+    } else {
+        return false;
+    }
+    return true;
+}
+
 static void process_key_press(Server* server, Client* client, int ch) {
     ZoneScoped;
 
@@ -289,47 +348,12 @@ rerun:
     } else if (ch >= 0 && ch < 128) {
         // normal keys
         key.code = ch;
-    } else if (ch == KEY_UP) {
-        key.code = Key_Code::UP;
-    } else if (ch == KEY_DOWN) {
-        key.code = Key_Code::DOWN;
-    } else if (ch == KEY_LEFT) {
-        key.code = Key_Code::LEFT;
-    } else if (ch == KEY_RIGHT) {
-        key.code = Key_Code::RIGHT;
+    } else if (handle_arrow_keys(ch, key)) {
+    } else if (handle_function_keys(ch, key)) {
+    } else if (handle_side_special_keys(ch, key)) {
     } else if (ch == KEY_MOUSE) {
         process_mouse_event(server, client);
         return;
-    } else if (ch >= 265 && ch <= 315) {
-        // Main block of function keys (F1-F12).
-        if (ch < 277) {
-            key.code = Key_Code::F1 + (ch - 265);
-        } else if (ch < 289) {
-            key.code = Key_Code::F1 + (ch - 277);
-            key.modifiers |= SHIFT;
-        } else if (ch < 301) {
-            key.code = Key_Code::F1 + (ch - 289);
-            key.modifiers |= CONTROL;
-        } else if (ch < 313) {
-            key.code = Key_Code::F1 + (ch - 301);
-            key.modifiers |= (CONTROL | SHIFT);
-        } else {
-            // Only A-F1 to A-F3 are bound.
-            key.code = Key_Code::F1 + (ch - 313);
-            key.modifiers |= ALT;
-        }
-    } else if (ch >= 325 && ch <= 327) {
-        // Only A-S-F1 to A-S-F3 are bound.
-        key.code = Key_Code::F1 + (ch - 313);
-        key.modifiers |= (ALT | SHIFT);
-    } else if (ch == KEY_HOME) {
-        key.code = Key_Code::HOME;
-    } else if (ch == KEY_END) {
-        key.code = Key_Code::END;
-    } else if (ch == KEY_NPAGE) {
-        key.code = Key_Code::PAGE_DOWN;
-    } else if (ch == KEY_PPAGE) {
-        key.code = Key_Code::PAGE_UP;
     } else if (ch == KEY_RESIZE) {
         // We poll window size instead of handling resize events.
         return;
