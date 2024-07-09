@@ -27,17 +27,40 @@ namespace client {
 namespace ncurses {
 
 #undef MOCK_INPUT
+#undef LOG_GETCH
 
 #ifdef MOCK_INPUT
 static bool is_nodelay = false;
 #define nodelay(WINDOW, VALUE) (is_nodelay = (VALUE))
 #endif
 
+static int logging_getch() {
+    int val = getch();
+
+#ifdef LOG_GETCH
+    if (val != ERR) {
+        static cz::Output_File file;
+        if (!file.is_open())
+            CZ_ASSERT(file.open("/tmp/mag-key-log"));
+
+        cz::Heap_String str = cz::format(val);
+        if (cz::is_print(val))
+            cz::append(&str, " '", (char)val, "'\n");
+        else
+            cz::append(&str, '\n');
+        file.write(str);
+        str.drop();
+    }
+#endif
+
+    return val;
+}
+
 static int mock_getch() {
     ZoneScoped;
 
 #ifndef MOCK_INPUT
-    return getch();
+    return logging_getch();
 #else
     static int keys[] = {27, '>', 24, 3};
     static int times[] = {800, 800, 1100, 1200};
