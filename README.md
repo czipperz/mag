@@ -31,6 +31,13 @@ The `custom` folder can be customized to fit your needs.  In particular `config.
 
 See [INSTALL.md](./INSTALL.md) for instructions on how to build and install Mag.
 
+## Debugging
+
+Mag's SDL2 interface and unit tests can be debugged via GDB trivially.
+
+Mag's NCurses interface can be debugged using the provided `debug-ncurses.sh` script.
+See that file for more documentation.
+
 ## Optimization
 
 See [OPTIMIZE.md](./OPTIMIZE.md) for instructions on how to build Mag.
