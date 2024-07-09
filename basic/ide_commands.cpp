@@ -14,6 +14,11 @@ namespace basic {
 
 REGISTER_COMMAND(command_insert_open_pair);
 void command_insert_open_pair(Editor* editor, Command_Source source) {
+    if (source.keys.len == 0) {
+        source.client->show_message("command_insert_open_pair must be called via keybind");
+        return;
+    }
+
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 
@@ -60,6 +65,11 @@ void command_insert_open_pair(Editor* editor, Command_Source source) {
 
 REGISTER_COMMAND(command_insert_close_pair);
 void command_insert_close_pair(Editor* editor, Command_Source source) {
+    if (source.keys.len == 0) {
+        source.client->show_message("command_insert_close_pair must be called via keybind");
+        return;
+    }
+
     WITH_SELECTED_BUFFER(source.client);
     cz::Slice<Cursor> cursors = window->cursors;
 

@@ -89,6 +89,11 @@ REGISTER_COMMAND(command_insert_char);
 void command_insert_char(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
+    if (source.keys.len == 0) {
+        source.client->show_message("command_insert_char must be called via keybind");
+        return;
+    }
+
     do_command_insert_char(editor, buffer, window, source);
 }
 
