@@ -300,8 +300,28 @@ rerun:
     } else if (ch == KEY_MOUSE) {
         process_mouse_event(server, client);
         return;
-    } else if (ch >= KEY_F(1) && ch <= KEY_F(12)) {
-        key.code = Key_Code::F1 + (ch - KEY_F(1));
+    } else if (ch >= 265 && ch <= 315) {
+        // Main block of function keys (F1-F12).
+        if (ch < 277) {
+            key.code = Key_Code::F1 + (ch - 265);
+        } else if (ch < 289) {
+            key.code = Key_Code::F1 + (ch - 277);
+            key.modifiers |= SHIFT;
+        } else if (ch < 301) {
+            key.code = Key_Code::F1 + (ch - 289);
+            key.modifiers |= CONTROL;
+        } else if (ch < 313) {
+            key.code = Key_Code::F1 + (ch - 301);
+            key.modifiers |= (CONTROL | SHIFT);
+        } else {
+            // Only A-F1 to A-F3 are bound.
+            key.code = Key_Code::F1 + (ch - 313);
+            key.modifiers |= ALT;
+        }
+    } else if (ch >= 325 && ch <= 327) {
+        // Only A-S-F1 to A-S-F3 are bound.
+        key.code = Key_Code::F1 + (ch - 313);
+        key.modifiers |= (ALT | SHIFT);
     } else if (ch == KEY_HOME) {
         key.code = Key_Code::HOME;
     } else if (ch == KEY_END) {
