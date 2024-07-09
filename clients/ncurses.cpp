@@ -300,6 +300,19 @@ rerun:
     } else if (ch == KEY_MOUSE) {
         process_mouse_event(server, client);
         return;
+    } else if (ch >= KEY_F(1) && ch <= KEY_F(12)) {
+        key.code = Key_Code::F1 + (ch - KEY_F(1));
+    } else if (ch == KEY_HOME) {
+        key.code = Key_Code::HOME;
+    } else if (ch == KEY_END) {
+        key.code = Key_Code::END;
+    } else if (ch == KEY_NPAGE) {
+        key.code = Key_Code::PAGE_DOWN;
+    } else if (ch == KEY_PPAGE) {
+        key.code = Key_Code::PAGE_UP;
+    } else if (ch == KEY_RESIZE) {
+        // We poll window size instead of handling resize events.
+        return;
     } else {
         cz::String message = cz::format("Ignoring unknown key code: ", ch);
         CZ_DEFER(message.drop(cz::heap_allocator()));
