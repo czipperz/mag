@@ -26,8 +26,9 @@ namespace mag {
 namespace client {
 namespace ncurses {
 
-#undef MOCK_INPUT
-#undef LOG_GETCH
+#undef MOCK_INPUT       // read from premade input buffer instead of keyboard
+#undef LOG_GETCH        // log all characters typed
+#undef VISUALIZE_INPUT  // show messages for characters typed instead of processing them
 
 #ifdef MOCK_INPUT
 static bool is_nodelay = false;
@@ -555,7 +556,22 @@ rerun:
         return;
     }
 
+#ifndef VISUALIZE_INPUT
     server->receive(client, key);
+#else
+    if (key.modifiers == ALT && (key.code == 'x' || key.code == 'c')) {
+        server->receive(client, key);
+    } else {
+        cz::String octal = cz::asprintf("0%o", ch);
+        CZ_DEFER(octal.drop(cz::heap_allocator()));
+        cz::String msg = {};
+        CZ_DEFER(msg.drop(cz::heap_allocator()));
+        cz::append(cz::heap_allocator(), &msg, "Pressed ", ch, " = ", octal, ": ");
+        msg.reserve(cz::heap_allocator(), stringify_key_max_size);
+        stringify_key(&msg, key);
+        client->show_message(msg);
+    }
+#endif
 }
 
 static void process_key_presses(Server* server, Client* client, int ch) {
