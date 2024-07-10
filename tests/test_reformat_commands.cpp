@@ -1,32 +1,10 @@
-#include "basic/reformat_commands.hpp"
 #include "test_runner.hpp"
+
+#include "basic/reformat_commands.hpp"
+#include "basic/markdown_commands.hpp"
 
 using namespace mag;
 using namespace mag::basic;
-
-TEST_CASE("reformat_at markdown no changes super basic") {
-    cz::Str body =
-        "\
-- |pt1\n\
-  * |pt2\n\
-    + |pt3\n\
-";
-
-    Test_Runner tr;
-    tr.setup(body);
-
-    WITH_SELECTED_BUFFER(&tr.client);
-    cz::Str rejected_patterns[] = {"#", "* ", "- ", "+ "};
-    cz::Str cursor_starts[] = {"- ", "* ", "+ "};
-    for (size_t c = 0; c < window->cursors.len; ++c) {
-        INFO("cursor: " << c);
-
-        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[c].point);
-        CHECK(reformat_at(&tr.client, buffer, it, cursor_starts[c], "  ", rejected_patterns));
-
-        REQUIRE(tr.stringify(window, buffer) == body);
-    }
-}
 
 TEST_CASE("reformat_at markdown reformat normal paragraph") {
     // There are two paragraphs both are a single line & way too long.  The idea
@@ -91,6 +69,28 @@ TEST_CASE("reformat_at markdown reformat normal paragraph") {
     }
 }
 
+TEST_CASE("reformat_at markdown no changes super basic") {
+    cz::Str body =
+        "\
+- |pt1\n\
+  * |pt2\n\
+    + |pt3\n\
+";
+
+    Test_Runner tr;
+    tr.setup(body);
+
+    WITH_SELECTED_BUFFER(&tr.client);
+    for (size_t c = 0; c < window->cursors.len; ++c) {
+        INFO("cursor: " << c);
+
+        Contents_Iterator it = buffer->contents.iterator_at(window->cursors[c].point);
+        markdown::reformat_at(&tr.client, buffer, it);
+
+        REQUIRE(tr.stringify(window, buffer) == body);
+    }
+}
+
 TEST_CASE("reformat_at markdown staircase") {
     char body1[] =
         "- Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod "
@@ -110,16 +110,6 @@ TEST_CASE("reformat_at markdown staircase") {
     char result3[] = "    - and so should this!";
 
     auto run_test_suite = [](cz::Str body, size_t start, size_t len, cz::Str result) {
-        char start_pattern[] = "- ";
-        for (size_t i = 0; i < 6; ++i) {
-            if (body[start + i] != ' ') {
-                start_pattern[0] = body[start + i];
-                break;
-            }
-        }
-        INFO("start_pattern: " << start_pattern);
-
-        cz::Str rejected_patterns[] = {"#", "* ", "- ", "+ "};
         for (size_t i = start; i < start + len; ++i) {
             INFO("i: " << i);
 
@@ -130,7 +120,7 @@ TEST_CASE("reformat_at markdown staircase") {
             buffer->mode.preferred_column = 80;
 
             Contents_Iterator it = buffer->contents.iterator_at(i);
-            CHECK(reformat_at(&tr.client, buffer, it, start_pattern, "  ", rejected_patterns));
+            markdown::reformat_at(&tr.client, buffer, it);
 
             REQUIRE(buffer->contents.stringify(tr.allocator()) == result);
         }

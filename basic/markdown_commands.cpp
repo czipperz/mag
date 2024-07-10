@@ -16,47 +16,30 @@ void command_reformat_paragraph(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+    reformat_at(source.client, buffer, iterator);
+}
+
+void reformat_at(Client *client, Buffer *buffer, Contents_Iterator iterator) {
+    start_of_line_text(&iterator);
 
     // Don't reformat title lines.
     if (looking_at(iterator, "#")) {
         return;
     }
 
-    // If we're at a starting line, don't allow ourselves
-    // to be reformatted as part of a different block.
-    start_of_line_text(&iterator);
-    cz::Str rejected_patterns[] = {"#", "- ", "+ "};
-    if (looking_at(iterator, "* ")) {
-        basic::reformat_at(source.client, buffer, iterator, "* ", "  ", rejected_patterns);
+    cz::Str rejected_patterns[] = {"#", "* ", "- ", "+ "};
+    if (basic::reformat_at(client, buffer, iterator, "* ", "  ", rejected_patterns)) {
         return;
     }
-    rejected_patterns[1] = "* ";
-    if (looking_at(iterator, "- ")) {
-        basic::reformat_at(source.client, buffer, iterator, "- ", "  ", rejected_patterns);
+    if (basic::reformat_at(client, buffer, iterator, "- ", "  ", rejected_patterns)) {
         return;
     }
-    rejected_patterns[2] = "- ";
-    if (looking_at(iterator, "+ ")) {
-        basic::reformat_at(source.client, buffer, iterator, "+ ", "  ", rejected_patterns);
-        return;
-    }
-
-    // Check when we're at a trailing line.
-    rejected_patterns[1] = "+ ";
-    if (basic::reformat_at(source.client, buffer, iterator, "* ", "  ", rejected_patterns)) {
-        return;
-    }
-    rejected_patterns[2] = "* ";
-    if (basic::reformat_at(source.client, buffer, iterator, "- ", "  ", rejected_patterns)) {
-        return;
-    }
-    rejected_patterns[1] = "- ";
-    if (basic::reformat_at(source.client, buffer, iterator, "+ ", "  ", rejected_patterns)) {
+    if (basic::reformat_at(client, buffer, iterator, "+ ", "  ", rejected_patterns)) {
         return;
     }
 
     // Backup: format as a paragraph.
-    if (basic::reformat_at(source.client, buffer, iterator, "", "")) {
+    if (basic::reformat_at(client, buffer, iterator, "", "")) {
         return;
     }
 }

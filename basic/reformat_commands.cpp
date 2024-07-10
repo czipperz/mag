@@ -181,12 +181,12 @@ bool reformat_at(Client* client,
             at_start = true;
         } else {
             if (iterator.position < acceptable_continuation_offset) {
-                break;
+                return false;
             }
             iterator.retreat(acceptable_continuation_offset);
             if (!looking_at(iterator, acceptable_continuation) ||
                 any_patterns_match(iterator, acceptable_continuation.len, rejected_patterns)) {
-                break;
+                return false;
             }
         }
 
