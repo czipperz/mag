@@ -294,16 +294,16 @@ static bool handle_arrow_keys(int ch, Key& key) {
         key.code = Key_Code::RIGHT;
         key.modifiers |= ALT;
 
-    } else if (ch == 337) {
+    } else if (ch == KEY_SR) {
         key.code = Key_Code::UP;
         key.modifiers |= SHIFT;
-    } else if (ch == 336) {
+    } else if (ch == KEY_SF) {
         key.code = Key_Code::DOWN;
         key.modifiers |= SHIFT;
-    } else if (ch == 393) {
+    } else if (ch == KEY_SLEFT) {
         key.code = Key_Code::LEFT;
         key.modifiers |= SHIFT;
-    } else if (ch == 402) {
+    } else if (ch == KEY_SRIGHT) {
         key.code = Key_Code::RIGHT;
         key.modifiers |= SHIFT;
 
