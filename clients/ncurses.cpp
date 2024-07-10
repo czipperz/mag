@@ -378,12 +378,75 @@ static bool handle_function_keys(int ch, Key& key) {
 static bool handle_side_special_keys(int ch, Key& key) {
     if (ch == KEY_HOME) {
         key.code = Key_Code::HOME;
+    } else if (ch == KEY_SHOME) {
+        key.code = Key_Code::HOME;
+        key.modifiers |= SHIFT;
+    } else if (ch == 534) {
+        key.code = Key_Code::HOME;
+        key.modifiers |= ALT;
+    } else if (ch == 535) {
+        key.code = Key_Code::HOME;
+        key.modifiers |= (ALT | SHIFT);
+    } else if (ch == 536) {
+        key.code = Key_Code::HOME;
+        key.modifiers |= CONTROL;
+    } else if (ch == 538) {
+        key.code = Key_Code::HOME;
+        key.modifiers |= (CONTROL | ALT);
+
     } else if (ch == KEY_END) {
         key.code = Key_Code::END;
+    } else if (ch == KEY_SEND) {
+        key.code = Key_Code::END;
+        key.modifiers |= SHIFT;
+    } else if (ch == 529) {
+        key.code = Key_Code::END;
+        key.modifiers |= ALT;
+    } else if (ch == 530) {
+        key.code = Key_Code::END;
+        key.modifiers |= (ALT | SHIFT);
+    } else if (ch == 531) {
+        key.code = Key_Code::END;
+        key.modifiers |= CONTROL;
+    } else if (ch == 533) {
+        key.code = Key_Code::END;
+        key.modifiers |= (CONTROL | ALT);
+
     } else if (ch == KEY_NPAGE) {
         key.code = Key_Code::PAGE_DOWN;
+    } else if (ch == KEY_SNEXT) {
+        key.code = Key_Code::PAGE_DOWN;
+        key.modifiers |= SHIFT;
+    } else if (ch == 549) {
+        key.code = Key_Code::PAGE_DOWN;
+        key.modifiers |= ALT;
+    } else if (ch == 550) {
+        key.code = Key_Code::PAGE_DOWN;
+        key.modifiers |= (ALT | SHIFT);
+    } else if (ch == 551) {
+        key.code = Key_Code::PAGE_DOWN;
+        key.modifiers |= CONTROL;
+    } else if (ch == 553) {
+        key.code = Key_Code::PAGE_DOWN;
+        key.modifiers |= (CONTROL | ALT);
+
     } else if (ch == KEY_PPAGE) {
         key.code = Key_Code::PAGE_UP;
+    } else if (ch == KEY_SPREVIOUS) {
+        key.code = Key_Code::PAGE_UP;
+        key.modifiers |= SHIFT;
+    } else if (ch == 554) {
+        key.code = Key_Code::PAGE_UP;
+        key.modifiers |= ALT;
+    } else if (ch == 555) {
+        key.code = Key_Code::PAGE_UP;
+        key.modifiers |= (ALT | SHIFT);
+    } else if (ch == 556) {
+        key.code = Key_Code::PAGE_UP;
+        key.modifiers |= CONTROL;
+    } else if (ch == 558) {
+        key.code = Key_Code::PAGE_UP;
+        key.modifiers |= (CONTROL | ALT);
 
     } else if (ch == KEY_DC) {
         key.code = Key_Code::DELETE_;
@@ -440,6 +503,9 @@ rerun:
         return;
     } else if (ch == '\n' || ch == '\t') {
         key.code = ch;
+    } else if (ch == KEY_BTAB) {
+        key.code = '\t';
+        key.modifiers |= SHIFT;
     } else if (ch == 0) {
         // C-@, C-\\ .
         key.modifiers |= CONTROL;
