@@ -280,6 +280,66 @@ static bool handle_arrow_keys(int ch, Key& key) {
         key.code = Key_Code::LEFT;
     } else if (ch == KEY_RIGHT) {
         key.code = Key_Code::RIGHT;
+
+    } else if (ch == 565) {
+        key.code = Key_Code::UP;
+        key.modifiers |= ALT;
+    } else if (ch == 524) {
+        key.code = Key_Code::DOWN;
+        key.modifiers |= ALT;
+    } else if (ch == 544) {
+        key.code = Key_Code::LEFT;
+        key.modifiers |= ALT;
+    } else if (ch == 559) {
+        key.code = Key_Code::RIGHT;
+        key.modifiers |= ALT;
+
+    } else if (ch == 337) {
+        key.code = Key_Code::UP;
+        key.modifiers |= SHIFT;
+    } else if (ch == 336) {
+        key.code = Key_Code::DOWN;
+        key.modifiers |= SHIFT;
+    } else if (ch == 393) {
+        key.code = Key_Code::LEFT;
+        key.modifiers |= SHIFT;
+    } else if (ch == 402) {
+        key.code = Key_Code::RIGHT;
+        key.modifiers |= SHIFT;
+
+    } else if (ch == 567) {
+        key.code = Key_Code::UP;
+        key.modifiers |= CONTROL;
+    } else if (ch == 526) {
+        key.code = Key_Code::DOWN;
+        key.modifiers |= CONTROL;
+    } else if (ch == 546) {
+        key.code = Key_Code::LEFT;
+        key.modifiers |= CONTROL;
+    } else if (ch == 561) {
+        key.code = Key_Code::RIGHT;
+        key.modifiers |= CONTROL;
+
+    } else if (ch == 569) {
+        key.code = Key_Code::UP;
+        key.modifiers |= (CONTROL | ALT);
+    } else if (ch == 528) {
+        key.code = Key_Code::DOWN;
+        key.modifiers |= (CONTROL | ALT);
+    } else if (ch == 548) {
+        key.code = Key_Code::LEFT;
+        key.modifiers |= (CONTROL | ALT);
+    } else if (ch == 563) {
+        key.code = Key_Code::RIGHT;
+        key.modifiers |= (CONTROL | ALT);
+
+    } else if (ch == 547) {
+        key.code = Key_Code::LEFT;
+        key.modifiers |= (CONTROL | SHIFT);
+    } else if (ch == 562) {
+        key.code = Key_Code::RIGHT;
+        key.modifiers |= (CONTROL | SHIFT);
+
     } else {
         return false;
     }
