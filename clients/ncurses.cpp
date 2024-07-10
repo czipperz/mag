@@ -384,6 +384,46 @@ static bool handle_side_special_keys(int ch, Key& key) {
         key.code = Key_Code::PAGE_DOWN;
     } else if (ch == KEY_PPAGE) {
         key.code = Key_Code::PAGE_UP;
+
+    } else if (ch == KEY_DC) {
+        key.code = Key_Code::DELETE_;
+    } else if (ch == KEY_SDC) {
+        key.code = Key_Code::DELETE_;
+        key.modifiers |= SHIFT;
+    } else if (ch == 518) {
+        key.code = Key_Code::DELETE_;
+        key.modifiers |= ALT;
+    } else if (ch == 519) {
+        key.code = Key_Code::DELETE_;
+        key.modifiers |= ALT | SHIFT;
+    } else if (ch == 520) {
+        key.code = Key_Code::DELETE_;
+        key.modifiers |= CONTROL;
+    } else if (ch == 521) {
+        key.code = Key_Code::DELETE_;
+        key.modifiers |= (CONTROL | SHIFT);
+
+    } else if (ch == KEY_IC) {
+        key.code = Key_Code::INSERT;
+    } else if (ch == KEY_SIC) {
+        key.code = Key_Code::INSERT;
+        key.modifiers |= SHIFT;
+    } else if (ch == 539) {
+        key.code = Key_Code::INSERT;
+        key.modifiers |= ALT;
+    } else if (ch == 540) {
+        key.code = Key_Code::INSERT;
+        key.modifiers |= ALT | SHIFT;
+    } else if (ch == 541) {
+        key.code = Key_Code::INSERT;
+        key.modifiers |= CONTROL;
+    } else if (ch == 542) {
+        key.code = Key_Code::INSERT;
+        key.modifiers |= (CONTROL | SHIFT);
+    } else if (ch == 543) {
+        key.code = Key_Code::INSERT;
+        key.modifiers |= (CONTROL | ALT);
+
     } else {
         return false;
     }
