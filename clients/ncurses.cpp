@@ -381,7 +381,9 @@ rerun:
         // We poll window size instead of handling resize events.
         return;
     } else {
-        cz::String message = cz::format("Ignoring unknown key code: ", ch);
+        cz::String octal = cz::asprintf("0%o", ch);
+        CZ_DEFER(octal.drop(cz::heap_allocator()));
+        cz::String message = cz::format("Ignoring unknown key code: ", ch, " = ", octal);
         CZ_DEFER(message.drop(cz::heap_allocator()));
         client->show_message(message);
         return;
