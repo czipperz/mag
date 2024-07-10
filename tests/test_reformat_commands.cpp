@@ -221,7 +221,7 @@ TEST_CASE("reformat_at markdown numbered list") {
         "incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud "
         "exercitation ullamco laboris nisi ut aliquip ex ea commodo\n";
     char body2[] =
-        "2. this\n"
+        "a. this\n"
         "   should be combined\n";
     char body3[] =
         "3. and so should\n"
@@ -230,7 +230,7 @@ TEST_CASE("reformat_at markdown numbered list") {
         "1. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod\n"
         "   tempor incididunt ut labore et dolore magna aliqua.  Ut enim ad minim veniam,\n"
         "   quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo\n";
-    char result2[] = "2. this should be combined\n";
+    char result2[] = "a. this should be combined\n";
     char result3[] = "3. and so should this!";
 
     cz::String body = cz::format(body1, body2, body3);

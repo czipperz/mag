@@ -12,7 +12,7 @@
 namespace mag {
 namespace markdown {
 
-static bool is_at_number(Contents_Iterator it, size_t* continuation_columns);
+static bool is_at_ordered_list_start(Contents_Iterator it, size_t* continuation_columns);
 
 REGISTER_COMMAND(command_reformat_paragraph);
 void command_reformat_paragraph(Editor* editor, Command_Source source) {
@@ -64,7 +64,7 @@ void reformat_at(Client* client, Buffer* buffer, Contents_Iterator iterator) {
 
         // Format ordered lists.
         size_t continuation_columns;
-        if (is_at_number(iterator, &continuation_columns)) {
+        if (is_at_ordered_list_start(iterator, &continuation_columns)) {
             if (iterator.position == initial_position || col + continuation_columns == column) {
                 cz::String number = {};
                 CZ_DEFER(number.drop(cz::heap_allocator()));
@@ -105,15 +105,17 @@ void reformat_at(Client* client, Buffer* buffer, Contents_Iterator iterator) {
     }
 }
 
-static bool is_at_number(Contents_Iterator it, size_t* continuation_columns) {
+static bool is_at_ordered_list_start(Contents_Iterator it, size_t* continuation_columns) {
     uint64_t start = it.position;
 
-    // Eat numbers at the start.
-    if (!cz::is_digit(it.get()))
-        return false;
-    do {
+    // We're considering an ordered list to either be a number (1, 2, 3) or a letter (a, b, c).
+    if (cz::is_digit(it.get())) {
+        do {
+            it.advance();
+        } while (!it.at_eob() && cz::is_digit(it.get()));
+    } else if (cz::is_lower(it.get())) {
         it.advance();
-    } while (!it.at_eob() && cz::is_digit(it.get()));
+    }
 
     if (!looking_at(it, ". "))
         return false;
