@@ -590,23 +590,7 @@ static void process_key_presses(Server* server, Client* client, int ch) {
     }
 }
 
-void run(Server* server, Client* client) {
-    ZoneScoped;
-
-    initscr();
-    raw();
-    noecho();
-    keypad(stdscr, TRUE);
-    curs_set(0);  // hide cursor
-    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
-    mouseinterval(0);
-    CZ_DEFER(endwin());
-
-    start_color();
-
-    int16_t* colors = cz::heap_allocator().alloc_zeroed<int16_t>(COLORS);
-    CZ_ASSERT(colors);
-    CZ_DEFER(cz::heap_allocator().dealloc(colors, COLORS));
+static void mark_used_colors(int16_t* colors, Server* server) {
     colors[0] = 1;
     colors[7] = 1;
     colors[21] = 1;
@@ -634,7 +618,9 @@ void run(Server* server, Client* client) {
             colors[bg] = 1;
         }
     }
+}
 
+static int16_t assign_color_codes(int16_t* colors) {
     int16_t used_colors = 0;
     for (size_t i = 0; i < (size_t)COLORS; ++i) {
         if (colors[i] != 0) {
@@ -657,6 +643,30 @@ void run(Server* server, Client* client) {
             init_pair(++color_pair, fg, bg);
         }
     }
+
+    return used_colors;
+}
+
+void run(Server* server, Client* client) {
+    ZoneScoped;
+
+    initscr();
+    raw();
+    noecho();
+    keypad(stdscr, TRUE);
+    curs_set(0);  // hide cursor
+    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+    mouseinterval(0);
+    CZ_DEFER(endwin());
+
+    start_color();
+
+    int16_t* colors = cz::heap_allocator().alloc_zeroed<int16_t>(COLORS);
+    CZ_ASSERT(colors);
+    CZ_DEFER(cz::heap_allocator().dealloc(colors, COLORS));
+
+    mark_used_colors(colors, server);
+    int16_t used_colors = assign_color_codes(colors);
 
     int total_rows = 0;
     int total_cols = 0;
