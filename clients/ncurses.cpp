@@ -272,289 +272,165 @@ static void process_mouse_event(Server* server, Client* client) {
 #endif
 }
 
-static bool handle_arrow_keys(int ch, Key& key) {
-    if (ch == KEY_UP) {
-        key.code = Key_Code::UP;
-    } else if (ch == KEY_DOWN) {
-        key.code = Key_Code::DOWN;
-    } else if (ch == KEY_LEFT) {
-        key.code = Key_Code::LEFT;
-    } else if (ch == KEY_RIGHT) {
-        key.code = Key_Code::RIGHT;
-
-    } else if (ch == 565) {
-        key.code = Key_Code::UP;
-        key.modifiers |= ALT;
-    } else if (ch == 524) {
-        key.code = Key_Code::DOWN;
-        key.modifiers |= ALT;
-    } else if (ch == 544) {
-        key.code = Key_Code::LEFT;
-        key.modifiers |= ALT;
-    } else if (ch == 559) {
-        key.code = Key_Code::RIGHT;
-        key.modifiers |= ALT;
-
-    } else if (ch == KEY_SR) {
-        key.code = Key_Code::UP;
-        key.modifiers |= SHIFT;
-    } else if (ch == KEY_SF) {
-        key.code = Key_Code::DOWN;
-        key.modifiers |= SHIFT;
-    } else if (ch == KEY_SLEFT) {
-        key.code = Key_Code::LEFT;
-        key.modifiers |= SHIFT;
-    } else if (ch == KEY_SRIGHT) {
-        key.code = Key_Code::RIGHT;
-        key.modifiers |= SHIFT;
-
-    } else if (ch == 567) {
-        key.code = Key_Code::UP;
-        key.modifiers |= CONTROL;
-    } else if (ch == 526) {
-        key.code = Key_Code::DOWN;
-        key.modifiers |= CONTROL;
-    } else if (ch == 546) {
-        key.code = Key_Code::LEFT;
-        key.modifiers |= CONTROL;
-    } else if (ch == 561) {
-        key.code = Key_Code::RIGHT;
-        key.modifiers |= CONTROL;
-
-    } else if (ch == 569) {
-        key.code = Key_Code::UP;
-        key.modifiers |= (CONTROL | ALT);
-    } else if (ch == 528) {
-        key.code = Key_Code::DOWN;
-        key.modifiers |= (CONTROL | ALT);
-    } else if (ch == 548) {
-        key.code = Key_Code::LEFT;
-        key.modifiers |= (CONTROL | ALT);
-    } else if (ch == 563) {
-        key.code = Key_Code::RIGHT;
-        key.modifiers |= (CONTROL | ALT);
-
-    } else if (ch == 547) {
-        key.code = Key_Code::LEFT;
-        key.modifiers |= (CONTROL | SHIFT);
-    } else if (ch == 562) {
-        key.code = Key_Code::RIGHT;
-        key.modifiers |= (CONTROL | SHIFT);
-
-    } else {
-        return false;
-    }
-    return true;
+static Key key_map[1024];
+static void bind_key(int ch, uint16_t modifiers, uint16_t code) {
+    CZ_ASSERT(ch >= 0);
+    CZ_ASSERT(ch < CZ_DIM(key_map));
+    key_map[ch] = {modifiers, code};
 }
 
-static bool handle_function_keys(int ch, Key& key) {
-    if (ch >= 265 && ch <= 315) {
-        // Main block of function keys (F1-F12).
-        if (ch < 277) {
-            key.code = Key_Code::F1 + (ch - 265);
-        } else if (ch < 289) {
-            key.code = Key_Code::F1 + (ch - 277);
-            key.modifiers |= SHIFT;
-        } else if (ch < 301) {
-            key.code = Key_Code::F1 + (ch - 289);
-            key.modifiers |= CONTROL;
-        } else if (ch < 313) {
-            key.code = Key_Code::F1 + (ch - 301);
-            key.modifiers |= (CONTROL | SHIFT);
-        } else {
-            // Only A-F1 to A-F3 are bound.
-            key.code = Key_Code::F1 + (ch - 313);
-            key.modifiers |= ALT;
-        }
-    } else if (ch >= 325 && ch <= 327) {
-        // Only A-S-F1 to A-S-F3 are bound.
-        key.code = Key_Code::F1 + (ch - 313);
-        key.modifiers |= (ALT | SHIFT);
-    } else {
-        return false;
-    }
-    return true;
+static void bind_arrow_keys() {
+    bind_key(KEY_UP, 0, Key_Code::UP);
+    bind_key(KEY_DOWN, 0, Key_Code::DOWN);
+    bind_key(KEY_LEFT, 0, Key_Code::LEFT);
+    bind_key(KEY_RIGHT, 0, Key_Code::RIGHT);
+
+    bind_key(565, ALT, Key_Code::UP);
+    bind_key(524, ALT, Key_Code::DOWN);
+    bind_key(544, ALT, Key_Code::LEFT);
+    bind_key(559, ALT, Key_Code::RIGHT);
+
+    bind_key(KEY_SR, SHIFT, Key_Code::UP);
+    bind_key(KEY_SF, SHIFT, Key_Code::DOWN);
+    bind_key(KEY_SLEFT, SHIFT, Key_Code::LEFT);
+    bind_key(KEY_SRIGHT, SHIFT, Key_Code::RIGHT);
+
+    bind_key(567, CONTROL, Key_Code::UP);
+    bind_key(526, CONTROL, Key_Code::DOWN);
+    bind_key(546, CONTROL, Key_Code::LEFT);
+    bind_key(561, CONTROL, Key_Code::RIGHT);
+
+    bind_key(569, (CONTROL | ALT), Key_Code::UP);
+    bind_key(528, (CONTROL | ALT), Key_Code::DOWN);
+    bind_key(548, (CONTROL | ALT), Key_Code::LEFT);
+    bind_key(563, (CONTROL | ALT), Key_Code::RIGHT);
+
+    bind_key(547, (CONTROL | SHIFT), Key_Code::LEFT);
+    bind_key(562, (CONTROL | SHIFT), Key_Code::RIGHT);
 }
 
-static bool handle_side_special_keys(int ch, Key& key) {
-    if (ch == KEY_HOME) {
-        key.code = Key_Code::HOME;
-    } else if (ch == KEY_SHOME) {
-        key.code = Key_Code::HOME;
-        key.modifiers |= SHIFT;
-    } else if (ch == 534) {
-        key.code = Key_Code::HOME;
-        key.modifiers |= ALT;
-    } else if (ch == 535) {
-        key.code = Key_Code::HOME;
-        key.modifiers |= (ALT | SHIFT);
-    } else if (ch == 536) {
-        key.code = Key_Code::HOME;
-        key.modifiers |= CONTROL;
-    } else if (ch == 538) {
-        key.code = Key_Code::HOME;
-        key.modifiers |= (CONTROL | ALT);
-
-    } else if (ch == KEY_END) {
-        key.code = Key_Code::END;
-    } else if (ch == KEY_SEND) {
-        key.code = Key_Code::END;
-        key.modifiers |= SHIFT;
-    } else if (ch == 529) {
-        key.code = Key_Code::END;
-        key.modifiers |= ALT;
-    } else if (ch == 530) {
-        key.code = Key_Code::END;
-        key.modifiers |= (ALT | SHIFT);
-    } else if (ch == 531) {
-        key.code = Key_Code::END;
-        key.modifiers |= CONTROL;
-    } else if (ch == 533) {
-        key.code = Key_Code::END;
-        key.modifiers |= (CONTROL | ALT);
-
-    } else if (ch == KEY_NPAGE) {
-        key.code = Key_Code::PAGE_DOWN;
-    } else if (ch == KEY_SNEXT) {
-        key.code = Key_Code::PAGE_DOWN;
-        key.modifiers |= SHIFT;
-    } else if (ch == 549) {
-        key.code = Key_Code::PAGE_DOWN;
-        key.modifiers |= ALT;
-    } else if (ch == 550) {
-        key.code = Key_Code::PAGE_DOWN;
-        key.modifiers |= (ALT | SHIFT);
-    } else if (ch == 551) {
-        key.code = Key_Code::PAGE_DOWN;
-        key.modifiers |= CONTROL;
-    } else if (ch == 553) {
-        key.code = Key_Code::PAGE_DOWN;
-        key.modifiers |= (CONTROL | ALT);
-
-    } else if (ch == KEY_PPAGE) {
-        key.code = Key_Code::PAGE_UP;
-    } else if (ch == KEY_SPREVIOUS) {
-        key.code = Key_Code::PAGE_UP;
-        key.modifiers |= SHIFT;
-    } else if (ch == 554) {
-        key.code = Key_Code::PAGE_UP;
-        key.modifiers |= ALT;
-    } else if (ch == 555) {
-        key.code = Key_Code::PAGE_UP;
-        key.modifiers |= (ALT | SHIFT);
-    } else if (ch == 556) {
-        key.code = Key_Code::PAGE_UP;
-        key.modifiers |= CONTROL;
-    } else if (ch == 558) {
-        key.code = Key_Code::PAGE_UP;
-        key.modifiers |= (CONTROL | ALT);
-
-    } else if (ch == KEY_DC) {
-        key.code = Key_Code::DELETE_;
-    } else if (ch == KEY_SDC) {
-        key.code = Key_Code::DELETE_;
-        key.modifiers |= SHIFT;
-    } else if (ch == 518) {
-        key.code = Key_Code::DELETE_;
-        key.modifiers |= ALT;
-    } else if (ch == 519) {
-        key.code = Key_Code::DELETE_;
-        key.modifiers |= ALT | SHIFT;
-    } else if (ch == 520) {
-        key.code = Key_Code::DELETE_;
-        key.modifiers |= CONTROL;
-    } else if (ch == 521) {
-        key.code = Key_Code::DELETE_;
-        key.modifiers |= (CONTROL | SHIFT);
-
-    } else if (ch == KEY_IC) {
-        key.code = Key_Code::INSERT;
-    } else if (ch == KEY_SIC) {
-        key.code = Key_Code::INSERT;
-        key.modifiers |= SHIFT;
-    } else if (ch == 539) {
-        key.code = Key_Code::INSERT;
-        key.modifiers |= ALT;
-    } else if (ch == 540) {
-        key.code = Key_Code::INSERT;
-        key.modifiers |= ALT | SHIFT;
-    } else if (ch == 541) {
-        key.code = Key_Code::INSERT;
-        key.modifiers |= CONTROL;
-    } else if (ch == 542) {
-        key.code = Key_Code::INSERT;
-        key.modifiers |= (CONTROL | SHIFT);
-    } else if (ch == 543) {
-        key.code = Key_Code::INSERT;
-        key.modifiers |= (CONTROL | ALT);
-
-    } else {
-        return false;
+static void bind_function_keys() {
+    for (int n = 0; n < 12; ++n) {
+        Key_Code code = (Key_Code)(Key_Code::F1 + n);
+        bind_key(265 + n + 0 * 12, 0, code);
+        bind_key(265 + n + 1 * 12, SHIFT, code);
+        bind_key(265 + n + 2 * 12, CONTROL, code);
+        bind_key(265 + n + 3 * 12, (CONTROL | SHIFT), code);
+        bind_key(265 + n + 4 * 12, ALT, code);
+        bind_key(265 + n + 5 * 12, (ALT | SHIFT), code);
     }
-    return true;
+}
+
+static void bind_side_special_keys() {
+    bind_key(KEY_HOME, 0, Key_Code::HOME);
+    bind_key(KEY_END, 0, Key_Code::END);
+    bind_key(KEY_NPAGE, 0, Key_Code::PAGE_DOWN);
+    bind_key(KEY_PPAGE, 0, Key_Code::PAGE_UP);
+    bind_key(KEY_DC, 0, Key_Code::DELETE_);
+    bind_key(KEY_IC, 0, Key_Code::INSERT);
+
+    bind_key(KEY_SHOME, SHIFT, Key_Code::HOME);
+    bind_key(534, ALT, Key_Code::HOME);
+    bind_key(535, (ALT | SHIFT), Key_Code::HOME);
+    bind_key(536, CONTROL, Key_Code::HOME);
+    bind_key(538, (CONTROL | ALT), Key_Code::HOME);
+
+    bind_key(KEY_SEND, SHIFT, Key_Code::END);
+    bind_key(529, ALT, Key_Code::END);
+    bind_key(530, (ALT | SHIFT), Key_Code::END);
+    bind_key(531, CONTROL, Key_Code::END);
+    bind_key(533, (CONTROL | ALT), Key_Code::END);
+
+    bind_key(KEY_SNEXT, SHIFT, Key_Code::PAGE_DOWN);
+    bind_key(549, ALT, Key_Code::PAGE_DOWN);
+    bind_key(550, (ALT | SHIFT), Key_Code::PAGE_DOWN);
+    bind_key(551, CONTROL, Key_Code::PAGE_DOWN);
+    bind_key(553, (CONTROL | ALT), Key_Code::PAGE_DOWN);
+
+    bind_key(KEY_SPREVIOUS, SHIFT, Key_Code::PAGE_UP);
+    bind_key(554, ALT, Key_Code::PAGE_UP);
+    bind_key(555, (ALT | SHIFT), Key_Code::PAGE_UP);
+    bind_key(556, CONTROL, Key_Code::PAGE_UP);
+    bind_key(558, (CONTROL | ALT), Key_Code::PAGE_UP);
+
+    bind_key(KEY_SDC, SHIFT, Key_Code::DELETE_);
+    bind_key(518, ALT, Key_Code::DELETE_);
+    bind_key(519, ALT | SHIFT, Key_Code::DELETE_);
+    bind_key(520, CONTROL, Key_Code::DELETE_);
+    bind_key(521, (CONTROL | SHIFT), Key_Code::DELETE_);
+
+    bind_key(KEY_SIC, SHIFT, Key_Code::INSERT);
+    bind_key(539, ALT, Key_Code::INSERT);
+    bind_key(540, ALT | SHIFT, Key_Code::INSERT);
+    bind_key(541, CONTROL, Key_Code::INSERT);
+    bind_key(542, (CONTROL | SHIFT), Key_Code::INSERT);
+    bind_key(543, (CONTROL | ALT), Key_Code::INSERT);
+}
+
+static void bind_all_keys() {
+    // C-a, C-b, ..., C-z
+    for (int ch = 1; ch <= 26; ++ch) {
+        bind_key(ch, CONTROL, 'a' - 1 + ch);
+    }
+
+    // Default for ASCII keys is to bind to themselves.
+    for (int ch = 27; ch < 128; ++ch) {
+        bind_key(ch, 0, ch);
+    }
+
+    bind_key(KEY_BTAB, SHIFT, '\t');
+    bind_key(0, CONTROL, '@');  // C-@, C-\\ .
+
+    bind_key(28, CONTROL, '\\');
+    bind_key(29, CONTROL, ']');
+    bind_key(30, CONTROL, '^');
+    bind_key(31, CONTROL, '_');  // C-_, C-/
+    bind_key(KEY_BACKSPACE, 0, Key_Code::BACKSPACE);
+    bind_key(127, 0, Key_Code::BACKSPACE); /*(\\-), C-?*/
+
+    bind_arrow_keys();
+    bind_function_keys();
+    bind_side_special_keys();
+}
+
+static void print_unbound_key_message(Client* client, int ch) {
+    cz::String octal = cz::asprintf("0%o", ch);
+    CZ_DEFER(octal.drop(cz::heap_allocator()));
+    cz::String message = cz::format("Ignoring unknown key code: ", ch, " = ", octal);
+    CZ_DEFER(message.drop(cz::heap_allocator()));
+    client->show_message(message);
 }
 
 static void process_key_press(Server* server, Client* client, int ch) {
     ZoneScoped;
 
-    Key key = {};
+    uint16_t modifiers = 0;
 rerun:
     if (ch == ERR) {
         // No actual key, just return.
         return;
-    } else if (ch == '\n' || ch == '\t') {
-        key.code = ch;
-    } else if (ch == KEY_BTAB) {
-        key.code = '\t';
-        key.modifiers |= SHIFT;
-    } else if (ch == 0) {
-        // C-@, C-\\ .
-        key.modifiers |= CONTROL;
-        key.code = '@';
-    } else if (ch >= 1 && ch <= 26) {
-        // C-a, C-b, ..., C-z
-        key.modifiers |= CONTROL;
-        key.code = 'a' - 1 + ch;
     } else if (ch == 27) {
         // ESCAPE (\\^), C-[
         ch = getch();
-        key.modifiers |= ALT;
+        modifiers |= ALT;
         goto rerun;
-    } else if (ch == 28) {
-        key.modifiers |= CONTROL;
-        key.code = '\\';
-    } else if (ch == 29) {
-        key.modifiers |= CONTROL;
-        key.code = ']';
-    } else if (ch == 30) {
-        key.modifiers |= CONTROL;
-        key.code = '^';
-    } else if (ch == 31) {
-        // C-_, C-/
-        key.modifiers |= CONTROL;
-        key.code = '_';
-    } else if (ch == 127 /*(\\-), C-?*/ || ch == KEY_BACKSPACE) {
-        key.code = Key_Code::BACKSPACE;
-    } else if (ch >= 0 && ch < 128) {
-        // normal keys
-        key.code = ch;
-    } else if (handle_arrow_keys(ch, key)) {
-    } else if (handle_function_keys(ch, key)) {
-    } else if (handle_side_special_keys(ch, key)) {
     } else if (ch == KEY_MOUSE) {
         process_mouse_event(server, client);
         return;
     } else if (ch == KEY_RESIZE) {
         // We poll window size instead of handling resize events.
         return;
-    } else {
-        cz::String octal = cz::asprintf("0%o", ch);
-        CZ_DEFER(octal.drop(cz::heap_allocator()));
-        cz::String message = cz::format("Ignoring unknown key code: ", ch, " = ", octal);
-        CZ_DEFER(message.drop(cz::heap_allocator()));
-        client->show_message(message);
+    } else if (ch >= CZ_DIM(key_map)) {
+        print_unbound_key_message(client, ch);
         return;
     }
+
+    Key key = key_map[ch];
+    if (key.modifiers == 0 && key.code == 0) {
+        print_unbound_key_message(client, ch);
+        return;
+    }
+    key.modifiers |= modifiers;
 
 #ifndef VISUALIZE_INPUT
     server->receive(client, key);
@@ -660,6 +536,7 @@ void run(Server* server, Client* client) {
     CZ_DEFER(endwin());
 
     start_color();
+    bind_all_keys();
 
     int16_t* colors = cz::heap_allocator().alloc_zeroed<int16_t>(COLORS);
     CZ_ASSERT(colors);
