@@ -153,6 +153,7 @@ static void create_key_remap(Key_Remap& key_remap) {
     key_remap.bind("C-j", "ENTER");
     key_remap.bind("C-/", "C-_");
     key_remap.bind("C-h", "BACKSPACE");
+    key_remap.bind("C-A-h", "C-A-BACKSPACE");
 
     // I hit shift and these keys quite often and want the normal behavior.
     key_remap.bind("S-ENTER", "ENTER");
