@@ -321,50 +321,23 @@ static void bind_function_keys() {
     }
 }
 
+static void bind_side_special_key(int ch_normal, int ch_shift, int ch_base, Key_Code code) {
+    bind_key(ch_normal, 0, code);
+    bind_key(ch_shift, SHIFT, code);
+    bind_key(ch_base + 0, ALT, code);
+    bind_key(ch_base + 1, (ALT | SHIFT), code);
+    bind_key(ch_base + 2, CONTROL, code);
+    bind_key(ch_base + 3, (CONTROL | SHIFT), code);
+    bind_key(ch_base + 4, (CONTROL | ALT), code);
+}
+
 static void bind_side_special_keys() {
-    bind_key(KEY_HOME, 0, Key_Code::HOME);
-    bind_key(KEY_END, 0, Key_Code::END);
-    bind_key(KEY_NPAGE, 0, Key_Code::PAGE_DOWN);
-    bind_key(KEY_PPAGE, 0, Key_Code::PAGE_UP);
-    bind_key(KEY_DC, 0, Key_Code::DELETE_);
-    bind_key(KEY_IC, 0, Key_Code::INSERT);
-
-    bind_key(KEY_SHOME, SHIFT, Key_Code::HOME);
-    bind_key(534, ALT, Key_Code::HOME);
-    bind_key(535, (ALT | SHIFT), Key_Code::HOME);
-    bind_key(536, CONTROL, Key_Code::HOME);
-    bind_key(538, (CONTROL | ALT), Key_Code::HOME);
-
-    bind_key(KEY_SEND, SHIFT, Key_Code::END);
-    bind_key(529, ALT, Key_Code::END);
-    bind_key(530, (ALT | SHIFT), Key_Code::END);
-    bind_key(531, CONTROL, Key_Code::END);
-    bind_key(533, (CONTROL | ALT), Key_Code::END);
-
-    bind_key(KEY_SNEXT, SHIFT, Key_Code::PAGE_DOWN);
-    bind_key(549, ALT, Key_Code::PAGE_DOWN);
-    bind_key(550, (ALT | SHIFT), Key_Code::PAGE_DOWN);
-    bind_key(551, CONTROL, Key_Code::PAGE_DOWN);
-    bind_key(553, (CONTROL | ALT), Key_Code::PAGE_DOWN);
-
-    bind_key(KEY_SPREVIOUS, SHIFT, Key_Code::PAGE_UP);
-    bind_key(554, ALT, Key_Code::PAGE_UP);
-    bind_key(555, (ALT | SHIFT), Key_Code::PAGE_UP);
-    bind_key(556, CONTROL, Key_Code::PAGE_UP);
-    bind_key(558, (CONTROL | ALT), Key_Code::PAGE_UP);
-
-    bind_key(KEY_SDC, SHIFT, Key_Code::DELETE_);
-    bind_key(518, ALT, Key_Code::DELETE_);
-    bind_key(519, ALT | SHIFT, Key_Code::DELETE_);
-    bind_key(520, CONTROL, Key_Code::DELETE_);
-    bind_key(521, (CONTROL | SHIFT), Key_Code::DELETE_);
-
-    bind_key(KEY_SIC, SHIFT, Key_Code::INSERT);
-    bind_key(539, ALT, Key_Code::INSERT);
-    bind_key(540, ALT | SHIFT, Key_Code::INSERT);
-    bind_key(541, CONTROL, Key_Code::INSERT);
-    bind_key(542, (CONTROL | SHIFT), Key_Code::INSERT);
-    bind_key(543, (CONTROL | ALT), Key_Code::INSERT);
+    bind_side_special_key(KEY_HOME, KEY_SHOME, 534, Key_Code::HOME);
+    bind_side_special_key(KEY_END, KEY_SEND, 529, Key_Code::END);
+    bind_side_special_key(KEY_NPAGE, KEY_SNEXT, 549, Key_Code::PAGE_DOWN);
+    bind_side_special_key(KEY_PPAGE, KEY_SPREVIOUS, 554, Key_Code::PAGE_UP);
+    bind_side_special_key(KEY_DC, KEY_SDC, 518, Key_Code::DELETE_);
+    bind_side_special_key(KEY_IC, KEY_SIC, 539, Key_Code::INSERT);
 }
 
 static void bind_all_keys() {
