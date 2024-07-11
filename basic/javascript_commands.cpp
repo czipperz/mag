@@ -179,7 +179,7 @@ void command_jq_format_buffer(Editor* editor, Command_Source source) {
         options.std_out = temp_output;
         options.std_err = err_out;
 
-        cz::Str args[] = {"jq"};
+        cz::Str args[] = {"jq", "."};
         if (!state.process.launch_program(args, options)) {
             source.client->show_message("Shell error");
             return;
