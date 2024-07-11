@@ -46,6 +46,7 @@ Options:\n\
   --client=CLIENT    Launches a specified client.\n\
   --try-remote       Tries to open the files in an existing Mag server.\n\
                      If no server is found then starts a client.\n\
+  --no-fork          Stall the current process while Mag runs.\n\
 \n\
 Available clients:\n"
 #ifdef HAS_NCURSES
