@@ -354,6 +354,8 @@ static void bind_all_keys() {
     bind_key(KEY_BTAB, SHIFT, '\t');
     bind_key(0, CONTROL, '@');  // C-@, C-\\ .
 
+    bind_key('\n', 0, '\n');
+    bind_key('\t', 0, '\t');
     bind_key(28, CONTROL, '\\');
     bind_key(29, CONTROL, ']');
     bind_key(30, CONTROL, '^');
