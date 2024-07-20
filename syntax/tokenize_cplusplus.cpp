@@ -567,7 +567,22 @@ static bool is_type(Contents_Iterator iterator, State* state) {
 static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch) {
     switch ((len << 8) | (uint8_t)first_ch) {
     case (1 << 8) | (uint8_t)'R':
+    case (1 << 8) | (uint8_t)'L':
+    case (1 << 8) | (uint8_t)'u':
+    case (1 << 8) | (uint8_t)'U':
         return 5;
+
+    case (2 << 8) | (uint8_t)'u':
+        if (looking_at_no_bounds_check(start, "u8"))
+            return 5;
+        // fallthrough
+    case (2 << 8) | (uint8_t)'L':
+    case (2 << 8) | (uint8_t)'U':
+        start.advance();
+        if (start.get() == 'R')
+            return 5;
+        return 0;
+
     case (2 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "do"))
             return 4;
@@ -580,6 +595,12 @@ static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch
         if (looking_at_no_bounds_check(start, "or"))
             return 2;
         return 0;
+
+    case (3 << 8) | (uint8_t)'u':
+        if (looking_at_no_bounds_check(start, "u8R"))
+            return 5;
+        return 0;
+
     case (3 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "and"))
             return 2;
