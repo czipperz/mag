@@ -14,7 +14,7 @@ set -e
 # Not in a tmux session, so spawn one and recurse.
 if [ -z "$TMUX" ]; then
     tmux new-session "$0" "$@"
-    exit "$@"
+    exit $?
 fi
 
 # At the bottom spawn the gdbserver (which instruments the binary).
