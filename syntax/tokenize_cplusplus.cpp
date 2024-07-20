@@ -248,6 +248,7 @@ retry:
         goto open_pair;
     case '[':
         state->syntax = SYNTAX_IN_EXPR;
+        // fallthrough
     case '(':
     open_pair:
         token->type = Token_Type::OPEN_PAIR;
@@ -1662,8 +1663,7 @@ static bool handle_block_comment_outside_multi_line(Contents_Iterator* iterator,
                 token->end = test.position;
                 return true;
             }
-            // fallthrough
-        }
+        } // fallthrough
 
         default:
             state->comment = COMMENT_BLOCK_INSIDE_MULTI_LINE;
@@ -2080,8 +2080,7 @@ static void handle_preprocessor_include_string(Contents_Iterator* iterator, Toke
             prev.retreat();
             if (prev.get() != '\\')
                 goto ret;
-            // fallthrough
-        }
+        } // fallthrough
 
         default:
             iterator->advance();
