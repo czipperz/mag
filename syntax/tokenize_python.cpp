@@ -82,6 +82,27 @@ bool python_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
         goto ret;
     }
 
+    // Triple-delimiter strings
+    if (first_ch == '"') {
+        if (looking_at(*iterator, "\"\"")) {
+            iterator->advance(2);
+            if (find(iterator, "\"\"\""))
+                iterator->advance(3);
+            token->type = Token_Type::STRING;
+            goto ret;
+        }
+    }
+    if (first_ch == '\'') {
+        if (looking_at(*iterator, "''")) {
+            iterator->advance(2);
+            if (find(iterator, "'''"))
+                iterator->advance(3);
+            token->type = Token_Type::STRING;
+            goto ret;
+        }
+    }
+
+    // Single-delimiter strings
     if (first_ch == '"' || first_ch == '\'') {
         while (!iterator->at_eob()) {
             if (iterator->get() == first_ch) {
