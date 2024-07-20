@@ -3,7 +3,7 @@
 
 using namespace mag;
 
-TEST_CASE("tokenize_cplusplus") {
+TEST_CASE("tokenize_cplusplus raw string literals") {
     Test_Runner tr;
     tr.setup(
         "R\"(hello ) \" world)\";\n"
@@ -25,4 +25,18 @@ TEST_CASE("tokenize_cplusplus") {
     CHECK(tokens[7] ==
           Test_Runner::TToken{"\"\"\"(hello )\" world)\"\"\"", {53, 75, Token_Type::STRING}});
     CHECK(tokens[8] == Test_Runner::TToken{";", {75, 76, Token_Type::PUNCTUATION}});
+}
+
+TEST_CASE("tokenize_cplusplus raw string literal prefixes are normal idents if no string") {
+    Test_Runner tr;
+    tr.setup("R L LR u8 u8R u uR U UR");
+    tr.set_tokenizer(syntax::cpp_next_token);
+    // tr.tokenize_print_tests();
+
+    auto tokens = tr.tokenize();
+    REQUIRE(tokens.len == 9);
+    for (size_t i = 0; i < tokens.len; ++i) {
+        INFO("i: " << i);
+        CHECK(tokens[i].token.type != Token_Type::STRING);
+    }
 }
