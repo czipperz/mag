@@ -55,6 +55,7 @@ enum {
     SYNTAX_AT_TYPE = 2,
     SYNTAX_AFTER_TYPE = 3,
     SYNTAX_AFTER_DECL = 4,
+    SYNTAX_AT_RAW_STRING_LITERAL = 5,
 };
 
 struct State {
@@ -226,6 +227,7 @@ static bool at_end_of_block_comment(Contents_Iterator iterator, State state);
 
 static void handle_char(Contents_Iterator* iterator, Token* token, State* state);
 static void handle_string(Contents_Iterator* iterator, Token* token, State* state);
+static void eat_raw_string_literal(Contents_Iterator* iterator);
 
 static bool handle_syntax(Contents_Iterator* iterator, Token* token, State* state) {
 retry:
@@ -493,6 +495,15 @@ static void handle_identifier(Contents_Iterator* iterator,
         token->type = Token_Type::KEYWORD;
         state->syntax = SYNTAX_AT_STMT;
         break;
+    case 5:
+        // Raw string literal.
+        if (looking_at(*iterator, '"')) {
+            token->type = Token_Type::KEYWORD;
+            state->syntax = SYNTAX_AT_RAW_STRING_LITERAL;
+            break;
+        }
+
+        // fallthrough
     default:
         // Not a keyword.
         if (is_type(*iterator, state)) {
@@ -555,6 +566,8 @@ static bool is_type(Contents_Iterator iterator, State* state) {
 
 static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch) {
     switch ((len << 8) | (uint8_t)first_ch) {
+    case (1 << 8) | (uint8_t)'R':
+        return 5;
     case (2 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "do"))
             return 4;
@@ -1884,6 +1897,11 @@ static void handle_string(Contents_Iterator* iterator, Token* token, State* stat
     token->start = iterator->position;
     iterator->advance();
 
+    if (state->syntax == SYNTAX_AT_RAW_STRING_LITERAL) {
+        eat_raw_string_literal(iterator);
+        goto ret;
+    }
+
     for (; !iterator->at_eob(); iterator->advance()) {
         switch (iterator->get()) {
         case '"':
@@ -1907,6 +1925,30 @@ static void handle_string(Contents_Iterator* iterator, Token* token, State* stat
 ret:
     token->end = iterator->position;
     state->syntax = SYNTAX_IN_EXPR;
+}
+
+static void eat_raw_string_literal(Contents_Iterator* iterator) {
+    Contents_Iterator start = *iterator;
+    for (; !iterator->at_eob(); iterator->advance()) {
+        char ch = iterator->get();
+        if (ch == '(')
+            break;
+        if (ch == ')' || ch == '\\' || cz::is_space(ch)) {
+            // Invalid character, so fail by just treating this line as a string and continuing.
+            end_of_line(iterator);
+            return;
+        }
+    }
+
+    cz::String block = {};
+    block.reserve(cz::heap_allocator(), iterator->position - start.position + 2);
+    block.push(')');
+    iterator->contents->slice_into(start, iterator->position, &block);
+    block.push('"');
+
+    if (find(iterator, block)) {
+        iterator->advance(block.len);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
