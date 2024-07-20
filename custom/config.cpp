@@ -81,6 +81,7 @@
 #include "syntax/tokenize_javascript.hpp"
 #include "syntax/tokenize_key_map.hpp"
 #include "syntax/tokenize_markdown.hpp"
+#include "syntax/tokenize_mustache.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "syntax/tokenize_process.hpp"
 #include "syntax/tokenize_protobuf.hpp"
@@ -1071,6 +1072,14 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             if (name.ends_with(".json")) {
                 BIND(buffer->mode.key_map, "A-x A-f", javascript::command_jq_format_buffer);
             }
+
+            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
+            buffer->mode.overlays.reserve(2);
+            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+        } else if (name.ends_with(".mustache")) {
+            buffer->mode.next_token = syntax::mustache_next_token;
+            indent_based_hierarchy_mode(buffer->mode);
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
