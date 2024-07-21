@@ -51,21 +51,19 @@ static void run_search(Client* client,
     }
 }
 
-static void command_search_in_current_directory_callback(Editor* editor,
-                                                         Client* client,
-                                                         cz::Str query,
-                                                         void*) {
+template <bool copy_directory(Client*, const Buffer*, cz::String*), bool query_word>
+static void command_search_in_x_callback(Editor* editor, Client* client, cz::Str query, void*) {
     cz::String directory = {};
     CZ_DEFER(directory.drop(cz::heap_allocator()));
 
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (!copy_buffer_directory(client, buffer, &directory)) {
+        if (!copy_directory(client, buffer, &directory)) {
             return;
         }
     }
 
-    run_search(client, editor, directory.buffer, query, false);
+    run_search(client, editor, directory.buffer, query, query_word);
 }
 
 REGISTER_COMMAND(command_search_in_current_directory_prompt);
@@ -76,26 +74,9 @@ void command_search_in_current_directory_prompt(Editor* editor, Command_Source s
 
     Dialog dialog = {};
     dialog.prompt = "Search in current directory: ";
-    dialog.response_callback = command_search_in_current_directory_callback;
+    dialog.response_callback = command_search_in_x_callback<copy_buffer_directory, false>;
     dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
-}
-
-static void command_search_in_current_directory_word_callback(Editor* editor,
-                                                              Client* client,
-                                                              cz::Str query,
-                                                              void*) {
-    cz::String directory = {};
-    CZ_DEFER(directory.drop(cz::heap_allocator()));
-
-    {
-        WITH_CONST_SELECTED_BUFFER(client);
-        if (!copy_buffer_directory(client, buffer, &directory)) {
-            return;
-        }
-    }
-
-    run_search(client, editor, directory.buffer, query, true);
 }
 
 REGISTER_COMMAND(command_search_in_current_directory_word_prompt);
@@ -106,26 +87,9 @@ void command_search_in_current_directory_word_prompt(Editor* editor, Command_Sou
 
     Dialog dialog = {};
     dialog.prompt = "Search in current directory word: ";
-    dialog.response_callback = command_search_in_current_directory_word_callback;
+    dialog.response_callback = command_search_in_x_callback<copy_buffer_directory, true>;
     dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
-}
-
-static void command_search_in_version_control_callback(Editor* editor,
-                                                       Client* client,
-                                                       cz::Str query,
-                                                       void*) {
-    cz::String directory = {};
-    CZ_DEFER(directory.drop(cz::heap_allocator()));
-
-    {
-        WITH_CONST_SELECTED_BUFFER(client);
-        if (!copy_version_control_directory(client, buffer, &directory)) {
-            return;
-        }
-    }
-
-    run_search(client, editor, directory.buffer, query, false);
 }
 
 REGISTER_COMMAND(command_search_in_version_control_prompt);
@@ -136,26 +100,9 @@ void command_search_in_version_control_prompt(Editor* editor, Command_Source sou
 
     Dialog dialog = {};
     dialog.prompt = "Search in version control: ";
-    dialog.response_callback = command_search_in_version_control_callback;
+    dialog.response_callback = command_search_in_x_callback<copy_version_control_directory, false>;
     dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
-}
-
-static void command_search_in_version_control_word_callback(Editor* editor,
-                                                            Client* client,
-                                                            cz::Str query,
-                                                            void*) {
-    cz::String directory = {};
-    CZ_DEFER(directory.drop(cz::heap_allocator()));
-
-    {
-        WITH_CONST_SELECTED_BUFFER(client);
-        if (!copy_version_control_directory(client, buffer, &directory)) {
-            return;
-        }
-    }
-
-    run_search(client, editor, directory.buffer, query, true);
 }
 
 REGISTER_COMMAND(command_search_in_version_control_word_prompt);
@@ -166,7 +113,7 @@ void command_search_in_version_control_word_prompt(Editor* editor, Command_Sourc
 
     Dialog dialog = {};
     dialog.prompt = "Search in version control word: ";
-    dialog.response_callback = command_search_in_version_control_word_callback;
+    dialog.response_callback = command_search_in_x_callback<copy_version_control_directory, true>;
     dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
 }
