@@ -30,6 +30,7 @@ void command_create_cursors_lines_in_region(Editor* editor, Command_Source sourc
 
 void command_cursors_align(Editor* editor, Command_Source source);
 void command_cursors_align_leftpad0(Editor* editor, Command_Source source);
+void command_cursors_align_leftpad_spaces(Editor* editor, Command_Source source);
 
 void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source);
 void command_remove_selected_cursor(Editor* editor, Command_Source source);

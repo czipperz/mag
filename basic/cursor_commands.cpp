@@ -502,10 +502,10 @@ void command_cursors_align(Editor* editor, Command_Source source) {
     transaction.commit(source.client, command_cursors_align);
 }
 
-REGISTER_COMMAND(command_cursors_align_leftpad0);
-void command_cursors_align_leftpad0(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-
+static void cursors_align_leftpad(Client* client,
+                                  Window_Unified* window,
+                                  Buffer* buffer,
+                                  char filler) {
     cz::Slice<Cursor> cursors = window->cursors;
     if (cursors.len == 1) {
         return;
@@ -547,7 +547,7 @@ void command_cursors_align_leftpad0(Editor* editor, Command_Source source) {
     // Note: we fill with spaces as this is supposed to be used not to correctly indent lines but
     // rather to align things in those lines.  We don't want to start inserting tabs because then
     // they might look different on a different users screen.
-    memset(buf, '0', max_column - min_column);
+    memset(buf, filler, max_column - min_column);
 
     iterator.retreat_to(cursors[0].point);
     uint64_t offset = 0;
@@ -573,7 +573,19 @@ void command_cursors_align_leftpad0(Editor* editor, Command_Source source) {
         transaction.push(edit);
     }
 
-    transaction.commit(source.client, command_cursors_align);
+    transaction.commit(client, command_cursors_align);
+}
+
+REGISTER_COMMAND(command_cursors_align_leftpad0);
+void command_cursors_align_leftpad0(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    cursors_align_leftpad(source.client, window, buffer, '0');
+}
+
+REGISTER_COMMAND(command_cursors_align_leftpad_spaces);
+void command_cursors_align_leftpad_spaces(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    cursors_align_leftpad(source.client, window, buffer, ' ');
 }
 
 REGISTER_COMMAND(command_remove_cursors_at_empty_lines);
