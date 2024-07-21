@@ -109,7 +109,11 @@ struct Token {
     uint64_t start;
     uint64_t end;
     Token_Type type;
+
+    void check_valid(uint64_t contents_len)const;
 };
+
+constexpr Token INVALID_TOKEN = {(uint64_t)-1, (uint64_t)-1, Token_Type::length};
 
 struct Contents_Iterator;
 

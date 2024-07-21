@@ -231,9 +231,18 @@ bool Token_Cache::next_check_point(const Buffer* buffer,
         }
 
         Token token;
+
+#ifndef NDEBUG
+        token = INVALID_TOKEN;
+#endif
+
         if (!buffer->mode.next_token(iterator, &token, state)) {
             break;
         }
+
+#ifndef NDEBUG
+        token.check_valid(buffer->contents.len);
+#endif
     }
 
     ran_to_end = true;

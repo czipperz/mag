@@ -226,11 +226,13 @@ cz::Vector<Test_Runner::TToken> Test_Runner::tokenize(Tokenizer tokenizer) {
     cz::Vector<TToken> tokens = {};
 
     Contents_Iterator it = buffer->contents.start();
-    Token token;
+    Token token = INVALID_TOKEN;
     uint64_t state = 0;
     while (tokenizer(&it, &token, &state)) {
+        token.check_valid(buffer->contents.len);
         tokens.reserve(buffer_array.allocator(), 1);
         tokens.push({{}, token});
+        token = INVALID_TOKEN;
     }
 
     // Allocate strings after first loop to allow the vector to reallocate.
