@@ -57,14 +57,14 @@ bool search_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
         goto ret;
     }
 
-    if (*state == END_OF_FILE_NAME) {
+    if (*state == END_OF_FILE_NAME || *state == END_OF_FILE_LINE) {
         iterator->advance();
         token->type = Token_Type::PUNCTUATION;
-        *state = START_OF_FILE_LINE;
+        *state = (*state == END_OF_FILE_NAME ? START_OF_FILE_LINE : START_OF_FILE_COLUMN);
         goto ret;
     }
 
-    if (*state == START_OF_FILE_LINE) {
+    if (*state == START_OF_FILE_LINE || *state == START_OF_FILE_COLUMN) {
         iterator->advance();
         while (!iterator->at_eob()) {
             char ch = iterator->get();
@@ -83,39 +83,14 @@ bool search_next_token(Contents_Iterator* iterator, Token* token, uint64_t* stat
             }
             iterator->advance();
         }
-        token->type = Token_Type::SEARCH_FILE_LINE;
-        *state = END_OF_FILE_LINE;
-        goto ret;
-    }
 
-    if (*state == END_OF_FILE_LINE) {
-        iterator->advance();
-        token->type = Token_Type::PUNCTUATION;
-        *state = START_OF_FILE_COLUMN;
-        goto ret;
-    }
-
-    if (*state == START_OF_FILE_COLUMN) {
-        iterator->advance();
-        while (!iterator->at_eob()) {
-            char ch = iterator->get();
-            if (ch == ':') {
-                break;
-            }
-            if (ch == '\n') {
-                token->type = Token_Type::SEARCH_RESULT;
-                *state = END_OF_LINE;
-                goto ret;
-            }
-            if (!cz::is_digit(ch)) {
-                token->type = Token_Type::SEARCH_RESULT;
-                *state = START_OF_RESULT;
-                goto ret;
-            }
-            iterator->advance();
+        if (*state == START_OF_FILE_LINE) {
+            token->type = Token_Type::SEARCH_FILE_LINE;
+            *state = END_OF_FILE_LINE;
+        } else {
+            token->type = Token_Type::SEARCH_FILE_COLUMN;
+            *state = END_OF_FILE_COLUMN;
         }
-        token->type = Token_Type::SEARCH_FILE_COLUMN;
-        *state = END_OF_FILE_COLUMN;
         goto ret;
     }
 
