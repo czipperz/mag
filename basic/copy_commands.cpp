@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include "command_macros.hpp"
+#include "buffer_commands.hpp"
 
 namespace mag {
 namespace basic {
@@ -105,7 +106,7 @@ static bool setup_paste(cz::Slice<Cursor> cursors, Copy_Chain* global_copy_chain
     return true;
 }
 
-static void run_paste(Client* client, Window_Unified* window, Buffer* buffer) {
+static void run_paste(Editor* editor, Client* client, Window_Unified* window, Buffer* buffer) {
     // :CopyLeak Probably we will need to copy all the values here.
     Transaction transaction;
     transaction.init(buffer);
@@ -150,6 +151,11 @@ static void run_paste(Client* client, Window_Unified* window, Buffer* buffer) {
             cursors[c].mark = befores[c];
         }
     }
+
+    // The only change to this buffer is pasting.  Try reloading syntax highlighting.
+    if (buffer->commit_index == 1) {
+        reset_mode(editor, buffer);
+    }
 }
 
 REGISTER_COMMAND(command_paste);
@@ -160,7 +166,7 @@ void command_paste(Editor* editor, Command_Source source) {
         return;
     }
 
-    run_paste(source.client, window, buffer);
+    run_paste(editor, source.client, window, buffer);
 }
 
 REGISTER_COMMAND(command_paste_previous);
@@ -197,7 +203,7 @@ void command_paste_previous(Editor* editor, Command_Source source) {
             WITH_WINDOW_BUFFER(window);
             buffer->undo();
             window->update_cursors(buffer);
-            run_paste(source.client, window, buffer);
+            run_paste(editor, source.client, window, buffer);
         }
     } else {
         source.client->show_message("Error: previous command was not paste");

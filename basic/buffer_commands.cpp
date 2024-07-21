@@ -20,7 +20,7 @@
 namespace mag {
 namespace basic {
 
-static void reset_mode(Editor* editor, Buffer* buffer) {
+void reset_mode(Editor* editor, Buffer* buffer) {
     buffer->mode.drop();
     buffer->mode = {};
 

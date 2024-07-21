@@ -7,6 +7,8 @@
 namespace mag {
 namespace basic {
 
+void reset_mode(Editor* editor, Buffer* buffer);
+
 void command_open_file(Editor* editor, Command_Source source);
 void command_open_file_full_path(Editor* editor, Command_Source source);
 void command_save_file(Editor* editor, Command_Source source);
