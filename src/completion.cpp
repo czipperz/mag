@@ -183,7 +183,7 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
     }
 
     if (end < start) {
-        start = end = 0;
+        end = start;
     }
 
     while (true) {
