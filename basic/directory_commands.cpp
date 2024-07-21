@@ -299,7 +299,7 @@ static bool make_parent_directories(cz::Str path) {
         return true;
 
     cz::Heap_String storage = {};
-    CZ_DEFER(storage.len);
+    CZ_DEFER(storage.drop());
 
     while (1) {
         cz::Str base = directory;
