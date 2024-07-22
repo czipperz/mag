@@ -2,6 +2,7 @@
 
 #include "basic/markdown_commands.hpp"
 #include "basic/reformat_commands.hpp"
+#include "basic/cpp_commands.hpp"
 
 using namespace mag;
 using namespace mag::basic;
@@ -270,4 +271,29 @@ TEST_CASE("reformat_at markdown numbered list") {
         CZ_DEFER(result.drop(cz::heap_allocator()));
         run_test_suite(body, strlen(body1) + strlen(body2), strlen(body3), result);
     }
+}
+
+TEST_CASE("reformat c++ comment") {
+    const char* input =
+        "\n"
+        "|// Ignore return value so that if the user does like 'find' we can still handle the "
+        "output by just treating the entire line as a relpath.";
+    const char* output =
+        "\n"
+        "|// Ignore return value so that if the user does like 'find' we can still\n"
+        "// handle the output by just treating the entire line as a relpath.";
+
+    Test_Runner tr;
+    tr.setup(input);
+
+    {
+        WITH_SELECTED_BUFFER(&tr.client);
+        buffer->mode.preferred_column = 80;
+    }
+
+    Command_Source source = {};
+    source.client = &tr.client;
+    cpp::command_reformat_comment(&tr.server.editor, source);
+
+    CHECK(tr.stringify() == output);
 }
