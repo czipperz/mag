@@ -221,6 +221,15 @@ static void command_search_forward_callback(Editor* editor,
                                             cz::Str query,
                                             void* _data) {
     WITH_CONST_SELECTED_BUFFER(client);
+
+    if (query.len == 0) {
+        if (_data)
+            interactive_search_reset(window, (Interactive_Search_Data*)_data);
+        else
+            window->show_marks = false;
+        return;
+    }
+
     size_t n = 1;
     if (_data) {
         Interactive_Search_Data* data = (Interactive_Search_Data*)_data;
@@ -252,6 +261,15 @@ static void command_search_backward_callback(Editor* editor,
                                              cz::Str query,
                                              void* _data) {
     WITH_CONST_SELECTED_BUFFER(client);
+
+    if (query.len == 0) {
+        if (_data)
+            interactive_search_reset(window, (Interactive_Search_Data*)_data);
+        else
+            window->show_marks = false;
+        return;
+    }
+
     size_t n = 1;
     if (_data) {
         Interactive_Search_Data* data = (Interactive_Search_Data*)_data;
