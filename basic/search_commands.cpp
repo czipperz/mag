@@ -283,29 +283,34 @@ bool in_interactive_search(Client* client) {
            client->_message.interactive_response_callback == interactive_search_response_callback;
 }
 
-REGISTER_COMMAND(command_search_forward);
-void command_search_forward(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_normal_window;
+static void do_command_search_x(Editor* editor, Client* client, bool is_forward) {
+    const char* prompt = is_forward ? "Search forward: " : "Search backward: ";
+    int64_t initial_direction = is_forward ? 1 : 0;
+    int64_t direction_offset = is_forward ? 1 : -1;
+    auto callback = is_forward ? command_search_forward_callback : command_search_backward_callback;
+    auto search_slice = is_forward ? search_forward_slice : search_backward_slice;
+
+    Window_Unified* window = client->selected_normal_window;
 
     // Already prompting.
-    if (in_interactive_search(source.client)) {
-        auto data = (Interactive_Search_Data*)source.client->_message.response_callback_data;
-        ++data->direction;
+    if (in_interactive_search(client)) {
+        auto data = (Interactive_Search_Data*)client->_message.response_callback_data;
+        data->direction += direction_offset;
         data->mini_buffer_change_index = 0;
-        if (data->direction == 1) {
-            source.client->set_prompt_text("Search forward: ");
-            source.client->_message.response_callback = command_search_forward_callback;
+        if (data->direction == initial_direction) {
+            client->set_prompt_text(prompt);
+            client->_message.response_callback = callback;
         }
         return;
     }
 
     // If not interactively prompting then deal with the mini buffer.
-    if (source.client->_select_mini_buffer) {
-        if (source.client->_message.response_callback == command_search_backward_callback ||
-            source.client->_message.response_callback == command_search_forward_callback) {
-            submit_mini_buffer(editor, source.client);
+    if (client->_select_mini_buffer) {
+        if (client->_message.response_callback == command_search_backward_callback ||
+            client->_message.response_callback == command_search_forward_callback) {
+            submit_mini_buffer(editor, client);
         } else {
-            source.client->hide_mini_buffer(editor);
+            client->hide_mini_buffer(editor);
         }
     }
 
@@ -316,13 +321,13 @@ void command_search_forward(Editor* editor, Command_Source source) {
         WITH_CONST_WINDOW_BUFFER(window);
         for (size_t c = 0; c < cursors.len; ++c) {
             bool created;
-            SEARCH_SLICE_THEN(search_forward_slice, created, cursors[c] = new_cursor);
+            SEARCH_SLICE_THEN(search_slice, created, cursors[c] = new_cursor);
         }
     } else {
         // Search using a prompt.
         Dialog dialog = {};
-        dialog.prompt = "Search forward: ";
-        dialog.response_callback = command_search_forward_callback;
+        dialog.prompt = prompt;
+        dialog.response_callback = callback;
         {
             WITH_CONST_WINDOW_BUFFER(window);
             dialog.next_token = buffer->mode.next_token;
@@ -332,7 +337,7 @@ void command_search_forward(Editor* editor, Command_Source source) {
         if (window->cursors.len == 1) {
             Interactive_Search_Data* data = cz::heap_allocator().alloc<Interactive_Search_Data>();
             CZ_ASSERT(data);
-            data->direction = 1;
+            data->direction = initial_direction;
             data->cursor_point = window->cursors[0].point;
             data->cursor_mark = window->cursors[0].mark;
             data->mini_buffer_change_index = 0;
@@ -342,71 +347,18 @@ void command_search_forward(Editor* editor, Command_Source source) {
             dialog.response_callback_data = data;
         }
 
-        source.client->show_dialog(dialog);
+        client->show_dialog(dialog);
     }
+}
+
+REGISTER_COMMAND(command_search_forward);
+void command_search_forward(Editor* editor, Command_Source source) {
+    do_command_search_x(editor, source.client, true);
 }
 
 REGISTER_COMMAND(command_search_backward);
 void command_search_backward(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->selected_normal_window;
-
-    // Already prompting.
-    if (in_interactive_search(source.client)) {
-        auto data = (Interactive_Search_Data*)source.client->_message.response_callback_data;
-        --data->direction;
-        data->mini_buffer_change_index = 0;
-        if (data->direction == 0) {
-            source.client->set_prompt_text("Search backward: ");
-            source.client->_message.response_callback = command_search_backward_callback;
-        }
-        return;
-    }
-
-    // If not interactively prompting then deal with the mini buffer.
-    if (source.client->_select_mini_buffer) {
-        if (source.client->_message.response_callback == command_search_backward_callback ||
-            source.client->_message.response_callback == command_search_forward_callback) {
-            submit_mini_buffer(editor, source.client);
-        } else {
-            source.client->hide_mini_buffer(editor);
-        }
-    }
-
-    if (window->show_marks) {
-        window->show_marks = 1;
-        // Search using the matching region.
-        cz::Slice<Cursor> cursors = window->cursors;
-        WITH_CONST_WINDOW_BUFFER(window);
-        for (size_t c = 0; c < cursors.len; ++c) {
-            bool created;
-            SEARCH_SLICE_THEN(search_backward_slice, created, cursors[c] = new_cursor);
-        }
-    } else {
-        // Search using a prompt.
-        Dialog dialog = {};
-        dialog.prompt = "Search backward: ";
-        dialog.response_callback = command_search_backward_callback;
-        {
-            WITH_CONST_WINDOW_BUFFER(window);
-            dialog.next_token = buffer->mode.next_token;
-        }
-
-        // Interactive search.
-        if (window->cursors.len == 1) {
-            Interactive_Search_Data* data = cz::heap_allocator().alloc<Interactive_Search_Data>();
-            CZ_ASSERT(data);
-            data->direction = 0;
-            data->cursor_point = window->cursors[0].point;
-            data->cursor_mark = window->cursors[0].mark;
-            data->mini_buffer_change_index = 0;
-
-            dialog.interactive_response_callback = interactive_search_response_callback;
-            dialog.response_cancel = interactive_search_cancel;
-            dialog.response_callback_data = data;
-        }
-
-        source.client->show_dialog(dialog);
-    }
+    do_command_search_x(editor, source.client, false);
 }
 
 static void command_search_backward_expanding_callback(Editor* editor,
