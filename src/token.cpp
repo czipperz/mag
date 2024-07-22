@@ -74,7 +74,7 @@ Face decode(Token_Type type) {
 }
 
 void Token::check_valid(uint64_t contents_len) const {
-    CZ_ASSERT(start < end);
+    CZ_ASSERT(start <= end);
     CZ_ASSERT(end <= contents_len);
     if (!(type & Token_Type::CUSTOM))
         CZ_ASSERT(type < Token_Type::length);
