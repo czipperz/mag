@@ -90,9 +90,27 @@
                 edit.value =                                                                    \
                     buffer->contents.slice(transaction.value_allocator(), start, end.position); \
                 edit.position = start.position - offset;                                        \
-                offset += end.position - start.position;                                        \
                 edit.flags = Edit::REMOVE;                                                      \
                 transaction.push(edit);                                                         \
+                                                                                                \
+                if (editor->theme.insert_replace && !edit.value.as_str().contains('\n')) {      \
+                    Edit insert;                                                                \
+                    if (end.position - start.position <= SSOStr::MAX_SHORT_LEN) {               \
+                        char spaces[SSOStr::MAX_SHORT_LEN];                                     \
+                        memset(spaces, ' ', end.position - start.position);                     \
+                        insert.value =                                                          \
+                            SSOStr::from_constant({spaces, end.position - start.position});     \
+                    } else {                                                                    \
+                        insert.value = SSOStr::from_constant(                                   \
+                            cz::format(transaction.value_allocator(),                           \
+                                       cz::many(' ', end.position - start.position)));          \
+                    }                                                                           \
+                    insert.position = start.position;                                           \
+                    insert.flags = Edit::INSERT_AFTER_POSITION;                                 \
+                    transaction.push(insert);                                                   \
+                } else {                                                                        \
+                    offset += end.position - start.position;                                    \
+                }                                                                               \
             }                                                                                   \
         }                                                                                       \
                                                                                                 \
