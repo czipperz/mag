@@ -37,6 +37,7 @@ void command_delete_start_of_line(Editor* editor, Command_Source source);
 void command_delete_start_of_line_text(Editor* editor, Command_Source source);
 
 void command_fill_region_with_spaces(Editor* editor, Command_Source source);
+void command_fill_region_with_prompt(Editor* editor, Command_Source source);
 void command_fill_region_or_solt_with_spaces(Editor* editor, Command_Source source);
 
 void command_undo(Editor* editor, Command_Source source);

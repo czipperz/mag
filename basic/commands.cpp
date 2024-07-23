@@ -654,7 +654,11 @@ void command_delete_start_of_line(Editor* editor, Command_Source source) {
 }
 
 template <class Func>
-static void fill_spaces(Client* client, Buffer* buffer, Window_Unified* window, Func func) {
+static void fill_region(Client* client,
+                        Buffer* buffer,
+                        Window_Unified* window,
+                        Func func,
+                        cz::Str filler) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction;
@@ -684,9 +688,17 @@ static void fill_spaces(Client* client, Buffer* buffer, Window_Unified* window, 
         return;
     }
 
+    if (filler.len == 0)
+        filler = " ";
+
     cz::String spaces = {};
     spaces.reserve(transaction.value_allocator(), max_region_size);
-    spaces.push_many(' ', max_region_size);
+    while (spaces.len < max_region_size) {
+        if (spaces.len + filler.len <= max_region_size)
+            spaces.append(filler);
+        else
+            spaces.append(filler.slice_end(max_region_size - spaces.len));
+    }
 
     for (size_t c = 0; c < cursors.len; ++c) {
         Contents_Iterator start, end;
@@ -724,14 +736,37 @@ void command_fill_region_with_spaces(Editor* editor, Command_Source source) {
         source.client->show_message("No region selected");
         return;
     }
-    fill_spaces(source.client, buffer, window,
-                [](Contents_Iterator*) { CZ_PANIC("Buffer mutated while locked"); });
+    fill_region(
+        source.client, buffer, window,
+        [](Contents_Iterator*) { CZ_PANIC("Buffer mutated while locked"); }, " ");
+}
+
+static void command_fill_region_with_prompt_callback(Editor* editor,
+                                                     Client* client,
+                                                     cz::Str filler,
+                                                     void* data) {
+    WITH_SELECTED_BUFFER(client);
+    if (!window->show_marks) {
+        client->show_message("No region selected");
+        return;
+    }
+    fill_region(
+        client, buffer, window, [](Contents_Iterator*) { CZ_PANIC("Buffer mutated while locked"); },
+        filler);
+}
+
+REGISTER_COMMAND(command_fill_region_with_prompt);
+void command_fill_region_with_prompt(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Fill with: ";
+    dialog.response_callback = command_fill_region_with_prompt_callback;
+    source.client->show_dialog(dialog);
 }
 
 REGISTER_COMMAND(command_fill_region_or_solt_with_spaces);
 void command_fill_region_or_solt_with_spaces(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    fill_spaces(source.client, buffer, window, start_of_line_text);
+    fill_region(source.client, buffer, window, start_of_line_text, " ");
 }
 
 REGISTER_COMMAND(command_undo);
