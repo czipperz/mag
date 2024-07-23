@@ -954,7 +954,8 @@ void command_show_file_length_info(Editor* editor, Command_Source source) {
     CZ_DEFER(string.drop(cz::heap_allocator()));
 
     cz::append(cz::heap_allocator(), &string, "Bytes: ", end - start, ", lines: ", lines,
-               ", words: ", words);
+               ", words: ", words,
+               ", cursor position: ", window->cursors[window->selected_cursor].point);
 
     source.client->show_message(string);
 }
