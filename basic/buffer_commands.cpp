@@ -131,7 +131,7 @@ static void command_save_file_callback(Editor* editor, Client* client, cz::Str, 
         // Should be null terminated via the loop above.
         CZ_DEBUG_ASSERT(*directory.end() == '\0');
 
-        if (!cz::file::create_directory(directory.buffer)) {
+        if (cz::file::create_directory(directory.buffer) != 0) {
             client->show_message("Failed to create parent directory");
         }
     }
