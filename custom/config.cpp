@@ -42,6 +42,7 @@
 #include "basic/window_completion_commands.hpp"
 #include "basic/xclip.hpp"
 #include "clang_format/clang_format.hpp"
+#include "compression/zstd.hpp"
 #include "decoration.hpp"
 #include "decorations/decoration_column_number.hpp"
 #include "decorations/decoration_cursor_count.hpp"
@@ -782,7 +783,24 @@ static void cpp_comments_key_map(Key_Map& key_map) {
 }
 
 Load_File_Result load_file_callback(Buffer* buffer, cz::Input_File file, cz::String* path) {
-    return load_text_file(buffer, file);
+    // Decompress input.
+    Load_File_Result result = Load_File_Result::SUCCESS;
+#ifdef HAS_ZSTD
+    if (path->ends_with(".zst")) {
+        path->len -= 4;
+        result = compression::load_zstd_file(buffer, file);
+        file = {};
+    }
+#endif
+    if (result != Load_File_Result::SUCCESS)
+        return result;
+
+    if (file.is_open()) {
+        return load_text_file(buffer, file);
+    } else {
+        strip_carriage_returns(&buffer->contents);
+        return Load_File_Result::SUCCESS;
+    }
 }
 
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
@@ -911,6 +929,11 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         // Treat `test.c~` as `test.c`.
         if (name.ends_with('~')) {
             --name.len;
+        }
+
+        // Unwrap decompressed files.
+        if (name.ends_with(".zst")) {
+            name.len -= 4;
         }
 
         if (name.ends_with(".c") || name.ends_with(".h") || name.ends_with(".cc") ||

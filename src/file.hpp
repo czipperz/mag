@@ -84,6 +84,8 @@ Load_File_Result open_file_buffer(Editor* editor,
 /// Load a file as text, stripping carriage returns, and assigning `buffer->use_carriage_returns`.
 Load_File_Result load_text_file(Buffer* buffer, cz::Input_File file);
 
+void strip_carriage_returns(Contents* contents);
+
 /// Find a buffer by its path.  The path must be standardized with `standardize_path`.
 ///
 /// Doesn't increment the reference count.

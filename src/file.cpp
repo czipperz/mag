@@ -126,6 +126,13 @@ read_continue:
     }
 }
 
+void strip_carriage_returns(Contents* contents) {
+    cz::Carriage_Return_Carry carry;
+    for (size_t o = 0; o < contents->buckets.len; ++o) {
+        cz::strip_carriage_returns(contents->buckets[o].elems, &contents->buckets[o].len, &carry);
+    }
+}
+
 static bool load_directory(Buffer* buffer, cz::String* path) {
     if (!path->ends_with('/')) {
         path->push('/');

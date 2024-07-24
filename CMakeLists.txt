@@ -52,7 +52,7 @@ endif()
 set(LIBRARY_NAME ${PROJECT_NAME}l)
 file(GLOB_RECURSE SRCS src/*.cpp custom/*.cpp basic/*.cpp prose/*.cpp clang_format/*.cpp
                        version_control/*.cpp gnu_global/*.cpp syntax/*.cpp man/*.cpp render/*.cpp
-                       overlays/*.cpp decorations/*.cpp)
+                       overlays/*.cpp decorations/*.cpp compression/*.cpp)
 add_library(${LIBRARY_NAME} ${SRCS})
 target_include_directories(${LIBRARY_NAME} PUBLIC custom)
 target_compile_definitions(${LIBRARY_NAME} PUBLIC MAG_BUILD_DIRECTORY=${CMAKE_SOURCE_DIR})
@@ -87,6 +87,13 @@ if (WIN32)
   target_link_libraries(${PROJECT_NAME} Shcore.lib)
 else()
   target_link_libraries(${PROJECT_NAME} pthread dl z)
+endif()
+
+find_package(ZSTD)
+if (${ZSTD_FOUND})
+  target_compile_definitions(${LIBRARY_NAME} PUBLIC HAS_ZSTD=1)
+  target_link_libraries(${LIBRARY_NAME} ${ZSTD_LIBRARY})
+  target_include_directories(${PROJECT_NAME} PUBLIC ${ZSTD_INCLUDE_DIR})
 endif()
 
 # Run GNU Global if it is available.
