@@ -121,11 +121,7 @@ static int load_file(Buffer* buffer, const char* path) {
                 // carriage returns.
                 buffer->use_carriage_returns = newline != buf && newline[-1] == '\r';
 
-                cz::strip_carriage_returns(buf, &str.len);
-                if (str.buffer[str.len - 1] == '\r') {
-                    carry.carrying = true;
-                    --str.len;
-                }
+                cz::strip_carriage_returns(buf, &str.len, &carry);
                 buffer->contents.append(str);
                 goto read_continue;
             }
