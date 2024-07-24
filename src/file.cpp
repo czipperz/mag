@@ -722,6 +722,10 @@ bool open_file_arg(Editor* editor, Client* client, cz::Str user_arg) {
 }
 
 bool save_buffer(Buffer* buffer) {
+    if (buffer->name.ends_with(".zst")) {
+        return false;
+    }
+
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     if (!buffer->get_path(cz::heap_allocator(), &path)) {
