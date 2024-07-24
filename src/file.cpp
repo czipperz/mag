@@ -55,9 +55,13 @@ bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* fil
     return false;
 }
 
-bool open_existing(cz::Output_File* file, const char* path) {
+/// Determine if we can write to the file by trying to open it in write mode.
+static bool file_exists_and_can_write(const char* path) {
     ZoneScoped;
     ZoneText(path, strlen(path));
+
+    cz::File_Descriptor file;
+    CZ_DEFER(file.close());
 
 #ifdef _WIN32
     SECURITY_ATTRIBUTES sa;
@@ -65,28 +69,19 @@ bool open_existing(cz::Output_File* file, const char* path) {
     sa.bInheritHandle = TRUE;
     sa.lpSecurityDescriptor = NULL;
 
-    void* h = CreateFile(path, GENERIC_WRITE, 0, &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (h == INVALID_HANDLE_VALUE) {
-        return false;
-    }
-    file->handle = h;
-    return true;
+    file.handle =
+        CreateFile(path, GENERIC_WRITE, 0, &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #else
-    file->handle = ::open(path, O_WRONLY);
-    return file->handle != -1;
+    file.handle = ::open(path, O_WRONLY);
 #endif
+
+    return file.is_open();
 }
 
 static int load_file(Buffer* buffer, const char* path) {
     buffer->use_carriage_returns = custom::default_use_carriage_returns;
 
-    // Determine if we can write to the file by trying to open it in write mode.
-    {
-        cz::Output_File file;
-        CZ_DEFER(file.close());
-
-        buffer->read_only = !open_existing(&file, path);
-    }
+    buffer->read_only = !file_exists_and_can_write(path);
 
     cz::Input_File file;
     if (!file.open(path)) {
