@@ -87,7 +87,7 @@ static bool errno_is_noent() {
 #endif
 }
 
-static int load_text_file(Buffer* buffer, cz::Input_File file) {
+static Load_File_Result load_text_file(Buffer* buffer, cz::Input_File file) {
     cz::Carriage_Return_Carry carry;
     char buf[4096];
     while (1) {
@@ -106,9 +106,9 @@ static int load_text_file(Buffer* buffer, cz::Input_File file) {
             }
             buffer->contents.append(str);
         } else if (res == 0) {
-            return 0;
+            return Load_File_Result::SUCCESS;
         } else {
-            return 1;
+            return Load_File_Result::FAILURE;
         }
     }
 
@@ -118,9 +118,9 @@ read_continue:
         if (res > 0) {
             buffer->contents.append({buf, (size_t)res});
         } else if (res == 0) {
-            return 0;
+            return Load_File_Result::SUCCESS;
         } else {
-            return 1;
+            return Load_File_Result::FAILURE;
         }
     }
 }
@@ -275,12 +275,12 @@ bool reload_directory_buffer(Buffer* buffer) {
     return true;
 }
 
-static int load_path_in_buffer(Buffer* buffer, cz::String* path) {
+static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::String* path) {
     // Try reading it as a directory, then if that fails read it as a file.  On
     // linux, opening it as a file will succeed even if it is a directory.  Then
     // reading the file will cause an error.
     if (load_directory(buffer, path)) {
-        return 0;
+        return Load_File_Result::SUCCESS;
     }
 
     *buffer = {};
@@ -302,10 +302,10 @@ static int load_path_in_buffer(Buffer* buffer, cz::String* path) {
         if (errno_is_noent()) {
             // Doesn't exist.
             buffer->read_only = false;
-            return 1;
+            return Load_File_Result::DOESNT_EXIST;
         } else {
             // Either permission error or spurious failure.
-            return 2;
+            return Load_File_Result::FAILURE;
         }
     }
     CZ_DEFER(file.close());
@@ -404,9 +404,9 @@ static Job_Tick_Result open_file_job_tick(Asynchronous_Job_Handler* handler, voi
     Open_File_Async_Data* data = (Open_File_Async_Data*)_data;
 
     Buffer buffer;
-    int result = load_path_in_buffer(&buffer, &data->path);
-    if (result != 0) {
-        if (result == 1) {
+    Load_File_Result result = load_path_in_buffer(&buffer, &data->path);
+    if (result != Load_File_Result::SUCCESS) {
+        if (result == Load_File_Result::DOESNT_EXIST) {
             handler->show_message("File not found");
             // Still open empty file buffer.
         } else {
@@ -572,7 +572,9 @@ bool find_temp_buffer(Editor* editor,
     return false;
 }
 
-int open_file_buffer(Editor* editor, cz::Str user_path, cz::Arc<Buffer_Handle>* handle_out) {
+Load_File_Result open_file_buffer(Editor* editor,
+                                  cz::Str user_path,
+                                  cz::Arc<Buffer_Handle>* handle_out) {
     ZoneScoped;
 
     cz::String path = standardize_path(cz::heap_allocator(), user_path);
@@ -582,12 +584,12 @@ int open_file_buffer(Editor* editor, cz::Str user_path, cz::Arc<Buffer_Handle>* 
     TracyMessage(message, len);
 
     if (find_buffer_by_path(editor, path, handle_out)) {
-        return 0;  // Success
+        return Load_File_Result::SUCCESS;
     }
 
     Buffer buffer;
-    int result = load_path_in_buffer(&buffer, &path);
-    if (result != 2) {
+    Load_File_Result result = load_path_in_buffer(&buffer, &path);
+    if (result != Load_File_Result::FAILURE) {
         *handle_out = editor->create_buffer(buffer);
     }
     return result;
@@ -605,11 +607,11 @@ bool open_file(Editor* editor, Client* client, cz::Str user_path) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     cz::Arc<Buffer_Handle> handle;
-    int result = open_file_buffer(editor, path, &handle);
-    if (result == 1) {
+    Load_File_Result result = open_file_buffer(editor, path, &handle);
+    if (result == Load_File_Result::DOESNT_EXIST) {
         client->show_message("File not found");
         // Still open empty file buffer.
-    } else if (result == 2) {
+    } else if (result == Load_File_Result::FAILURE) {
         client->show_message("Couldn't open file");
         return false;
     }
