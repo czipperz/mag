@@ -236,11 +236,6 @@ void Contents::insert(uint64_t start, cz::Str str) {
 void Contents::append(cz::Str str) {
     ZoneScoped;
 
-    if (str.len >= CONTENTS_BUCKET_DESIRED_LEN && str.len <= CONTENTS_BUCKET_MAX_SIZE) {
-        insert_empty(this, str);
-        return;
-    }
-
     if (str.len < CONTENTS_BUCKET_DESIRED_LEN) {
         if (buckets.len == 0) {
             CZ_DEBUG_ASSERT(len == 0);
@@ -248,6 +243,8 @@ void Contents::append(cz::Str str) {
         } else {
             insert_at(this, end(), str);
         }
+    } else {
+        insert_empty(this, str);
     }
 }
 
