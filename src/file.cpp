@@ -20,6 +20,7 @@
 #include "client.hpp"
 #include "command_macros.hpp"
 #include "config.hpp"
+#include "custom/config.hpp"
 #include "diff.hpp"
 #include "editor.hpp"
 #include "movement.hpp"
@@ -310,7 +311,7 @@ static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::String* path) {
     }
     CZ_DEFER(file.close());
 
-    return load_text_file(buffer, file);
+    return custom::load_file_callback(buffer, file, path);
 }
 
 static void start_syntax_highlighting(Editor* editor, cz::Arc<Buffer_Handle> handle) {

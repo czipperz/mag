@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cz/str.hpp>
+#include "src/file.hpp"
 
 namespace mag {
 
@@ -17,6 +18,10 @@ void client_created_callback(Editor* editor, Client* client);
 /// purpose of this function is to initialize the `Editor::key_map` and
 /// `Editor::theme` fields however you may want to do more complicated tasks.
 void editor_created_callback(Editor* editor);
+
+/// Called whenever a file is being loaded.  This function should plug in
+/// different decompression mechanisms.  `path` can be freely modified.
+Load_File_Result load_file_callback(Buffer* buffer, cz::Input_File file, cz::String* path);
 
 /// Called whenever a buffer is created in order to initialize it.  The main
 /// purpose of this function is to initialize the `Buffer::mode` field

@@ -1,6 +1,7 @@
 #include "config.hpp"
 
 #include <cz/defer.hpp>
+#include <cz/file.hpp>
 #include <cz/path.hpp>
 #include <cz/sort.hpp>
 #include <tracy/Tracy.hpp>
@@ -69,6 +70,7 @@
 #include "prose/repository.hpp"
 #include "prose/search.hpp"
 #include "solarized_dark.hpp"
+#include "src/file.hpp"
 #include "syntax/tokenize_cmake.hpp"
 #include "syntax/tokenize_color_test.hpp"
 #include "syntax/tokenize_cplusplus.hpp"
@@ -777,6 +779,10 @@ static void cpp_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c h 0", cpp::command_insert_header_100);
     BIND(key_map, "A-c h 1", cpp::command_insert_header_110);
     BIND(key_map, "A-c h 2", cpp::command_insert_header_120);
+}
+
+Load_File_Result load_file_callback(Buffer* buffer, cz::Input_File file, cz::String* path) {
+    return load_text_file(buffer, file);
 }
 
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
