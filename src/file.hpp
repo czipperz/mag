@@ -77,7 +77,12 @@ using Load_File_Result_::Load_File_Result;
 /// Doesn't increment the reference count.
 ///
 /// Standardizes the user_path internally.
-Load_File_Result open_file_buffer(Editor* editor, cz::Str user_path, cz::Arc<Buffer_Handle>* handle_out);
+Load_File_Result open_file_buffer(Editor* editor,
+                                  cz::Str user_path,
+                                  cz::Arc<Buffer_Handle>* handle_out);
+
+/// Load a file as text, stripping carriage returns, and assigning `buffer->use_carriage_returns`.
+Load_File_Result load_text_file(Buffer* buffer, cz::Input_File file);
 
 /// Find a buffer by its path.  The path must be standardized with `standardize_path`.
 ///

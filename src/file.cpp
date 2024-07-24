@@ -87,7 +87,7 @@ static bool errno_is_noent() {
 #endif
 }
 
-static Load_File_Result load_text_file(Buffer* buffer, cz::Input_File file) {
+Load_File_Result load_text_file(Buffer* buffer, cz::Input_File file) {
     cz::Carriage_Return_Carry carry;
     char buf[4096];
     while (1) {
