@@ -78,32 +78,16 @@ static bool file_exists_and_can_write(const char* path) {
     return file.is_open();
 }
 
-static int load_file(Buffer* buffer, const char* path) {
-    buffer->use_carriage_returns = custom::default_use_carriage_returns;
-
-    buffer->read_only = !file_exists_and_can_write(path);
-
-    cz::Input_File file;
-    if (!file.open(path)) {
-        // Failed to open so the file either doesn't exist or isn't readable.
-        bool dne;
+static bool errno_is_noent() {
 #ifdef _WIN32
-        auto error = GetLastError();
-        dne = (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND);
+    auto error = GetLastError();
+    return (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND);
 #else
-        dne = (errno == ENOENT);
+    return (errno == ENOENT);
 #endif
-        if (dne) {
-            // Doesn't exist.
-            buffer->read_only = false;
-            return 1;
-        } else {
-            // Either permission error or spurious failure.
-            return 2;
-        }
-    }
-    CZ_DEFER(file.close());
+}
 
+static int load_text_file(Buffer* buffer, cz::Input_File file) {
     cz::Carriage_Return_Carry carry;
     char buf[4096];
     while (1) {
@@ -308,7 +292,25 @@ static int load_path_in_buffer(Buffer* buffer, cz::String* path) {
     }
     buffer->name = name.clone(cz::heap_allocator());
 
-    return load_file(buffer, path->buffer);
+    buffer->use_carriage_returns = custom::default_use_carriage_returns;
+
+    buffer->read_only = !file_exists_and_can_write(path->buffer);
+
+    cz::Input_File file;
+    if (!file.open(path->buffer)) {
+        // Failed to open so the file either doesn't exist or isn't readable.
+        if (errno_is_noent()) {
+            // Doesn't exist.
+            buffer->read_only = false;
+            return 1;
+        } else {
+            // Either permission error or spurious failure.
+            return 2;
+        }
+    }
+    CZ_DEFER(file.close());
+
+    return load_text_file(buffer, file);
 }
 
 static void start_syntax_highlighting(Editor* editor, cz::Arc<Buffer_Handle> handle) {
