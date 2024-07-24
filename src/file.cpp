@@ -444,15 +444,6 @@ Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column, 
     return job;
 }
 
-static int load_path(Editor* editor, cz::String* path, cz::Arc<Buffer_Handle>* handle) {
-    Buffer buffer;
-    int result = load_path_in_buffer(&buffer, path);
-    if (result != 2) {
-        *handle = editor->create_buffer(buffer);
-    }
-    return result;
-}
-
 bool find_buffer_by_path(Editor* editor, cz::Str path, cz::Arc<Buffer_Handle>* handle_out) {
     if (path.len == 0) {
         return false;
@@ -592,7 +583,12 @@ int open_file_buffer(Editor* editor, cz::Str user_path, cz::Arc<Buffer_Handle>* 
         return 0;  // Success
     }
 
-    return load_path(editor, &path, handle_out);
+    Buffer buffer;
+    int result = load_path_in_buffer(&buffer, &path);
+    if (result != 2) {
+        *handle_out = editor->create_buffer(buffer);
+    }
+    return result;
 }
 
 bool open_file(Editor* editor, Client* client, cz::Str user_path) {
