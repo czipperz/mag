@@ -910,7 +910,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         }
         // Treat `test.c~` as `test.c`.
         if (name.ends_with('~')) {
-            name = name.slice_end(name.len - 1);
+            --name.len;
         }
 
         if (name.ends_with(".c") || name.ends_with(".h") || name.ends_with(".cc") ||
