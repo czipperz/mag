@@ -86,6 +86,7 @@ target_link_libraries(${PROJECT_NAME} tracy)
 if (WIN32)
   target_link_libraries(${PROJECT_NAME} Shcore.lib)
 else()
+  target_compile_definitions(${LIBRARY_NAME} PUBLIC HAS_ZLIB=1)
   target_link_libraries(${PROJECT_NAME} pthread dl z)
 endif()
 

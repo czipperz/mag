@@ -42,6 +42,7 @@
 #include "basic/window_completion_commands.hpp"
 #include "basic/xclip.hpp"
 #include "clang_format/clang_format.hpp"
+#include "compression/zlib.hpp"
 #include "compression/zstd.hpp"
 #include "decoration.hpp"
 #include "decorations/decoration_column_number.hpp"
@@ -792,6 +793,13 @@ Load_File_Result load_file_callback(Buffer* buffer, cz::Input_File file, cz::Str
         file = {};
     }
 #endif
+#ifdef HAS_ZLIB
+    if (path->ends_with(".gz")) {
+        path->len -= 4;
+        result = compression::load_zlib_file(buffer, file);
+        file = {};
+    }
+#endif
     if (result != Load_File_Result::SUCCESS)
         return result;
 
@@ -934,6 +942,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         // Unwrap decompressed files.
         if (name.ends_with(".zst")) {
             name.len -= 4;
+        }
+        if (name.ends_with(".gz")) {
+            name.len -= 3;
         }
 
         if (name.ends_with(".c") || name.ends_with(".h") || name.ends_with(".cc") ||

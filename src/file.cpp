@@ -722,7 +722,7 @@ bool open_file_arg(Editor* editor, Client* client, cz::Str user_arg) {
 }
 
 bool save_buffer(Buffer* buffer) {
-    if (buffer->name.ends_with(".zst")) {
+    if (buffer->name.ends_with(".zst") || buffer->name.ends_with(".gz")) {
         return false;
     }
 
