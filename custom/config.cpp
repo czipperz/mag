@@ -939,6 +939,14 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             --name.len;
         }
 
+        // Strip off extensions just used to mark files as backups.
+        if (name.ends_with(".back")) {
+            name.len -= 5;
+        }
+        if (name.ends_with(".backup")) {
+            name.len -= 7;
+        }
+
         // Unwrap decompressed files.
         if (name.ends_with(".zst")) {
             name.len -= 4;
