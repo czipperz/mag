@@ -75,14 +75,41 @@ static void open_file_tiling(Editor* editor,
     ++*opened_count;
 }
 
-/// Decode the argument as one of FILE, FILE:LINE, FILE:LINE:COLUMN and then open it.
-static void open_arg(Editor* editor, Client* client, cz::Str arg, uint32_t* opened_count) {
-    ZoneScoped;
+/// gdb runs '$EDITOR +LINE FILE' ex 'mag +42 main.cpp'.
+static bool open_args_as_gdb_edit(Server* server, Client* client, cz::Slice<const cz::Str> files) {
+    if (files.len != 2)
+        return false;
 
-    uint64_t line = 0, column = 0;
-    cz::Str file;
-    parse_file_arg(arg, &file, &line, &column);
-    open_file_tiling(editor, client, file, opened_count, line, column);
+    cz::Str line_number_str = files[0];
+    cz::Str file = files[1];
+
+    if (line_number_str.len < 2 || line_number_str[0] != '+')
+        return false;
+
+    uint64_t line;
+    if (cz::parse(line_number_str.slice_start(1), &line) != (int64_t)line_number_str.len - 1)
+        return false;
+
+    uint32_t opened_count = 0;
+    open_file_tiling(&server->editor, client, file, &opened_count, line, /*column=*/0);
+    server->slurp_jobs();
+    return true;
+}
+
+static void open_args(Server* server, Client* client, cz::Slice<const cz::Str> files) {
+    if (open_args_as_gdb_edit(server, client, files))
+        return;
+
+    uint32_t opened_count = 0;
+    for (size_t i = 0; i < files.len; ++i) {
+        // Decode the argument as one of FILE, FILE:LINE, FILE:LINE:COLUMN and then open it.
+        uint64_t line = 0, column = 0;
+        cz::Str file;
+        parse_file_arg(files[i], &file, &line, &column);
+
+        open_file_tiling(&server->editor, client, file, &opened_count, line, column);
+        server->slurp_jobs();
+    }
 }
 
 static void switch_to_the_home_directory() {
@@ -361,11 +388,7 @@ A-g     Project or directory commands\n\
         // and allows opening a file at a specific line to center it moderately well.
         client.window->set_size(38, 88);
 
-        uint32_t opened_count = 0;
-        for (size_t i = 0; i < files.len; ++i) {
-            open_arg(&server.editor, &client, files[i], &opened_count);
-            server.slurp_jobs();
-        }
+        open_args(&server, &client, files);
 
         switch (chosen_client) {
 #ifdef HAS_NCURSES
