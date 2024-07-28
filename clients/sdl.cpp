@@ -10,12 +10,14 @@
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
+#include <cz/format.hpp>
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
 #include <cz/str.hpp>
 #include <cz/utf.hpp>
 #include <cz/working_directory.hpp>
 #include <tracy/Tracy.hpp>
+#include "UbuntuMono.h"
 #include "basic/copy_commands.hpp"
 #include "cell.hpp"
 #include "client.hpp"
@@ -1173,7 +1175,8 @@ void set_icon(SDL_Window* sdl_window) {
 #endif
 }
 
-static bool load_font(cz::String* font_file,
+static bool load_font(Client* client,
+                      cz::String* font_file,
                       uint32_t* font_size,
                       TTF_Font** font,
                       int* character_width,
@@ -1191,17 +1194,32 @@ static bool load_font(cz::String* font_file,
     font_file->null_terminate();
     *font_size = new_font_size;
 
+    int point_size = (int)(*font_size * dpi_scale);
+
     // Load the font.
-    TTF_Font* new_font = TTF_OpenFont(font_file->buffer, (int)(*font_size * dpi_scale));
+    TTF_Font* new_font = TTF_OpenFont(font_file->buffer, point_size);
     if (!new_font) {
-        fprintf(stderr, "Failed to open the font file '%s': %s\n", font_file->buffer,
-                SDL_GetError());
-        return false;
+        cz::Heap_String msg =
+            cz::format("Failed to open font file '", new_font_file, "': ", SDL_GetError());
+        CZ_DEFER(msg.drop());
+        client->show_message(msg);
+    } else if (!get_character_dims(new_font, character_width, character_height)) {
+        TTF_CloseFont(new_font);
+        new_font = nullptr;
+
+        cz::Heap_String msg =
+            cz::format("Failed to parse character dims from font file: ", new_font_file);
+        CZ_DEFER(msg.drop());
+        client->show_message(msg);
     }
 
-    if (!get_character_dims(new_font, character_width, character_height)) {
-        TTF_CloseFont(new_font);
-        return false;
+    if (!new_font) {
+        // Backup by using UbuntuMono.  This cannot fail to
+        // load so we just assert that everything works.
+        SDL_RWops* font_mem = SDL_RWFromConstMem(&UbuntuMonoData[0], sizeof(UbuntuMonoData));
+        new_font = TTF_OpenFontRW(font_mem, /*freesrc=*/true, point_size);
+        CZ_ASSERT(new_font);
+        CZ_ASSERT(get_character_dims(new_font, character_width, character_height));
     }
 
     if (*font) {
@@ -1297,11 +1315,8 @@ void run(Server* server, Client* client) {
     CZ_DEFER(drop_surface_cache(surface_cache));
 
     // Load the font.
-    if (!load_font(&font_file, &font_size, &font, &character_width, &character_height,
-                   surface_cache, server->editor.theme.font_file, server->editor.theme.font_size,
-                   dpi_scale)) {
-        return;
-    }
+    load_font(client, &font_file, &font_size, &font, &character_width, &character_height, surface_cache,
+              server->editor.theme.font_file, server->editor.theme.font_size, dpi_scale);
 
     int old_width = 0;
     int old_height = 0;
@@ -1377,13 +1392,12 @@ void run(Server* server, Client* client) {
             dpi_scale != old_dpi_scale) {
             font_file.len = 0;
 
-            // If loading the font fails then we print a message inside `load_font()` and continue.
-            if (load_font(&font_file, &font_size, &font, &character_width, &character_height,
-                          surface_cache, server->editor.theme.font_file,
-                          server->editor.theme.font_size, dpi_scale)) {
-                // Redraw the screen with the new font info.
-                force_redraw = true;
-            }
+            load_font(client, &font_file, &font_size, &font, &character_width, &character_height,
+                      surface_cache, server->editor.theme.font_file, server->editor.theme.font_size,
+                      dpi_scale);
+
+            // Redraw the screen with the new font info.
+            force_redraw = true;
         }
 
         client->update_mini_buffer_completion_cache();
