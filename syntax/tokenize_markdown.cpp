@@ -14,9 +14,6 @@ enum {
     START_OF_LINE,
     MIDDLE_OF_LINE,
     TITLE,
-    INSIDE_ITALICS,
-    INSIDE_BOLD,
-    INSIDE_BOLD_ITALICS,
     AFTER_LINK_TITLE,
     BEFORE_LINK_HREF_LINE,
     BEFORE_LINK_HREF_PAREN,
@@ -67,7 +64,36 @@ static void advance_through_inline_code_block(Contents_Iterator* iterator) {
 }
 
 static bool is_special(char ch) {
-    return ch == '`' || ch == '*' || ch == '_' || ch == '[';
+    return ch == '`' || ch == '*' || ch == '_' || ch == '[' || cz::is_space(ch);
+}
+
+static bool advance_through_start_to_bold_or_italics_region(Contents_Iterator* iterator,
+                                                            char first_ch) {
+    char other_ch = (first_ch == '*' ? '_' : '*');
+
+    // Eat the first char.
+    iterator->advance();
+    if (iterator->at_eob())
+        return false;
+
+    char second_ch = iterator->get();
+    if (second_ch == first_ch || second_ch == other_ch) {
+        iterator->advance();
+        if (iterator->at_eob())
+            return false;
+
+        char third_ch = iterator->get();
+        if (third_ch == other_ch) {
+            iterator->advance();
+            return true; // length=3
+        } else if (!is_special(third_ch)) {
+            return true; // length=2
+        }
+    } else if (!is_special(second_ch)) {
+        return true; // length=1
+    }
+
+    return false;
 }
 
 bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
@@ -84,6 +110,7 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         iterator->advance();
         if (first_ch == '*' && !iterator->at_eob() && !cz::is_blank(iterator->get())) {
             // `\n*hello world*` should be parsed as italics not a list element.
+            iterator->retreat();
         } else {
             token->type = Token_Type::PUNCTUATION;
             *state = MIDDLE_OF_LINE;
@@ -165,122 +192,33 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         goto ret;
     }
 
-    if (*state == INSIDE_ITALICS || *state == INSIDE_BOLD || *state == INSIDE_BOLD_ITALICS ||
-        first_ch == '*' || first_ch == '_') {
-        bool italic = false;
-        bool bold = false;
+    if (first_ch == '*' || first_ch == '_') {
+        // All possible combinations:
+        // *   _   **   __   **_   *__   __*   _**
 
-        auto assign_bold_and_italic = [&]() {
-            if (!iterator->at_eob() && (iterator->get() == '*' || iterator->get() == '_')) {
-                iterator->advance();
-                if (!iterator->at_eob() && (iterator->get() == '*' || iterator->get() == '_')) {
-                    iterator->advance();
-                    italic = !italic;
-                }
-                bold = !bold;
-            } else {
-                italic = !italic;
-            }
-        };
-
-        if (*state == INSIDE_ITALICS) {
-            italic = true;
-        } else if (*state == INSIDE_BOLD) {
-            bold = true;
-        } else if (*state == INSIDE_BOLD_ITALICS) {
-            bold = true;
-            italic = true;
-        } else {
-            Contents_Iterator backup = *iterator;
-            backup.retreat_to(token->start);
-            backup.advance();
-
-            assign_bold_and_italic();
-
-            Contents_Iterator backup2 = *iterator;
-
-            bool bold_backup = bold;
-            bool italic_backup = italic;
-
-            // Check that we have a paired * or ** in this line.
-            while (1) {
-                if (iterator->at_eob()) {
-                    *iterator = backup;
-                    goto normal_character;
-                }
-
-                char ch = iterator->get();
-                if (ch == '\n') {
-                    break;
-                }
-
-                if (!is_special(ch)) {
-                    iterator->advance();
-                    continue;
-                }
-
-                if (ch != '*' && ch != '_') {
-                    *iterator = backup;
-                    goto normal_character;
-                }
-
-                iterator->advance();
-                assign_bold_and_italic();
-                if (!bold && !italic) {
-                    break;
-                }
-                if (!iterator->at_eob())
-                    iterator->advance();
-            }
-
-            if (!bold && !italic) {
-                bold = bold_backup;
-                italic = italic_backup;
-                *iterator = backup2;
-            } else {
-                *iterator = backup;
-                goto normal_character;
-            }
+        Contents_Iterator start = *iterator;
+        if (!advance_through_start_to_bold_or_italics_region(iterator, first_ch)) {
+            *iterator = start;
+            goto normal_character;
         }
 
-        while (!iterator->at_eob()) {
-            if (is_special(iterator->get())) {
-                break;
-            }
-            iterator->advance();
-        }
+        char end_pattern[3];
+        size_t pattern_length = iterator->position - start.position;
+        CZ_DEBUG_ASSERT(pattern_length <= sizeof(end_pattern));
+        start.contents->slice_into(start, iterator->position, end_pattern);
 
-        if (bold) {
-            if (italic) {
-                token->type = Token_Type::PROCESS_BOLD_ITALICS;
-            } else {
-                token->type = Token_Type::PROCESS_BOLD;
-            }
-        } else {
-            if (italic) {
-                token->type = Token_Type::PROCESS_ITALICS;
-            } else {
-                CZ_PANIC("unreachable");
-            }
+        if (!find_this_line(iterator, {end_pattern, pattern_length})) {
+            *iterator = start;
+            goto normal_character;
         }
+        iterator->advance(pattern_length);
 
-        if (!iterator->at_eob() && (iterator->get() == '*' || iterator->get() == '_')) {
-            assign_bold_and_italic();
-        }
-
-        if (bold) {
-            if (italic) {
-                *state = INSIDE_BOLD_ITALICS;
-            } else {
-                *state = INSIDE_BOLD;
-            }
-        } else {
-            if (italic) {
-                *state = INSIDE_ITALICS;
-            } else {
-                *state = MIDDLE_OF_LINE;
-            }
-        }
+        if (pattern_length == 1)
+            token->type = Token_Type::PROCESS_ITALICS;
+        else if (pattern_length == 2)
+            token->type = Token_Type::PROCESS_BOLD;
+        else if (pattern_length == 3)
+            token->type = Token_Type::PROCESS_BOLD_ITALICS;
 
         goto ret;
     }
@@ -299,6 +237,10 @@ normal_character:
             break;
         }
         if (is_special(ch)) {
+            // Force at least one character in this token.
+            if (token->start == iterator->position)
+                iterator->advance();
+
             *state = MIDDLE_OF_LINE;
             break;
         }
