@@ -1151,6 +1151,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (name == "COMMIT_EDITMSG" || name == "MERGE_MSG") {
             buffer->mode.next_token = syntax::git_commit_edit_message_next_token;
             hash_comments_key_map(buffer->mode.key_map);
+            BIND(buffer->mode.key_map, "A-h", basic::command_reformat_paragraph);
             git_edit_key_map(buffer->mode.key_map);
             add_indent_overlays = false;
             indent_based_hierarchy_mode(buffer->mode);
