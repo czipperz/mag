@@ -647,6 +647,34 @@ bool rfind_after(Contents_Iterator* it, uint64_t start, char ch) {
     }
 }
 
+bool find_before(Contents_Iterator* it, uint64_t end, cz::Str query) {
+    if (query.len == 0)
+        return true;
+
+    while (1) {
+        if (!find_before(it, end, query[0]))
+            return false;
+
+        if (looking_at(*it, query))
+            return true;
+
+        it->advance();
+    }
+}
+
+bool rfind_after(Contents_Iterator* it, uint64_t start, cz::Str query) {
+    if (query.len == 0)
+        return true;
+
+    while (1) {
+        if (!rfind_after(it, start, query[0]))
+            return false;
+
+        if (looking_at(*it, query))
+            return true;
+    }
+}
+
 bool find_this_line(Contents_Iterator* it, char ch) {
     Contents_Iterator eol = *it;
     end_of_line(&eol);
@@ -657,6 +685,18 @@ bool rfind_this_line(Contents_Iterator* it, char ch) {
     Contents_Iterator sol = *it;
     start_of_line(&sol);
     return rfind_after(it, sol.position, ch);
+}
+
+bool find_this_line(Contents_Iterator* it, cz::Str str) {
+    Contents_Iterator eol = *it;
+    end_of_line(&eol);
+    return find_before(it, eol.position, str);
+}
+
+bool rfind_this_line(Contents_Iterator* it, cz::Str str) {
+    Contents_Iterator sol = *it;
+    start_of_line(&sol);
+    return rfind_after(it, sol.position, str);
 }
 
 }
