@@ -1113,6 +1113,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
         } else if (name.ends_with(".cfg") || name.ends_with(".json") || name.ends_with(".yaml") ||
+                   name.ends_with(".toml") || name.ends_with(".ini") || name == ".editorconfig" ||
                    name == ".ignore" || name == ".gitignore" || name == ".hgignore" ||
                    name == ".agignore" || name == "config") {
             // A bunch of miscellaneous file types that all use # for comments.
