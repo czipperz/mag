@@ -1527,7 +1527,7 @@ static void command_insert_num_callback(Editor* editor,
                                         void*) {
     size_t num;
     cz::Str string;
-    if (cz::parse(replacement, &num, ' ', cz::rest(&string)) != replacement.len) {
+    if (cz::parse(replacement, &num, ' ', cz::rest(&string)) != (int64_t)replacement.len) {
         client->show_message("Error: invalid input; must match format 'NUM STRING'.");
         return;
     }
