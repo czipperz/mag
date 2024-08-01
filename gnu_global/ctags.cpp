@@ -16,15 +16,6 @@ namespace ctags {
 // Utility functions
 ///////////////////////////////////////////////////////////////////////////////
 
-static bool eat(cz::Str str, size_t* it, char ch) {
-    if (str.len >= *it && str[*it] == ch) {
-        ++*it;
-        return true;
-    } else {
-        return false;
-    }
-}
-
 static cz::Str eat_line(cz::Str str, size_t* it) {
     size_t start = *it;
     *it += str.slice_start(*it).find_index('\n');
@@ -92,8 +83,6 @@ const char* list_symbols(cz::Str directory, cz::Allocator allocator, cz::Vector<
     while (i < contents.len) {
         // Ignore file name.
         eat_line(contents, &i);
-
-        bool first = true;
 
         while (i < contents.len) {
             cz::Str line = eat_line(contents, &i);
