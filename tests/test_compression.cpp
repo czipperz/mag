@@ -84,8 +84,8 @@ static cz::Input_File run_compression_script(const char* script, cz::Str input) 
     return compressed_file;
 }
 
-#ifdef HAS_ZLIB
-TEST_CASE("zlib / gzip") {
+template <class DecompressionStream>
+static void do_test(const char* script) {
     size_t length = GENERATE(0, 10, 1 << 12, 1 << 20);
     cz::String input = make_random_input(cz::heap_allocator(), length);
     CZ_DEFER(input.drop(cz::heap_allocator()));
@@ -104,26 +104,15 @@ TEST_CASE("zlib / gzip") {
     CZ_DEFER(result.drop(cz::heap_allocator()));
     CHECK(input == result);
 }
+
+#ifdef HAS_ZLIB
+TEST_CASE("zlib / gzip") {
+    do_test<compression::zlib::DecompressionStream>("gzip -");
+}
 #endif
 
 #ifdef HAS_ZSTD
 TEST_CASE("zstd") {
-    size_t length = GENERATE(0, 10, 1 << 12, 1 << 20);
-    cz::String input = make_random_input(cz::heap_allocator(), length);
-    CZ_DEFER(input.drop(cz::heap_allocator()));
-
-    cz::Input_File compressed_file = run_compression_script("zstd -", input);
-
-    Contents contents = {};
-    CZ_DEFER(contents.drop());
-
-    compression::zstd::DecompressionStream stream;
-    stream.init();
-    REQUIRE(compression::decompress_file(&stream, compressed_file, &contents) ==
-            Load_File_Result::SUCCESS);
-
-    cz::String result = contents.stringify(cz::heap_allocator());
-    CZ_DEFER(result.drop(cz::heap_allocator()));
-    CHECK(input == result);
+    do_test<compression::zstd::DecompressionStream>("zstd -");
 }
 #endif
