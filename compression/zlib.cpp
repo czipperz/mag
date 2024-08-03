@@ -20,11 +20,7 @@ size_t DecompressionStream::recommended_out_buffer_size() {
 }
 
 Compression_Result DecompressionStream::init() {
-    stream.zalloc = Z_NULL;
-    stream.zfree = Z_NULL;
-    stream.opaque = Z_NULL;
-    stream.next_in = 0;
-    stream.avail_in = 0;
+    memset(&stream, 0, sizeof(stream));
     // Add together the amount of memory to be used (8..15) and detection scheme (32 = automatic).
     int window_bits = 15 + 32;
     int ret = inflateInit2(&stream, window_bits);
