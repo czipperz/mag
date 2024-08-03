@@ -789,14 +789,24 @@ Load_File_Result load_file_callback(Buffer* buffer, cz::Input_File file, cz::Str
 #ifdef HAS_ZSTD
     if (path->ends_with(".zst")) {
         path->len -= 4;
-        result = compression::load_zstd_file(buffer, file);
+        compression::zstd::DecompressionStream stream;
+        if (!stream.init())
+            return Load_File_Result::FAILURE;
+        CZ_DEFER(stream.drop());
+        result = compression::decompress_file(&stream, file, &buffer->contents);
+        buffer->read_only = true;
         file = {};
     }
 #endif
 #ifdef HAS_ZLIB
     if (path->ends_with(".gz")) {
         path->len -= 4;
-        result = compression::load_zlib_file(buffer, file);
+        compression::zlib::DecompressionStream stream;
+        if (!stream.init())
+            return Load_File_Result::FAILURE;
+        CZ_DEFER(stream.drop());
+        result = compression::decompress_file(&stream, file, &buffer->contents);
+        buffer->read_only = true;
         file = {};
     }
 #endif
