@@ -9,8 +9,9 @@
 
 using namespace mag;
 
+static std::random_device dev;
+
 static cz::String make_random_input(cz::Allocator allocator, size_t length) {
-    std::random_device dev;
     std::mt19937 gen(dev());
     std::uniform_int_distribution<> dist(0, 255);
 
@@ -86,7 +87,13 @@ static cz::Input_File run_compression_script(const char* script, cz::Str input) 
 
 template <class DecompressionStream>
 static void do_test(const char* script) {
-    size_t length = GENERATE(0, 10, 1 << 12, 1 << 20);
+    size_t length = GENERATE(0, 10, 1 << 12, 1 << 20, -1, -1, -1, -1);
+    if (length == -1) {
+        std::mt19937 gen(dev());
+        std::uniform_int_distribution<> dist(0, 1 << 20);
+        length = dist(gen);
+    }
+
     cz::String input = make_random_input(cz::heap_allocator(), length);
     CZ_DEFER(input.drop(cz::heap_allocator()));
 
