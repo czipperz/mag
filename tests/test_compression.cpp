@@ -98,7 +98,7 @@ static void do_test(const char* script) {
     Contents contents = {};
     CZ_DEFER(contents.drop());
 
-    REQUIRE(compression::decompress_file<DecompressionStream>(compressed_file, &contents) ==
+    REQUIRE(compression::process_file<DecompressionStream>(compressed_file, &contents) ==
             Load_File_Result::SUCCESS);
 
     cz::String result = contents.stringify(cz::heap_allocator());

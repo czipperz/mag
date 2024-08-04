@@ -10,7 +10,56 @@ namespace mag {
 namespace compression {
 namespace zlib {
 
+////////////////////////////////////////////////////////////////////////////////
+// Forward declarations
+////////////////////////////////////////////////////////////////////////////////
+
 static Compression_Result translate(int ret);
+
+////////////////////////////////////////////////////////////////////////////////
+// CompressionStream
+////////////////////////////////////////////////////////////////////////////////
+
+size_t CompressionStream::recommended_in_buffer_size() {
+    return 4096;
+}
+size_t CompressionStream::recommended_out_buffer_size() {
+    return 4096;
+}
+
+Compression_Result CompressionStream::init() {
+    memset(&stream, 0, sizeof(stream));
+    int level = Z_DEFAULT_COMPRESSION;
+    int ret = deflateInit(&stream, level);
+    return translate(ret);
+}
+
+void CompressionStream::drop() {
+    deflateEnd(&stream);
+}
+
+Compression_Result CompressionStream::process_chunk(const void** in_cursor,
+                                                    const void* in_end,
+                                                    void** out_cursor,
+                                                    void* out_end,
+                                                    bool last_input) {
+    stream.next_in = (unsigned char*)*in_cursor;
+    stream.avail_in = (const char*)in_end - (const char*)*in_cursor;
+    stream.next_out = (unsigned char*)*out_cursor;
+    stream.avail_out = (const char*)out_end - (const char*)*out_cursor;
+
+    int flags = last_input ? Z_FINISH : Z_NO_FLUSH;
+    int ret = deflate(&stream, flags);
+
+    *in_cursor = stream.next_in;
+    *out_cursor = stream.next_out;
+
+    return translate(ret);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// DecompressionStream
+////////////////////////////////////////////////////////////////////////////////
 
 size_t DecompressionStream::recommended_in_buffer_size() {
     return 4096;
@@ -31,11 +80,11 @@ void DecompressionStream::drop() {
     inflateEnd(&stream);
 }
 
-Compression_Result DecompressionStream::decompress_chunk(const void** in_cursor,
-                                                         const void* in_end,
-                                                         void** out_cursor,
-                                                         void* out_end,
-                                                         bool last_input) {
+Compression_Result DecompressionStream::process_chunk(const void** in_cursor,
+                                                      const void* in_end,
+                                                      void** out_cursor,
+                                                      void* out_end,
+                                                      bool last_input) {
     stream.next_in = (unsigned char*)*in_cursor;
     stream.avail_in = (const char*)in_end - (const char*)*in_cursor;
     stream.next_out = (unsigned char*)*out_cursor;
@@ -49,6 +98,10 @@ Compression_Result DecompressionStream::decompress_chunk(const void** in_cursor,
 
     return translate(ret);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Utilities
+////////////////////////////////////////////////////////////////////////////////
 
 static Compression_Result translate(int ret) {
     switch (ret) {

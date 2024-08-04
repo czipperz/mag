@@ -786,12 +786,12 @@ static void cpp_comments_key_map(Key_Map& key_map) {
 template <class DecompressionStream>
 static void try_decompress(Load_File_Result* result,
                            Buffer* buffer,
-                           cz::Input_File *file,
+                           cz::Input_File* file,
                            cz::String* path,
                            cz::Str extension) {
     if (*result == Load_File_Result::SUCCESS && file->is_open() && path->ends_with(extension)) {
         path->len -= extension.len;
-        *result = compression::decompress_file<DecompressionStream>(*file, &buffer->contents);
+        *result = compression::process_file<DecompressionStream>(*file, &buffer->contents);
         buffer->read_only = true;
         *file = {};
     }

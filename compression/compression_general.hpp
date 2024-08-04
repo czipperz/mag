@@ -31,10 +31,10 @@ enum Compression_Result {
 }
 using Compression_Result_::Compression_Result;
 
-template <class DecompressionStream>
-Load_File_Result decompress_file(cz::Input_File input,
-                                 Contents* contents) {
-    DecompressionStream stream;
+/// Compress or decompress the input file and put the result into `contents`.
+template <class Stream>
+Load_File_Result process_file(cz::Input_File input, Contents* contents) {
+    Stream stream;
     if (!stream.init())
         return Load_File_Result::FAILURE;
     CZ_DEFER(stream.drop());
@@ -57,8 +57,8 @@ Load_File_Result decompress_file(cz::Input_File input,
             const char* const in_end = in.buffer;
             while (1) {
                 void* out_cursor = out.buffer;
-                Compression_Result result = stream.decompress_chunk(
-                    &in_cursor, in_end, &out_cursor, out_end, /*last_input=*/true);
+                Compression_Result result = stream.process_chunk(&in_cursor, in_end, &out_cursor,
+                                                                 out_end, /*last_input=*/true);
                 contents->append({out.buffer, size_t((char*)out_cursor - out.buffer)});
 
                 if (!(result == Compression_Result::SUCCESS ||
@@ -72,8 +72,8 @@ Load_File_Result decompress_file(cz::Input_File input,
         const char* const in_end = in.buffer + read_len;
         do {
             void* out_cursor = out.buffer;
-            Compression_Result result = stream.decompress_chunk(&in_cursor, in_end, &out_cursor,
-                                                                 out_end, /*last_input=*/false);
+            Compression_Result result = stream.process_chunk(&in_cursor, in_end, &out_cursor,
+                                                             out_end, /*last_input=*/false);
             contents->append({out.buffer, size_t((char*)out_cursor - out.buffer)});
 
             if (result == Compression_Result::SUCCESS) {
