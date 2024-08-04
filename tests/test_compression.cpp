@@ -29,10 +29,7 @@ static cz::String make_random_input(cz::Allocator allocator, size_t length) {
     return input;
 }
 
-static cz::Input_File save_to_temp_file(cz::Str str) {
-    char temp_file_buffer[L_tmpnam];
-    CZ_ASSERT(tmpnam(temp_file_buffer));
-
+static cz::Input_File save_to_temp_file(char temp_file_buffer[L_tmpnam], cz::Str str) {
     {
         cz::Output_File output;
         CZ_ASSERT(output.open(temp_file_buffer));
@@ -48,17 +45,20 @@ static cz::Input_File save_to_temp_file(cz::Str str) {
     return input;
 }
 
-static cz::Input_File run_compression_script(const char* script, cz::Str input) {
+static cz::Input_File run_compression_script(char compressed_file_buffer[L_tmpnam],
+                                             const char* script,
+                                             cz::Str input) {
     cz::Process process;
 
-    char temp_file_buffer[L_tmpnam];
-    CZ_ASSERT(tmpnam(temp_file_buffer));
+    char uncompressed_file_buffer[L_tmpnam];
+    CZ_ASSERT(tmpnam(uncompressed_file_buffer));
+    CZ_DEFER(cz::file::remove_file(uncompressed_file_buffer));
 
     {
         cz::Output_File compressed_file;
-        CZ_ASSERT(compressed_file.open(temp_file_buffer));
+        CZ_ASSERT(compressed_file.open(compressed_file_buffer));
 
-        cz::Input_File uncompressed_file = save_to_temp_file(input);
+        cz::Input_File uncompressed_file = save_to_temp_file(uncompressed_file_buffer, input);
         CZ_DEFER(uncompressed_file.close());
 
         cz::Process_Options options;
@@ -72,7 +72,7 @@ static cz::Input_File run_compression_script(const char* script, cz::Str input) 
 
     // TODO: open file in r/w mode and reset the head.
     cz::Input_File compressed_file;
-    CZ_ASSERT(compressed_file.open(temp_file_buffer));
+    CZ_ASSERT(compressed_file.open(compressed_file_buffer));
     return compressed_file;
 }
 
@@ -88,7 +88,11 @@ static void do_test(const char* script) {
     cz::String input = make_random_input(cz::heap_allocator(), length);
     CZ_DEFER(input.drop(cz::heap_allocator()));
 
-    cz::Input_File compressed_file = run_compression_script(script, input);
+    char compressed_file_buffer[L_tmpnam];
+    CZ_ASSERT(tmpnam(compressed_file_buffer));
+    CZ_DEFER(cz::file::remove_file(compressed_file_buffer));
+
+    cz::Input_File compressed_file = run_compression_script(compressed_file_buffer, script, input);
     CZ_DEFER(compressed_file.close());
 
     Contents contents = {};
