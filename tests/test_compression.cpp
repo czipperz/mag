@@ -29,15 +29,6 @@ static cz::String make_random_input(cz::Allocator allocator, size_t length) {
     return input;
 }
 
-static cz::Output_File open_temp_file() {
-    char temp_file_buffer[L_tmpnam];
-    CZ_ASSERT(tmpnam(temp_file_buffer));
-
-    cz::Output_File output;
-    CZ_ASSERT(output.open(temp_file_buffer));
-    return output;
-}
-
 static cz::Input_File save_to_temp_file(cz::Str str) {
     char temp_file_buffer[L_tmpnam];
     CZ_ASSERT(tmpnam(temp_file_buffer));
