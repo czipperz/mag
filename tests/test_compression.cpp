@@ -77,7 +77,7 @@ static cz::Input_File run_compression_script(char compressed_file_buffer[L_tmpna
 }
 
 template <class DecompressionStream>
-static void do_test(const char* script) {
+static void test_decompression(const char* script) {
     size_t length = GENERATE(0, 10, 1 << 12, 1 << 20, -1, -1, -1, -1);
     if (length == -1) {
         std::mt19937 gen(dev());
@@ -107,13 +107,13 @@ static void do_test(const char* script) {
 }
 
 #ifdef HAS_ZLIB
-TEST_CASE("zlib / gzip") {
-    do_test<compression::zlib::DecompressionStream>("gzip -");
+TEST_CASE("zlib / gzip decompression") {
+    test_decompression<compression::zlib::DecompressionStream>("gzip -");
 }
 #endif
 
 #ifdef HAS_ZSTD
-TEST_CASE("zstd") {
-    do_test<compression::zstd::DecompressionStream>("zstd -");
+TEST_CASE("zstd decompression") {
+    test_decompression<compression::zstd::DecompressionStream>("zstd -");
 }
 #endif
