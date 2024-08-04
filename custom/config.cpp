@@ -783,32 +783,28 @@ static void cpp_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c h 2", cpp::command_insert_header_120);
 }
 
+template <class DecompressionStream>
+static void try_decompress(Load_File_Result* result,
+                           Buffer* buffer,
+                           cz::Input_File *file,
+                           cz::String* path,
+                           cz::Str extension) {
+    if (*result == Load_File_Result::SUCCESS && file->is_open() && path->ends_with(extension)) {
+        path->len -= extension.len;
+        *result = compression::decompress_file<DecompressionStream>(*file, &buffer->contents);
+        buffer->read_only = true;
+        *file = {};
+    }
+}
+
 Load_File_Result load_file_callback(Buffer* buffer, cz::Input_File file, cz::String* path) {
     // Decompress input.
     Load_File_Result result = Load_File_Result::SUCCESS;
 #ifdef HAS_ZSTD
-    if (path->ends_with(".zst")) {
-        path->len -= 4;
-        compression::zstd::DecompressionStream stream;
-        if (!stream.init())
-            return Load_File_Result::FAILURE;
-        CZ_DEFER(stream.drop());
-        result = compression::decompress_file(&stream, file, &buffer->contents);
-        buffer->read_only = true;
-        file = {};
-    }
+    try_decompress<compression::zstd::DecompressionStream>(&result, buffer, &file, path, ".zst");
 #endif
 #ifdef HAS_ZLIB
-    if (path->ends_with(".gz")) {
-        path->len -= 4;
-        compression::zlib::DecompressionStream stream;
-        if (!stream.init())
-            return Load_File_Result::FAILURE;
-        CZ_DEFER(stream.drop());
-        result = compression::decompress_file(&stream, file, &buffer->contents);
-        buffer->read_only = true;
-        file = {};
-    }
+    try_decompress<compression::zlib::DecompressionStream>(&result, buffer, &file, path, ".gz");
 #endif
     if (result != Load_File_Result::SUCCESS)
         return result;

@@ -32,16 +32,20 @@ enum Compression_Result {
 using Compression_Result_::Compression_Result;
 
 template <class DecompressionStream>
-Load_File_Result decompress_file(DecompressionStream* stream,
-                                 cz::Input_File input,
+Load_File_Result decompress_file(cz::Input_File input,
                                  Contents* contents) {
+    DecompressionStream stream;
+    if (!stream.init())
+        return Load_File_Result::FAILURE;
+    CZ_DEFER(stream.drop());
+
     cz::String in = {};
     CZ_DEFER(in.drop(cz::heap_allocator()));
-    in.reserve_exact(cz::heap_allocator(), stream->recommended_in_buffer_size());
+    in.reserve_exact(cz::heap_allocator(), stream.recommended_in_buffer_size());
 
     cz::String out = {};
     CZ_DEFER(out.drop(cz::heap_allocator()));
-    out.reserve_exact(cz::heap_allocator(), stream->recommended_out_buffer_size());
+    out.reserve_exact(cz::heap_allocator(), stream.recommended_out_buffer_size());
     char* out_end = out.buffer + out.cap;
 
     while (1) {
@@ -53,7 +57,7 @@ Load_File_Result decompress_file(DecompressionStream* stream,
             const char* const in_end = in.buffer;
             while (1) {
                 void* out_cursor = out.buffer;
-                Compression_Result result = stream->decompress_chunk(
+                Compression_Result result = stream.decompress_chunk(
                     &in_cursor, in_end, &out_cursor, out_end, /*last_input=*/true);
                 contents->append({out.buffer, size_t((char*)out_cursor - out.buffer)});
 
@@ -68,7 +72,7 @@ Load_File_Result decompress_file(DecompressionStream* stream,
         const char* const in_end = in.buffer + read_len;
         do {
             void* out_cursor = out.buffer;
-            Compression_Result result = stream->decompress_chunk(&in_cursor, in_end, &out_cursor,
+            Compression_Result result = stream.decompress_chunk(&in_cursor, in_end, &out_cursor,
                                                                  out_end, /*last_input=*/false);
             contents->append({out.buffer, size_t((char*)out_cursor - out.buffer)});
 
