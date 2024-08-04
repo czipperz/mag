@@ -97,12 +97,12 @@ static void do_test(const char* script) {
     cz::String input = make_random_input(cz::heap_allocator(), length);
     CZ_DEFER(input.drop(cz::heap_allocator()));
 
-    cz::Input_File compressed_file = run_compression_script("gzip -", input);
+    cz::Input_File compressed_file = run_compression_script(script, input);
 
     Contents contents = {};
     CZ_DEFER(contents.drop());
 
-    REQUIRE(compression::decompress_file<compression::zlib::DecompressionStream>(compressed_file, &contents) ==
+    REQUIRE(compression::decompress_file<DecompressionStream>(compressed_file, &contents) ==
             Load_File_Result::SUCCESS);
 
     cz::String result = contents.stringify(cz::heap_allocator());
