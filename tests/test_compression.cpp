@@ -98,6 +98,7 @@ static void do_test(const char* script) {
     CZ_DEFER(input.drop(cz::heap_allocator()));
 
     cz::Input_File compressed_file = run_compression_script(script, input);
+    CZ_DEFER(compressed_file.close());
 
     Contents contents = {};
     CZ_DEFER(contents.drop());
