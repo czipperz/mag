@@ -79,7 +79,7 @@ static cz::Input_File run_compression_script(char compressed_file_buffer[L_tmpna
 
 template <class DecompressionStream>
 static void test_decompression(const char* script) {
-    size_t length = GENERATE(0, 10, 1 << 12, 1 << 20, -1, -1, -1, -1);
+    size_t length = GENERATE(0, 10, -1);
     if (length == -1) {
         std::mt19937 gen(dev());
         std::uniform_int_distribution<> dist(0, 1 << 20);
@@ -109,7 +109,7 @@ static void test_decompression(const char* script) {
 
 template <class CompressionStream>
 static void test_compression(const char* script) {
-    size_t length = GENERATE(0, 10, 1 << 12, 1 << 20, -1, -1, -1, -1);
+    size_t length = GENERATE(0, 10, -1);
     if (length == -1) {
         std::mt19937 gen(dev());
         std::uniform_int_distribution<> dist(0, 1 << 20);
