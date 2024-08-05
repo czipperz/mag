@@ -57,6 +57,7 @@ static cz::Input_File run_compression_script(char compressed_file_buffer[L_tmpna
     {
         cz::Output_File compressed_file;
         CZ_ASSERT(compressed_file.open(compressed_file_buffer));
+        CZ_DEFER(compressed_file.close());
 
         cz::Input_File uncompressed_file = save_to_temp_file(uncompressed_file_buffer, input);
         CZ_DEFER(uncompressed_file.close());
@@ -118,7 +119,7 @@ static void test_compression(const char* script) {
     cz::String input = make_random_input(cz::heap_allocator(), length);
     CZ_DEFER(input.drop(cz::heap_allocator()));
 
-    Contents contents;
+    Contents contents = {};
     {
         char uncompressed_file_buffer_in[L_tmpnam];
         CZ_ASSERT(tmpnam(uncompressed_file_buffer_in));
