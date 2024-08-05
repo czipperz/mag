@@ -43,12 +43,13 @@ Compression_Result CompressionStream::process_chunk(const void** in_cursor,
     in.size = (const char*)in_end - (const char*)*in_cursor;
     in.pos = 0;
 
-    size_t result = ZSTD_compressStream((ZSTD_CStream*)stream, &out, &in);
+    ZSTD_EndDirective end_op = (last_input ? ZSTD_e_end : ZSTD_e_continue);
+    size_t result = ZSTD_compressStream2((ZSTD_CStream*)stream, &out, &in, end_op);
 
     *(const char**)in_cursor += in.pos;
     *(char**)out_cursor += out.pos;
 
-    if (result == 0)
+    if (last_input && result == 0)
         return Compression_Result::DONE;
     else if (ZSTD_isError(result))
         return Compression_Result::ERROR_OTHER;
