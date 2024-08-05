@@ -106,14 +106,63 @@ static void test_decompression(const char* script) {
     CHECK(input == result);
 }
 
+template <class CompressionStream>
+static void test_compression(const char* script) {
+    size_t length = GENERATE(0, 10, 1 << 12, 1 << 20, -1, -1, -1, -1);
+    if (length == -1) {
+        std::mt19937 gen(dev());
+        std::uniform_int_distribution<> dist(0, 1 << 20);
+        length = dist(gen);
+    }
+
+    cz::String input = make_random_input(cz::heap_allocator(), length);
+    CZ_DEFER(input.drop(cz::heap_allocator()));
+
+    Contents contents;
+    {
+        char uncompressed_file_buffer_in[L_tmpnam];
+        CZ_ASSERT(tmpnam(uncompressed_file_buffer_in));
+        CZ_DEFER(cz::file::remove_file(uncompressed_file_buffer_in));
+
+        CZ_ASSERT(cz::write_file(uncompressed_file_buffer_in, input));
+
+        cz::Input_File uncompressed_file;
+        CZ_ASSERT(uncompressed_file.open(uncompressed_file_buffer_in));
+        CZ_DEFER(uncompressed_file.close());
+        REQUIRE(compression::process_file<CompressionStream>(uncompressed_file, &contents) ==
+                Load_File_Result::SUCCESS);
+    }
+
+    char uncompressed_file_buffer_out[L_tmpnam];
+    CZ_ASSERT(tmpnam(uncompressed_file_buffer_out));
+    CZ_DEFER(cz::file::remove_file(uncompressed_file_buffer_out));
+
+    cz::String output = contents.stringify(cz::heap_allocator());
+    CZ_DEFER(output.drop(cz::heap_allocator()));
+
+    cz::Input_File file = run_compression_script(uncompressed_file_buffer_out, script, output);
+    CZ_DEFER(file.close());
+
+    cz::String result = {};
+    CZ_DEFER(result.drop(cz::heap_allocator()));
+    CZ_ASSERT(cz::read_to_string(file, cz::heap_allocator(), &result));
+    CHECK(input == result);
+}
+
 #ifdef HAS_ZLIB
 TEST_CASE("zlib / gzip decompression") {
     test_decompression<compression::zlib::DecompressionStream>("gzip -");
+}
+TEST_CASE("zlib / gzip compression") {
+    test_compression<compression::zlib::CompressionStream>("gunzip -");
 }
 #endif
 
 #ifdef HAS_ZSTD
 TEST_CASE("zstd decompression") {
     test_decompression<compression::zstd::DecompressionStream>("zstd -");
+}
+TEST_CASE("zstd compression") {
+    test_compression<compression::zstd::CompressionStream>("unzstd -");
 }
 #endif
