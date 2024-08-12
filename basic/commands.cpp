@@ -1456,17 +1456,27 @@ static void command_run_command_ignore_result_callback(Editor* editor,
 
 REGISTER_COMMAND(command_run_command_for_result);
 void command_run_command_for_result(Editor* editor, Command_Source source) {
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
+    get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
+
     Dialog dialog = {};
     dialog.prompt = "Shell buffer: ";
     dialog.response_callback = command_run_command_for_result_callback;
+    dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
 }
 
 REGISTER_COMMAND(command_run_command_ignore_result);
 void command_run_command_ignore_result(Editor* editor, Command_Source source) {
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
+    get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
+
     Dialog dialog = {};
     dialog.prompt = "Shell silent: ";
     dialog.response_callback = command_run_command_ignore_result_callback;
+    dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
 }
 
