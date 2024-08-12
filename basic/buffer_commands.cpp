@@ -287,6 +287,26 @@ static bool remove_windows_for_buffer(Client* client,
     return everything;
 }
 
+static bool run_kill(Editor* editor, Client* client, cz::Arc<Buffer_Handle> buffer_handle) {
+    // Prevent killing special buffers (*scratch*, *splash
+    // page*, *client messages*, and *client mini buffer*).
+    {
+        WITH_CONST_BUFFER_HANDLE(buffer_handle);
+        if (buffer->id.value < 4) {
+            return false;
+        }
+    }
+
+    // @KillBuffer
+    editor->kill(buffer_handle.get());
+
+    if (remove_windows_for_buffer(client, buffer_handle, editor->buffers[0])) {
+        (void)pop_jump(editor, client);
+    }
+
+    return true;
+}
+
 static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str path, void*) {
     cz::Arc<Buffer_Handle> buffer_handle;
     if (path.len == 0) {
@@ -298,21 +318,7 @@ static void command_kill_buffer_callback(Editor* editor, Client* client, cz::Str
         }
     }
 
-    // Prevent killing special buffers (*scratch*, *splash
-    // page*, *client messages*, and *client mini buffer*).
-    {
-        WITH_CONST_BUFFER_HANDLE(buffer_handle);
-        if (buffer->id.value < 4) {
-            return;
-        }
-    }
-
-    // @KillBuffer
-    editor->kill(buffer_handle.get());
-
-    if (remove_windows_for_buffer(client, buffer_handle, editor->buffers[0])) {
-        (void)pop_jump(editor, client);
-    }
+    run_kill(editor, client, buffer_handle);
 }
 
 REGISTER_COMMAND(command_kill_buffer);
@@ -322,6 +328,53 @@ void command_kill_buffer(Editor* editor, Command_Source source) {
     dialog.completion_engine = buffer_completion_engine;
     dialog.response_callback = command_kill_buffer_callback;
     dialog.next_token = syntax::buffer_name_next_token;
+    source.client->show_dialog(dialog);
+}
+
+static void command_kill_buffers_in_folder_callback(Editor* editor,
+                                                    Client* client,
+                                                    cz::Str path_raw,
+                                                    void*) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+
+    if (path.len == 0) {
+        WITH_CONST_SELECTED_NORMAL_BUFFER(client);
+        if (buffer->directory.len == 0) {
+            client->show_message("Must specify directory to kill");
+            return;
+        }
+        path = buffer->directory.clone(cz::heap_allocator());
+    } else if (!path.ends_with('/')) {
+        path.reserve(cz::heap_allocator(), path_raw.len);
+        path.append(path_raw);
+        path.push('/');
+    } else {
+        path = path_raw.clone(cz::heap_allocator());
+    }
+
+    for (size_t i = 0; i < editor->buffers.len;) {
+        cz::Arc<Buffer_Handle> buffer_handle = editor->buffers[i];
+        {
+            WITH_CONST_BUFFER_HANDLE(buffer_handle);
+            if (!buffer->directory.starts_with(path)) {
+                ++i;
+                continue;
+            }
+        }
+
+        if (!run_kill(editor, client, buffer_handle))
+            ++i;
+    }
+}
+
+REGISTER_COMMAND(command_kill_buffers_in_folder);
+void command_kill_buffers_in_folder(Editor* editor, Command_Source source) {
+    Dialog dialog = {};
+    dialog.prompt = "Folder to recursively kill: ";
+    dialog.completion_engine = file_completion_engine;
+    dialog.response_callback = command_kill_buffers_in_folder_callback;
+    dialog.next_token = syntax::path_next_token;
     source.client->show_dialog(dialog);
 }
 

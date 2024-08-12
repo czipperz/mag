@@ -15,6 +15,7 @@ void command_save_file(Editor* editor, Command_Source source);
 
 void command_switch_buffer(Editor* editor, Command_Source source);
 void command_kill_buffer(Editor* editor, Command_Source source);
+void command_kill_buffers_in_folder(Editor* editor, Command_Source source);
 void command_delete_file_and_kill_buffer(Editor* editor, Command_Source source);
 
 void command_rename_buffer(Editor* editor, Command_Source source);
