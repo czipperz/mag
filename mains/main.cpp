@@ -214,8 +214,12 @@ int mag_main(int argc, char** argv) {
         Client::Type chosen_client = Client::SDL;
         bool try_remote = false;
         bool allow_fork = true;
+        bool force_file = false;
         for (int i = 1; i < argc; ++i) {
             cz::Str arg = argv[i];
+            if (force_file)
+                goto handle_as_file;
+
             if (arg == "--help") {
                 return usage();
             } else if (arg.starts_with("--client=")) {
@@ -241,7 +245,10 @@ int mag_main(int argc, char** argv) {
                 try_remote = true;
             } else if (arg == "--no-fork") {
                 allow_fork = false;
+            } else if (arg == "--") {
+                force_file = true;
             } else {
+            handle_as_file:
                 files.reserve(cz::heap_allocator(), 1);
                 files.push(arg);
             }
