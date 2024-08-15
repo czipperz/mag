@@ -27,6 +27,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 #endif
 
@@ -257,6 +259,17 @@ int mag_main(int argc, char** argv) {
                 files.push(arg);
             }
         }
+
+#ifndef _WIN32
+        // If no arguments and stdin is interesting then open it.
+        if (files.len == 0) {
+            struct stat statbuf;
+            if (fstat(0, &statbuf) == 0 && !S_ISCHR(statbuf.st_mode)) {
+                files.reserve(cz::heap_allocator(), 1);
+                files.push("/dev/fd/0");
+            }
+        }
+#endif
 
         if (try_remote || chosen_client == Client::REMOTE) {
             if (files.len > 0) {
