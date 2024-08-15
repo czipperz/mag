@@ -368,10 +368,16 @@ static void command_kill_buffers_in_folder_callback(Editor* editor,
 
 REGISTER_COMMAND(command_kill_buffers_in_folder);
 void command_kill_buffers_in_folder(Editor* editor, Command_Source source) {
+    cz::String selected_window_directory = {};
+    CZ_DEFER(selected_window_directory.drop(cz::heap_allocator()));
+    get_selected_window_directory(editor, source.client, cz::heap_allocator(),
+                                  &selected_window_directory);
+
     Dialog dialog = {};
     dialog.prompt = "Folder to recursively kill: ";
     dialog.completion_engine = file_completion_engine;
     dialog.response_callback = command_kill_buffers_in_folder_callback;
+    dialog.mini_buffer_contents = selected_window_directory;
     dialog.next_token = syntax::path_next_token;
     source.client->show_dialog(dialog);
 }
