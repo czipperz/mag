@@ -338,19 +338,17 @@ static void command_kill_buffers_in_folder_callback(Editor* editor,
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
-    if (path.len == 0) {
+    if (path_raw.len == 0) {
         WITH_CONST_SELECTED_NORMAL_BUFFER(client);
         if (buffer->directory.len == 0) {
             client->show_message("Must specify directory to kill");
             return;
         }
         path = buffer->directory.clone(cz::heap_allocator());
-    } else if (!path.ends_with('/')) {
-        path.reserve(cz::heap_allocator(), path_raw.len);
-        path.append(path_raw);
-        path.push('/');
     } else {
-        path = path_raw.clone(cz::heap_allocator());
+        path = standardize_path(cz::heap_allocator(), path_raw);
+        if (!path.ends_with('/'))
+            path.push('/');
     }
 
     for (size_t i = 0; i < editor->buffers.len;) {
