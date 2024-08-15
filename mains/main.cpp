@@ -217,6 +217,10 @@ int mag_main(int argc, char** argv) {
         bool force_file = false;
         for (int i = 1; i < argc; ++i) {
             cz::Str arg = argv[i];
+#ifndef _WIN32
+            if (arg == "-")
+                arg = "/dev/fd/0";
+#endif
             if (force_file)
                 goto handle_as_file;
 
