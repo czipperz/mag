@@ -318,7 +318,18 @@ static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::String* path) {
     }
     CZ_DEFER(file.close());
 
-    return custom::load_file_callback(buffer, file, path);
+    // Inflate compressed files.
+    for (size_t i = 0; i < custom::compression_extensions_len; ++i) {
+        const auto& ext = custom::compression_extensions[i];
+        if (path->ends_with(ext.extension)) {
+            Load_File_Result result = ext.decompress_file(file, &buffer->contents);
+            strip_carriage_returns(&buffer->contents);
+            buffer->read_only = true;
+            return result;
+        }
+    }
+
+    return load_text_file(buffer, file);
 }
 
 static void start_syntax_highlighting(Editor* editor, cz::Arc<Buffer_Handle> handle) {
@@ -722,8 +733,11 @@ bool open_file_arg(Editor* editor, Client* client, cz::Str user_arg) {
 }
 
 bool save_buffer(Buffer* buffer) {
-    if (buffer->name.ends_with(".zst") || buffer->name.ends_with(".gz")) {
-        return false;
+    // Disable saving compressed files because they we don't currently support deflation.
+    for (size_t i = 0; i < custom::compression_extensions_len; ++i) {
+        const auto& ext = custom::compression_extensions[i];
+        if (buffer->name.ends_with(ext.extension))
+            return false;
     }
 
     cz::String path = {};

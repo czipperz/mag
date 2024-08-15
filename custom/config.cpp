@@ -129,6 +129,17 @@ bool default_use_carriage_returns = false;
 bool default_use_carriage_returns = false;
 #endif
 
+CompressionExtensions compression_extensions[] = {
+#ifdef HAS_ZSTD
+    {".zst", compression::process_file<compression::zstd::DecompressionStream>},
+#endif
+#ifdef HAS_ZLIB
+    {".gz", compression::process_file<compression::zlib::DecompressionStream>},
+#endif
+};
+size_t compression_extensions_len =
+    sizeof(compression_extensions) / sizeof(*compression_extensions);
+
 using namespace basic;
 
 #define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, COMMAND(FUNC)))
@@ -781,40 +792,6 @@ static void cpp_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c h 0", cpp::command_insert_header_100);
     BIND(key_map, "A-c h 1", cpp::command_insert_header_110);
     BIND(key_map, "A-c h 2", cpp::command_insert_header_120);
-}
-
-template <class DecompressionStream>
-static void try_decompress(Load_File_Result* result,
-                           Buffer* buffer,
-                           cz::Input_File* file,
-                           cz::String* path,
-                           cz::Str extension) {
-    if (*result == Load_File_Result::SUCCESS && file->is_open() && path->ends_with(extension)) {
-        path->len -= extension.len;
-        *result = compression::process_file<DecompressionStream>(*file, &buffer->contents);
-        buffer->read_only = true;
-        *file = {};
-    }
-}
-
-Load_File_Result load_file_callback(Buffer* buffer, cz::Input_File file, cz::String* path) {
-    // Decompress input.
-    Load_File_Result result = Load_File_Result::SUCCESS;
-#ifdef HAS_ZSTD
-    try_decompress<compression::zstd::DecompressionStream>(&result, buffer, &file, path, ".zst");
-#endif
-#ifdef HAS_ZLIB
-    try_decompress<compression::zlib::DecompressionStream>(&result, buffer, &file, path, ".gz");
-#endif
-    if (result != Load_File_Result::SUCCESS)
-        return result;
-
-    if (file.is_open()) {
-        return load_text_file(buffer, file);
-    } else {
-        strip_carriage_returns(&buffer->contents);
-        return Load_File_Result::SUCCESS;
-    }
 }
 
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
