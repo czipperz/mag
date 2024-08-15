@@ -31,8 +31,6 @@ void command_make_indirect(Editor* editor, Command_Source source);
 
 void command_extract_variable(Editor* editor, Command_Source source);
 
-void command_insert_source_template_from_header(Editor* editor, Command_Source source);
-
 void command_insert_divider_60(Editor* editor, Command_Source source);
 void command_insert_divider_70(Editor* editor, Command_Source source);
 void command_insert_divider_80(Editor* editor, Command_Source source);
