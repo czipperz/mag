@@ -137,7 +137,7 @@ cz::String Test_Runner::stringify() {
     return stringify(window, buffer);
 }
 
-cz::String Test_Runner::stringify(const Window_Unified *window, const Buffer *buffer) {
+cz::String Test_Runner::stringify(const Window_Unified* window, const Buffer* buffer) {
     cz::String output = {};
 
     struct Separator {
