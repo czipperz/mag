@@ -20,6 +20,9 @@ Test_Runner::Test_Runner() {
     server.setup_async_context(&client);
 
     set_tokenizer(syntax::general_next_token);
+
+    client.window->total_rows = 128;
+    client.window->total_cols = 128;
 }
 
 void Test_Runner::set_tokenizer(Tokenizer tokenizer) {
