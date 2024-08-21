@@ -501,7 +501,8 @@ static int16_t assign_color_codes(int16_t* colors) {
 void run(Server* server, Client* client) {
     ZoneScoped;
 
-    initscr();
+    newterm(nullptr, fopen("/dev/tty", "wb"), fopen("/dev/tty", "rb"));
+    def_prog_mode();
     raw();
     noecho();
     keypad(stdscr, TRUE);
