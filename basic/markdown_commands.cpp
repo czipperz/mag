@@ -29,10 +29,8 @@ void command_reformat_paragraph_or_hash_comment(Editor* editor, Command_Source s
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
     start_of_line_text(&iterator);
     if (looking_at(iterator, '#')) {
-        source.client->show_message("at hash");
         basic::reformat_at(source.client, buffer, iterator, "# ", "# ");
     } else {
-        source.client->show_message("not at hash");
         reformat_at(source.client, buffer, iterator);
     }
 }
