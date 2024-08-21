@@ -57,6 +57,10 @@ struct Test_Runner {
     /// Tokenize the buffer and print code to assert all tokens are correct.
     void tokenize_print_tests(Tokenizer tokenizer = nullptr);
 
+    void open_temp_file(cz::Str temp_name, cz::Option<cz::Str> dir);
+    void validate_client_layout() const;
+    cz::String stringify_client_layout();
+
     cz::Allocator allocator() { return buffer_array.allocator(); }
 };
 

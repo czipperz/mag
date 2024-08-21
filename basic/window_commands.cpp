@@ -209,20 +209,35 @@ static void shift_window(Client* client, bool want_first, Window::Tag want_tag) 
             return;
         }
 
-        // Rotate the selected window up.  Then loop to get it in the right orientation.
+        // Rotation pulls selected out.  The next loop will fix for want_first.
+        //    a                                  | a
+        // ----------------     ->    (selected) |---
+        //  b | (selected)                       | b
         //
-        //  a | x         a | c         a |
-        // -------  -->  -------  -->  ---| x
-        //    c      |      x      |    c |
-        //           |             |
-        //        rotate         loop
-        Window** selected_slot = want_first ? &selected->parent->first : &selected->parent->second;
-        if (split->parent->first == split) {
-            cz::swap(split->parent->second, *selected_slot);
-            cz::swap(split->parent->second->parent, (*selected_slot)->parent);
-        } else {
-            cz::swap(split->parent->first, *selected_slot);
-            cz::swap(split->parent->first->parent, (*selected_slot)->parent);
+        // Horizontal:                Vertical:
+        //     a                          Horizontal:
+        //     Vertical:                      a
+        //         b                          b
+        //         selected               selected
+        if (split->parent) {
+            Window_Split* dbl = split->parent;
+            cz::swap(dbl->tag, split->tag);
+            Window* a = (dbl->first == split ? dbl->second : dbl->first);
+            Window* b = (split->first == selected ? split->second : split->first);
+
+            if (dbl->first == split) {
+                dbl->second = selected;
+                split->first = b;
+                split->second = a;
+            } else {
+                dbl->first = selected;
+                split->first = a;
+                split->second = b;
+            }
+
+            selected->parent = dbl;
+            a->parent = split;
+            b->parent = split;
         }
 
         split = split->parent;

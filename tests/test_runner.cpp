@@ -258,6 +258,54 @@ void Test_Runner::tokenize_print_tests(Tokenizer tokenizer) {
     }
 }
 
+void Test_Runner::open_temp_file(cz::Str temp_name, cz::Option<cz::Str> dir) {
+    cz::Arc<Buffer_Handle> handle = server.editor.create_temp_buffer(temp_name, dir);
+    client.set_selected_buffer(handle);
+}
+
+static void validate_window(Window* window) {
+    if (window->tag != Window::UNIFIED) {
+        Window_Split* split = (Window_Split*)window;
+        CZ_ASSERT(split->first);
+        CZ_ASSERT(split->second);
+        CZ_ASSERT(split->first->parent == split);
+        CZ_ASSERT(split->second->parent == split);
+        validate_window(split->first);
+        validate_window(split->second);
+    }
+}
+
+void Test_Runner::validate_client_layout() const {
+    CZ_ASSERT(client.window);
+    validate_window(client.window);
+}
+
+static void stringify_window_layout(cz::Allocator allocator,
+                                    cz::String* string,
+                                    Window* window,
+                                    uint32_t depth) {
+    cz::append(allocator, string, cz::many(' ', depth * 2));
+    if (window->tag == Window::UNIFIED) {
+        Window_Unified* unified = (Window_Unified*)window;
+        WITH_CONST_BUFFER_HANDLE(unified->buffer_handle);
+        buffer->render_name(allocator, string);
+        cz::append(allocator, string, '\n');
+    } else {
+        Window_Split* split = (Window_Split*)window;
+        cz::append(allocator, string,
+                   (window->tag == Window::VERTICAL_SPLIT ? "Vertical:\n" : "Horizontal:\n"));
+        stringify_window_layout(allocator, string, split->first, depth + 1);
+        stringify_window_layout(allocator, string, split->second, depth + 1);
+    }
+}
+
+cz::String Test_Runner::stringify_client_layout() {
+    validate_client_layout();
+    cz::String string = {};
+    stringify_window_layout(allocator(), &string, client.window, 0);
+    return string;
+}
+
 }
 
 namespace cz {
