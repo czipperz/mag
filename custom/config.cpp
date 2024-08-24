@@ -94,6 +94,7 @@
 #include "syntax/tokenize_search.hpp"
 #include "syntax/tokenize_shell_script.hpp"
 #include "syntax/tokenize_splash.hpp"
+#include "syntax/tokenize_vim_script.hpp"
 #include "syntax/tokenize_zig.hpp"
 #include "version_control/blame.hpp"
 #include "version_control/log.hpp"
@@ -1139,6 +1140,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             git_edit_key_map(buffer->mode.key_map);
             add_indent_overlays = false;
             indent_based_hierarchy_mode(buffer->mode);
+        } else if (name == ".vimrc" || name.ends_with(".vim")) {
+            buffer->mode.next_token = syntax::vim_script_next_token;
         } else if (name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
             indent_based_hierarchy_mode(buffer->mode);
