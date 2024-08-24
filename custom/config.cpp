@@ -496,7 +496,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "C-c", command_complete_at_point_nearest_matching_before_after);
     BIND(key_map, "C-A-c", command_complete_at_point_prompt_identifiers);
-    BIND(key_map, "C-,", command_copy_rest_of_line_from_nearest_matching_identifier);
+    BIND(key_map, "A-,", command_copy_rest_of_line_from_nearest_matching_identifier);
 
     BIND(key_map, "C-l", command_goto_center_of_window);
     BIND(key_map, "A-l", command_center_in_window);
