@@ -37,6 +37,8 @@ void command_run_macro(Editor* editor, Command_Source source) {
 
 REGISTER_COMMAND(command_run_macro_forall_lines_in_search);
 void command_run_macro_forall_lines_in_search(Editor* editor, Command_Source source) {
+    bool recurse = true;
+
     // If cursor in other window is at eob then stop.
     {
         Window_Unified* window = source.client->selected_normal_window;
@@ -53,6 +55,11 @@ void command_run_macro_forall_lines_in_search(Editor* editor, Command_Source sou
         uint64_t point = other2->cursors[0].point;
         if (point == buffer->contents.len)
             return;  // done
+
+        // In multi-cursor mode, the cursor doesn't ever point to the end
+        // of the buffer.  So instead we detect if we're on the last
+        // cursor.  If so then run the command one more time and then stop.
+        recurse = (other2->cursors.len == 1 || other2->selected_cursor + 1 < other2->cursors.len);
     }
 
     // Push the macro.
@@ -60,10 +67,12 @@ void command_run_macro_forall_lines_in_search(Editor* editor, Command_Source sou
     source.client->key_chain.insert_slice(source.client->key_chain_offset,
                                           source.client->macro_key_chain);
 
-    // Reschedule this command.
-    source.client->key_chain.reserve(cz::heap_allocator(), source.keys.len);
-    source.client->key_chain.insert_slice(
-        source.client->key_chain_offset + source.client->macro_key_chain.len, source.keys);
+    if (recurse) {
+        // Reschedule this command.
+        source.client->key_chain.reserve(cz::heap_allocator(), source.keys.len);
+        source.client->key_chain.insert_slice(
+            source.client->key_chain_offset + source.client->macro_key_chain.len, source.keys);
+    }
 }
 
 }
