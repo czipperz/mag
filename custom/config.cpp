@@ -19,6 +19,7 @@
 #include "basic/directory_commands.hpp"
 #include "basic/hash_commands.hpp"
 #include "basic/help_commands.hpp"
+#include "basic/highlight_commands.hpp"
 #include "basic/html_commands.hpp"
 #include "basic/ide_commands.hpp"
 #include "basic/indent_commands.hpp"
@@ -676,6 +677,9 @@ void editor_created_callback(Editor* editor) {
     create_key_map(editor->key_map);
     create_theme(editor->theme);
     sort_global_commands();
+
+    register_global_command(COMMAND(command_add_highlight_to_buffer));
+    register_global_command(COMMAND(command_remove_highlight_from_buffer));
 
     start_server(editor);
 }
