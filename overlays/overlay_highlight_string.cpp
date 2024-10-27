@@ -129,18 +129,18 @@ static void overlay_highlight_string_cleanup(void* _data) {
     cz::heap_allocator().dealloc(data);
 }
 
+static const Overlay::VTable vtable = {
+    overlay_highlight_string_start_frame,
+    overlay_highlight_string_get_face_and_advance,
+    overlay_highlight_string_get_face_newline_padding,
+    overlay_highlight_string_end_frame,
+    overlay_highlight_string_cleanup,
+};
+
 Overlay overlay_highlight_string(Face face,
                                  cz::Str str,
                                  Case_Handling case_handling,
                                  Token_Type token_type) {
-    static const Overlay::VTable vtable = {
-        overlay_highlight_string_start_frame,
-        overlay_highlight_string_get_face_and_advance,
-        overlay_highlight_string_get_face_newline_padding,
-        overlay_highlight_string_end_frame,
-        overlay_highlight_string_cleanup,
-    };
-
     Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
     data->face = face;
@@ -148,6 +148,15 @@ Overlay overlay_highlight_string(Face face,
     data->case_handling = case_handling;
     data->token_type = token_type;
     return {&vtable, data};
+}
+
+bool is_overlay_highlight_string(const Overlay& overlay, cz::Str str) {
+    if (overlay.vtable != &vtable) {
+        return false;
+    }
+
+    Data* data = (Data*)overlay.data;
+    return data->string == str;
 }
 
 }

@@ -22,5 +22,7 @@ Overlay overlay_highlight_string(Face face,
                                  Case_Handling case_handling = Case_Handling::CASE_SENSITIVE,
                                  Token_Type token_type = Token_Type::length);
 
+bool is_overlay_highlight_string(const Overlay& overlay, cz::Str str);
+
 }
 }

@@ -117,6 +117,10 @@ size_t alternate_extensions_len = sizeof(alternate_extensions_1) / sizeof(*alter
 
 }
 
+namespace basic {
+Face highlight_face = {0, 226, 0};
+}
+
 namespace custom {
 
 /// Specify if new file buffers should use carriage returns when they
