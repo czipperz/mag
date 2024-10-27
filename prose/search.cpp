@@ -220,7 +220,7 @@ void command_search_in_file_prompt(Editor* editor, Command_Source source) {
     get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
 
     Dialog dialog = {};
-    dialog.prompt = "Search in current directory: ";
+    dialog.prompt = "Search in current file: ";
     dialog.response_callback = command_search_in_file_callback<false>;
     dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
@@ -233,7 +233,7 @@ void command_search_in_file_word_prompt(Editor* editor, Command_Source source) {
     get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
 
     Dialog dialog = {};
-    dialog.prompt = "Search in current directory word: ";
+    dialog.prompt = "Search in current file word: ";
     dialog.response_callback = command_search_in_file_callback<true>;
     dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
