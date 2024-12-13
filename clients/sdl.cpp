@@ -601,7 +601,7 @@ static void process_event(Server* server,
 
     case SDL_KEYDOWN: {
         is_alt_key = *previous_alt_key;
-        alt_is_down = ((event.key.keysym.mod & KMOD_ALT) && !(event.key.keysym.mod & !KMOD_ALT));
+        alt_is_down = ((event.key.keysym.mod & KMOD_ALT) && !(event.key.keysym.mod & ~KMOD_ALT));
 
         Key key = {};
         switch (event.key.keysym.sym) {
