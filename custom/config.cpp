@@ -5,6 +5,7 @@
 #include <cz/path.hpp>
 #include <cz/sort.hpp>
 #include <tracy/Tracy.hpp>
+#include "basic/ascii_drawing_commands.hpp"
 #include "basic/buffer_commands.hpp"
 #include "basic/build_commands.hpp"
 #include "basic/capitalization_commands.hpp"
@@ -684,6 +685,7 @@ void editor_created_callback(Editor* editor) {
 
     register_global_command(COMMAND(command_add_highlight_to_buffer));
     register_global_command(COMMAND(command_remove_highlight_from_buffer));
+    register_global_command(COMMAND(ascii_drawing::command_draw_box));
 
     start_server(editor);
 }
