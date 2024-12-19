@@ -137,17 +137,17 @@ REGISTER_COMMAND(command_line_history);
 void command_line_history(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
-    Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
+    Contents_Iterator iterator = buffer->contents.iterator_at(
+        window->show_marks ? window->cursors[0].start() : window->cursors[0].point);
     uint64_t line_number_start = iterator.get_line_number() + 1;
     uint64_t line_number_end = line_number_start;
 
     if (window->show_marks) {
-        iterator.go_to(window->cursors[0].mark);
-        uint64_t mark_line_number = iterator.get_line_number() + 1;
-        if (mark_line_number > line_number_end)
-            line_number_end = mark_line_number;
-        else
-            line_number_start = mark_line_number;
+        iterator.go_to(window->cursors[0].end());
+        if (at_start_of_line(iterator) && iterator.position > window->cursors[0].start()) {
+            iterator.retreat();
+        }
+        line_number_end = iterator.get_line_number() + 1;
     }
 
     cz::String root = {};
