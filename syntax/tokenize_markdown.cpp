@@ -85,12 +85,12 @@ static bool advance_through_start_to_bold_or_italics_region(Contents_Iterator* i
         char third_ch = iterator->get();
         if (third_ch == other_ch) {
             iterator->advance();
-            return true; // length=3
+            return true;  // length=3
         } else if (!is_special(third_ch)) {
-            return true; // length=2
+            return true;  // length=2
         }
     } else if (!is_special(second_ch)) {
-        return true; // length=1
+        return true;  // length=1
     }
 
     return false;

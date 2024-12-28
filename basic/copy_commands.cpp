@@ -2,8 +2,8 @@
 
 #include <inttypes.h>
 #include <stdio.h>
-#include "command_macros.hpp"
 #include "buffer_commands.hpp"
+#include "command_macros.hpp"
 
 namespace mag {
 namespace basic {

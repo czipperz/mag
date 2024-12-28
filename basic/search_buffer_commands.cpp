@@ -57,7 +57,8 @@ static bool get_file_to_open(const Buffer* buffer,
 
     Contents_Iterator relative_end = relative_start;
 
-    // Ignore return value so that if the user does like 'find' we can still handle the output by just treating the entire line as a relpath.
+    // Ignore return value so that if the user does like 'find' we can still
+    // handle the output by just treating the entire line as a relpath.
     (void)find_this_line(&relative_end, ':');
 
     Contents_Iterator iterator = relative_end;

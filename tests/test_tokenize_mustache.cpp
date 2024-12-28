@@ -43,17 +43,22 @@ TEST_CASE("tokenize_mustache") {
     CHECK(tokens[19] == Test_Runner::TToken{"s", {120, 121, Token_Type::IDENTIFIER}});
     CHECK(tokens[20] == Test_Runner::TToken{"bold", {122, 126, Token_Type::IDENTIFIER}});
     CHECK(tokens[21] == Test_Runner::TToken{".", {126, 127, Token_Type::PUNCTUATION}});
-    CHECK(tokens[22] == Test_Runner::TToken{"{{/text}}", {127, 136, Token_Type::PREPROCESSOR_ENDIF}});
+    CHECK(tokens[22] ==
+          Test_Runner::TToken{"{{/text}}", {127, 136, Token_Type::PREPROCESSOR_ENDIF}});
     CHECK(tokens[23] == Test_Runner::TToken{"<", {136, 137, Token_Type::PUNCTUATION}});
     CHECK(tokens[24] == Test_Runner::TToken{"/", {137, 138, Token_Type::PUNCTUATION}});
     CHECK(tokens[25] == Test_Runner::TToken{"b", {138, 139, Token_Type::IDENTIFIER}});
     CHECK(tokens[26] == Test_Runner::TToken{">", {139, 140, Token_Type::PUNCTUATION}});
-    CHECK(tokens[27] == Test_Runner::TToken{"{{!dynamic.mustache}}", {142, 163, Token_Type::COMMENT}});
-    CHECK(tokens[28] == Test_Runner::TToken{"{{<*dynamic}}", {164, 177, Token_Type::PREPROCESSOR_IF}});
+    CHECK(tokens[27] ==
+          Test_Runner::TToken{"{{!dynamic.mustache}}", {142, 163, Token_Type::COMMENT}});
+    CHECK(tokens[28] ==
+          Test_Runner::TToken{"{{<*dynamic}}", {164, 177, Token_Type::PREPROCESSOR_IF}});
     CHECK(tokens[29] == Test_Runner::TToken{"{{$text}}", {178, 187, Token_Type::PREPROCESSOR_IF}});
     CHECK(tokens[30] == Test_Runner::TToken{"Hello", {187, 192, Token_Type::IDENTIFIER}});
     CHECK(tokens[31] == Test_Runner::TToken{"World", {193, 198, Token_Type::IDENTIFIER}});
     CHECK(tokens[32] == Test_Runner::TToken{"!", {198, 199, Token_Type::PUNCTUATION}});
-    CHECK(tokens[33] == Test_Runner::TToken{"{{/text}}", {199, 208, Token_Type::PREPROCESSOR_ENDIF}});
-    CHECK(tokens[34] == Test_Runner::TToken{"{{/*dynamic}}", {209, 222, Token_Type::PREPROCESSOR_ENDIF}});
+    CHECK(tokens[33] ==
+          Test_Runner::TToken{"{{/text}}", {199, 208, Token_Type::PREPROCESSOR_ENDIF}});
+    CHECK(tokens[34] ==
+          Test_Runner::TToken{"{{/*dynamic}}", {209, 222, Token_Type::PREPROCESSOR_ENDIF}});
 }

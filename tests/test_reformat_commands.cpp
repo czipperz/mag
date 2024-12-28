@@ -1,8 +1,8 @@
 #include "test_runner.hpp"
 
+#include "basic/cpp_commands.hpp"
 #include "basic/markdown_commands.hpp"
 #include "basic/reformat_commands.hpp"
-#include "basic/cpp_commands.hpp"
 
 using namespace mag;
 using namespace mag::basic;

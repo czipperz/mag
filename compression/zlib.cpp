@@ -31,9 +31,8 @@ Compression_Result CompressionStream::init() {
     memset(&stream, 0, sizeof(stream));
     int level = Z_DEFAULT_COMPRESSION;
     int window_bits = 15 /* 2^15 byte window */ + 16 /* gzip header */;
-    int mem_level = 8; // high memory compression state
-    int ret = deflateInit2(&stream, level, Z_DEFLATED, window_bits,
-                           mem_level, Z_DEFAULT_STRATEGY);
+    int mem_level = 8;  // high memory compression state
+    int ret = deflateInit2(&stream, level, Z_DEFLATED, window_bits, mem_level, Z_DEFAULT_STRATEGY);
     return translate(ret);
 }
 

@@ -1315,8 +1315,9 @@ void run(Server* server, Client* client) {
     CZ_DEFER(drop_surface_cache(surface_cache));
 
     // Load the font.
-    load_font(client, &font_file, &font_size, &font, &character_width, &character_height, surface_cache,
-              server->editor.theme.font_file, server->editor.theme.font_size, dpi_scale);
+    load_font(client, &font_file, &font_size, &font, &character_width, &character_height,
+              surface_cache, server->editor.theme.font_file, server->editor.theme.font_size,
+              dpi_scale);
 
     int old_width = 0;
     int old_height = 0;
