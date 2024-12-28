@@ -106,6 +106,10 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     token->start = iterator->position;
     char first_ch = iterator->get();
 
+    if (*state == TITLE) {
+        goto normal_character;
+    }
+
     if (*state == START_OF_LINE && (first_ch == '*' || first_ch == '+' || first_ch == '-')) {
         iterator->advance();
         if (first_ch == '*' && !iterator->at_eob() && !cz::is_blank(iterator->get())) {
@@ -236,7 +240,11 @@ normal_character:
             *state = START_OF_LINE;
             break;
         }
-        if (is_special(ch)) {
+        if (*state == TITLE) {
+            if (cz::is_space(ch)) {
+                break;
+            }
+        } else if (is_special(ch)) {
             // Force at least one character in this token.
             if (token->start == iterator->position)
                 iterator->advance();
