@@ -215,10 +215,16 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         }
 
         if (!find_this_line(iterator, {end_pattern, pattern_length})) {
+            // Only capture bold/italics on same line to prevent it getting out of control.
             *iterator = start;
             goto normal_character;
         }
         iterator->advance(pattern_length);
+        if (!iterator->at_eob() && !cz::is_space(iterator->get())) {
+            // Only capture if end is at word boundary.
+            *iterator = start;
+            goto normal_character;
+        }
 
         if (pattern_length == 1)
             token->type = Token_Type::PROCESS_ITALICS;
