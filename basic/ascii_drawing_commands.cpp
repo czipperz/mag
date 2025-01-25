@@ -1,6 +1,7 @@
 #include "basic/ascii_drawing_commands.hpp"
 
 #include "command_macros.hpp"
+#include "match.hpp"
 #include "movement.hpp"
 #include "transaction.hpp"
 
@@ -102,6 +103,58 @@ void command_draw_box(Editor* editor, Command_Source source) {
     } else {
         source.client->show_message("Unsupported region");
     }
+}
+
+REGISTER_COMMAND(command_insert_indent_width_as_spaces);
+void command_insert_indent_width_as_spaces(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::String indent = {};
+    CZ_DEFER(indent.drop(cz::heap_allocator()));
+    indent.reserve(cz::heap_allocator(), buffer->mode.indent_width);
+    indent.push_many(' ', buffer->mode.indent_width);
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    SSOStr indent_ssostr = SSOStr::as_duplicate(transaction.value_allocator(), indent);
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        transaction.push({indent_ssostr, window->cursors[i].point + offset, Edit::INSERT});
+        offset += indent.len;
+    }
+    transaction.commit(source.client);
+}
+REGISTER_COMMAND(command_delete_backwards_indent_width_as_spaces);
+void command_delete_backwards_indent_width_as_spaces(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    cz::String indent = {};
+    CZ_DEFER(indent.drop(cz::heap_allocator()));
+    indent.reserve(cz::heap_allocator(), buffer->mode.indent_width);
+    indent.push_many(' ', buffer->mode.indent_width);
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    uint64_t offset = 0;
+    SSOStr indent_ssostr = SSOStr::as_duplicate(transaction.value_allocator(), indent);
+    Contents_Iterator it = buffer->contents.start();
+    for (size_t i = 0; i < window->cursors.len; ++i) {
+        // Check that indent preceeds the cursor otherwise skip it.
+        it.advance_to(window->cursors[i].point);
+        if (it.position < indent.len)
+            continue;
+        it.retreat(indent.len);
+        if (!looking_at(it, indent))
+            continue;
+
+        transaction.push({indent_ssostr, it.position - offset, Edit::REMOVE});
+        offset += indent.len;
+    }
+    transaction.commit(source.client);
 }
 
 }
