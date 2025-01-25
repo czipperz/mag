@@ -210,6 +210,9 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         size_t pattern_length = iterator->position - start.position;
         CZ_DEBUG_ASSERT(pattern_length <= sizeof(end_pattern));
         start.contents->slice_into(start, iterator->position, end_pattern);
+        if (pattern_length >= 2) {
+            std::swap(end_pattern[0], end_pattern[pattern_length - 1]);
+        }
 
         if (!find_this_line(iterator, {end_pattern, pattern_length})) {
             *iterator = start;
