@@ -10,11 +10,10 @@ TEST_CASE("tokenize_markdown list") {
     // tr.tokenize_print_tests();
 
     auto tokens = tr.tokenize();
-    REQUIRE(tokens.len == 4);
+    REQUIRE(tokens.len == 3);
     CHECK(tokens[0] == Test_Runner::TToken{"*", {0, 1, Token_Type::PUNCTUATION}});
     CHECK(tokens[1] == Test_Runner::TToken{"hello", {2, 7, Token_Type::DEFAULT}});
-    CHECK(tokens[2] == Test_Runner::TToken{"world", {8, 13, Token_Type::DEFAULT}});
-    CHECK(tokens[3] == Test_Runner::TToken{"*", {13, 14, Token_Type::DEFAULT}});
+    CHECK(tokens[2] == Test_Runner::TToken{"world*", {8, 14, Token_Type::DEFAULT}});
 }
 
 TEST_CASE("tokenize_markdown bold/italics simple") {

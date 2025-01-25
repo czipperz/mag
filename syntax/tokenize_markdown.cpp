@@ -244,7 +244,7 @@ normal_character:
             if (cz::is_space(ch)) {
                 break;
             }
-        } else if (is_special(ch)) {
+        } else if (cz::is_space(ch)) {
             // Force at least one character in this token.
             if (token->start == iterator->position)
                 iterator->advance();
