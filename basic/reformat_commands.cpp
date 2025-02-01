@@ -73,7 +73,9 @@ static size_t judge_word_column_goal_score(cz::Slice<SSOStr> words,
 
         previous_spaces = 1;
         if (end_of_sentence(word.as_str())) {
-            previous_spaces = 2;
+            if (sentences_start_with_two_spaces) {
+                previous_spaces = 2;
+            }
 
             previous_word_just_after_end_of_sentence = false;
             next_word_just_after_end_of_sentence = true;
@@ -355,7 +357,7 @@ bool reformat_at(Client* client,
         }
 
         previous_spaces = 1;
-        if (end_of_sentence(word.as_str())) {
+        if (sentences_start_with_two_spaces && end_of_sentence(word.as_str())) {
             previous_spaces = 2;
         }
     }
