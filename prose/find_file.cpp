@@ -7,6 +7,7 @@
 #include <cz/heap.hpp>
 #include <cz/mutex.hpp>
 #include <cz/path.hpp>
+#include <cz/process.hpp>
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
 #include "command_macros.hpp"
@@ -394,6 +395,56 @@ REGISTER_COMMAND(command_find_file_in_version_control);
 void command_find_file_in_version_control(Editor* editor, Command_Source source) {
     find_file(editor, source.client,
               "Find file in version control: ", copy_version_control_directory);
+}
+
+struct Diff_Master_Completion_Engine_Data {
+    char* working_directory;
+    Run_Command_For_Completion_Results runner;
+};
+
+static bool diff_master_completion_engine(Editor* editor,
+                                          Completion_Engine_Context* context,
+                                          bool is_initial_frame) {
+    cz::Str args[] = {"git", "diff", "--name-only", "origin/master"};
+    Diff_Master_Completion_Engine_Data* data = (Diff_Master_Completion_Engine_Data*)context->data;
+    cz::Process_Options options;
+    options.working_directory = data->working_directory;
+#ifdef _WIN32
+    options.hide_window = true;
+#endif
+    return data->runner.iterate(context, args, options, is_initial_frame);
+}
+
+REGISTER_COMMAND(command_find_file_diff_master);
+void command_find_file_diff_master(Editor* editor, Command_Source source) {
+    cz::String directory = {};
+    {
+        WITH_CONST_SELECTED_NORMAL_BUFFER(source.client);
+        if (!copy_version_control_directory(source.client, buffer, &directory)) {
+            return;
+        }
+    }
+
+    Dialog dialog = {};
+    dialog.prompt = "Find file diff master: ";
+    dialog.completion_engine = diff_master_completion_engine;
+    dialog.response_callback = command_find_file_response;
+    dialog.response_callback_data = directory.buffer;
+    dialog.next_token = syntax::path_next_token;
+    source.client->show_dialog(dialog);
+
+    auto data = cz::heap_allocator().alloc<Diff_Master_Completion_Engine_Data>();
+    CZ_ASSERT(data);
+    *data = {};
+    data->working_directory = directory.clone_null_terminate(cz::heap_allocator()).buffer;
+    source.client->mini_buffer_completion_cache.engine_context.data = data;
+
+    source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* _data) {
+        Diff_Master_Completion_Engine_Data* data = (Diff_Master_Completion_Engine_Data*)_data;
+        cz::heap_allocator().dealloc({data->working_directory, 0});
+        data->runner.drop();
+        cz::heap_allocator().dealloc(data);
+    };
 }
 
 }

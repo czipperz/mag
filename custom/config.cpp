@@ -497,6 +497,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-g f", prose::command_find_file_in_version_control);
     BIND(key_map, "A-g h", prose::command_find_file_in_current_directory);
+    BIND(key_map, "A-g d", prose::command_find_file_diff_master);
 
     BIND(key_map, "A-g u", prose::command_open_file_on_repo_site);
 
