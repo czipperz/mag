@@ -405,7 +405,7 @@ struct Diff_Master_Completion_Engine_Data {
 static bool diff_master_completion_engine(Editor* editor,
                                           Completion_Engine_Context* context,
                                           bool is_initial_frame) {
-    cz::Str args[] = {"git", "diff", "--name-only", "origin/master"};
+    cz::Str args[] = {"bash", "-c", "git diff --name-only $(git merge-base origin/master HEAD)"};
     Diff_Master_Completion_Engine_Data* data = (Diff_Master_Completion_Engine_Data*)context->data;
     cz::Process_Options options;
     options.working_directory = data->working_directory;
