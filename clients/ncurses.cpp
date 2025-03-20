@@ -106,6 +106,35 @@ static int16_t get_face_color_or(Face_Color fc, int16_t deflt) {
     return color;
 }
 
+namespace {
+struct NcursesColorPair {
+    int16_t fg;
+    int16_t bg;
+};
+}
+
+/// NCurses supports colors via preassigning color pairs.  But we don't know which colors the
+/// user will use until they use them because for example `buffer_created_callback` can create
+/// arbitrary overlays.  Thus we dynamically allocate colors and evict them in round robin.
+static size_t get_color_pair_or_assign(NcursesColorPair* color_pairs,
+                                       size_t* color_eviction_index,
+                                       int16_t fg,
+                                       int16_t bg) {
+    for (size_t i = 0; i < (size_t)COLORS; ++i) {
+        if (color_pairs[i].fg == fg && color_pairs[i].bg == bg) {
+            return i;
+        }
+    }
+
+    // Evict at index i.
+    size_t i = *color_eviction_index;
+    init_pair(i, fg, bg);
+    color_pairs[i] = {fg, bg};
+    if (++*color_eviction_index == (size_t)COLORS)
+        *color_eviction_index = 0;
+    return i;
+}
+
 static void render(int* total_rows,
                    int* total_cols,
                    Cell** cellss,
@@ -113,8 +142,8 @@ static void render(int* total_rows,
                    Window_Cache** mini_buffer_window_cache,
                    Editor* editor,
                    Client* client,
-                   int16_t* colors,
-                   int16_t used_colors) {
+                   NcursesColorPair* color_pairs,
+                   size_t* color_eviction_index) {
     ZoneScoped;
 
     int rows, cols;
@@ -174,17 +203,10 @@ static void render(int* total_rows,
                     }
                     attrset(attrs);
 
-                    int16_t bg = get_face_color_or(new_cell->face.background, 0);
-                    if (colors[bg] == 0) {
-                        bg = 0;
-                    }
                     int16_t fg = get_face_color_or(new_cell->face.foreground, 7);
-                    if (colors[fg] == 0) {
-                        fg = 7;
-                    }
-
-                    int32_t color_pair = (colors[bg] - 1) * used_colors + (colors[fg] - 1) + 1;
-                    color_set(color_pair, nullptr);
+                    int16_t bg = get_face_color_or(new_cell->face.background, 0);
+                    color_set(get_color_pair_or_assign(color_pairs, color_eviction_index, fg, bg),
+                              nullptr);
 
                     mvaddch(y, x, new_cell->code);
                     any = true;
@@ -441,63 +463,6 @@ static void process_key_presses(Server* server, Client* client, int ch) {
     }
 }
 
-static void mark_used_colors(int16_t* colors, Server* server) {
-    colors[0] = 1;
-    colors[7] = 1;
-    colors[21] = 1;
-    colors[208] = 1;
-    colors[237] = 1;
-    for (size_t i = 0; i < cz::len(server->editor.theme.special_faces); ++i) {
-        Face* face = &server->editor.theme.special_faces[i];
-        int16_t fg = get_face_color(face->foreground);
-        if (fg >= 0 && fg < COLORS) {
-            colors[fg] = 1;
-        }
-        int16_t bg = get_face_color(face->background);
-        if (bg >= 0 && bg < COLORS) {
-            colors[bg] = 1;
-        }
-    }
-    for (size_t i = 0; i < cz::len(server->editor.theme.token_faces); ++i) {
-        Face* face = &server->editor.theme.token_faces[i];
-        int16_t fg = get_face_color(face->foreground);
-        if (fg >= 0 && fg < COLORS) {
-            colors[fg] = 1;
-        }
-        int16_t bg = get_face_color(face->background);
-        if (bg >= 0 && bg < COLORS) {
-            colors[bg] = 1;
-        }
-    }
-}
-
-static int16_t assign_color_codes(int16_t* colors) {
-    int16_t used_colors = 0;
-    for (size_t i = 0; i < (size_t)COLORS; ++i) {
-        if (colors[i] != 0) {
-            colors[i] = ++used_colors;
-        }
-    }
-
-    int32_t color_pair = 0;
-    for (size_t bg = 0; bg < (size_t)COLORS; ++bg) {
-        if (colors[bg] == 0) {
-            continue;
-        }
-
-        for (size_t fg = 0; fg < (size_t)COLORS; ++fg) {
-            if (colors[fg] == 0) {
-                continue;
-            }
-
-            // int32_t color_pair = (colors[bg] - 1) * used_colors + (colors[fg] - 1) + 1;
-            init_pair(++color_pair, fg, bg);
-        }
-    }
-
-    return used_colors;
-}
-
 void run(Server* server, Client* client) {
     ZoneScoped;
 
@@ -514,12 +479,10 @@ void run(Server* server, Client* client) {
     start_color();
     bind_all_keys();
 
-    int16_t* colors = cz::heap_allocator().alloc_zeroed<int16_t>(COLORS);
-    CZ_ASSERT(colors);
-    CZ_DEFER(cz::heap_allocator().dealloc(colors, COLORS));
-
-    mark_used_colors(colors, server);
-    int16_t used_colors = assign_color_codes(colors);
+    NcursesColorPair* color_pairs = cz::heap_allocator().alloc_zeroed<NcursesColorPair>(COLORS);
+    CZ_ASSERT(color_pairs);
+    CZ_DEFER(cz::heap_allocator().dealloc(color_pairs, COLORS));
+    size_t color_eviction_index = 0;
 
     int total_rows = 0;
     int total_cols = 0;
@@ -546,7 +509,7 @@ void run(Server* server, Client* client) {
         load_mini_buffer_completion_cache(server, client);
 
         render(&total_rows, &total_cols, cellss, &window_cache, &mini_buffer_window_cache,
-               &server->editor, client, colors, used_colors);
+               &server->editor, client, color_pairs, &color_eviction_index);
 
         bool has_jobs = false;
         has_jobs |= server->slurp_jobs();
