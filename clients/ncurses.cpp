@@ -485,11 +485,12 @@ void run(Server* server, Client* client) {
 
     NcursesColorPair* color_pairs = cz::heap_allocator().alloc<NcursesColorPair>(COLOR_PAIRS);
     CZ_ASSERT(color_pairs);
-    for (size_t i = 0; i < (size_t)COLOR_PAIRS; ++i) {
+    size_t num_allocated_colors = 1;
+    color_pairs[0] = {7, 0};  // Color pair 0 is hardcoded to default foregrand & background.
+    for (size_t i = 1; i < (size_t)COLOR_PAIRS; ++i) {
         color_pairs[i] = {-1, -1};
     }
     CZ_DEFER(cz::heap_allocator().dealloc(color_pairs, COLOR_PAIRS));
-    size_t num_allocated_colors = 1;
 
     for (const Face& face : server->editor.theme.special_faces) {
         get_color_pair_or_assign(color_pairs, &num_allocated_colors, face);
