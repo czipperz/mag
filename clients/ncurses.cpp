@@ -100,7 +100,8 @@ static int16_t get_face_color(Face_Color fc) {
 
 static int16_t get_face_color_or(Face_Color fc, int16_t deflt) {
     int16_t color = get_face_color(fc);
-    if (color < 0 || color >= COLORS) {
+    int16_t max_colors = 256;
+    if (color < 0 || color >= max_colors) {
         color = deflt;
     }
     return color;
