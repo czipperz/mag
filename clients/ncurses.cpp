@@ -119,11 +119,18 @@ struct NcursesColorPair {
 /// arbitrary overlays.  Thus we dynamically allocate any additional colors that come in.
 static size_t get_color_pair_or_assign(NcursesColorPair* color_pairs,
                                        size_t* num_allocated_colors,
-                                       const Face& face) {
+                                       const Face& face,
+                                       int* attrs) {
     int16_t fg = get_face_color_or(face.foreground, 7);
     int16_t bg = get_face_color_or(face.background, 0);
     for (size_t i = 0; i < (size_t)COLOR_PAIRS; ++i) {
         if (color_pairs[i].fg == fg && color_pairs[i].bg == bg) {
+            return i;
+        }
+    }
+    for (size_t i = 0; i < (size_t)COLOR_PAIRS; ++i) {
+        if (color_pairs[i].bg == fg && color_pairs[i].fg == bg) {
+            *attrs ^= A_REVERSE;
             return i;
         }
     }
@@ -206,11 +213,12 @@ static void render(int* total_rows,
                     if (new_cell->face.flags & Face::ITALICS) {
                         attrs |= A_UNDERLINE;
                     }
-                    attrset(attrs);
 
-                    color_set(
-                        get_color_pair_or_assign(color_pairs, num_allocated_colors, new_cell->face),
-                        nullptr);
+                    size_t color_pair = get_color_pair_or_assign(color_pairs, num_allocated_colors,
+                                                                 new_cell->face, &attrs);
+
+                    attrset(attrs);
+                    color_set(color_pair, nullptr);
 
                     mvaddch(y, x, new_cell->code);
                     any = true;
@@ -492,11 +500,12 @@ void run(Server* server, Client* client) {
     }
     CZ_DEFER(cz::heap_allocator().dealloc(color_pairs, COLOR_PAIRS));
 
+    int attrs = 0;
     for (const Face& face : server->editor.theme.special_faces) {
-        get_color_pair_or_assign(color_pairs, &num_allocated_colors, face);
+        get_color_pair_or_assign(color_pairs, &num_allocated_colors, face, &attrs);
     }
     for (const Face& face : server->editor.theme.token_faces) {
-        get_color_pair_or_assign(color_pairs, &num_allocated_colors, face);
+        get_color_pair_or_assign(color_pairs, &num_allocated_colors, face, &attrs);
     }
 
     int total_rows = 0;
