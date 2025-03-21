@@ -114,25 +114,29 @@ struct NcursesColorPair {
 };
 }
 
-/// NCurses supports colors via preassigning color pairs.  But we don't know which colors the
-/// user will use until they use them because for example `buffer_created_callback` can create
-/// arbitrary overlays.  Thus we dynamically allocate colors and evict them in round robin.
+/// NCurses supports colors via preassigning color pairs.  But we don't know all the colors
+/// the user will use until they use them.  For example `buffer_created_callback` can create
+/// arbitrary overlays.  Thus we dynamically allocate any additional colors that come in.
 static size_t get_color_pair_or_assign(NcursesColorPair* color_pairs,
-                                       size_t* color_eviction_index,
-                                       int16_t fg,
-                                       int16_t bg) {
-    for (size_t i = 0; i < (size_t)COLORS; ++i) {
+                                       size_t* num_allocated_colors,
+                                       const Face& face) {
+    int16_t fg = get_face_color_or(face.foreground, 7);
+    int16_t bg = get_face_color_or(face.background, 0);
+    for (size_t i = 0; i < (size_t)COLOR_PAIRS; ++i) {
         if (color_pairs[i].fg == fg && color_pairs[i].bg == bg) {
             return i;
         }
     }
 
-    // Evict at index i.
-    size_t i = *color_eviction_index;
+    // Too many colors.  Fail!
+    if (*num_allocated_colors == (size_t)COLOR_PAIRS) {
+        return 0;
+    }
+
+    size_t i = *num_allocated_colors;
     init_pair(i, fg, bg);
     color_pairs[i] = {fg, bg};
-    if (++*color_eviction_index == (size_t)COLORS)
-        *color_eviction_index = 0;
+    ++*num_allocated_colors;
     return i;
 }
 
@@ -144,7 +148,7 @@ static void render(int* total_rows,
                    Editor* editor,
                    Client* client,
                    NcursesColorPair* color_pairs,
-                   size_t* color_eviction_index) {
+                   size_t* num_allocated_colors) {
     ZoneScoped;
 
     int rows, cols;
@@ -204,10 +208,9 @@ static void render(int* total_rows,
                     }
                     attrset(attrs);
 
-                    int16_t fg = get_face_color_or(new_cell->face.foreground, 7);
-                    int16_t bg = get_face_color_or(new_cell->face.background, 0);
-                    color_set(get_color_pair_or_assign(color_pairs, color_eviction_index, fg, bg),
-                              nullptr);
+                    color_set(
+                        get_color_pair_or_assign(color_pairs, num_allocated_colors, new_cell->face),
+                        nullptr);
 
                     mvaddch(y, x, new_cell->code);
                     any = true;
@@ -480,10 +483,20 @@ void run(Server* server, Client* client) {
     start_color();
     bind_all_keys();
 
-    NcursesColorPair* color_pairs = cz::heap_allocator().alloc_zeroed<NcursesColorPair>(COLORS);
+    NcursesColorPair* color_pairs = cz::heap_allocator().alloc<NcursesColorPair>(COLOR_PAIRS);
     CZ_ASSERT(color_pairs);
-    CZ_DEFER(cz::heap_allocator().dealloc(color_pairs, COLORS));
-    size_t color_eviction_index = 0;
+    for (size_t i = 0; i < (size_t)COLOR_PAIRS; ++i) {
+        color_pairs[i] = {-1, -1};
+    }
+    CZ_DEFER(cz::heap_allocator().dealloc(color_pairs, COLOR_PAIRS));
+    size_t num_allocated_colors = 1;
+
+    for (const Face& face : server->editor.theme.special_faces) {
+        get_color_pair_or_assign(color_pairs, &num_allocated_colors, face);
+    }
+    for (const Face& face : server->editor.theme.token_faces) {
+        get_color_pair_or_assign(color_pairs, &num_allocated_colors, face);
+    }
 
     int total_rows = 0;
     int total_cols = 0;
@@ -510,7 +523,7 @@ void run(Server* server, Client* client) {
         load_mini_buffer_completion_cache(server, client);
 
         render(&total_rows, &total_cols, cellss, &window_cache, &mini_buffer_window_cache,
-               &server->editor, client, color_pairs, &color_eviction_index);
+               &server->editor, client, color_pairs, &num_allocated_colors);
 
         bool has_jobs = false;
         has_jobs |= server->slurp_jobs();
