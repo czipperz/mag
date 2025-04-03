@@ -147,6 +147,10 @@ CompressionExtensions compression_extensions[] = {
 size_t compression_extensions_len =
     sizeof(compression_extensions) / sizeof(*compression_extensions);
 
+/// Controls whether ncurses will configure colors of the terminal.
+/// It doesn't look good on my machine so I disabled it.
+bool enable_terminal_colors = false;
+
 using namespace basic;
 
 #define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, COMMAND(FUNC)))

@@ -508,6 +508,17 @@ void run(Server* server, Client* client) {
         get_color_pair_or_assign(color_pairs, &num_allocated_colors, face, &attrs);
     }
 
+    if (custom::enable_terminal_colors && can_change_color() && COLORS >= 256) {
+        for (size_t i = 0; i < 256; ++i) {
+            uint32_t c = server->editor.theme.colors[i];
+            uint8_t r = (c & 0xFF0000) >> 16;
+            uint8_t g = (c & 0x00FF00) >> 8;
+            uint8_t b = (c & 0x0000FF);
+            init_color(i, (short)((double)r * 1000.0 / 255.0), (short)((double)g * 1000.0 / 255.0),
+                       (short)((double)b * 1000.0 / 255.0));
+        }
+    }
+
     int total_rows = 0;
     int total_cols = 0;
 

@@ -39,5 +39,7 @@ struct CompressionExtensions {
 extern CompressionExtensions compression_extensions[];
 extern size_t compression_extensions_len;
 
+extern bool enable_terminal_colors;
+
 }
 }
