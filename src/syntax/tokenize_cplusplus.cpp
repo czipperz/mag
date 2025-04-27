@@ -1894,13 +1894,26 @@ static void handle_char(Contents_Iterator* iterator, Token* token, State* state)
     token->start = iterator->position;
 
     iterator->advance();  // opening '\''
-    if (looking_at(*iterator, '\\'))
-        forward_char(iterator);  // skip escaped character
-    forward_char(iterator);      // body character
+    if (iterator->at_eob())
+        goto ret;
+
+    if (iterator->get() == '\\') {  // skip escaped character
+        iterator->advance();
+        if (iterator->at_eob())
+            goto ret;
+    }
+
+    if (cz::is_space_line(iterator->get())) {
+        goto ret;
+    }
+    iterator->advance();
+
     while (!iterator->at_eob()) {
         switch (iterator->get()) {
         case '\'':
             iterator->advance();  // closing '\''
+            goto ret;
+        case CZ_SPACE_LINE_CASES:
             goto ret;
         default:
             iterator->advance();
