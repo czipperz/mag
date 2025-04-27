@@ -1642,7 +1642,7 @@ static void handle_block_comment_normal(Contents_Iterator* iterator,
 
             case 3:  // '`'/'```'
                 iterator->advance_to(min);
-                state->comment = COMMENT_BLOCK_RESUME_INSIDE;
+                state->comment = COMMENT_LINE_RESUME_INSIDE;
                 goto ret;
 
             default:
