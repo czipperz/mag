@@ -16,8 +16,8 @@ set(TRACY_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/tracy/public)
 add_subdirectory(cz)
 
 include_directories(cz/include)
-include_directories(.)
 include_directories(src)
+include_directories(src/core)
 include_directories(${TRACY_INCLUDE_DIRS})
 
 if (WIN32)
@@ -50,24 +50,35 @@ endif()
 
 # Build all sources as library magl (so we don't double build to make testing program)
 set(LIBRARY_NAME ${PROJECT_NAME}l)
-file(GLOB_RECURSE SRCS src/*.cpp custom/*.cpp basic/*.cpp prose/*.cpp clang_format/*.cpp
-                       version_control/*.cpp gnu_global/*.cpp syntax/*.cpp man/*.cpp render/*.cpp
-                       overlays/*.cpp decorations/*.cpp compression/*.cpp)
+file(GLOB_RECURSE SRCS
+  src/core/*.cpp
+  src/custom/*.cpp
+  src/basic/*.cpp src/prose/*.cpp
+  src/clang_format/*.cpp
+  src/version_control/*.cpp
+  src/gnu_global/*.cpp
+  src/syntax/*.cpp
+  src/man/*.cpp
+  src/render/*.cpp
+  src/overlays/*.cpp
+  src/decorations/*.cpp
+  src/compression/*.cpp
+)
 add_library(${LIBRARY_NAME} ${SRCS})
-target_include_directories(${LIBRARY_NAME} PUBLIC custom)
+target_include_directories(${LIBRARY_NAME} PUBLIC src/custom)
 target_compile_definitions(${LIBRARY_NAME} PUBLIC MAG_BUILD_DIRECTORY=${CMAKE_SOURCE_DIR})
 
 # Build mag (mag.exe)
-file(GLOB_RECURSE CLIENT_SRCS clients/*.cpp)
+file(GLOB_RECURSE CLIENT_SRCS src/clients/*.cpp)
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-  add_executable(${PROJECT_NAME} mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
+  add_executable(${PROJECT_NAME} src/mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
   target_compile_definitions(${PROJECT_NAME} PUBLIC CONSOLE_MAIN)
 else()
-  add_executable(${PROJECT_NAME} WIN32 mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
+  add_executable(${PROJECT_NAME} WIN32 src/mains/main.cpp ${CLIENT_SRCS} ${WINDOWS_RC_FILE})
 endif()
 target_link_libraries(${PROJECT_NAME} ${LIBRARY_NAME})
 target_link_libraries(${PROJECT_NAME} cz)
-target_include_directories(${PROJECT_NAME} PUBLIC clients render)
+target_include_directories(${PROJECT_NAME} PUBLIC src/clients src/render)
 
 # Include client libraries to mag
 if (${HAS_NCURSES})
@@ -161,7 +172,7 @@ else()
   file(GLOB_RECURSE TEST_SRCS tests/*.cpp)
   set(TEST_EXECUTABLE mag-test)
   add_executable(${TEST_EXECUTABLE} ${TEST_SRCS})
-  target_include_directories(${TEST_EXECUTABLE} PUBLIC src)
+  target_include_directories(${TEST_EXECUTABLE} PUBLIC src/core)
   target_include_directories(${TEST_EXECUTABLE} PUBLIC cz/include)
   target_include_directories(${TEST_EXECUTABLE} PUBLIC cz/test_base)
   target_link_libraries(${TEST_EXECUTABLE} ${LIBRARY_NAME})
