@@ -318,6 +318,14 @@ static void do_command_search_x(Editor* editor, Client* client, bool is_forward)
         if (data->direction == initial_direction) {
             client->set_prompt_text(prompt);
             client->_message.response_callback = callback;
+        } else if (data->direction == initial_direction + direction_offset) {
+            // If there is nothing to search then use the last search result.
+            WITH_WINDOW_BUFFER(client->_mini_buffer);
+            if (buffer->contents.len == 0) {
+                buffer->undo();
+                client->_mini_buffer->update_cursors(buffer);
+                data->direction = initial_direction;  // Go to the first search result.
+            }
         }
         return;
     }
