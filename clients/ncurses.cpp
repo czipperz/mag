@@ -484,8 +484,10 @@ void run(Server* server, Client* client) {
     noecho();
     keypad(stdscr, TRUE);
     curs_set(0);  // hide cursor
-    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
-    mouseinterval(0);
+    if (custom::enable_terminal_mouse) {
+        mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+        mouseinterval(0);
+    }
     CZ_DEFER(endwin());
 
     start_color();

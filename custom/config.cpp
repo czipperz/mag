@@ -151,6 +151,11 @@ size_t compression_extensions_len =
 /// It doesn't look good on my machine so I disabled it.
 bool enable_terminal_colors = false;
 
+/// If enabled then Mag will capture mouse events and move the cursor to where the mouse is clicked.
+/// I find it more useful to use the mouse to be able to copy text to external programs and thus
+/// disable this.  In SDL, copy/paste works with the native buffers so there isn't this problem.
+bool enable_terminal_mouse = false;
+
 using namespace basic;
 
 #define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, COMMAND(FUNC)))
