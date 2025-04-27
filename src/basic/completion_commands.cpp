@@ -3,10 +3,10 @@
 #include <cz/char_type.hpp>
 #include <cz/dedup.hpp>
 #include <cz/sort.hpp>
-#include "command_macros.hpp"
 #include "commands.hpp"
-#include "match.hpp"
-#include "movement.hpp"
+#include "core/command_macros.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
 
 namespace mag {
 namespace basic {

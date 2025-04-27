@@ -2,9 +2,9 @@
 
 #include <cz/str.hpp>
 #include <cz/string.hpp>
-#include "completion.hpp"
-#include "message.hpp"
-#include "token.hpp"
+#include "core/completion.hpp"
+#include "core/message.hpp"
+#include "core/token.hpp"
 
 namespace mag {
 

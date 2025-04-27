@@ -2,8 +2,8 @@
 
 #include <stdio.h>
 #include <cz/date.hpp>
-#include "command_macros.hpp"
-#include "editor.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
 
 namespace mag {
 

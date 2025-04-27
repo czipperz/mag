@@ -1,11 +1,11 @@
 #include "jump.hpp"
 
-#include "buffer.hpp"
-#include "client.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "visible_region.hpp"
-#include "window.hpp"
+#include "core/buffer.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/visible_region.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 

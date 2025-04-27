@@ -1,9 +1,9 @@
 #include "search_commands.hpp"
 
-#include "command_macros.hpp"
+#include "core/command_macros.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
 #include "cursor_commands.hpp"
-#include "match.hpp"
-#include "movement.hpp"
 
 namespace mag {
 namespace basic {

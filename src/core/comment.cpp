@@ -2,9 +2,9 @@
 
 #include <cz/defer.hpp>
 #include <cz/format.hpp>
-#include "edit.hpp"
-#include "match.hpp"
-#include "movement.hpp"
+#include "core/edit.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
 
 namespace mag {
 

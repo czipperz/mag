@@ -1,8 +1,8 @@
 #include "region_movement_commands.hpp"
 
-#include "client.hpp"
-#include "command_macros.hpp"
-#include "movement.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/movement.hpp"
 #include "movement_commands.hpp"
 #include "token_movement_commands.hpp"
 

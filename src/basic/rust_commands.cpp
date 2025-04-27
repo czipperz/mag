@@ -4,11 +4,11 @@
 #include <cz/format.hpp>
 #include <cz/path.hpp>
 #include <cz/process.hpp>
-#include "command.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "job.hpp"
-#include "movement.hpp"
+#include "core/command.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/job.hpp"
+#include "core/movement.hpp"
 
 namespace mag {
 namespace rust {

@@ -5,11 +5,11 @@
 #include <cz/defer.hpp>
 #include <cz/option.hpp>
 #include <cz/util.hpp>
-#include "command_macros.hpp"
-#include "file.hpp"
-#include "insert.hpp"
-#include "movement.hpp"
-#include "transaction.hpp"
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
+#include "core/insert.hpp"
+#include "core/movement.hpp"
+#include "core/transaction.hpp"
 #include "visible_region_commands.hpp"
 
 namespace mag {

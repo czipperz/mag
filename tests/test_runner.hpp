@@ -2,10 +2,10 @@
 #include <cz/defer.hpp>
 #include <cz/heap_string.hpp>
 #include <czt/test_base.hpp>
-#include "client.hpp"
-#include "command_macros.hpp"
-#include "server.hpp"
-#include "token.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/server.hpp"
+#include "core/token.hpp"
 
 namespace mag {
 

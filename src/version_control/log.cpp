@@ -1,9 +1,9 @@
 #include "log.hpp"
 
 #include <cz/format.hpp>
-#include "command_macros.hpp"
-#include "job.hpp"
-#include "movement.hpp"
+#include "core/command_macros.hpp"
+#include "core/job.hpp"
+#include "core/movement.hpp"
 #include "version_control.hpp"
 
 namespace mag {

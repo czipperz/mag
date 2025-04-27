@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <cz/util.hpp>
-#include "copy_chain.hpp"
+#include "core/copy_chain.hpp"
 
 namespace mag {
 

@@ -1,9 +1,9 @@
 #include "tokenize_git_commit_edit_message.hpp"
 
-#include "contents.hpp"
-#include "match.hpp"
-#include "movement.hpp"
-#include "token.hpp"
+#include "core/contents.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
+#include "core/token.hpp"
 #include "tokenize_patch.hpp"
 
 namespace mag {

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "buffer.hpp"
-#include "contents.hpp"
-#include "mode.hpp"
-#include "transaction.hpp"
-#include "window.hpp"
+#include "core/buffer.hpp"
+#include "core/contents.hpp"
+#include "core/mode.hpp"
+#include "core/transaction.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 

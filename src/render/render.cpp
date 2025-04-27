@@ -6,16 +6,16 @@
 #include <cz/format.hpp>
 #include <cz/sort.hpp>
 #include <tracy/Tracy.hpp>
-#include "command_macros.hpp"
-#include "decoration.hpp"
-#include "diff.hpp"
-#include "file.hpp"
-#include "movement.hpp"
-#include "overlay.hpp"
-#include "server.hpp"
-#include "token.hpp"
-#include "tracy_format.hpp"
-#include "visible_region.hpp"
+#include "core/command_macros.hpp"
+#include "core/decoration.hpp"
+#include "core/diff.hpp"
+#include "core/file.hpp"
+#include "core/movement.hpp"
+#include "core/overlay.hpp"
+#include "core/server.hpp"
+#include "core/token.hpp"
+#include "core/tracy_format.hpp"
+#include "core/visible_region.hpp"
 
 namespace mag {
 namespace render {

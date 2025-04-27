@@ -11,11 +11,11 @@
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
 #include <tracy/Tracy.hpp>
-#include "buffer.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "file.hpp"
-#include "program_info.hpp"
+#include "core/buffer.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/file.hpp"
+#include "core/program_info.hpp"
 
 namespace mag {
 

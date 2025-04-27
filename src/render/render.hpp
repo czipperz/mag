@@ -2,10 +2,10 @@
 
 #include <stddef.h>
 #include "cell.hpp"
-#include "client.hpp"
-#include "completion.hpp"
-#include "editor.hpp"
-#include "window.hpp"
+#include "core/client.hpp"
+#include "core/completion.hpp"
+#include "core/editor.hpp"
+#include "core/window.hpp"
 #include "window_cache.hpp"
 
 namespace mag {

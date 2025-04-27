@@ -1,7 +1,7 @@
 #include "remote.hpp"
 
-#include "command_macros.hpp"
-#include "file.hpp"
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN

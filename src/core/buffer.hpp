@@ -5,14 +5,14 @@
 #include <cz/option.hpp>
 #include <cz/string.hpp>
 #include <cz/vector.hpp>
-#include "buffer_id.hpp"
-#include "change.hpp"
-#include "command.hpp"
-#include "commit.hpp"
-#include "contents.hpp"
-#include "mode.hpp"
-#include "ssostr.hpp"
-#include "token_cache.hpp"
+#include "core/buffer_id.hpp"
+#include "core/change.hpp"
+#include "core/command.hpp"
+#include "core/commit.hpp"
+#include "core/contents.hpp"
+#include "core/mode.hpp"
+#include "core/ssostr.hpp"
+#include "core/token_cache.hpp"
 
 namespace mag {
 struct Client;

@@ -3,10 +3,10 @@
 #include <cz/defer.hpp>
 #include <tracy/Tracy.hpp>
 #include "basic/completion_commands.hpp"
-#include "match.hpp"
-#include "movement.hpp"
-#include "overlay.hpp"
-#include "window.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
+#include "core/overlay.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 namespace syntax {

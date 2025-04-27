@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ssostr.hpp"
+#include "core/ssostr.hpp"
 
 namespace mag {
 

@@ -2,8 +2,8 @@
 
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
-#include "command_macros.hpp"
-#include "job.hpp"
+#include "core/command_macros.hpp"
+#include "core/job.hpp"
 #include "version_control/version_control.hpp"
 
 namespace mag {

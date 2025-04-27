@@ -1,6 +1,6 @@
 #pragma once
 
-#include "editor.hpp"
+#include "core/editor.hpp"
 
 namespace mag {
 namespace basic {

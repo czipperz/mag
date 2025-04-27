@@ -7,13 +7,13 @@
 #include <cz/heap.hpp>
 #include <cz/util.hpp>
 #include <tracy/Tracy.hpp>
-#include "buffer.hpp"
-#include "buffer_handle.hpp"
-#include "command_macros.hpp"
-#include "contents.hpp"
-#include "job.hpp"
-#include "token.hpp"
-#include "tracy_format.hpp"
+#include "core/buffer.hpp"
+#include "core/buffer_handle.hpp"
+#include "core/command_macros.hpp"
+#include "core/contents.hpp"
+#include "core/job.hpp"
+#include "core/token.hpp"
+#include "core/tracy_format.hpp"
 
 namespace mag {
 

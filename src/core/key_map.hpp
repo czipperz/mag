@@ -2,8 +2,8 @@
 
 #include <cz/str.hpp>
 #include <cz/vector.hpp>
-#include "command.hpp"
-#include "key.hpp"
+#include "core/command.hpp"
+#include "core/key.hpp"
 
 namespace mag {
 

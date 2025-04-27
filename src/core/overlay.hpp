@@ -1,8 +1,8 @@
 #pragma once
 
 #include <stddef.h>
-#include "contents.hpp"
-#include "face.hpp"
+#include "core/contents.hpp"
+#include "core/face.hpp"
 
 namespace mag {
 

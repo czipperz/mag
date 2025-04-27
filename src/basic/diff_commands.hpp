@@ -1,7 +1,7 @@
 #pragma once
 
-#include "command.hpp"
-#include "editor.hpp"
+#include "core/command.hpp"
+#include "core/editor.hpp"
 
 namespace cz {
 struct Input_File;

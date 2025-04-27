@@ -6,7 +6,6 @@
 #include <SDL_ttf.h>
 #include <inttypes.h>
 #include <math.h>
-#include <command_macros.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
@@ -19,16 +18,16 @@
 #include <tracy/Tracy.hpp>
 #include "UbuntuMono.h"
 #include "basic/copy_commands.hpp"
-#include "cell.hpp"
-#include "client.hpp"
-#include "command_macros.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
+#include "core/movement.hpp"
+#include "core/program_info.hpp"
+#include "core/server.hpp"
 #include "custom/config.hpp"
-#include "file.hpp"
-#include "movement.hpp"
-#include "program_info.hpp"
-#include "render.hpp"
-#include "server.hpp"
-#include "window_cache.hpp"
+#include "render/cell.hpp"
+#include "render/render.hpp"
+#include "render/window_cache.hpp"
 
 #ifdef _WIN32
 #include <shellscalingapi.h>

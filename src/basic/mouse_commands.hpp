@@ -1,7 +1,7 @@
 #pragma once
 
-#include "client.hpp"
-#include "editor.hpp"
+#include "core/client.hpp"
+#include "core/editor.hpp"
 
 namespace mag {
 namespace basic {

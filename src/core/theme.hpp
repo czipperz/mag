@@ -2,9 +2,9 @@
 
 #include <stdint.h>
 #include <cz/heap_vector.hpp>
-#include "completion.hpp"
-#include "face.hpp"
-#include "token.hpp"
+#include "core/completion.hpp"
+#include "core/face.hpp"
+#include "core/token.hpp"
 
 namespace mag {
 struct Decoration;

@@ -6,11 +6,11 @@
 #include <cz/process.hpp>
 #include <cz/vector.hpp>
 #include <tracy/Tracy.hpp>
-#include "command.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "file.hpp"
-#include "rebase.hpp"
+#include "core/command.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/file.hpp"
+#include "core/rebase.hpp"
 
 namespace mag {
 namespace clang_format {

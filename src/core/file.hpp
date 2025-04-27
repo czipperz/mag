@@ -3,7 +3,7 @@
 #include <cz/arc.hpp>
 #include <cz/option.hpp>
 #include <cz/path.hpp>
-#include "buffer.hpp"
+#include "core/buffer.hpp"
 
 namespace cz {
 struct Allocator;

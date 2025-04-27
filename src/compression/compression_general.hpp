@@ -4,8 +4,8 @@
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
 #include <cz/heap.hpp>
-#include "contents.hpp"
-#include "file.hpp"
+#include "core/contents.hpp"
+#include "core/file.hpp"
 
 namespace mag {
 namespace compression {

@@ -5,11 +5,11 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
-#include "buffer.hpp"
-#include "client.hpp"
-#include "edit.hpp"
-#include "file.hpp"
-#include "transaction.hpp"
+#include "core/buffer.hpp"
+#include "core/client.hpp"
+#include "core/edit.hpp"
+#include "core/file.hpp"
+#include "core/transaction.hpp"
 
 namespace mag {
 

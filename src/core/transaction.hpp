@@ -3,8 +3,8 @@
 #include <cz/allocator.hpp>
 #include <cz/buffer_array.hpp>
 #include <cz/vector.hpp>
-#include "command.hpp"
-#include "ssostr.hpp"
+#include "core/command.hpp"
+#include "core/ssostr.hpp"
 
 namespace mag {
 

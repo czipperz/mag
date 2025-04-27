@@ -2,8 +2,8 @@
 
 #include <cz/vector.hpp>
 #include <thread>
-#include "editor.hpp"
-#include "key_map.hpp"
+#include "core/editor.hpp"
+#include "core/key_map.hpp"
 
 namespace cz {
 struct Mutex;

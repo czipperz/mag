@@ -1,8 +1,8 @@
 #pragma once
 
-#include "command.hpp"
-#include "editor.hpp"
-#include "window.hpp"
+#include "core/command.hpp"
+#include "core/editor.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 namespace basic {

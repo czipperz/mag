@@ -2,8 +2,8 @@
 
 #include <cz/char_type.hpp>
 #include <cz/heap.hpp>
-#include "overlay.hpp"
-#include "window.hpp"
+#include "core/overlay.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 namespace syntax {

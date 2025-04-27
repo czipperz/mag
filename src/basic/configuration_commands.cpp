@@ -3,7 +3,7 @@
 #include <cz/format.hpp>
 #include <cz/heap_string.hpp>
 #include <cz/parse.hpp>
-#include "command_macros.hpp"
+#include "core/command_macros.hpp"
 
 namespace mag {
 namespace basic {

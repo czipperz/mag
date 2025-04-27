@@ -1,8 +1,8 @@
 #include "alternate.hpp"
 
 #include <cz/file.hpp>
-#include "command_macros.hpp"
-#include "file.hpp"
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
 
 namespace mag {
 namespace prose {

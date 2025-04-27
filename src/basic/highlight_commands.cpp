@@ -1,8 +1,8 @@
 #include "highlight_commands.hpp"
 
-#include "command_macros.hpp"
-#include "face.hpp"
-#include "overlay.hpp"
+#include "core/command_macros.hpp"
+#include "core/face.hpp"
+#include "core/overlay.hpp"
 #include "overlays/overlay_highlight_string.hpp"
 
 namespace mag {

@@ -1,13 +1,13 @@
 #include "insert.hpp"
 
 #include <cz/defer.hpp>
-#include "buffer.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "movement.hpp"
-#include "ssostr.hpp"
-#include "transaction.hpp"
-#include "window.hpp"
+#include "core/buffer.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/movement.hpp"
+#include "core/ssostr.hpp"
+#include "core/transaction.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 

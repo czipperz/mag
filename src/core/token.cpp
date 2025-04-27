@@ -1,7 +1,7 @@
 #include "token.hpp"
 
 #include <cz/format.hpp>
-#include "face.hpp"
+#include "core/face.hpp"
 
 namespace mag {
 namespace Token_Type_ {

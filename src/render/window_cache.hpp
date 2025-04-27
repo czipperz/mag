@@ -3,9 +3,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <cz/vector.hpp>
-#include "buffer.hpp"
-#include "editor.hpp"
-#include "window.hpp"
+#include "core/buffer.hpp"
+#include "core/editor.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 namespace render {

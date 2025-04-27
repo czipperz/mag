@@ -1,8 +1,8 @@
 #include "indent.hpp"
 
 #include "basic/token_movement_commands.hpp"
-#include "buffer.hpp"
-#include "movement.hpp"
+#include "core/buffer.hpp"
+#include "core/movement.hpp"
 
 namespace mag {
 

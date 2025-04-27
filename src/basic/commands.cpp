@@ -10,18 +10,18 @@
 #include <cz/process.hpp>
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
-#include "command_macros.hpp"
-#include "comment.hpp"
-#include "file.hpp"
-#include "insert.hpp"
-#include "match.hpp"
-#include "movement.hpp"
-#include "program_info.hpp"
+#include "core/command_macros.hpp"
+#include "core/comment.hpp"
+#include "core/file.hpp"
+#include "core/insert.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
+#include "core/program_info.hpp"
+#include "core/transaction.hpp"
+#include "core/visible_region.hpp"
+#include "core/window.hpp"
 #include "region_movement_commands.hpp"
 #include "search_commands.hpp"
-#include "transaction.hpp"
-#include "visible_region.hpp"
-#include "window.hpp"
 
 namespace mag {
 namespace basic {

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cz/string.hpp>
-#include "buffer.hpp"
-#include "client.hpp"
+#include "core/buffer.hpp"
+#include "core/client.hpp"
 
 namespace mag {
 namespace prose {

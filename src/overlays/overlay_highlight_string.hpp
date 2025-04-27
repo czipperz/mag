@@ -1,7 +1,7 @@
 #pragma once
 
-#include "case.hpp"
-#include "token.hpp"
+#include "core/case.hpp"
+#include "core/token.hpp"
 
 namespace cz {
 struct Str;

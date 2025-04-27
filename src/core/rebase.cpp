@@ -1,8 +1,8 @@
 #include "rebase.hpp"
 
 #include <tracy/Tracy.hpp>
-#include "change.hpp"
-#include "edit.hpp"
+#include "core/change.hpp"
+#include "core/edit.hpp"
 
 namespace mag {
 

@@ -12,12 +12,12 @@
 #include <cz/util.hpp>
 #include <tracy/Tracy.hpp>
 #include "basic/commands.hpp"
-#include "client.hpp"
-#include "command_macros.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/insert.hpp"
+#include "core/movement.hpp"
+#include "core/tracy_format.hpp"
 #include "custom/config.hpp"
-#include "insert.hpp"
-#include "movement.hpp"
-#include "tracy_format.hpp"
 
 namespace mag {
 

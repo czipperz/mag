@@ -1,7 +1,7 @@
 #include "macro_commands.hpp"
 
-#include "client.hpp"
-#include "command_macros.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
 
 namespace mag {
 namespace basic {

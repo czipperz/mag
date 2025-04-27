@@ -4,8 +4,8 @@
 #include <cz/heap.hpp>
 #include <cz/util.hpp>
 #include <tracy/Tracy.hpp>
-#include "movement.hpp"
-#include "ssostr.hpp"
+#include "core/movement.hpp"
+#include "core/ssostr.hpp"
 
 namespace mag {
 

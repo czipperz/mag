@@ -43,10 +43,11 @@ TEST_CASE("tokenize_cplusplus raw string literal prefixes are normal idents if n
 
 TEST_CASE("tokenize_cplusplus /* inside ///```") {
     Test_Runner tr;
-    tr.setup("/// ```\n"
-             "/// hi /* bye\n"
-             "/// ```\n"
-             "after");
+    tr.setup(
+        "/// ```\n"
+        "/// hi /* bye\n"
+        "/// ```\n"
+        "after");
     tr.set_tokenizer(syntax::cpp_next_token);
     // tr.tokenize_print_tests();
 

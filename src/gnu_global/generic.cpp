@@ -2,7 +2,6 @@
 
 #include <inttypes.h>
 #include <stdio.h>
-#include <command_macros.hpp>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/find_file.hpp>
@@ -10,16 +9,17 @@
 #include <cz/heap.hpp>
 #include <cz/parse.hpp>
 #include <cz/process.hpp>
-#include <file.hpp>
 #include <limits>
-#include <movement.hpp>
-#include <token.hpp>
 #include <tracy/Tracy.hpp>
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
+#include "core/movement.hpp"
+#include "core/program_info.hpp"
+#include "core/token.hpp"
+#include "core/visible_region.hpp"
 #include "ctags.hpp"
 #include "gnu_global.hpp"
-#include "program_info.hpp"
 #include "syntax/tokenize_path.hpp"
-#include "visible_region.hpp"
 
 namespace mag {
 namespace tags {

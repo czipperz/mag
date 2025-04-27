@@ -4,13 +4,13 @@
 #include <chrono>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
-#include "completion.hpp"
-#include "copy_chain.hpp"
-#include "dialog.hpp"
-#include "jump.hpp"
-#include "key.hpp"
-#include "message.hpp"
-#include "window.hpp"
+#include "core/completion.hpp"
+#include "core/copy_chain.hpp"
+#include "core/dialog.hpp"
+#include "core/jump.hpp"
+#include "core/key.hpp"
+#include "core/message.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 

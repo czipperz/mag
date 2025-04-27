@@ -6,15 +6,15 @@
 #include <cz/heap.hpp>
 #include <tracy/Tracy.hpp>
 #include "basic/search_commands.hpp"
-#include "buffer.hpp"
-#include "client.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "match.hpp"
-#include "overlay.hpp"
-#include "theme.hpp"
-#include "token.hpp"
-#include "window.hpp"
+#include "core/buffer.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/match.hpp"
+#include "core/overlay.hpp"
+#include "core/theme.hpp"
+#include "core/token.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 namespace syntax {

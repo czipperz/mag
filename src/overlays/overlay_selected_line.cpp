@@ -1,11 +1,11 @@
 #include "overlay_selected_line.hpp"
 
 #include <cz/heap.hpp>
-#include "buffer.hpp"
-#include "movement.hpp"
-#include "overlay.hpp"
-#include "theme.hpp"
-#include "window.hpp"
+#include "core/buffer.hpp"
+#include "core/movement.hpp"
+#include "core/overlay.hpp"
+#include "core/theme.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 namespace syntax {

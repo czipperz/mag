@@ -3,10 +3,10 @@
 #include <stdint.h>
 #include <cz/heap_vector.hpp>
 #include <cz/slice.hpp>
-#include "case.hpp"
-#include "indent.hpp"
-#include "key_map.hpp"
-#include "token.hpp"
+#include "core/case.hpp"
+#include "core/indent.hpp"
+#include "core/key_map.hpp"
+#include "core/token.hpp"
 
 namespace mag {
 

@@ -1,8 +1,8 @@
 #include "mouse_commands.hpp"
 
-#include "command_macros.hpp"
 #include "copy_commands.hpp"
-#include "movement.hpp"
+#include "core/command_macros.hpp"
+#include "core/movement.hpp"
 
 namespace mag {
 namespace basic {

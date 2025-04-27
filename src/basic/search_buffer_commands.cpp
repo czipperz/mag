@@ -6,12 +6,12 @@
 #include <cz/path.hpp>
 #include <cz/util.hpp>
 #include <syntax/tokenize_search.hpp>
-#include "command_macros.hpp"
-#include "file.hpp"
-#include "match.hpp"
-#include "movement.hpp"
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
+#include "core/visible_region.hpp"
 #include "search_commands.hpp"
-#include "visible_region.hpp"
 #include "window_commands.hpp"
 
 namespace mag {

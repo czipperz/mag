@@ -1,7 +1,7 @@
 #include "common.hpp"
 
 #include <cz/char_type.hpp>
-#include "contents.hpp"
+#include "core/contents.hpp"
 
 namespace mag {
 namespace syntax {

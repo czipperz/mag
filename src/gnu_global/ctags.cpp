@@ -7,7 +7,7 @@
 #include <cz/format.hpp>
 #include <cz/parse.hpp>
 #include <cz/sort.hpp>
-#include "file.hpp"
+#include "core/file.hpp"
 
 namespace mag {
 namespace ctags {

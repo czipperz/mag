@@ -1,9 +1,9 @@
 #include "basic/ascii_drawing_commands.hpp"
 
-#include "command_macros.hpp"
-#include "match.hpp"
-#include "movement.hpp"
-#include "transaction.hpp"
+#include "core/command_macros.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
+#include "core/transaction.hpp"
 
 namespace mag {
 namespace ascii_drawing {

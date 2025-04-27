@@ -2,12 +2,12 @@
 
 #include <cz/char_type.hpp>
 #include <tracy/Tracy.hpp>
-#include "buffer.hpp"
-#include "contents.hpp"
-#include "match.hpp"
-#include "mode.hpp"
-#include "token.hpp"
-#include "window.hpp"
+#include "core/buffer.hpp"
+#include "core/contents.hpp"
+#include "core/match.hpp"
+#include "core/mode.hpp"
+#include "core/token.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 

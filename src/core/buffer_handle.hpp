@@ -3,7 +3,7 @@
 #include <atomic>
 #include <cz/condition_variable.hpp>
 #include <cz/mutex.hpp>
-#include "buffer.hpp"
+#include "core/buffer.hpp"
 
 #ifdef TRACY_ENABLE
 #include <tracy/client/TracyLock.hpp>

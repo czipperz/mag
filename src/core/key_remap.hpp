@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cz/vector.hpp>
-#include "key.hpp"
+#include "core/key.hpp"
 
 namespace mag {
 

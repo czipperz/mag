@@ -10,16 +10,16 @@
 #include <cz/path.hpp>
 #include <cz/process.hpp>
 #include "buffer_commands.hpp"
-#include "client.hpp"
-#include "command.hpp"
-#include "command_macros.hpp"
-#include "completion.hpp"
-#include "contents.hpp"
-#include "editor.hpp"
-#include "file.hpp"
-#include "job.hpp"
-#include "match.hpp"
-#include "movement.hpp"
+#include "core/client.hpp"
+#include "core/command.hpp"
+#include "core/command_macros.hpp"
+#include "core/completion.hpp"
+#include "core/contents.hpp"
+#include "core/editor.hpp"
+#include "core/file.hpp"
+#include "core/job.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
 #include "syntax/tokenize_path.hpp"
 
 #ifdef _WIN32

@@ -6,10 +6,10 @@
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
 #include <tracy/Tracy.hpp>
-#include "buffer.hpp"
-#include "decoration.hpp"
-#include "movement.hpp"
-#include "window.hpp"
+#include "core/buffer.hpp"
+#include "core/decoration.hpp"
+#include "core/movement.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 namespace syntax {

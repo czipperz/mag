@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
-#include "buffer_handle.hpp"
+#include "core/buffer_handle.hpp"
 
 namespace mag {
 struct Buffer;

@@ -4,13 +4,13 @@
 #include <cz/file.hpp>
 #include <cz/heap_string.hpp>
 #include <cz/heap_vector.hpp>
-#include "command_macros.hpp"
-#include "file.hpp"
-#include "movement.hpp"
-#include "overlay.hpp"
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
+#include "core/movement.hpp"
+#include "core/overlay.hpp"
+#include "core/token.hpp"
 #include "overlays/overlay_highlight_string.hpp"
 #include "prose/helpers.hpp"
-#include "token.hpp"
 
 namespace mag {
 namespace prose {

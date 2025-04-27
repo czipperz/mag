@@ -4,16 +4,16 @@
 #include <cz/format.hpp>
 #include <cz/sort.hpp>
 #include "basic/commands.hpp"
-#include "command_macros.hpp"
-#include "comment.hpp"
-#include "editor.hpp"
-#include "file.hpp"
-#include "match.hpp"
-#include "movement.hpp"
+#include "core/command_macros.hpp"
+#include "core/comment.hpp"
+#include "core/editor.hpp"
+#include "core/file.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
+#include "core/transaction.hpp"
+#include "core/window.hpp"
 #include "prose/alternate.hpp"
 #include "reformat_commands.hpp"
-#include "transaction.hpp"
-#include "window.hpp"
 
 namespace mag {
 namespace cpp {

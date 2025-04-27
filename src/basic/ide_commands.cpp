@@ -2,12 +2,12 @@
 
 #include "basic/indent_commands.hpp"
 #include "basic/token_movement_commands.hpp"
-#include "command.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "insert.hpp"
-#include "movement.hpp"
-#include "token.hpp"
+#include "core/command.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/insert.hpp"
+#include "core/movement.hpp"
+#include "core/token.hpp"
 
 namespace mag {
 namespace basic {

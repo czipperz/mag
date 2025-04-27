@@ -4,11 +4,11 @@
 #include <cz/format.hpp>
 #include <cz/heap_vector.hpp>
 #include "buffer_commands.hpp"
-#include "client.hpp"
-#include "command_macros.hpp"
-#include "movement.hpp"
-#include "transaction.hpp"
-#include "window.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/movement.hpp"
+#include "core/transaction.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 namespace basic {

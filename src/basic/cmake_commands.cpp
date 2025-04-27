@@ -3,8 +3,8 @@
 #include <cz/dedup.hpp>
 #include <cz/sort.hpp>
 #include "basic/completion_commands.hpp"
-#include "command_macros.hpp"
-#include "movement.hpp"
+#include "core/command_macros.hpp"
+#include "core/movement.hpp"
 
 namespace mag {
 namespace basic {

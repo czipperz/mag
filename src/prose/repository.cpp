@@ -2,9 +2,9 @@
 
 #include <cz/format.hpp>
 #include <cz/process.hpp>
-#include "command_macros.hpp"
-#include "movement.hpp"
-#include "process.hpp"
+#include "core/command_macros.hpp"
+#include "core/movement.hpp"
+#include "core/process.hpp"
 #include "prose/helpers.hpp"
 
 namespace mag {

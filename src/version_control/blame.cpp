@@ -6,12 +6,12 @@
 #include <cz/heap_string.hpp>
 #include <cz/parse.hpp>
 #include <cz/process.hpp>
-#include "command_macros.hpp"
-#include "file.hpp"
-#include "match.hpp"
-#include "movement.hpp"
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
+#include "core/visible_region.hpp"
 #include "version_control.hpp"
-#include "visible_region.hpp"
 
 namespace mag {
 namespace version_control {

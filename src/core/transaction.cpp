@@ -2,10 +2,10 @@
 
 #include <cz/debug.hpp>
 #include <cz/heap.hpp>
-#include "buffer.hpp"
-#include "client.hpp"
-#include "commit.hpp"
-#include "job.hpp"
+#include "core/buffer.hpp"
+#include "core/client.hpp"
+#include "core/commit.hpp"
+#include "core/job.hpp"
 
 namespace mag {
 

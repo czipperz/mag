@@ -13,16 +13,16 @@
 #include <cz/working_directory.hpp>
 #include <tracy/Tracy.hpp>
 #include "basic/remote.hpp"
-#include "client.hpp"
-#include "command.hpp"
-#include "command_macros.hpp"
+#include "clients/ncurses.hpp"
+#include "clients/sdl.hpp"
+#include "core/client.hpp"
+#include "core/command.hpp"
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
+#include "core/movement.hpp"
+#include "core/program_info.hpp"
+#include "core/server.hpp"
 #include "custom/config.hpp"
-#include "file.hpp"
-#include "movement.hpp"
-#include "ncurses.hpp"
-#include "program_info.hpp"
-#include "sdl.hpp"
-#include "server.hpp"
 
 #ifdef _WIN32
 #include <windows.h>

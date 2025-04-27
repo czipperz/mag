@@ -2,8 +2,8 @@
 
 #include <cz/path.hpp>
 #include <tracy/Tracy.hpp>
-#include "contents.hpp"
-#include "token.hpp"
+#include "core/contents.hpp"
+#include "core/token.hpp"
 
 namespace mag {
 namespace syntax {

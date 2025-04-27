@@ -1,12 +1,12 @@
 #include "reformat_commands.hpp"
 
 #include <cz/char_type.hpp>
-#include "buffer.hpp"
-#include "command.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "match.hpp"
-#include "movement.hpp"
+#include "core/buffer.hpp"
+#include "core/command.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
 #include "reformat_commands.hpp"
 
 namespace mag {

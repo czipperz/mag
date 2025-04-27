@@ -1,6 +1,6 @@
 #pragma once
 
-#include "commit.hpp"
+#include "core/commit.hpp"
 
 namespace mag {
 

@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <cz/str.hpp>
-#include "case.hpp"
+#include "core/case.hpp"
 
 namespace mag {
 struct Contents_Iterator;

@@ -6,11 +6,11 @@
 #include <cz/heap.hpp>
 #include <cz/option.hpp>
 #include <cz/vector.hpp>
-#include "buffer_handle.hpp"
-#include "job.hpp"
-#include "key_map.hpp"
-#include "key_remap.hpp"
-#include "theme.hpp"
+#include "core/buffer_handle.hpp"
+#include "core/job.hpp"
+#include "core/key_map.hpp"
+#include "core/key_remap.hpp"
+#include "core/theme.hpp"
 
 namespace mag {
 

@@ -3,7 +3,7 @@
 #include <cz/defer.hpp>
 #include <cz/format.hpp>
 #include <cz/process.hpp>
-#include "client.hpp"
+#include "core/client.hpp"
 
 namespace mag {
 

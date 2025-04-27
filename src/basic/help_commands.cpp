@@ -7,15 +7,15 @@
 #include <cz/heap_string.hpp>
 #include <cz/sort.hpp>
 #include <cz/stringify.hpp>
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "file.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/file.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
+#include "core/program_info.hpp"
+#include "core/transaction.hpp"
+#include "core/window.hpp"
 #include "gnu_global/generic.hpp"
-#include "match.hpp"
-#include "movement.hpp"
-#include "program_info.hpp"
-#include "transaction.hpp"
-#include "window.hpp"
 
 namespace mag {
 namespace basic {

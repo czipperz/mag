@@ -1,8 +1,8 @@
 #include "overlay_merge_conflicts.hpp"
 
 #include <cz/heap.hpp>
-#include "match.hpp"
-#include "movement.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
 
 namespace mag {
 namespace syntax {

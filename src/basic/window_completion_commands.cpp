@@ -1,7 +1,7 @@
 #include "window_completion_commands.hpp"
 
-#include "command_macros.hpp"
 #include "commands.hpp"
+#include "core/command_macros.hpp"
 
 namespace mag {
 namespace basic {

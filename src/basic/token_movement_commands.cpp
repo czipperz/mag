@@ -2,13 +2,13 @@
 
 #include <algorithm>
 #include <cz/sort.hpp>
-#include "command.hpp"
-#include "command_macros.hpp"
+#include "core/command.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
+#include "core/token.hpp"
 #include "cursor_commands.hpp"
-#include "editor.hpp"
-#include "match.hpp"
-#include "movement.hpp"
-#include "token.hpp"
 
 namespace mag {
 namespace basic {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cz/slice.hpp>
-#include "edit.hpp"
+#include "core/edit.hpp"
 
 namespace mag {
 

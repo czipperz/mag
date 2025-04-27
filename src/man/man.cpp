@@ -8,12 +8,12 @@
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
 #include <cz/sort.hpp>
-#include "client.hpp"
-#include "command.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "file.hpp"
-#include "movement.hpp"
+#include "core/client.hpp"
+#include "core/command.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/file.hpp"
+#include "core/movement.hpp"
 
 #ifndef _WIN32
 #include <zlib.h>

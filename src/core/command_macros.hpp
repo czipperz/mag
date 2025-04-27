@@ -1,11 +1,11 @@
 #pragma once
 
 #include <cz/defer.hpp>
-#include "buffer.hpp"
-#include "buffer_handle.hpp"
-#include "client.hpp"
-#include "ssostr.hpp"
-#include "transaction.hpp"
+#include "core/buffer.hpp"
+#include "core/buffer_handle.hpp"
+#include "core/client.hpp"
+#include "core/ssostr.hpp"
+#include "core/transaction.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Register a command

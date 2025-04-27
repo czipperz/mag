@@ -4,7 +4,7 @@
 #include <cz/env.hpp>
 #include <cz/heap.hpp>
 #include <cz/process.hpp>
-#include "client.hpp"
+#include "core/client.hpp"
 
 namespace mag {
 namespace xclip {

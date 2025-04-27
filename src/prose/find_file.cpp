@@ -10,8 +10,8 @@
 #include <cz/process.hpp>
 #include <cz/sort.hpp>
 #include <cz/util.hpp>
-#include "command_macros.hpp"
-#include "file.hpp"
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
 #include "prose/helpers.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "version_control/ignore.hpp"

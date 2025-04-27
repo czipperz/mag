@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command.hpp"
+#include "core/command.hpp"
 
 namespace mag {
 namespace basic {

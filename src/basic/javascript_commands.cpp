@@ -2,12 +2,12 @@
 
 #include <cz/format.hpp>
 #include <cz/process.hpp>
-#include "command.hpp"
-#include "command_macros.hpp"
-#include "diff.hpp"
-#include "editor.hpp"
-#include "file.hpp"
-#include "movement.hpp"
+#include "core/command.hpp"
+#include "core/command_macros.hpp"
+#include "core/diff.hpp"
+#include "core/editor.hpp"
+#include "core/file.hpp"
+#include "core/movement.hpp"
 
 namespace mag {
 namespace javascript {

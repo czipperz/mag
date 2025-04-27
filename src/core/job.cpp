@@ -5,10 +5,10 @@
 #include <cz/format.hpp>
 #include <cz/process.hpp>
 #include <cz/util.hpp>
-#include "client.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "file.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/file.hpp"
 
 namespace mag {
 

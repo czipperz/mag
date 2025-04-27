@@ -9,10 +9,10 @@
 #include <cz/path.hpp>
 #include <cz/util.hpp>
 #include <cz/working_directory.hpp>
-#include "command_macros.hpp"
-#include "config.hpp"
-#include "diff.hpp"
-#include "file.hpp"
+#include "core/command_macros.hpp"
+#include "core/diff.hpp"
+#include "core/file.hpp"
+#include "custom/config.hpp"
 #include "syntax/tokenize_buffer_name.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "window_commands.hpp"

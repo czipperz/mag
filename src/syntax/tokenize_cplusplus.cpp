@@ -5,10 +5,10 @@
 #include <cz/heap.hpp>
 #include <cz/string.hpp>
 #include <tracy/Tracy.hpp>
-#include "contents.hpp"
-#include "match.hpp"
-#include "movement.hpp"
-#include "token.hpp"
+#include "core/contents.hpp"
+#include "core/match.hpp"
+#include "core/movement.hpp"
+#include "core/token.hpp"
 
 namespace mag {
 namespace syntax {

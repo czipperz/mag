@@ -1,6 +1,6 @@
 #pragma once
 
-#include "overlay.hpp"
+#include "core/overlay.hpp"
 
 namespace mag {
 namespace syntax {

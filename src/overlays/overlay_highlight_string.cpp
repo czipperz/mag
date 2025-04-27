@@ -3,13 +3,13 @@
 #include <cz/char_type.hpp>
 #include <cz/heap.hpp>
 #include <tracy/Tracy.hpp>
-#include "buffer.hpp"
-#include "contents.hpp"
-#include "face.hpp"
-#include "match.hpp"
-#include "overlay.hpp"
-#include "token.hpp"
-#include "token_cache.hpp"
+#include "core/buffer.hpp"
+#include "core/contents.hpp"
+#include "core/face.hpp"
+#include "core/match.hpp"
+#include "core/overlay.hpp"
+#include "core/token.hpp"
+#include "core/token_cache.hpp"
 
 namespace mag {
 struct Buffer;

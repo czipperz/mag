@@ -1,8 +1,8 @@
 #include "mode.hpp"
 
 #include <cz/heap.hpp>
-#include "decoration.hpp"
-#include "overlay.hpp"
+#include "core/decoration.hpp"
+#include "core/overlay.hpp"
 
 namespace mag {
 

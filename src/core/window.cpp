@@ -5,14 +5,14 @@
 #include <algorithm>
 #include <cz/heap.hpp>
 #include <tracy/Tracy.hpp>
-#include "buffer.hpp"
-#include "change.hpp"
-#include "client.hpp"
-#include "command_macros.hpp"
-#include "editor.hpp"
-#include "movement.hpp"
-#include "token.hpp"
-#include "visible_region.hpp"
+#include "core/buffer.hpp"
+#include "core/change.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/editor.hpp"
+#include "core/movement.hpp"
+#include "core/token.hpp"
+#include "core/visible_region.hpp"
 
 namespace mag {
 

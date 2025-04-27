@@ -10,15 +10,15 @@
 #include <cz/heap.hpp>
 #include <thread>
 #include <tracy/Tracy.hpp>
-#include "cell.hpp"
-#include "client.hpp"
-#include "completion.hpp"
+#include "core/client.hpp"
+#include "core/completion.hpp"
+#include "core/movement.hpp"
+#include "core/server.hpp"
+#include "core/token.hpp"
 #include "custom/config.hpp"
-#include "movement.hpp"
-#include "render.hpp"
-#include "server.hpp"
-#include "token.hpp"
-#include "window_cache.hpp"
+#include "render/cell.hpp"
+#include "render/render.hpp"
+#include "render/window_cache.hpp"
 
 using namespace mag::render;
 

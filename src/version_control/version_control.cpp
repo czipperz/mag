@@ -4,12 +4,12 @@
 #include <cz/find_file.hpp>
 #include <cz/heap.hpp>
 #include <cz/path.hpp>
-#include "client.hpp"
-#include "command_macros.hpp"
-#include "file.hpp"
-#include "message.hpp"
-#include "movement.hpp"
-#include "token.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/file.hpp"
+#include "core/message.hpp"
+#include "core/movement.hpp"
+#include "core/token.hpp"
 
 namespace mag {
 namespace version_control {

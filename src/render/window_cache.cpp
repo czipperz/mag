@@ -1,8 +1,8 @@
 #include "window_cache.hpp"
 
-#include "command_macros.hpp"
-#include "token.hpp"
-#include "visible_region.hpp"
+#include "core/command_macros.hpp"
+#include "core/token.hpp"
+#include "core/visible_region.hpp"
 
 namespace mag {
 namespace render {

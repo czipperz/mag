@@ -1,10 +1,10 @@
 #include "visible_region.hpp"
 
-#include "contents.hpp"
-#include "mode.hpp"
-#include "movement.hpp"
-#include "theme.hpp"
-#include "window.hpp"
+#include "core/contents.hpp"
+#include "core/mode.hpp"
+#include "core/movement.hpp"
+#include "core/theme.hpp"
+#include "core/window.hpp"
 
 namespace mag {
 

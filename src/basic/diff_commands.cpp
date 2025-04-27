@@ -3,14 +3,14 @@
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
 #include <cz/heap.hpp>
-#include "buffer.hpp"
-#include "client.hpp"
-#include "command_macros.hpp"
-#include "diff.hpp"
-#include "edit.hpp"
-#include "file.hpp"
+#include "core/buffer.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/diff.hpp"
+#include "core/edit.hpp"
+#include "core/file.hpp"
+#include "core/transaction.hpp"
 #include "syntax/tokenize_path.hpp"
-#include "transaction.hpp"
 
 namespace mag {
 namespace basic {

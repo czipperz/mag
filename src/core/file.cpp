@@ -17,17 +17,16 @@
 #include <cz/string.hpp>
 #include <cz/util.hpp>
 #include <tracy/Tracy.hpp>
-#include "client.hpp"
-#include "command_macros.hpp"
-#include "config.hpp"
+#include "core/client.hpp"
+#include "core/command_macros.hpp"
+#include "core/diff.hpp"
+#include "core/editor.hpp"
+#include "core/movement.hpp"
+#include "core/program_info.hpp"
+#include "core/server.hpp"
+#include "core/tracy_format.hpp"
+#include "core/visible_region.hpp"
 #include "custom/config.hpp"
-#include "diff.hpp"
-#include "editor.hpp"
-#include "movement.hpp"
-#include "program_info.hpp"
-#include "server.hpp"
-#include "tracy_format.hpp"
-#include "visible_region.hpp"
 
 #ifdef _WIN32
 #include <windows.h>

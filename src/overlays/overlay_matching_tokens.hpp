@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cz/slice.hpp>
-#include "token.hpp"
+#include "core/token.hpp"
 
 namespace mag {
 struct Face;

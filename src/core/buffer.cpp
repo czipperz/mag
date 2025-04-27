@@ -5,11 +5,11 @@
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <tracy/Tracy.hpp>
-#include "cursor.hpp"
-#include "diff.hpp"
-#include "file.hpp"
-#include "match.hpp"
-#include "transaction.hpp"
+#include "core/cursor.hpp"
+#include "core/diff.hpp"
+#include "core/file.hpp"
+#include "core/match.hpp"
+#include "core/transaction.hpp"
 
 #ifdef _WIN32
 #include <windows.h>

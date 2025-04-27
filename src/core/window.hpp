@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <cz/arc.hpp>
 #include <cz/vector.hpp>
-#include "completion.hpp"
-#include "cursor.hpp"
+#include "core/completion.hpp"
+#include "core/cursor.hpp"
 
 namespace mag {
 struct Buffer;

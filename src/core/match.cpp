@@ -1,8 +1,8 @@
 #include "match.hpp"
 
 #include <tracy/Tracy.hpp>
-#include "contents.hpp"
-#include "movement.hpp"
+#include "core/contents.hpp"
+#include "core/movement.hpp"
 
 namespace mag {
 
