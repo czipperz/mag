@@ -6,6 +6,7 @@
 #include <cz/heap_string.hpp>
 #include <cz/parse.hpp>
 #include <cz/process.hpp>
+#include <cz/util.hpp>
 #include "core/command_macros.hpp"
 #include "core/file.hpp"
 #include "core/match.hpp"
@@ -35,8 +36,10 @@ enum Parse_Status {
     Parse_Error,
     Parse_Eob,
 };
+#define COMMITTER_MAX_LEN ((size_t)10)
 static Parse_Status parse_commit_info(cz::Str elem,
                                       cz::Str* hash,
+                                      char* committer,
                                       time_t* commit_time,
                                       cz::Str* line,
                                       size_t* offset);
@@ -68,8 +71,11 @@ static Job_Tick_Result job_blame_append_tick(Asynchronous_Job_Handler* handler, 
         while (index < data->buffer.len) {
             cz::Str elem = data->buffer.slice_start(index);
             cz::Str hash, line;
+            char committer[COMMITTER_MAX_LEN + 1] = {};
+            memset(committer, ' ', COMMITTER_MAX_LEN);
             time_t commit_time_u64;
-            Parse_Status status = parse_commit_info(elem, &hash, &commit_time_u64, &line, &index);
+            Parse_Status status =
+                parse_commit_info(elem, &hash, committer, &commit_time_u64, &line, &index);
             if (status != Parse_Ok) {
                 if (status == Parse_Error) {
                     handler->show_message("Failed to parse git blame");
@@ -78,15 +84,16 @@ static Job_Tick_Result job_blame_append_tick(Asynchronous_Job_Handler* handler, 
                 break;
             }
 
+            char header[22 + COMMITTER_MAX_LEN];
             if (hash != "0000000000000000000000000000000000000000") {
                 cz::Date date = cz::time_t_to_date_utc(commit_time_u64);
-                char header[21];
-                snprintf(header, sizeof(header), "%.8s %.4d-%.2d-%.2d ", hash.buffer, date.year,
-                         date.month, date.day_of_month);
-                buffer->contents.append(header);
+                snprintf(header, sizeof(header), "%.8s %s %.4d-%.2d-%.2d ", hash.buffer, committer,
+                         date.year, date.month, date.day_of_month);
             } else {
-                buffer->contents.append("                    ");
+                memset(header, ' ', sizeof(header) - 1);
+                header[sizeof(header) - 1] = '\0';
             }
+            buffer->contents.append(header);
 
             buffer->contents.append(line);
         }
@@ -116,6 +123,7 @@ cleanup:
 
 static Parse_Status parse_commit_info(cz::Str elem,
                                       cz::Str* hash,
+                                      char* committer,
                                       time_t* commit_time,
                                       cz::Str* line,
                                       size_t* offset) {
@@ -143,11 +151,20 @@ static Parse_Status parse_commit_info(cz::Str elem,
     }
     *hash = elem.slice_end(40);
 
+    // Parse commit author.
+    cz::Str committer_query = "\ncommitter ";
+    const char* committer_start = metadata.find(committer_query);
+    if (!committer_start)
+        return Parse_Error;
+    cz::Str committer_str = elem.slice_start(committer_start + committer_query.len);
+    committer_str = committer_str.slice_end(committer_str.find_index('\n'));
+    memcpy(committer, committer_str.buffer, cz::min(COMMITTER_MAX_LEN, committer_str.len));
+
+    // Parse commit time.
     cz::Str commit_time_query = "\ncommitter-time ";
     const char* commit_time_start = metadata.find(commit_time_query);
     if (!commit_time_start)
         return Parse_Error;
-
     cz::Str commit_time_str = metadata.slice_start(commit_time_start + commit_time_query.len);
     commit_time_str = commit_time_str.slice_end(commit_time_str.find_index('\n'));
     if (cz::parse(commit_time_str, commit_time) != commit_time_str.len) {
@@ -356,8 +373,9 @@ void command_blame_reload(Editor* editor, Command_Source source) {
 namespace blame {
 enum {
     Line_Hash = 0,
-    Line_Date = 1,
-    Line_Contents = 2,
+    Line_Committer = 1,
+    Line_Date = 2,
+    Line_Contents = 3,
 };
 
 struct State {
@@ -378,14 +396,28 @@ retry:
             return false;
 
         if (looking_at(*iterator, "                    ")) {
-            iterator->advance(20);
+            iterator->advance(20 + COMMITTER_MAX_LEN);
             state->top = Line_Contents;
             goto retry;
         }
 
-        token->type = Token_Type::BLAME_COMMIT;
+        token->type = Token_Type::BLAME_HASH;
         token->start = iterator->position;
         iterator->advance(8);
+        token->end = iterator->position;
+        state->top = Line_Committer;
+        return true;
+    }
+
+    case Line_Committer: {
+        if (looking_at(*iterator, ' '))
+            iterator->advance();
+        if (iterator->position + COMMITTER_MAX_LEN > iterator->contents->len)
+            return false;
+
+        token->type = Token_Type::BLAME_COMMITTER;
+        token->start = iterator->position;
+        iterator->advance(COMMITTER_MAX_LEN);
         token->end = iterator->position;
         state->top = Line_Date;
         return true;
@@ -408,6 +440,15 @@ retry:
     case Line_Contents: {
         if (looking_at(*iterator, ' '))
             iterator->advance();
+
+        if (at_end_of_line(*iterator)) {
+            if (iterator->at_eob()) {
+                return false;
+            }
+            iterator->advance();
+            state->top = Line_Hash;
+            goto retry;
+        }
 
         token->type = Token_Type::BLAME_CONTENTS;
         token->start = iterator->position;

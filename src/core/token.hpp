@@ -74,7 +74,8 @@ struct Face;
     MAG_TOKEN_TYPE(SPLASH_LOGO)                                               \
     MAG_TOKEN_TYPE(SPLASH_KEY_BIND)                                           \
                                                                               \
-    MAG_TOKEN_TYPE(BLAME_COMMIT)                                              \
+    MAG_TOKEN_TYPE(BLAME_HASH)                                                \
+    MAG_TOKEN_TYPE(BLAME_COMMITTER)                                           \
     MAG_TOKEN_TYPE(BLAME_DATE)                                                \
     MAG_TOKEN_TYPE(BLAME_CONTENTS)                                            \
                                                                               \

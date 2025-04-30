@@ -640,7 +640,8 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::SPLASH_LOGO] = {46, {}, 0};
     theme.token_faces[Token_Type::SPLASH_KEY_BIND] = {213, {}, 0};
 
-    theme.token_faces[Token_Type::BLAME_COMMIT] = {{}, {}, Face::UNDERSCORE};
+    theme.token_faces[Token_Type::BLAME_HASH] = {{}, {}, Face::UNDERSCORE};
+    theme.token_faces[Token_Type::BLAME_COMMITTER] = {196, {}, 0};
     theme.token_faces[Token_Type::BLAME_DATE] = {46, {}, 0};
     theme.token_faces[Token_Type::BLAME_CONTENTS] = {{}, {}, 0};
 
