@@ -10,6 +10,7 @@
 #include "core/client.hpp"
 #include "core/command_macros.hpp"
 #include "core/editor.hpp"
+#include "core/match.hpp"
 #include "core/movement.hpp"
 #include "core/token.hpp"
 #include "core/visible_region.hpp"
@@ -125,28 +126,44 @@ void Window_Unified::finish_completion(Client* client, Buffer* buffer) {
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
+    cz::Str completion_result_str = context->results[context->selected];
     SSOStr completion_result =
-        SSOStr::as_duplicate(transaction.value_allocator(), context->results[context->selected]);
+        SSOStr::as_duplicate(transaction.value_allocator(), completion_result_str);
     int64_t offset = 0;
     for (size_t c = 0; c < cursors.len; ++c) {
         Contents_Iterator iterator = buffer->contents.iterator_at(cursors[c].point);
+        uint64_t insertion_position = iterator.position;
+
+        Contents_Iterator token_start = iterator;
         Token token;
-        bool do_remove = get_token_at_position(buffer, &iterator, &token);
+        bool found_token = get_token_at_position(buffer, &token_start, &token);
+        bool do_remove = found_token;
+        if (found_token && iterator.position >= token.start &&
+            iterator.position - token.start <= completion_result_str.len &&
+            matches(token_start, iterator.position,
+                    completion_result_str.slice_end(iterator.position - token.start))) {
+            // If the cursor is inside/at a token that matches the
+            // completion result, then just insert the new suffix.
+            do_remove = false;
+            completion_result = SSOStr::from_constant(
+                completion_result.as_str().slice_start(iterator.position - token.start));
+        }
 
         int64_t pending_offset = 0;
         if (do_remove) {
             Edit remove;
             remove.value =
-                buffer->contents.slice(transaction.value_allocator(), iterator, token.end);
+                buffer->contents.slice(transaction.value_allocator(), token_start, token.end);
             remove.position = token.start + offset;
             remove.flags = Edit::REMOVE;
             transaction.push(remove);
-            pending_offset -= token.end - iterator.position;
+            pending_offset -= token.end - token_start.position;
+            insertion_position = token.start;
         }
 
         Edit insert;
         insert.value = completion_result;
-        insert.position = token.start + offset;
+        insert.position = insertion_position + offset;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
         offset += pending_offset + completion_result.len();
