@@ -98,6 +98,49 @@ void infix_completion_filter(Editor* editor,
     }
 }
 
+static bool starts_with_uppercase_sticky(cz::Str string, cz::Str query) {
+    if (query.len > string.len)
+        return false;
+    for (size_t i = 0; i < query.len; ++i) {
+        if (cz::is_upper(query[i])) {
+            if (string[i] != query[i]) {
+                return false;
+            }
+        } else {
+            if (cz::to_lower(string[i]) != query[i]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+static bool ends_with_uppercase_sticky(cz::Str string, cz::Str query) {
+    if (query.len > string.len)
+        return false;
+    for (size_t i = 0; i < query.len; ++i) {
+        if (cz::is_upper(query[i])) {
+            if (string[string.len - query.len + i] != query[i]) {
+                return false;
+            }
+        } else {
+            if (cz::to_lower(string[string.len - query.len + i]) != query[i]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+static const char* find_uppercase_sticky(cz::Str string, cz::Str query) {
+    for (size_t i = 0; i + query.len <= string.len; ++i) {
+        if (starts_with_uppercase_sticky(string.slice_start(i), query)) {
+            return string.buffer + i;
+        }
+    }
+    return nullptr;
+}
+
 struct Wildcard_Pattern {
     bool wild_start = true;
     bool wild_start_component = true;
@@ -116,7 +159,7 @@ struct Wildcard_Pattern {
                     p2 = piece.slice_start(1);
                 }
 
-                if (string.starts_with_case_insensitive(p2)) {
+                if (starts_with_uppercase_sticky(string, p2)) {
                     index += p2.len;
                     continue;
                 }
@@ -131,11 +174,11 @@ struct Wildcard_Pattern {
             // If there are multiple parts of the string that match the last
             // piece and wild_end is set then we only care about the end.
             if (j + 1 == pieces.len && !wild_end) {
-                return string.ends_with_case_insensitive(piece);
+                return ends_with_uppercase_sticky(string, piece);
             }
 
             // Find the piece.
-            const char* find = string.slice_start(index).find_case_insensitive(piece);
+            const char* find = find_uppercase_sticky(string.slice_start(index), piece);
             if (!find) {
                 return false;
             } else {
