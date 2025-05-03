@@ -35,6 +35,7 @@ struct Face;
     MAG_TOKEN_TYPE(LINK_TITLE)                                                \
     MAG_TOKEN_TYPE(LINK_HREF)                                                 \
                                                                               \
+    MAG_TOKEN_TYPE(PATCH_COMMIT_CONTEXT)                                      \
     MAG_TOKEN_TYPE(PATCH_REMOVE)                                              \
     MAG_TOKEN_TYPE(PATCH_ADD)                                                 \
     MAG_TOKEN_TYPE(PATCH_NEUTRAL)                                             \
