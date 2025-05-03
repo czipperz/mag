@@ -4,6 +4,7 @@
 #include "core/command_macros.hpp"
 #include "core/job.hpp"
 #include "core/movement.hpp"
+#include "line_numbers_before_diff.hpp"
 #include "version_control.hpp"
 
 namespace mag {
@@ -137,17 +138,23 @@ REGISTER_COMMAND(command_line_history);
 void command_line_history(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
+    if (buffer->type != Buffer::FILE) {
+        source.client->show_message("Error: buffer must be a file");
+        return;
+    }
+
     Contents_Iterator iterator = buffer->contents.iterator_at(
         window->show_marks ? window->cursors[0].start() : window->cursors[0].point);
-    uint64_t line_number_start = iterator.get_line_number() + 1;
-    uint64_t line_number_end = line_number_start;
+    uint64_t line_number_range[2] = {iterator.get_line_number() + 1};
 
     if (window->show_marks) {
         iterator.go_to(window->cursors[0].end());
         if (at_start_of_line(iterator) && iterator.position > window->cursors[0].start()) {
             iterator.retreat();
         }
-        line_number_end = iterator.get_line_number() + 1;
+        line_number_range[1] = iterator.get_line_number() + 1;
+    } else {
+        line_number_range[1] = line_number_range[0];
     }
 
     cz::String root = {};
@@ -157,9 +164,15 @@ void command_line_history(Editor* editor, Command_Source source) {
         return;
     }
 
+    if (!line_numbers_before_changes_to_path(buffer->directory.buffer, buffer->name,
+                                             line_number_range)) {
+        source.client->show_message("Error: couldn't calculate line numbers before diff");
+        return;
+    }
+
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
-    cz::append(cz::heap_allocator(), &path, line_number_start, ',', line_number_end, ':');
+    cz::append(cz::heap_allocator(), &path, line_number_range[0], ',', line_number_range[1], ':');
     if (!buffer->get_path(cz::heap_allocator(), &path)) {
         source.client->show_message("Error: couldn't get buffer path");
         return;
