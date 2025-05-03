@@ -1361,6 +1361,231 @@ void process_buffer_external_updates(Client* client, Window* window) {
     }
 }
 
+static void draw_mini_buffer_buffer(Cell* cells,
+                                    Window_Cache** mini_buffer_window_cache,
+                                    size_t total_rows,
+                                    size_t total_cols,
+                                    Editor* editor,
+                                    Client* client,
+                                    bool* any_animated_scrolling,
+                                    Window_Unified* window,
+                                    cz::Arc<Buffer_Handle> handle,
+                                    const Buffer* buffer,
+                                    size_t mini_buffer_height,
+                                    size_t results_height,
+                                    size_t message_width) {
+    size_t y = 0;
+    size_t x = 0;
+    size_t start_row = total_rows - mini_buffer_height - results_height;
+    size_t start_col = 0;
+
+    Face minibuffer_prompt_face = {};
+    apply_face(&minibuffer_prompt_face, editor->theme.special_faces[Face_Type::MINI_BUFFER_PROMPT]);
+    {
+        WITH_CONST_BUFFER_HANDLE(client->messages_buffer_handle);
+
+        Contents_Iterator it = buffer->contents.iterator_at(client->_message.start);
+        // TODO: handle multi line mini buffer message
+        for (; x < message_width; it.advance()) {
+            SET_IND(minibuffer_prompt_face, it.get());
+            ++x;
+        }
+    }
+
+    // Clear the other lines below the message.
+    for (y = 1; y < window->rows(); ++y) {
+        // TODO: handle multi line mini buffer message
+        for (x = 0; x < message_width; ++x) {
+            SET_IND(minibuffer_prompt_face, ' ');
+        }
+    }
+
+    if (client->_message.tag > Message::SHOW) {
+        start_col = x;
+
+        Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
+            editor, client, window, handle, buffer, *mini_buffer_window_cache,
+            any_animated_scrolling);
+        size_t cursor_pos_y, cursor_pos_x;
+        draw_buffer_contents(cells, *mini_buffer_window_cache, total_cols, editor, client, buffer,
+                             window, start_row, start_col, &cursor_pos_y, &cursor_pos_x, iterator);
+    } else {
+        y = 0;
+        for (; x < total_cols; ++x) {
+            SET_IND({}, ' ');
+        }
+
+        if (std::chrono::system_clock::now() - client->_message_time > std::chrono::seconds(5)) {
+            client->_message.tag = Message::NONE;
+        }
+    }
+}
+
+static void draw_mini_buffer_results(Cell* cells,
+                                     Window_Cache** mini_buffer_window_cache,
+                                     size_t total_rows,
+                                     size_t total_cols,
+                                     Editor* editor,
+                                     Client* client,
+                                     const Buffer* buffer,
+                                     size_t results_height,
+                                     Completion_Cache* completion_cache) {
+    size_t y = 0;
+    size_t x = 0;
+    size_t start_row = total_rows - results_height;
+    size_t start_col = 0;
+    size_t offset = completion_cache->filter_context.selected;
+    if (offset >= completion_cache->filter_context.results.len - results_height / 2) {
+        offset = completion_cache->filter_context.results.len - results_height;
+    } else if (offset < results_height / 2) {
+        offset = 0;
+    } else {
+        offset -= results_height / 2;
+    }
+
+    Tokenizer minibuffer_next_token = buffer->mode.next_token;
+    for (size_t r = offset; r < results_height + offset; ++r) {
+        // Syntax highlight results with the Tokenizer set on the mini buffer.
+        Contents contents = {};
+        CZ_DEFER(contents.drop());
+
+        cz::Str result = completion_cache->filter_context.results[r];
+        // TODO: have some sort of scroll or wrap for results?
+        if (result.len > total_cols) {
+            result = result.slice_end(total_cols);
+        }
+
+        contents.insert(0, result);
+
+        Contents_Iterator iterator = contents.start();
+        uint64_t state = 0;
+        Token token;
+#ifndef NDEBUG
+        token = INVALID_TOKEN;
+#endif
+        bool has_token = minibuffer_next_token(&iterator, &token, &state);
+#ifndef NDEBUG
+        if (has_token) {
+            token.check_valid(contents.len);
+        }
+#endif
+
+        Face base_face = {};
+        if (r == completion_cache->filter_context.selected) {
+            apply_face(&base_face,
+                       editor->theme.special_faces[Face_Type::MINI_BUFFER_COMPLETION_SELECTED]);
+        }
+
+        for (size_t i = 0; i < result.len; ++i) {
+            Face face = base_face;
+
+            while (has_token) {
+                if (i < token.start) {
+                    // Before the start of the token; do nothing.
+                    break;
+                } else if (i < token.end) {
+                    // The token is active.
+                    if (token.type & Token_Type::CUSTOM) {
+                        apply_face(&face, Token_Type_::decode(token.type));
+                    } else {
+                        apply_face(&face, editor->theme.token_faces[token.type]);
+                    }
+                    break;
+                } else {
+                    // Go to the next token.
+#ifndef NDEBUG
+                    token = INVALID_TOKEN;
+#endif
+                    has_token = minibuffer_next_token(&iterator, &token, &state);
+#ifndef NDEBUG
+                    if (has_token) {
+                        token.check_valid(contents.len);
+                    }
+#endif
+                    continue;
+                }
+            }
+
+            SET_IND(face, result[i]);
+            ++x;
+        }
+
+        for (; x < total_cols; ++x) {
+            SET_IND({}, ' ');
+        }
+
+        x = 0;
+        ++y;
+    }
+}
+
+static size_t draw_mini_buffer(Cell* cells,
+                               Window_Cache** window_cache,
+                               Window_Cache** mini_buffer_window_cache,
+                               size_t total_rows,
+                               size_t total_cols,
+                               Editor* editor,
+                               Client* client,
+                               bool* any_animated_scrolling) {
+    ZoneScoped;
+
+    size_t mini_buffer_height = 1;
+    size_t results_height = 0;
+
+    Completion_Cache* completion_cache = &client->mini_buffer_completion_cache;
+    if (client->_message.tag > Message::SHOW) {
+        if (completion_cache->state == Completion_Cache::LOADED) {
+            results_height = completion_cache->filter_context.results.len;
+            if (results_height > editor->theme.max_completion_results) {
+                results_height = editor->theme.max_completion_results;
+            }
+            if (results_height > total_rows / 2) {
+                results_height = total_rows / 2;
+            }
+        }
+    }
+
+    Window_Unified* window = client->mini_buffer_window();
+    WITH_CONST_WINDOW_BUFFER(window);
+
+    size_t message_width =
+        std::min(client->_message.end - client->_message.start, (uint64_t)total_cols);
+    // Add 1 for the title bar even though the mini buffer doesn't have a title bar.
+    window->total_rows = 1 + mini_buffer_height;
+    window->total_cols = total_cols - message_width;
+
+    // We want to draw the mini buffer as small as possible.
+    // TODO: draw message on multiple lines if it is too long.
+    if (client->_message.tag > Message::SHOW) {
+        Contents_Iterator it = buffer->contents.start();
+
+        // Eat the first line.
+        end_of_visual_line(window, buffer->mode, editor->theme, &it);
+        forward_char(&it);
+
+        for (; mini_buffer_height < editor->theme.mini_buffer_max_height; ++mini_buffer_height) {
+            // If there is no subsequent line then stop.
+            uint64_t backup = it.position;
+            end_of_visual_line(window, buffer->mode, editor->theme, &it);
+            forward_char(&it);
+            if (it.position == backup) {
+                break;
+            }
+        }
+
+        window->total_rows = 1 + mini_buffer_height;
+
+        setup_unified_window_cache(editor, window, buffer, mini_buffer_window_cache);
+    }
+
+    draw_mini_buffer_buffer(cells, mini_buffer_window_cache, total_rows, total_cols, editor, client,
+                            any_animated_scrolling, window, handle, buffer, mini_buffer_height,
+                            results_height, message_width);
+    draw_mini_buffer_results(cells, mini_buffer_window_cache, total_rows, total_cols, editor,
+                             client, buffer, results_height, completion_cache);
+    return total_rows - mini_buffer_height - results_height;
+}
+
 void render_to_cells(Cell* cells,
                      Window_Cache** window_cache,
                      Window_Cache** mini_buffer_window_cache,
@@ -1371,202 +1596,9 @@ void render_to_cells(Cell* cells,
                      bool* any_animated_scrolling) {
     ZoneScoped;
 
-    size_t mini_buffer_height = 0;
-
     if (client->_message.tag != Message::NONE) {
-        ZoneScopedN("Draw mini buffer");
-
-        mini_buffer_height = 1;
-        size_t results_height = 0;
-
-        Completion_Cache* completion_cache = &client->mini_buffer_completion_cache;
-        if (client->_message.tag > Message::SHOW) {
-            if (completion_cache->state == Completion_Cache::LOADED) {
-                results_height = completion_cache->filter_context.results.len;
-                if (results_height > editor->theme.max_completion_results) {
-                    results_height = editor->theme.max_completion_results;
-                }
-                if (results_height > total_rows / 2) {
-                    results_height = total_rows / 2;
-                }
-            }
-        }
-
-        Window_Unified* window = client->mini_buffer_window();
-        WITH_CONST_WINDOW_BUFFER(window);
-        Tokenizer minibuffer_next_token = buffer->mode.next_token;
-
-        size_t message_width =
-            std::min(client->_message.end - client->_message.start, (uint64_t)total_cols);
-        // Add 1 for the title bar even though the mini buffer doesn't have a title bar.
-        window->total_rows = 1 + mini_buffer_height;
-        window->total_cols = total_cols - message_width;
-
-        // We want to draw the mini buffer as small as possible.
-        // TODO: draw message on multiple lines if it is too long.
-        if (client->_message.tag > Message::SHOW) {
-            Contents_Iterator it = buffer->contents.start();
-
-            // Eat the first line.
-            end_of_visual_line(window, buffer->mode, editor->theme, &it);
-            forward_char(&it);
-
-            for (; mini_buffer_height < editor->theme.mini_buffer_max_height;
-                 ++mini_buffer_height) {
-                // If there is no subsequent line then stop.
-                uint64_t backup = it.position;
-                end_of_visual_line(window, buffer->mode, editor->theme, &it);
-                forward_char(&it);
-                if (it.position == backup) {
-                    break;
-                }
-            }
-
-            window->total_rows = 1 + mini_buffer_height;
-
-            setup_unified_window_cache(editor, window, buffer, mini_buffer_window_cache);
-        }
-
-        size_t y = 0;
-        size_t x = 0;
-        size_t start_row = total_rows - mini_buffer_height - results_height;
-        size_t start_col = 0;
-
-        Face minibuffer_prompt_face = {};
-        apply_face(&minibuffer_prompt_face,
-                   editor->theme.special_faces[Face_Type::MINI_BUFFER_PROMPT]);
-        {
-            WITH_CONST_BUFFER_HANDLE(client->messages_buffer_handle);
-
-            Contents_Iterator it = buffer->contents.iterator_at(client->_message.start);
-            // TODO: handle multi line mini buffer message
-            for (; x < message_width; it.advance()) {
-                SET_IND(minibuffer_prompt_face, it.get());
-                ++x;
-            }
-        }
-
-        // Clear the other lines below the message.
-        for (y = 1; y < window->rows(); ++y) {
-            // TODO: handle multi line mini buffer message
-            for (x = 0; x < message_width; ++x) {
-                SET_IND(minibuffer_prompt_face, ' ');
-            }
-        }
-
-        if (client->_message.tag > Message::SHOW) {
-            start_col = x;
-
-            Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
-                editor, client, window, handle, buffer, *mini_buffer_window_cache,
-                any_animated_scrolling);
-            size_t cursor_pos_y, cursor_pos_x;
-            draw_buffer_contents(cells, *mini_buffer_window_cache, total_cols, editor, client,
-                                 buffer, window, start_row, start_col, &cursor_pos_y, &cursor_pos_x,
-                                 iterator);
-        } else {
-            y = 0;
-            for (; x < total_cols; ++x) {
-                SET_IND({}, ' ');
-            }
-
-            if (std::chrono::system_clock::now() - client->_message_time >
-                std::chrono::seconds(5)) {
-                client->_message.tag = Message::NONE;
-            }
-        }
-
-        {
-            size_t y = 0;
-            size_t x = 0;
-            size_t start_row = total_rows - results_height;
-            size_t start_col = 0;
-            size_t offset = completion_cache->filter_context.selected;
-            if (offset >= completion_cache->filter_context.results.len - results_height / 2) {
-                offset = completion_cache->filter_context.results.len - results_height;
-            } else if (offset < results_height / 2) {
-                offset = 0;
-            } else {
-                offset -= results_height / 2;
-            }
-
-            for (size_t r = offset; r < results_height + offset; ++r) {
-                // Syntax highlight results with the Tokenizer set on the mini buffer.
-                Contents contents = {};
-                CZ_DEFER(contents.drop());
-
-                cz::Str result = completion_cache->filter_context.results[r];
-                // TODO: have some sort of scroll or wrap for results?
-                if (result.len > total_cols) {
-                    result = result.slice_end(total_cols);
-                }
-
-                contents.insert(0, result);
-
-                Contents_Iterator iterator = contents.start();
-                uint64_t state = 0;
-                Token token;
-#ifndef NDEBUG
-                token = INVALID_TOKEN;
-#endif
-                bool has_token = minibuffer_next_token(&iterator, &token, &state);
-#ifndef NDEBUG
-                if (has_token) {
-                    token.check_valid(contents.len);
-                }
-#endif
-
-                Face base_face = {};
-                if (r == completion_cache->filter_context.selected) {
-                    apply_face(
-                        &base_face,
-                        editor->theme.special_faces[Face_Type::MINI_BUFFER_COMPLETION_SELECTED]);
-                }
-
-                for (size_t i = 0; i < result.len; ++i) {
-                    Face face = base_face;
-
-                    while (has_token) {
-                        if (i < token.start) {
-                            // Before the start of the token; do nothing.
-                            break;
-                        } else if (i < token.end) {
-                            // The token is active.
-                            if (token.type & Token_Type::CUSTOM) {
-                                apply_face(&face, Token_Type_::decode(token.type));
-                            } else {
-                                apply_face(&face, editor->theme.token_faces[token.type]);
-                            }
-                            break;
-                        } else {
-                            // Go to the next token.
-#ifndef NDEBUG
-                            token = INVALID_TOKEN;
-#endif
-                            has_token = minibuffer_next_token(&iterator, &token, &state);
-#ifndef NDEBUG
-                            if (has_token) {
-                                token.check_valid(contents.len);
-                            }
-#endif
-                            continue;
-                        }
-                    }
-
-                    SET_IND(face, result[i]);
-                    ++x;
-                }
-
-                for (; x < total_cols; ++x) {
-                    SET_IND({}, ' ');
-                }
-
-                x = 0;
-                ++y;
-            }
-        }
-
-        total_rows = start_row;
+        total_rows = draw_mini_buffer(cells, window_cache, mini_buffer_window_cache, total_rows,
+                                      total_cols, editor, client, any_animated_scrolling);
     }
 
     client->window->set_size(total_rows, total_cols);
