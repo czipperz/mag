@@ -715,10 +715,14 @@ static void draw_buffer_contents(Cell* cells,
     for (; !iterator.at_eob(); iterator.advance()) {
         while (has_token && iterator.position >= token.end) {
 #ifndef NDEBUG
-            // Detect bugs in next_token implementations where they don't set all token fields.
-            memset(&token, 0xCC, sizeof(token));
+            token = INVALID_TOKEN;
 #endif
             has_token = buffer->mode.next_token(&token_iterator, &token, &state);
+#ifndef NDEBUG
+            if (has_token) {
+                token.check_valid(buffer->contents.len);
+            }
+#endif
         }
 
         bool has_selected_cursor = false;
@@ -1503,10 +1507,14 @@ void render_to_cells(Cell* cells,
                 uint64_t state = 0;
                 Token token;
 #ifndef NDEBUG
-                // Detect bugs in next_token implementations where they don't set all token fields.
-                memset(&token, 0xCC, sizeof(token));
+                token = INVALID_TOKEN;
 #endif
                 bool has_token = minibuffer_next_token(&iterator, &token, &state);
+#ifndef NDEBUG
+                if (has_token) {
+                    token.check_valid(contents.len);
+                }
+#endif
 
                 Face base_face = {};
                 if (r == completion_cache->filter_context.selected) {
@@ -1533,11 +1541,14 @@ void render_to_cells(Cell* cells,
                         } else {
                             // Go to the next token.
 #ifndef NDEBUG
-                            // Detect bugs in next_token implementations
-                            // where they don't set all token fields.
-                            memset(&token, 0xCC, sizeof(token));
+                            token = INVALID_TOKEN;
 #endif
                             has_token = minibuffer_next_token(&iterator, &token, &state);
+#ifndef NDEBUG
+                            if (has_token) {
+                                token.check_valid(contents.len);
+                            }
+#endif
                             continue;
                         }
                     }
