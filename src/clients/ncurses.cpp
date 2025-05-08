@@ -6,11 +6,13 @@
 #include <algorithm>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
+#include <cz/file.hpp>
 #include <cz/format.hpp>
 #include <cz/heap.hpp>
 #include <thread>
 #include <tracy/Tracy.hpp>
 #include "core/client.hpp"
+#include "core/command_macros.hpp"
 #include "core/completion.hpp"
 #include "core/movement.hpp"
 #include "core/server.hpp"
@@ -26,9 +28,32 @@ namespace mag {
 namespace client {
 namespace ncurses {
 
+////////////////////////////////////////////////////////////////////////////////
+// Configuration variables
+////////////////////////////////////////////////////////////////////////////////
+
 #undef MOCK_INPUT       // read from premade input buffer instead of keyboard
-#undef LOG_GETCH        // log all characters typed
 #undef VISUALIZE_INPUT  // show messages for characters typed instead of processing them
+
+#define LOG_PATH "/tmp/mag-key-log"
+static cz::Output_File log_getch_file;  // log all characters typed
+void command_ncurses_log_getch_toggle(Editor* editor, Command_Source source) {
+    if (log_getch_file.is_open()) {
+        log_getch_file.close();
+        source.client->show_message("Log written to " LOG_PATH);
+    } else {
+        if (log_getch_file.open(LOG_PATH)) {
+            source.client->show_message("Logging to " LOG_PATH);
+        } else {
+            source.client->show_message("Failed to start logging to " LOG_PATH);
+        }
+    }
+}
+REGISTER_COMMAND(command_ncurses_log_getch_toggle);
+
+////////////////////////////////////////////////////////////////////////////////
+// Mock input & logging input implementatino
+////////////////////////////////////////////////////////////////////////////////
 
 #ifdef MOCK_INPUT
 static bool is_nodelay = false;
@@ -38,21 +63,15 @@ static bool is_nodelay = false;
 static int logging_getch() {
     int val = getch();
 
-#ifdef LOG_GETCH
-    if (val != ERR) {
-        static cz::Output_File file;
-        if (!file.is_open())
-            CZ_ASSERT(file.open("/tmp/mag-key-log"));
-
+    if (log_getch_file.is_open() && val != ERR) {
         cz::Heap_String str = cz::format(val);
         if (cz::is_print(val))
             cz::append(&str, " '", (char)val, "'\n");
         else
             cz::append(&str, '\n');
-        file.write(str);
+        log_getch_file.write(str);
         str.drop();
     }
-#endif
 
     return val;
 }
@@ -89,6 +108,10 @@ static int mock_getch() {
 
 #undef getch
 #define getch() (mock_getch())
+
+////////////////////////////////////////////////////////////////////////////////
+// Normal implementation
+////////////////////////////////////////////////////////////////////////////////
 
 static int16_t get_face_color(Face_Color fc) {
     if (fc.is_themed) {
