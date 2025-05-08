@@ -249,6 +249,7 @@ static void render(int* total_rows,
                 ++index;
             }
         }
+        move(client->cursor_pos_y, client->cursor_pos_x);
     }
 
     cz::swap(cellss[0], cellss[1]);

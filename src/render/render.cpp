@@ -1133,13 +1133,15 @@ static void draw_buffer(Cell* cells,
         update_cursors_and_run_animated_scrolling(editor, client, window, window->buffer_handle,
                                                   buffer, window_cache, any_animated_scrolling);
 
-    size_t cursor_pos_y, cursor_pos_x;
+    size_t cursor_pos_y = 0, cursor_pos_x = 0;
     draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
                          start_col, &cursor_pos_y, &cursor_pos_x, iterator);
     draw_buffer_decoration(cells, total_cols, editor, client, window, buffer, is_selected_window,
                            start_row, start_col);
     draw_window_completion(cells, editor, client, window, buffer, total_cols, start_row, start_col,
                            cursor_pos_y, cursor_pos_x);
+    client->cursor_pos_y = cursor_pos_y;
+    client->cursor_pos_x = cursor_pos_x;
 }
 
 static void setup_unified_window_cache(Editor* editor,

@@ -70,6 +70,10 @@ struct Client {
 
     Mouse_Position mouse;
 
+    /// Selected normal window's selected cursor's position on screen.  Used to put the
+    /// ncurses cursor at the same position so tmux will start copying at the right place.
+    size_t cursor_pos_y, cursor_pos_x;
+
     cz::Vector<Window_Unified*> _offscreen_windows;
     Window* window;
     Window_Unified* selected_normal_window;
