@@ -909,6 +909,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    buffer->name.starts_with("*git log ") ||
                    buffer->name.starts_with("*shell git log ") ||
                    buffer->name == "*shell git log*" ||
+                   buffer->name.starts_with("*shell git diff ") ||
+                   buffer->name == "*shell git diff*" ||
                    buffer->name.starts_with("*shell git show ") ||
                    buffer->name == "*shell git show*") {
             buffer->mode.next_token = syntax::patch_next_token;
