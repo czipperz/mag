@@ -99,13 +99,7 @@ void command_show_commit_at_sol(Editor* editor, Command_Source source) {
 // File history
 ////////////////////////////////////////////////////////////////////////////////
 
-REGISTER_COMMAND(command_git_log);
-void command_git_log(Editor* editor, Command_Source source) {
-    return command_file_history(editor, source);
-}
-
-REGISTER_COMMAND(command_file_history);
-void command_file_history(Editor* editor, Command_Source source) {
+static void command_git_log_common(Editor* editor, Command_Source source, bool show_patch) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
     cz::String root = {};
@@ -122,12 +116,24 @@ void command_file_history(Editor* editor, Command_Source source) {
         return;
     }
 
-    cz::Heap_String buffer_name = cz::format("git log ", path);
+    cz::Heap_String buffer_name = cz::format(show_patch ? "git log -p " : "git log ", path);
     CZ_DEFER(buffer_name.drop());
 
-    cz::Str args[] = {"git", "log", path};
-    run_console_command(source.client, editor, root.buffer, args, buffer_name, "Git error",
-                        nullptr);
+    cz::Str args_patch[] = {"git", "log", "-p", path};
+    cz::Str args_no_patch[] = {"git", "log", path};
+    run_console_command(source.client, editor, root.buffer,
+                        show_patch ? cz::slice(args_patch) : cz::slice(args_no_patch), buffer_name,
+                        "Git error", nullptr);
+}
+
+REGISTER_COMMAND(command_git_log);
+void command_git_log(Editor* editor, Command_Source source) {
+    command_git_log_common(editor, source, false);
+}
+
+REGISTER_COMMAND(command_file_history);
+void command_file_history(Editor* editor, Command_Source source) {
+    command_git_log_common(editor, source, true);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
