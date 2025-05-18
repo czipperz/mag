@@ -75,5 +75,28 @@ void command_run_macro_forall_lines_in_search(Editor* editor, Command_Source sou
     }
 }
 
+REGISTER_COMMAND(command_print_macro);
+void command_print_macro(Editor* editor, Command_Source source) {
+    cz::String message = {};
+    CZ_DEFER(message.drop(cz::heap_allocator()));
+    message.reserve(cz::heap_allocator(), 256);
+    message.append("Macro:");
+    const auto is_basic = [](const Key& key) {
+        return key.modifiers == 0 && key.code <= UCHAR_MAX && cz::is_graph((char)key.code);
+    };
+    for (size_t i = 0; i < source.client->macro_key_chain.len; ++i) {
+        if (i >= 1 && is_basic(source.client->macro_key_chain[i - 1]) &&
+            is_basic(source.client->macro_key_chain[i])) {
+            message.reserve(cz::heap_allocator(), 1);
+            message.push(source.client->macro_key_chain[i].code);
+            continue;
+        }
+        message.reserve(cz::heap_allocator(), 1 + stringify_key_max_size);
+        message.push(' ');
+        stringify_key(&message, source.client->macro_key_chain[i]);
+    }
+    source.client->show_message(message);
+}
+
 }
 }
