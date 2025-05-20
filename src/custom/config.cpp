@@ -915,6 +915,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    buffer->name == "*shell git show*") {
             buffer->mode.next_token = syntax::patch_next_token;
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
+            BIND(buffer->mode.key_map, "ENTER", version_control::command_show_commit_in_log);
+            BIND(buffer->mode.key_map, "A-j", version_control::command_show_commit_in_log);
         } else if (buffer->name.starts_with("*git blame ")) {
             buffer->mode.next_token = version_control::git_blame_next_token;
             BIND(buffer->mode.key_map, "ENTER", version_control::command_show_commit_in_blame);

@@ -3,6 +3,7 @@
 #include <cz/format.hpp>
 #include "core/command_macros.hpp"
 #include "core/job.hpp"
+#include "core/match.hpp"
 #include "core/movement.hpp"
 #include "line_numbers_before_diff.hpp"
 #include "version_control.hpp"
@@ -73,26 +74,41 @@ void command_show_commit(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
-REGISTER_COMMAND(command_show_commit_in_blame);
-void command_show_commit_in_blame(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
-    Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
-    start_of_line(&iterator);
-
+static void show_commit_at_point(Editor* editor, Client* client, Contents_Iterator iterator) {
     {
         Contents_Iterator test = iterator;
         for (uint64_t i = 0; i < 8; ++i) {
-            if (!cz::is_hex_digit(test.get())) {
-                source.client->show_message("No commit on this line");
+            if (test.at_eob() || !cz::is_hex_digit(test.get())) {
+                client->show_message("No commit on this line");
                 return;
             }
             test.advance();
         }
     }
 
-    SSOStr commit = buffer->contents.slice(cz::heap_allocator(), iterator, iterator.position + 8);
+    SSOStr commit = iterator.contents->slice(cz::heap_allocator(), iterator, iterator.position + 8);
     CZ_DEFER(commit.drop(cz::heap_allocator()));
-    command_show_commit_callback(editor, source.client, commit.as_str(), nullptr);
+    command_show_commit_callback(editor, client, commit.as_str(), nullptr);
+}
+
+REGISTER_COMMAND(command_show_commit_in_blame);
+void command_show_commit_in_blame(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    Contents_Iterator iterator = buffer->contents.iterator_at(window->sel().point);
+    start_of_line(&iterator);
+    return show_commit_at_point(editor, source.client, iterator);
+}
+
+REGISTER_COMMAND(command_show_commit_in_log);
+void command_show_commit_in_log(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    Contents_Iterator iterator = buffer->contents.iterator_at(window->sel().point);
+    if (!rfind(&iterator, "\ncommit ")) {
+        source.client->show_message("Couldn't find a commit");
+        return;
+    }
+    iterator.advance(strlen("\ncommit "));
+    return show_commit_at_point(editor, source.client, iterator);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
