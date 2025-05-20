@@ -73,8 +73,8 @@ void command_show_commit(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
-REGISTER_COMMAND(command_show_commit_at_sol);
-void command_show_commit_at_sol(Editor* editor, Command_Source source) {
+REGISTER_COMMAND(command_show_commit_in_blame);
+void command_show_commit_in_blame(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[0].point);
     start_of_line(&iterator);
