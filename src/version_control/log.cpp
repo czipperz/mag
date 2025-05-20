@@ -124,6 +124,8 @@ void command_git_log_next_commit(Editor* editor, Command_Source source) {
             iterator.advance();
         window->cursors[c].point = iterator.position;
     }
+    window->start_position = window->cursors[window->selected_cursor].point;
+    window->column_offset = 0;
 }
 
 REGISTER_COMMAND(command_git_log_previous_commit);
@@ -136,6 +138,8 @@ void command_git_log_previous_commit(Editor* editor, Command_Source source) {
             iterator.advance();
         window->cursors[c].point = iterator.position;
     }
+    window->start_position = window->cursors[window->selected_cursor].point;
+    window->column_offset = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
