@@ -295,6 +295,25 @@ void kill_extra_cursors(Window_Unified* window, Client* client) {
     }
 }
 
+void kill_cursor(Window_Unified* window, Client* client, size_t index) {
+    CZ_DEBUG_ASSERT(index < window->cursors.len);
+
+    // When going down to 1 cursor we need to call `kill_extra_cursors` to cleanup various settings.
+    if (window->cursors.len == 2) {
+        if (window->selected_cursor == index)
+            window->selected_cursor = 1 - window->selected_cursor;
+        kill_extra_cursors(window, client);
+        return;
+    }
+
+    window->cursors.remove(index);
+
+    // Make sure the selected cursor is still in bounds.  Prefer moving forwards.
+    if (window->selected_cursor > index || window->selected_cursor == window->cursors.len) {
+        --window->selected_cursor;
+    }
+}
+
 Contents_Iterator nearest_character(const Window_Unified* window,
                                     const Buffer* buffer,
                                     const Theme& theme,

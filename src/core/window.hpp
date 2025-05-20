@@ -119,6 +119,7 @@ struct Window_Split : Window {
 
 struct Client;
 void kill_extra_cursors(Window_Unified* window, Client* client);
+void kill_cursor(Window_Unified* window, Client* client, size_t index);
 
 Contents_Iterator nearest_character(const Window_Unified* window,
                                     const Buffer* buffer,
