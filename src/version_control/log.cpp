@@ -112,6 +112,33 @@ void command_show_commit_in_log(Editor* editor, Command_Source source) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Movement commands
+////////////////////////////////////////////////////////////////////////////////
+
+REGISTER_COMMAND(command_git_log_next_commit);
+void command_git_log_next_commit(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    for (size_t c = window->cursors.len; c-- > 0;) {
+        Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
+        if (find(&iterator, "\ncommit "))
+            iterator.advance();
+        window->cursors[c].point = iterator.position;
+    }
+}
+
+REGISTER_COMMAND(command_git_log_previous_commit);
+void command_git_log_previous_commit(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    for (size_t c = window->cursors.len; c-- > 0;) {
+        Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
+        backward_char(&iterator);
+        if (rfind(&iterator, "\ncommit "))
+            iterator.advance();
+        window->cursors[c].point = iterator.position;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // File history
 ////////////////////////////////////////////////////////////////////////////////
 

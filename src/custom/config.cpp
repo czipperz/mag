@@ -917,6 +917,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
             BIND(buffer->mode.key_map, "ENTER", version_control::command_show_commit_in_log);
             BIND(buffer->mode.key_map, "A-j", version_control::command_show_commit_in_log);
+            BIND(buffer->mode.key_map, "n", version_control::command_git_log_next_commit);
+            BIND(buffer->mode.key_map, "p", version_control::command_git_log_previous_commit);
         } else if (buffer->name.starts_with("*git blame ")) {
             buffer->mode.next_token = version_control::git_blame_next_token;
             BIND(buffer->mode.key_map, "ENTER", version_control::command_show_commit_in_blame);
