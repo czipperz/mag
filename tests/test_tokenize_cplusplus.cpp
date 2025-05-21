@@ -63,3 +63,83 @@ TEST_CASE("tokenize_cplusplus /* inside ///```") {
     CHECK(tokens[7] == Test_Runner::TToken{"```", {26, 29, Token_Type::CLOSE_PAIR}});
     CHECK(tokens[8] == Test_Runner::TToken{"after", {30, 35, Token_Type::IDENTIFIER}});
 }
+
+TEST_CASE("tokenize_cplusplus markdown in /// comment") {
+    Test_Runner tr;
+    tr.setup(
+        "/// # Header\n"
+        "/// * List1\n"
+        "///   - List2\n"
+        "///     + List3\n"
+        "/// Not a * list.\n");
+    tr.set_tokenizer(syntax::cpp_next_token);
+    // tr.tokenize_print_tests();
+
+    auto tokens = tr.tokenize();
+    REQUIRE(tokens.len == 13);
+    CHECK(tokens[0] == Test_Runner::TToken{"/// ", {0, 4, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[1] == Test_Runner::TToken{"#", {4, 5, Token_Type::PUNCTUATION}});
+    CHECK(tokens[2] == Test_Runner::TToken{" Header", {5, 12, Token_Type::TITLE}});
+    CHECK(tokens[3] == Test_Runner::TToken{"/// ", {13, 17, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[4] == Test_Runner::TToken{"*", {17, 18, Token_Type::PUNCTUATION}});
+    CHECK(tokens[5] == Test_Runner::TToken{" List1", {18, 24, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[6] == Test_Runner::TToken{"///   ", {25, 31, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[7] == Test_Runner::TToken{"-", {31, 32, Token_Type::PUNCTUATION}});
+    CHECK(tokens[8] == Test_Runner::TToken{" List2", {32, 38, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[9] == Test_Runner::TToken{"///     ", {39, 47, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[10] == Test_Runner::TToken{"+", {47, 48, Token_Type::PUNCTUATION}});
+    CHECK(tokens[11] == Test_Runner::TToken{" List3", {48, 54, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[12] ==
+          Test_Runner::TToken{"/// Not a * list.", {55, 72, Token_Type::DOC_COMMENT}});
+}
+
+TEST_CASE("tokenize_cplusplus markdown in /** comment") {
+    Test_Runner tr;
+    tr.setup(
+        "/** # Header\n"
+        "    * List1\n"
+        "      - List2\n"
+        "        + List3\n"
+        "    Not a * list. */\n");
+    tr.set_tokenizer(syntax::cpp_next_token);
+    // tr.tokenize_print_tests();
+
+    auto tokens = tr.tokenize();
+    REQUIRE(tokens.len == 8);
+    CHECK(tokens[0] == Test_Runner::TToken{"/** ", {0, 4, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[1] == Test_Runner::TToken{"#", {4, 5, Token_Type::PUNCTUATION}});
+    CHECK(tokens[2] == Test_Runner::TToken{" Header", {5, 12, Token_Type::TITLE}});
+    CHECK(tokens[3] ==
+          Test_Runner::TToken{"\n    * List1\n      ", {12, 31, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[4] == Test_Runner::TToken{"-", {31, 32, Token_Type::PUNCTUATION}});
+    CHECK(tokens[5] == Test_Runner::TToken{" List2\n        ", {32, 47, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[6] == Test_Runner::TToken{"+", {47, 48, Token_Type::PUNCTUATION}});
+    CHECK(tokens[7] ==
+          Test_Runner::TToken{" List3\n    Not a * list. */", {48, 75, Token_Type::DOC_COMMENT}});
+}
+
+TEST_CASE("tokenize_cplusplus markdown in /** comment with * continuations") {
+    Test_Runner tr;
+    tr.setup(
+        "/** # Header\n"
+        " *  * List1\n"
+        " *    - List2\n"
+        " *      + List3\n"
+        " *  Not a * list. */\n");
+    tr.set_tokenizer(syntax::cpp_next_token);
+    // tr.tokenize_print_tests();
+
+    auto tokens = tr.tokenize();
+    REQUIRE(tokens.len == 10);
+    CHECK(tokens[0] == Test_Runner::TToken{"/** ", {0, 4, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[1] == Test_Runner::TToken{"#", {4, 5, Token_Type::PUNCTUATION}});
+    CHECK(tokens[2] == Test_Runner::TToken{" Header", {5, 12, Token_Type::TITLE}});
+    CHECK(tokens[3] == Test_Runner::TToken{"\n *  ", {12, 17, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[4] == Test_Runner::TToken{"*", {17, 18, Token_Type::PUNCTUATION}});
+    CHECK(tokens[5] == Test_Runner::TToken{" List1\n *    ", {18, 31, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[6] == Test_Runner::TToken{"-", {31, 32, Token_Type::PUNCTUATION}});
+    CHECK(tokens[7] == Test_Runner::TToken{" List2\n *      ", {32, 47, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[8] == Test_Runner::TToken{"+", {47, 48, Token_Type::PUNCTUATION}});
+    CHECK(tokens[9] ==
+          Test_Runner::TToken{" List3\n *  Not a * list. */", {48, 75, Token_Type::DOC_COMMENT}});
+}
