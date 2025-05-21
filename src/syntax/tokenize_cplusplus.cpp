@@ -246,6 +246,7 @@ retry:
     switch (first_ch) {
     case CZ_ALPHA_CASES:
     case '_':
+    case '$':
         handle_identifier(iterator, first_ch, token, state);
         return true;
 
@@ -475,7 +476,7 @@ static void handle_identifier(Contents_Iterator* iterator,
 
     while (!iterator->at_eob()) {
         char ch = iterator->get();
-        if (!cz::is_alnum(ch) && ch != '_')
+        if (!cz::is_alnum(ch) && ch != '_' && ch != '$')
             break;
         iterator->advance();
     }

@@ -169,3 +169,16 @@ TEST_CASE("tokenize_cplusplus markdown in /** comment with * continuations") {
     CHECK(tokens[9] ==
           Test_Runner::TToken{" List3\n *  Not a * list. */", {48, 75, Token_Type::DOC_COMMENT}});
 }
+
+TEST_CASE("tokenize_cplusplus identifier and number") {
+    Test_Runner tr;
+    tr.setup("$ident$ 123 ident_123");
+    tr.set_tokenizer(syntax::cpp_next_token);
+    // tr.tokenize_print_tests();
+
+    auto tokens = tr.tokenize();
+    REQUIRE(tokens.len == 3);
+    CHECK(tokens[0] == Test_Runner::TToken{"$ident$", {0, 7, Token_Type::IDENTIFIER}});
+    CHECK(tokens[1] == Test_Runner::TToken{"123", {8, 11, Token_Type::NUMBER}});
+    CHECK(tokens[2] == Test_Runner::TToken{"ident_123", {12, 21, Token_Type::IDENTIFIER}});
+}
