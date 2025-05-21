@@ -618,14 +618,11 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (3 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "and"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (3 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "asm"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
     case (3 << 8) | (uint8_t)'f':
         if (looking_at_no_bounds_check(start, "for"))
-            // return KEYWORD_GENERAL;
             return KEYWORD_STATEMENT_PREFIX;
         return NOT_KEYWORD;
     case (3 << 8) | (uint8_t)'i':
@@ -634,12 +631,9 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
         return NOT_KEYWORD;
     case (3 << 8) | (uint8_t)'n':
         if (looking_at_no_bounds_check(start, "new")) {
-            // Note: treat as a type declaration keyword since it works pretty much the same
-            // way. return KEYWORD_GENERAL;
+            // Treat as a type declaration keyword because the next token will be a type.
             return KEYWORD_TYPE_DECLARATION;
         }
-        // return NOT_KEYWORD;
-        // case (3 << 8) | (uint8_t)'n':
         if (looking_at_no_bounds_check(start, "not"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
@@ -662,16 +656,12 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (4 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "case"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (4 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "char"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
     case (4 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "else"))
             return KEYWORD_STATEMENT_PREFIX;
-        // return NOT_KEYWORD;
-        // case (4 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "enum"))
             return KEYWORD_TYPE_DECLARATION;
         return NOT_KEYWORD;
@@ -686,8 +676,6 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (4 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "this"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (4 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "true"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
@@ -698,32 +686,22 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (5 << 8) | (uint8_t)'b':
         if (looking_at_no_bounds_check(start, "bitor"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (5 << 8) | (uint8_t)'b':
         if (looking_at_no_bounds_check(start, "break"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
     case (5 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "catch"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (5 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "class"))
             return KEYWORD_TYPE_DECLARATION;
-        // return NOT_KEYWORD;
-        // case (5 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "compl"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (5 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "const"))
             return KEYWORD_STATEMENT_PREFIX;
         return NOT_KEYWORD;
     case (5 << 8) | (uint8_t)'f':
         if (looking_at_no_bounds_check(start, "false"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (5 << 8) | (uint8_t)'f':
         if (looking_at_no_bounds_check(start, "float"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
@@ -742,8 +720,6 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (5 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "union"))
             return KEYWORD_TYPE_DECLARATION;
-        // return NOT_KEYWORD;
-        // case (5 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "using"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
@@ -762,16 +738,12 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (6 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "delete"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (6 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "double"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "export"))
             return KEYWORD_STATEMENT_PREFIX;
-        // return NOT_KEYWORD;
-        // case (6 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "extern"))
             return KEYWORD_STATEMENT_PREFIX;
         return NOT_KEYWORD;
@@ -782,8 +754,6 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (6 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "inline"))
             return KEYWORD_STATEMENT_PREFIX;
-        // return NOT_KEYWORD;
-        // case (6 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int8_t"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
@@ -802,24 +772,14 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "signed"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "size_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "sizeof"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "static"))
             return KEYWORD_STATEMENT_PREFIX;
-        // return NOT_KEYWORD;
-        // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "struct"))
             return KEYWORD_TYPE_DECLARATION;
-        // return NOT_KEYWORD;
-        // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "switch"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
@@ -838,16 +798,12 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (7 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "alignas"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (7 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "alignof"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "char8_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (7 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "concept"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
@@ -858,12 +814,8 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (7 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int16_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (7 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int32_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (7 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int64_t"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
@@ -898,20 +850,12 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (8 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "char16_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "char32_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "co_await"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "co_yield"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "continue"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
@@ -926,8 +870,6 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (8 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "intmax_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "intptr_t"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
@@ -942,36 +884,24 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (8 << 8) | (uint8_t)'r':
         if (looking_at_no_bounds_check(start, "reflexpr"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'r':
         if (looking_at_no_bounds_check(start, "register"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'r':
         if (looking_at_no_bounds_check(start, "requires"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "template"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "typename"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint16_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint32_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint64_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (8 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "unsigned"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
@@ -982,16 +912,10 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (9 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "co_return"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (9 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "consteval"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (9 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "constexpr"))
             return KEYWORD_STATEMENT_PREFIX;
-        // return NOT_KEYWORD;
-        // case (9 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "constinit"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
@@ -1002,16 +926,12 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (9 << 8) | (uint8_t)'p':
         if (looking_at_no_bounds_check(start, "protected"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (9 << 8) | (uint8_t)'p':
         if (looking_at_no_bounds_check(start, "ptrdiff_t"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
     case (9 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uintmax_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (9 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uintptr_t"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
@@ -1034,16 +954,10 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (12 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_fast16_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (12 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_fast32_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (12 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_fast64_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (12 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_least8_t"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
@@ -1062,20 +976,14 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (13 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "atomic_cancel"))
             return KEYWORD_GENERAL;
-        // return NOT_KEYWORD;
-        // case (13 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "atomic_commit"))
             return KEYWORD_GENERAL;
         return NOT_KEYWORD;
     case (13 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_least16_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (13 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_least32_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (13 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_least64_t"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
@@ -1086,24 +994,16 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (13 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_fast16_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (13 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_fast32_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (13 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_fast64_t"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
     case (14 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_least16_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (14 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_least32_t"))
             return KEYWORD_TYPE;
-        // return NOT_KEYWORD;
-        // case (14 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_least64_t"))
             return KEYWORD_TYPE;
         return NOT_KEYWORD;
