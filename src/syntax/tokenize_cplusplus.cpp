@@ -460,8 +460,19 @@ retry:
 // Identifier
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace {
+enum Keyword_Type {
+    NOT_KEYWORD = 0,
+    KEYWORD_TYPE_DECLARATION = 1,    /// e.g. 'struct'
+    KEYWORD_GENERAL = 2,             /// e.g. 'if'
+    KEYWORD_TYPE = 3,                /// e.g. 'char'
+    KEYWORD_STATEMENT_PREFIX = 4,    /// e.g. 'static'
+    KEYWORD_RAW_STRING_LITERAL = 5,  /// e.g. 'R'
+};
+}
+
 static bool is_type(Contents_Iterator iterator, State* state);
-static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch);
+static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch);
 
 static void handle_identifier(Contents_Iterator* iterator,
                               char first_ch,
@@ -483,28 +494,23 @@ static void handle_identifier(Contents_Iterator* iterator,
     token->end = iterator->position;
 
     switch (look_for_keyword(start, iterator->position - start.position, first_ch)) {
-    case 1:
-        // Type declaration keyword so next token is the type name (ex. struct).
+    case KEYWORD_TYPE_DECLARATION:
         token->type = Token_Type::KEYWORD;
         state->syntax = SYNTAX_AT_TYPE;
         break;
-    case 2:
-        // General keyword (ex. if).
+    case KEYWORD_GENERAL:
         token->type = Token_Type::KEYWORD;
         state->syntax = SYNTAX_IN_EXPR;
         break;
-    case 3:
-        // Type keyword (ex. char).
+    case KEYWORD_TYPE:
         token->type = Token_Type::TYPE;
         state->syntax = SYNTAX_AFTER_TYPE;
         break;
-    case 4:
-        // General keyword that prefixes a statement (ex. static).
+    case KEYWORD_STATEMENT_PREFIX:
         token->type = Token_Type::KEYWORD;
         state->syntax = SYNTAX_AT_STMT;
         break;
-    case 5:
-        // Raw string literal.
+    case KEYWORD_RAW_STRING_LITERAL:
         if (looking_at(*iterator, '"')) {
             token->type = Token_Type::KEYWORD;
             state->syntax = SYNTAX_AT_RAW_STRING_LITERAL;
@@ -572,546 +578,546 @@ static bool is_type(Contents_Iterator iterator, State* state) {
     return false;
 }
 
-static int look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch) {
+static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char first_ch) {
     switch ((len << 8) | (uint8_t)first_ch) {
     case (1 << 8) | (uint8_t)'R':
     case (1 << 8) | (uint8_t)'L':
     case (1 << 8) | (uint8_t)'u':
     case (1 << 8) | (uint8_t)'U':
-        return 5;
+        return KEYWORD_RAW_STRING_LITERAL;
 
     case (2 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "u8"))
-            return 5;
+            return KEYWORD_RAW_STRING_LITERAL;
         // fallthrough
     case (2 << 8) | (uint8_t)'L':
     case (2 << 8) | (uint8_t)'U':
         start.advance();
         if (start.get() == 'R')
-            return 5;
-        return 0;
+            return KEYWORD_RAW_STRING_LITERAL;
+        return NOT_KEYWORD;
 
     case (2 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "do"))
-            return 4;
-        return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        return NOT_KEYWORD;
     case (2 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "if"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (2 << 8) | (uint8_t)'o':
         if (looking_at_no_bounds_check(start, "or"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
 
     case (3 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "u8R"))
-            return 5;
-        return 0;
+            return KEYWORD_RAW_STRING_LITERAL;
+        return NOT_KEYWORD;
 
     case (3 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "and"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (3 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "asm"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (3 << 8) | (uint8_t)'f':
         if (looking_at_no_bounds_check(start, "for"))
-            // return 2;
-            return 4;
-        return 0;
+            // return KEYWORD_GENERAL;
+            return KEYWORD_STATEMENT_PREFIX;
+        return NOT_KEYWORD;
     case (3 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (3 << 8) | (uint8_t)'n':
         if (looking_at_no_bounds_check(start, "new")) {
             // Note: treat as a type declaration keyword since it works pretty much the same
-            // way. return 2;
-            return 1;
+            // way. return KEYWORD_GENERAL;
+            return KEYWORD_TYPE_DECLARATION;
         }
-        // return 0;
+        // return NOT_KEYWORD;
         // case (3 << 8) | (uint8_t)'n':
         if (looking_at_no_bounds_check(start, "not"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (3 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "try"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (3 << 8) | (uint8_t)'x':
         if (looking_at_no_bounds_check(start, "xor"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (4 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "auto"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (4 << 8) | (uint8_t)'b':
         if (looking_at_no_bounds_check(start, "bool"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (4 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "case"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (4 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "char"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (4 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "else"))
-            return 4;
-        // return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        // return NOT_KEYWORD;
         // case (4 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "enum"))
-            return 1;
-        return 0;
+            return KEYWORD_TYPE_DECLARATION;
+        return NOT_KEYWORD;
     case (4 << 8) | (uint8_t)'g':
         if (looking_at_no_bounds_check(start, "goto"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (4 << 8) | (uint8_t)'l':
         if (looking_at_no_bounds_check(start, "long"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (4 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "this"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (4 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "true"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (4 << 8) | (uint8_t)'v':
         if (looking_at_no_bounds_check(start, "void"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (5 << 8) | (uint8_t)'b':
         if (looking_at_no_bounds_check(start, "bitor"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (5 << 8) | (uint8_t)'b':
         if (looking_at_no_bounds_check(start, "break"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (5 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "catch"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (5 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "class"))
-            return 1;
-        // return 0;
+            return KEYWORD_TYPE_DECLARATION;
+        // return NOT_KEYWORD;
         // case (5 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "compl"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (5 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "const"))
-            return 4;
-        return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        return NOT_KEYWORD;
     case (5 << 8) | (uint8_t)'f':
         if (looking_at_no_bounds_check(start, "false"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (5 << 8) | (uint8_t)'f':
         if (looking_at_no_bounds_check(start, "float"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (5 << 8) | (uint8_t)'o':
         if (looking_at_no_bounds_check(start, "or_eq"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (5 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "short"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (5 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "throw"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (5 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "union"))
-            return 1;
-        // return 0;
+            return KEYWORD_TYPE_DECLARATION;
+        // return NOT_KEYWORD;
         // case (5 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "using"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (5 << 8) | (uint8_t)'w':
         if (looking_at_no_bounds_check(start, "while"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "and_eq"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'b':
         if (looking_at_no_bounds_check(start, "bitand"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "delete"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (6 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "double"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "export"))
-            return 4;
-        // return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        // return NOT_KEYWORD;
         // case (6 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "extern"))
-            return 4;
-        return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'f':
         if (looking_at_no_bounds_check(start, "friend"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "inline"))
-            return 4;
-        // return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        // return NOT_KEYWORD;
         // case (6 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int8_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'n':
         if (looking_at_no_bounds_check(start, "not_eq"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'p':
         if (looking_at_no_bounds_check(start, "public"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'r':
         if (looking_at_no_bounds_check(start, "return"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "signed"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "size_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "sizeof"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "static"))
-            return 4;
-        // return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        // return NOT_KEYWORD;
         // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "struct"))
-            return 1;
-        // return 0;
+            return KEYWORD_TYPE_DECLARATION;
+        // return NOT_KEYWORD;
         // case (6 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "switch"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "typeid"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (6 << 8) | (uint8_t)'x':
         if (looking_at_no_bounds_check(start, "xor_eq"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'_':
         if (looking_at_no_bounds_check(start, "_Pragma"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "alignas"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (7 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "alignof"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "char8_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (7 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "concept"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "default"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int16_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (7 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int32_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (7 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int64_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'m':
         if (looking_at_no_bounds_check(start, "mutable"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'n':
         if (looking_at_no_bounds_check(start, "nullptr"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'p':
         if (looking_at_no_bounds_check(start, "private"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "typedef"))
-            return 4;
-        return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint8_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'v':
         if (looking_at_no_bounds_check(start, "virtual"))
-            return 4;
-        return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        return NOT_KEYWORD;
     case (7 << 8) | (uint8_t)'w':
         if (looking_at_no_bounds_check(start, "wchar_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "char16_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "char32_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "co_await"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "co_yield"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "continue"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "decltype"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'e':
         if (looking_at_no_bounds_check(start, "explicit"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "intmax_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "intptr_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'n':
         if (looking_at_no_bounds_check(start, "noexcept"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'o':
         if (looking_at_no_bounds_check(start, "operator"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'r':
         if (looking_at_no_bounds_check(start, "reflexpr"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'r':
         if (looking_at_no_bounds_check(start, "register"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'r':
         if (looking_at_no_bounds_check(start, "requires"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "template"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "typename"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint16_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint32_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint64_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (8 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "unsigned"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'v':
         if (looking_at_no_bounds_check(start, "volatile"))
-            return 4;
-        return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        return NOT_KEYWORD;
     case (9 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "co_return"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (9 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "consteval"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (9 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "constexpr"))
-            return 4;
-        // return 0;
+            return KEYWORD_STATEMENT_PREFIX;
+        // return NOT_KEYWORD;
         // case (9 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "constinit"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (9 << 8) | (uint8_t)'n':
         if (looking_at_no_bounds_check(start, "namespace"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (9 << 8) | (uint8_t)'p':
         if (looking_at_no_bounds_check(start, "protected"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (9 << 8) | (uint8_t)'p':
         if (looking_at_no_bounds_check(start, "ptrdiff_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (9 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uintmax_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (9 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uintptr_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (10 << 8) | (uint8_t)'c':
         if (looking_at_no_bounds_check(start, "const_cast"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (11 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_fast8_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (11 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "static_cast"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (12 << 8) | (uint8_t)'d':
         if (looking_at_no_bounds_check(start, "dynamic_cast"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (12 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_fast16_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (12 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_fast32_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (12 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_fast64_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (12 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_least8_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (12 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "synchronized"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (12 << 8) | (uint8_t)'t':
         if (looking_at_no_bounds_check(start, "thread_local"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (12 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_fast8_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (13 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "atomic_cancel"))
-            return 2;
-        // return 0;
+            return KEYWORD_GENERAL;
+        // return NOT_KEYWORD;
         // case (13 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "atomic_commit"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (13 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_least16_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (13 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_least32_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (13 << 8) | (uint8_t)'i':
         if (looking_at_no_bounds_check(start, "int_least64_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (13 << 8) | (uint8_t)'s':
         if (looking_at_no_bounds_check(start, "static_assert"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (13 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_fast16_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (13 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_fast32_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (13 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_fast64_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (14 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_least16_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (14 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_least32_t"))
-            return 3;
-        // return 0;
+            return KEYWORD_TYPE;
+        // return NOT_KEYWORD;
         // case (14 << 8) | (uint8_t)'u':
         if (looking_at_no_bounds_check(start, "uint_least64_t"))
-            return 3;
-        return 0;
+            return KEYWORD_TYPE;
+        return NOT_KEYWORD;
     case (15 << 8) | (uint8_t)'a':
         if (looking_at_no_bounds_check(start, "atomic_noexcept"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
     case (16 << 8) | (uint8_t)'r':
         if (looking_at_no_bounds_check(start, "reinterpret_cast"))
-            return 2;
-        return 0;
+            return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
 
     default:
-        return 0;
+        return NOT_KEYWORD;
     }
 }
 
