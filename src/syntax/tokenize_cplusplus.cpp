@@ -18,26 +18,32 @@ namespace syntax {
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace cpp {
+
+/// Doc comment state used for highlighting markdown and embedded code blocks.  Markdown
+/// characters can only happen at the start of the line (SOL) and thus middle of the line
+/// (MOL) states bypass Markdown detection.  Inside/outside refers to whether the cursor is
+/// inside or outside of a code block ie `|` for single line or ```\n|\n``` for multi line.
 enum {
     COMMENT_NULL = 0,
-    COMMENT_LINE_INSIDE_INLINE = 1,
-    COMMENT_LINE_INSIDE_MULTI_LINE = 2,
-    COMMENT_LINE_RESUME_INSIDE = 3,
-    COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL = 4,
-    COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL = 5,
-    COMMENT_LINE_RESUME_OUTSIDE_SOL = 6,
-    COMMENT_LINE_RESUME_OUTSIDE_MOL = 7,
-    COMMENT_LINE_RESUME_OUTSIDE_HEADER = 8,
-    COMMENT_LINE_OUTSIDE_MULTI_LINE = 9,
-    COMMENT_BLOCK_INSIDE_INLINE = 10,
-    COMMENT_BLOCK_INSIDE_MULTI_LINE = 11,
-    COMMENT_BLOCK_RESUME_INSIDE = 12,
-    COMMENT_BLOCK_RESUME_OUTSIDE_SOL1 = 13,
-    COMMENT_BLOCK_RESUME_OUTSIDE_SOL2 = 14,
-    COMMENT_BLOCK_RESUME_OUTSIDE_MOL = 15,
-    COMMENT_BLOCK_RESUME_OUTSIDE_HEADER = 16,
-    COMMENT_BLOCK_OUTSIDE_MULTI_LINE = 17,
-    COMMENT_BLOCK_NORMAL = 18,
+    COMMENT_LINE_INSIDE_INLINE = 1,                    /// '/// `|x`'
+    COMMENT_LINE_INSIDE_MULTI_LINE = 2,                /// '/// ```|x```'
+    COMMENT_LINE_RESUME_INSIDE = 3,                    /// '/// `x|`|' (either)
+    COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL = 4,  /// '/// ```\n|/// xyz\n/// ```'
+    COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL = 5,  /// '/// ```\n///| xyz|\n/// ```' (either)
+    COMMENT_LINE_RESUME_OUTSIDE_SOL = 6,               /// '/// |'
+    COMMENT_LINE_RESUME_OUTSIDE_MOL = 7,               /// '/// ``|'
+    COMMENT_LINE_RESUME_OUTSIDE_HEADER = 8,            /// '/// #| Header'
+    COMMENT_LINE_OUTSIDE_MULTI_LINE = 9,               /// '/// ```|\n///```'
+    COMMENT_BLOCK_INSIDE_INLINE = 10,                  /// '/** `|x` */'
+    COMMENT_BLOCK_INSIDE_MULTI_LINE = 11,              /// '/** ```|x``` */'
+    COMMENT_BLOCK_RESUME_INSIDE = 12,                  /// '/** `x|` */'
+    COMMENT_BLOCK_RESUME_OUTSIDE_SOL1 = 13,  /// '/**\n|* - x */' (immediately after newline)
+    COMMENT_BLOCK_RESUME_OUTSIDE_SOL2 =
+        14,  /// '/**| - x */' or '/**\n*| - x */' (after newline and * continuation)
+    COMMENT_BLOCK_RESUME_OUTSIDE_MOL = 15,     /// '/** x |`y` */'
+    COMMENT_BLOCK_RESUME_OUTSIDE_HEADER = 16,  /// '/** #| Header */'
+    COMMENT_BLOCK_OUTSIDE_MULTI_LINE = 17,     /// '/** ```|\n``` */'
+    COMMENT_BLOCK_NORMAL = 18,                 /// '/* ...|... */' (to prevent blocking)
 };
 
 enum {
