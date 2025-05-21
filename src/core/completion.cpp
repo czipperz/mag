@@ -185,7 +185,9 @@ struct Wildcard_Pattern {
                 index = find - string.buffer + piece.len;
             }
         }
-
+        if (!wild_end && index < string.len) {
+            return false;
+        }
         return true;
     }
 };

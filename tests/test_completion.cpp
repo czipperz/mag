@@ -5,7 +5,7 @@
 
 using namespace mag;
 
-TEST_CASE("spaces_are_wildcards_completion_filter") {
+TEST_CASE("spaces_are_wildcards_completion_filter files") {
     Completion_Filter_Context context = {};
     Completion_Engine_Context engine_context = {};
     engine_context.init();
@@ -65,5 +65,27 @@ TEST_CASE("spaces_are_wildcards_completion_filter") {
                                            /*selected_result=*/"unlisted",
                                            /*has_selected_result=*/true);
     REQUIRE(context.results.len == 0);
+    CHECK(context.selected == 0);
+}
+
+TEST_CASE("spaces_are_wildcards_completion_filter commands") {
+    Completion_Filter_Context context = {};
+    Completion_Engine_Context engine_context = {};
+    engine_context.init();
+    CZ_DEFER(context.drop());
+    CZ_DEFER(engine_context.drop());
+    engine_context.results.reserve(4);
+    engine_context.results.push("command_apply_diff (A-x A-d)");
+    engine_context.results.push("command_backward_char (S-LEFT) (LEFT) (C-b) (C-B)");
+    engine_context.results.push("command_backward_line");
+    engine_context.results.push(
+        "command_backward_line_single_cursor_visual (UP) (S-UP) (A-p) (A-P)");
+
+    engine_context.query = cz::format("^command_backward_line$");
+    spaces_are_wildcards_completion_filter(/*editor=*/nullptr, &context, &engine_context,
+                                           /*selected_result=*/{},
+                                           /*has_selected_result=*/false);
+    REQUIRE(context.results.len == 1);
+    CHECK(context.results[0] == "command_backward_line");
     CHECK(context.selected == 0);
 }
