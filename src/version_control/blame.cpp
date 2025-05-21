@@ -167,7 +167,7 @@ static Parse_Status parse_commit_info(cz::Str elem,
         return Parse_Error;
     cz::Str commit_time_str = metadata.slice_start(commit_time_start + commit_time_query.len);
     commit_time_str = commit_time_str.slice_end(commit_time_str.find_index('\n'));
-    if (cz::parse(commit_time_str, commit_time) != commit_time_str.len) {
+    if ((size_t)cz::parse(commit_time_str, commit_time) != commit_time_str.len) {
         return Parse_Error;
     }
 

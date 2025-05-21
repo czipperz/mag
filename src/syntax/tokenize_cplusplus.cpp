@@ -207,10 +207,6 @@ static void handle_identifier(Contents_Iterator* iterator,
 static void handle_number(Contents_Iterator* iterator, Token* token, State* state);
 
 static void punctuation_simple(Contents_Iterator* iterator, Token* token, State* state);
-static void punctuation_double(Contents_Iterator* iterator,
-                               char first_ch,
-                               Token* token,
-                               State* state);
 static void punctuation_set(Contents_Iterator* iterator, Token* token, State* state);
 static void punctuation_double_set(Contents_Iterator* iterator,
                                    char first_ch,
@@ -1135,19 +1131,6 @@ static void punctuation_simple(Contents_Iterator* iterator, Token* token, State*
     token->start = iterator->position;
     iterator->advance();
     token->end = iterator->position;
-}
-
-static void punctuation_double(Contents_Iterator* iterator,
-                               char first_ch,
-                               Token* token,
-                               State* state) {
-    token->type = Token_Type::PUNCTUATION;
-    token->start = iterator->position;
-    iterator->advance();
-    if (!iterator->at_eob() && iterator->get() == first_ch)
-        iterator->advance();
-    token->end = iterator->position;
-    state->syntax = SYNTAX_IN_EXPR;
 }
 
 static void punctuation_set(Contents_Iterator* iterator, Token* token, State* state) {

@@ -84,15 +84,10 @@ static int test_extensions(cz::String* path,
 }
 
 int find_alternate_file(cz::String* path) {
-    bool any_changes = false;
-
     // Apply all `alternate_path` rules.
     for (size_t i = 0; i < alternate_path_len; ++i) {
-        if (replace_if_contains(path, alternate_path_1[i], alternate_path_2[i])) {
-            any_changes = true;
-        } else if (replace_if_contains(path, alternate_path_2[i], alternate_path_1[i])) {
-            any_changes = true;
-        }
+        if (!replace_if_contains(path, alternate_path_1[i], alternate_path_2[i]))
+            replace_if_contains(path, alternate_path_2[i], alternate_path_1[i]);
     }
 
     cz::Slice<cz::Str> extensions_1 = {alternate_extensions_1, alternate_extensions_len};

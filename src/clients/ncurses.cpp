@@ -333,7 +333,7 @@ static void process_mouse_event(Server* server, Client* client) {
 static Key key_map[1024];
 static void bind_key(int ch, uint16_t modifiers, uint16_t code) {
     CZ_ASSERT(ch >= 0);
-    CZ_ASSERT(ch < CZ_DIM(key_map));
+    CZ_ASSERT((size_t)ch < CZ_DIM(key_map));
     key_map[ch] = {modifiers, code};
 }
 
@@ -453,7 +453,7 @@ rerun:
     } else if (ch == KEY_RESIZE) {
         // We poll window size instead of handling resize events.
         return;
-    } else if (ch >= CZ_DIM(key_map)) {
+    } else if (ch < 0 || (size_t)ch >= CZ_DIM(key_map)) {
         print_unbound_key_message(client, ch);
         return;
     }
