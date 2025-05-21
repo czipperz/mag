@@ -17,7 +17,7 @@ namespace syntax {
 // Type definitions
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace cpp {
+namespace {
 
 /// Doc comment state used for highlighting markdown and embedded code blocks.  Markdown
 /// characters can only happen at the start of the line (SOL) and thus middle of the line
@@ -78,7 +78,6 @@ struct State {
 };
 static_assert(sizeof(State) == sizeof(uint64_t), "Must be able to cast between the two");
 }
-using namespace cpp;
 
 ///////////////////////////////////////////////////////////////////////////////
 // cpp_next_token
@@ -1998,7 +1997,7 @@ static void eat_raw_string_literal(Contents_Iterator* iterator) {
 // Preprocessor keyword (ex. define)
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace cpp {
+namespace {
 enum {
     PREPROCESSOR_KW_IF = 1,
     PREPROCESSOR_KW_ELSE = 2,
