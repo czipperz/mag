@@ -64,6 +64,32 @@ TEST_CASE("tokenize_cplusplus /* inside ///```") {
     CHECK(tokens[8] == Test_Runner::TToken{"after", {30, 35, Token_Type::IDENTIFIER}});
 }
 
+TEST_CASE("tokenize_cplusplus multiline string inside ///```") {
+    Test_Runner tr;
+    tr.setup(
+        "/// ```\n"
+        "/// hi \"inside1\\n\\\n"
+        "/// inside2\" bye\n"
+        "/// ```\n"
+        "after");
+    tr.set_tokenizer(syntax::cpp_next_token);
+    // tr.tokenize_print_tests();
+
+    auto tokens = tr.tokenize();
+    REQUIRE(tokens.len == 11);
+    CHECK(tokens[0] == Test_Runner::TToken{"/// ", {0, 4, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[1] == Test_Runner::TToken{"```", {4, 7, Token_Type::OPEN_PAIR}});
+    CHECK(tokens[2] == Test_Runner::TToken{"///", {8, 11, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[3] == Test_Runner::TToken{"hi", {12, 14, Token_Type::IDENTIFIER}});
+    CHECK(tokens[4] == Test_Runner::TToken{"\"inside1\\n\\", {15, 26, Token_Type::STRING}});
+    CHECK(tokens[5] == Test_Runner::TToken{"///", {27, 30, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[6] == Test_Runner::TToken{" inside2\"", {30, 39, Token_Type::STRING}});
+    CHECK(tokens[7] == Test_Runner::TToken{"bye", {40, 43, Token_Type::IDENTIFIER}});
+    CHECK(tokens[8] == Test_Runner::TToken{"///", {44, 47, Token_Type::DOC_COMMENT}});
+    CHECK(tokens[9] == Test_Runner::TToken{"```", {48, 51, Token_Type::CLOSE_PAIR}});
+    CHECK(tokens[10] == Test_Runner::TToken{"after", {52, 57, Token_Type::IDENTIFIER}});
+}
+
 TEST_CASE("tokenize_cplusplus markdown in /// comment") {
     Test_Runner tr;
     tr.setup(

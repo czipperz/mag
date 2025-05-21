@@ -30,20 +30,22 @@ enum {
     COMMENT_LINE_RESUME_INSIDE = 3,                    /// '/// `x|`|' (either)
     COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL = 4,  /// '/// ```\n|/// xyz\n/// ```'
     COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL = 5,  /// '/// ```\n///| xyz|\n/// ```' (either)
-    COMMENT_LINE_RESUME_OUTSIDE_SOL = 6,               /// '/// |'
-    COMMENT_LINE_RESUME_OUTSIDE_MOL = 7,               /// '/// ``|'
-    COMMENT_LINE_RESUME_OUTSIDE_HEADER = 8,            /// '/// #| Header'
-    COMMENT_LINE_OUTSIDE_MULTI_LINE = 9,               /// '/// ```|\n///```'
-    COMMENT_BLOCK_INSIDE_INLINE = 10,                  /// '/** `|x` */'
-    COMMENT_BLOCK_INSIDE_MULTI_LINE = 11,              /// '/** ```|x``` */'
-    COMMENT_BLOCK_RESUME_INSIDE = 12,                  /// '/** `x|` */'
-    COMMENT_BLOCK_RESUME_OUTSIDE_SOL1 = 13,  /// '/**\n|* - x */' (immediately after newline)
+    COMMENT_LINE_RESUME_INSIDE_STRING_SOL = 6,         /// '/// ```\n|/// xyz\n/// ```'
+    COMMENT_LINE_RESUME_INSIDE_STRING_MOL = 7,         /// '/// ```\n///| xyz|\n/// ```' (either)
+    COMMENT_LINE_RESUME_OUTSIDE_SOL = 8,               /// '/// |'
+    COMMENT_LINE_RESUME_OUTSIDE_MOL = 9,               /// '/// ``|'
+    COMMENT_LINE_RESUME_OUTSIDE_HEADER = 10,           /// '/// #| Header'
+    COMMENT_LINE_OUTSIDE_MULTI_LINE = 11,              /// '/// ```|\n///```'
+    COMMENT_BLOCK_INSIDE_INLINE = 12,                  /// '/** `|x` */'
+    COMMENT_BLOCK_INSIDE_MULTI_LINE = 13,              /// '/** ```|x``` */'
+    COMMENT_BLOCK_RESUME_INSIDE = 14,                  /// '/** `x|` */'
+    COMMENT_BLOCK_RESUME_OUTSIDE_SOL1 = 15,  /// '/**\n|* - x */' (immediately after newline)
     COMMENT_BLOCK_RESUME_OUTSIDE_SOL2 =
-        14,  /// '/**| - x */' or '/**\n*| - x */' (after newline and * continuation)
-    COMMENT_BLOCK_RESUME_OUTSIDE_MOL = 15,     /// '/** x |`y` */'
-    COMMENT_BLOCK_RESUME_OUTSIDE_HEADER = 16,  /// '/** #| Header */'
-    COMMENT_BLOCK_OUTSIDE_MULTI_LINE = 17,     /// '/** ```|\n``` */'
-    COMMENT_BLOCK_NORMAL = 18,                 /// '/* ...|... */' (to prevent blocking)
+        16,  /// '/**| - x */' or '/**\n*| - x */' (after newline and * continuation)
+    COMMENT_BLOCK_RESUME_OUTSIDE_MOL = 17,     /// '/** x |`y` */'
+    COMMENT_BLOCK_RESUME_OUTSIDE_HEADER = 18,  /// '/** #| Header */'
+    COMMENT_BLOCK_OUTSIDE_MULTI_LINE = 19,     /// '/** ```|\n``` */'
+    COMMENT_BLOCK_NORMAL = 20,                 /// '/* ...|... */' (to prevent blocking)
 };
 
 enum {
@@ -106,6 +108,7 @@ static bool handle_block_comment_outside_multi_line(Contents_Iterator* iterator,
                                                     Token* token,
                                                     State* state);
 static bool resume_block_comment_normal(Contents_Iterator* iterator, Token* token, State* state);
+static void handle_string(Contents_Iterator* iterator, Token* token, State* state, bool at_start);
 
 static bool handle_comment(Contents_Iterator* iterator, Token* token, State* state) {
     switch (state->comment) {
@@ -122,6 +125,7 @@ static bool handle_comment(Contents_Iterator* iterator, Token* token, State* sta
     case COMMENT_LINE_RESUME_OUTSIDE_HEADER:
         return resume_line_comment_header(iterator, token, state);
     case COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL:
+    case COMMENT_LINE_RESUME_INSIDE_STRING_SOL:
     case COMMENT_LINE_OUTSIDE_MULTI_LINE:
         return handle_line_comment_outside_multi_line(iterator, token, state);
     case COMMENT_BLOCK_RESUME_INSIDE:
@@ -136,6 +140,9 @@ static bool handle_comment(Contents_Iterator* iterator, Token* token, State* sta
     case COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL:
     case COMMENT_BLOCK_NORMAL:
         return resume_block_comment_normal(iterator, token, state);
+    case COMMENT_LINE_RESUME_INSIDE_STRING_MOL:
+        handle_string(iterator, token, state, /*at_start=*/false);
+        return true;
     default:
         return false;
     }
@@ -228,7 +235,6 @@ static void handle_block_comment(Contents_Iterator* iterator, Token* token, Stat
 static bool at_end_of_block_comment(Contents_Iterator iterator, State state);
 
 static void handle_char(Contents_Iterator* iterator, Token* token, State* state);
-static void handle_string(Contents_Iterator* iterator, Token* token, State* state);
 static void eat_raw_string_literal(Contents_Iterator* iterator);
 
 static bool handle_syntax(Contents_Iterator* iterator, Token* token, State* state) {
@@ -406,7 +412,7 @@ retry:
         handle_char(iterator, token, state);
         return true;
     case '"':
-        handle_string(iterator, token, state);
+        handle_string(iterator, token, state, /*at_start=*/true);
         return true;
 
     case '`':
@@ -1311,6 +1317,8 @@ static bool handle_line_comment_outside_multi_line(Contents_Iterator* iterator,
                 if (ch == '!' || ch == '/') {
                     if (state->comment == COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_SOL)
                         state->comment = COMMENT_LINE_RESUME_INSIDE_BLOCK_COMMENT_MOL;
+                    else if (state->comment == COMMENT_LINE_RESUME_INSIDE_STRING_SOL)
+                        state->comment = COMMENT_LINE_RESUME_INSIDE_STRING_MOL;
                     else
                         state->comment = COMMENT_LINE_INSIDE_MULTI_LINE;
                     token->type = Token_Type::DOC_COMMENT;
@@ -1915,10 +1923,11 @@ ret:
     state->syntax = SYNTAX_IN_EXPR;
 }
 
-static void handle_string(Contents_Iterator* iterator, Token* token, State* state) {
+static void handle_string(Contents_Iterator* iterator, Token* token, State* state, bool at_start) {
     token->type = Token_Type::STRING;
     token->start = iterator->position;
-    iterator->advance();
+    if (at_start)
+        iterator->advance();
 
     if (state->syntax == SYNTAX_AT_RAW_STRING_LITERAL) {
         eat_raw_string_literal(iterator);
@@ -1929,12 +1938,22 @@ static void handle_string(Contents_Iterator* iterator, Token* token, State* stat
         switch (iterator->get()) {
         case '"':
             iterator->advance();
+            if (state->comment == COMMENT_LINE_RESUME_INSIDE_STRING_MOL)
+                state->comment = COMMENT_LINE_INSIDE_MULTI_LINE;
             goto ret;
 
         case '\\':
             iterator->advance();
             if (iterator->at_eob())
                 goto ret;
+            if (iterator->get() == '\n') {
+                if (state->comment == COMMENT_LINE_INSIDE_MULTI_LINE) {
+                    state->comment = COMMENT_LINE_RESUME_INSIDE_STRING_SOL;
+                    goto ret;
+                } else if (state->comment == COMMENT_LINE_INSIDE_INLINE) {
+                    goto ret;
+                }
+            }
             break;
 
         case CZ_SPACE_LINE_CASES:
