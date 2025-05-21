@@ -75,6 +75,7 @@
 #include "prose/repository.hpp"
 #include "prose/search.hpp"
 #include "solarized_dark.hpp"
+#include "syntax/tokenize_build.hpp"
 #include "syntax/tokenize_cmake.hpp"
 #include "syntax/tokenize_color_test.hpp"
 #include "syntax/tokenize_cplusplus.hpp"
@@ -923,11 +924,12 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-j", version_control::command_show_commit_in_blame);
             BIND(buffer->mode.key_map, "g", version_control::command_blame_reload);
         } else if (buffer->name.starts_with("*git grep ") || buffer->name.starts_with("*ag ") ||
-                   buffer->name.starts_with("*shell ") ||
-                   // Build will eventually get its own tokenizer and key map.
-                   buffer->name.starts_with("*build ")) {
+                   buffer->name.starts_with("*shell ")) {
             buffer->mode.next_token = syntax::search_next_token;
             search_key_map(buffer->mode.key_map);
+        } else if (buffer->name.starts_with("*build ")) {
+            buffer->mode.next_token = syntax::build_next_token;
+            BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
         }
         break;
 
