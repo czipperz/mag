@@ -74,41 +74,49 @@ void command_show_commit(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
-static void show_commit_at_point(Editor* editor, Client* client, Contents_Iterator iterator) {
-    {
-        Contents_Iterator test = iterator;
-        for (uint64_t i = 0; i < 8; ++i) {
-            if (test.at_eob() || !cz::is_hex_digit(test.get())) {
-                client->show_message("No commit on this line");
-                return;
-            }
-            test.advance();
+static bool slice_commit_at_point(Client* client, Contents_Iterator iterator, SSOStr* commit) {
+    Contents_Iterator test = iterator;
+    for (uint64_t i = 0; i < 8; ++i) {
+        if (test.at_eob() || !cz::is_hex_digit(test.get())) {
+            client->show_message("No commit on this line");
+            return false;
         }
+        test.advance();
     }
-
-    SSOStr commit = iterator.contents->slice(cz::heap_allocator(), iterator, iterator.position + 8);
-    CZ_DEFER(commit.drop(cz::heap_allocator()));
-    command_show_commit_callback(editor, client, commit.as_str(), nullptr);
+    *commit = iterator.contents->slice(cz::heap_allocator(), iterator, iterator.position + 8);
+    return true;
 }
 
 REGISTER_COMMAND(command_show_commit_in_blame);
 void command_show_commit_in_blame(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
-    Contents_Iterator iterator = buffer->contents.iterator_at(window->sel().point);
-    start_of_line(&iterator);
-    return show_commit_at_point(editor, source.client, iterator);
+    SSOStr commit;
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        Contents_Iterator iterator = buffer->contents.iterator_at(window->sel().point);
+        start_of_line(&iterator);
+        if (!slice_commit_at_point(source.client, iterator, &commit))
+            return;
+    }
+    CZ_DEFER(commit.drop(cz::heap_allocator()));
+    command_show_commit_callback(editor, source.client, commit.as_str(), nullptr);
 }
 
 REGISTER_COMMAND(command_show_commit_in_log);
 void command_show_commit_in_log(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
-    Contents_Iterator iterator = buffer->contents.iterator_at(window->sel().point);
-    if (!rfind(&iterator, "\ncommit ")) {
-        source.client->show_message("Couldn't find a commit");
-        return;
+    SSOStr commit;
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        Contents_Iterator iterator = buffer->contents.iterator_at(window->sel().point);
+        if (!rfind(&iterator, "\ncommit ")) {
+            source.client->show_message("Couldn't find a commit");
+            return;
+        }
+        iterator.advance(strlen("\ncommit "));
+        if (!slice_commit_at_point(source.client, iterator, &commit))
+            return;
     }
-    iterator.advance(strlen("\ncommit "));
-    return show_commit_at_point(editor, source.client, iterator);
+    CZ_DEFER(commit.drop(cz::heap_allocator()));
+    command_show_commit_callback(editor, source.client, commit.as_str(), nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
