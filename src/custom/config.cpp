@@ -279,11 +279,11 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "C-A-B", region_movement::command_backward_token_pair);
     BIND(key_map, "C-A-F", region_movement::command_forward_token_pair);
 
-    BIND(key_map, "A-j", command_backward_matching_token);
+    BIND(key_map, "A-u", command_backward_matching_token);
     BIND(key_map, "A-q", command_forward_matching_token);
-    BIND(key_map, "C-j", command_create_cursor_backward_matching_token);
+    BIND(key_map, "C-u", command_create_cursor_backward_matching_token);
     BIND(key_map, "C-q", command_create_cursor_forward_matching_token);
-    BIND(key_map, "C-A-j", command_create_cursors_to_start_matching_token);
+    BIND(key_map, "C-A-u", command_create_cursors_to_start_matching_token);
     BIND(key_map, "C-A-q", command_create_cursors_to_end_matching_token);
 
     BIND(key_map, "C-A-n", command_create_cursor_forward);
