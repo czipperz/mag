@@ -144,8 +144,9 @@ void insert_line_comments(Transaction* transaction,
                           const Mode& mode,
                           Contents_Iterator start,
                           uint64_t end,
-                          uint64_t visual_column,
                           cz::Str comment_start) {
+    start_of_line(&start);
+    uint64_t visual_column = visual_column_for_aligned_line_comments(mode, start, end);
     cz::String comment_start_space_string =
         cz::format(transaction->value_allocator(), comment_start, ' ');
     SSOStr comment_start_space = SSOStr::from_constant(comment_start_space_string);
@@ -200,30 +201,25 @@ void insert_line_comments(Transaction* transaction,
     }
 }
 
-void insert_line_comments(Transaction* transaction,
-                          uint64_t* offset,
-                          const Mode& mode,
-                          Contents_Iterator start,
-                          uint64_t end,
-                          cz::Str comment_start) {
-    start_of_line(&start);
-    uint64_t visual_column = visual_column_for_aligned_line_comments(mode, start, end);
-    insert_line_comments(transaction, offset, mode, start, end, visual_column, comment_start);
-}
-
 void remove_line_comments(Transaction* transaction,
                           uint64_t* offset,
                           const Mode& mode,
                           Contents_Iterator start,
                           uint64_t end,
-                          cz::Str comment_start) {
+                          cz::Slice<const cz::Str> comment_starts) {
     start_of_line(&start);
 
     while (start.position < end) {
         Contents_Iterator sol = start;
         forward_through_whitespace(&start);
 
-        if (!looking_at(start, comment_start)) {
+        size_t i = 0;
+        for (; i < comment_starts.len; ++i) {
+            if (looking_at(start, comment_starts[i])) {
+                break;
+            }
+        }
+        if (i == comment_starts.len) {
         next_line:
             end_of_line(&start);
             forward_char(&start);
@@ -231,7 +227,7 @@ void remove_line_comments(Transaction* transaction,
         }
 
         Contents_Iterator after = start;
-        after.advance(comment_start.len);
+        after.advance(comment_starts[i].len);
 
         if (after.get() == ' ') {
             after.advance();
@@ -333,11 +329,12 @@ void remove_line_comments(Transaction* transaction,
     }
 }
 
-void generic_line_comment(Client* client,
-                          Buffer* buffer,
-                          Window_Unified* window,
-                          cz::Str comment_start,
-                          bool add) {
+template <class Func, class CommentStart>
+static void generic_line_comment(Client* client,
+                                 Buffer* buffer,
+                                 Window_Unified* window,
+                                 CommentStart comment_start,
+                                 Func func) {
     cz::Slice<Cursor> cursors = window->cursors;
 
     Transaction transaction = {};
@@ -349,26 +346,14 @@ void generic_line_comment(Client* client,
     if (window->show_marks) {
         for (size_t i = 0; i < cursors.len; ++i) {
             start.advance_to(cursors[i].start());
-            if (add) {
-                insert_line_comments(&transaction, &offset, buffer->mode, start, cursors[i].end(),
-                                     comment_start);
-            } else {
-                remove_line_comments(&transaction, &offset, buffer->mode, start, cursors[i].end(),
-                                     comment_start);
-            }
+            func(&transaction, &offset, buffer->mode, start, cursors[i].end(), comment_start);
         }
     } else {
         for (size_t i = 0; i < cursors.len; ++i) {
             start.advance_to(cursors[i].point);
             Contents_Iterator end = start;
             forward_char(&end);
-            if (add) {
-                insert_line_comments(&transaction, &offset, buffer->mode, start, end.position,
-                                     comment_start);
-            } else {
-                remove_line_comments(&transaction, &offset, buffer->mode, start, end.position,
-                                     comment_start);
-            }
+            func(&transaction, &offset, buffer->mode, start, end.position, comment_start);
         }
 
         // If there is only one cursor and no region selected then move to the next line.
@@ -380,6 +365,19 @@ void generic_line_comment(Client* client,
     }
 
     transaction.commit(client);
+}
+
+void insert_line_comments_and_commit(Client* client,
+                                     Buffer* buffer,
+                                     Window_Unified* window,
+                                     cz::Str comment_start) {
+    return generic_line_comment(client, buffer, window, comment_start, insert_line_comments);
+}
+void remove_line_comments_and_commit(Client* client,
+                                     Buffer* buffer,
+                                     Window_Unified* window,
+                                     cz::Slice<const cz::Str> comment_starts) {
+    return generic_line_comment(client, buffer, window, comment_starts, remove_line_comments);
 }
 
 }

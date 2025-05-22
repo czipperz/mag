@@ -122,13 +122,14 @@ void command_comment(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_comment_line_comments_only);
 void command_comment_line_comments_only(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    generic_line_comment(source.client, buffer, window, "//", /*add=*/true);
+    insert_line_comments_and_commit(source.client, buffer, window, "//");
 }
 
 REGISTER_COMMAND(command_uncomment);
 void command_uncomment(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    generic_line_comment(source.client, buffer, window, "//", /*add=*/false);
+    static const cz::Str comment_starts[] = {"///", "//!", "//"};
+    remove_line_comments_and_commit(source.client, buffer, window, comment_starts);
 }
 
 REGISTER_COMMAND(command_reformat_comment);

@@ -1098,13 +1098,14 @@ void command_show_date_of_build(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_comment_hash);
 void command_comment_hash(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    generic_line_comment(source.client, buffer, window, "#", /*add=*/true);
+    insert_line_comments_and_commit(source.client, buffer, window, "#");
 }
 
 REGISTER_COMMAND(command_uncomment_hash);
 void command_uncomment_hash(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
-    generic_line_comment(source.client, buffer, window, "#", /*add=*/false);
+    static const cz::Str comment_starts[] = {"#"};
+    remove_line_comments_and_commit(source.client, buffer, window, comment_starts);
 }
 
 static void slice_and_add_line(Contents_Iterator sol,

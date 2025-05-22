@@ -28,15 +28,6 @@ void insert_line_comments(Transaction* transaction,
                           const Mode& mode,
                           Contents_Iterator start,
                           uint64_t end,
-                          uint64_t visual_column,
-                          cz::Str comment_start);
-
-/// Convenience wrapper that calculates `visual_column` for you.
-void insert_line_comments(Transaction* transaction,
-                          uint64_t* offset,
-                          const Mode& mode,
-                          Contents_Iterator start,
-                          uint64_t end,
                           cz::Str comment_start);
 
 /// Remove the line comments from the region.
@@ -48,13 +39,16 @@ void remove_line_comments(Transaction* transaction,
                           const Mode& mode,
                           Contents_Iterator start,
                           uint64_t end,
-                          cz::Str comment_start);
+                          cz::Slice<const cz::Str> comment_start);
 
-/// Helper routine to comment or uncomment bunch of regions / lines.
-void generic_line_comment(Client* client,
-                          Buffer* buffer,
-                          Window_Unified* window,
-                          cz::Str comment_start,
-                          bool add);
+/// Helper routines to comment or uncomment bunch of regions / lines.
+void insert_line_comments_and_commit(Client* client,
+                                     Buffer* buffer,
+                                     Window_Unified* window,
+                                     cz::Str comment_start);
+void remove_line_comments_and_commit(Client* client,
+                                     Buffer* buffer,
+                                     Window_Unified* window,
+                                     cz::Slice<const cz::Str> comment_starts);
 
 }
