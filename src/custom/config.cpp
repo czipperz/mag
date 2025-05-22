@@ -82,6 +82,7 @@
 #include "syntax/tokenize_css.hpp"
 #include "syntax/tokenize_directory.hpp"
 #include "syntax/tokenize_general.hpp"
+#include "syntax/tokenize_general_c_comments.hpp"
 #include "syntax/tokenize_general_hash_comments.hpp"
 #include "syntax/tokenize_go.hpp"
 #include "syntax/tokenize_html.hpp"
@@ -821,6 +822,20 @@ static void cpp_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c h 2", cpp::command_insert_header_120);
 }
 
+/// See if there are any C style comments at start of lines as a simple heuristic.
+static bool has_c_style_comments(const Contents& contents) {
+    Contents_Iterator it = contents.start();
+    while (!it.at_eob() && it.bucket < 10) {
+        forward_through_whitespace(&it);
+        if (looking_at(it, "//") || looking_at(it, "/*")) {
+            return true;
+        }
+        end_of_line(&it);
+        forward_char(&it);
+    }
+    return false;
+}
+
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
     ZoneScoped;
 
@@ -1129,23 +1144,35 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
-        } else if (name.ends_with(".cfg") || name.ends_with(".json") || name.ends_with(".yaml") ||
-                   name.ends_with(".toml") || name.ends_with(".ini") || name == ".editorconfig" ||
-                   name == ".ignore" || name == ".gitignore" || name == ".hgignore" ||
-                   name == ".agignore" || name == "config") {
+        } else if (name.ends_with(".cfg") || name.ends_with(".yaml") || name.ends_with(".toml") ||
+                   name.ends_with(".ini") || name == ".editorconfig" || name == ".ignore" ||
+                   name == ".gitignore" || name == ".hgignore" || name == ".agignore" ||
+                   name == "config") {
+        hash_comments:
             // A bunch of miscellaneous file types that all use # for comments.
             buffer->mode.next_token = syntax::general_hash_comments_next_token;
             hash_comments_key_map(buffer->mode.key_map);
             indent_based_hierarchy_mode(buffer->mode);
 
-            if (name.ends_with(".json")) {
-                BIND(buffer->mode.key_map, "A-x A-f", javascript::command_jq_format_buffer);
-            }
-
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
             buffer->mode.overlays.reserve(2);
             buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
             buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+        } else if (name.ends_with(".json")) {
+            BIND(buffer->mode.key_map, "A-x A-f", javascript::command_jq_format_buffer);
+            if (has_c_style_comments(buffer->contents)) {
+                // A bunch of miscellaneous file types that all use # for comments.
+                buffer->mode.next_token = syntax::general_c_comments_next_token;
+                cpp_comments_key_map(buffer->mode.key_map);
+                indent_based_hierarchy_mode(buffer->mode);
+
+                static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
+                buffer->mode.overlays.reserve(2);
+                buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
+                buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            } else {
+                goto hash_comments;
+            }
         } else if (name.ends_with(".mustache")) {
             buffer->mode.next_token = syntax::mustache_next_token;
             indent_based_hierarchy_mode(buffer->mode);
