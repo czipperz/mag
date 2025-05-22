@@ -836,6 +836,16 @@ static bool has_c_style_comments(const Contents& contents) {
     return false;
 }
 
+static const Token_Type standard_matching_identifier_token_types[] = {Token_Type::KEYWORD,
+                                                                      Token_Type::IDENTIFIER};
+static void matching_identifier_overlays(
+    cz::Heap_Vector<Overlay>* overlays,
+    cz::Slice<const Token_Type> types = standard_matching_identifier_token_types) {
+    overlays->reserve(2);
+    overlays->push(syntax::overlay_matching_pairs({-1, 237, 0}));
+    overlays->push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+}
+
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
     ZoneScoped;
 
@@ -1006,21 +1016,14 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             static const Token_Type types[] = {
                 Token_Type::KEYWORD, Token_Type::TYPE, Token_Type::IDENTIFIER,
                 Token_Type::PREPROCESSOR_KEYWORD, Token_Type::PREPROCESSOR_ELSE};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays, types);
         } else if (name == "CMakeLists.txt" || name.ends_with(".cmake")) {
             buffer->mode.next_token = syntax::cmake_next_token;
             hash_comments_key_map(buffer->mode.key_map);
             BIND(buffer->mode.key_map, "C-A-c",
                  command_complete_at_point_prompt_identifiers_or_cmake_keywords);
-
             indent_based_hierarchy_mode(buffer->mode);
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays);
         } else if (name.ends_with(".md") ||
                    // .rst / ReStructured Text files aren't
                    // really markdown but they're often pretty similar.
@@ -1037,9 +1040,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                 Token_Type::CSS_PROPERTY, Token_Type::CSS_ELEMENT_SELECTOR,
                 Token_Type::CSS_ID_SELECTOR, Token_Type::CSS_CLASS_SELECTOR,
                 Token_Type::CSS_PSEUDO_SELECTOR};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays, types);
         } else if (name.ends_with(".html") || name.ends_with(".xml")) {
             buffer->mode.next_token = syntax::html_next_token;
             BIND(buffer->mode.key_map, "A-;", html::command_comment);
@@ -1047,9 +1048,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::HTML_TAG_NAME,
                                                Token_Type::HTML_ATTRIBUTE_NAME};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays, types);
         } else if (name.ends_with(".js") || name.ends_with(".ts")) {
         javascript:
             buffer->mode.next_token = syntax::js_next_token;
@@ -1057,9 +1056,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays, types);
         } else if (name.ends_with(".go")) {
             buffer->mode.next_token = syntax::go_next_token;
             cpp_comments_key_map(buffer->mode.key_map);
@@ -1070,9 +1067,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays, types);
         } else if (name.ends_with(".rs")) {
             buffer->mode.next_token = syntax::rust_next_token;
             cpp_comments_key_map(buffer->mode.key_map);
@@ -1082,9 +1077,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays, types);
         } else if (name.ends_with(".zig")) {
             buffer->mode.next_token = syntax::zig_next_token;
             cpp_comments_key_map(buffer->mode.key_map);
@@ -1092,9 +1085,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays, types);
         } else if (name.ends_with(".proto")) {
             buffer->mode.next_token = syntax::protobuf_next_token;
             cpp_comments_key_map(buffer->mode.key_map);
@@ -1102,9 +1093,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays, types);
 
             // Style guide says 2 spaces, 80 characters.
             buffer->mode.indent_width = buffer->mode.tab_width = 2;
@@ -1129,21 +1118,13 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             buffer->mode.next_token = syntax::sh_next_token;
             hash_comments_key_map(buffer->mode.key_map);
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays);
         } else if (name.ends_with(".py")) {
         python:
             buffer->mode.next_token = syntax::python_next_token;
             hash_comments_key_map(buffer->mode.key_map);
             indent_based_hierarchy_mode(buffer->mode);
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays);
         } else if (name.ends_with(".cfg") || name.ends_with(".yaml") || name.ends_with(".toml") ||
                    name.ends_with(".ini") || name == ".editorconfig" || name == ".ignore" ||
                    name == ".gitignore" || name == ".hgignore" || name == ".agignore" ||
@@ -1153,11 +1134,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::general_hash_comments_next_token;
             hash_comments_key_map(buffer->mode.key_map);
             indent_based_hierarchy_mode(buffer->mode);
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays);
         } else if (name.ends_with(".json")) {
             BIND(buffer->mode.key_map, "A-x A-f", javascript::command_jq_format_buffer);
             if (has_c_style_comments(buffer->contents)) {
@@ -1165,22 +1142,14 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                 buffer->mode.next_token = syntax::general_c_comments_next_token;
                 cpp_comments_key_map(buffer->mode.key_map);
                 indent_based_hierarchy_mode(buffer->mode);
-
-                static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-                buffer->mode.overlays.reserve(2);
-                buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-                buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+                matching_identifier_overlays(&buffer->mode.overlays);
             } else {
                 goto hash_comments;
             }
         } else if (name.ends_with(".mustache")) {
             buffer->mode.next_token = syntax::mustache_next_token;
             indent_based_hierarchy_mode(buffer->mode);
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays);
         } else if (name.ends_with(".patch") || name.ends_with(".diff")) {
             buffer->mode.next_token = syntax::patch_next_token;
             if (name == "addp-hunk-edit.diff") {
@@ -1245,9 +1214,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
                                                Token_Type::IDENTIFIER};
-            buffer->mode.overlays.reserve(2);
-            buffer->mode.overlays.push(syntax::overlay_matching_pairs({-1, 237, 0}));
-            buffer->mode.overlays.push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
+            matching_identifier_overlays(&buffer->mode.overlays, types);
         }
 
         if (add_indent_overlays) {
