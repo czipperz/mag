@@ -1419,6 +1419,10 @@ void command_redo_all(Editor* editor, Command_Source source) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Run shell command
+////////////////////////////////////////////////////////////////////////////////
+
 static void command_run_command_for_result_callback(Editor* editor,
                                                     Client* client,
                                                     cz::Str script,
@@ -1437,22 +1441,96 @@ static void command_run_command_for_result_callback(Editor* editor,
                         "Shell error");
 }
 
+struct Process_Ignore_Result_Job_Data {
+    cz::Process process;
+    cz::Input_File output;
+};
+
+static void process_ignore_result_job_kill(void* _data) {
+    Process_Ignore_Result_Job_Data* data = (Process_Ignore_Result_Job_Data*)_data;
+    data->process.kill();
+    data->output.close();
+    cz::heap_allocator().dealloc(data);
+}
+
+static Job_Tick_Result process_ignore_result_job_tick(Asynchronous_Job_Handler* handler,
+                                                      void* _data) {
+    Process_Ignore_Result_Job_Data* data = (Process_Ignore_Result_Job_Data*)_data;
+    int ret;
+    if (data->process.try_join(&ret)) {
+        char output_buffer[1024];
+        cz::Carriage_Return_Carry carry = {};
+        int64_t output_buffer_len =
+            data->output.read_strip_carriage_returns(output_buffer, sizeof(output_buffer), &carry);
+        if (output_buffer_len < 0) {
+            output_buffer_len =
+                snprintf(output_buffer, sizeof(output_buffer), "(failed to read stdout/stderr)");
+        } else if (output_buffer_len == 0) {
+            output_buffer_len =
+                snprintf(output_buffer, sizeof(output_buffer), "(empty stdout/stderr)");
+        } else {
+            if (output_buffer[output_buffer_len - 1] == '\n')
+                --output_buffer_len;
+        }
+        data->output.close();
+
+        cz::Heap_String message = {};
+        CZ_DEFER(message.drop());
+        if (ret == 0) {
+            cz::append(&message, "Command succeeded: ");
+        } else {
+            cz::append(&message, "Command failed with ", ret, ": ");
+        }
+        cz::append(&message, cz::Str{output_buffer, (size_t)output_buffer_len});
+        handler->show_message(message);
+
+        cz::heap_allocator().dealloc(data);
+        return Job_Tick_Result::FINISHED;
+    } else {
+        return Job_Tick_Result::STALLED;
+    }
+}
+
+static Asynchronous_Job job_process_ignore_result(cz::Process process, cz::Input_File output) {
+    Process_Ignore_Result_Job_Data* data =
+        cz::heap_allocator().alloc<Process_Ignore_Result_Job_Data>();
+    CZ_ASSERT(data);
+    data->process = process;
+    data->output = output;
+
+    Asynchronous_Job job;
+    job.tick = process_ignore_result_job_tick;
+    job.kill = process_ignore_result_job_kill;
+    job.data = data;
+    return job;
+}
+
 static void command_run_command_ignore_result_callback(Editor* editor,
                                                        Client* client,
                                                        cz::Str script,
                                                        void*) {
     WITH_CONST_SELECTED_BUFFER(client);
 
-    cz::Process_Options options;
-    options.working_directory = buffer->directory.buffer;
-
     cz::Process process;
-    if (!process.launch_script(script, options)) {
-        client->show_message("Shell error");
-        return;
+    cz::Input_File output;
+
+    {
+        cz::Process_Options options;
+        if (!create_process_output_pipe(&options.std_out, &output)) {
+            client->show_message("Failed to create stdout/stderr pipe");
+            return;
+        }
+        CZ_DEFER(options.std_out.close());
+        options.std_err = options.std_out;
+        options.working_directory = buffer->directory.buffer;
+        if (!process.launch_script(script, options)) {
+            output.close();
+            client->show_message("Shell error");
+            return;
+        }
     }
 
-    editor->add_asynchronous_job(job_process_silent(process));
+    editor->add_asynchronous_job(job_process_ignore_result(process, output));
 }
 
 REGISTER_COMMAND(command_run_command_for_result);
@@ -1480,6 +1558,10 @@ void command_run_command_ignore_result(Editor* editor, Command_Source source) {
     dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Replace region
+////////////////////////////////////////////////////////////////////////////////
 
 static void command_replace_region_callback(Editor* editor,
                                             Client* client,
