@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <chrono>
 #include <cz/vector.hpp>
 #include "core/buffer.hpp"
 #include "core/editor.hpp"
@@ -19,9 +20,10 @@ struct Window_Unified_Cache {
 
     // Animate when the visible region shifts.
     struct {
-        float speed;
-        uint64_t visible_start;
-        bool slam_on_the_breaks;
+        std::chrono::system_clock::time_point start_time;
+        std::chrono::system_clock::time_point end_time;
+        uint64_t start_line;
+        uint64_t end_line;
     } animated_scrolling;
 };
 
