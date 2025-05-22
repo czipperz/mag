@@ -40,6 +40,7 @@ static cz::Output_File log_getch_file;  // log all characters typed
 void command_ncurses_log_getch_toggle(Editor* editor, Command_Source source) {
     if (log_getch_file.is_open()) {
         log_getch_file.close();
+        log_getch_file = {};
         source.client->show_message("Log written to " LOG_PATH);
     } else {
         if (log_getch_file.open(LOG_PATH)) {
