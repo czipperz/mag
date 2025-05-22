@@ -189,10 +189,6 @@ static void create_key_remap(Key_Remap& key_remap) {
     key_remap.bind("C-h", "BACKSPACE");
     key_remap.bind("C-A-h", "C-A-BACKSPACE");
 
-    // C-SPACE doesn't work on some terminals so bind A-u as a backup.
-    key_remap.bind("A-u", "C-SPACE");
-    key_remap.bind("C-u", "C-SPACE");
-
     // I hit shift and these keys quite often and want the normal behavior.
     key_remap.bind("S-ENTER", "ENTER");
     key_remap.bind("S-BACKSPACE", "BACKSPACE");
