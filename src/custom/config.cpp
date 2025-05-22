@@ -836,8 +836,8 @@ static bool has_c_style_comments(const Contents& contents) {
     return false;
 }
 
-static const Token_Type standard_matching_identifier_token_types[] = {Token_Type::KEYWORD,
-                                                                      Token_Type::IDENTIFIER};
+static const Token_Type standard_matching_identifier_token_types[] = {
+    Token_Type::KEYWORD, Token_Type::TYPE, Token_Type::IDENTIFIER};
 static void matching_identifier_overlays(
     cz::Heap_Vector<Overlay>* overlays,
     cz::Slice<const Token_Type> types = standard_matching_identifier_token_types) {
@@ -1053,10 +1053,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         javascript:
             buffer->mode.next_token = syntax::js_next_token;
             cpp_comments_key_map(buffer->mode.key_map);
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
-                                               Token_Type::IDENTIFIER};
-            matching_identifier_overlays(&buffer->mode.overlays, types);
+            matching_identifier_overlays(&buffer->mode.overlays);
         } else if (name.ends_with(".go")) {
             buffer->mode.next_token = syntax::go_next_token;
             cpp_comments_key_map(buffer->mode.key_map);
@@ -1064,36 +1061,24 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             // Go uses tabs for alignment.
             buffer->mode.tab_width = buffer->mode.indent_width;
             buffer->mode.use_tabs = true;
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
-                                               Token_Type::IDENTIFIER};
-            matching_identifier_overlays(&buffer->mode.overlays, types);
+            matching_identifier_overlays(&buffer->mode.overlays);
         } else if (name.ends_with(".rs")) {
             buffer->mode.next_token = syntax::rust_next_token;
             cpp_comments_key_map(buffer->mode.key_map);
             BIND(buffer->mode.key_map, "A-x e", rust::command_extract_variable);
             BIND(buffer->mode.key_map, "A-x A-f", rust::command_rust_format_buffer);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
-                                               Token_Type::IDENTIFIER};
-            matching_identifier_overlays(&buffer->mode.overlays, types);
+            matching_identifier_overlays(&buffer->mode.overlays);
         } else if (name.ends_with(".zig")) {
             buffer->mode.next_token = syntax::zig_next_token;
             cpp_comments_key_map(buffer->mode.key_map);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
-                                               Token_Type::IDENTIFIER};
-            matching_identifier_overlays(&buffer->mode.overlays, types);
+            matching_identifier_overlays(&buffer->mode.overlays);
         } else if (name.ends_with(".proto")) {
             buffer->mode.next_token = syntax::protobuf_next_token;
             cpp_comments_key_map(buffer->mode.key_map);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
-                                               Token_Type::IDENTIFIER};
-            matching_identifier_overlays(&buffer->mode.overlays, types);
+            matching_identifier_overlays(&buffer->mode.overlays);
 
             // Style guide says 2 spaces, 80 characters.
             buffer->mode.indent_width = buffer->mode.tab_width = 2;
@@ -1211,10 +1196,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
 
             buffer->mode.next_token = syntax::general_next_token;
             indent_based_hierarchy_mode(buffer->mode);
-
-            static const Token_Type types[] = {Token_Type::KEYWORD, Token_Type::TYPE,
-                                               Token_Type::IDENTIFIER};
-            matching_identifier_overlays(&buffer->mode.overlays, types);
+            matching_identifier_overlays(&buffer->mode.overlays);
         }
 
         if (add_indent_overlays) {
