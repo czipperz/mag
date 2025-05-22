@@ -19,7 +19,7 @@ struct Window_Unified_Cache {
     uint64_t selected_cursor_mark;
 
     // Animate when the visible region shifts.
-    struct {
+    struct Animated_Scrolling {
         std::chrono::system_clock::time_point start_time;
         std::chrono::system_clock::time_point end_time;
         uint64_t start_line;

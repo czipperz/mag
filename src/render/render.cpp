@@ -122,6 +122,70 @@ static bool try_to_make_visible(Window_Unified* window,
     return false;
 }
 
+/// If we allow animated scrolling then run the code to process it.  Otherwise we
+/// just jump directly to the desired starting point (`iterator.position`).
+static void animate_scrolling(bool allow_animated_scrolling, bool* any_animated_scrolling,
+                              Window_Unified_Cache::Animated_Scrolling* animated_scrolling,
+                              const Buffer* buffer,
+                              Contents_Iterator* iterator) {
+    if (!allow_animated_scrolling) {
+        // If the user toggles on animated scrolling we should pretend
+        // we've already animated scrolling to the current position.
+        *animated_scrolling = {};
+        return;
+    }
+
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    uint64_t target_line = buffer->contents.get_line_number(iterator->position);
+    if (animated_scrolling->end_time < now && animated_scrolling->end_line == target_line) {
+        // Animated scrolling done.
+        return;
+    }
+
+    *any_animated_scrolling = true;
+
+    const auto get_current_line = [&] {
+        double percent_elapsed_time = 1;
+        if (now < animated_scrolling->end_time) {
+            percent_elapsed_time =
+                (double)(now - animated_scrolling->start_time).count() /
+                (double)(animated_scrolling->end_time - animated_scrolling->start_time).count();
+        }
+        if (animated_scrolling->start_line < animated_scrolling->end_line) {
+            return animated_scrolling->start_line +
+                   (uint64_t)((double)(animated_scrolling->end_line -
+                                       animated_scrolling->start_line) *
+                              percent_elapsed_time);
+        } else {
+            return animated_scrolling->start_line -
+                   (uint64_t)((double)(animated_scrolling->start_line -
+                                       animated_scrolling->end_line) *
+                              percent_elapsed_time);
+        }
+    };
+    uint64_t current_line = get_current_line();
+
+    if (animated_scrolling->end_time < now || animated_scrolling->end_line != target_line) {
+        if (animated_scrolling->end_time < now ||
+            (animated_scrolling->start_line < animated_scrolling->end_line &&
+             current_line > target_line) ||
+            (animated_scrolling->start_line > animated_scrolling->end_line &&
+             current_line < target_line)) {
+            animated_scrolling->start_time = now;
+            animated_scrolling->start_line = current_line;
+        }
+
+        uint64_t distance =
+            target_line > current_line ? target_line - current_line : current_line - target_line;
+        animated_scrolling->end_time =
+            now + std::min(std::chrono::milliseconds(200), std::chrono::milliseconds(distance));
+        animated_scrolling->end_line = target_line;
+        current_line = get_current_line();
+    }
+
+    *iterator = start_of_line_position(buffer->contents, current_line + 1);
+}
+
 static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* editor,
                                                                    Client* client,
                                                                    Window_Unified* window,
@@ -372,63 +436,8 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         }
         window_cache->v.unified.cursor_count = window->cursors.len;
 
-        // If we allow animated scrolling then run the code to process it.  Otherwise we
-        // just jump directly to the desired starting point (`iterator.position`).
-        auto& animated_scrolling = window_cache->v.unified.animated_scrolling;
-        std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-        uint64_t target_line = buffer->contents.get_line_number(iterator.position);
-        if (!editor->theme.allow_animated_scrolling) {
-            // If the user toggles on animated scrolling we should pretend
-            // we've already animated scrolling to the current position.
-            animated_scrolling = {};
-        } else if (animated_scrolling.end_time < now &&
-                   animated_scrolling.end_line == target_line) {
-            // Animated scrolling done.
-        } else {
-            *any_animated_scrolling = true;
-
-            const auto get_current_line = [&] {
-                double percent_elapsed_time = 1;
-                if (now < animated_scrolling.end_time) {
-                    percent_elapsed_time =
-                        (double)(now - animated_scrolling.start_time).count() /
-                        (double)(animated_scrolling.end_time - animated_scrolling.start_time)
-                            .count();
-                }
-                if (animated_scrolling.start_line < animated_scrolling.end_line) {
-                    return animated_scrolling.start_line +
-                           (uint64_t)((double)(animated_scrolling.end_line -
-                                               animated_scrolling.start_line) *
-                                      percent_elapsed_time);
-                } else {
-                    return animated_scrolling.start_line -
-                           (uint64_t)((double)(animated_scrolling.start_line -
-                                               animated_scrolling.end_line) *
-                                      percent_elapsed_time);
-                }
-            };
-            uint64_t current_line = get_current_line();
-
-            if (animated_scrolling.end_time < now || animated_scrolling.end_line != target_line) {
-                if (animated_scrolling.end_time < now ||
-                    (animated_scrolling.start_line < animated_scrolling.end_line &&
-                     current_line > target_line) ||
-                    (animated_scrolling.start_line > animated_scrolling.end_line &&
-                     current_line < target_line)) {
-                    animated_scrolling.start_time = now;
-                    animated_scrolling.start_line = current_line;
-                }
-
-                uint64_t distance = target_line > current_line ? target_line - current_line
-                                                               : current_line - target_line;
-                animated_scrolling.end_time = now + std::min(std::chrono::milliseconds(200),
-                                                             std::chrono::milliseconds(distance));
-                animated_scrolling.end_line = target_line;
-                current_line = get_current_line();
-            }
-
-            iterator = start_of_line_position(buffer->contents, current_line + 1);
-        }
+        animate_scrolling(editor->theme.allow_animated_scrolling, any_animated_scrolling,
+                          &window_cache->v.unified.animated_scrolling, buffer, &iterator);
     } else {
         window->start_position = iterator.position;
     }
