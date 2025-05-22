@@ -51,6 +51,8 @@ void cache_window_unified_create(Editor* editor,
     window_cache->v.unified = {};
     window_cache->v.unified.id = buffer->id;
     window_cache->v.unified.cursor_count = window->cursors.len;
+    window_cache->v.unified.animated_scrolling.end_line =
+        buffer->contents.get_line_number(window->start_position);
     cache_window_unified_position(window, window_cache, window->start_position, buffer);
 }
 
