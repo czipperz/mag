@@ -68,9 +68,14 @@ static void command_show_commit_callback(Editor* editor, Client* client, cz::Str
 
 REGISTER_COMMAND(command_show_commit);
 void command_show_commit(Editor* editor, Command_Source source) {
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
+    get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
+
     Dialog dialog = {};
     dialog.prompt = "Show commit: ";
     dialog.response_callback = command_show_commit_callback;
+    dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
 }
 
