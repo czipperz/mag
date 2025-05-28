@@ -7,6 +7,7 @@
 #include <cz/format.hpp>
 #include <cz/heap_string.hpp>
 #include <cz/path.hpp>
+#include <cz/process.hpp>
 #include <cz/util.hpp>
 #include <cz/working_directory.hpp>
 #include "core/command_macros.hpp"
@@ -625,13 +626,12 @@ static void command_diff_buffer_file_against_callback(Editor* editor,
     buffer_path.append(buffer->directory);
     buffer_path.append(buffer->name);
 
-    cz::Heap_String name = {};
-    CZ_DEFER(name.drop());
-    name = cz::format("diff ", input_path, " ", buffer_path);
-
-    cz::Str args[] = {"diff", input_path, buffer_path};
-
-    run_console_command(client, editor, buffer->directory.buffer, args, name, "Diff error");
+    cz::Heap_String command = {};
+    CZ_DEFER(command.drop());
+    command = cz::format("diff ", cz::Process::escape_arg(input_path), " ",
+                         cz::Process::escape_arg(buffer_path));
+    run_console_command(client, editor, buffer->directory.buffer, command.buffer, command,
+                        "Diff error");
 }
 
 REGISTER_COMMAND(command_diff_buffer_contents_against);

@@ -57,11 +57,9 @@ static void command_show_commit_callback(Editor* editor, Client* client, cz::Str
         }
     }
 
-    cz::Heap_String buffer_name = cz::format("git show ", commit);
-    CZ_DEFER(buffer_name.drop());
-
-    cz::Str args[] = {"git", "show", commit};
-    run_console_command(client, editor, root.buffer, args, buffer_name, "Git error");
+    cz::Heap_String command = cz::format("git show ", cz::Process::escape_arg(commit));
+    CZ_DEFER(command.drop());
+    run_console_command(client, editor, root.buffer, command.buffer, command, "Git error");
 }
 
 REGISTER_COMMAND(command_show_commit);
@@ -197,14 +195,10 @@ static void command_git_log_common(Editor* editor, Command_Source source, bool s
         return;
     }
 
-    cz::Heap_String buffer_name = cz::format(show_patch ? "git log -p " : "git log ", path);
-    CZ_DEFER(buffer_name.drop());
-
-    cz::Str args_patch[] = {"git", "log", "-p", path};
-    cz::Str args_no_patch[] = {"git", "log", path};
-    run_console_command(source.client, editor, root.buffer,
-                        show_patch ? cz::slice(args_patch) : cz::slice(args_no_patch), buffer_name,
-                        "Git error");
+    cz::Heap_String command =
+        cz::format(show_patch ? "git log -p " : "git log ", cz::Process::escape_arg(path));
+    CZ_DEFER(command.drop());
+    run_console_command(source.client, editor, root.buffer, command.buffer, command, "Git error");
 }
 
 REGISTER_COMMAND(command_git_log);
@@ -265,11 +259,9 @@ void command_line_history(Editor* editor, Command_Source source) {
         return;
     }
 
-    cz::Heap_String buffer_name = cz::format("git line-history ", path);
-    CZ_DEFER(buffer_name.drop());
-
-    cz::Str args[] = {"git", "log", "-L", path};
-    run_console_command(source.client, editor, root.buffer, args, buffer_name, "Git error");
+    cz::Heap_String command = cz::format("git log -L ", cz::Process::escape_arg(path));
+    CZ_DEFER(command.drop());
+    run_console_command(source.client, editor, root.buffer, command.buffer, command, "Git error");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -288,12 +280,9 @@ static void command_git_log_add_filter_callback(Editor* editor,
     }
 
     cz::Str old_command = buffer->name.slice(1, buffer->name.len - 1);
-    cz::Heap_String query_escaped = {};
-    CZ_DEFER(query_escaped.drop());
-    cz::Process::escape_arg(query, &query_escaped, cz::heap_allocator());
     cz::Heap_String new_command =
-        cz::format(old_command.slice_end(strlen("git log ")), "-G ", query_escaped, " ",
-                   old_command.slice_start(strlen("git log ")));
+        cz::format(old_command.slice_end(strlen("git log ")), "-G ", cz::Process::escape_arg(query),
+                   " ", old_command.slice_start(strlen("git log ")));
     CZ_DEFER(new_command.drop());
     run_console_command(client, editor, buffer->directory.buffer, new_command.buffer, new_command,
                         "Git error");
