@@ -22,6 +22,7 @@
 #include "core/window.hpp"
 #include "region_movement_commands.hpp"
 #include "search_commands.hpp"
+#include "version_control/version_control.hpp"
 
 namespace mag {
 namespace basic {
@@ -1415,6 +1416,7 @@ void command_redo_all(Editor* editor, Command_Source source) {
 // Run shell command
 ////////////////////////////////////////////////////////////////////////////////
 
+template <bool in_vc_root>
 static void command_run_command_for_result_callback(Editor* editor,
                                                     Client* client,
                                                     cz::Str script,
@@ -1428,9 +1430,17 @@ static void command_run_command_for_result_callback(Editor* editor,
     client->close_fused_paired_windows();
 
     WITH_CONST_SELECTED_BUFFER(client);
-
-    run_console_command(client, editor, buffer->directory.buffer, script, buffer_name,
-                        "Shell error");
+    cz::Heap_String directory = {};
+    CZ_DEFER(directory.drop());
+    if (in_vc_root) {
+        if (!version_control::get_root_directory(buffer->directory, cz::heap_allocator(),
+                                                 &directory)) {
+            client->show_message("Failed to find vc root directory");
+            return;
+        }
+    }
+    run_console_command(client, editor, in_vc_root ? directory.buffer : buffer->directory.buffer,
+                        script, buffer_name, "Shell error");
 }
 
 struct Process_Ignore_Result_Job_Data {
@@ -1533,7 +1543,20 @@ void command_run_command_for_result(Editor* editor, Command_Source source) {
 
     Dialog dialog = {};
     dialog.prompt = "Shell buffer: ";
-    dialog.response_callback = command_run_command_for_result_callback;
+    dialog.response_callback = command_run_command_for_result_callback<false>;
+    dialog.mini_buffer_contents = selected_region;
+    source.client->show_dialog(dialog);
+}
+
+REGISTER_COMMAND(command_run_command_for_result_in_vc_root);
+void command_run_command_for_result_in_vc_root(Editor* editor, Command_Source source) {
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
+    get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
+
+    Dialog dialog = {};
+    dialog.prompt = "Shell buffer in vc root: ";
+    dialog.response_callback = command_run_command_for_result_callback<true>;
     dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
 }

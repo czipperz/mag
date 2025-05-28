@@ -462,6 +462,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-!", command_run_command_for_result);
     BIND(key_map, "A-@", command_run_command_ignore_result);
+    BIND(key_map, "A-#", command_run_command_for_result_in_vc_root);
     BIND(key_map, "A-x C-t", command_launch_terminal);
 
     BIND(key_map, "A-x A-t", command_recapitalize_token_prompt);
