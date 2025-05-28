@@ -32,6 +32,10 @@
 #include <unistd.h>
 #endif
 
+#if !defined(CONSOLE_MAIN)
+#define ALLOW_FORK 1
+#endif
+
 using namespace mag;
 
 static int usage() {
@@ -47,9 +51,11 @@ Options:\n\
   --help             View the help page.\n\
   --client=CLIENT    Launches a specified client.\n\
   --try-remote       Tries to open the files in an existing Mag server.\n\
-                     If no server is found then starts a client.\n\
-  --no-fork          Stall the current process while Mag runs.\n\
-\n\
+                     If no server is found then starts a client.\n"
+#if ALLOW_FORK
+            "  --no-fork          Stall the current process while Mag runs.\n"
+#endif
+            "\n\
 Available clients:\n"
 #ifdef HAS_NCURSES
             "  ncurses   in terminal editing\n"
@@ -215,7 +221,9 @@ int mag_main(int argc, char** argv) {
         CZ_DEFER(files.drop(cz::heap_allocator()));
         Client::Type chosen_client = Client::SDL;
         bool try_remote = false;
+#if ALLOW_FORK
         bool allow_fork = true;
+#endif
         bool force_file = false;
         for (int i = 1; i < argc; ++i) {
             cz::Str arg = argv[i];
@@ -249,8 +257,10 @@ int mag_main(int argc, char** argv) {
                 return usage();
             } else if (arg == "--try-remote") {
                 try_remote = true;
+#if ALLOW_FORK
             } else if (arg == "--no-fork") {
                 allow_fork = false;
+#endif
             } else if (arg == "--") {
                 force_file = true;
             } else {
@@ -290,7 +300,7 @@ int mag_main(int argc, char** argv) {
             }
         }
 
-#if !defined(CONSOLE_MAIN)
+#if ALLOW_FORK
         if (allow_fork && chosen_client != Client::NCURSES) {
             cz::Vector<cz::Str> args = {};
             args.reserve_exact(cz::heap_allocator(), argc + 1);
