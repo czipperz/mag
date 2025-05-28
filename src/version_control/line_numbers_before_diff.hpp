@@ -18,5 +18,15 @@ bool line_numbers_before_changes_to_path(const char* working_directory,
 /// Same as above but allows for a custom diff.  Returns false on parsing error.
 bool line_numbers_before_diff(cz::Str diff_output, cz::Slice<uint64_t> line_numbers);
 
+/// Parse git patch line to extract the following fields:
+/// ```
+/// @@ -before_line[,before_len] +after_line[,after_len] @@
+/// ```
+bool parse_diff_line_numbers(cz::Str line,
+                             uint64_t* before_line,
+                             uint64_t* before_len,
+                             uint64_t* after_line,
+                             uint64_t* after_len);
+
 }
 }

@@ -59,16 +59,8 @@ bool line_numbers_before_diff(cz::Str diff_output, cz::Slice<uint64_t> line_numb
         if (!line.starts_with("@@ "))
             continue;  // We only really care about the line number headers.
 
-        uint64_t before_line, before_len = 1, after_line, after_len = 1;
-        if (cz::parse_advance(&line, "@@ -", &before_line) <= 0)
-            return false;
-        if (cz::parse_advance(&line, ',', &before_len) < 0)  // optional
-            return false;
-        if (cz::parse_advance(&line, " +", &after_line) <= 0)
-            return false;
-        if (cz::parse_advance(&line, ',', &after_len) < 0)  // optional
-            return false;
-        if (cz::parse_advance(&line, " @@") <= 0)
+        uint64_t before_line, before_len, after_line, after_len;
+        if (!parse_diff_line_numbers(line, &before_line, &before_len, &after_line, &after_len))
             return false;
 
         while (line_numbers[line_index] < before_line) {
@@ -89,6 +81,26 @@ bool line_numbers_before_diff(cz::Str diff_output, cz::Slice<uint64_t> line_numb
             line_numbers[l] += offset;
         }
     }
+    return true;
+}
+
+bool parse_diff_line_numbers(cz::Str line,
+                             uint64_t* before_line,
+                             uint64_t* before_len,
+                             uint64_t* after_line,
+                             uint64_t* after_len) {
+    if (cz::parse_advance(&line, "@@ -", before_line) <= 0)
+        return false;
+    *before_len = 1;
+    if (cz::parse_advance(&line, ',', before_len) < 0)  // optional
+        return false;
+    if (cz::parse_advance(&line, " +", after_line) <= 0)
+        return false;
+    *after_len = 1;
+    if (cz::parse_advance(&line, ',', after_len) < 0)  // optional
+        return false;
+    if (cz::parse_advance(&line, " @@") <= 0)
+        return false;
     return true;
 }
 
