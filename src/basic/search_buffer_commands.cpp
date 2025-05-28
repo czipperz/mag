@@ -36,15 +36,6 @@ static bool parse_number(Contents_Iterator* iterator, uint64_t* num) {
     }
 }
 
-static void select_search_window(Client* client) {
-    toggle_cycle_window(client);
-
-    WITH_CONST_SELECTED_BUFFER(client);
-    if (buffer->mode.next_token != syntax::search_next_token) {
-        toggle_cycle_window(client);
-    }
-}
-
 static bool get_file_to_open(const Buffer* buffer,
                              Contents_Iterator relative_start,
                              cz::String* path,
@@ -170,13 +161,6 @@ void command_search_buffer_open_selected(Editor* editor, Command_Source source) 
     toggle_cycle_window(source.client);
 }
 
-REGISTER_COMMAND(command_search_buffer_continue_selected);
-void command_search_buffer_continue_selected(Editor* editor, Command_Source source) {
-    select_search_window(source.client);
-    search_open_selected_no_swap(editor, source.client);
-    toggle_cycle_window(source.client);
-}
-
 static void search_open_next_no_swap(Editor* editor, Client* client) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -237,13 +221,6 @@ void command_search_buffer_open_next_no_swap(Editor* editor, Command_Source sour
 
 REGISTER_COMMAND(command_search_buffer_open_next);
 void command_search_buffer_open_next(Editor* editor, Command_Source source) {
-    search_open_next_no_swap(editor, source.client);
-    toggle_cycle_window(source.client);
-}
-
-REGISTER_COMMAND(command_search_buffer_continue_next);
-void command_search_buffer_continue_next(Editor* editor, Command_Source source) {
-    select_search_window(source.client);
     search_open_next_no_swap(editor, source.client);
     toggle_cycle_window(source.client);
 }
@@ -312,11 +289,12 @@ void command_search_buffer_open_previous(Editor* editor, Command_Source source) 
     toggle_cycle_window(source.client);
 }
 
-REGISTER_COMMAND(command_search_buffer_continue_previous);
-void command_search_buffer_continue_previous(Editor* editor, Command_Source source) {
-    select_search_window(source.client);
-    search_open_previous_no_swap(editor, source.client);
-    toggle_cycle_window(source.client);
+void search_buffer_iterate(Editor* editor, Client* client, bool select_next) {
+    if (select_next)
+        search_open_next_no_swap(editor, client);
+    else
+        search_open_previous_no_swap(editor, client);
+    toggle_cycle_window(client);
 }
 
 }

@@ -20,10 +20,7 @@ void command_search_buffer_open_selected(Editor* editor, Command_Source source);
 void command_search_buffer_open_next(Editor* editor, Command_Source source);
 void command_search_buffer_open_previous(Editor* editor, Command_Source source);
 
-/// From the result window use one of these commands to switch to a different result.
-void command_search_buffer_continue_selected(Editor* editor, Command_Source source);
-void command_search_buffer_continue_next(Editor* editor, Command_Source source);
-void command_search_buffer_continue_previous(Editor* editor, Command_Source source);
+void search_buffer_iterate(Editor* editor, Client* client, bool select_next);
 
 }
 }

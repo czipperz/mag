@@ -91,6 +91,9 @@ struct Mode {
     /// Used for debugging.
     bool render_bucket_boundaries = false;
 
+    /// Callback that allows iterating through search results ie `command_iteration_next`.
+    void (*perform_iteration)(Editor* editor, Client* client, bool select_next) = nullptr;
+
     void drop();
 };
 

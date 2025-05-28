@@ -153,27 +153,25 @@ void command_git_log_previous_commit(Editor* editor, Command_Source source) {
     window->column_offset = 0;
 }
 
-REGISTER_COMMAND(command_git_log_next_diff);
-void command_git_log_next_diff(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
+static void git_log_iterate_diff(Editor* editor, Client* client, bool select_next) {
+    WITH_CONST_SELECTED_BUFFER(client);
     for (size_t c = 0; c < window->cursors.len; ++c) {
         Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
-        if (find(&iterator, "\n@@ "))
+        if (!select_next)
+            backward_char(&iterator);
+        if (select_next ? find(&iterator, "\n@@ ") : rfind(&iterator, "\n@@ "))
             iterator.advance();
         window->cursors[c].point = iterator.position;
     }
 }
 
+REGISTER_COMMAND(command_git_log_next_diff);
+void command_git_log_next_diff(Editor* editor, Command_Source source) {
+    git_log_iterate_diff(editor, source.client, /*select_next=*/true);
+}
 REGISTER_COMMAND(command_git_log_previous_diff);
 void command_git_log_previous_diff(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
-    for (size_t c = 0; c < window->cursors.len; ++c) {
-        Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
-        backward_char(&iterator);
-        if (rfind(&iterator, "\n@@ "))
-            iterator.advance();
-        window->cursors[c].point = iterator.position;
-    }
+    git_log_iterate_diff(editor, source.client, /*select_next=*/false);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -268,6 +266,11 @@ void command_git_log_open_previous_diff_no_swap(Editor* editor, Command_Source s
     command_git_log_previous_diff(editor, source);
     if (open_selected_diff(editor, source.client))
         toggle_cycle_window(source.client);
+}
+
+void log_buffer_iterate(Editor* editor, Client* client, bool select_next) {
+    git_log_iterate_diff(editor, client, select_next);
+    open_selected_diff(editor, client);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -25,6 +25,7 @@ void command_git_log_open_previous_diff(Editor* editor, Command_Source source);
 void command_git_log_open_selected_diff_no_swap(Editor* editor, Command_Source source);
 void command_git_log_open_next_diff_no_swap(Editor* editor, Command_Source source);
 void command_git_log_open_previous_diff_no_swap(Editor* editor, Command_Source source);
+void log_buffer_iterate(Editor* editor, Client* client, bool select_next);
 
 /// Show git log.
 void command_git_log(Editor* editor, Command_Source source);

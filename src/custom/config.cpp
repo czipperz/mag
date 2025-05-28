@@ -7,6 +7,7 @@
 #include <tracy/Tracy.hpp>
 #include "basic/ascii_drawing_commands.hpp"
 #include "basic/buffer_commands.hpp"
+#include "basic/buffer_iteration_commands.hpp"
 #include "basic/build_commands.hpp"
 #include "basic/capitalization_commands.hpp"
 #include "basic/cmake_commands.hpp"
@@ -486,10 +487,10 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-g g", command_show_file_length_info);
     BIND(key_map, "A-g c", command_goto_column);
 
-    BIND(key_map, "A-g n", command_search_buffer_continue_next);
-    BIND(key_map, "A-g p", command_search_buffer_continue_previous);
-    BIND(key_map, "A-g A-n", command_search_buffer_continue_next);
-    BIND(key_map, "A-g A-p", command_search_buffer_continue_previous);
+    BIND(key_map, "A-g n", command_iteration_next);
+    BIND(key_map, "A-g p", command_iteration_previous);
+    BIND(key_map, "A-g A-n", command_iteration_next);
+    BIND(key_map, "A-g A-p", command_iteration_previous);
 
     BIND(key_map, "A-g a", prose::command_alternate);
 
@@ -935,6 +936,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    buffer->name.starts_with("*shell git show ") ||
                    buffer->name == "*shell git show*") {
             buffer->mode.next_token = syntax::patch_next_token;
+            buffer->mode.perform_iteration = version_control::log_buffer_iterate;
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
             BIND(buffer->mode.key_map, "s", version_control::command_show_commit_in_log);
             BIND(buffer->mode.key_map, "n", version_control::command_git_log_next_commit);
@@ -954,6 +956,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.starts_with("*git grep ") || buffer->name.starts_with("*ag ") ||
                    buffer->name.starts_with("*shell ")) {
             buffer->mode.next_token = syntax::search_next_token;
+            buffer->mode.perform_iteration = basic::search_buffer_iterate;
             search_key_map(buffer->mode.key_map);
         } else if (buffer->name.starts_with("*build ")) {
             buffer->mode.next_token = syntax::build_next_token;
