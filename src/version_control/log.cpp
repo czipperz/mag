@@ -39,9 +39,7 @@ void command_show_last_commit_to_file(Editor* editor, Command_Source source) {
     CZ_DEFER(buffer_name.drop());
 
     cz::Str args[] = {"git", "log", "-1", "-p", "--full-diff", "--", path};
-    cz::Arc<Buffer_Handle> handle;
-    run_console_command(source.client, editor, root.buffer, args, buffer_name, "Git error",
-                        &handle);
+    run_console_command(source.client, editor, root.buffer, args, buffer_name, "Git error");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,8 +61,7 @@ static void command_show_commit_callback(Editor* editor, Client* client, cz::Str
     CZ_DEFER(buffer_name.drop());
 
     cz::Str args[] = {"git", "show", commit};
-    cz::Arc<Buffer_Handle> handle;
-    run_console_command(client, editor, root.buffer, args, buffer_name, "Git error", &handle);
+    run_console_command(client, editor, root.buffer, args, buffer_name, "Git error");
 }
 
 REGISTER_COMMAND(command_show_commit);
@@ -207,7 +204,7 @@ static void command_git_log_common(Editor* editor, Command_Source source, bool s
     cz::Str args_no_patch[] = {"git", "log", path};
     run_console_command(source.client, editor, root.buffer,
                         show_patch ? cz::slice(args_patch) : cz::slice(args_no_patch), buffer_name,
-                        "Git error", nullptr);
+                        "Git error");
 }
 
 REGISTER_COMMAND(command_git_log);
@@ -272,8 +269,7 @@ void command_line_history(Editor* editor, Command_Source source) {
     CZ_DEFER(buffer_name.drop());
 
     cz::Str args[] = {"git", "log", "-L", path};
-    run_console_command(source.client, editor, root.buffer, args, buffer_name, "Git error",
-                        nullptr);
+    run_console_command(source.client, editor, root.buffer, args, buffer_name, "Git error");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
