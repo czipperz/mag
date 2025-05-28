@@ -34,10 +34,10 @@ void command_open_file_on_repo_site(Editor* editor, Command_Source source) {
             auto end_it = buffer->contents.iterator_at(window->sel().end());
             if (at_start_of_line(end_it) && end_it.position > start_it.position)
                 backward_char(&end_it);
-            start = start_it.get_line_number() + 1;
-            end = end_it.get_line_number() + 1;
+            start = start_it.get_line_number();
+            end = end_it.get_line_number();
         } else {
-            start = end = buffer->contents.get_line_number(window->sel().point) + 1;
+            start = end = buffer->contents.get_line_number(window->sel().point);
         }
     }
 

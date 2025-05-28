@@ -329,7 +329,7 @@ char Contents::get_once(uint64_t pos) const {
 uint64_t Contents::get_line_number(uint64_t pos) const {
     ZoneScoped;
 
-    uint64_t line = 0;
+    uint64_t line = 1;
     for (size_t i = 0; i < buckets.len; ++i) {
         if (pos < buckets[i].len) {
             return line + count_lines({buckets[i].elems, pos});

@@ -25,10 +25,10 @@ static bool decoration_line_number_append(Editor*,
     if (window->show_marks) {
         uint64_t start = buffer->contents.get_line_number(cursor.start());
         uint64_t end = buffer->contents.get_line_number(cursor.end());
-        cz::append(allocator, string, 'L', start + 1, '-', end + 1);
+        cz::append(allocator, string, 'L', start, '-', end);
     } else {
         uint64_t line = buffer->contents.get_line_number(cursor.point);
-        cz::append(allocator, string, 'L', line + 1);
+        cz::append(allocator, string, 'L', line);
     }
     return true;
 }

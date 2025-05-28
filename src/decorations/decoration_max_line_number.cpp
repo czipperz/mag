@@ -22,7 +22,7 @@ static bool decoration_max_line_number_append(Editor*,
                                               cz::String* string,
                                               void* _data) {
     uint64_t line = buffer->contents.get_line_number(buffer->contents.len);
-    cz::append(allocator, string, '/', line + 1);
+    cz::append(allocator, string, '/', line);
     return true;
 }
 

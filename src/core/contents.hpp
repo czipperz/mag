@@ -39,6 +39,7 @@ struct Contents {
     char get_once(uint64_t position) const;
     Contents_Iterator iterator_at(uint64_t position) const;
 
+    /// Note: lines (and columns) are 1-indexed!
     uint64_t get_line_number(uint64_t position) const;
 
     inline Contents_Iterator start() const;

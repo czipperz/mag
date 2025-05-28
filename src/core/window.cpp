@@ -185,7 +185,7 @@ size_t line_number_cols(const Theme& theme,
     if (!theme.draw_line_numbers)
         return 0;
 
-    size_t end_line_number = contents->get_line_number(contents->len) + 1;
+    size_t end_line_number = contents->get_line_number(contents->len);
     size_t line_number_width = (size_t)log10(end_line_number) + 1;
     size_t result = line_number_width + 1 /* space on right */;
 

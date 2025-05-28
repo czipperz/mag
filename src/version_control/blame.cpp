@@ -231,7 +231,7 @@ static Job_Tick_Result job_goto_line_tick(Editor* editor, Client* client, void* 
         kill_extra_cursors(window, client);
 
         WITH_CONST_BUFFER_HANDLE(handle);
-        Contents_Iterator iterator = start_of_line_position(buffer->contents, data->line + 1);
+        Contents_Iterator iterator = start_of_line_position(buffer->contents, data->line);
         window->cursors[0].point = iterator.position;
         center_in_window(window, buffer->mode, editor->theme, iterator);
     }

@@ -184,7 +184,7 @@ static void animate_scrolling(bool allow_animated_scrolling,
         current_line = get_current_line();
     }
 
-    *iterator = start_of_line_position(buffer->contents, current_line + 1);
+    *iterator = start_of_line_position(buffer->contents, current_line);
 }
 
 static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* editor,
@@ -268,12 +268,11 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
             position_after_changes(changes, &window_cache->v.unified.visible_start);
             auto& animated_scrolling = window_cache->v.unified.animated_scrolling;
             uint64_t position =
-                start_of_line_position(buffer->contents, animated_scrolling.start_line + 1)
-                    .position;
+                start_of_line_position(buffer->contents, animated_scrolling.start_line).position;
             position_after_changes(changes, &position);
             animated_scrolling.start_line = buffer->contents.get_line_number(position);
             position =
-                start_of_line_position(buffer->contents, animated_scrolling.end_line + 1).position;
+                start_of_line_position(buffer->contents, animated_scrolling.end_line).position;
             position_after_changes(changes, &position);
             animated_scrolling.end_line = buffer->contents.get_line_number(position);
 

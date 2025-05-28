@@ -226,14 +226,14 @@ void command_line_history(Editor* editor, Command_Source source) {
 
     Contents_Iterator iterator = buffer->contents.iterator_at(
         window->show_marks ? window->cursors[0].start() : window->cursors[0].point);
-    uint64_t line_number_range[2] = {iterator.get_line_number() + 1};
+    uint64_t line_number_range[2] = {iterator.get_line_number()};
 
     if (window->show_marks) {
         iterator.go_to(window->cursors[0].end());
         if (at_start_of_line(iterator) && iterator.position > window->cursors[0].start()) {
             iterator.retreat();
         }
-        line_number_range[1] = iterator.get_line_number() + 1;
+        line_number_range[1] = iterator.get_line_number();
     } else {
         line_number_range[1] = line_number_range[0];
     }
