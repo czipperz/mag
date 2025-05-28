@@ -1,6 +1,7 @@
 #include "log.hpp"
 
 #include <cz/format.hpp>
+#include <cz/process.hpp>
 #include "core/command_macros.hpp"
 #include "core/job.hpp"
 #include "core/match.hpp"
@@ -273,6 +274,46 @@ void command_line_history(Editor* editor, Command_Source source) {
     cz::Str args[] = {"git", "log", "-L", path};
     run_console_command(source.client, editor, root.buffer, args, buffer_name, "Git error",
                         nullptr);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Grep history
+////////////////////////////////////////////////////////////////////////////////
+
+static void command_git_log_add_filter_callback(Editor* editor,
+                                                Client* client,
+                                                cz::Str query,
+                                                void*) {
+    WITH_CONST_SELECTED_BUFFER(client);
+    if (buffer->type != Buffer::TEMPORARY || !buffer->name.starts_with("*git log ") ||
+        !buffer->name.ends_with("*")) {
+        client->show_message("Must be ran from a *git log ...* buffer");
+        return;
+    }
+
+    cz::Str old_command = buffer->name.slice(1, buffer->name.len - 1);
+    cz::Heap_String query_escaped = {};
+    CZ_DEFER(query_escaped.drop());
+    cz::Process::escape_arg(query, &query_escaped, cz::heap_allocator());
+    cz::Heap_String new_command =
+        cz::format(old_command.slice_end(strlen("git log ")), "-G ", query_escaped, " ",
+                   old_command.slice_start(strlen("git log ")));
+    CZ_DEFER(new_command.drop());
+    run_console_command(client, editor, buffer->directory.buffer, new_command.buffer, new_command,
+                        "Git error");
+}
+
+REGISTER_COMMAND(command_git_log_add_filter);
+void command_git_log_add_filter(Editor* editor, Command_Source source) {
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
+    get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
+
+    Dialog dialog = {};
+    dialog.prompt = "git log add filter: ";
+    dialog.response_callback = command_git_log_add_filter_callback;
+    dialog.mini_buffer_contents = selected_region;
+    source.client->show_dialog(dialog);
 }
 
 }

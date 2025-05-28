@@ -941,6 +941,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "p", version_control::command_git_log_previous_commit);
             BIND(buffer->mode.key_map, "f", version_control::command_git_log_next_diff);
             BIND(buffer->mode.key_map, "b", version_control::command_git_log_previous_diff);
+            BIND(buffer->mode.key_map, "G", version_control::command_git_log_add_filter);
         } else if (buffer->name.starts_with("*git blame ")) {
             buffer->mode.next_token = version_control::git_blame_next_token;
             BIND(buffer->mode.key_map, "ENTER", version_control::command_show_commit_in_blame);
