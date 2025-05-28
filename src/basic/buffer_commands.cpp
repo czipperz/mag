@@ -602,7 +602,7 @@ static void command_diff_buffer_contents_against_callback(Editor* editor,
 
     cz::Str args[] = {"diff", path, temp_file_buffer};
 
-    run_console_command(client, editor, buffer->directory.buffer, args, name, "Diff error");
+    run_console_command(client, editor, buffer->directory.buffer, args, name);
 }
 
 static void command_diff_buffer_file_against_callback(Editor* editor,
@@ -630,8 +630,7 @@ static void command_diff_buffer_file_against_callback(Editor* editor,
     CZ_DEFER(command.drop());
     command = cz::format("diff ", cz::Process::escape_arg(input_path), " ",
                          cz::Process::escape_arg(buffer_path));
-    run_console_command(client, editor, buffer->directory.buffer, command.buffer, command,
-                        "Diff error");
+    run_console_command(client, editor, buffer->directory.buffer, command.buffer, command);
 }
 
 REGISTER_COMMAND(command_diff_buffer_contents_against);

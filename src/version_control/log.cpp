@@ -39,7 +39,7 @@ void command_show_last_commit_to_file(Editor* editor, Command_Source source) {
     CZ_DEFER(buffer_name.drop());
 
     cz::Str args[] = {"git", "log", "-1", "-p", "--full-diff", "--", path};
-    run_console_command(source.client, editor, root.buffer, args, buffer_name, "Git error");
+    run_console_command(source.client, editor, root.buffer, args, buffer_name);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ static void command_show_commit_callback(Editor* editor, Client* client, cz::Str
 
     cz::Heap_String command = cz::format("git show ", cz::Process::escape_arg(commit));
     CZ_DEFER(command.drop());
-    run_console_command(client, editor, root.buffer, command.buffer, command, "Git error");
+    run_console_command(client, editor, root.buffer, command.buffer, command);
 }
 
 REGISTER_COMMAND(command_show_commit);
@@ -198,7 +198,7 @@ static void command_git_log_common(Editor* editor, Command_Source source, bool s
     cz::Heap_String command =
         cz::format(show_patch ? "git log -p " : "git log ", cz::Process::escape_arg(path));
     CZ_DEFER(command.drop());
-    run_console_command(source.client, editor, root.buffer, command.buffer, command, "Git error");
+    run_console_command(source.client, editor, root.buffer, command.buffer, command);
 }
 
 REGISTER_COMMAND(command_git_log);
@@ -261,7 +261,7 @@ void command_line_history(Editor* editor, Command_Source source) {
 
     cz::Heap_String command = cz::format("git log -L ", cz::Process::escape_arg(path));
     CZ_DEFER(command.drop());
-    run_console_command(source.client, editor, root.buffer, command.buffer, command, "Git error");
+    run_console_command(source.client, editor, root.buffer, command.buffer, command);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -284,8 +284,7 @@ static void command_git_log_add_filter_callback(Editor* editor,
         cz::format(old_command.slice_end(strlen("git log ")), "-G ", cz::Process::escape_arg(query),
                    " ", old_command.slice_start(strlen("git log ")));
     CZ_DEFER(new_command.drop());
-    run_console_command(client, editor, buffer->directory.buffer, new_command.buffer, new_command,
-                        "Git error");
+    run_console_command(client, editor, buffer->directory.buffer, new_command.buffer, new_command);
 }
 
 REGISTER_COMMAND(command_git_log_add_filter);

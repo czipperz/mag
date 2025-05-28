@@ -54,7 +54,7 @@ static void run_search(Client* client,
     client->close_fused_paired_windows();
 
     cz::Arc<Buffer_Handle> handle;
-    if (run_console_command(client, editor, directory, args, buffer_name, "Ag error", &handle) ==
+    if (run_console_command(client, editor, directory, args, buffer_name, &handle) ==
         Run_Console_Command_Result::SUCCESS_NEW_BUFFER) {
         Buffer* buffer = handle->lock_writing();
         CZ_DEFER(handle->unlock());

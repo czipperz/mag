@@ -28,8 +28,7 @@ void command_build_debug_vc_root(Editor* editor, Command_Source source) {
 #else
     cz::Str args[] = {"./build-debug"};
 #endif
-    run_console_command(source.client, editor, top_level_path.buffer, args, "build debug",
-                        "Failed to run build-debug.sh");
+    run_console_command(source.client, editor, top_level_path.buffer, args, "build debug");
 }
 
 }

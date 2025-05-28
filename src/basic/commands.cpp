@@ -1440,7 +1440,7 @@ static void command_run_command_for_result_callback(Editor* editor,
         }
     }
     run_console_command(client, editor, in_vc_root ? directory.buffer : buffer->directory.buffer,
-                        script, buffer_name, "Shell error");
+                        script, buffer_name);
 }
 
 struct Process_Ignore_Result_Job_Data {

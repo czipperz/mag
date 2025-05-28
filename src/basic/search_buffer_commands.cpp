@@ -135,8 +135,8 @@ void command_search_buffer_reload(Editor* editor, Command_Source source) {
     window->cursors[0].point = window->cursors[0].mark = buffer->contents.len;
     window->show_marks = false;
 
-    run_console_command_in(source.client, editor, handle, buffer->directory.buffer, script.as_str(),
-                           "Failed to rerun script");
+    run_console_command_in(source.client, editor, handle, buffer->directory.buffer,
+                           script.as_str());
 }
 
 static void search_open_selected_no_swap(Editor* editor, Client* client) {

@@ -253,7 +253,6 @@ Run_Console_Command_Result run_console_command(Client* client,
                                                const char* working_directory,
                                                cz::Str script,
                                                cz::Str buffer_name,
-                                               cz::Str error,
                                                cz::Arc<Buffer_Handle>* handle_out) {
     ZoneScoped;
 
@@ -287,7 +286,7 @@ Run_Console_Command_Result run_console_command(Client* client,
 
     client->set_selected_buffer(handle);
 
-    if (!run_console_command_in(client, editor, handle, working_directory, script, error)) {
+    if (!run_console_command_in(client, editor, handle, working_directory, script)) {
         return Run_Console_Command_Result::FAILED;
     }
 
@@ -299,8 +298,7 @@ bool run_console_command_in(Client* client,
                             Editor* editor,
                             cz::Arc<Buffer_Handle> handle,
                             const char* working_directory,
-                            cz::Str script,
-                            cz::Str error) {
+                            cz::Str script) {
     ZoneScoped;
 
     cz::Process_Options options;
@@ -321,7 +319,7 @@ bool run_console_command_in(Client* client,
 
     cz::Process process;
     if (!process.launch_script(script, options)) {
-        client->show_message(error);
+        client->show_message_format("Failed to run: ", script);
         stdout_read.close();
         return false;
     }
@@ -336,12 +334,11 @@ Run_Console_Command_Result run_console_command(Client* client,
                                                const char* working_directory,
                                                cz::Slice<cz::Str> args,
                                                cz::Str buffer_name,
-                                               cz::Str error,
                                                cz::Arc<Buffer_Handle>* handle_out) {
     cz::String script = {};
     CZ_DEFER(script.drop(cz::heap_allocator()));
     cz::Process::escape_args(args, &script, cz::heap_allocator());
-    return run_console_command(client, editor, working_directory, script.buffer, buffer_name, error,
+    return run_console_command(client, editor, working_directory, script.buffer, buffer_name,
                                handle_out);
 }
 
