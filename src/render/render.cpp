@@ -124,7 +124,8 @@ static bool try_to_make_visible(Window_Unified* window,
 
 /// If we allow animated scrolling then run the code to process it.  Otherwise we
 /// just jump directly to the desired starting point (`iterator.position`).
-static void animate_scrolling(bool allow_animated_scrolling, bool* any_animated_scrolling,
+static void animate_scrolling(bool allow_animated_scrolling,
+                              bool* any_animated_scrolling,
                               Window_Unified_Cache::Animated_Scrolling* animated_scrolling,
                               const Buffer* buffer,
                               Contents_Iterator* iterator) {
