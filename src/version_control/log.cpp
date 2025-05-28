@@ -131,7 +131,7 @@ void command_show_commit_in_log(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_git_log_next_commit);
 void command_git_log_next_commit(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
-    for (size_t c = window->cursors.len; c-- > 0;) {
+    for (size_t c = 0; c < window->cursors.len; ++c) {
         Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
         if (find(&iterator, "\ncommit "))
             iterator.advance();
@@ -144,7 +144,7 @@ void command_git_log_next_commit(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_git_log_previous_commit);
 void command_git_log_previous_commit(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
-    for (size_t c = window->cursors.len; c-- > 0;) {
+    for (size_t c = 0; c < window->cursors.len; ++c) {
         Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
         backward_char(&iterator);
         if (rfind(&iterator, "\ncommit "))
@@ -158,7 +158,7 @@ void command_git_log_previous_commit(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_git_log_next_diff);
 void command_git_log_next_diff(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
-    for (size_t c = window->cursors.len; c-- > 0;) {
+    for (size_t c = 0; c < window->cursors.len; ++c) {
         Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
         if (find(&iterator, "\n@@ "))
             iterator.advance();
@@ -169,7 +169,7 @@ void command_git_log_next_diff(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_git_log_previous_diff);
 void command_git_log_previous_diff(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
-    for (size_t c = window->cursors.len; c-- > 0;) {
+    for (size_t c = 0; c < window->cursors.len; ++c) {
         Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
         backward_char(&iterator);
         if (rfind(&iterator, "\n@@ "))
