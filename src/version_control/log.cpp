@@ -155,6 +155,29 @@ void command_git_log_previous_commit(Editor* editor, Command_Source source) {
     window->column_offset = 0;
 }
 
+REGISTER_COMMAND(command_git_log_next_diff);
+void command_git_log_next_diff(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    for (size_t c = window->cursors.len; c-- > 0;) {
+        Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
+        if (find(&iterator, "\n@@ "))
+            iterator.advance();
+        window->cursors[c].point = iterator.position;
+    }
+}
+
+REGISTER_COMMAND(command_git_log_previous_diff);
+void command_git_log_previous_diff(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    for (size_t c = window->cursors.len; c-- > 0;) {
+        Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
+        backward_char(&iterator);
+        if (rfind(&iterator, "\n@@ "))
+            iterator.advance();
+        window->cursors[c].point = iterator.position;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // File history
 ////////////////////////////////////////////////////////////////////////////////
