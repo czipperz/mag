@@ -2,8 +2,10 @@
 
 #include <stdlib.h>
 #include <chrono>
+#include <cz/format.hpp>
 #include <cz/heap.hpp>
 #include <cz/vector.hpp>
+#include <utility>
 #include "core/completion.hpp"
 #include "core/copy_chain.hpp"
 #include "core/dialog.hpp"
@@ -128,6 +130,13 @@ struct Client {
 
     /// Show a message to the user.
     void show_message(cz::Str text);
+    template <class... Ts>
+    void show_message_format(Ts&&... ts) {
+        cz::Heap_String message = {};
+        CZ_DEFER(message.drop());
+        cz::append(&message, std::forward<Ts>(ts)...);
+        show_message(message);
+    }
 
     /// Show a dialog.  If submitted then `response_callback` is called.  Once the
     /// dialog has ended the data will be deallocated via `cz::heap_allocator`.

@@ -430,9 +430,7 @@ static void bind_all_keys() {
 static void print_unbound_key_message(Client* client, int ch) {
     cz::String octal = cz::asprintf("0%o", ch);
     CZ_DEFER(octal.drop(cz::heap_allocator()));
-    cz::String message = cz::format("Ignoring unknown key code: ", ch, " = ", octal);
-    CZ_DEFER(message.drop(cz::heap_allocator()));
-    client->show_message(message);
+    client->show_message_format("Ignoring unknown key code: ", ch, " = ", octal);
 }
 
 static void process_key_press(Server* server, Client* client, int ch) {

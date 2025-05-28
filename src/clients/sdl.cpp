@@ -1198,18 +1198,13 @@ static bool load_font(Client* client,
     // Load the font.
     TTF_Font* new_font = TTF_OpenFont(font_file->buffer, point_size);
     if (!new_font) {
-        cz::Heap_String msg =
-            cz::format("Failed to open font file '", new_font_file, "': ", SDL_GetError());
-        CZ_DEFER(msg.drop());
-        client->show_message(msg);
+        client->show_message_format("Failed to open font file '", new_font_file,
+                                    "': ", SDL_GetError());
     } else if (!get_character_dims(new_font, character_width, character_height)) {
         TTF_CloseFont(new_font);
         new_font = nullptr;
-
-        cz::Heap_String msg =
-            cz::format("Failed to parse character dims from font file: ", new_font_file);
-        CZ_DEFER(msg.drop());
-        client->show_message(msg);
+        client->show_message_format("Failed to parse character dims from font file: ",
+                                    new_font_file);
     }
 
     if (!new_font) {

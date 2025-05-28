@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cz/arc.hpp>
+#include <cz/format.hpp>
 #include <cz/str.hpp>
 #include <cz/vector.hpp>
+#include <utility>
 
 namespace cz {
 struct Process;
@@ -39,6 +41,13 @@ public:
 
     /// Show a message to the user.
     void show_message(cz::Str message);
+    template <class... Ts>
+    void show_message_format(Ts&&... ts) {
+        cz::Heap_String message = {};
+        CZ_DEFER(message.drop());
+        cz::append(&message, std::forward<Ts>(ts)...);
+        show_message(message);
+    }
 
     /// If the main thread is sleeping, we can do synchronous operations asynchronously.
     bool try_sync_lock(Server**, Client**);

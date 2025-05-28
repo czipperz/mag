@@ -448,9 +448,7 @@ static void command_directory_rename_path_callback(Editor* editor,
         }
     }
     if (cz::file::is_directory(new_path.buffer)) {
-        auto message = cz::format("Cannot overwrite directory ", new_path);
-        CZ_DEFER(message.drop());
-        client->show_message(message);
+        client->show_message_format("Cannot overwrite directory ", new_path);
         return;
     }
 
@@ -595,13 +593,7 @@ void command_directory_run_path(Editor* editor, Command_Source source) {
 #endif
 
     if (!success) {
-        cz::String string = {};
-        CZ_DEFER(string.drop(cz::heap_allocator()));
-        cz::Str prefix = "Failed to run path ";
-        string.reserve(cz::heap_allocator(), prefix.len + path.len);
-        string.append(prefix);
-        string.append(path);
-        source.client->show_message(string);
+        source.client->show_message_format("Failed to run path ", path);
         return;
     }
 
@@ -632,19 +624,8 @@ void launch_terminal_in(Editor* editor, Client* client, const char* directory) {
 
     cz::Process process;
     if (!process.launch_script(terminal_script, options)) {
-        cz::String string = {};
-        CZ_DEFER(string.drop(cz::heap_allocator()));
-        cz::Str prefix = "Failed to start terminal ";
-        cz::Str terminal_script_str = terminal_script;
-        cz::Str infix = " in directory ";
-        cz::Str directory_str = directory;
-        string.reserve(cz::heap_allocator(),
-                       prefix.len + terminal_script_str.len + infix.len + directory_str.len);
-        string.append(prefix);
-        string.append(terminal_script_str);
-        string.append(infix);
-        string.append(directory_str);
-        client->show_message(string);
+        client->show_message_format("Failed to start terminal ", terminal_script, " in directory ",
+                                    directory);
         return;
     }
 

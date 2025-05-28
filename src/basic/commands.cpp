@@ -950,14 +950,9 @@ void command_show_file_length_info(Editor* editor, Command_Source source) {
     if (words > 0)
         --words;
 
-    cz::String string = {};
-    CZ_DEFER(string.drop(cz::heap_allocator()));
-
-    cz::append(cz::heap_allocator(), &string, "Bytes: ", end - start, ", lines: ", lines,
-               ", words: ", words,
-               ", cursor position: ", window->cursors[window->selected_cursor].point);
-
-    source.client->show_message(string);
+    source.client->show_message_format(
+        "Bytes: ", end - start, ", lines: ", lines, ", words: ", words,
+        ", cursor position: ", window->cursors[window->selected_cursor].point);
 }
 
 REGISTER_COMMAND(command_path_up_directory);
@@ -1089,10 +1084,7 @@ REGISTER_COMMAND(command_show_date_of_build);
 void command_show_date_of_build(Editor* editor, Command_Source source) {
     char buffer[20];
     format_date(program_date, buffer);
-
-    cz::Heap_String message = cz::format("Date of build: ", buffer);
-    CZ_DEFER(message.drop());
-    source.client->show_message(message);
+    source.client->show_message_format("Date of build: ", buffer);
 }
 
 REGISTER_COMMAND(command_comment_hash);

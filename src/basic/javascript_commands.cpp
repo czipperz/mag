@@ -95,9 +95,7 @@ static Job_Tick_Result do_tick(Asynchronous_Job_Handler* handler, void* _data) {
     if (data->process.try_join(&ret)) {
         // If jq fails with no std_err output then log a message so the user knows.
         if (ret != 0 && data->err_string.len == 0) {
-            auto message = cz::format("jq failed with error code: ", ret);
-            handler->show_message(message);
-            message.drop();
+            handler->show_message_format("jq failed with error code: ", ret);
         }
 
         // If jq succeeds then push the string in.

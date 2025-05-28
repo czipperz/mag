@@ -109,9 +109,7 @@ void command_open_file_on_repo_site(Editor* editor, Command_Source source) {
     }
     browser.detach();
 
-    cz::String message = cz::format("Opening ", url);
-    CZ_DEFER(message.drop(cz::heap_allocator()));
-    source.client->show_message(message);
+    source.client->show_message_format("Opening ", url);
 }
 
 static void find_common_branch(cz::Heap_String* branch, const char* vc_dir) {

@@ -240,14 +240,7 @@ static Job_Tick_Result clang_format_job_tick(Asynchronous_Job_Handler* handler, 
                                              data->change_index, &error_line);
 
                 if (error_line.len > 0) {
-                    cz::String message = {};
-                    CZ_DEFER(message.drop(cz::heap_allocator()));
-                    cz::Str prefix = "Error: clang-format failed on line ";
-                    message.reserve(cz::heap_allocator(), prefix.len + error_line.len);
-                    message.append(prefix);
-                    message.append(error_line);
-
-                    handler->show_message(message);
+                    handler->show_message_format("Error: clang-format failed on line ", error_line);
                 }
             }
 

@@ -23,18 +23,14 @@ bool run_process_for_output(Client* client,
         CZ_DEFER(options.std_err.close());
         if (!create_process_output_pipe(&options.std_out, &std_out) ||
             !create_process_output_pipe(&options.std_err, &std_err)) {
-            auto msg = cz::format("Error: failed to create pipes for ", pretty_name);
-            CZ_DEFER(msg.drop());
-            client->show_message(msg);
+            client->show_message_format("Error: failed to create pipes for ", pretty_name);
             return false;
         }
 
         options.working_directory = working_directory;
 
         if (!process.launch_program(args, options)) {
-            auto msg = cz::format("Error: failed to spawn ", pretty_name);
-            CZ_DEFER(msg.drop());
-            client->show_message(msg);
+            client->show_message_format("Error: failed to spawn ", pretty_name);
             return false;
         }
     }
@@ -44,16 +40,12 @@ bool run_process_for_output(Client* client,
     cz::Heap_String err = {};
     CZ_DEFER(err.drop());
     if (!cz::read_to_string(std_err, cz::heap_allocator(), &err) || err.len > 0) {
-        auto msg = cz::format("Error: ", pretty_name, " failed with stderr: ", err);
-        CZ_DEFER(msg.drop());
-        client->show_message(msg);
+        client->show_message_format("Error: ", pretty_name, " failed with stderr: ", err);
         return false;
     }
 
     if (exit_code != 0) {
-        auto msg = cz::format("Error: ", pretty_name, " failed with exit code: ", exit_code);
-        CZ_DEFER(msg.drop());
-        client->show_message(msg);
+        client->show_message_format("Error: ", pretty_name, " failed with exit code: ", exit_code);
         return false;
     }
 
