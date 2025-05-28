@@ -3,9 +3,11 @@
 #include <cz/format.hpp>
 #include <cz/process.hpp>
 #include "core/command_macros.hpp"
+#include "core/file.hpp"
 #include "core/job.hpp"
 #include "core/match.hpp"
 #include "core/movement.hpp"
+#include "core/visible_region.hpp"
 #include "line_numbers_before_diff.hpp"
 #include "version_control.hpp"
 
@@ -172,6 +174,100 @@ void command_git_log_previous_diff(Editor* editor, Command_Source source) {
             iterator.advance();
         window->cursors[c].point = iterator.position;
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Open selected diff commands
+////////////////////////////////////////////////////////////////////////////////
+
+static bool open_selected_diff(Editor* editor, Client* client) {
+    SSOStr path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    uint64_t line;
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        Contents_Iterator iterator =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+
+        // Find line number.
+        {
+            if (!rfind(&iterator, "\n@@ "))
+                return false;
+            iterator.advance();
+            Contents_Iterator eol = iterator;
+            end_of_line(&eol);
+            SSOStr line_contents =
+                buffer->contents.slice(cz::heap_allocator(), iterator, eol.position);
+            CZ_DEFER(line_contents.drop(cz::heap_allocator()));
+            uint64_t before_line, before_len, after_len;
+            if (!parse_diff_line_numbers(line_contents.as_str(), &before_line, &before_len,
+                                         /*after_line=*/&line, &after_len))
+                return false;
+        }
+
+        // Find file.
+        {
+            if (!rfind(&iterator, "\ndiff --git "))
+                return false;
+            iterator.advance(strlen("\ndiff --git "));
+            Contents_Iterator space = iterator;
+            if (!find_this_line(&space, ' '))
+                return false;
+            path = buffer->contents.slice(cz::heap_allocator(), iterator, space.position);
+        }
+    }
+
+    // Open a vertical split and put the opened file on the right.
+    if (!client->selected_normal_window->parent || !client->selected_normal_window->parent->fused) {
+        Window_Split* split = split_window(client, Window::VERTICAL_SPLIT);
+        split->fused = true;
+    } else {
+        toggle_cycle_window(client);
+    }
+
+    open_file(editor, client, path.as_str());
+
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        kill_extra_cursors(window, client);
+        Contents_Iterator iterator = start_of_line_position(buffer->contents, line);
+        window->cursors[0].point = iterator.position;
+        center_in_window(window, buffer->mode, editor->theme, iterator);
+        window->show_marks = false;
+    }
+
+    return true;
+}
+
+REGISTER_COMMAND(command_git_log_open_selected_diff);
+void command_git_log_open_selected_diff(Editor* editor, Command_Source source) {
+    open_selected_diff(editor, source.client);
+}
+
+REGISTER_COMMAND(command_git_log_open_next_diff);
+void command_git_log_open_next_diff(Editor* editor, Command_Source source) {
+    command_git_log_next_diff(editor, source);
+    open_selected_diff(editor, source.client);
+}
+REGISTER_COMMAND(command_git_log_open_previous_diff);
+void command_git_log_open_previous_diff(Editor* editor, Command_Source source) {
+    command_git_log_previous_diff(editor, source);
+    open_selected_diff(editor, source.client);
+}
+
+void command_git_log_open_selected_diff_no_swap(Editor* editor, Command_Source source) {
+    if (open_selected_diff(editor, source.client))
+        toggle_cycle_window(source.client);
+}
+void command_git_log_open_next_diff_no_swap(Editor* editor, Command_Source source) {
+    command_git_log_next_diff(editor, source);
+    if (open_selected_diff(editor, source.client))
+        toggle_cycle_window(source.client);
+}
+void command_git_log_open_previous_diff_no_swap(Editor* editor, Command_Source source) {
+    command_git_log_previous_diff(editor, source);
+    if (open_selected_diff(editor, source.client))
+        toggle_cycle_window(source.client);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
