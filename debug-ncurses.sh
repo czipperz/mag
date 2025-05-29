@@ -21,5 +21,5 @@ fi
 tmux splitw -v -p 30 "gdbserver localhost:12345 ./build/debug/mag --client=ncurses $*"
 
 # At the top spawn main gdb client (interactive debugger) and connect to the server.
-tmux selectp -t 0
+tmux selectp -t "$TMUX_PANE"
 gdb -x debug-ncurses.gdb
