@@ -725,6 +725,8 @@ static void search_key_map(Key_Map& key_map) {
     BIND(key_map, "o", command_search_buffer_open_selected_no_swap);
     BIND(key_map, "n", command_search_buffer_open_next_no_swap);
     BIND(key_map, "p", command_search_buffer_open_previous_no_swap);
+    BIND(key_map, "N", command_forward_line);
+    BIND(key_map, "P", command_backward_line);
 }
 
 static void mini_buffer_key_map(Key_Map& key_map) {
