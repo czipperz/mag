@@ -1100,7 +1100,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.use_tabs = false;
             buffer->mode.preferred_column = 80;
         } else if (name.ends_with(".sh") || name.ends_with(".bash") || name.ends_with(".zsh") ||
-                   name == ".bashrc" || name == ".teshrc" || name == ".zshrc" ||
+                   name.ends_with(".bashrc") || name == ".teshrc" || name == ".zshrc" ||
                    name == "Makefile" || name == ".gitconfig" || name == ".gitmodules" ||
                    // Powershell isn't really a shell script but it pretty much works.
                    name.ends_with(".ps1") ||
