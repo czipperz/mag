@@ -300,6 +300,8 @@ static bool open_selected_diff(Editor* editor, Client* client, int select_next) 
             if (!rfind(&iterator, "\ndiff --git "))
                 return false;
             iterator.advance(strlen("\ndiff --git "));
+            if (looking_at(iterator, "a/") || looking_at(iterator, "b/"))
+                iterator.advance(2);
             Contents_Iterator space = iterator;
             if (!find_this_line(&space, ' '))
                 return false;
