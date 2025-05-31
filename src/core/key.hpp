@@ -92,6 +92,7 @@ struct Key {
     bool operator==(const Key& other) const {
         return modifiers == other.modifiers && code == other.code;
     }
+    bool operator!=(const Key& other) const { return !(*this == other); }
 
     bool operator<(const Key& other) const {
         if (code != other.code) {
@@ -121,6 +122,12 @@ constexpr const size_t stringify_key_max_size = 21;
 /// (reserve at least `stringify_key_max_size` characters in advance).
 void stringify_key(cz::String* string, Key key);
 
+/// Convert a list of keys to/from a string.  Aims to be easy for an end user to
+/// interact with.  Single quotes are used to enclose a sequence of printable
+/// characters (man isprint).  Single quotes are escaped via single quotes.
+///
+/// `parse_keys` returns `string.len` on success or `-index` on the index of the first failure.
+int64_t parse_keys(cz::Allocator allocator, cz::Vector<Key>* keys, cz::Str string);
 void stringify_keys(cz::Allocator allocator, cz::String* string, cz::Slice<const Key> keys);
 
 }

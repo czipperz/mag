@@ -209,13 +209,13 @@ void stringify_key(cz::String* string, Key key) {
 }
 
 void stringify_keys(cz::Allocator allocator, cz::String* string, cz::Slice<const Key> keys) {
-    const auto is_basic = [](const Key& key) {
+    const auto is_print = [](const Key& key) {
         return key.modifiers == 0 && key.code <= UCHAR_MAX && cz::is_print((char)key.code);
     };
 
     bool in_single_quotes = false;
     for (size_t i = 0; i < keys.len; ++i) {
-        if (is_basic(keys[i])) {
+        if (is_print(keys[i])) {
             string->reserve(allocator, 4);
 
             // Printable characters must be surrounded in single quotes.
@@ -247,6 +247,41 @@ void stringify_keys(cz::Allocator allocator, cz::String* string, cz::Slice<const
         string->reserve(allocator, 1);
         string->push('\'');
     }
+}
+
+int64_t parse_keys(cz::Allocator allocator, cz::Vector<Key>* keys, cz::Str string) {
+    for (size_t i = 0; i < string.len; ++i) {
+        if (string[i] == '\'') {
+            // Parse sequence of printable characters.
+            for (++i;; ++i) {
+                if (i == string.len)
+                    return -(int64_t)i;  // error unterminated '
+                if (!cz::is_print(string[i]))
+                    return -(int64_t)i;  // error non printable character in printable section
+
+                if (string[i] == '\'') {
+                    ++i;
+                    // Fallthrough unless the single quote is escaped.
+                    if (i >= string.len || string[i] != '\'') {
+                        break;
+                    }
+                }
+
+                keys->reserve(allocator, 1);
+                keys->push({0, (uint16_t)string[i]});
+            }
+        } else {
+            // Parse modified or non-printable.
+            size_t word_length = string.slice_start(i).find_index(' ');
+            Key key;
+            if (!Key::parse(&key, string.slice(i, i + word_length)))
+                return -(int64_t)i;  // invalid key
+            keys->reserve(allocator, 1);
+            keys->push(key);
+            i += word_length;
+        }
+    }
+    return (int64_t)string.len;
 }
 
 }
