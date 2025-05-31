@@ -2,6 +2,7 @@
 
 #include <cz/format.hpp>
 #include <cz/process.hpp>
+#include "basic/visible_region_commands.hpp"
 #include "core/command_macros.hpp"
 #include "core/file.hpp"
 #include "core/job.hpp"
@@ -163,6 +164,7 @@ static void git_log_iterate_diff(Editor* editor, Client* client, bool select_nex
             iterator.advance();
         window->cursors[c].point = iterator.position;
     }
+    basic::center_selected_cursor(editor, window, buffer);
 }
 
 REGISTER_COMMAND(command_git_log_next_diff);
