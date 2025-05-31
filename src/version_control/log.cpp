@@ -2,6 +2,7 @@
 
 #include <cz/format.hpp>
 #include <cz/process.hpp>
+#include "basic/search_buffer_commands.hpp"
 #include "basic/visible_region_commands.hpp"
 #include "core/command_macros.hpp"
 #include "core/file.hpp"
@@ -183,13 +184,20 @@ void command_git_log_previous_file(Editor* editor, Command_Source source) {
 
 static void git_log_iterate_diff(Editor* editor, Client* client, bool select_next) {
     WITH_CONST_SELECTED_BUFFER(client);
-    for (size_t c = 0; c < window->cursors.len; ++c) {
-        Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
-        if (!select_next)
-            backward_char(&iterator);
-        if (select_next ? find(&iterator, "\n@@ ") : rfind(&iterator, "\n@@ "))
-            iterator.advance();
-        window->cursors[c].point = iterator.position;
+    if (window->cursors.len > 1 || window->show_marks) {
+        Contents_Iterator it =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+        if (!basic::iterate_cursors(window, buffer, select_next, &it))
+            return;
+    } else {
+        for (size_t c = 0; c < window->cursors.len; ++c) {
+            Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
+            if (!select_next)
+                backward_char(&iterator);
+            if (select_next ? find(&iterator, "\n@@ ") : rfind(&iterator, "\n@@ "))
+                iterator.advance();
+            window->cursors[c].point = iterator.position;
+        }
     }
     basic::center_selected_cursor(editor, window, buffer);
 }

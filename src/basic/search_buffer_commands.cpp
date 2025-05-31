@@ -161,6 +161,44 @@ void command_search_buffer_open_selected(Editor* editor, Command_Source source) 
     toggle_cycle_window(source.client);
 }
 
+bool iterate_cursors(Window_Unified* window,
+                     const Buffer* buffer,
+                     bool select_next,
+                     Contents_Iterator* it) {
+    if (window->cursors.len > 1) {
+        // In multi-cursor mode, go to the result at the next/previous cursor.
+        if (select_next) {
+            if (window->selected_cursor + 1 >= window->cursors.len)
+                return false;
+            ++window->selected_cursor;
+        } else {
+            if (window->selected_cursor == 0)
+                return false;
+            --window->selected_cursor;
+        }
+        it->go_to(window->cursors[window->selected_cursor].point);
+    } else if (window->show_marks) {
+        // Go to the result at the next/previous matching region.
+        Cursor& cursor = window->cursors[window->selected_cursor];
+        it->retreat_to(cursor.start());
+        if (select_next ? !search_forward_slice(buffer, it, cursor.end())
+                        : !search_backward_slice(buffer, it, cursor.end()))
+            return false;
+
+        uint64_t selection_len = (cursor.end() - cursor.start());
+        if (cursor.point == cursor.start()) {
+            cursor.point = it->position;
+            cursor.mark = it->position + selection_len;
+        } else {
+            cursor.point = it->position + selection_len;
+            cursor.mark = it->position;
+        }
+    } else {
+        CZ_PANIC("iterate_cursors can only be called with multiple cursors or a selected region");
+    }
+    return true;
+}
+
 static void search_open_next_no_swap(Editor* editor, Client* client) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
@@ -178,27 +216,9 @@ static void search_open_next_no_swap(Editor* editor, Client* client) {
         Contents_Iterator it =
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
 
-        if (window->cursors.len > 1) {
-            // In multi-cursor mode, go to the result at the next cursor.
-            if (window->selected_cursor + 1 >= window->cursors.len)
+        if (window->cursors.len > 1 || window->show_marks) {
+            if (!iterate_cursors(window, buffer, /*select_next=*/false, &it))
                 return;
-            ++window->selected_cursor;
-            it.advance_to(window->cursors[window->selected_cursor].point);
-        } else if (window->show_marks) {
-            // Search for next result & open that.
-            Cursor& cursor = window->cursors[window->selected_cursor];
-            it.retreat_to(cursor.start());
-            if (!search_forward_slice(buffer, &it, cursor.end()))
-                return;
-
-            uint64_t selection_len = (cursor.end() - cursor.start());
-            if (cursor.point == cursor.start()) {
-                cursor.point = it.position;
-                cursor.mark = it.position + selection_len;
-            } else {
-                cursor.point = it.position + selection_len;
-                cursor.mark = it.position;
-            }
         } else {
             // Default case, just go to result on next line.
             forward_line(buffer->mode, &it);
@@ -241,28 +261,9 @@ static void search_open_previous_no_swap(Editor* editor, Client* client) {
 
         Contents_Iterator it =
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-
-        if (window->cursors.len > 1) {
-            // In multi-cursor mode, go to the result at the previous cursor.
-            if (window->selected_cursor == 0)
+        if (window->cursors.len > 1 || window->show_marks) {
+            if (!iterate_cursors(window, buffer, /*select_next=*/false, &it))
                 return;
-            --window->selected_cursor;
-            it.retreat_to(window->cursors[window->selected_cursor].point);
-        } else if (window->show_marks) {
-            // Search for previous result & open that.
-            Cursor& cursor = window->cursors[window->selected_cursor];
-            it.retreat_to(cursor.start());
-            if (!search_backward_slice(buffer, &it, cursor.end()))
-                return;
-
-            uint64_t selection_len = (cursor.end() - cursor.start());
-            if (cursor.point == cursor.start()) {
-                cursor.point = it.position;
-                cursor.mark = it.position + selection_len;
-            } else {
-                cursor.point = it.position + selection_len;
-                cursor.mark = it.position;
-            }
         } else {
             // Default case, just go to result on previous line.
             backward_line(buffer->mode, &it);

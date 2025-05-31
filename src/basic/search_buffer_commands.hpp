@@ -4,7 +4,13 @@
 #include "core/editor.hpp"
 
 namespace mag {
+struct Window_Unified;
 namespace basic {
+
+bool iterate_cursors(Window_Unified* window,
+                     const Buffer* buffer,
+                     bool select_next,
+                     Contents_Iterator* it);
 
 void command_search_buffer_reload(Editor* editor, Command_Source source);
 
