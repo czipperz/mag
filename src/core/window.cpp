@@ -134,6 +134,9 @@ void Window_Unified::finish_completion(Client* client, Buffer* buffer) {
         Contents_Iterator iterator = buffer->contents.iterator_at(cursors[c].point);
         uint64_t insertion_position = iterator.position;
 
+        Edit insert;
+        insert.value = completion_result;
+
         Contents_Iterator token_start = iterator;
         Token token;
         bool found_token = get_token_at_position(buffer, &token_start, &token);
@@ -145,7 +148,7 @@ void Window_Unified::finish_completion(Client* client, Buffer* buffer) {
             // If the cursor is inside/at a token that matches the
             // completion result, then just insert the new suffix.
             do_remove = false;
-            completion_result = SSOStr::from_constant(
+            insert.value = SSOStr::from_constant(
                 completion_result.as_str().slice_start(iterator.position - token.start));
         }
 
@@ -161,12 +164,10 @@ void Window_Unified::finish_completion(Client* client, Buffer* buffer) {
             insertion_position = token.start;
         }
 
-        Edit insert;
-        insert.value = completion_result;
         insert.position = insertion_position + offset;
         insert.flags = Edit::INSERT;
         transaction.push(insert);
-        offset += pending_offset + completion_result.len();
+        offset += pending_offset + insert.value.len();
     }
 
     transaction.commit(client);
