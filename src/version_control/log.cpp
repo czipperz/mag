@@ -179,8 +179,8 @@ void command_git_log_previous_diff(Editor* editor, Command_Source source) {
 ////////////////////////////////////////////////////////////////////////////////
 
 static bool open_selected_diff(Editor* editor, Client* client) {
-    SSOStr path = {};
-    CZ_DEFER(path.drop(cz::heap_allocator()));
+    cz::Heap_String path = {};
+    CZ_DEFER(path.drop());
     uint64_t line;
     {
         WITH_CONST_SELECTED_BUFFER(client);
@@ -211,7 +211,8 @@ static bool open_selected_diff(Editor* editor, Client* client) {
             Contents_Iterator space = iterator;
             if (!find_this_line(&space, ' '))
                 return false;
-            path = buffer->contents.slice(cz::heap_allocator(), iterator, space.position);
+            cz::append(&path, buffer->directory);
+            buffer->contents.slice_into(cz::heap_allocator(), iterator, space.position, &path);
         }
     }
 
@@ -223,7 +224,7 @@ static bool open_selected_diff(Editor* editor, Client* client) {
         toggle_cycle_window(client);
     }
 
-    open_file(editor, client, path.as_str());
+    open_file(editor, client, path);
 
     {
         WITH_CONST_SELECTED_BUFFER(client);
