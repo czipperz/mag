@@ -73,3 +73,16 @@ TEST_CASE("stringify_keys escaping single quotes") {
     CHECK(parse_keys(cz::heap_allocator(), &keys_out, string) == (int64_t)string.len);
     CHECK(keys_out.as_const_slice() == keys);
 }
+
+TEST_CASE("parse_keys intern whitespace to prevent silly errors") {
+    const Key keys[] = {
+        {0, '\n'}, {0, '\t'}
+    };
+
+    cz::Str string = "'\n\t'";
+
+    cz::Vector<Key> keys_out = {};
+    CZ_DEFER(keys_out.drop(cz::heap_allocator()));
+    CHECK(parse_keys(cz::heap_allocator(), &keys_out, string) == (int64_t)string.len);
+    CHECK(keys_out.as_const_slice() == keys);
+}

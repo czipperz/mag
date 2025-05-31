@@ -255,9 +255,12 @@ int64_t parse_keys(cz::Allocator allocator, cz::Vector<Key>* keys, cz::Str strin
             // Parse sequence of printable characters.
             for (++i;; ++i) {
                 if (i == string.len)
-                    return -(int64_t)i;  // error unterminated '
-                if (!cz::is_print(string[i]))
-                    return -(int64_t)i;  // error non printable character in printable section
+                    return -(int64_t)i;  // Error: unterminated '.
+
+                // Error: non printable character in printable section.
+                // To ease with manual usage, allow some whitespace.
+                if (!cz::is_print(string[i]) && string[i] != '\n' && string[i] != '\t')
+                    return -(int64_t)i;
 
                 if (string[i] == '\'') {
                     ++i;
@@ -275,7 +278,7 @@ int64_t parse_keys(cz::Allocator allocator, cz::Vector<Key>* keys, cz::Str strin
             size_t word_length = string.slice_start(i).find_index(' ');
             Key key;
             if (!Key::parse(&key, string.slice(i, i + word_length)))
-                return -(int64_t)i;  // invalid key
+                return -(int64_t)i;  // Error: invalid key.
             keys->reserve(allocator, 1);
             keys->push(key);
             i += word_length;
