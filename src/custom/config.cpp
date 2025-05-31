@@ -794,10 +794,10 @@ static void hash_comments_key_map(Key_Map& key_map) {
 
 static void indent_based_hierarchy_mode(Mode& mode) {
     mode.discover_indent_policy = Discover_Indent_Policy::COPY_PREVIOUS_LINE;
-    BIND(mode.key_map, "C-A-u", command_backward_up_token_pair_or_indent);
-    BIND(mode.key_map, "C-A-d", command_forward_up_token_pair_or_indent);
-    BIND(mode.key_map, "C-A-U", region_movement::command_backward_up_token_pair_or_indent);
-    BIND(mode.key_map, "C-A-D", region_movement::command_forward_up_token_pair_or_indent);
+    BIND(mode.key_map, "C-A-a", command_backward_up_token_pair_or_indent);
+    BIND(mode.key_map, "C-A-e", command_forward_up_token_pair_or_indent);
+    BIND(mode.key_map, "C-A-A", region_movement::command_backward_up_token_pair_or_indent);
+    BIND(mode.key_map, "C-A-E", region_movement::command_forward_up_token_pair_or_indent);
 }
 
 static void cpp_comments_key_map(Key_Map& key_map) {
