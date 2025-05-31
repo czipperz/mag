@@ -180,6 +180,47 @@ void command_git_log_previous_diff(Editor* editor, Command_Source source) {
 // Open selected diff commands
 ////////////////////////////////////////////////////////////////////////////////
 
+static bool find_line_number(Contents_Iterator iterator, uint64_t* line) {
+    Contents_Iterator sol_cursor = iterator;
+    start_of_line(&sol_cursor);
+
+    if (!rfind(&iterator, "\n@@ "))
+        return false;
+    iterator.advance();
+    Contents_Iterator eol = iterator;
+    end_of_line(&eol);
+    SSOStr line_contents = iterator.contents->slice(cz::heap_allocator(), iterator, eol.position);
+    CZ_DEFER(line_contents.drop(cz::heap_allocator()));
+    uint64_t before_line, before_len, after_len;
+    if (!parse_diff_line_numbers(line_contents.as_str(), &before_line, &before_len,
+                                 /*after_line=*/line, &after_len))
+        return false;
+
+    if (iterator.position == sol_cursor.position) {
+        // Cursor is at the '@@' line.  Go to the first changed line in the diff region.
+        while (1) {
+            end_of_line(&iterator);
+            forward_char(&iterator);
+            if (iterator.at_eob())
+                return true;
+            if (iterator.get() != ' ')
+                return true;
+            ++*line;
+        }
+    } else {
+        // Cursor is at a line in the diff.  Try to go to it.
+        while (1) {
+            end_of_line(&iterator);
+            forward_char(&iterator);
+            if (iterator.position >= sol_cursor.position)
+                return true;
+            if (iterator.get() != '-')
+                ++*line;
+        }
+    }
+    return true;
+}
+
 static bool open_selected_diff(Editor* editor, Client* client) {
     cz::Heap_String path = {};
     CZ_DEFER(path.drop());
@@ -189,21 +230,8 @@ static bool open_selected_diff(Editor* editor, Client* client) {
         Contents_Iterator iterator =
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
 
-        // Find line number.
-        {
-            if (!rfind(&iterator, "\n@@ "))
-                return false;
-            iterator.advance();
-            Contents_Iterator eol = iterator;
-            end_of_line(&eol);
-            SSOStr line_contents =
-                buffer->contents.slice(cz::heap_allocator(), iterator, eol.position);
-            CZ_DEFER(line_contents.drop(cz::heap_allocator()));
-            uint64_t before_line, before_len, after_len;
-            if (!parse_diff_line_numbers(line_contents.as_str(), &before_line, &before_len,
-                                         /*after_line=*/&line, &after_len))
-                return false;
-        }
+        if (!find_line_number(iterator, &line))
+            return false;
 
         // Find file.
         {
