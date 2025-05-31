@@ -234,12 +234,14 @@ static bool in_diff_file_header(Contents_Iterator iterator) {
            looking_at(iterator, "index ");
 }
 
-static bool find_line_number(Contents_Iterator iterator, uint64_t* line) {
+static bool find_line_number(Contents_Iterator iterator, uint64_t* line, uint64_t* column) {
     Contents_Iterator sol_cursor = iterator;
     start_of_line(&sol_cursor);
+    *column = iterator.position - sol_cursor.position;
 
     if (in_diff_file_header(sol_cursor)) {
         *line = 1;
+        *column = 1;
         return true;
     }
 
@@ -261,21 +263,24 @@ static bool find_line_number(Contents_Iterator iterator, uint64_t* line) {
             end_of_line(&iterator);
             forward_char(&iterator);
             if (iterator.at_eob())
-                return true;
+                break;
             if (iterator.get() != ' ')
-                return true;
+                break;
             ++*line;
         }
+        *column = 1;
     } else {
         // Cursor is at a line in the diff.  Try to go to it.
         while (1) {
             end_of_line(&iterator);
             forward_char(&iterator);
             if (iterator.position >= sol_cursor.position)
-                return true;
+                break;
             if (iterator.get() != '-')
                 ++*line;
         }
+        if (looking_at(sol_cursor, "-"))
+            *column = 1;
     }
     return true;
 }
@@ -283,7 +288,7 @@ static bool find_line_number(Contents_Iterator iterator, uint64_t* line) {
 static bool open_selected_diff(Editor* editor, Client* client, int select_next) {
     cz::Heap_String path = {};
     CZ_DEFER(path.drop());
-    uint64_t line;
+    uint64_t line, column;
     {
         WITH_CONST_SELECTED_BUFFER(client);
         if (select_next != -1)
@@ -292,7 +297,7 @@ static bool open_selected_diff(Editor* editor, Client* client, int select_next) 
         Contents_Iterator iterator =
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
 
-        if (!find_line_number(iterator, &line))
+        if (!find_line_number(iterator, &line, &column))
             return false;
 
         // Find file.
@@ -323,7 +328,7 @@ static bool open_selected_diff(Editor* editor, Client* client, int select_next) 
     {
         WITH_CONST_SELECTED_BUFFER(client);
         kill_extra_cursors(window, client);
-        Contents_Iterator iterator = start_of_line_position(buffer->contents, line);
+        Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
         window->cursors[0].point = iterator.position;
         center_in_window(window, buffer->mode, editor->theme, iterator);
         window->show_marks = false;
