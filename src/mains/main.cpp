@@ -51,7 +51,13 @@ Options:\n\
   --help             View the help page.\n\
   --client=CLIENT    Launches a specified client.\n\
   --try-remote       Tries to open the files in an existing Mag server.\n\
-                     If no server is found then starts a client.\n"
+                     If no server is found then starts a client.\n\
+  --macro=KEYS       Immediately start running the keys given in the input sequence.  For example:\n\
+                     --macro=\"A-! git diff origin/master ENTER\"\n\
+  --escape=TEXT      Take a string and escape it for safe invocation via --macro.\n\
+                     Prints output to stdout and exits mag.  ' is the only escaped character.  Example:\n\
+                     --escape=\"git diff 'origin/master'\"\n\
+                     stdout: 'git diff ''origin/master'''\n"
 #if ALLOW_FORK
             "  --no-fork          Stall the current process while Mag runs.\n"
 #endif
@@ -209,6 +215,35 @@ static void set_home_directory(cz::String* home_directory_storage) {
     }
 }
 
+static void print_escape_sequence(cz::Str escape_sequence) {
+    cz::Vector<Key> keys = {};
+    CZ_DEFER(keys.drop(cz::heap_allocator()));
+    keys.reserve_exact(cz::heap_allocator(), escape_sequence.len);
+    for (size_t i = 0; i < escape_sequence.len; ++i) {
+        keys.push({0, (uint16_t)escape_sequence[i]});
+    }
+    cz::String string = {};
+    CZ_DEFER(string.drop(cz::heap_allocator()));
+    stringify_keys(cz::heap_allocator(), &string, keys);
+    fwrite(string.buffer, 1, string.len, stdout);
+    putchar('\n');
+}
+
+static bool parse_macro(cz::Heap_Vector<Key>* initial_key_chain, cz::Str macro) {
+    int64_t result = parse_keys(cz::heap_allocator(), initial_key_chain, macro);
+    if (result == (int64_t)macro.len)
+        return true;
+
+    size_t first_half_len = std::min<size_t>(macro.len, result < 0 ? -result : result);
+    fprintf(stderr, "Macro parsing %s after %" PRIu64 " bytes in macro at point <<<HERE>>>:\n",
+            (result < 0 ? "failed" : "stalled"), first_half_len);
+    fwrite(macro.buffer, 1, first_half_len, stderr);
+    fprintf(stderr, "<<<HERE>>>");
+    fwrite(macro.buffer + first_half_len, 1, macro.len - first_half_len, stderr);
+    fputc('\n', stderr);
+    return false;
+}
+
 int mag_main(int argc, char** argv) {
     tracy::SetThreadName("Mag main thread");
     ZoneScoped;
@@ -221,6 +256,8 @@ int mag_main(int argc, char** argv) {
         CZ_DEFER(files.drop(cz::heap_allocator()));
         Client::Type chosen_client = Client::SDL;
         bool try_remote = false;
+        cz::Heap_Vector<Key> initial_key_chain = {};
+        CZ_DEFER(initial_key_chain.drop());
 #if ALLOW_FORK
         bool allow_fork = true;
 #endif
@@ -257,6 +294,12 @@ int mag_main(int argc, char** argv) {
                 return usage();
             } else if (arg == "--try-remote") {
                 try_remote = true;
+            } else if (arg.starts_with("--escape=")) {
+                print_escape_sequence(arg.slice_start(strlen("--escape=")));
+                return 0;
+            } else if (arg.starts_with("--macro=")) {
+                if (!parse_macro(&initial_key_chain, arg.slice_start(strlen("--macro="))))
+                    return 1;
 #if ALLOW_FORK
             } else if (arg == "--no-fork") {
                 allow_fork = false;
@@ -413,6 +456,8 @@ A-g     Project or directory commands\n\
 
         Client client = server.make_client();
         client.type = chosen_client;
+        client.key_chain.reserve(cz::heap_allocator(), initial_key_chain.len);
+        client.key_chain.insert_slice(client.key_chain_offset, initial_key_chain);
         CZ_DEFER(client.drop());
 
         server.setup_async_context(&client);
