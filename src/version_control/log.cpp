@@ -154,6 +154,33 @@ void command_git_log_previous_commit(Editor* editor, Command_Source source) {
     window->column_offset = 0;
 }
 
+REGISTER_COMMAND(command_git_log_next_file);
+void command_git_log_next_file(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    for (size_t c = 0; c < window->cursors.len; ++c) {
+        Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
+        if (find(&iterator, "\ndiff --git "))
+            iterator.advance();
+        window->cursors[c].point = iterator.position;
+    }
+    window->start_position = window->cursors[window->selected_cursor].point;
+    window->column_offset = 0;
+}
+
+REGISTER_COMMAND(command_git_log_previous_file);
+void command_git_log_previous_file(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    for (size_t c = 0; c < window->cursors.len; ++c) {
+        Contents_Iterator iterator = buffer->contents.iterator_at(window->cursors[c].point);
+        backward_char(&iterator);
+        if (rfind(&iterator, "\ndiff --git "))
+            iterator.advance();
+        window->cursors[c].point = iterator.position;
+    }
+    window->start_position = window->cursors[window->selected_cursor].point;
+    window->column_offset = 0;
+}
+
 static void git_log_iterate_diff(Editor* editor, Client* client, bool select_next) {
     WITH_CONST_SELECTED_BUFFER(client);
     for (size_t c = 0; c < window->cursors.len; ++c) {

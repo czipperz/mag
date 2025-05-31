@@ -944,10 +944,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "s", version_control::command_show_commit_in_log);
             BIND(buffer->mode.key_map, "G", version_control::command_git_log_add_filter);
 
-            BIND(buffer->mode.key_map, "f", version_control::command_git_log_next_commit);
-            BIND(buffer->mode.key_map, "b", version_control::command_git_log_previous_commit);
-            BIND(buffer->mode.key_map, "N", version_control::command_git_log_next_diff);
-            BIND(buffer->mode.key_map, "P", version_control::command_git_log_previous_diff);
+            BIND(buffer->mode.key_map, "c", version_control::command_git_log_next_commit);
+            BIND(buffer->mode.key_map, "C", version_control::command_git_log_previous_commit);
+            BIND(buffer->mode.key_map, "f", version_control::command_git_log_next_file);
+            BIND(buffer->mode.key_map, "F", version_control::command_git_log_previous_file);
 
             BIND(buffer->mode.key_map, "o",
                  version_control::command_git_log_open_selected_diff_no_swap);
@@ -955,6 +955,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                  version_control::command_git_log_open_next_diff_no_swap);
             BIND(buffer->mode.key_map, "p",
                  version_control::command_git_log_open_previous_diff_no_swap);
+            BIND(buffer->mode.key_map, "N", version_control::command_git_log_next_diff);
+            BIND(buffer->mode.key_map, "P", version_control::command_git_log_previous_diff);
             BIND(buffer->mode.key_map, "ENTER",
                  version_control::command_git_log_open_selected_diff);
         } else if (buffer->name.starts_with("*git blame ")) {

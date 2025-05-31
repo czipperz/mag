@@ -15,6 +15,8 @@ void command_show_commit_in_log(Editor* editor, Command_Source source);
 /// Movement commands.
 void command_git_log_next_commit(Editor* editor, Command_Source source);
 void command_git_log_previous_commit(Editor* editor, Command_Source source);
+void command_git_log_next_file(Editor* editor, Command_Source source);
+void command_git_log_previous_file(Editor* editor, Command_Source source);
 void command_git_log_next_diff(Editor* editor, Command_Source source);
 void command_git_log_previous_diff(Editor* editor, Command_Source source);
 
