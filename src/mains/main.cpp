@@ -249,6 +249,10 @@ int mag_main(int argc, char** argv) {
     ZoneScoped;
 
     try {
+        cz::String program_name_storage = {};
+        CZ_DEFER(program_name_storage.drop(cz::heap_allocator()));
+        set_program_name(&program_name_storage, argv[0]);
+
         //
         // Parse command line arguments
         //
@@ -366,10 +370,6 @@ int mag_main(int argc, char** argv) {
         //
         // Load general information.
         //
-        cz::String program_name_storage = {};
-        CZ_DEFER(program_name_storage.drop(cz::heap_allocator()));
-        set_program_name(&program_name_storage, argv[0]);
-
         set_program_date();
 
         cz::String program_dir_storage = {};
