@@ -182,8 +182,10 @@ void command_git_log_previous_file(Editor* editor, Command_Source source) {
     window->column_offset = 0;
 }
 
-static void git_log_iterate_diff(Editor* editor, Client* client, bool select_next) {
-    WITH_CONST_SELECTED_BUFFER(client);
+static void git_log_iterate_diff(Editor* editor,
+                                 Window_Unified* window,
+                                 const Buffer* buffer,
+                                 bool select_next) {
     if (window->cursors.len > 1 || window->show_marks) {
         Contents_Iterator it =
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
@@ -204,11 +206,13 @@ static void git_log_iterate_diff(Editor* editor, Client* client, bool select_nex
 
 REGISTER_COMMAND(command_git_log_next_diff);
 void command_git_log_next_diff(Editor* editor, Command_Source source) {
-    git_log_iterate_diff(editor, source.client, /*select_next=*/true);
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    git_log_iterate_diff(editor, window, buffer, /*select_next=*/true);
 }
 REGISTER_COMMAND(command_git_log_previous_diff);
 void command_git_log_previous_diff(Editor* editor, Command_Source source) {
-    git_log_iterate_diff(editor, source.client, /*select_next=*/false);
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    git_log_iterate_diff(editor, window, buffer, /*select_next=*/false);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -276,12 +280,15 @@ static bool find_line_number(Contents_Iterator iterator, uint64_t* line) {
     return true;
 }
 
-static bool open_selected_diff(Editor* editor, Client* client) {
+static bool open_selected_diff(Editor* editor, Client* client, int select_next) {
     cz::Heap_String path = {};
     CZ_DEFER(path.drop());
     uint64_t line;
     {
         WITH_CONST_SELECTED_BUFFER(client);
+        if (select_next != -1)
+            git_log_iterate_diff(editor, window, buffer, select_next);
+
         Contents_Iterator iterator =
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
 
@@ -325,38 +332,32 @@ static bool open_selected_diff(Editor* editor, Client* client) {
 
 REGISTER_COMMAND(command_git_log_open_selected_diff);
 void command_git_log_open_selected_diff(Editor* editor, Command_Source source) {
-    open_selected_diff(editor, source.client);
+    open_selected_diff(editor, source.client, /*select_next=*/-1);
 }
-
 REGISTER_COMMAND(command_git_log_open_next_diff);
 void command_git_log_open_next_diff(Editor* editor, Command_Source source) {
-    command_git_log_next_diff(editor, source);
-    open_selected_diff(editor, source.client);
+    open_selected_diff(editor, source.client, /*select_next=*/true);
 }
 REGISTER_COMMAND(command_git_log_open_previous_diff);
 void command_git_log_open_previous_diff(Editor* editor, Command_Source source) {
-    command_git_log_previous_diff(editor, source);
-    open_selected_diff(editor, source.client);
+    open_selected_diff(editor, source.client, /*select_next=*/false);
 }
 
 void command_git_log_open_selected_diff_no_swap(Editor* editor, Command_Source source) {
-    if (open_selected_diff(editor, source.client))
+    if (open_selected_diff(editor, source.client, /*select_next=*/-1))
         toggle_cycle_window(source.client);
 }
 void command_git_log_open_next_diff_no_swap(Editor* editor, Command_Source source) {
-    command_git_log_next_diff(editor, source);
-    if (open_selected_diff(editor, source.client))
+    if (open_selected_diff(editor, source.client, /*select_next=*/true))
         toggle_cycle_window(source.client);
 }
 void command_git_log_open_previous_diff_no_swap(Editor* editor, Command_Source source) {
-    command_git_log_previous_diff(editor, source);
-    if (open_selected_diff(editor, source.client))
+    if (open_selected_diff(editor, source.client, /*select_next=*/false))
         toggle_cycle_window(source.client);
 }
 
 void log_buffer_iterate(Editor* editor, Client* client, bool select_next) {
-    git_log_iterate_diff(editor, client, select_next);
-    open_selected_diff(editor, client);
+    open_selected_diff(editor, client, select_next);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
