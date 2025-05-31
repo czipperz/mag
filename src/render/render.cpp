@@ -174,16 +174,19 @@ static void animate_scrolling(bool allow_animated_scrolling,
              current_line < target_line)) {
             animated_scrolling->start_time = now;
             animated_scrolling->start_line = current_line;
+            animated_scrolling->start_position =
+                start_of_line_position(buffer->contents, current_line).position;
         }
 
         uint64_t distance =
             target_line > current_line ? target_line - current_line : current_line - target_line;
         if (distance < 10) {
-            distance = 0; // Prevent jitter when typing and a buffer is split screen.
+            distance = 0;  // Prevent jitter when typing and a buffer is split screen.
         }
         animated_scrolling->end_time =
             now + std::min(std::chrono::milliseconds(200), std::chrono::milliseconds(distance));
         animated_scrolling->end_line = target_line;
+        animated_scrolling->end_position = iterator->position;
         current_line = get_current_line();
     }
 
@@ -270,14 +273,12 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
 
             position_after_changes(changes, &window_cache->v.unified.visible_start);
             auto& animated_scrolling = window_cache->v.unified.animated_scrolling;
-            uint64_t position =
-                start_of_line_position(buffer->contents, animated_scrolling.start_line).position;
-            position_after_changes(changes, &position);
-            animated_scrolling.start_line = buffer->contents.get_line_number(position);
-            position =
-                start_of_line_position(buffer->contents, animated_scrolling.end_line).position;
-            position_after_changes(changes, &position);
-            animated_scrolling.end_line = buffer->contents.get_line_number(position);
+            position_after_changes(changes, &animated_scrolling.start_position);
+            animated_scrolling.start_line =
+                buffer->contents.get_line_number(animated_scrolling.start_position);
+            position_after_changes(changes, &animated_scrolling.end_position);
+            animated_scrolling.end_line =
+                buffer->contents.get_line_number(animated_scrolling.end_position);
 
             cache_window_unified_position(window, window_cache, iterator.position, buffer);
         }

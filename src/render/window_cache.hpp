@@ -24,6 +24,8 @@ struct Window_Unified_Cache {
         std::chrono::system_clock::time_point end_time;
         uint64_t start_line;
         uint64_t end_line;
+        uint64_t start_position;
+        uint64_t end_position;
     } animated_scrolling;
 };
 
