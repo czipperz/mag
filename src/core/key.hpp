@@ -3,8 +3,10 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <cz/slice.hpp>
 
 namespace cz {
+struct Allocator;
 struct String;
 struct Str;
 }
@@ -118,5 +120,7 @@ constexpr const size_t stringify_key_max_size = 21;
 /// Append a key to the string.  Assumes there is enough space
 /// (reserve at least `stringify_key_max_size` characters in advance).
 void stringify_key(cz::String* string, Key key);
+
+void stringify_keys(cz::Allocator allocator, cz::String* string, cz::Slice<const Key> keys);
 
 }

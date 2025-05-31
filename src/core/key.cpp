@@ -208,4 +208,45 @@ void stringify_key(cz::String* string, Key key) {
     }
 }
 
+void stringify_keys(cz::Allocator allocator, cz::String* string, cz::Slice<const Key> keys) {
+    const auto is_basic = [](const Key& key) {
+        return key.modifiers == 0 && key.code <= UCHAR_MAX && cz::is_print((char)key.code);
+    };
+
+    bool in_single_quotes = false;
+    for (size_t i = 0; i < keys.len; ++i) {
+        if (is_basic(keys[i])) {
+            string->reserve(allocator, 4);
+
+            // Printable characters must be surrounded in single quotes.
+            if (!in_single_quotes) {
+                if (i >= 1)
+                    string->push(' ');
+                string->push('\'');
+                in_single_quotes = true;
+            }
+
+            // Use single quotes as the escape character too to make it the only special character.
+            if (keys[i].code == '\'')
+                string->push('\'');
+            string->push(keys[i].code);
+            continue;
+        }
+
+        string->reserve(allocator, 2 + stringify_key_max_size);
+        if (in_single_quotes) {
+            string->push('\'');
+            in_single_quotes = false;
+        }
+        if (i >= 1)
+            string->push(' ');
+        stringify_key(string, keys[i]);
+    }
+
+    if (in_single_quotes) {
+        string->reserve(allocator, 1);
+        string->push('\'');
+    }
+}
+
 }
