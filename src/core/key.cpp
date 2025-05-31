@@ -119,22 +119,22 @@ bool Key::parse(Key* key, cz::Str description) {
     return true;
 }
 
-void stringify_key(cz::String* prefix, Key key) {
+void stringify_key(cz::String* string, Key key) {
     if (key.modifiers & Modifiers::GUI) {
-        prefix->append("G-");
+        string->append("G-");
     }
     if (key.modifiers & Modifiers::CONTROL) {
-        prefix->append("C-");
+        string->append("C-");
     }
     if (key.modifiers & Modifiers::ALT) {
-        prefix->append("A-");
+        string->append("A-");
     }
     if (key.modifiers & Modifiers::SHIFT) {
         if (key.code <= UCHAR_MAX && cz::is_lower((char)key.code)) {
-            prefix->push(cz::to_upper((char)key.code));
+            string->push(cz::to_upper((char)key.code));
             return;
         } else {
-            prefix->append("S-");
+            string->append("S-");
         }
     }
 
@@ -142,7 +142,7 @@ void stringify_key(cz::String* prefix, Key key) {
     switch (key.code) {
 #define CASE(CONDITION, STRING) \
     case CONDITION:             \
-        prefix->append(STRING); \
+        string->append(STRING); \
         break
 #define KEY_CODE_CASE(KEY) CASE(Key_Code::KEY, #KEY)
 
@@ -194,16 +194,16 @@ void stringify_key(cz::String* prefix, Key key) {
 #undef KEY_CODE_CASE
 
     case '\t':
-        prefix->append("TAB");
+        string->append("TAB");
         break;
     case '\n':
-        prefix->append("ENTER");
+        string->append("ENTER");
         break;
 
     default:
         CZ_DEBUG_ASSERT(key.code <= UCHAR_MAX);
         CZ_DEBUG_ASSERT(cz::is_print((char)key.code));
-        prefix->push((char)key.code);
+        string->push((char)key.code);
         break;
     }
 }

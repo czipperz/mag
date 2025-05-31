@@ -117,6 +117,6 @@ constexpr const size_t stringify_key_max_size = 21;
 
 /// Append a key to the string.  Assumes there is enough space
 /// (reserve at least `stringify_key_max_size` characters in advance).
-void stringify_key(cz::String* prefix, Key key);
+void stringify_key(cz::String* string, Key key);
 
 }
