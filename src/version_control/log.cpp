@@ -180,9 +180,29 @@ void command_git_log_previous_diff(Editor* editor, Command_Source source) {
 // Open selected diff commands
 ////////////////////////////////////////////////////////////////////////////////
 
+static bool in_diff_file_header(Contents_Iterator iterator) {
+    size_t retreat = 0;
+    if (looking_at(iterator, "---"))
+        retreat = 1;
+    if (looking_at(iterator, "+++"))
+        retreat = 2;
+    for (size_t i = 0; i < retreat; ++i) {
+        backward_char(&iterator);
+        start_of_line(&iterator);
+    }
+    return looking_at(iterator, "diff --git ") || looking_at(iterator, "new file mode ") ||
+           looking_at(iterator, "old mode ") || looking_at(iterator, "new mode ") ||
+           looking_at(iterator, "index ");
+}
+
 static bool find_line_number(Contents_Iterator iterator, uint64_t* line) {
     Contents_Iterator sol_cursor = iterator;
     start_of_line(&sol_cursor);
+
+    if (in_diff_file_header(sol_cursor)) {
+        *line = 1;
+        return true;
+    }
 
     if (!rfind(&iterator, "\n@@ "))
         return false;
