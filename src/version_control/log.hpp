@@ -20,7 +20,10 @@ void command_git_log_previous_file(Editor* editor, Command_Source source);
 void command_git_log_next_diff(Editor* editor, Command_Source source);
 void command_git_log_previous_diff(Editor* editor, Command_Source source);
 
-/// Open the next patch using a split.
+/// Open diff in a split or commit in the current window.
+void command_git_log_open_selected_commit_or_diff(Editor* editor, Command_Source source);
+
+/// Open diff in a split.
 void command_git_log_open_selected_diff(Editor* editor, Command_Source source);
 void command_git_log_open_next_diff(Editor* editor, Command_Source source);
 void command_git_log_open_previous_diff(Editor* editor, Command_Source source);

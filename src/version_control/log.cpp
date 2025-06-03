@@ -106,19 +106,26 @@ void command_show_commit_in_blame(Editor* editor, Command_Source source) {
     command_show_commit_callback(editor, source.client, commit.as_str(), nullptr);
 }
 
+static bool get_commit_at_point(Client* client, Contents_Iterator iterator, SSOStr* commit) {
+    if (!rfind(&iterator, "\ncommit ")) {
+        client->show_message("Couldn't find a commit");
+        return false;
+    }
+    iterator.advance(strlen("\ncommit "));
+    if (!slice_commit_at_point(client, iterator, commit))
+        return false;
+    return true;
+}
+
 REGISTER_COMMAND(command_show_commit_in_log);
 void command_show_commit_in_log(Editor* editor, Command_Source source) {
     SSOStr commit;
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        Contents_Iterator iterator = buffer->contents.iterator_at(window->sel().point);
-        if (!rfind(&iterator, "\ncommit ")) {
-            source.client->show_message("Couldn't find a commit");
+        if (!get_commit_at_point(source.client, buffer->contents.iterator_at(window->sel().point),
+                                 &commit)) {
             return;
         }
-        iterator.advance(strlen("\ncommit "));
-        if (!slice_commit_at_point(source.client, iterator, &commit))
-            return;
     }
     CZ_DEFER(commit.drop(cz::heap_allocator()));
     command_show_commit_callback(editor, source.client, commit.as_str(), nullptr);
@@ -294,40 +301,91 @@ static bool in_commit_message_or_header(Contents_Iterator it) {
              find_before(&commit, it.position, "\n@@ "));
 }
 
-static bool open_selected_diff(Editor* editor, Client* client, int select_next) {
+namespace enums {
+enum SelectedCommitOrDiff {
+    SELECTED_COMMIT_OR_DIFF,
+    SELECTED_DIFF,
+    NEXT_DIFF,
+    PREVIOUS_DIFF,
+};
+enum SelectedCommitOrDiffResult {
+    FAILURE,
+    COMMIT,
+    DIFF,
+};
+}
+using enums::SelectedCommitOrDiff;
+using enums::SelectedCommitOrDiffResult;
+
+static SelectedCommitOrDiffResult get_selected_commit_or_diff(Editor* editor,
+                                                              Client* client,
+                                                              const Buffer* buffer,
+                                                              Window_Unified* window,
+                                                              SelectedCommitOrDiff select_next,
+                                                              cz::Heap_String* path,
+                                                              uint64_t* line,
+                                                              uint64_t* column,
+                                                              SSOStr* commit) {
+    if (select_next == SelectedCommitOrDiff::SELECTED_COMMIT_OR_DIFF ||
+        select_next == SelectedCommitOrDiff::SELECTED_DIFF) {
+        Contents_Iterator iterator =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+        if (in_commit_message_or_header(iterator)) {
+            if (select_next == SelectedCommitOrDiff::SELECTED_COMMIT_OR_DIFF) {
+                if (get_commit_at_point(client, iterator, commit))
+                    return SelectedCommitOrDiffResult::COMMIT;
+            }
+            return SelectedCommitOrDiffResult::FAILURE;
+        }
+    } else {
+        git_log_iterate_diff(editor, window, buffer,
+                             select_next == SelectedCommitOrDiff::NEXT_DIFF);
+    }
+
+    Contents_Iterator iterator =
+        buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+
+    if (!find_line_number(iterator, line, column))
+        return SelectedCommitOrDiffResult::FAILURE;
+
+    // Find file.
+    {
+        if (!rfind(&iterator, "\ndiff --git "))
+            return SelectedCommitOrDiffResult::FAILURE;
+        iterator.advance(strlen("\ndiff --git "));
+        if (looking_at(iterator, "a/") || looking_at(iterator, "b/"))
+            iterator.advance(2);
+        Contents_Iterator space = iterator;
+        if (!find_this_line(&space, ' '))
+            return SelectedCommitOrDiffResult::FAILURE;
+        cz::append(path, buffer->directory);
+        buffer->contents.slice_into(cz::heap_allocator(), iterator, space.position, path);
+    }
+
+    return SelectedCommitOrDiffResult::DIFF;
+}
+
+static SelectedCommitOrDiffResult open_selected_commit_or_diff(Editor* editor,
+                                                               Client* client,
+                                                               SelectedCommitOrDiff select_next) {
     cz::Heap_String path = {};
     CZ_DEFER(path.drop());
     uint64_t line, column;
+    SSOStr commit = {};
+    CZ_DEFER(commit.drop(cz::heap_allocator()));
+    SelectedCommitOrDiffResult result;
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (select_next == -1) {
-            if (in_commit_message_or_header(
-                    buffer->contents.iterator_at(window->cursors[window->selected_cursor].point))) {
-                return false;
-            }
-        } else {
-            git_log_iterate_diff(editor, window, buffer, select_next);
-        }
+        result = get_selected_commit_or_diff(editor, client, buffer, window, select_next, &path,
+                                             &line, &column, &commit);
+    }
 
-        Contents_Iterator iterator =
-            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+    if (result == SelectedCommitOrDiffResult::FAILURE)
+        return result;
 
-        if (!find_line_number(iterator, &line, &column))
-            return false;
-
-        // Find file.
-        {
-            if (!rfind(&iterator, "\ndiff --git "))
-                return false;
-            iterator.advance(strlen("\ndiff --git "));
-            if (looking_at(iterator, "a/") || looking_at(iterator, "b/"))
-                iterator.advance(2);
-            Contents_Iterator space = iterator;
-            if (!find_this_line(&space, ' '))
-                return false;
-            cz::append(&path, buffer->directory);
-            buffer->contents.slice_into(cz::heap_allocator(), iterator, space.position, &path);
-        }
+    if (result == SelectedCommitOrDiffResult::COMMIT) {
+        command_show_commit_callback(editor, client, commit.as_str(), nullptr);
+        return result;
     }
 
     // Open a vertical split and put the opened file on the right.
@@ -349,37 +407,51 @@ static bool open_selected_diff(Editor* editor, Client* client, int select_next) 
         window->show_marks = false;
     }
 
-    return true;
+    return result;
+}
+
+REGISTER_COMMAND(command_git_log_open_selected_commit_or_diff);
+void command_git_log_open_selected_commit_or_diff(Editor* editor, Command_Source source) {
+    open_selected_commit_or_diff(editor, source.client,
+                                 SelectedCommitOrDiff::SELECTED_COMMIT_OR_DIFF);
 }
 
 REGISTER_COMMAND(command_git_log_open_selected_diff);
 void command_git_log_open_selected_diff(Editor* editor, Command_Source source) {
-    open_selected_diff(editor, source.client, /*select_next=*/-1);
+    open_selected_commit_or_diff(editor, source.client, SelectedCommitOrDiff::SELECTED_DIFF);
 }
 REGISTER_COMMAND(command_git_log_open_next_diff);
 void command_git_log_open_next_diff(Editor* editor, Command_Source source) {
-    open_selected_diff(editor, source.client, /*select_next=*/true);
+    open_selected_commit_or_diff(editor, source.client, SelectedCommitOrDiff::NEXT_DIFF);
 }
 REGISTER_COMMAND(command_git_log_open_previous_diff);
 void command_git_log_open_previous_diff(Editor* editor, Command_Source source) {
-    open_selected_diff(editor, source.client, /*select_next=*/false);
+    open_selected_commit_or_diff(editor, source.client, SelectedCommitOrDiff::PREVIOUS_DIFF);
 }
 
 void command_git_log_open_selected_diff_no_swap(Editor* editor, Command_Source source) {
-    if (open_selected_diff(editor, source.client, /*select_next=*/-1))
+    if (open_selected_commit_or_diff(editor, source.client, SelectedCommitOrDiff::SELECTED_DIFF) ==
+        SelectedCommitOrDiffResult::DIFF) {
         toggle_cycle_window(source.client);
+    }
 }
 void command_git_log_open_next_diff_no_swap(Editor* editor, Command_Source source) {
-    if (open_selected_diff(editor, source.client, /*select_next=*/true))
+    if (open_selected_commit_or_diff(editor, source.client, SelectedCommitOrDiff::NEXT_DIFF) ==
+        SelectedCommitOrDiffResult::DIFF) {
         toggle_cycle_window(source.client);
+    }
 }
 void command_git_log_open_previous_diff_no_swap(Editor* editor, Command_Source source) {
-    if (open_selected_diff(editor, source.client, /*select_next=*/false))
+    if (open_selected_commit_or_diff(editor, source.client, SelectedCommitOrDiff::PREVIOUS_DIFF) ==
+        SelectedCommitOrDiffResult::DIFF) {
         toggle_cycle_window(source.client);
+    }
 }
 
 void log_buffer_iterate(Editor* editor, Client* client, bool select_next) {
-    open_selected_diff(editor, client, select_next);
+    open_selected_commit_or_diff(
+        editor, client,
+        select_next ? SelectedCommitOrDiff::NEXT_DIFF : SelectedCommitOrDiff::PREVIOUS_DIFF);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
