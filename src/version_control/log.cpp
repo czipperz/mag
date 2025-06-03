@@ -285,14 +285,29 @@ static bool find_line_number(Contents_Iterator iterator, uint64_t* line, uint64_
     return true;
 }
 
+static bool in_commit_message_or_header(Contents_Iterator it) {
+    Contents_Iterator commit = it;
+    if (!rfind(&commit, "\ncommit "))
+        return false;
+    Contents_Iterator temp = commit;
+    return !(find_before(&temp, it.position, "\ndiff --git") ||
+             find_before(&commit, it.position, "\n@@ "));
+}
+
 static bool open_selected_diff(Editor* editor, Client* client, int select_next) {
     cz::Heap_String path = {};
     CZ_DEFER(path.drop());
     uint64_t line, column;
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (select_next != -1)
+        if (select_next == -1) {
+            if (in_commit_message_or_header(
+                    buffer->contents.iterator_at(window->cursors[window->selected_cursor].point))) {
+                return false;
+            }
+        } else {
             git_log_iterate_diff(editor, window, buffer, select_next);
+        }
 
         Contents_Iterator iterator =
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
