@@ -5,6 +5,7 @@
 #include <cz/format.hpp>
 #include <cz/process.hpp>
 #include <cz/util.hpp>
+#include <cz/working_directory.hpp>
 #include "core/client.hpp"
 #include "core/command_macros.hpp"
 #include "core/editor.hpp"
@@ -256,9 +257,14 @@ Run_Console_Command_Result run_console_command(Client* client,
                                                cz::Arc<Buffer_Handle>* handle_out) {
     ZoneScoped;
 
-    cz::Option<cz::Str> wd = {};
-    if (working_directory) {
-        wd = {working_directory};
+    cz::String working_directory_storage = {};
+    CZ_DEFER(working_directory_storage.drop(cz::heap_allocator()));
+    if (!working_directory) {
+        if (!cz::get_working_directory(cz::heap_allocator(), &working_directory_storage)) {
+            client->show_message("Failed to get working directory");
+            return Run_Console_Command_Result::FAILED;
+        }
+        working_directory = working_directory_storage.buffer;
     }
 
     {
@@ -268,8 +274,8 @@ Run_Console_Command_Result run_console_command(Client* client,
 
     bool created = false;
     cz::Arc<Buffer_Handle> handle;
-    if (!find_temp_buffer(editor, client, buffer_name, wd, &handle)) {
-        handle = editor->create_temp_buffer(buffer_name, wd);
+    if (!find_temp_buffer(editor, client, buffer_name, cz::Str{working_directory}, &handle)) {
+        handle = editor->create_temp_buffer(buffer_name, cz::Str{working_directory});
         created = true;
     }
 
