@@ -905,7 +905,8 @@ static void draw_window_completion(Cell* cells,
 
     bool engine_change = load_completion_cache(editor, &window->completion_cache,
                                                editor->theme.window_completion_filter);
-    if (!engine_change && window->completion_cache.filter_context.results.len == 0) {
+    if (window->completion_cache.state == Completion_Cache::LOADED &&
+        window->completion_cache.filter_context.results.len == 0) {
         client->show_message("No completion results");
         window->abort_completion();
         return;
