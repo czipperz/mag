@@ -184,7 +184,7 @@ static void animate_scrolling(bool allow_animated_scrolling,
             distance = 0;  // Prevent jitter when typing and a buffer is split screen.
         }
         animated_scrolling->end_time =
-            now + std::min(std::chrono::milliseconds(200), std::chrono::milliseconds(distance));
+            now + std::min(std::chrono::milliseconds(200), std::chrono::milliseconds(distance / 2));
         animated_scrolling->end_line = target_line;
         animated_scrolling->end_position = iterator->position;
         current_line = get_current_line();
