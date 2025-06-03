@@ -75,9 +75,7 @@ TEST_CASE("stringify_keys escaping single quotes") {
 }
 
 TEST_CASE("parse_keys intern whitespace to prevent silly errors") {
-    const Key keys[] = {
-        {0, '\n'}, {0, '\t'}
-    };
+    const Key keys[] = {{0, '\n'}, {0, '\t'}};
 
     cz::Str string = "'\n\t'";
 
