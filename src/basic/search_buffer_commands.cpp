@@ -217,7 +217,7 @@ static void search_open_next_no_swap(Editor* editor, Client* client) {
             buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
 
         if (window->cursors.len > 1 || window->show_marks) {
-            if (!iterate_cursors(window, buffer, /*select_next=*/false, &it))
+            if (!iterate_cursors(window, buffer, /*select_next=*/true, &it))
                 return;
         } else {
             // Default case, just go to result on next line.
