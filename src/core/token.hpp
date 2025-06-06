@@ -13,7 +13,12 @@ struct Face;
     MAG_TOKEN_TYPE(KEYWORD)                                                   \
     MAG_TOKEN_TYPE(TYPE)                                                      \
     MAG_TOKEN_TYPE(PUNCTUATION)                                               \
+    /* Parenthesis and braces are tracked via OPEN_PAIR and CLOSE_PAIR.       \
+       Some languages (e.g. bash, C preprocessor) use keywords for            \
+       if/for/etc.  In these languages we use DIVIDER_PAIR to represent       \
+       'else' keywords that act as both a CLOSE_PAIR and OPEN_PAIR.  */       \
     MAG_TOKEN_TYPE(OPEN_PAIR)                                                 \
+    MAG_TOKEN_TYPE(DIVIDER_PAIR)                                              \
     MAG_TOKEN_TYPE(CLOSE_PAIR)                                                \
     MAG_TOKEN_TYPE(COMMENT)                                                   \
     MAG_TOKEN_TYPE(DOC_COMMENT)                                               \

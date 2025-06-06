@@ -86,7 +86,7 @@ uint64_t find_indent_width(Buffer* buffer,
 
             // Indent starting after the open pair token.  We hit this case
             // if the open pair we found above was at the end of the line.
-            if (token.type == Token_Type::OPEN_PAIR) {
+            if (token.type == Token_Type::OPEN_PAIR || token.type == Token_Type::DIVIDER_PAIR) {
                 it.retreat_to(token.end);
                 if (at_end_of_line(it) || token.end == start_position) {
                     base_columns = buffer->mode.indent_width;

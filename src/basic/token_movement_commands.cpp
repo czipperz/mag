@@ -33,7 +33,9 @@ static void tokenize_recording_pairs(Tokenizer_Check_Point check_point,
                 break;
             }
             if (token.type == Token_Type::OPEN_PAIR || token.type == Token_Type::CLOSE_PAIR ||
+                token.type == Token_Type::DIVIDER_PAIR ||
                 (non_pairs && (token.type == Token_Type::PREPROCESSOR_IF ||
+                               token.type == Token_Type::PREPROCESSOR_ELSE ||
                                token.type == Token_Type::PREPROCESSOR_ENDIF))) {
                 tokens->reserve(cz::heap_allocator(), 1);
                 tokens->push(token);
@@ -76,6 +78,12 @@ bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_
                 }
 
                 --depth;
+            } else if (tokens[i].type == Token_Type::DIVIDER_PAIR ||
+                       (non_pairs && tokens[i].type == Token_Type::PREPROCESSOR_ELSE)) {
+                if (depth == 0) {
+                    cursor->retreat_to(tokens[i].start);
+                    return true;
+                }
             } else {
                 ++depth;
             }
@@ -192,6 +200,12 @@ bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_p
             }
 
             --depth;
+        } else if (token.type == Token_Type::DIVIDER_PAIR ||
+                   (non_pair && token.type == Token_Type::PREPROCESSOR_ELSE)) {
+            if (depth == 0) {
+                cursor->advance_to(token.end);
+                return true;
+            }
         } else if (token.type == Token_Type::OPEN_PAIR ||
                    (non_pair && token.type == Token_Type::PREPROCESSOR_IF)) {
             ++depth;
@@ -394,8 +408,9 @@ bool forward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_pa
 
     CZ_DEBUG_ASSERT(token.end == iterator->position);
 
-    if (token.type == Token_Type::OPEN_PAIR ||
-        (non_pair && token.type == Token_Type::PREPROCESSOR_IF)) {
+    if (token.type == Token_Type::OPEN_PAIR || token.type == Token_Type::DIVIDER_PAIR ||
+        (non_pair && (token.type == Token_Type::PREPROCESSOR_IF ||
+                      token.type == Token_Type::PREPROCESSOR_ELSE))) {
         forward_up_token_pair(buffer, iterator, /*non_pair=*/true);
     }
 
@@ -429,8 +444,9 @@ bool backward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_p
 
     iterator->retreat_to(token.start);
 
-    if (token.type == Token_Type::CLOSE_PAIR ||
-        (non_pair && token.type == Token_Type::PREPROCESSOR_ENDIF)) {
+    if (token.type == Token_Type::CLOSE_PAIR || token.type == Token_Type::DIVIDER_PAIR ||
+        (non_pair && (token.type == Token_Type::PREPROCESSOR_ENDIF ||
+                      token.type == Token_Type::PREPROCESSOR_ELSE))) {
         backward_up_token_pair(buffer, iterator, /*non_pair=*/true);
     }
 

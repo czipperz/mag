@@ -274,20 +274,32 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "if") ||
                                              matches(start, iterator->position, "while") ||
                                              matches(start, iterator->position, "until") ||
-                                             matches(start, iterator->position, ".") ||
-                                             matches(start, iterator->position, "else"))) {
-            token->type = Token_Type::KEYWORD;
-            top = AT_START_OF_STATEMENT;
-            goto ret;
-        } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "then") ||
-                                                    matches(start, iterator->position, "do") ||
-                                                    matches(start, iterator->position, "case"))) {
+                                             matches(start, iterator->position, "case"))) {
             token->type = Token_Type::OPEN_PAIR;
             top = AT_START_OF_STATEMENT;
             goto ret;
+        } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "else") ||
+                                                    matches(start, iterator->position, "elif"))) {
+            token->type = Token_Type::DIVIDER_PAIR;
+            top = AT_START_OF_STATEMENT;
+            goto ret;
+        } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, "fi") ||
+                                                    matches(start, iterator->position, "done") ||
+                                                    matches(start, iterator->position, "esac"))) {
+            token->type = Token_Type::CLOSE_PAIR;
+            top = AT_START_OF_STATEMENT;
+            goto ret;
         } else if (top == AT_START_OF_STATEMENT && matches(start, iterator->position, "for")) {
-            token->type = Token_Type::KEYWORD;
+            token->type = Token_Type::OPEN_PAIR;
             new_transient = TRANSIENT_AFTER_DOLLAR;
+        } else if (top == AT_START_OF_STATEMENT &&
+                   (matches(start, iterator->position, ".") ||
+                    matches(start, iterator->position, "then") ||
+                    matches(start, iterator->position,
+                            "do") || matches(start, iterator->position, "in"))) {
+            token->type = Token_Type::KEYWORD;
+            top = AT_START_OF_STATEMENT;
+            goto ret;
         } else if (top == AT_START_OF_STATEMENT &&
                    (matches(start, iterator->position, "select") ||
                     matches(start, iterator->position, "continue") ||

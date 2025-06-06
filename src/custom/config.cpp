@@ -580,6 +580,7 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::TYPE] = {4, {}, 0};
     theme.token_faces[Token_Type::PUNCTUATION] = {6, {}, 0};
     theme.token_faces[Token_Type::OPEN_PAIR] = {3, {}, 0};
+    theme.token_faces[Token_Type::DIVIDER_PAIR] = {3, {}, 0};
     theme.token_faces[Token_Type::CLOSE_PAIR] = {3, {}, 0};
     theme.token_faces[Token_Type::COMMENT] = {12, {}, 0};
     theme.token_faces[Token_Type::DOC_COMMENT] = {142, {}, 0};
