@@ -35,7 +35,7 @@ using Compression_Result_::Compression_Result;
 template <class Stream>
 Load_File_Result process_file(cz::Input_File input, Contents* contents) {
     Stream stream;
-    if (!stream.init())
+    if (stream.init() < 0)
         return Load_File_Result::FAILURE;
     CZ_DEFER(stream.drop());
 

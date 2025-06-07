@@ -12,7 +12,7 @@ struct CompressionStream {
     static size_t recommended_in_buffer_size();
     static size_t recommended_out_buffer_size();
 
-    bool init();
+    Compression_Result init();
     void drop();
 
     /// Compress a chunk of input.  Advances the `in_cursor` and `out_cursor` to
@@ -33,7 +33,7 @@ struct DecompressionStream {
     static size_t recommended_in_buffer_size();
     static size_t recommended_out_buffer_size();
 
-    bool init();
+    Compression_Result init();
     void drop();
 
     /// Decompress a chunk of input.  Advances the `in_cursor` and `out_cursor` to

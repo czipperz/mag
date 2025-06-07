@@ -21,9 +21,9 @@ size_t CompressionStream::recommended_out_buffer_size() {
     return ZSTD_CStreamOutSize();
 }
 
-bool CompressionStream::init() {
+Compression_Result CompressionStream::init() {
     stream = ZSTD_createCStream();
-    return stream != nullptr;
+    return stream != nullptr ? Compression_Result::SUCCESS : Compression_Result::ERROR_OTHER;
 }
 void CompressionStream::drop() {
     ZSTD_freeCStream((ZSTD_CStream*)stream);
@@ -68,9 +68,9 @@ size_t DecompressionStream::recommended_out_buffer_size() {
     return ZSTD_DStreamOutSize();
 }
 
-bool DecompressionStream::init() {
+Compression_Result DecompressionStream::init() {
     stream = ZSTD_createDStream();
-    return stream != nullptr;
+    return stream != nullptr ? Compression_Result::SUCCESS : Compression_Result::ERROR_OTHER;
 }
 void DecompressionStream::drop() {
     ZSTD_freeDStream((ZSTD_DStream*)stream);
