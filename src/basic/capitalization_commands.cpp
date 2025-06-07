@@ -471,15 +471,17 @@ void recapitalize_token_to(Editor* editor,
     int64_t offset = 0;
     Contents_Iterator it = buffer->contents.start();
     for (size_t i = 0; i < window->cursors.len; ++i) {
-        it.advance_to(window->cursors[i].point);
-
         Token token;
-        if (!get_token_at_position(buffer, &it, &token)) {
-            continue;
+        if (window->show_marks) {
+            token.start = window->cursors[i].start();
+            token.end = window->cursors[i].end();
+        } else {
+            it.advance_to(window->cursors[i].point);
+            if (!get_token_at_position(buffer, &it, &token)) {
+                continue;
+            }
         }
-
         it.go_to(token.start);
-
         SSOStr original = buffer->contents.slice(transaction.value_allocator(), it, token.end);
 
         cz::String replacement = {};
