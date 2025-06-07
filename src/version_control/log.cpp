@@ -396,16 +396,7 @@ static SelectedCommitOrDiffResult open_selected_commit_or_diff(Editor* editor,
         toggle_cycle_window(client);
     }
 
-    open_file(editor, client, path);
-
-    {
-        WITH_CONST_SELECTED_BUFFER(client);
-        kill_extra_cursors(window, client);
-        Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
-        window->cursors[0].point = iterator.position;
-        center_in_window(window, buffer->mode, editor->theme, iterator);
-        window->show_marks = false;
-    }
+    open_file_at(editor, client, path, line, column);
 
     return result;
 }

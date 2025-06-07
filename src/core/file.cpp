@@ -679,6 +679,19 @@ bool open_file(Editor* editor, Client* client, cz::Str user_path) {
     return true;
 }
 
+bool open_file_at(Editor* editor, Client* client, cz::Str file, uint64_t line, uint64_t column) {
+    if (!open_file(editor, client, file))
+        return false;
+
+    WITH_CONST_SELECTED_BUFFER(client);
+    kill_extra_cursors(window, client);
+    Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
+    window->cursors[0].point = iterator.position;
+    center_in_window(window, buffer->mode, editor->theme, iterator);
+    window->show_marks = false;
+    return true;
+}
+
 bool parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t* column_out) {
     ZoneScoped;
 
@@ -745,17 +758,11 @@ bool open_file_arg(Editor* editor, Client* client, cz::Str user_arg) {
     cz::Str file;
     uint64_t line = 0, column = 0;
     bool has_line = parse_file_arg(user_arg, &file, &line, &column);
-
-    if (!open_file(editor, client, file))
-        return false;
-
     if (has_line) {
-        WITH_CONST_SELECTED_BUFFER(client);
-        Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
-        window->cursors[0].point = iterator.position;
-        center_in_window(window, buffer->mode, editor->theme, iterator);
+        return open_file_at(editor, client, file, line, column);
+    } else {
+        return open_file(editor, client, file);
     }
-    return true;
 }
 
 bool save_buffer(Buffer* buffer) {

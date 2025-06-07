@@ -78,27 +78,7 @@ static void open_tag(Editor* editor, Client* client, const Tag& tag) {
         push_jump(window, client, buffer);
     }
 
-    open_file(editor, client, tag.file_name);
-
-    WITH_CONST_SELECTED_NORMAL_BUFFER(client);
-    kill_extra_cursors(window, client);
-
-    Contents_Iterator iterator = start_of_line_position(buffer->contents, tag.line);
-    uint64_t old_point = window->cursors[window->selected_cursor].point;
-    window->cursors[window->selected_cursor].point = iterator.position;
-
-    if (iterator.position < window->start_position) {
-        window->start_position = iterator.position;
-    } else if (iterator.position > old_point) {
-        Contents_Iterator ve = iterator;
-        ve.retreat_to(window->start_position);
-        forward_visual_line(window, buffer->mode, editor->theme, &ve, window->rows() - 1);
-        if (iterator.position < ve.position) {
-            center_in_window(window, buffer->mode, editor->theme, iterator);
-        } else {
-            window->start_position = iterator.position;
-        }
-    }
+    open_file_at(editor, client, tag.file_name, tag.line, /*column=*/0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
