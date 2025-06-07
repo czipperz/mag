@@ -40,6 +40,14 @@
 #endif
 
 namespace mag {
+namespace Load_File_Result_ {
+enum Load_File_Result {
+    SUCCESS,
+    DOESNT_EXIST,
+    FAILURE,
+};
+}
+using Load_File_Result_::Load_File_Result;
 
 bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* file_time) {
     cz::File_Time new_ft;
@@ -88,7 +96,8 @@ static bool errno_is_noent() {
 #endif
 }
 
-Load_File_Result load_text_file(Buffer* buffer, cz::Input_File file) {
+/// Load a file as text, stripping carriage returns, and assigning `buffer->use_carriage_returns`.
+static Load_File_Result load_text_file(Buffer* buffer, cz::Input_File file) {
     cz::Carriage_Return_Carry carry;
     char buf[4096];
     while (1) {
@@ -123,13 +132,6 @@ read_continue:
         } else {
             return Load_File_Result::FAILURE;
         }
-    }
-}
-
-void strip_carriage_returns(Contents* contents) {
-    cz::Carriage_Return_Carry carry;
-    for (size_t o = 0; o < contents->buckets.len; ++o) {
-        cz::strip_carriage_returns(contents->buckets[o].elems, &contents->buckets[o].len, &carry);
     }
 }
 
@@ -610,9 +612,14 @@ bool find_temp_buffer(Editor* editor,
     return false;
 }
 
-Load_File_Result open_file_buffer(Editor* editor,
-                                  cz::Str user_path,
-                                  cz::Arc<Buffer_Handle>* handle_out) {
+/// Find or open a buffer.  Note that returning `DOESNT_EXIST` will still create a buffer.
+///
+/// Doesn't increment the reference count.
+///
+/// Standardizes the user_path internally.
+static Load_File_Result open_file_buffer(Editor* editor,
+                                         cz::Str user_path,
+                                         cz::Arc<Buffer_Handle>* handle_out) {
     ZoneScoped;
 
     cz::String path = standardize_path(cz::heap_allocator(), user_path);

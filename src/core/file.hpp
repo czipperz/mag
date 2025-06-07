@@ -63,29 +63,6 @@ bool save_contents_to_temp_file(const Contents* contents,
 
 using cz::path::standardize_path;
 
-namespace Load_File_Result_ {
-enum Load_File_Result {
-    SUCCESS,
-    DOESNT_EXIST,
-    FAILURE,
-};
-}
-using Load_File_Result_::Load_File_Result;
-
-/// Find or open a buffer.  Note that returning `DOESNT_EXIST` will still create a buffer.
-///
-/// Doesn't increment the reference count.
-///
-/// Standardizes the user_path internally.
-Load_File_Result open_file_buffer(Editor* editor,
-                                  cz::Str user_path,
-                                  cz::Arc<Buffer_Handle>* handle_out);
-
-/// Load a file as text, stripping carriage returns, and assigning `buffer->use_carriage_returns`.
-Load_File_Result load_text_file(Buffer* buffer, cz::Input_File file);
-
-void strip_carriage_returns(Contents* contents);
-
 /// Find a buffer by its path.  The path must be standardized with `standardize_path`.
 ///
 /// Doesn't increment the reference count.
