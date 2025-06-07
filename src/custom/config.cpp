@@ -45,8 +45,6 @@
 #include "basic/window_completion_commands.hpp"
 #include "basic/xclip.hpp"
 #include "clang_format/clang_format.hpp"
-#include "compression/zlib.hpp"
-#include "compression/zstd.hpp"
 #include "core/decoration.hpp"
 #include "core/file.hpp"
 #include "core/match.hpp"
@@ -140,12 +138,8 @@ bool default_use_carriage_returns = false;
 #endif
 
 CompressionExtensions compression_extensions[] = {
-#ifdef HAS_ZSTD
-    {".zst", compression::process_file<compression::zstd::DecompressionStream>},
-#endif
-#ifdef HAS_ZLIB
-    {".gz", compression::process_file<compression::zlib::DecompressionStream>},
-#endif
+    {".zst", "unzstd"},
+    {".gz", "gunzip"},
 };
 size_t compression_extensions_len =
     sizeof(compression_extensions) / sizeof(*compression_extensions);

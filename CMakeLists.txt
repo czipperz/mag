@@ -61,7 +61,6 @@ file(GLOB_RECURSE SRCS
   src/render/*.cpp
   src/overlays/*.cpp
   src/decorations/*.cpp
-  src/compression/*.cpp
 )
 add_library(${LIBRARY_NAME} ${SRCS})
 target_compile_definitions(${LIBRARY_NAME} PUBLIC MAG_BUILD_DIRECTORY=${CMAKE_SOURCE_DIR})
@@ -94,15 +93,7 @@ target_link_libraries(${PROJECT_NAME} tracy)
 if (WIN32)
   target_link_libraries(${PROJECT_NAME} Shcore.lib)
 else()
-  target_compile_definitions(${LIBRARY_NAME} PUBLIC HAS_ZLIB=1)
   target_link_libraries(${PROJECT_NAME} pthread dl z)
-endif()
-
-find_package(ZSTD)
-if (${ZSTD_FOUND})
-  target_compile_definitions(${LIBRARY_NAME} PUBLIC HAS_ZSTD=1)
-  target_link_libraries(${LIBRARY_NAME} ${ZSTD_LIBRARY})
-  target_include_directories(${PROJECT_NAME} PUBLIC ${ZSTD_INCLUDE_DIR})
 endif()
 
 # Run GNU Global if it is available.

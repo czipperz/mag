@@ -34,7 +34,7 @@ extern bool default_use_carriage_returns;
 
 struct CompressionExtensions {
     const char* extension;
-    Load_File_Result (*decompress_file)(cz::Input_File, Contents*);
+    cz::Str process;
 };
 extern CompressionExtensions compression_extensions[];
 extern size_t compression_extensions_len;

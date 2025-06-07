@@ -13,6 +13,7 @@
 #include <cz/file.hpp>
 #include <cz/parse.hpp>
 #include <cz/path.hpp>
+#include <cz/process.hpp>
 #include <cz/sort.hpp>
 #include <cz/string.hpp>
 #include <cz/util.hpp>
@@ -321,9 +322,28 @@ static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::String* path) {
     for (size_t i = 0; i < custom::compression_extensions_len; ++i) {
         const auto& ext = custom::compression_extensions[i];
         if (path->ends_with(ext.extension)) {
-            Load_File_Result result = ext.decompress_file(file, &buffer->contents);
-            strip_carriage_returns(&buffer->contents);
             buffer->read_only = true;
+            cz::Process process;
+            cz::Input_File std_out;
+            CZ_DEFER(std_out.close());
+            {
+                cz::Process_Options options;
+                options.std_in = file;
+                if (!cz::create_process_output_pipe(&options.std_out, &std_out)) {
+                    return Load_File_Result::FAILURE;
+                }
+                CZ_DEFER(options.std_out.close());
+                cz::Str args[] = {ext.process};
+                if (!process.launch_program(args, options)) {
+                    return Load_File_Result::FAILURE;
+                }
+            }
+            file.close();
+            file = {};
+            Load_File_Result result = load_text_file(buffer, std_out);
+            if (process.join() != 0) {
+                return Load_File_Result::FAILURE;
+            }
             return result;
         }
     }
