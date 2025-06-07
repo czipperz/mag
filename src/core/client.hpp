@@ -76,6 +76,7 @@ struct Client {
     /// ncurses cursor at the same position so tmux will start copying at the right place.
     size_t cursor_pos_y, cursor_pos_x;
 
+    uint64_t next_window_id;
     cz::Vector<Window_Unified*> _offscreen_windows;
     Window* window;
     Window_Unified* selected_normal_window;

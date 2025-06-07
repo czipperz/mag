@@ -17,7 +17,7 @@
 
 namespace mag {
 
-Window_Unified* Window_Unified::create(cz::Arc<Buffer_Handle> buffer_handle) {
+Window_Unified* Window_Unified::create(cz::Arc<Buffer_Handle> buffer_handle, uint64_t id) {
     Window_Unified* window = cz::heap_allocator().alloc<Window_Unified>();
     CZ_ASSERT(window);
     window->parent = nullptr;
@@ -25,6 +25,7 @@ Window_Unified* Window_Unified::create(cz::Arc<Buffer_Handle> buffer_handle) {
     window->total_cols = 0;
     window->tag = Window::UNIFIED;
 
+    window->id = id;
     window->buffer_handle = buffer_handle.clone();
     window->start_position = 0;
     window->column_offset = 0;
@@ -44,7 +45,7 @@ Window_Unified* Window_Unified::create(cz::Arc<Buffer_Handle> buffer_handle) {
     return window;
 }
 
-Window_Unified* Window_Unified::clone() {
+Window_Unified* Window_Unified::clone(uint64_t new_id) {
     Window_Unified* window = cz::heap_allocator().alloc<Window_Unified>();
     CZ_ASSERT(window);
     *window = *this;
@@ -53,6 +54,7 @@ Window_Unified* Window_Unified::clone() {
     window->completion_cache = {};
     window->completion_cache.init();
     window->completing = false;
+    window->id = new_id;
     window->buffer_handle = buffer_handle.clone();
     return window;
 }
@@ -411,7 +413,7 @@ void reverse_cycle_window(Client* client) {
 
 Window_Split* split_window(Client* client, Window::Tag tag) {
     Window* top = client->selected_normal_window;
-    Window_Unified* bottom = client->selected_normal_window->clone();
+    Window_Unified* bottom = client->selected_normal_window->clone(client->next_window_id++);
 
     if (top->parent && top->parent->fused) {
         top = top->parent;

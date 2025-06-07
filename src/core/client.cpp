@@ -33,10 +33,11 @@ bool Client::update_global_copy_chain(Editor* editor) {
 void Client::init(cz::Arc<Buffer_Handle> selected_buffer_handle,
                   cz::Arc<Buffer_Handle> mini_buffer_handle,
                   cz::Arc<Buffer_Handle> messages_handle) {
-    selected_normal_window = Window_Unified::create(selected_buffer_handle);
+    next_window_id = 1;
+    selected_normal_window = Window_Unified::create(selected_buffer_handle, next_window_id++);
     window = selected_normal_window;
 
-    _mini_buffer = Window_Unified::create(mini_buffer_handle);
+    _mini_buffer = Window_Unified::create(mini_buffer_handle, next_window_id++);
     mini_buffer_completion_cache.init();
 
     messages_buffer_handle = messages_handle.clone();
@@ -135,9 +136,9 @@ Window_Unified* Client::make_window_for_buffer(cz::Arc<Buffer_Handle> buffer_han
     }
 
     if (find_window_for_buffer(this->window, buffer_handle, &window)) {
-        return window->clone();
+        return window->clone(next_window_id++);
     } else {
-        return Window_Unified::create(buffer_handle);
+        return Window_Unified::create(buffer_handle, next_window_id++);
     }
 }
 

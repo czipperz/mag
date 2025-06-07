@@ -36,6 +36,9 @@ struct Window {
 };
 
 struct Window_Unified : Window {
+    /// Incrementing ID; reset when a new buffer is assigned to this window.
+    uint64_t id;
+
     /// The buffer this window is associated with.  If the buffer (which is owned by
     /// the `Editor`) is killed then this window needs to be replaced by the killer.
     cz::Arc<Buffer_Handle> buffer_handle;
@@ -64,8 +67,8 @@ struct Window_Unified : Window {
     bool pinned;
 
     /// Clones the `Buffer_Handle`.
-    static Window_Unified* create(cz::Arc<Buffer_Handle> buffer_handle);
-    Window_Unified* clone();
+    static Window_Unified* create(cz::Arc<Buffer_Handle> buffer_handle, uint64_t id);
+    Window_Unified* clone(uint64_t new_id);
 
     void update_cursors(const Buffer* buffer);
 

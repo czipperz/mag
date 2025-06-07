@@ -1030,7 +1030,7 @@ static void setup_unified_window_cache(Editor* editor,
     } else if ((*window_cache)->tag != window->tag) {
         destroy_window_cache_children(*window_cache);
         cache_window_unified_create(editor, *window_cache, window, buffer);
-    } else if ((*window_cache)->v.unified.id != buffer->id) {
+    } else if ((*window_cache)->v.unified.window_id != window->id) {
         cache_window_unified_create(editor, *window_cache, window, buffer);
     }
 }

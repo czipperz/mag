@@ -12,7 +12,7 @@ namespace mag {
 namespace render {
 
 struct Window_Unified_Cache {
-    Buffer_Id id;
+    uint64_t window_id;
     size_t change_index;
     uint64_t visible_start;
     size_t cursor_count;

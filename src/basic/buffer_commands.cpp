@@ -269,7 +269,7 @@ static bool remove_windows_for_buffer(Client* client,
     if (remove_windows_matching(&client->window, buffer_handle, &client->selected_normal_window)) {
         // Every buffer matches the killed buffer id
         everything = true;
-        Window_Unified* win = Window_Unified::create(replacement);
+        Window_Unified* win = Window_Unified::create(replacement, client->next_window_id++);
         win->total_rows = client->window->total_rows;
         win->total_cols = client->window->total_cols;
         Window::drop_(client->window);
