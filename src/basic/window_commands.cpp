@@ -94,7 +94,7 @@ void command_close_window(Editor* editor, Command_Source source) {
         } else {
             CZ_DEBUG_ASSERT(parent->second == child);
             source.client->replace_window(parent, parent->first);
-            source.client->selected_normal_window = window_first(parent->first);
+            source.client->selected_normal_window = window_last(parent->first);
         }
         source.client->save_removed_window(child);
         Window_Split::drop_non_recursive(parent);
