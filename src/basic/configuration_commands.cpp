@@ -147,12 +147,14 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
         dialog.prompt = prompt;
         dialog.response_callback = [](Editor* editor, Client* client, cz::Str str, void*) {
             WITH_SELECTED_BUFFER(client);
-            uint32_t value;
-            if (cz::parse(str, &value) <= 0 || value == 0) {
+            int64_t value;
+            if (cz::parse(str, &value) <= 0) {
                 client->show_message("Invalid preferred column");
                 return;
             }
-            buffer->mode.preferred_column = value;
+            if (value <= 0)
+                value = -1;
+            buffer->mode.preferred_column = (uint64_t)value;
         };
         client->show_dialog(dialog);
     } else if (query == "buffer read only") {
