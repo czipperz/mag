@@ -189,6 +189,7 @@ static void command_filter_cursors_looking_at_callback(Editor* editor,
     // If everything would die then handle it gracefully.
     if (num_remaining == 0) {
         kill_extra_cursors(window, client);
+        client->show_message("No cursors match, killing extra cursors");
         return;
     }
 
@@ -226,6 +227,7 @@ static void command_filter_cursors_not_looking_at_callback(Editor* editor,
     // If everything would die then handle it gracefully.
     if (num_remaining == 0) {
         kill_extra_cursors(window, client);
+        client->show_message("All cursors match, killing extra cursors");
         return;
     }
 
