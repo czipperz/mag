@@ -136,7 +136,6 @@ read_continue:
 }
 
 static bool load_directory(Buffer* buffer, cz::Str path) {
-    buffer->type = Buffer::DIRECTORY;
     if (!path.ends_with('/')) {
         buffer->directory.reserve(cz::heap_allocator(), path.len + 2);
         buffer->directory.append(path);
@@ -147,18 +146,16 @@ static bool load_directory(Buffer* buffer, cz::Str path) {
         buffer->directory.append(path);
         buffer->directory.null_terminate();
     }
-    buffer->name = cz::Str(".").clone(cz::heap_allocator());
-    buffer->read_only = true;
 
     bool result = reload_directory_buffer(buffer);
-
-    if (!result) {
-        buffer->contents.drop();
-        buffer->name.drop(cz::heap_allocator());
+    if (result) {
+        buffer->type = Buffer::DIRECTORY;
+        buffer->name = cz::Str(".").clone(cz::heap_allocator());
+        buffer->read_only = true;
+    } else {
         buffer->directory.drop(cz::heap_allocator());
-        *buffer = {};
+        buffer->directory = {};
     }
-
     return result;
 }
 
