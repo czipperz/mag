@@ -136,7 +136,6 @@ read_continue:
 }
 
 static bool load_directory(Buffer* buffer, cz::Str path) {
-    *buffer = {};
     buffer->type = Buffer::DIRECTORY;
     if (!path.ends_with('/')) {
         buffer->directory.reserve(cz::heap_allocator(), path.len + 2);
@@ -157,6 +156,7 @@ static bool load_directory(Buffer* buffer, cz::Str path) {
         buffer->contents.drop();
         buffer->name.drop(cz::heap_allocator());
         buffer->directory.drop(cz::heap_allocator());
+        *buffer = {};
     }
 
     return result;
@@ -296,7 +296,6 @@ static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::Str path) {
         return Load_File_Result::SUCCESS;
     }
 
-    *buffer = {};
     buffer->type = Buffer::FILE;
 
     cz::Str directory, name = path;
@@ -446,7 +445,7 @@ static Job_Tick_Result open_file_job_tick(Asynchronous_Job_Handler* handler, voi
 
     Open_File_Async_Data* data = (Open_File_Async_Data*)_data;
 
-    Buffer buffer;
+    Buffer buffer = {};
     Load_File_Result result = load_path_in_buffer(&buffer, data->path);
     if (result != Load_File_Result::SUCCESS) {
         if (result == Load_File_Result::DOESNT_EXIST) {
@@ -631,7 +630,7 @@ static Load_File_Result open_file_buffer(Editor* editor,
         return Load_File_Result::SUCCESS;
     }
 
-    Buffer buffer;
+    Buffer buffer = {};
     Load_File_Result result = load_path_in_buffer(&buffer, path);
     if (result != Load_File_Result::FAILURE) {
         *handle_out = editor->create_buffer(buffer);
