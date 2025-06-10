@@ -29,7 +29,7 @@ private:
     Buffer buffer;
 
 public:
-    /// Call this with `buffer.directory`, `buffer.file`, and `buffer.is_temp` set.
+    /// Call this with `buffer.directory`, `buffer.name`, and `buffer.type` set.
     void init(Buffer buffer);
     void drop();
 
