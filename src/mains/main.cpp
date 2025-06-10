@@ -75,7 +75,7 @@ Available clients:\n"
 static void open_file_tiling(Editor* editor,
                              Client* client,
                              cz::Str arg,
-                             uint32_t* opened_count,
+                             uint32_t index,
                              uint64_t line,
                              uint64_t column) {
     if (arg.len == 0) {
@@ -85,8 +85,7 @@ static void open_file_tiling(Editor* editor,
 
     // Open the file asynchronously.
     cz::String path = standardize_path(cz::heap_allocator(), arg);
-    editor->add_asynchronous_job(job_open_file(path, line, column, *opened_count));
-    ++*opened_count;
+    editor->add_asynchronous_job(job_open_file(path, line, column, index));
 }
 
 /// gdb runs '$EDITOR +LINE FILE' ex 'mag +42 main.cpp'.
@@ -104,8 +103,7 @@ static bool open_args_as_gdb_edit(Server* server, Client* client, cz::Slice<cons
     if (cz::parse(line_number_str.slice_start(1), &line) != (int64_t)line_number_str.len - 1)
         return false;
 
-    uint32_t opened_count = 0;
-    open_file_tiling(&server->editor, client, file, &opened_count, line, /*column=*/0);
+    open_file_tiling(&server->editor, client, file, /*index=*/0, line, /*column=*/0);
     server->slurp_jobs();
     return true;
 }
@@ -114,14 +112,13 @@ static void open_args(Server* server, Client* client, cz::Slice<const cz::Str> f
     if (open_args_as_gdb_edit(server, client, files))
         return;
 
-    uint32_t opened_count = 0;
     for (size_t i = 0; i < files.len; ++i) {
         // Decode the argument as one of FILE, FILE:LINE, FILE:LINE:COLUMN and then open it.
         uint64_t line = 0, column = 0;
         cz::Str file;
         parse_file_arg(files[i], &file, &line, &column);
 
-        open_file_tiling(&server->editor, client, file, &opened_count, line, column);
+        open_file_tiling(&server->editor, client, file, i, line, column);
         server->slurp_jobs();
     }
 }
