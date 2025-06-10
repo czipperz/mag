@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <cz/defer.hpp>
 #include <cz/option.hpp>
+#include "core/command_macros.hpp"
 #include "custom/config.hpp"
 
 namespace mag {
@@ -54,46 +55,23 @@ void Editor::kill(Buffer_Handle* buffer) {
     }
 }
 
-cz::Arc<Buffer_Handle> Editor::create_buffer(Buffer buffer) {
+void Editor::create_buffer(cz::Arc<Buffer_Handle> buffer_handle) {
     ZoneScoped;
 
-    custom::buffer_created_callback(this, &buffer);
-
-    cz::Arc<Buffer_Handle> buffer_handle;
-    buffer_handle.init_emplace();
-    buffer.id = {buffer_counter++};
-    buffer_handle->init(buffer);
+    {
+        WITH_BUFFER_HANDLE(buffer_handle);
+        buffer->id = {buffer_counter++};
+        custom::buffer_created_callback(this, buffer);
+    }
 
     buffers.reserve(cz::heap_allocator(), 1);
     buffers.push(buffer_handle);
-
-    return buffer_handle;
 }
 
-cz::Arc<Buffer_Handle> Editor::create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir) {
-    ZoneScoped;
-
-    Buffer buffer = {};
-
-    if (dir.is_present) {
-        bool has_forward_slash = dir.value.ends_with("/");
-        buffer.directory.reserve(cz::heap_allocator(), dir.value.len + !has_forward_slash + 1);
-        buffer.directory.append(dir.value);
-        if (!has_forward_slash) {
-            buffer.directory.push('/');
-        }
-        buffer.directory.null_terminate();
-    }
-
-    buffer.type = Buffer::TEMPORARY;
-    buffer.read_only = true;
-
-    buffer.name.reserve(cz::heap_allocator(), 2 + temp_name.len);
-    buffer.name.push('*');
-    buffer.name.append(temp_name);
-    buffer.name.push('*');
-
-    return create_buffer(buffer);
+cz::Arc<Buffer_Handle> Editor::create_buffer(Buffer buffer) {
+    cz::Arc<Buffer_Handle> buffer_handle = create_buffer_handle(buffer);
+    create_buffer(buffer_handle);
+    return buffer_handle;
 }
 
 }

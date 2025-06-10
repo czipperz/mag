@@ -74,4 +74,6 @@ public:
     void unlock();
 };
 
+cz::Arc<Buffer_Handle> create_buffer_handle(Buffer);
+
 }

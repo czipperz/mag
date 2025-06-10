@@ -327,7 +327,7 @@ void command_blame(Editor* editor, Command_Source source) {
         WITH_BUFFER_HANDLE(handle);
         buffer->contents.remove(0, buffer->contents.len);
     } else {
-        handle = editor->create_temp_buffer(buffer_name, wd);
+        handle = editor->create_buffer(create_temp_buffer(buffer_name, wd));
     }
     source.client->set_selected_buffer(handle);
 

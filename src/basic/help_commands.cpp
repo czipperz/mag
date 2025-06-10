@@ -49,7 +49,7 @@ REGISTER_COMMAND(command_dump_key_map);
 void command_dump_key_map(Editor* editor, Command_Source source) {
     cz::Arc<Buffer_Handle> handle;
     if (!find_temp_buffer(editor, source.client, "key map", {mag_build_directory}, &handle)) {
-        handle = editor->create_temp_buffer("key map", {mag_build_directory});
+        handle = editor->create_buffer(create_temp_buffer("key map", {mag_build_directory}));
     }
 
     {

@@ -11,9 +11,8 @@ Test_Runner::Test_Runner() {
     server = {};
     server.init();
 
-    Buffer test_buffer = {};
-    test_buffer.type = Buffer::TEMPORARY;
-    test_buffer.name = cz::Str("*test*").clone(cz::heap_allocator());
+    Buffer test_buffer = create_temp_buffer("test");
+    test_buffer.read_only = false;
     server.editor.create_buffer(test_buffer);
 
     client = server.make_client();
@@ -259,8 +258,7 @@ void Test_Runner::tokenize_print_tests(Tokenizer tokenizer) {
 }
 
 void Test_Runner::open_temp_file(cz::Str temp_name, cz::Option<cz::Str> dir) {
-    cz::Arc<Buffer_Handle> handle = server.editor.create_temp_buffer(temp_name, dir);
-    client.set_selected_buffer(handle);
+    client.set_selected_buffer(server.editor.create_buffer(create_temp_buffer(temp_name, dir)));
 }
 
 static void validate_window(Window* window) {

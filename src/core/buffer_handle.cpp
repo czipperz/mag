@@ -320,4 +320,11 @@ void Buffer_Handle::unlock() {
     }
 }
 
+cz::Arc<Buffer_Handle> create_buffer_handle(Buffer buffer) {
+    cz::Arc<Buffer_Handle> buffer_handle;
+    buffer_handle.init_emplace();
+    buffer_handle->init(buffer);
+    return buffer_handle;
+}
+
 }

@@ -138,4 +138,7 @@ struct Buffer {
 
 SSOStr clear_buffer(Client* client, Buffer* buffer);
 
+/// Creates a temp buffer named `*${temp_name}*` in the directory `dir`.
+Buffer create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir = {});
+
 }

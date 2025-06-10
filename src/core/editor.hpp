@@ -38,11 +38,10 @@ struct Editor {
     /// Remove the corresponding buffer.
     void kill(Buffer_Handle* buffer_handle);
 
+    /// Takes ownership of the Arc, do not `drop`.
+    void create_buffer(cz::Arc<Buffer_Handle> buffer_handle);
     /// Do not decrement the reference count by calling `drop` on the return value.
     cz::Arc<Buffer_Handle> create_buffer(Buffer buffer);
-
-    /// Do not decrement the reference count by calling `drop` on the return value.
-    cz::Arc<Buffer_Handle> create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir = {});
 };
 
 }

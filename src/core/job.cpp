@@ -275,7 +275,7 @@ Run_Console_Command_Result run_console_command(Client* client,
     bool created = false;
     cz::Arc<Buffer_Handle> handle;
     if (!find_temp_buffer(editor, client, buffer_name, cz::Str{working_directory}, &handle)) {
-        handle = editor->create_temp_buffer(buffer_name, cz::Str{working_directory});
+        handle = editor->create_buffer(create_temp_buffer(buffer_name, cz::Str{working_directory}));
         created = true;
     }
 
