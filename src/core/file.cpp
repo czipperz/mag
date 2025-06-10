@@ -135,14 +135,19 @@ read_continue:
     }
 }
 
-static bool load_directory(Buffer* buffer, cz::String* path) {
-    if (!path->ends_with('/')) {
-        path->push('/');
-    }
-
+static bool load_directory(Buffer* buffer, cz::Str path) {
     *buffer = {};
     buffer->type = Buffer::DIRECTORY;
-    buffer->directory = path->clone_null_terminate(cz::heap_allocator());
+    if (!path.ends_with('/')) {
+        buffer->directory.reserve(cz::heap_allocator(), path.len + 2);
+        buffer->directory.append(path);
+        buffer->directory.push('/');
+        buffer->directory.null_terminate();
+    } else {
+        buffer->directory.reserve(cz::heap_allocator(), path.len + 1);
+        buffer->directory.append(path);
+        buffer->directory.null_terminate();
+    }
     buffer->name = cz::Str(".").clone(cz::heap_allocator());
     buffer->read_only = true;
 
@@ -152,8 +157,6 @@ static bool load_directory(Buffer* buffer, cz::String* path) {
         buffer->contents.drop();
         buffer->name.drop(cz::heap_allocator());
         buffer->directory.drop(cz::heap_allocator());
-        path->pop();
-        path->null_terminate();
     }
 
     return result;
@@ -285,7 +288,7 @@ bool reload_directory_buffer(Buffer* buffer) {
     return true;
 }
 
-static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::String* path) {
+static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::Str path) {
     // Try reading it as a directory, then if that fails read it as a file.  On
     // linux, opening it as a file will succeed even if it is a directory.  Then
     // reading the file will cause an error.
@@ -296,7 +299,7 @@ static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::String* path) {
     *buffer = {};
     buffer->type = Buffer::FILE;
 
-    cz::Str directory, name = *path;
+    cz::Str directory, name = path;
     if (name.split_after_last('/', &directory, &name)) {
         buffer->directory = directory.clone_null_terminate(cz::heap_allocator());
     }
@@ -304,10 +307,10 @@ static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::String* path) {
 
     buffer->use_carriage_returns = custom::default_use_carriage_returns;
 
-    buffer->read_only = !file_exists_and_can_write(path->buffer);
+    buffer->read_only = !file_exists_and_can_write(path.buffer);
 
     cz::Input_File file;
-    if (!file.open(path->buffer)) {
+    if (!file.open(path.buffer)) {
         // Failed to open so the file either doesn't exist or isn't readable.
         if (errno_is_noent()) {
             // Doesn't exist.
@@ -323,7 +326,7 @@ static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::String* path) {
     // Inflate compressed files.
     for (size_t i = 0; i < custom::compression_extensions_len; ++i) {
         const auto& ext = custom::compression_extensions[i];
-        if (path->ends_with(ext.extension)) {
+        if (path.ends_with(ext.extension)) {
             buffer->read_only = true;
             cz::Process process;
             cz::Input_File std_out;
@@ -444,7 +447,7 @@ static Job_Tick_Result open_file_job_tick(Asynchronous_Job_Handler* handler, voi
     Open_File_Async_Data* data = (Open_File_Async_Data*)_data;
 
     Buffer buffer;
-    Load_File_Result result = load_path_in_buffer(&buffer, &data->path);
+    Load_File_Result result = load_path_in_buffer(&buffer, data->path);
     if (result != Load_File_Result::SUCCESS) {
         if (result == Load_File_Result::DOESNT_EXIST) {
             handler->show_message("File not found");
@@ -618,13 +621,9 @@ bool find_temp_buffer(Editor* editor,
 ///
 /// Standardizes the user_path internally.
 static Load_File_Result open_file_buffer(Editor* editor,
-                                         cz::Str user_path,
+                                         cz::Str path,
                                          cz::Arc<Buffer_Handle>* handle_out) {
     ZoneScoped;
-
-    cz::String path = standardize_path(cz::heap_allocator(), user_path);
-    CZ_DEFER(path.drop(cz::heap_allocator()));
-
     TracyFormat(message, len, 1024, "open_file_buffer: %s", path.buffer);
     TracyMessage(message, len);
 
@@ -633,7 +632,7 @@ static Load_File_Result open_file_buffer(Editor* editor,
     }
 
     Buffer buffer;
-    Load_File_Result result = load_path_in_buffer(&buffer, &path);
+    Load_File_Result result = load_path_in_buffer(&buffer, path);
     if (result != Load_File_Result::FAILURE) {
         *handle_out = editor->create_buffer(buffer);
     }
