@@ -52,9 +52,9 @@ Options:\n\
   --client=CLIENT    Launches a specified client.\n\
   --try-remote       Tries to open the files in an existing Mag server.\n\
                      If no server is found then starts a client.\n\
-  --macro=KEYS       Immediately start running the keys given in the input sequence.  For example:\n\
-                     --macro=\"A-! git diff origin/master ENTER\"\n\
-  --escape=TEXT      Take a string and escape it for safe invocation via --macro.\n\
+  --execute=KEYS     Immediately start running the keys given in the input sequence.  For example:\n\
+                     --execute=\"A-! git diff origin/master ENTER\"\n\
+  --escape=TEXT      Take a string and escape it for safe invocation via --execute.\n\
                      Prints output to stdout and exits mag.  ' is the only escaped character.  Example:\n\
                      --escape=\"git diff 'origin/master'\"\n\
                      stdout: 'git diff ''origin/master'''\n"
@@ -301,8 +301,8 @@ int mag_main(int argc, char** argv) {
             } else if (arg.starts_with("--escape=")) {
                 print_escape_sequence(arg.slice_start(strlen("--escape=")));
                 return 0;
-            } else if (arg.starts_with("--macro=")) {
-                if (!parse_macro(&initial_key_chain, arg.slice_start(strlen("--macro="))))
+            } else if (arg.starts_with("--execute=")) {
+                if (!parse_macro(&initial_key_chain, arg.slice_start(strlen("--execute="))))
                     return 1;
 #if ALLOW_FORK
             } else if (arg == "--no-fork") {
