@@ -54,12 +54,8 @@ Open_File_Result open_file_at(Editor* editor,
                               uint64_t line,
                               uint64_t column);
 
-/// Parse a "file arg" of the form `file` or `file:line` or `file:line:column`.
-/// `*line` and `*column` are not modified if they are not present.
-/// Returns `true` if `*line` is present.
-///
-/// Note that both lines and columns are formatted starting
-/// at 1 but are handled internally starting at 0.
+/// Parse a "file arg" of the form `file` or `file:line` or `file:line:column`.  `*line` and
+/// `*column` are not modified if they are not present.  Returns `true` if `*line` is present.
 bool parse_file_arg(cz::Str user_arg, cz::Str* file, uint64_t* line, uint64_t* column);
 
 /// Combines `parse_file_arg`, `open_file_at`.
