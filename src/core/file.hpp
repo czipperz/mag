@@ -22,26 +22,37 @@ struct Client;
 struct Contents;
 struct Buffer_Id;
 
+namespace Load_File_Result_ {
+enum Open_File_Result {
+    SUCCESS,
+    DOESNT_EXIST,
+    FAILURE,
+};
+}
+using Load_File_Result_::Open_File_Result;
+
 bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* file_time);
 
 bool reload_directory_buffer(Buffer* buffer);
 
 Synchronous_Job open_file_callback_do_nothing();
 
-/// If `user_path` isn't open, open it in a `Buffer` and replace the current `Window`.
-///
+/// Open the given file in a `Buffer` and replace the current `Window`.
 /// The `user_path` does *not* need to be standardized as `open_file` will handle that.
-bool open_file(Editor* editor,
-               Client* client,
-               cz::Str user_path,
-               Synchronous_Job callback = open_file_callback_do_nothing());
+///
+/// If this returns `Open_File_Result::SUCCESS` then `callback` will be enqueued
+/// to run after the contents are loaded.  Otherwise, `callback` will be killed.
+Open_File_Result open_file(Editor* editor,
+                           Client* client,
+                           cz::Str user_path,
+                           Synchronous_Job callback = open_file_callback_do_nothing());
 
 /// Open file and position cursor at the line, column.
-bool open_file_at(Editor* editor,
-                  Client* client,
-                  cz::Str user_path,
-                  uint64_t line,
-                  uint64_t column);
+Open_File_Result open_file_at(Editor* editor,
+                              Client* client,
+                              cz::Str user_path,
+                              uint64_t line,
+                              uint64_t column);
 
 /// Parse a "file arg" of the form `file` or `file:line` or `file:line:column`.
 /// `*line` and `*column` are not modified if they are not present.
@@ -52,7 +63,7 @@ bool open_file_at(Editor* editor,
 bool parse_file_arg(cz::Str user_arg, cz::Str* file, uint64_t* line, uint64_t* column);
 
 /// Combines `parse_file_arg`, `open_file_at`.
-bool open_file_arg(Editor* editor, Client* client, cz::Str user_arg);
+Open_File_Result open_file_arg(Editor* editor, Client* client, cz::Str user_arg);
 
 bool save_buffer(Buffer* buffer);
 bool save_buffer_to(const Buffer* buffer, cz::Output_File file);

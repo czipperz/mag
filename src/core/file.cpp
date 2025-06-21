@@ -40,15 +40,6 @@
 #endif
 
 namespace mag {
-namespace Load_File_Result_ {
-enum Load_File_Result {
-    SUCCESS,
-    DOESNT_EXIST,
-    FAILURE,
-};
-}
-using Load_File_Result_::Load_File_Result;
-
 bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* file_time) {
     cz::File_Time new_ft;
 
@@ -351,7 +342,7 @@ bool reload_directory_buffer(Buffer* buffer) {
     return true;
 }
 
-static Load_File_Result load_path_in_buffer(Editor* editor,
+static Open_File_Result load_path_in_buffer(Editor* editor,
                                             cz::Arc<Buffer_Handle> buffer_handle,
                                             cz::Str path,
                                             Synchronous_Job callback) {
@@ -361,7 +352,7 @@ static Load_File_Result load_path_in_buffer(Editor* editor,
     // linux, opening it as a file will succeed even if it is a directory.  Then
     // reading the file will cause an error.
     if (load_directory(buffer, path)) {
-        return Load_File_Result::SUCCESS;
+        return Open_File_Result::SUCCESS;
     }
 
     buffer->type = Buffer::FILE;
@@ -382,10 +373,10 @@ static Load_File_Result load_path_in_buffer(Editor* editor,
         if (errno_is_noent()) {
             // Doesn't exist.
             buffer->read_only = false;
-            return Load_File_Result::DOESNT_EXIST;
+            return Open_File_Result::DOESNT_EXIST;
         } else {
             // Either permission error or spurious failure.
-            return Load_File_Result::FAILURE;
+            return Open_File_Result::FAILURE;
         }
     }
     CZ_DEFER(file.close());
@@ -402,15 +393,15 @@ static Load_File_Result load_path_in_buffer(Editor* editor,
                 cz::Process_Options options;
                 options.std_in = file;
                 if (!cz::create_process_output_pipe(&options.std_out, &std_out)) {
-                    return Load_File_Result::FAILURE;
+                    return Open_File_Result::FAILURE;
                 }
                 CZ_DEFER(options.std_out.close());
                 if (!std_out.set_non_blocking()) {
-                    return Load_File_Result::FAILURE;
+                    return Open_File_Result::FAILURE;
                 }
                 cz::Str args[] = {ext.process};
                 if (!process.launch_program(args, options)) {
-                    return Load_File_Result::FAILURE;
+                    return Open_File_Result::FAILURE;
                 }
             }
             file.close();
@@ -418,14 +409,14 @@ static Load_File_Result load_path_in_buffer(Editor* editor,
             process.detach();  // TODO show stderr / exit code
             start_loading_text_file(editor, buffer_handle, std_out, callback);
             std_out = {};  // Prevent destroying.
-            return Load_File_Result::SUCCESS;
+            return Open_File_Result::SUCCESS;
         }
     }
 
     (void)file.set_non_blocking();
     start_loading_text_file(editor, buffer_handle, file, callback);
     file = {};  // Prevent destroying.
-    return Load_File_Result::SUCCESS;
+    return Open_File_Result::SUCCESS;
 }
 
 static void start_syntax_highlighting(Editor* editor, cz::Arc<Buffer_Handle> handle) {
@@ -573,7 +564,7 @@ bool find_temp_buffer(Editor* editor,
 /// Doesn't increment the reference count.
 ///
 /// Standardizes the user_path internally.
-static Load_File_Result open_file_buffer(Editor* editor,
+static Open_File_Result open_file_buffer(Editor* editor,
                                          cz::Str path,
                                          cz::Arc<Buffer_Handle>* handle_out,
                                          Synchronous_Job callback) {
@@ -582,16 +573,17 @@ static Load_File_Result open_file_buffer(Editor* editor,
     TracyMessage(message, len);
 
     if (find_buffer_by_path(editor, path, handle_out)) {
-        return Load_File_Result::SUCCESS;
+        editor->add_synchronous_job(callback);
+        return Open_File_Result::SUCCESS;
     }
 
     cz::Arc<Buffer_Handle> buffer_handle = create_buffer_handle(Buffer{});
-    Load_File_Result result = load_path_in_buffer(editor, buffer_handle, path, callback);
-    if (result != Load_File_Result::SUCCESS) {
+    Open_File_Result result = load_path_in_buffer(editor, buffer_handle, path, callback);
+    if (result != Open_File_Result::SUCCESS) {
         (*callback.kill)(callback.data);
     }
 
-    if (result == Load_File_Result::FAILURE) {
+    if (result == Open_File_Result::FAILURE) {
         buffer_handle.drop();
     } else {
         // Open the buffer even if file not found.
@@ -610,31 +602,34 @@ Synchronous_Job open_file_callback_do_nothing() {
     return job;
 }
 
-bool open_file(Editor* editor, Client* client, cz::Str user_path, Synchronous_Job callback) {
+Open_File_Result open_file(Editor* editor,
+                           Client* client,
+                           cz::Str user_path,
+                           Synchronous_Job callback) {
     ZoneScoped;
 
     if (user_path.len == 0) {
         client->show_message("File path must not be empty");
-        return false;
+        return Open_File_Result::FAILURE;
     }
 
     cz::String path = standardize_path(cz::heap_allocator(), user_path);
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     cz::Arc<Buffer_Handle> handle;
-    Load_File_Result result = open_file_buffer(editor, path, &handle, callback);
-    if (result == Load_File_Result::DOESNT_EXIST) {
+    Open_File_Result result = open_file_buffer(editor, path, &handle, callback);
+    if (result == Open_File_Result::DOESNT_EXIST) {
         client->show_message("File not found");
         // Still open empty file buffer.
-    } else if (result == Load_File_Result::FAILURE) {
+    } else if (result == Open_File_Result::FAILURE) {
         client->show_message("Couldn't open file");
-        return false;
+        return result;
     }
 
     client->set_selected_buffer(handle);
 
     start_syntax_highlighting(editor, handle);
-    return true;
+    return result;
 }
 
 struct Open_File_Callback_Goto_Line_Column {
@@ -643,7 +638,11 @@ struct Open_File_Callback_Goto_Line_Column {
     uint64_t column;
 };
 
-bool open_file_at(Editor* editor, Client* client, cz::Str file, uint64_t line, uint64_t column) {
+Open_File_Result open_file_at(Editor* editor,
+                              Client* client,
+                              cz::Str file,
+                              uint64_t line,
+                              uint64_t column) {
     Open_File_Callback_Goto_Line_Column* data =
         cz::heap_allocator().alloc<Open_File_Callback_Goto_Line_Column>();
     CZ_ASSERT(data);
@@ -671,10 +670,10 @@ bool open_file_at(Editor* editor, Client* client, cz::Str file, uint64_t line, u
     };
     job.data = data;
 
-    if (!open_file(editor, client, file, job))
-        return false;
-    data->window_id = client->selected_normal_window->id;
-    return true;
+    Open_File_Result result = open_file(editor, client, file, job);
+    if (result == Open_File_Result::SUCCESS)
+        data->window_id = client->selected_normal_window->id;
+    return result;
 }
 
 bool parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t* column_out) {
@@ -739,7 +738,7 @@ bool parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t
     goto open;
 }
 
-bool open_file_arg(Editor* editor, Client* client, cz::Str user_arg) {
+Open_File_Result open_file_arg(Editor* editor, Client* client, cz::Str user_arg) {
     cz::Str file;
     uint64_t line = 0, column = 0;
     bool has_line = parse_file_arg(user_arg, &file, &line, &column);
