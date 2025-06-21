@@ -15,6 +15,7 @@ struct Client;
 struct Contents;
 struct Theme;
 
+struct Window_Unified;
 struct Window_Split;
 
 struct Window {
@@ -33,6 +34,8 @@ struct Window {
 
     /// Set the size of this window and its children if it has any.
     void set_size(size_t total_rows, size_t total_cols);
+
+    Window_Unified* find(uint64_t id) const;
 };
 
 struct Window_Unified : Window {

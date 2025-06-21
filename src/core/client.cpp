@@ -217,6 +217,17 @@ void Client::replace_window(const Window* o, Window* n) {
     n->set_size(o->total_rows, o->total_cols);
 }
 
+Window_Unified* Client::find_window(uint64_t window_id) const {
+    Window_Unified* result = window->find(window_id);
+    if (result)
+        return result;
+    for (size_t i = 0; i < _offscreen_windows.len; ++i) {
+        if (_offscreen_windows[i]->id == window_id)
+            return _offscreen_windows[i];
+    }
+    return nullptr;
+}
+
 void Client::set_prompt_text(cz::Str text) {
     WITH_BUFFER_HANDLE(messages_buffer_handle);
 

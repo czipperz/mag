@@ -4,6 +4,7 @@
 #include <cz/option.hpp>
 #include <cz/path.hpp>
 #include "core/buffer.hpp"
+#include "core/job.hpp"
 
 namespace cz {
 struct Allocator;
@@ -20,16 +21,20 @@ struct Editor;
 struct Client;
 struct Contents;
 struct Buffer_Id;
-struct Asynchronous_Job;
 
 bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* file_time);
 
 bool reload_directory_buffer(Buffer* buffer);
 
+Synchronous_Job open_file_callback_do_nothing();
+
 /// If `user_path` isn't open, open it in a `Buffer` and replace the current `Window`.
 ///
 /// The `user_path` does *not* need to be standardized as `open_file` will handle that.
-bool open_file(Editor* editor, Client* client, cz::Str user_path);
+bool open_file(Editor* editor,
+               Client* client,
+               cz::Str user_path,
+               Synchronous_Job callback = open_file_callback_do_nothing());
 
 /// Open file and position cursor at the line, column.
 bool open_file_at(Editor* editor,
@@ -48,14 +53,6 @@ bool parse_file_arg(cz::Str user_arg, cz::Str* file, uint64_t* line, uint64_t* c
 
 /// Combines `parse_file_arg`, `open_file_at`.
 bool open_file_arg(Editor* editor, Client* client, cz::Str user_arg);
-
-/// Create an asynchronous job that opens a file at the specified line and column.
-///
-/// `path` must be a heap-allocated string that is at least 1
-/// character long.  This passes ownership of the string to the job.
-///
-/// Before calling this function you must check that the file hasn't already been opened.
-Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column, size_t index);
 
 bool save_buffer(Buffer* buffer);
 bool save_buffer_to(const Buffer* buffer, cz::Output_File file);

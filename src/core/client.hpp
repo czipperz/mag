@@ -109,6 +109,8 @@ struct Client {
         }
     }
 
+    Window_Unified* find_window(uint64_t window_id) const;
+
     /// Clones the handle.
     Window_Unified* make_window_for_buffer(cz::Arc<Buffer_Handle> buffer_handle);
 

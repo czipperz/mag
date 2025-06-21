@@ -96,44 +96,110 @@ static bool errno_is_noent() {
 #endif
 }
 
-/// Load a file as text, stripping carriage returns, and assigning `buffer->use_carriage_returns`.
-static Load_File_Result load_text_file(Buffer* buffer, cz::Input_File file) {
-    cz::Carriage_Return_Carry carry;
-    char buf[4096];
-    while (1) {
-        int64_t res = file.read(buf, sizeof(buf));
-        if (res > 0) {
-            cz::Str str = {buf, (size_t)res};
-            const char* newline = str.find('\n');
-            if (newline) {
-                // Once we read one line, we can determine if this file in particular should use
-                // carriage returns.
-                buffer->use_carriage_returns = newline != buf && newline[-1] == '\r';
+////////////////////////////////////////////////////////////////////////////////
+// Load text file
+////////////////////////////////////////////////////////////////////////////////
 
-                cz::strip_carriage_returns(buf, &str.len, &carry);
+/// Load a file as text, stripping carriage returns, and assigning `buffer->use_carriage_returns`.
+static Job_Tick_Result load_text_file_chunk(Buffer* buffer,
+                                            cz::Input_File file,
+                                            cz::Carriage_Return_Carry* carry,
+                                            bool* first_line) {
+    char buf[4096];
+    size_t remaining_iterations = 32;
+    if (*first_line) {
+        for (; remaining_iterations-- > 0;) {
+            int64_t res = file.read(buf, sizeof(buf));
+            if (res > 0) {
+                cz::Str str = {buf, (size_t)res};
+                const char* newline = str.find('\n');
+                if (newline) {
+                    // Once we read one line, we can determine if this file in particular should use
+                    // carriage returns.
+                    buffer->use_carriage_returns = newline != buf && newline[-1] == '\r';
+
+                    cz::strip_carriage_returns(buf, &str.len, carry);
+                    buffer->contents.append(str);
+                    *first_line = false;
+                    break;
+                }
                 buffer->contents.append(str);
-                goto read_continue;
+            } else if (res == 0) {
+                return Job_Tick_Result::FINISHED;
+            } else {
+                return Job_Tick_Result::STALLED;
             }
-            buffer->contents.append(str);
-        } else if (res == 0) {
-            return Load_File_Result::SUCCESS;
-        } else {
-            return Load_File_Result::FAILURE;
         }
     }
 
-read_continue:
-    while (1) {
-        int64_t res = file.read_strip_carriage_returns(buf, sizeof(buf), &carry);
+    for (; remaining_iterations-- > 0;) {
+        int64_t res = file.read_strip_carriage_returns(buf, sizeof(buf), carry);
         if (res > 0) {
             buffer->contents.append({buf, (size_t)res});
         } else if (res == 0) {
-            return Load_File_Result::SUCCESS;
+            return Job_Tick_Result::FINISHED;
         } else {
-            return Load_File_Result::FAILURE;
+            return Job_Tick_Result::STALLED;
         }
     }
+    return Job_Tick_Result::MADE_PROGRESS;
 }
+
+struct Load_Text_File_Job_Data {
+    cz::Arc_Weak<Buffer_Handle> buffer_handle;
+    cz::Input_File file;
+    cz::Carriage_Return_Carry carry;
+    bool first_line;
+    Synchronous_Job callback;
+};
+static void load_text_file_job_kill(void* _data) {
+    Load_Text_File_Job_Data* data = (Load_Text_File_Job_Data*)_data;
+    data->buffer_handle.drop();
+    data->file.close();
+    (*data->callback.kill)(data->callback.data);
+    cz::heap_allocator().dealloc(data);
+}
+static Job_Tick_Result load_text_file_job_tick(Asynchronous_Job_Handler* handler, void* _data) {
+    Load_Text_File_Job_Data* data = (Load_Text_File_Job_Data*)_data;
+    cz::Arc<Buffer_Handle> buffer_handle;
+    if (!data->buffer_handle.upgrade(&buffer_handle)) {
+        load_text_file_job_kill(_data);
+        return Job_Tick_Result::FINISHED;
+    }
+    CZ_DEFER(buffer_handle.drop());
+
+    WITH_BUFFER_HANDLE(buffer_handle);
+    Job_Tick_Result result =
+        load_text_file_chunk(buffer, data->file, &data->carry, &data->first_line);
+    if (result == Job_Tick_Result::FINISHED) {
+        data->buffer_handle.drop();
+        data->file.close();
+        handler->add_synchronous_job(data->callback);
+        cz::heap_allocator().dealloc(data);
+    }
+    return result;
+}
+static void start_loading_text_file(Editor* editor,
+                                    cz::Arc<Buffer_Handle> buffer_handle,
+                                    cz::Input_File file,
+                                    Synchronous_Job callback) {
+    Load_Text_File_Job_Data* data = cz::heap_allocator().alloc<Load_Text_File_Job_Data>();
+    data->buffer_handle = buffer_handle.clone_downgrade();
+    data->file = file;
+    data->carry = {};
+    data->first_line = true;
+    data->callback = callback;
+
+    Asynchronous_Job job;
+    job.tick = load_text_file_job_tick;
+    job.kill = load_text_file_job_kill;
+    job.data = data;
+    editor->add_asynchronous_job(job);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Load directory
+////////////////////////////////////////////////////////////////////////////////
 
 static bool load_directory(Buffer* buffer, cz::Str path) {
     if (!path.ends_with('/')) {
@@ -285,7 +351,12 @@ bool reload_directory_buffer(Buffer* buffer) {
     return true;
 }
 
-static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::Str path) {
+static Load_File_Result load_path_in_buffer(Editor* editor,
+                                            cz::Arc<Buffer_Handle> buffer_handle,
+                                            cz::Str path,
+                                            Synchronous_Job callback) {
+    WITH_BUFFER_HANDLE(buffer_handle);
+
     // Try reading it as a directory, then if that fails read it as a file.  On
     // linux, opening it as a file will succeed even if it is a directory.  Then
     // reading the file will cause an error.
@@ -334,6 +405,9 @@ static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::Str path) {
                     return Load_File_Result::FAILURE;
                 }
                 CZ_DEFER(options.std_out.close());
+                if (!std_out.set_non_blocking()) {
+                    return Load_File_Result::FAILURE;
+                }
                 cz::Str args[] = {ext.process};
                 if (!process.launch_program(args, options)) {
                     return Load_File_Result::FAILURE;
@@ -341,15 +415,17 @@ static Load_File_Result load_path_in_buffer(Buffer* buffer, cz::Str path) {
             }
             file.close();
             file = {};
-            Load_File_Result result = load_text_file(buffer, std_out);
-            if (process.join() != 0) {
-                return Load_File_Result::FAILURE;
-            }
-            return result;
+            process.detach();  // TODO show stderr / exit code
+            start_loading_text_file(editor, buffer_handle, std_out, callback);
+            std_out = {};  // Prevent destroying.
+            return Load_File_Result::SUCCESS;
         }
     }
 
-    return load_text_file(buffer, file);
+    (void)file.set_non_blocking();
+    start_loading_text_file(editor, buffer_handle, file, callback);
+    file = {};  // Prevent destroying.
+    return Load_File_Result::SUCCESS;
 }
 
 static void start_syntax_highlighting(Editor* editor, cz::Arc<Buffer_Handle> handle) {
@@ -364,125 +440,6 @@ static void start_syntax_highlighting(Editor* editor, cz::Arc<Buffer_Handle> han
     }
 
     editor->add_asynchronous_job(job_syntax_highlight_buffer(handle.clone_downgrade()));
-}
-
-struct Finish_Open_File_Sync_Data {
-    Buffer buffer;
-    uint64_t position;
-    size_t index;
-};
-
-static void finish_open_file(Editor* editor,
-                             Client* client,
-                             const Buffer& buffer,
-                             uint64_t position,
-                             size_t index) {
-    cz::Arc<Buffer_Handle> handle = editor->create_buffer(buffer);
-
-    if (index > 0) {
-        split_window(client, index % 2 == 0 ? Window::HORIZONTAL_SPLIT : Window::VERTICAL_SPLIT);
-    }
-
-    client->set_selected_buffer(handle);
-    client->selected_normal_window->cursors[0].point = position;
-
-    start_syntax_highlighting(editor, handle);
-
-    {
-        WITH_BUFFER_HANDLE(handle);
-        push_jump(client->selected_normal_window, client, buffer);
-    }
-}
-
-static Job_Tick_Result finish_open_file_sync_job_tick(Editor* editor, Client* client, void* _data) {
-    ZoneScoped;
-
-    Finish_Open_File_Sync_Data* data = (Finish_Open_File_Sync_Data*)_data;
-
-    finish_open_file(editor, client, data->buffer, data->position, data->index);
-
-    cz::heap_allocator().dealloc(data);
-    return Job_Tick_Result::FINISHED;
-}
-
-static void finish_open_file_sync_job_kill(void* _data) {
-    Finish_Open_File_Sync_Data* data = (Finish_Open_File_Sync_Data*)_data;
-    data->buffer.drop();
-    cz::heap_allocator().dealloc(data);
-}
-
-static Synchronous_Job job_finish_open_file_sync(Buffer buffer, uint64_t position, size_t index) {
-    Finish_Open_File_Sync_Data* data = cz::heap_allocator().alloc<Finish_Open_File_Sync_Data>();
-    data->buffer = buffer;
-    data->position = position;
-    data->index = index;
-
-    Synchronous_Job job;
-    job.data = data;
-    job.tick = finish_open_file_sync_job_tick;
-    job.kill = finish_open_file_sync_job_kill;
-    return job;
-}
-
-struct Open_File_Async_Data {
-    cz::String path;  // heap allocated
-    uint64_t line;
-    uint64_t column;
-    size_t index;
-};
-
-static void open_file_job_kill(void* _data) {
-    Open_File_Async_Data* data = (Open_File_Async_Data*)_data;
-    data->path.drop(cz::heap_allocator());
-    cz::heap_allocator().dealloc(data);
-}
-
-static Job_Tick_Result open_file_job_tick(Asynchronous_Job_Handler* handler, void* _data) {
-    ZoneScoped;
-
-    Open_File_Async_Data* data = (Open_File_Async_Data*)_data;
-
-    Buffer buffer = {};
-    Load_File_Result result = load_path_in_buffer(&buffer, data->path);
-    if (result != Load_File_Result::SUCCESS) {
-        if (result == Load_File_Result::DOESNT_EXIST) {
-            handler->show_message("File not found");
-            // Still open empty file buffer.
-        } else {
-            handler->show_message("Couldn't open file");
-
-            // Returning here when there are multiple other files being opened asynchronously
-            // allows for weird windowing states but they won't crash so it's ok for now.
-            return Job_Tick_Result::FINISHED;
-        }
-    }
-
-    uint64_t position = iterator_at_line_column(buffer.contents, data->line, data->column).position;
-
-    // Finish by loading the buffer synchronously.  We *cannot* attempt to lock the state here
-    // because it introduces a race condition where: the first job fails to lock and finishes via a
-    // synchronous job then the second job successfully locks and finishes immediately.  This causes
-    // the second job to finish before the first job which the code to finish doesn't handle.
-    handler->add_synchronous_job(job_finish_open_file_sync(buffer, position, data->index));
-
-    open_file_job_kill(data);
-    return Job_Tick_Result::FINISHED;
-}
-
-Asynchronous_Job job_open_file(cz::String path, uint64_t line, uint64_t column, size_t index) {
-    CZ_DEBUG_ASSERT(path.len > 0);
-
-    Open_File_Async_Data* data = cz::heap_allocator().alloc<Open_File_Async_Data>();
-    data->path = path;
-    data->line = line;
-    data->column = column;
-    data->index = index;
-
-    Asynchronous_Job job;
-    job.data = data;
-    job.tick = open_file_job_tick;
-    job.kill = open_file_job_kill;
-    return job;
 }
 
 bool find_buffer_by_path(Editor* editor, cz::Str path, cz::Arc<Buffer_Handle>* handle_out) {
@@ -618,7 +575,8 @@ bool find_temp_buffer(Editor* editor,
 /// Standardizes the user_path internally.
 static Load_File_Result open_file_buffer(Editor* editor,
                                          cz::Str path,
-                                         cz::Arc<Buffer_Handle>* handle_out) {
+                                         cz::Arc<Buffer_Handle>* handle_out,
+                                         Synchronous_Job callback) {
     ZoneScoped;
     TracyFormat(message, len, 1024, "open_file_buffer: %s", path.buffer);
     TracyMessage(message, len);
@@ -627,15 +585,32 @@ static Load_File_Result open_file_buffer(Editor* editor,
         return Load_File_Result::SUCCESS;
     }
 
-    Buffer buffer = {};
-    Load_File_Result result = load_path_in_buffer(&buffer, path);
-    if (result != Load_File_Result::FAILURE) {
-        *handle_out = editor->create_buffer(buffer);
+    cz::Arc<Buffer_Handle> buffer_handle = create_buffer_handle(Buffer{});
+    Load_File_Result result = load_path_in_buffer(editor, buffer_handle, path, callback);
+    if (result != Load_File_Result::SUCCESS) {
+        (*callback.kill)(callback.data);
     }
+
+    if (result == Load_File_Result::FAILURE) {
+        buffer_handle.drop();
+    } else {
+        // Open the buffer even if file not found.
+        editor->create_buffer(buffer_handle);
+        *handle_out = buffer_handle;
+    }
+
     return result;
 }
 
-bool open_file(Editor* editor, Client* client, cz::Str user_path) {
+Synchronous_Job open_file_callback_do_nothing() {
+    Synchronous_Job job;
+    job.tick = [](Editor*, Client*, void*) { return Job_Tick_Result::FINISHED; };
+    job.kill = [](void*) {};
+    job.data = nullptr;
+    return job;
+}
+
+bool open_file(Editor* editor, Client* client, cz::Str user_path, Synchronous_Job callback) {
     ZoneScoped;
 
     if (user_path.len == 0) {
@@ -647,7 +622,7 @@ bool open_file(Editor* editor, Client* client, cz::Str user_path) {
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     cz::Arc<Buffer_Handle> handle;
-    Load_File_Result result = open_file_buffer(editor, path, &handle);
+    Load_File_Result result = open_file_buffer(editor, path, &handle, callback);
     if (result == Load_File_Result::DOESNT_EXIST) {
         client->show_message("File not found");
         // Still open empty file buffer.
@@ -658,32 +633,47 @@ bool open_file(Editor* editor, Client* client, cz::Str user_path) {
 
     client->set_selected_buffer(handle);
 
-    {
-        WITH_CONST_BUFFER_HANDLE(handle);
-        cz::File_Time file_time = buffer->file_time;
-        if (check_out_of_date_and_update_file_time(path.buffer, &file_time)) {
-            Buffer* buffer_mut = handle->increase_reading_to_writing();
-            buffer_mut->file_time = file_time;
-            const char* message = reload_file(buffer_mut);
-            if (message)
-                client->show_message(message);
-        }
-    }
-
     start_syntax_highlighting(editor, handle);
     return true;
 }
 
-bool open_file_at(Editor* editor, Client* client, cz::Str file, uint64_t line, uint64_t column) {
-    if (!open_file(editor, client, file))
-        return false;
+struct Open_File_Callback_Goto_Line_Column {
+    uint64_t window_id;
+    uint64_t line;
+    uint64_t column;
+};
 
-    WITH_CONST_SELECTED_BUFFER(client);
-    kill_extra_cursors(window, client);
-    Contents_Iterator iterator = iterator_at_line_column(buffer->contents, line, column);
-    window->cursors[0].point = iterator.position;
-    center_in_window(window, buffer->mode, editor->theme, iterator);
-    window->show_marks = false;
+bool open_file_at(Editor* editor, Client* client, cz::Str file, uint64_t line, uint64_t column) {
+    Open_File_Callback_Goto_Line_Column* data =
+        cz::heap_allocator().alloc<Open_File_Callback_Goto_Line_Column>();
+    CZ_ASSERT(data);
+    data->line = line;
+    data->column = column;
+
+    Synchronous_Job job;
+    job.tick = [](Editor* editor, Client* client, void* _data) {
+        Open_File_Callback_Goto_Line_Column* data = (Open_File_Callback_Goto_Line_Column*)_data;
+        Window_Unified* window = client->find_window(data->window_id);
+        if (window) {
+            WITH_CONST_WINDOW_BUFFER(window);
+            kill_extra_cursors(window, client);
+            Contents_Iterator iterator =
+                iterator_at_line_column(buffer->contents, data->line, data->column);
+            window->cursors[0].point = iterator.position;
+            center_in_window(window, buffer->mode, editor->theme, iterator);
+            window->show_marks = false;
+        }
+        cz::heap_allocator().dealloc(data);
+        return Job_Tick_Result::FINISHED;
+    };
+    job.kill = [](void* data) {
+        cz::heap_allocator().dealloc((Open_File_Callback_Goto_Line_Column*)data);
+    };
+    job.data = data;
+
+    if (!open_file(editor, client, file, job))
+        return false;
+    data->window_id = client->selected_normal_window->id;
     return true;
 }
 

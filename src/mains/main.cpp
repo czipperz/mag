@@ -78,14 +78,10 @@ static void open_file_tiling(Editor* editor,
                              uint32_t index,
                              uint64_t line,
                              uint64_t column) {
-    if (arg.len == 0) {
-        client->show_message("File path must not be empty");
-        return;
+    if (index > 0) {
+        split_window(client, index % 2 == 0 ? Window::HORIZONTAL_SPLIT : Window::VERTICAL_SPLIT);
     }
-
-    // Open the file asynchronously.
-    cz::String path = standardize_path(cz::heap_allocator(), arg);
-    editor->add_asynchronous_job(job_open_file(path, line, column, index));
+    open_file_at(editor, client, arg, line, column);
 }
 
 /// gdb runs '$EDITOR +LINE FILE' ex 'mag +42 main.cpp'.

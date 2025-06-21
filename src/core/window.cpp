@@ -250,6 +250,19 @@ void Window::set_size(size_t _total_rows, size_t _total_cols) {
     split->set_children_size();
 }
 
+Window_Unified* Window::find(uint64_t id) const {
+    if (tag == Window::UNIFIED) {
+        Window_Unified* w = (Window_Unified*)this;
+        return w->id == id ? w : nullptr;
+    } else {
+        Window_Split* split = (Window_Split*)this;
+        Window_Unified* first = split->first->find(id);
+        if (first)
+            return first;
+        return split->second->find(id);
+    }
+}
+
 void Window_Split::set_children_size() {
     if (tag == Window::VERTICAL_SPLIT) {
         CZ_ASSERT(total_cols >= 1);
