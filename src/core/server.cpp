@@ -515,24 +515,6 @@ static bool lookup_key_press(cz::Slice<Key> key_chain_orig,
                                                   max_depth, map);
 }
 
-static bool lookup_key_press_completion(cz::Slice<Key> key_chain,
-                                        size_t start,
-                                        Command* command,
-                                        size_t* end,
-                                        size_t* max_depth,
-                                        Editor* editor,
-                                        Client* client,
-                                        const Key_Remap& key_remap) {
-    Window_Unified* window = client->selected_window();
-    if (!window->completing) {
-        return false;
-    }
-
-    WITH_CONST_WINDOW_BUFFER(window);
-    return lookup_key_press(key_chain, start, command, end, max_depth, key_remap,
-                            &buffer->mode.completion_key_map);
-}
-
 static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
                                     size_t start,
                                     Command* command,
@@ -542,6 +524,12 @@ static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
                                     Client* client,
                                     const Key_Remap& key_remap) {
     WITH_CONST_SELECTED_BUFFER(client);
+    if (window->completing) {
+        if (lookup_key_press(key_chain, start, command, end, max_depth, key_remap,
+                             &buffer->mode.completion_key_map)) {
+            return true;
+        }
+    }
     return lookup_key_press(key_chain, start, command, end, max_depth, key_remap,
                             &buffer->mode.key_map);
 }
@@ -616,9 +604,7 @@ void Server::process_key_chain(Client* client) {
         // Try to lookup the exact key sequence.
         // Then try looking it up while using the remap.
         // Then fallback to inserting the key as as text.
-        if (lookup_key_press_completion(client->key_chain, client->key_chain_offset, &command, &end,
-                                        &max_depth, &editor, client, empty_remap) ||
-            lookup_key_press_buffer(client->key_chain, client->key_chain_offset, &command, &end,
+        if (lookup_key_press_buffer(client->key_chain, client->key_chain_offset, &command, &end,
                                     &max_depth, &editor, client, empty_remap) ||
             lookup_key_press_global(client->key_chain, client->key_chain_offset, &command, &end,
                                     &max_depth, &editor, empty_remap)) {
@@ -626,10 +612,7 @@ void Server::process_key_chain(Client* client) {
             if (command.function == nullptr) {
                 break;
             }
-        } else if (lookup_key_press_completion(client->key_chain, client->key_chain_offset,
-                                               &command, &end, &max_depth, &editor, client,
-                                               editor.key_remap) ||
-                   lookup_key_press_buffer(client->key_chain, client->key_chain_offset, &command,
+        } else if (lookup_key_press_buffer(client->key_chain, client->key_chain_offset, &command,
                                            &end, &max_depth, &editor, client, editor.key_remap) ||
                    lookup_key_press_global(client->key_chain, client->key_chain_offset, &command,
                                            &end, &max_depth, &editor, editor.key_remap)) {
