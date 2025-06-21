@@ -65,6 +65,26 @@ bool parse_file_arg(cz::Str user_arg, cz::Str* file, uint64_t* line, uint64_t* c
 /// Combines `parse_file_arg`, `open_file_at`.
 Open_File_Result open_file_arg(Editor* editor, Client* client, cz::Str user_arg);
 
+/// Find or open a buffer.  Note that returning `DOESNT_EXIST` will
+/// still create a buffer.  Doesn't increment the reference count.
+///
+/// This lower-level function is exposed to allow for opening files in the background.
+Open_File_Result open_file_buffer(Editor* editor,
+                                  cz::Str standardized_path,
+                                  cz::Arc<Buffer_Handle>* handle_out,
+                                  Synchronous_Job callback = open_file_callback_do_nothing());
+
+struct Open_File_Callback_Goto_Line_Column {
+    uint64_t window_id;
+    uint64_t line;
+    uint64_t column;
+
+    static Open_File_Callback_Goto_Line_Column* create(uint64_t line, uint64_t column);
+    Open_File_Result finish_setup(const Client* client, Open_File_Result);
+};
+/// After creating the job you must call `finish_setup` with the result of `open_file`!
+Synchronous_Job open_file_callback_goto_line_column(Open_File_Callback_Goto_Line_Column* data);
+
 bool save_buffer(Buffer* buffer);
 bool save_buffer_to(const Buffer* buffer, cz::Output_File file);
 bool save_buffer_to(const Buffer* buffer, const char* path);

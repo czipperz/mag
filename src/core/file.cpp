@@ -559,15 +559,12 @@ bool find_temp_buffer(Editor* editor,
     return false;
 }
 
-/// Find or open a buffer.  Note that returning `DOESNT_EXIST` will still create a buffer.
-///
-/// Doesn't increment the reference count.
-///
-/// Standardizes the user_path internally.
-static Open_File_Result open_file_buffer(Editor* editor,
-                                         cz::Str path,
-                                         cz::Arc<Buffer_Handle>* handle_out,
-                                         Synchronous_Job callback) {
+/// Find or open a buffer.  Note that returning `DOESNT_EXIST` will
+/// still create a buffer.  Doesn't increment the reference count.
+Open_File_Result open_file_buffer(Editor* editor,
+                                  cz::Str path,
+                                  cz::Arc<Buffer_Handle>* handle_out,
+                                  Synchronous_Job callback) {
     ZoneScoped;
     TracyFormat(message, len, 1024, "open_file_buffer: %s", path.buffer);
     TracyMessage(message, len);
@@ -632,23 +629,22 @@ Open_File_Result open_file(Editor* editor,
     return result;
 }
 
-struct Open_File_Callback_Goto_Line_Column {
-    uint64_t window_id;
-    uint64_t line;
-    uint64_t column;
-};
-
-Open_File_Result open_file_at(Editor* editor,
-                              Client* client,
-                              cz::Str file,
-                              uint64_t line,
-                              uint64_t column) {
+Open_File_Callback_Goto_Line_Column* Open_File_Callback_Goto_Line_Column::create(uint64_t line,
+                                                                                 uint64_t column) {
     Open_File_Callback_Goto_Line_Column* data =
         cz::heap_allocator().alloc<Open_File_Callback_Goto_Line_Column>();
     CZ_ASSERT(data);
     data->line = line;
     data->column = column;
-
+    return data;
+}
+Open_File_Result Open_File_Callback_Goto_Line_Column::finish_setup(const Client* client,
+                                                                   Open_File_Result result) {
+    if (result == Open_File_Result::SUCCESS)
+        window_id = client->selected_normal_window->id;
+    return result;
+}
+Synchronous_Job open_file_callback_goto_line_column(Open_File_Callback_Goto_Line_Column* data) {
     Synchronous_Job job;
     job.tick = [](Editor* editor, Client* client, void* _data) {
         Open_File_Callback_Goto_Line_Column* data = (Open_File_Callback_Goto_Line_Column*)_data;
@@ -669,11 +665,18 @@ Open_File_Result open_file_at(Editor* editor,
         cz::heap_allocator().dealloc((Open_File_Callback_Goto_Line_Column*)data);
     };
     job.data = data;
+    return job;
+}
 
-    Open_File_Result result = open_file(editor, client, file, job);
-    if (result == Open_File_Result::SUCCESS)
-        data->window_id = client->selected_normal_window->id;
-    return result;
+Open_File_Result open_file_at(Editor* editor,
+                              Client* client,
+                              cz::Str file,
+                              uint64_t line,
+                              uint64_t column) {
+    Open_File_Callback_Goto_Line_Column* data =
+        Open_File_Callback_Goto_Line_Column::create(line, column);
+    return data->finish_setup(
+        client, open_file(editor, client, file, open_file_callback_goto_line_column(data)));
 }
 
 bool parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t* column_out) {
