@@ -31,6 +31,13 @@ TEST_CASE("spaces_are_wildcards_completion_filter files") {
     CHECK(context.results == engine_context.results);
     CHECK(context.selected == 5);
 
+    engine_context.query = cz::format("  ");
+    spaces_are_wildcards_completion_filter(/*editor=*/nullptr, &context, &engine_context,
+                                           /*selected_result=*/{},
+                                           /*has_selected_result=*/false);
+    CHECK(context.results == engine_context.results);
+    CHECK(context.selected == 0);
+
     engine_context.query = cz::format("^src/pr");
     spaces_are_wildcards_completion_filter(/*editor=*/nullptr, &context, &engine_context,
                                            /*selected_result=*/{}, /*has_selected_result=*/false);

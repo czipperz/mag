@@ -219,16 +219,12 @@ static Wildcard_Pattern parse_spaces_are_wildcards(cz::String& query) {
     }
 
     // Recognize $ at end -> last piece must be at the end of the string.
-    if (end > 0 && query[end - 1] == '$') {
+    if (end > start && query[end - 1] == '$') {
         pattern.wild_end = false;
         --end;
     }
-    while (end > 0 && query[end - 1] == ' ') {
+    while (end > start && query[end - 1] == ' ') {
         --end;
-    }
-
-    if (end < start) {
-        end = start;
     }
 
     while (true) {
