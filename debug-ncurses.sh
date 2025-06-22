@@ -18,7 +18,7 @@ if [ -z "$TMUX" ]; then
 fi
 
 # At the bottom spawn the gdbserver (which instruments the binary).
-tmux splitw -v -p 30 "gdbserver localhost:12345 ./build/debug/mag --client=ncurses $*"
+tmux splitw -v -p 30 "gdbserver localhost:12345 ./build/debug/mag --client=ncurses $(printf '%q ' "$@")"
 
 # At the top spawn main gdb client (interactive debugger) and connect to the server.
 tmux selectp -t "$TMUX_PANE"
