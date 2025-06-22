@@ -30,6 +30,7 @@ void Completion_Engine_Context::drop() {
     if (cleanup) {
         cleanup(data);
     }
+    result_suffix.drop(cz::heap_allocator());
     results.drop();
     results_buffer_array.drop();
     query.drop(cz::heap_allocator());
@@ -41,15 +42,30 @@ void Completion_Engine_Context::reset() {
     }
     cleanup = nullptr;
     data = nullptr;
+    result_suffix.len = 0;
     results_buffer_array.clear();
     results.len = 0;
+}
+
+void Completion_Engine_Context::parse_file_line_column_suffix() {
+    cz::Str query_file;
+    {
+        uint64_t query_line, query_column;
+        parse_file_arg_no_disk(query, &query_file, &query_line, &query_column);
+    }
+
+    cz::Str line_number_suffix = query.slice_start(query_file.len);
+    result_suffix.len = 0;
+    result_suffix.reserve(cz::heap_allocator(), line_number_suffix.len);
+    result_suffix.append(line_number_suffix);
+
+    query.len = query_file.len;
 }
 
 bool Completion_Cache::update(size_t changes_len) {
     if (change_index != changes_len) {
         change_index = changes_len;
         state = Completion_Cache::LOADING;
-        engine_context.query.len = 0;
         return true;
     }
     return false;
@@ -368,6 +384,8 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
         context->data = data;
         context->cleanup = file_completion_engine_data_cleanup;
     }
+
+    context->parse_file_line_column_suffix();
 
     data->temp_result.len = 0;
     cz::Str prefix = get_directory_to_list(&data->temp_result, context->query);

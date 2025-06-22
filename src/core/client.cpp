@@ -274,10 +274,11 @@ static void setup_completion_cache(Client* client) {
 void Client::update_mini_buffer_completion_cache() {
     WITH_WINDOW_BUFFER(mini_buffer_window());
 
-    if (mini_buffer_completion_cache.update(buffer->changes.len)) {
-        buffer->contents.stringify_into(cz::heap_allocator(),
-                                        &mini_buffer_completion_cache.engine_context.query);
-    }
+    mini_buffer_completion_cache.update(buffer->changes.len);
+
+    mini_buffer_completion_cache.engine_context.query.len = 0;
+    buffer->contents.stringify_into(cz::heap_allocator(),
+                                    &mini_buffer_completion_cache.engine_context.query);
 }
 
 void Client::show_dialog(Dialog dialog) {

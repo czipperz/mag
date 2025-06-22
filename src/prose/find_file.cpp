@@ -268,6 +268,8 @@ static bool find_file_completion_engine(Editor* editor,
                                         bool is_initial_frame) {
     Find_File_Completion_Engine_Data* data = (Find_File_Completion_Engine_Data*)context->data;
 
+    context->parse_file_line_column_suffix();
+
     if (is_initial_frame) {
         if (data->shared.is_not_null()) {
             data->shared.drop();

@@ -99,20 +99,21 @@ void Window_Unified::start_completion(Completion_Engine completion_engine) {
 void Window_Unified::update_completion_cache(const Buffer* buffer) {
     CZ_DEBUG_ASSERT(completing);
 
+    Contents_Iterator iterator = buffer->contents.iterator_at(cursors[selected_cursor].point);
+    Contents_Iterator middle = iterator;
+
     if (completion_cache.update(buffer->changes.len)) {
-        Contents_Iterator iterator = buffer->contents.iterator_at(cursors[selected_cursor].point);
-        Contents_Iterator middle = iterator;
         Token token;
         if (!get_token_at_position_no_update(buffer, &iterator, &token)) {
             abort_completion();
             return;
         }
-
-        completion_cache.engine_context.query.reserve(cz::heap_allocator(),
-                                                      middle.position - iterator.position);
-        buffer->contents.slice_into(iterator, middle.position,
-                                    &completion_cache.engine_context.query);
     }
+
+    completion_cache.engine_context.query.len = 0;
+    completion_cache.engine_context.query.reserve(cz::heap_allocator(),
+                                                  middle.position - iterator.position);
+    buffer->contents.slice_into(iterator, middle.position, &completion_cache.engine_context.query);
 }
 
 void Window_Unified::finish_completion(Client* client, Buffer* buffer) {

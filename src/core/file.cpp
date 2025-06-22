@@ -741,6 +741,48 @@ bool parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t
     goto open;
 }
 
+bool parse_file_arg_no_disk(cz::Str arg,
+                            cz::Str* file_out,
+                            uint64_t* line_out,
+                            uint64_t* column_out) {
+    ZoneScoped;
+
+    const char* colon = arg.rfind(':');
+    if (!colon) {
+    no_line_number:
+        *file_out = arg;
+        return false;
+    }
+
+    // See if there are any numbers at all.
+    uint64_t last_number;
+    cz::Str last_number_string = arg.slice_start(colon + 1);
+    if (cz::parse(last_number_string, &last_number) != (int64_t)last_number_string.len) {
+        goto no_line_number;
+    }
+
+    arg = arg.slice_end(colon);
+    colon = arg.rfind(':');
+    if (!colon) {
+    line_only:
+        *file_out = arg;
+        *line_out = last_number;
+        return true;
+    }
+
+    // If there are two numbers then the first is the line number & the second is the column.
+    uint64_t first_number;
+    cz::Str first_number_string = arg.slice_start(colon + 1);
+    if (cz::parse(first_number_string, &first_number) != (int64_t)first_number_string.len) {
+        goto line_only;
+    }
+
+    *file_out = arg.slice_end(colon);
+    *line_out = first_number;
+    *column_out = last_number;
+    return true;
+}
+
 Open_File_Result open_file_arg(Editor* editor, Client* client, cz::Str user_arg) {
     cz::Str file;
     uint64_t line = 0, column = 0;

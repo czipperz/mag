@@ -937,6 +937,7 @@ static void draw_window_completion(Cell* cells,
                 width = window->completion_cache.filter_context.results[r].len;
             }
         }
+        width += window->completion_cache.engine_context.result_suffix.len;
 
         size_t y = cursor_pos_y;
         size_t x = cursor_pos_x;
@@ -978,6 +979,11 @@ static void draw_window_completion(Cell* cells,
             cz::Str result = window->completion_cache.filter_context.results[r];
             for (size_t i = 0; i < width && i < result.len; ++i) {
                 SET_IND(face, result[i]);
+                ++x;
+            }
+            for (size_t i = 0;
+                 i < width && i < window->completion_cache.engine_context.result_suffix.len; ++i) {
+                SET_IND(face, window->completion_cache.engine_context.result_suffix[i]);
                 ++x;
             }
 
@@ -1327,20 +1333,21 @@ static void draw_mini_buffer_results(Cell* cells,
         CZ_DEFER(contents.drop());
 
         cz::Str result = completion_cache->filter_context.results[r];
-        // TODO: have some sort of scroll or wrap for results?
-        if (result.len > total_cols) {
-            result = result.slice_end(total_cols);
-        }
-
+        contents.insert(0, completion_cache->engine_context.result_suffix);
         contents.insert(0, result);
 
-        Contents_Iterator iterator = contents.start();
+        // TODO: have some sort of scroll or wrap for results?
+        if (contents.len > total_cols) {
+            contents.remove(total_cols, contents.len - total_cols);
+        }
+
+        Contents_Iterator token_iterator = contents.start();
         uint64_t state = 0;
         Token token;
 #ifndef NDEBUG
         token = INVALID_TOKEN;
 #endif
-        bool has_token = minibuffer_next_token(&iterator, &token, &state);
+        bool has_token = minibuffer_next_token(&token_iterator, &token, &state);
 #ifndef NDEBUG
         if (has_token) {
             token.check_valid(contents.len);
@@ -1353,14 +1360,14 @@ static void draw_mini_buffer_results(Cell* cells,
                        editor->theme.special_faces[Face_Type::MINI_BUFFER_COMPLETION_SELECTED]);
         }
 
-        for (size_t i = 0; i < result.len; ++i) {
+        for (Contents_Iterator it = contents.start(); !it.at_eob(); it.advance()) {
             Face face = base_face;
 
             while (has_token) {
-                if (i < token.start) {
+                if (it.position < token.start) {
                     // Before the start of the token; do nothing.
                     break;
-                } else if (i < token.end) {
+                } else if (it.position < token.end) {
                     // The token is active.
                     if (token.type & Token_Type::CUSTOM) {
                         apply_face(&face, Token_Type_::decode(token.type));
@@ -1373,7 +1380,7 @@ static void draw_mini_buffer_results(Cell* cells,
 #ifndef NDEBUG
                     token = INVALID_TOKEN;
 #endif
-                    has_token = minibuffer_next_token(&iterator, &token, &state);
+                    has_token = minibuffer_next_token(&token_iterator, &token, &state);
 #ifndef NDEBUG
                     if (has_token) {
                         token.check_valid(contents.len);
@@ -1383,7 +1390,7 @@ static void draw_mini_buffer_results(Cell* cells,
                 }
             }
 
-            SET_IND(face, result[i]);
+            SET_IND(face, it.get());
             ++x;
         }
 

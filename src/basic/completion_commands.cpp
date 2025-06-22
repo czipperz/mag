@@ -13,20 +13,30 @@ namespace basic {
 
 REGISTER_COMMAND(command_insert_completion);
 void command_insert_completion(Editor* editor, Command_Source source) {
-    Window_Unified* window = source.client->mini_buffer_window();
-    WITH_WINDOW_BUFFER(window);
-    Completion_Filter_Context* context =
-        &source.client->mini_buffer_completion_cache.filter_context;
-    cz::Str query = source.client->mini_buffer_completion_cache.engine_context.query;
-    if (context->selected >= context->results.len) {
+    const Completion_Cache* completion_cache = &source.client->mini_buffer_completion_cache;
+    if (completion_cache->filter_context.selected >= completion_cache->filter_context.results.len) {
         return;
     }
 
-    cz::Str value = context->results[context->selected];
+    cz::String result = {};
+    CZ_DEFER(result.drop(cz::heap_allocator()));
+    result.reserve_exact(
+        cz::heap_allocator(),
+        completion_cache->filter_context.results[completion_cache->filter_context.selected].len +
+            completion_cache->engine_context.result_suffix.len);
+    result.append(
+        completion_cache->filter_context.results[completion_cache->filter_context.selected]);
+    result.append(completion_cache->engine_context.result_suffix);
+
+    Window_Unified* window = source.client->mini_buffer_window();
+    WITH_WINDOW_BUFFER(window);
+
+    cz::String query = buffer->contents.stringify(cz::heap_allocator());
+    CZ_DEFER(query.drop(cz::heap_allocator()));
 
     size_t common_base;
-    for (common_base = 0; common_base < query.len && common_base < value.len; ++common_base) {
-        if (query[common_base] != value[common_base]) {
+    for (common_base = 0; common_base < query.len && common_base < result.len; ++common_base) {
+        if (query[common_base] != result[common_base]) {
             break;
         }
     }
@@ -45,11 +55,11 @@ void command_insert_completion(Editor* editor, Command_Source source) {
         transaction.push(remove);
     }
 
-    bool inserting = common_base < value.len;
+    bool inserting = common_base < result.len;
     if (inserting) {
         Edit insert;
         insert.value =
-            SSOStr::as_duplicate(transaction.value_allocator(), value.slice_start(common_base));
+            SSOStr::as_duplicate(transaction.value_allocator(), result.slice_start(common_base));
         insert.position = common_base;
         insert.flags = Edit::INSERT;
         transaction.push(insert);

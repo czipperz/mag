@@ -56,7 +56,14 @@ Open_File_Result open_file_at(Editor* editor,
 
 /// Parse a "file arg" of the form `file` or `file:line` or `file:line:column`.  `*line` and
 /// `*column` are not modified if they are not present.  Returns `true` if `*line` is present.
+///
+/// `parse_file_arg` will only find `line`/`column` if the path exists after removing the suffix
+/// whereas `parse_file_arg_no_disk` will always find `line`/`column` if they are in the string.
 bool parse_file_arg(cz::Str user_arg, cz::Str* file, uint64_t* line, uint64_t* column);
+bool parse_file_arg_no_disk(cz::Str user_arg,
+                                    cz::Str* file,
+                                    uint64_t* line,
+                                    uint64_t* column);
 
 /// Combines `parse_file_arg`, `open_file_at`.
 Open_File_Result open_file_arg(Editor* editor, Client* client, cz::Str user_arg);

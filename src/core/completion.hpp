@@ -25,6 +25,10 @@ struct Completion_Filter_Context {
 struct Completion_Engine_Context {
     cz::String query;
 
+    /// This suffix wraps results as they are displayed and/or completed.
+    /// The suffix is useful to allow for line & column specifiers (see `parse_file_arg`).
+    cz::String result_suffix;
+
     cz::Buffer_Array results_buffer_array;
     cz::Heap_Vector<cz::Str> results;
 
@@ -36,6 +40,9 @@ struct Completion_Engine_Context {
 
     /// Delete the results and cleanup `data`.
     void reset();
+
+    /// If `query` ends with `:LINE` or `:LINE:COLUMN` then move that portion to `result_suffix`.
+    void parse_file_line_column_suffix();
 };
 
 typedef bool (*Completion_Engine)(Editor* editor,
