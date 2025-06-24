@@ -18,6 +18,7 @@
 #include <cz/string.hpp>
 #include <cz/util.hpp>
 #include <tracy/Tracy.hpp>
+#include "basic/buffer_commands.hpp"
 #include "core/client.hpp"
 #include "core/command_macros.hpp"
 #include "core/diff.hpp"
@@ -136,6 +137,32 @@ static Job_Tick_Result load_text_file_chunk(Buffer* buffer,
     return Job_Tick_Result::MADE_PROGRESS;
 }
 
+static void reset_buffer_mode_job_kill(void* _data) {
+    cz::Arc_Weak<Buffer_Handle>* data = (cz::Arc_Weak<Buffer_Handle>*)_data;
+    data->drop();
+    cz::heap_allocator().dealloc(data);
+}
+static Job_Tick_Result reset_buffer_mode_job_tick(Editor* editor, Client* client, void* _data) {
+    cz::Arc_Weak<Buffer_Handle>* data = (cz::Arc_Weak<Buffer_Handle>*)_data;
+    cz::Arc<Buffer_Handle> buffer_handle;
+    if (data->upgrade(&buffer_handle)) {
+        CZ_DEFER(buffer_handle.drop());
+        WITH_BUFFER_HANDLE(buffer_handle);
+        basic::reset_mode(editor, buffer);
+    }
+    reset_buffer_mode_job_kill(_data);
+    return Job_Tick_Result::FINISHED;
+}
+static Synchronous_Job reset_buffer_mode_job(cz::Arc_Weak<Buffer_Handle> handle) {
+    cz::Arc_Weak<Buffer_Handle>* data = cz::heap_allocator().clone(handle);
+    CZ_ASSERT(data);
+    Synchronous_Job job = {};
+    job.tick = reset_buffer_mode_job_tick;
+    job.kill = reset_buffer_mode_job_kill;
+    job.data = data;
+    return job;
+}
+
 struct Load_Text_File_Job_Data {
     cz::Arc_Weak<Buffer_Handle> buffer_handle;
     cz::Input_File file;
@@ -165,6 +192,7 @@ static Job_Tick_Result load_text_file_job_tick(Asynchronous_Job_Handler* handler
     if (result == Job_Tick_Result::FINISHED) {
         data->buffer_handle.drop();
         data->file.close();
+        handler->add_synchronous_job(reset_buffer_mode_job(buffer_handle.clone_downgrade()));
         handler->add_synchronous_job(data->callback);
         cz::heap_allocator().dealloc(data);
     }
