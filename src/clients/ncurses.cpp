@@ -572,6 +572,7 @@ void run(Server* server, Client* client) {
                &server->editor, client, color_pairs, &num_allocated_colors);
 
         bool has_jobs = false;
+        has_jobs |= (client->key_chain_offset < client->key_chain.len);
         has_jobs |= server->slurp_jobs();
         has_jobs |= server->run_synchronous_jobs(client);
 

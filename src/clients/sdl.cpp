@@ -1422,6 +1422,9 @@ void run(Server* server, Client* client) {
         if (redrew_this_time) {
             // Record that we redrew.
             redrew_last = frame_end_ticks;
+        } else if (client->key_chain_offset < client->key_chain.len) {
+            // Don't delay if there are still key presses to process.
+            frame_length = 0;
         } else if (minimized || (no_jobs && redrew_last + 600000 < frame_end_ticks)) {
             // If we are minimized or if 10 minutes have elapsed with no
             // jobs still running then lower the frame rate to 1 fps.
