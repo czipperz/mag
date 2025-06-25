@@ -119,6 +119,9 @@ bool Token_Cache::update(const Buffer* buffer) {
 
         position_after_changes(pending_changes, &pos);
 
+        // TODO instead check:
+        // any_changes_inbetween(pending_changes, check_points[i - 1].position,
+        //                       check_points[i].position)
         if (check_points[i].position != pos) {
             changed_check_points.set(i);
         }
@@ -135,64 +138,68 @@ bool Token_Cache::update(const Buffer* buffer) {
     }
     change_index = changes.len;
 
-    Token token;
-    token.end = 0;
-    uint64_t state = 0;
+    Contents_Iterator iterator = buffer->contents.start();
     // Fix check points that were changed
-    for (size_t i = 0; i < check_points.len; ++i) {
+    for (size_t i = 1; i < check_points.len; ++i) {
+        if (!changed_check_points.get(i))
+            continue;
+
+        iterator.advance_to(check_points[i - 1].position);
         uint64_t end_position = check_points[i].position;
-        if (changed_check_points.get(i)) {
-            Contents_Iterator iterator = buffer->contents.iterator_at(token.end);
-            size_t start = i;
-            // Efficiently loop without recalculating the iterator so long as
-            // the edit is screwing up future check points.
-            while (i < check_points.len) {
-                ZoneScopedN("mag::Token_Cache::update: one check point");
+        Token token;
+        uint64_t state = check_points[i - 1].state;
+        size_t start = i;
+        // Efficiently loop without recalculating the iterator so long as
+        // the edit is screwing up future check points.
+        while (i < check_points.len) {
+            ZoneScopedN("mag::Token_Cache::update: one check point");
 
-                // If we don't resolve after 3 check points we probably won't in the immediate
-                // future so just discard our results.  This prevents us from stalling a
-                // really long time when the user starts typing a block comment at the start
-                // of a big file.  If we're on the main thread this will automatically kick
-                // off a background thread to tokenize the rest of the file.
-                if (i == start + 3) {
-                    TracyFormat(message, len, 1024, "Discarding check points after index %lu",
-                                (unsigned long)i);
-                    TracyMessage(message, len);
-                    check_points.len = i;
-                    ran_to_end = false;
-                    return false;
-                }
+            // If we don't resolve after 3 check points we probably won't in the immediate
+            // future so just discard our results.  This prevents us from stalling a
+            // really long time when the user starts typing a block comment at the start
+            // of a big file.  If we're on the main thread this will automatically kick
+            // off a background thread to tokenize the rest of the file.
+            if (i == start + 3) {
+                TracyFormat(message, len, 1024, "Discarding check points after index %lu",
+                            (unsigned long)i);
+                TracyMessage(message, len);
+                check_points.len = i;
+                ran_to_end = false;
+                return false;
+            }
 
-                while (token.end < end_position) {
+            bool has_token = false;
+            while (iterator.position < end_position) {
 #ifndef NDEBUG
-                    token = INVALID_TOKEN;
+                token = INVALID_TOKEN;
 #endif
 
-                    if (!buffer->mode.next_token(&iterator, &token, &state)) {
-                        break;
-                    }
-
-#ifndef NDEBUG
-                    token.check_valid(buffer->contents.len);
-#endif
-                }
-
-                if (token.end > end_position || state != check_points[i].state) {
-                    check_points[i].position = token.end;
-                    check_points[i].state = state;
-                    ++i;
-                    if (i == check_points.len) {
-                        return true;
-                    }
-                    end_position = check_points[i].position;
-                } else {
+                has_token = buffer->mode.next_token(&iterator, &token, &state);
+                if (!has_token) {
                     break;
                 }
+
+#ifndef NDEBUG
+                token.check_valid(buffer->contents.len);
+#endif
+            }
+            if (!has_token) {
+                check_points.len = i;
+                return true;
+            }
+
+            if (token.end != check_points[i].position || state != check_points[i].state) {
+                check_points[i].position = token.end;
+                check_points[i].state = state;
+                ++i;
+                if (i == check_points.len) {
+                    return true;
+                }
+                end_position = check_points[i].position;
+            } else {
+                break;
             }
         }
-
-        token.end = check_points[i].position;
-        state = check_points[i].state;
     }
 
     return true;
