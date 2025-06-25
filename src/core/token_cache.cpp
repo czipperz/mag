@@ -95,6 +95,37 @@ static bool any_changes_after(cz::Slice<const Change> changes, uint64_t position
     return false;
 }
 
+static bool any_changes_inbetween(cz::Slice<const Change> changes, uint64_t start, uint64_t end) {
+    for (size_t c = 0; c < changes.len; ++c) {
+        if (changes[c].is_redo) {
+            for (size_t e = 0; e < changes[c].commit.edits.len; ++e) {
+                auto& edit = changes[c].commit.edits[e];
+                if (cz::max(edit.position, start) <=
+                    cz::min(
+                        edit.position + (!(edit.flags & Edit::INSERT_MASK) ? edit.value.len() : 0),
+                        end)) {
+                    return true;
+                }
+                position_after_edit(edit, &start);
+                position_after_edit(edit, &end);
+            }
+        } else {
+            for (size_t e = changes[c].commit.edits.len; e-- > 0;) {
+                auto& edit = changes[c].commit.edits[e];
+                if (cz::max(edit.position, start) <=
+                    cz::min(
+                        edit.position + ((edit.flags & Edit::INSERT_MASK) ? edit.value.len() : 0),
+                        end)) {
+                    return true;
+                }
+                position_before_edit(edit, &start);
+                position_before_edit(edit, &end);
+            }
+        }
+    }
+    return false;
+}
+
 bool Token_Cache::update(const Buffer* buffer) {
     ZoneScoped;
 
@@ -113,28 +144,23 @@ bool Token_Cache::update(const Buffer* buffer) {
 
     // Detect check points that changed
     for (size_t i = 1; i < check_points.len; ++i) {
-        uint64_t pos = check_points[i].position;
-
-        bool cntinue = any_changes_after(pending_changes, check_points[i].position);
-
-        position_after_changes(pending_changes, &pos);
-
-        // TODO instead check:
-        // any_changes_inbetween(pending_changes, check_points[i - 1].position,
-        //                       check_points[i].position)
-        if (check_points[i].position != pos) {
+        if (any_changes_inbetween(pending_changes, check_points[i - 1].position,
+                                  check_points[i].position)) {
             changed_check_points.set(i);
         }
 
-        uint64_t offset = pos - check_points[i].position;
-        check_points[i].position = pos;
+        uint64_t pos = check_points[i].position;
+        position_after_changes(pending_changes, &pos);
 
-        if (!cntinue) {
-            for (size_t j = i + 1; j < check_points.len; ++j) {
+        if (!any_changes_after(pending_changes, check_points[i].position)) {
+            uint64_t offset = pos - check_points[i].position;
+            for (size_t j = i; j < check_points.len; ++j) {
                 check_points[j].position += offset;
             }
             break;
         }
+
+        check_points[i].position = pos;
     }
     change_index = changes.len;
 
