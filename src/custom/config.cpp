@@ -966,7 +966,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             search_key_map(buffer->mode.key_map);
         } else if (buffer->name.starts_with("*build ")) {
             buffer->mode.next_token = syntax::build_next_token;
+            buffer->mode.perform_iteration = basic::build_buffer_iterate;
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
+            BIND(buffer->mode.key_map, "ENTER", command_build_open_link_at_point);
         }
         break;
 
