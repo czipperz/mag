@@ -6,21 +6,25 @@ namespace mag {
 namespace basic {
 
 static void perform_iteration(Editor* editor, Client* client, bool select_next) {
+    void (*perform_iteration)(Editor * editor, Client * client, bool select_next);
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (buffer->mode.perform_iteration != nullptr) {
-            buffer->mode.perform_iteration(editor, client, select_next);
-            return;
-        }
+        perform_iteration = buffer->mode.perform_iteration;
+    }
+    if (perform_iteration != nullptr) {
+        perform_iteration(editor, client, select_next);
+        return;
     }
 
     toggle_cycle_window(client);
+
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (buffer->mode.perform_iteration != nullptr) {
-            buffer->mode.perform_iteration(editor, client, select_next);
-            return;
-        }
+        perform_iteration = buffer->mode.perform_iteration;
+    }
+    if (perform_iteration != nullptr) {
+        perform_iteration(editor, client, select_next);
+        return;
     }
 
     toggle_cycle_window(client);
