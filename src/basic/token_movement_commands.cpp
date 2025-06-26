@@ -13,6 +13,23 @@
 namespace mag {
 namespace basic {
 
+REGISTER_COMMAND(command_print_token_at_point);
+void command_print_token_at_point(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    buffer->token_cache.update(buffer);
+    Contents_Iterator it =
+        buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+    Token token;
+    if (!get_token_at_position(buffer, &it, &token)) {
+        source.client->show_message("No token at point");
+        return;
+    }
+
+    source.client->show_message_format("point=", window->cursors[window->selected_cursor].point,
+                                       " start=", token.start, " end=", token.end,
+                                       " len=", token.end - token.start, " type=", token.type);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Backward up token pair
 ////////////////////////////////////////////////////////////////////////////////

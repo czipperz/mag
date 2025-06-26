@@ -11,6 +11,8 @@ struct Token;
 
 namespace basic {
 
+void command_print_token_at_point(Editor* editor, Command_Source source);
+
 void command_backward_up_token_pair(Editor* editor, Command_Source source);
 void command_forward_up_token_pair(Editor* editor, Command_Source source);
 
