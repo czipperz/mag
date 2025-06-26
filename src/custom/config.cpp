@@ -890,7 +890,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         directory_key_map(buffer->mode.key_map);
         break;
 
-    case Buffer::TEMPORARY:
+    case Buffer::TEMPORARY: {
         // Temporary files pretty much never use tabs and also shouldn't
         // have a max column limit.  They're temporary after all!
         buffer->mode.use_tabs = false;
@@ -912,6 +912,11 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         // Don't bind "q" in the mini buffer.
         BIND(buffer->mode.key_map, "q", command_quit_window);
 
+        const auto is_shell_command_prefix = [&](cz::Str prefix) {
+            return buffer->name.len >= prefix.len + 1 && buffer->name.starts_with(prefix) &&
+                   (buffer->name[prefix.len] == ' ' || buffer->name[prefix.len] == '*');
+        };
+
         if (buffer->name.starts_with("*man ")) {
             buffer->mode.next_token = syntax::process_next_token;
         } else if (buffer->name == "*key map*") {
@@ -926,12 +931,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    buffer->name.starts_with("*git show ") ||
                    buffer->name.starts_with("*git line-history ") ||
                    buffer->name.starts_with("*git log ") ||
-                   buffer->name.starts_with("*shell git log ") ||
-                   buffer->name == "*shell git log*" ||
-                   buffer->name.starts_with("*shell git diff ") ||
-                   buffer->name == "*shell git diff*" ||
-                   buffer->name.starts_with("*shell git show ") ||
-                   buffer->name == "*shell git show*") {
+                   is_shell_command_prefix("*shell git log") ||
+                   is_shell_command_prefix("*shell git diff") ||
+                   is_shell_command_prefix("*shell git show")) {
             buffer->mode.next_token = syntax::patch_next_token;
             buffer->mode.perform_iteration = version_control::log_buffer_iterate;
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
@@ -971,6 +973,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "ENTER", command_build_open_link_at_point);
         }
         break;
+    }
 
     case Buffer::FILE: {
         buffer->mode.decorations.reserve(1);
