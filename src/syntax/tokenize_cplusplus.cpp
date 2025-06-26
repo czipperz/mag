@@ -467,7 +467,9 @@ enum Keyword_Type {
     KEYWORD_GENERAL = 2,             /// e.g. 'if'
     KEYWORD_TYPE = 3,                /// e.g. 'char'
     KEYWORD_STATEMENT_PREFIX = 4,    /// e.g. 'static'
-    KEYWORD_RAW_STRING_LITERAL = 5,  /// e.g. 'R'
+    KEYWORD_START_BLOCK = 5,         /// e.g. 'BOOST_AUTO_TEST_SUITE'
+    KEYWORD_END_BLOCK = 6,           /// e.g. 'BOOST_AUTO_TEST_SUITE_END'
+    KEYWORD_RAW_STRING_LITERAL = 7,  /// e.g. 'R'
 };
 }
 
@@ -509,6 +511,14 @@ static void handle_identifier(Contents_Iterator* iterator,
     case KEYWORD_STATEMENT_PREFIX:
         token->type = Token_Type::KEYWORD;
         state->syntax = SYNTAX_AT_STMT;
+        break;
+    case KEYWORD_START_BLOCK:
+        token->type = Token_Type::PREPROCESSOR_IF;
+        state->syntax = SYNTAX_AFTER_DECL;
+        break;
+    case KEYWORD_END_BLOCK:
+        token->type = Token_Type::PREPROCESSOR_ENDIF;
+        state->syntax = SYNTAX_AFTER_DECL;
         break;
     case KEYWORD_RAW_STRING_LITERAL:
         if (looking_at(*iterator, '"')) {
@@ -1014,6 +1024,19 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
     case (16 << 8) | (uint8_t)'r':
         if (looking_at_no_bounds_check(start, "reinterpret_cast"))
             return KEYWORD_GENERAL;
+        return NOT_KEYWORD;
+
+    case (21 << 8) | (uint8_t)'B':
+        if (looking_at_no_bounds_check(start, "BOOST_AUTO_TEST_SUITE"))
+            return KEYWORD_START_BLOCK;
+        return NOT_KEYWORD;
+    case (24 << 8) | (uint8_t)'B':
+        if (looking_at_no_bounds_check(start, "BOOST_FIXTURE_TEST_SUITE"))
+            return KEYWORD_START_BLOCK;
+        return NOT_KEYWORD;
+    case (25 << 8) | (uint8_t)'B':
+        if (looking_at_no_bounds_check(start, "BOOST_AUTO_TEST_SUITE_END"))
+            return KEYWORD_END_BLOCK;
         return NOT_KEYWORD;
 
     default:
