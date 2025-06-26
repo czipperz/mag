@@ -841,6 +841,47 @@ static void matching_identifier_overlays(
     overlays->push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
 }
 
+static bool handle_git_show_file(Editor* editor, Buffer* buffer) {
+    if (!buffer->name.starts_with("*shell git show ") || !buffer->name.ends_with('*'))
+        return false;
+
+    cz::Str args = buffer->name.slice(strlen("*shell git show "), buffer->name.len - 1);
+    if (args.contains(' '))
+        return false; // Hard to handle paths with spaces so just ignore.
+    cz::Str before, file;
+    if (!args.split_excluding(':', &before, &file))
+        return false;
+
+    cz::Heap_String path = {};
+    CZ_DEFER(path.drop());
+    if (file.starts_with("./") || file.starts_with("../")) {
+        path.reserve_exact(buffer->directory.len + file.len);
+        path.append(buffer->directory);
+    } else {
+        if (!version_control::get_root_directory(buffer->directory, cz::heap_allocator(), &path))
+            return false; // Not in git, fail.
+        path.reserve_exact(1 + file.len);
+        path.push('/');
+    }
+    path.append(file);
+
+    cz::String standardized_path = standardize_path(cz::heap_allocator(), path);
+    CZ_DEFER(standardized_path.drop(cz::heap_allocator()));
+
+    cz::Str name, directory;
+    Buffer::Type type;
+    if (!parse_rendered_buffer_name(standardized_path, &name, &directory, &type)) {
+        return false;
+    }
+    if (type != Buffer::Type::FILE) {
+        // Git directory format is totally different & special files can't be produced by git.
+        return false;
+    }
+
+    reset_mode_as_if(editor, buffer, name, directory, type);
+    return true;
+}
+
 void buffer_created_callback(Editor* editor, Buffer* buffer) {
     ZoneScoped;
 
@@ -934,6 +975,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    is_shell_command_prefix("*shell git log") ||
                    is_shell_command_prefix("*shell git diff") ||
                    is_shell_command_prefix("*shell git show")) {
+            if (handle_git_show_file(editor, buffer))
+                return;
+
             buffer->mode.next_token = syntax::patch_next_token;
             buffer->mode.perform_iteration = version_control::log_buffer_iterate;
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
