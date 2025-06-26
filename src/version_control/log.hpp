@@ -35,6 +35,7 @@ void log_buffer_iterate(Editor* editor, Client* client, bool select_next);
 /// Show git log.
 void command_git_log(Editor* editor, Command_Source source);
 void command_file_history(Editor* editor, Command_Source source);
+void command_file_history_filtered(Editor* editor, Command_Source source);
 void command_line_history(Editor* editor, Command_Source source);
 
 /// Open a new buffer that filters the shown results via -G.

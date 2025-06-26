@@ -449,37 +449,71 @@ void log_buffer_iterate(Editor* editor, Client* client, bool select_next) {
 // File history
 ////////////////////////////////////////////////////////////////////////////////
 
-static void command_git_log_common(Editor* editor, Command_Source source, bool show_patch) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
+static void command_git_log_common(Editor* editor,
+                                   Client* client,
+                                   cz::Str filter,
+                                   bool show_patch) {
+    WITH_CONST_SELECTED_BUFFER(client);
 
     cz::String root = {};
     CZ_DEFER(root.drop(cz::heap_allocator()));
     if (!get_root_directory(buffer->directory.buffer, cz::heap_allocator(), &root)) {
-        source.client->show_message("Error: couldn't find vc root");
+        client->show_message("Error: couldn't find vc root");
         return;
     }
 
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     if (!buffer->get_path(cz::heap_allocator(), &path)) {
-        source.client->show_message("Error: couldn't get buffer path");
+        client->show_message("Error: couldn't get buffer path");
         return;
     }
 
-    cz::Heap_String command =
-        cz::format(show_patch ? "git log -p " : "git log ", cz::Process::escape_arg(path));
+    cz::Heap_String command = {};
     CZ_DEFER(command.drop());
-    run_console_command(source.client, editor, root.buffer, command.buffer, command);
+    cz::append(&command, "git log ");
+    if (filter.len > 0)
+        cz::append(&command, "-G ", cz::Process::escape_arg(filter), " ");
+    if (show_patch)
+        cz::append(&command, "-p ");
+    cz::append(&command, cz::Process::escape_arg(path));
+    command.reserve_exact(1);
+    command.null_terminate();
+
+    run_console_command(client, editor, root.buffer, command.buffer, command);
 }
 
 REGISTER_COMMAND(command_git_log);
 void command_git_log(Editor* editor, Command_Source source) {
-    command_git_log_common(editor, source, false);
+    command_git_log_common(editor, source.client, "", false);
 }
 
 REGISTER_COMMAND(command_file_history);
 void command_file_history(Editor* editor, Command_Source source) {
-    command_git_log_common(editor, source, true);
+    command_git_log_common(editor, source.client, "", true);
+}
+
+static void command_file_history_filtered_callback(Editor* editor,
+                                                   Client* client,
+                                                   cz::Str filter,
+                                                   void* _data) {
+    command_git_log_common(editor, client, filter, true);
+}
+
+REGISTER_COMMAND(command_file_history_filtered);
+void command_file_history_filtered(Editor* editor, Command_Source source) {
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
+    Dialog dialog = {};
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        dialog.next_token = buffer->mode.next_token;
+        get_selected_region(window, buffer, cz::heap_allocator(), &selected_region);
+    }
+    dialog.prompt = "Filter: ";
+    dialog.response_callback = command_file_history_filtered_callback;
+    dialog.mini_buffer_contents = selected_region;
+    source.client->show_dialog(dialog);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
