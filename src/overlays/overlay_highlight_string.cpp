@@ -23,6 +23,7 @@ struct Data {
     cz::String string;
     Face face;
     Case_Handling case_handling;
+    Matching_Algo matching_algo;
 
     Token_Type token_type;
     Contents_Iterator token_it;
@@ -96,8 +97,24 @@ static Face overlay_highlight_string_get_face_and_advance(const Buffer* buffer,
                 return {};
             }
 
-            if (iterator.position < data->token_token.start) {
-                return {};
+            switch (data->matching_algo) {
+            case Matching_Algo::CONTAINS:
+                if (iterator.position < data->token_token.start)
+                    return {};
+                break;
+            case Matching_Algo::EXACT_MATCH:
+                if (iterator.position != data->token_token.start ||
+                    data->token_token.end - data->token_token.start != data->string.len)
+                    return {};
+                break;
+            case Matching_Algo::PREFIX:
+                if (iterator.position != data->token_token.start)
+                    return {};
+                break;
+            case Matching_Algo::SUFFIX:
+                if (iterator.position + data->string.len != data->token_token.end)
+                    return {};
+                break;
             }
         }
 
@@ -140,13 +157,15 @@ static const Overlay::VTable vtable = {
 Overlay overlay_highlight_string(Face face,
                                  cz::Str str,
                                  Case_Handling case_handling,
-                                 Token_Type token_type) {
+                                 Token_Type token_type,
+                                 Matching_Algo matching_algo) {
     Data* data = cz::heap_allocator().alloc<Data>();
     CZ_ASSERT(data);
     data->face = face;
     data->string = str.clone(cz::heap_allocator());
     data->case_handling = case_handling;
     data->token_type = token_type;
+    data->matching_algo = matching_algo;
     return {&vtable, data};
 }
 
