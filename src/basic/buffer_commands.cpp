@@ -30,6 +30,38 @@ void reset_mode(Editor* editor, Buffer* buffer) {
     custom::buffer_created_callback(editor, buffer);
 }
 
+void reset_mode_as_if(Editor* editor,
+                      Buffer* buffer,
+                      cz::Str name,
+                      cz::Str directory,
+                      Buffer::Type type) {
+    Buffer::Type btype = buffer->type;
+    buffer->type = type;
+    CZ_DEFER(buffer->type = btype);
+
+    cz::String bname = buffer->name;
+    buffer->name = name.clone(cz::heap_allocator());
+    CZ_DEFER(buffer->name = bname);
+    CZ_DEFER(buffer->name.drop(cz::heap_allocator()));
+
+    cz::String bdirectory = buffer->directory;
+    buffer->directory = directory.clone(cz::heap_allocator());
+    CZ_DEFER(buffer->directory = bdirectory);
+    CZ_DEFER(buffer->directory.drop(cz::heap_allocator()));
+
+    reset_mode(editor, buffer);
+}
+
+bool reset_mode_as_if_named(Editor* editor, Buffer* buffer, cz::Str path) {
+    cz::Str name, directory;
+    Buffer::Type type;
+    if (!parse_rendered_buffer_name(path, &name, &directory, &type)) {
+        return false;
+    }
+    reset_mode_as_if(editor, buffer, name, directory, type);
+    return true;
+}
+
 static void command_open_file_callback(Editor* editor, Client* client, cz::Str query, void* data) {
     {
         WITH_CONST_SELECTED_BUFFER(client);
@@ -489,29 +521,8 @@ static void command_pretend_rename_buffer_callback(Editor* editor,
                                                    cz::Str path,
                                                    void* data) {
     WITH_SELECTED_BUFFER(client);
-
-    cz::Str name, directory;
-    Buffer::Type type;
-    if (!parse_rendered_buffer_name(path, &name, &directory, &type)) {
+    if (!reset_mode_as_if_named(editor, buffer, path))
         client->show_message("Error: invalid path");
-        return;
-    }
-
-    Buffer::Type btype = buffer->type;
-    buffer->type = type;
-    CZ_DEFER(buffer->type = btype);
-
-    cz::String bname = buffer->name;
-    buffer->name = name.clone(cz::heap_allocator());
-    CZ_DEFER(buffer->name = bname);
-    CZ_DEFER(buffer->name.drop(cz::heap_allocator()));
-
-    cz::String bdirectory = buffer->directory;
-    buffer->directory = directory.clone(cz::heap_allocator());
-    CZ_DEFER(buffer->directory = bdirectory);
-    CZ_DEFER(buffer->directory.drop(cz::heap_allocator()));
-
-    reset_mode(editor, buffer);
 }
 
 REGISTER_COMMAND(command_pretend_rename_buffer);

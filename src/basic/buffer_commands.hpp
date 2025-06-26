@@ -8,6 +8,14 @@ namespace mag {
 namespace basic {
 
 void reset_mode(Editor* editor, Buffer* buffer);
+void reset_mode_as_if(Editor* editor,
+                      Buffer* buffer,
+                      cz::Str name,
+                      cz::Str directory,
+                      Buffer::Type type);
+/// Combines `reset_mode_as_if` with `parse_rendered_buffer_name`
+/// and returns false on parse failure.
+bool reset_mode_as_if_named(Editor* editor, Buffer* buffer, cz::Str rendered_buffer_name);
 
 void command_open_file(Editor* editor, Command_Source source);
 void command_open_file_full_path(Editor* editor, Command_Source source);
