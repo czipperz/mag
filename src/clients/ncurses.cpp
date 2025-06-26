@@ -581,9 +581,6 @@ void run(Server* server, Client* client) {
         int ch;
         if (has_jobs) {
             ch = getch();
-            if (ch == ERR) {
-                continue;
-            }
         } else {
             server->set_async_locked(false);
             timeout(10);
@@ -592,7 +589,9 @@ void run(Server* server, Client* client) {
             server->set_async_locked(true);
         }
 
-        process_key_presses(server, client, ch);
+        if (ch != ERR) {
+            process_key_presses(server, client, ch);
+        }
         server->process_key_chain(client);
 
         if (client->queue_quit) {
