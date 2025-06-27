@@ -163,17 +163,41 @@ static Synchronous_Job reset_buffer_mode_job(cz::Arc_Weak<Buffer_Handle> handle)
     return job;
 }
 
+static void enqueue_keys_job_kill(void* _data) {
+    cz::Vector<Key>* keys = (cz::Vector<Key>*)_data;
+    keys->drop(cz::heap_allocator());
+    cz::heap_allocator().dealloc(keys);
+}
+static Job_Tick_Result enqueue_keys_job_tick(Editor* editor, Client* client, void* _data) {
+    cz::Vector<Key>* keys = (cz::Vector<Key>*)_data;
+    client->key_chain.reserve(cz::heap_allocator(), keys->len);
+    client->key_chain.insert_slice(client->key_chain_offset, *keys);
+    enqueue_keys_job_kill(_data);
+    return Job_Tick_Result::FINISHED;
+}
+static Synchronous_Job enqueue_keys_job(cz::Vector<Key> keys) {
+    cz::Vector<Key>* data = cz::heap_allocator().clone(keys);
+    CZ_ASSERT(data);
+    Synchronous_Job job = {};
+    job.tick = enqueue_keys_job_tick;
+    job.kill = enqueue_keys_job_kill;
+    job.data = data;
+    return job;
+}
+
 struct Load_Text_File_Job_Data {
     cz::Arc_Weak<Buffer_Handle> buffer_handle;
     cz::Input_File file;
     cz::Carriage_Return_Carry carry;
     bool first_line;
+    cz::Vector<Key> unprocessed_keys;
     Synchronous_Job callback;
 };
 static void load_text_file_job_kill(void* _data) {
     Load_Text_File_Job_Data* data = (Load_Text_File_Job_Data*)_data;
     data->buffer_handle.drop();
     data->file.close();
+    data->unprocessed_keys.drop(cz::heap_allocator());
     (*data->callback.kill)(data->callback.data);
     cz::heap_allocator().dealloc(data);
 }
@@ -194,6 +218,7 @@ static Job_Tick_Result load_text_file_job_tick(Asynchronous_Job_Handler* handler
         data->file.close();
         handler->add_synchronous_job(reset_buffer_mode_job(buffer_handle.clone_downgrade()));
         handler->add_synchronous_job(data->callback);
+        handler->add_synchronous_job(enqueue_keys_job(data->unprocessed_keys));
         cz::heap_allocator().dealloc(data);
     }
     return result;
@@ -201,12 +226,14 @@ static Job_Tick_Result load_text_file_job_tick(Asynchronous_Job_Handler* handler
 static void start_loading_text_file(Editor* editor,
                                     cz::Arc<Buffer_Handle> buffer_handle,
                                     cz::Input_File file,
+                                    cz::Vector<Key> unprocessed_keys,
                                     Synchronous_Job callback) {
     Load_Text_File_Job_Data* data = cz::heap_allocator().alloc<Load_Text_File_Job_Data>();
     data->buffer_handle = buffer_handle.clone_downgrade();
     data->file = file;
     data->carry = {};
     data->first_line = true;
+    data->unprocessed_keys = unprocessed_keys;
     data->callback = callback;
 
     Asynchronous_Job job;
@@ -373,6 +400,7 @@ bool reload_directory_buffer(Buffer* buffer) {
 static Open_File_Result load_path_in_buffer(Editor* editor,
                                             cz::Arc<Buffer_Handle> buffer_handle,
                                             cz::Str path,
+                                            cz::Vector<Key> unprocessed_keys,
                                             Synchronous_Job callback) {
     WITH_BUFFER_HANDLE(buffer_handle);
 
@@ -435,14 +463,14 @@ static Open_File_Result load_path_in_buffer(Editor* editor,
             file.close();
             file = {};
             process.detach();  // TODO show stderr / exit code
-            start_loading_text_file(editor, buffer_handle, std_out, callback);
+            start_loading_text_file(editor, buffer_handle, std_out, unprocessed_keys, callback);
             std_out = {};  // Prevent destroying.
             return Open_File_Result::SUCCESS;
         }
     }
 
     (void)file.set_non_blocking();
-    start_loading_text_file(editor, buffer_handle, file, callback);
+    start_loading_text_file(editor, buffer_handle, file, unprocessed_keys, callback);
     file = {};  // Prevent destroying.
     return Open_File_Result::SUCCESS;
 }
@@ -592,6 +620,7 @@ bool find_temp_buffer(Editor* editor,
 Open_File_Result open_file_buffer(Editor* editor,
                                   cz::Str path,
                                   cz::Arc<Buffer_Handle>* handle_out,
+                                  cz::Vector<Key> unprocessed_keys,
                                   Synchronous_Job callback) {
     ZoneScoped;
     TracyFormat(message, len, 1024, "open_file_buffer: %s", path.buffer);
@@ -599,13 +628,16 @@ Open_File_Result open_file_buffer(Editor* editor,
 
     if (find_buffer_by_path(editor, path, handle_out)) {
         editor->add_synchronous_job(callback);
+        editor->add_synchronous_job(enqueue_keys_job(unprocessed_keys));
         return Open_File_Result::SUCCESS;
     }
 
     cz::Arc<Buffer_Handle> buffer_handle = create_buffer_handle(Buffer{});
-    Open_File_Result result = load_path_in_buffer(editor, buffer_handle, path, callback);
+    Open_File_Result result =
+        load_path_in_buffer(editor, buffer_handle, path, unprocessed_keys, callback);
     if (result != Open_File_Result::SUCCESS) {
         (*callback.kill)(callback.data);
+        editor->add_synchronous_job(enqueue_keys_job(unprocessed_keys));
     }
 
     if (result == Open_File_Result::FAILURE) {
@@ -641,8 +673,12 @@ Open_File_Result open_file(Editor* editor,
     cz::String path = standardize_path(cz::heap_allocator(), user_path);
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
+    cz::Vector<Key> unprocessed_keys =
+        client->key_chain.slice_start(client->key_chain_offset).clone(cz::heap_allocator());
+    client->key_chain.len = client->key_chain_offset;
+
     cz::Arc<Buffer_Handle> handle;
-    Open_File_Result result = open_file_buffer(editor, path, &handle, callback);
+    Open_File_Result result = open_file_buffer(editor, path, &handle, unprocessed_keys, callback);
     if (result == Open_File_Result::DOESNT_EXIST) {
         client->show_message("File not found");
         // Still open empty file buffer.

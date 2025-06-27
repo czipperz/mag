@@ -69,9 +69,13 @@ Open_File_Result open_file_arg(Editor* editor, Client* client, cz::Str user_arg)
 /// still create a buffer.  Doesn't increment the reference count.
 ///
 /// This lower-level function is exposed to allow for opening files in the background.
+///
+/// `unprocessed_keys` will be re-enqueued into the
+/// client's `key_chain` once the file has been loaded.
 Open_File_Result open_file_buffer(Editor* editor,
                                   cz::Str standardized_path,
                                   cz::Arc<Buffer_Handle>* handle_out,
+                                  cz::Heap_Vector<Key> unprocessed_keys,
                                   Synchronous_Job callback = open_file_callback_do_nothing());
 
 struct Open_File_Callback_Goto_Line_Column {
