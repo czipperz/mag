@@ -40,10 +40,11 @@ struct Client {
     } type;
 
     bool record_key_presses;
-    size_t key_chain_offset;
     cz::Vector<Key> macro_key_chain;
 
+    size_t key_chain_offset;
     cz::Vector<Key> key_chain;
+
     bool queue_quit;
 
     Copy_Chain* global_copy_chain;
