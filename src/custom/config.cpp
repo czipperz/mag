@@ -1083,6 +1083,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             hash_comments_key_map(buffer->mode.key_map);
             BIND(buffer->mode.key_map, "C-A-c",
                  command_complete_at_point_prompt_identifiers_or_cmake_keywords);
+            BIND(buffer->mode.key_map, "A-g A-t", prose::command_find_file_prefill_token_at_point);
             indent_based_hierarchy_mode(buffer->mode);
             matching_identifier_overlays(&buffer->mode.overlays);
         } else if (name.ends_with(".md") ||
