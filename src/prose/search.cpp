@@ -139,7 +139,7 @@ static void search_token_at_position(Editor* editor,
     cz::String directory = {};
     CZ_DEFER(directory.drop(cz::heap_allocator()));
 
-    cz::String query = {};
+    SSOStr query = {};
     CZ_DEFER(query.drop(cz::heap_allocator()));
 
     {
@@ -149,19 +149,14 @@ static void search_token_at_position(Editor* editor,
             return;
         }
 
-        Contents_Iterator iterator =
-            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-        Token token;
-        if (!get_token_at_position(buffer, &iterator, &token)) {
+        if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,
+                                            &query)) {
             client->show_message("Cursor is not positioned at a token");
             return;
         }
-
-        query.reserve(cz::heap_allocator(), token.end - token.start);
-        buffer->contents.slice_into(iterator, token.end, &query);
     }
 
-    run_search(client, editor, directory.buffer, query, true);
+    run_search(client, editor, directory.buffer, query.as_str(), true);
 }
 
 REGISTER_COMMAND(command_search_in_current_directory_token_at_position);
@@ -247,7 +242,7 @@ void command_search_in_file_token_at_position(Editor* editor, Command_Source sou
     cz::String name = {};
     CZ_DEFER(name.drop(cz::heap_allocator()));
 
-    cz::String query = {};
+    SSOStr query = {};
     CZ_DEFER(query.drop(cz::heap_allocator()));
 
     {
@@ -260,20 +255,15 @@ void command_search_in_file_token_at_position(Editor* editor, Command_Source sou
         directory = buffer->directory.clone(cz::heap_allocator());
         name = buffer->name.clone(cz::heap_allocator());
 
-        Contents_Iterator iterator =
-            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-        Token token;
-        if (!get_token_at_position(buffer, &iterator, &token)) {
+        if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,
+                                            &query)) {
             source.client->show_message("Cursor is not positioned at a token");
             return;
         }
-
-        query.reserve(cz::heap_allocator(), token.end - token.start);
-        buffer->contents.slice_into(iterator, token.end, &query);
     }
 
     ensure_has_empty_file();
-    run_search(source.client, editor, directory.buffer, query, true, &name);
+    run_search(source.client, editor, directory.buffer, query.as_str(), true, &name);
 }
 
 }

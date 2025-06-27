@@ -475,16 +475,11 @@ void command_man_at_point(Editor* editor, Command_Source source) {
 
     {
         WITH_SELECTED_BUFFER(source.client);
-
-        Contents_Iterator iterator =
-            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-        Token token;
-        if (!get_token_at_position(buffer, &iterator, &token)) {
+        if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,
+                                            &query)) {
             source.client->show_message("Cursor is not positioned at a token");
             return;
         }
-
-        query = buffer->contents.slice(cz::heap_allocator(), iterator, token.end);
     }
 
     command_man_response(editor, source.client, query.as_str(), nullptr);

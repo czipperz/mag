@@ -463,15 +463,11 @@ void command_find_file_prefill_token_at_point(Editor* editor, Command_Source sou
     {
         WITH_SELECTED_BUFFER(source.client);
 
-        Contents_Iterator iterator =
-            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-        Token token;
-        if (!get_token_at_position(buffer, &iterator, &token)) {
+        if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,
+                                            &query_storage)) {
             source.client->show_message("Cursor is not positioned at a token");
             return;
         }
-
-        query_storage = buffer->contents.slice(cz::heap_allocator(), iterator, token.end);
 
         buffer_directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
     }

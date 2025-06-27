@@ -82,20 +82,17 @@ void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
 
 REGISTER_COMMAND(command_build_open_link_at_point);
 void command_build_open_link_at_point(Editor* editor, Command_Source source) {
-    cz::String path = {};
+    SSOStr path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     {
         WITH_SELECTED_BUFFER(source.client);
-        Contents_Iterator iterator =
-            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-        Token token;
-        if (!get_token_at_position(buffer, &iterator, &token))
+        if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,
+                                            &path))
             return;
-        buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &path);
     }
 
-    open_result(editor, source.client, path);
+    open_result(editor, source.client, path.as_str());
 }
 
 }

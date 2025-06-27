@@ -5,11 +5,12 @@
 namespace mag {
 
 struct Buffer;
-struct Contents_Iterator;
 struct Contents;
-struct Token;
-struct Theme;
+struct Contents_Iterator;
 struct Mode;
+struct SSOStr;
+struct Theme;
+struct Token;
 struct Window_Unified;
 
 void start_of_line(Contents_Iterator* iterator);
@@ -70,6 +71,8 @@ bool get_token_at_position(Buffer* buffer, Contents_Iterator* iterator, Token* t
 bool get_token_at_position_no_update(const Buffer* buffer,
                                      Contents_Iterator* iterator,
                                      Token* token);
+
+bool get_token_at_position_contents(Buffer* buffer, uint64_t position, SSOStr* contents);
 
 bool at_start_of_line(Contents_Iterator iterator);
 bool at_end_of_line(Contents_Iterator iterator);

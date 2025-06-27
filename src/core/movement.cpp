@@ -469,6 +469,17 @@ bool get_token_at_position(Buffer* buffer, Contents_Iterator* token_iterator, To
     return get_token_at_position_no_update(buffer, token_iterator, token);
 }
 
+bool get_token_at_position_contents(Buffer* buffer, uint64_t position, SSOStr* contents) {
+    buffer->token_cache.update(buffer);
+    Contents_Iterator token_iterator = buffer->contents.iterator_at(position);
+    Token token;
+    if (!get_token_at_position_no_update(buffer, &token_iterator, &token)) {
+        return false;
+    }
+    *contents = buffer->contents.slice(cz::heap_allocator(), token_iterator, token.end);
+    return true;
+}
+
 bool get_token_at_position_no_update(const Buffer* buffer,
                                      Contents_Iterator* token_iterator,
                                      Token* token) {
