@@ -6,10 +6,10 @@
 namespace mag {
 namespace prose {
 
-bool copy_buffer_directory(Client* client, const Buffer* buffer, cz::String* out) {
-    if (buffer->directory.len > 0) {
-        out->reserve(cz::heap_allocator(), buffer->directory.len + 1);
-        out->append(buffer->directory);
+bool copy_buffer_directory(Client* client, cz::Str buffer_directory, cz::String* out) {
+    if (buffer_directory.len > 0) {
+        out->reserve(cz::heap_allocator(), buffer_directory.len + 1);
+        out->append(buffer_directory);
         out->null_terminate();
         return true;
     } else {
@@ -21,16 +21,16 @@ bool copy_buffer_directory(Client* client, const Buffer* buffer, cz::String* out
     }
 }
 
-bool copy_version_control_directory(Client* client, const Buffer* buffer, cz::String* directory) {
-    if (!version_control::get_root_directory(buffer->directory, cz::heap_allocator(), directory)) {
+bool copy_version_control_directory(Client* client, cz::Str buffer_directory, cz::String* out) {
+    if (!version_control::get_root_directory(buffer_directory, cz::heap_allocator(), out)) {
         client->show_message("No version control repository found");
         return false;
     }
 
-    directory->reserve(cz::heap_allocator(), 2);
-    if (!directory->ends_with('/'))
-        directory->push('/');
-    directory->null_terminate();
+    out->reserve(cz::heap_allocator(), 2);
+    if (!out->ends_with('/'))
+        out->push('/');
+    out->null_terminate();
     return true;
 }
 

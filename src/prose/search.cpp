@@ -65,14 +65,14 @@ static void run_search(Client* client,
     }
 }
 
-template <bool copy_directory(Client*, const Buffer*, cz::String*), bool query_word>
+template <bool copy_directory(Client*, cz::Str, cz::String*), bool query_word>
 static void command_search_in_x_callback(Editor* editor, Client* client, cz::Str query, void*) {
     cz::String directory = {};
     CZ_DEFER(directory.drop(cz::heap_allocator()));
 
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (!copy_directory(client, buffer, &directory)) {
+        if (!copy_directory(client, buffer->directory, &directory)) {
             return;
         }
     }
@@ -145,7 +145,7 @@ static void search_token_at_position(Editor* editor,
     {
         WITH_SELECTED_BUFFER(client);
 
-        if (!copy_directory(client, buffer, &directory)) {
+        if (!copy_directory(client, buffer->directory, &directory)) {
             return;
         }
 

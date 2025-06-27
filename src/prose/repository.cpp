@@ -26,7 +26,7 @@ void command_open_file_on_repo_site(Editor* editor, Command_Source source) {
             return;
         }
 
-        if (!copy_version_control_directory(source.client, buffer, &vc_dir))
+        if (!copy_version_control_directory(source.client, buffer->directory, &vc_dir))
             return;
 
         if (window->show_marks) {

@@ -354,24 +354,13 @@ static void command_find_file_response(Editor* editor, Client* client, cz::Str f
     open_file_arg(editor, client, path);
 }
 
-template <class Copy_Directory>
-static void find_file(Editor* editor,
-                      Client* client,
-                      const char* prompt,
-                      Copy_Directory&& copy_directory) {
-    cz::String directory = {};
-    {
-        WITH_CONST_SELECTED_NORMAL_BUFFER(client);
-        if (!copy_directory(client, buffer, &directory)) {
-            return;
-        }
-    }
-
+void find_file(Client* client, const char* prompt, cz::Str initial_value, cz::String directory) {
     Dialog dialog = {};
     dialog.prompt = prompt;
     dialog.completion_engine = find_file_completion_engine;
     dialog.response_callback = command_find_file_response;
     dialog.response_callback_data = directory.buffer;
+    dialog.mini_buffer_contents = initial_value;
     dialog.next_token = syntax::path_next_token;
     client->show_dialog(dialog);
 
@@ -390,13 +379,26 @@ static void find_file(Editor* editor,
 
 REGISTER_COMMAND(command_find_file_in_current_directory);
 void command_find_file_in_current_directory(Editor* editor, Command_Source source) {
-    find_file(editor, source.client, "Find file in current directory: ", copy_buffer_directory);
+    cz::String directory = {};
+    {
+        WITH_CONST_SELECTED_NORMAL_BUFFER(source.client);
+        if (!copy_buffer_directory(source.client, buffer->directory, &directory)) {
+            return;
+        }
+    }
+    find_file(source.client, "Find file in current directory: ", "", directory);
 }
 
 REGISTER_COMMAND(command_find_file_in_version_control);
 void command_find_file_in_version_control(Editor* editor, Command_Source source) {
-    find_file(editor, source.client,
-              "Find file in version control: ", copy_version_control_directory);
+    cz::String directory = {};
+    {
+        WITH_CONST_SELECTED_NORMAL_BUFFER(source.client);
+        if (!copy_version_control_directory(source.client, buffer->directory, &directory)) {
+            return;
+        }
+    }
+    find_file(source.client, "Find file in version control: ", "", directory);
 }
 
 struct Diff_Master_Completion_Engine_Data {
@@ -422,7 +424,7 @@ void command_find_file_diff_master(Editor* editor, Command_Source source) {
     cz::String directory = {};
     {
         WITH_CONST_SELECTED_NORMAL_BUFFER(source.client);
-        if (!copy_version_control_directory(source.client, buffer, &directory)) {
+        if (!copy_version_control_directory(source.client, buffer->directory, &directory)) {
             return;
         }
     }
