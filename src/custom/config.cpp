@@ -847,7 +847,7 @@ static bool handle_git_show_file(Editor* editor, Buffer* buffer) {
 
     cz::Str args = buffer->name.slice(strlen("*shell git show "), buffer->name.len - 1);
     if (args.contains(' '))
-        return false; // Hard to handle paths with spaces so just ignore.
+        return false;  // Hard to handle paths with spaces so just ignore.
     cz::Str before, file;
     if (!args.split_excluding(':', &before, &file))
         return false;
@@ -859,7 +859,7 @@ static bool handle_git_show_file(Editor* editor, Buffer* buffer) {
         path.append(buffer->directory);
     } else {
         if (!version_control::get_root_directory(buffer->directory, cz::heap_allocator(), &path))
-            return false; // Not in git, fail.
+            return false;  // Not in git, fail.
         path.reserve_exact(1 + file.len);
         path.push('/');
     }
