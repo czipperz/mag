@@ -12,6 +12,7 @@
 #include <cz/util.hpp>
 #include "core/command_macros.hpp"
 #include "core/file.hpp"
+#include "core/movement.hpp"
 #include "prose/helpers.hpp"
 #include "syntax/tokenize_path.hpp"
 #include "version_control/ignore.hpp"
@@ -449,6 +450,61 @@ void command_find_file_diff_master(Editor* editor, Command_Source source) {
         data->runner.drop();
         cz::heap_allocator().dealloc(data);
     };
+}
+
+REGISTER_COMMAND(command_find_file_prefill_token_at_point);
+void command_find_file_prefill_token_at_point(Editor* editor, Command_Source source) {
+    SSOStr query_storage = {};
+    CZ_DEFER(query_storage.drop(cz::heap_allocator()));
+
+    cz::String buffer_directory = {};
+    CZ_DEFER(buffer_directory.drop(cz::heap_allocator()));
+
+    {
+        WITH_SELECTED_BUFFER(source.client);
+
+        Contents_Iterator iterator =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+        Token token;
+        if (!get_token_at_position(buffer, &iterator, &token)) {
+            source.client->show_message("Cursor is not positioned at a token");
+            return;
+        }
+
+        query_storage = buffer->contents.slice(cz::heap_allocator(), iterator, token.end);
+
+        buffer_directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
+    }
+
+    cz::Str query = query_storage.as_str();
+    if (query.len >= 2 && query.starts_with('"') && query.ends_with('"')) {
+        query = query.slice(1, query.len - 1);
+    }
+
+    {
+        cz::Heap_String combined = cz::format(buffer_directory, query);
+        CZ_DEFER(combined.drop());
+        cz::Str file;
+        uint64_t line, column = 0;
+        bool has_line = parse_file_arg(combined, &file, &line, &column);
+        combined[file.len] = '\0';
+        if (cz::file::exists(combined.buffer)) {
+            if (has_line) {
+                open_file_at(editor, source.client, file, line, column);
+            } else {
+                open_file(editor, source.client, file);
+            }
+            return;
+        }
+    }
+
+    cz::String vc_dir = {};
+    if (!copy_version_control_directory(source.client, buffer_directory, &vc_dir)) {
+        vc_dir.drop(cz::heap_allocator());
+        return;
+    }
+
+    find_file(source.client, "Find file in version control: ", query, vc_dir);
 }
 
 }
