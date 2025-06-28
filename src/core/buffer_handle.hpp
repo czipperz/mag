@@ -6,7 +6,7 @@
 #include "core/buffer.hpp"
 
 #ifdef TRACY_ENABLE
-#include <tracy/client/TracyLock.hpp>
+#include <tracy/Tracy.hpp>
 #endif
 
 namespace mag {
