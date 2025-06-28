@@ -53,7 +53,7 @@ Options:\n\
   --try-remote       Tries to open the files in an existing Mag server.\n\
                      If no server is found then starts a client.\n\
   --execute=KEYS     Immediately start running the keys given in the input sequence.  For example:\n\
-                     --execute=\"A-! git diff origin/master ENTER\"\n\
+                     --execute=\"A-! 'git diff origin/master' ENTER\"\n\
   --escape=TEXT      Take a string and escape it for safe invocation via --execute.\n\
                      Prints output to stdout and exits mag.  ' is the only escaped character.  Example:\n\
                      --escape=\"git diff 'origin/master'\"\n\
@@ -222,8 +222,8 @@ static void print_escape_sequence(cz::Str escape_sequence) {
     putchar('\n');
 }
 
-static bool parse_macro(cz::Heap_Vector<Key>* initial_key_chain, cz::Str macro) {
-    int64_t result = parse_keys(cz::heap_allocator(), initial_key_chain, macro);
+static bool parse_macro(cz::Heap_Vector<Key>* key_chain, cz::Str macro) {
+    int64_t result = parse_keys(cz::heap_allocator(), key_chain, macro);
     if (result == (int64_t)macro.len)
         return true;
 
