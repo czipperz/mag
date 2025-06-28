@@ -5,6 +5,7 @@
 #include <cz/char_type.hpp>
 #include <cz/format.hpp>
 #include <cz/sort.hpp>
+#include <cz/working_directory.hpp>
 #include <tracy/Tracy.hpp>
 #include "core/command_macros.hpp"
 #include "core/decoration.hpp"
@@ -16,6 +17,7 @@
 #include "core/token.hpp"
 #include "core/tracy_format.hpp"
 #include "core/visible_region.hpp"
+#include "version_control/version_control.hpp"
 
 namespace mag {
 namespace render {
@@ -997,6 +999,19 @@ static void draw_window_completion(Cell* cells,
     }
 }
 
+static void update_working_directory(cz::Str directory) {
+    cz::Heap_String new_wd = {};
+    CZ_DEFER(new_wd.drop());
+    if (!version_control::get_root_directory(directory, cz::heap_allocator(), &new_wd))
+        return;
+
+    static cz::Heap_String previous_wd = {};
+    if (previous_wd == new_wd)
+        return;
+    std::swap(previous_wd, new_wd);
+    (void)cz::set_working_directory(previous_wd.buffer);
+}
+
 static void draw_buffer(Cell* cells,
                         Window_Cache* window_cache,
                         size_t total_cols,
@@ -1009,6 +1024,10 @@ static void draw_buffer(Cell* cells,
                         size_t start_row,
                         size_t start_col) {
     ZoneScoped;
+
+    if (is_selected_window) {
+        update_working_directory(buffer->directory);
+    }
 
     Contents_Iterator iterator =
         update_cursors_and_run_animated_scrolling(editor, client, window, window->buffer_handle,
