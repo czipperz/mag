@@ -1256,6 +1256,32 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                 }
             }
 
+            end = buffer->contents.end();
+            while (!end.at_bob()) {
+                end.retreat();
+                if (end.get() != '\n') {
+                    end.advance();
+                    break;
+                }
+            }
+            start = end;
+            start_of_line(&start);
+            SSOStr last_linex = buffer->contents.slice(cz::heap_allocator(), start, end.position);
+            CZ_DEFER(last_linex.drop(cz::heap_allocator()));
+            cz::Str last_line = last_linex.as_str();
+
+            // Recognize vim file declarations.
+            if (last_line.starts_with("# vi: ")) {
+                const char* syntax_point = last_line.find("syntax=");
+                if (syntax_point) {
+                    cz::Str token = last_line.slice_start(syntax_point + strlen("syntax="));
+                    token = token.slice_end(token.find_index(' '));
+                    if (token == "bash") {
+                        goto shell;
+                    }
+                }
+            }
+
             buffer->mode.next_token = syntax::general_next_token;
             indent_based_hierarchy_mode(buffer->mode);
             matching_identifier_overlays(&buffer->mode.overlays);
