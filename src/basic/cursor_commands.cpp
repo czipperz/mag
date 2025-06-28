@@ -635,5 +635,21 @@ void command_remove_selected_cursor(Editor* editor, Command_Source source) {
     kill_cursor(window, source.client, window->selected_cursor);
 }
 
+REGISTER_COMMAND(command_remove_even_cursors);
+void command_remove_even_cursors(Editor* editor, Command_Source source) {
+    Window_Unified* window = source.client->selected_window();
+    for (size_t i = (window->cursors.len + 1) / 2; i-- > 0;) {
+        kill_cursor(window, source.client, i * 2);
+    }
+}
+
+REGISTER_COMMAND(command_remove_odd_cursors);
+void command_remove_odd_cursors(Editor* editor, Command_Source source) {
+    Window_Unified* window = source.client->selected_window();
+    for (size_t i = window->cursors.len / 2; i-- > 0;) {
+        kill_cursor(window, source.client, i * 2 + 1);
+    }
+}
+
 }
 }

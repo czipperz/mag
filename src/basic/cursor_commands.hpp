@@ -35,5 +35,8 @@ void command_cursors_align_leftpad_spaces(Editor* editor, Command_Source source)
 void command_remove_cursors_at_empty_lines(Editor* editor, Command_Source source);
 void command_remove_selected_cursor(Editor* editor, Command_Source source);
 
+void command_remove_even_cursors(Editor* editor, Command_Source source);
+void command_remove_odd_cursors(Editor* editor, Command_Source source);
+
 }
 }
