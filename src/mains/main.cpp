@@ -54,6 +54,8 @@ Options:\n\
                      If no server is found then starts a client.\n\
   --execute=KEYS     Immediately start running the keys given in the input sequence.  For example:\n\
                      --execute=\"A-! 'git diff origin/master' ENTER\"\n\
+  --macro=KEYS       Load the keys as a macro that can be repeatedly invoked.  For example:\n\
+                     --macro=\"'command' C-s A-g A-n\"\n\
   --escape=TEXT      Take a string and escape it for safe invocation via --execute.\n\
                      Prints output to stdout and exits mag.  ' is the only escaped character.  Example:\n\
                      --escape=\"git diff 'origin/master'\"\n\
@@ -255,6 +257,8 @@ int mag_main(int argc, char** argv) {
         bool try_remote = false;
         cz::Heap_Vector<Key> initial_key_chain = {};
         CZ_DEFER(initial_key_chain.drop());
+        cz::Heap_Vector<Key> macro_key_chain = {};
+        CZ_DEFER(macro_key_chain.drop());
 #if ALLOW_FORK
         bool allow_fork = true;
 #endif
@@ -296,6 +300,9 @@ int mag_main(int argc, char** argv) {
                 return 0;
             } else if (arg.starts_with("--execute=")) {
                 if (!parse_macro(&initial_key_chain, arg.slice_start(strlen("--execute="))))
+                    return 1;
+            } else if (arg.starts_with("--macro=")) {
+                if (!parse_macro(&macro_key_chain, arg.slice_start(strlen("--macro="))))
                     return 1;
 #if ALLOW_FORK
             } else if (arg == "--no-fork") {
@@ -451,6 +458,8 @@ A-g     Project or directory commands\n\
         client.type = chosen_client;
         client.key_chain.reserve(cz::heap_allocator(), initial_key_chain.len);
         client.key_chain.insert_slice(client.key_chain_offset, initial_key_chain);
+        client.macro_key_chain = macro_key_chain;
+        macro_key_chain = {};
         CZ_DEFER(client.drop());
 
         server.setup_async_context(&client);
