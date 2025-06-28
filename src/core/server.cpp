@@ -458,7 +458,7 @@ static bool lookup_key_press_inner(cz::Slice<Key> key_chain,
 
 static bool recursively_remap_and_lookup_key_press(const Key_Remap& remap,
                                                    size_t index,
-                                                   cz::Vector<Key>& key_chain,
+                                                   cz::Slice<Key> key_chain,
                                                    size_t start,
                                                    Command* command,
                                                    size_t* end,
@@ -491,25 +491,14 @@ static bool recursively_remap_and_lookup_key_press(const Key_Remap& remap,
                                                   max_depth, map);
 }
 
-static bool lookup_key_press(cz::Slice<Key> key_chain_orig,
+static bool lookup_key_press(cz::Slice<Key> key_chain,
                              size_t start,
                              Command* command,
                              size_t* end,
                              size_t* max_depth,
                              const Key_Remap& remap,
                              const Key_Map* map) {
-    // `map` can be null if the user hasn't configured a `Mode` to have a special key map.
-    if (map == nullptr) {
-        return false;
-    }
-
-    // We want to generate 2^n combinations for each remapped key.
-    // We'll duplicate the input to a temporary so we can play with it.
-    cz::Vector<Key> key_chain = {};
-    CZ_DEFER(key_chain.drop(cz::heap_allocator()));
-    key_chain.reserve(cz::heap_allocator(), key_chain_orig.len);
-    key_chain.append(key_chain_orig);
-
+    ZoneScoped;
     // Transfer to the recursive combinator.
     return recursively_remap_and_lookup_key_press(remap, 0, key_chain, start, command, end,
                                                   max_depth, map);
