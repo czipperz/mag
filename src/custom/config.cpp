@@ -1156,7 +1156,9 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    // Powershell isn't really a shell script but it pretty much works.
                    name.ends_with(".ps1") ||
                    // Perl isn't really a shell script but it pretty much works.
-                   name.ends_with(".pl")) {
+                   name.ends_with(".pl") ||
+                   // GNU DeBugger isn't really a shell script but it pretty much works.
+                   name.ends_with(".gdb")) {
         shell:
             if (name == "Makefile" || name == ".gitconfig" || name == ".gitmodules") {
                 // Makefiles must use tabs so set that up automatically.
