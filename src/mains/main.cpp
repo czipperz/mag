@@ -456,8 +456,8 @@ A-g     Project or directory commands\n\
 
         Client client = server.make_client();
         client.type = chosen_client;
-        client.key_chain.reserve(cz::heap_allocator(), initial_key_chain.len);
-        client.key_chain.insert_slice(client.key_chain_offset, initial_key_chain);
+        client.key_chain = initial_key_chain;
+        initial_key_chain = {};
         client.macro_key_chain = macro_key_chain;
         macro_key_chain = {};
         CZ_DEFER(client.drop());
