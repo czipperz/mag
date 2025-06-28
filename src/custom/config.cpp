@@ -1148,6 +1148,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.preferred_column = 80;
         } else if (name.ends_with(".sh") || name.ends_with(".bash") || name.ends_with(".zsh") ||
                    name.ends_with(".bashrc") || name == ".teshrc" || name == ".zshrc" ||
+                   name == ".profile" || name == ".bash_profile" || name == ".bash_login" ||
+                   name == ".bash_logout" ||
+                   (buffer->directory == "/etc/" &&
+                    (name == "profile" || name == "bash_completion")) ||
                    name == "Makefile" || name == ".gitconfig" || name == ".gitmodules" ||
                    // Powershell isn't really a shell script but it pretty much works.
                    name.ends_with(".ps1") ||
