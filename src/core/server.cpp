@@ -421,12 +421,8 @@ static bool lookup_key_press_inner(cz::Slice<Key> key_chain,
                                    size_t start,
                                    Command* command,
                                    size_t* end,
-                                   size_t* max_depth,
                                    const Key_Map* map) {
     *end = start;
-
-    // Record the max depth so we know how many keys to delete.
-    CZ_DEFER(*max_depth = std::max(*max_depth, *end - start));
 
     while (1) {
         // We need more keys to get to a command.
@@ -462,7 +458,6 @@ static bool recursively_remap_and_lookup_key_press(const Key_Remap& remap,
                                                    size_t start,
                                                    Command* command,
                                                    size_t* end,
-                                                   size_t* max_depth,
                                                    const Key_Map* map) {
     // Advance through keys that don't have alternatives.
     while (index < key_chain.len && !remap.bound(key_chain[index])) {
@@ -471,12 +466,12 @@ static bool recursively_remap_and_lookup_key_press(const Key_Remap& remap,
 
     // No alternatives so look up at this point.
     if (index == key_chain.len) {
-        return lookup_key_press_inner(key_chain, start, command, end, max_depth, map);
+        return lookup_key_press_inner(key_chain, start, command, end, map);
     }
 
     // Lookup the input chain.
     if (recursively_remap_and_lookup_key_press(remap, index + 1, key_chain, start, command, end,
-                                               max_depth, map)) {
+                                               map)) {
         return true;
     }
 
@@ -488,56 +483,50 @@ static bool recursively_remap_and_lookup_key_press(const Key_Remap& remap,
 
     // And recurse with the alternate key chain.
     return recursively_remap_and_lookup_key_press(remap, index + 1, key_chain, start, command, end,
-                                                  max_depth, map);
+                                                  map);
 }
 
 static bool lookup_key_press(cz::Slice<Key> key_chain,
                              size_t start,
                              Command* command,
                              size_t* end,
-                             size_t* max_depth,
                              const Key_Remap& remap,
                              const Key_Map* map) {
     ZoneScoped;
     // Transfer to the recursive combinator.
-    return recursively_remap_and_lookup_key_press(remap, 0, key_chain, start, command, end,
-                                                  max_depth, map);
+    return recursively_remap_and_lookup_key_press(remap, 0, key_chain, start, command, end, map);
 }
 
 static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
                                     size_t start,
                                     Command* command,
                                     size_t* end,
-                                    size_t* max_depth,
                                     Editor* editor,
                                     Client* client,
                                     const Key_Remap& key_remap) {
     WITH_CONST_SELECTED_BUFFER(client);
     if (window->completing) {
-        if (lookup_key_press(key_chain, start, command, end, max_depth, key_remap,
+        if (lookup_key_press(key_chain, start, command, end, key_remap,
                              &buffer->mode.completion_key_map)) {
             return true;
         }
     }
-    return lookup_key_press(key_chain, start, command, end, max_depth, key_remap,
-                            &buffer->mode.key_map);
+    return lookup_key_press(key_chain, start, command, end, key_remap, &buffer->mode.key_map);
 }
 
 static bool lookup_key_press_global(cz::Slice<Key> key_chain,
                                     size_t start,
                                     Command* command,
                                     size_t* end,
-                                    size_t* max_depth,
                                     Editor* editor,
                                     const Key_Remap& key_remap) {
-    return lookup_key_press(key_chain, start, command, end, max_depth, key_remap, &editor->key_map);
+    return lookup_key_press(key_chain, start, command, end, key_remap, &editor->key_map);
 }
 
 static bool handle_key_press_insert(cz::Slice<Key> key_chain,
                                     size_t start,
                                     Command* command,
-                                    size_t* end,
-                                    size_t* max_depth) {
+                                    size_t* end) {
     Key key = key_chain[start];
     if (key.modifiers == 0 && ((key.code <= UCHAR_MAX && cz::is_print((char)key.code)) ||
                                key.code == '\t' || key.code == '\n')) {
@@ -586,7 +575,6 @@ void Server::process_key_chain(Client* client) {
 
         Command command;
         size_t end;
-        size_t max_depth = 1;
 
         Key_Remap empty_remap = {};
 
@@ -594,23 +582,23 @@ void Server::process_key_chain(Client* client) {
         // Then try looking it up while using the remap.
         // Then fallback to inserting the key as as text.
         if (lookup_key_press_buffer(client->key_chain, client->key_chain_offset, &command, &end,
-                                    &max_depth, &editor, client, empty_remap) ||
+                                    &editor, client, empty_remap) ||
             lookup_key_press_global(client->key_chain, client->key_chain_offset, &command, &end,
-                                    &max_depth, &editor, empty_remap)) {
+                                    &editor, empty_remap)) {
             // We need more keys before we can run a command.
             if (command.function == nullptr) {
                 break;
             }
         } else if (lookup_key_press_buffer(client->key_chain, client->key_chain_offset, &command,
-                                           &end, &max_depth, &editor, client, editor.key_remap) ||
+                                           &end, &editor, client, editor.key_remap) ||
                    lookup_key_press_global(client->key_chain, client->key_chain_offset, &command,
-                                           &end, &max_depth, &editor, editor.key_remap)) {
+                                           &end, &editor, editor.key_remap)) {
             // We need more keys before we can run a command.
             if (command.function == nullptr) {
                 break;
             }
         } else if (handle_key_press_insert(client->key_chain, client->key_chain_offset, &command,
-                                           &end, &max_depth)) {
+                                           &end)) {
             CZ_DEBUG_ASSERT(command.function != nullptr);
         } else {
             command = COMMAND(basic::command_invalid);
