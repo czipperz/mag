@@ -486,6 +486,16 @@ static bool recursively_remap_and_lookup_key_press(const Key_Remap& remap,
                                                   map);
 }
 
+static size_t get_max_depth(const Key_Map* map) {
+    size_t depth = 1;
+    for (size_t i = 0; i < map->bindings.len; ++i) {
+        if (!map->bindings[i].is_command) {
+            depth = std::max(depth, 1 + get_max_depth(map->bindings[i].v.map));
+        }
+    }
+    return depth;
+}
+
 static bool lookup_key_press(cz::Slice<Key> key_chain,
                              size_t start,
                              Command* command,
@@ -493,7 +503,11 @@ static bool lookup_key_press(cz::Slice<Key> key_chain,
                              const Key_Remap& remap,
                              const Key_Map* map) {
     ZoneScoped;
-    // Transfer to the recursive combinator.
+    size_t max_depth = get_max_depth(map);
+    if (key_chain.len > max_depth) {
+        // No point in processing keys that can't possibly be used.
+        key_chain = key_chain.slice_end(max_depth);
+    }
     return recursively_remap_and_lookup_key_press(remap, 0, key_chain, start, command, end, map);
 }
 
