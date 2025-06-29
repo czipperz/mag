@@ -401,6 +401,7 @@ static void run_command(Command command, Editor* editor, Command_Source source) 
             message.append(")");
 
             TracyMessage(message.buffer, message.len);
+            ZoneText(message.buffer + prefix.len, message.len - prefix.len);
         }
 #endif
 
@@ -528,6 +529,7 @@ static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
 }
 
 static bool do_lookup_key_press(Editor* editor, Client* client, Command* command, size_t* end) {
+    ZoneScoped;
     Key_Remap empty_remap = {};
     WITH_CONST_SELECTED_BUFFER(client);
     return lookup_key_press_buffer(client->key_chain, client->key_chain_offset, command, end,
@@ -629,6 +631,8 @@ void Server::process_key_chain(Client* client) {
         // Run the command.
         run_command(command, &editor, source);
     }
+
+    ZoneTextF("remaining: %llu", client->key_chain.len - client->key_chain_offset);
 }
 
 void Server::release(Client* client, Key key) {
