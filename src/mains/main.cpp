@@ -49,7 +49,10 @@ Files should be one of the following forms:\n\
 \n\
 Options:\n\
   --help             View the help page.\n\
-  --client=CLIENT    Launches a specified client.\n\
+  --client=CLIENT    Launches a specified client.  Supported clients:\n\
+                     --client=sdl       Opens a graphical window.\n\
+                     --client=ncurses   Renders in the terminal.\n\
+                     --client=remote    Opens the files in an existing Mag server or exits with an error.\n\
   --try-remote       Tries to open the files in an existing Mag server.\n\
                      If no server is found then starts a client.\n\
   --execute=KEYS     Immediately start running the keys given in the input sequence.  For example:\n\
