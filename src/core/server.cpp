@@ -532,8 +532,8 @@ static bool do_lookup_key_press(Editor* editor, Client* client, Command* command
     WITH_CONST_SELECTED_BUFFER(client);
     return lookup_key_press_buffer(client->key_chain, client->key_chain_offset, command, end,
                                    empty_remap, buffer, window) ||
-           lookup_key_press(client->key_chain, client->key_chain_offset, command, end,
-                            empty_remap, &editor->key_map) ||
+           lookup_key_press(client->key_chain, client->key_chain_offset, command, end, empty_remap,
+                            &editor->key_map) ||
            lookup_key_press_buffer(client->key_chain, client->key_chain_offset, command, end,
                                    editor->key_remap, buffer, window) ||
            lookup_key_press(client->key_chain, client->key_chain_offset, command, end,
