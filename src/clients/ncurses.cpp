@@ -4,6 +4,7 @@
 
 #include <ncurses.h>
 #include <algorithm>
+#include <chrono>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
 #include <cz/file.hpp>
@@ -562,6 +563,8 @@ void run(Server* server, Client* client) {
 
     custom::client_created_callback(&server->editor, client);
 
+    std::chrono::system_clock::time_point last_getch_sleep = std::chrono::system_clock::now();
+
     while (1) {
         ZoneScopedN("ncurses main loop");
 
@@ -583,11 +586,20 @@ void run(Server* server, Client* client) {
             ch = getch();
         } else {
             server->set_async_locked(false);
-            timeout(10);
+            std::chrono::system_clock::duration elapsed =
+                std::chrono::system_clock::now() - last_getch_sleep;
+            std::chrono::system_clock::duration target_frame_length =
+                std::chrono::milliseconds(1000 / 60);
+            if (elapsed < target_frame_length) {
+                timeout(std::chrono::duration_cast<std::chrono::milliseconds>(target_frame_length -
+                                                                              elapsed)
+                            .count());
+            }
             ch = getch();
             nodelay(stdscr, TRUE);
             server->set_async_locked(true);
         }
+        last_getch_sleep = std::chrono::system_clock::now();
 
         if (ch != ERR) {
             process_key_presses(server, client, ch);
