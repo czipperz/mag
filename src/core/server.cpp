@@ -524,12 +524,9 @@ static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
 
 static bool do_lookup_key_press(Editor* editor, Client* client, Command* command, size_t* end) {
     ZoneScoped;
-    Key_Remap empty_remap = {};
     WITH_CONST_SELECTED_BUFFER(client);
     cz::Slice<Key> usable_key_chain = client->key_chain.slice_start(client->key_chain_offset);
-    return lookup_key_press_buffer(usable_key_chain, command, end, empty_remap, buffer, window) ||
-           lookup_key_press(usable_key_chain, command, end, empty_remap, &editor->key_map) ||
-           lookup_key_press_buffer(usable_key_chain, command, end, editor->key_remap, buffer,
+    return lookup_key_press_buffer(usable_key_chain, command, end, editor->key_remap, buffer,
                                    window) ||
            lookup_key_press(usable_key_chain, command, end, editor->key_remap, &editor->key_map);
 }
