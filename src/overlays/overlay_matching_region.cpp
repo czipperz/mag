@@ -91,13 +91,13 @@ static Face overlay_matching_region_get_face_and_advance(const Buffer* buffer,
                                                          Window_Unified* window,
                                                          Contents_Iterator iterator,
                                                          void* _data) {
-    ZoneScoped;
-
     Data* data = (Data*)_data;
 
     if (!data->enabled) {
         return {};
     }
+
+    ZoneScoped;
 
     if (data->countdown_cursor_region > 0) {
         --data->countdown_cursor_region;
