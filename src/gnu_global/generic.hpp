@@ -35,8 +35,14 @@ const char* lookup_symbol(const char* directory,
 /// If there is only one tag then it is immediately opened.
 /// If there are none then an error is shown to the user.
 ///
-/// Cleans up `tags` and `ba`.
-void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::Buffer_Array ba);
+/// `query` is used to format the dialog's message.
+///
+/// Takes ownership of `tags` and `ba`.
+void prompt_open_tags(Editor* editor,
+                      Client* client,
+                      cz::Vector<Tag> tags,
+                      cz::Buffer_Array ba,
+                      cz::Str query);
 
 /// Chain `lookup_symbol` and `prompt_open_tags`.
 void lookup_and_prompt(Editor* editor, Client* client, const char* directory, cz::Str query);

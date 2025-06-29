@@ -140,7 +140,11 @@ static void prompt_open_tags_callback(Editor* editor, Client* client, cz::Str qu
     open_tag(editor, client, tag);
 }
 
-void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::Buffer_Array ba) {
+void prompt_open_tags(Editor* editor,
+                      Client* client,
+                      cz::Vector<Tag> tags,
+                      cz::Buffer_Array ba,
+                      cz::Str query) {
     if (tags.len == 0) {
         tags.drop(cz::heap_allocator());
         ba.drop();
@@ -165,8 +169,11 @@ void prompt_open_tags(Editor* editor, Client* client, cz::Vector<Tag> tags, cz::
     data->tags = tags;
     data->ba = ba;
 
+    cz::Heap_String prompt = cz::format("Open tag (", query, "): ");
+    CZ_DEFER(prompt.drop());
+
     Dialog dialog = {};
-    dialog.prompt = "Open tag: ";
+    dialog.prompt = prompt;
     dialog.completion_engine = tag_completion_engine;
     dialog.response_callback = prompt_open_tags_callback;
     dialog.next_token = syntax::path_next_token;
@@ -194,7 +201,7 @@ void lookup_and_prompt(Editor* editor, Client* client, const char* directory, cz
         return;
     }
 
-    prompt_open_tags(editor, client, tags, ba);
+    prompt_open_tags(editor, client, tags, ba, query);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
