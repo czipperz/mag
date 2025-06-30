@@ -585,27 +585,20 @@ void Server::process_key_chain(Client* client) {
         Command_Source source;
         source.client = client;
         source.previous_command = previous_command;
-
-        cz::Vector<Key> temp = {};
-        CZ_DEFER(temp.drop(cz::heap_allocator()));
+        source.keys = {client->key_chain.start() + client->key_chain_offset, end};
 
         // Update the state variables.
         previous_command = command;
-        if (client->record_key_presses) {
-            source.keys = {client->key_chain.start() + client->key_chain_offset, end};
-            client->key_chain_offset += end;
-        } else {
-            temp.reserve(cz::heap_allocator(), end);
-            temp.append({client->key_chain.start(), end});
-            source.keys = temp;
-            client->key_chain.remove_range(0, end);
-            CZ_DEBUG_ASSERT(client->key_chain_offset == 0);
-        }
+        client->key_chain_offset += end;
 
         // Run the command.
         run_command(command, &editor, source);
     }
 
+    if (!client->record_key_presses) {
+        client->key_chain.remove_range(0, client->key_chain_offset);
+        client->key_chain_offset = 0;
+    }
     ZoneTextF("remaining: %llu", client->key_chain.len - client->key_chain_offset);
 }
 
