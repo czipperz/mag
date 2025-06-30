@@ -575,7 +575,7 @@ void Server::process_key_chain(Client* client) {
             }
         } else if (handle_key_press_insert(client->key_chain[client->key_chain_offset])) {
             command = {command_insert_char, "command_insert_char"};
-            end = client->key_chain_offset + 1;
+            end = 1;
         } else {
             command = COMMAND(basic::command_invalid);
             // end is set by do_lookup_key_press
@@ -592,15 +592,14 @@ void Server::process_key_chain(Client* client) {
         // Update the state variables.
         previous_command = command;
         if (client->record_key_presses) {
-            source.keys = {client->key_chain.start() + client->key_chain_offset,
-                           end - client->key_chain_offset};
-            client->key_chain_offset = end;
+            source.keys = {client->key_chain.start() + client->key_chain_offset, end};
+            client->key_chain_offset += end;
         } else {
             temp.reserve(cz::heap_allocator(), end);
             temp.append({client->key_chain.start(), end});
             source.keys = temp;
             client->key_chain.remove_range(0, end);
-            client->key_chain_offset = 0;
+            CZ_DEBUG_ASSERT(client->key_chain_offset == 0);
         }
 
         // Run the command.
