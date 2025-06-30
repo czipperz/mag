@@ -507,28 +507,22 @@ static bool lookup_key_press(cz::Slice<Key> key_chain,
     return recursively_remap_and_lookup_key_press(remap, 0, key_chain, command, end, map);
 }
 
-static bool lookup_key_press_buffer(cz::Slice<Key> key_chain,
-                                    Command* command,
-                                    size_t* end,
-                                    const Key_Remap& key_remap,
-                                    const Buffer* buffer,
-                                    const Window_Unified* window) {
-    if (window->completing) {
-        if (lookup_key_press(key_chain, command, end, key_remap,
-                             &buffer->mode.completion_key_map)) {
-            return true;
-        }
-    }
-    return lookup_key_press(key_chain, command, end, key_remap, &buffer->mode.key_map);
-}
-
 static bool do_lookup_key_press(Editor* editor, Client* client, Command* command, size_t* end) {
     ZoneScoped;
-    WITH_CONST_SELECTED_BUFFER(client);
     cz::Slice<Key> usable_key_chain = client->key_chain.slice_start(client->key_chain_offset);
-    return lookup_key_press_buffer(usable_key_chain, command, end, editor->key_remap, buffer,
-                                   window) ||
-           lookup_key_press(usable_key_chain, command, end, editor->key_remap, &editor->key_map);
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        if (window->completing) {
+            if (lookup_key_press(usable_key_chain, command, end, editor->key_remap,
+                                 &buffer->mode.completion_key_map)) {
+                return true;
+            }
+        }
+        if (lookup_key_press(usable_key_chain, command, end, editor->key_remap,
+                             &buffer->mode.key_map))
+            return true;
+    }
+    return lookup_key_press(usable_key_chain, command, end, editor->key_remap, &editor->key_map);
 }
 
 static bool handle_key_press_insert(Key key) {
