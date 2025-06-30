@@ -507,22 +507,24 @@ static bool lookup_key_press(cz::Slice<Key> key_chain,
     return recursively_remap_and_lookup_key_press(remap, 0, key_chain, command, end, map);
 }
 
-static bool do_lookup_key_press(Editor* editor, Client* client, Command* command, size_t* end) {
+static bool do_lookup_key_press(cz::Slice<Key> key_chain,
+                                Command* command,
+                                size_t* end,
+                                Editor* editor,
+                                Client* client) {
     ZoneScoped;
-    cz::Slice<Key> usable_key_chain = client->key_chain.slice_start(client->key_chain_offset);
     {
         WITH_CONST_SELECTED_BUFFER(client);
         if (window->completing) {
-            if (lookup_key_press(usable_key_chain, command, end, editor->key_remap,
+            if (lookup_key_press(key_chain, command, end, editor->key_remap,
                                  &buffer->mode.completion_key_map)) {
                 return true;
             }
         }
-        if (lookup_key_press(usable_key_chain, command, end, editor->key_remap,
-                             &buffer->mode.key_map))
+        if (lookup_key_press(key_chain, command, end, editor->key_remap, &buffer->mode.key_map))
             return true;
     }
-    return lookup_key_press(usable_key_chain, command, end, editor->key_remap, &editor->key_map);
+    return lookup_key_press(key_chain, command, end, editor->key_remap, &editor->key_map);
 }
 
 static bool handle_key_press_insert(Key key) {
@@ -568,7 +570,8 @@ void Server::process_key_chain(Client* client) {
 
         Command command;
         size_t end;
-        if (do_lookup_key_press(&editor, client, &command, &end)) {
+        if (do_lookup_key_press(client->key_chain.slice_start(client->key_chain_offset), &command,
+                                &end, &editor, client)) {
             // We need more keys before we can run a command.
             if (command.function == nullptr) {
                 break;
