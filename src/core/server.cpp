@@ -531,18 +531,9 @@ static bool do_lookup_key_press(Editor* editor, Client* client, Command* command
            lookup_key_press(usable_key_chain, command, end, editor->key_remap, &editor->key_map);
 }
 
-static bool handle_key_press_insert(cz::Slice<Key> key_chain,
-                                    size_t start,
-                                    Command* command,
-                                    size_t* end) {
-    Key key = key_chain[start];
-    if (key.modifiers == 0 && ((key.code <= UCHAR_MAX && cz::is_print((char)key.code)) ||
-                               key.code == '\t' || key.code == '\n')) {
-        *command = {command_insert_char, "command_insert_char"};
-        *end = start + 1;
-        return true;
-    }
-    return false;
+static bool handle_key_press_insert(Key key) {
+    return key.modifiers == 0 && ((key.code <= UCHAR_MAX && cz::is_print((char)key.code)) ||
+                                  key.code == '\t' || key.code == '\n');
 }
 
 void Server::receive(Client* client, Key key) {
@@ -588,11 +579,12 @@ void Server::process_key_chain(Client* client) {
             if (command.function == nullptr) {
                 break;
             }
-        } else if (handle_key_press_insert(client->key_chain, client->key_chain_offset, &command,
-                                           &end)) {
-            CZ_DEBUG_ASSERT(command.function != nullptr);
+        } else if (handle_key_press_insert(client->key_chain[client->key_chain_offset])) {
+            command = {command_insert_char, "command_insert_char"};
+            end = client->key_chain_offset + 1;
         } else {
             command = COMMAND(basic::command_invalid);
+            // end is set by do_lookup_key_press
         }
 
         // Make the source of the command.
