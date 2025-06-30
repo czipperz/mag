@@ -425,7 +425,7 @@ runs commands.  Control is written as C-* and Alt is written as A-*.  Mag is mod
 to Emacs but prefers Alt as a prefix over Control as it is easier to type on modern keyboards.\n\
 \n\
 Some basic key bindings are listed below.  Press F1 to view all key bindings.\n\
-Configuration should be done by editing `custom/config.cpp`.\n\
+Configuration should be done by editing `src/custom/config.cpp`.\n\
 \n\
 \n\
 Main key bindings:\n\

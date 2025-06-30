@@ -10,7 +10,7 @@ loop {
 }
 ```
 
-This loop is located in the client file (ex. `clients/sdl.cpp` and `clients/ncurses.cpp`).
+This loop is located in the client file (ex. `src/clients/sdl.cpp` and `src/clients/ncurses.cpp`).
 
 ## Process user events
 
@@ -19,7 +19,7 @@ are in the queue to trigger a `Command`, that `Command` will be invoked.
 
 ## Rendering features
 
-Rendering (`render/render.cpp`) does all of the following things:
+Rendering (`src/render/render.cpp`) does all of the following things:
 
 * Layout windows
   - The normal windows form a tree structure.
@@ -37,11 +37,11 @@ Rendering (`render/render.cpp`) does all of the following things:
 
 * Put characters into the grid
   - The renderer makes a grid of characters
-  - The client (see `clients` folder) then renders the
+  - The client (see `src/clients` folder) then renders the
     characters that have changed (either in value or in face).
 
 * Find face for characters
-  - A `Face` (`src/face.hpp`) is a combination of a foreground color,
+  - A `Face` (`src/core/face.hpp`) is a combination of a foreground color,
     background color, and text modifiers (italics, bold, etc.)
   - The color a character is rendered in is that of
     the first `Face` to be applied that specifies a color.
