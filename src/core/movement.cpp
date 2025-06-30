@@ -375,31 +375,32 @@ void forward_paragraph(Contents_Iterator* iterator) {
 }
 
 void backward_paragraph(Contents_Iterator* iterator) {
-    if (iterator->at_eob()) {
-        backward_char(iterator);
-    }
+    backward_char(iterator);
     start_of_line(iterator);
+
     if (iterator->at_eob()) {
+        CZ_DEBUG_ASSERT(iterator->contents->len == 0);
         return;
     }
 
-    if (iterator->get() == '\n') {
-        while (1) {
-            backward_char(iterator);
-            start_of_line(iterator);
-            if (iterator->at_bob() || iterator->get() != '\n') {
-                break;
-            }
+    while (iterator->get() == '\n') {
+        backward_char(iterator);
+        start_of_line(iterator);
+        if (iterator->at_bob()) {
+            return;
         }
     }
 
-    while (1) {
+    while (iterator->get() != '\n') {
         backward_char(iterator);
         start_of_line(iterator);
-        if (iterator->at_bob() || iterator->get() == '\n') {
-            break;
+        if (iterator->at_bob()) {
+            return;
         }
     }
+
+    end_of_line(iterator);
+    forward_char(iterator);
 }
 
 Contents_Iterator start_of_line_position(const Contents& contents, uint64_t line) {
