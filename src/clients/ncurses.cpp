@@ -614,19 +614,17 @@ void run(Server* server, Client* client) {
         if (ch != ERR) {
             process_key_presses(server, client, ch);
 
-            in_batch_paste =
-                custom::ncurses_batch_paste_boundary != 0 &&
-                chars_read - last_chars_read >= custom::ncurses_batch_paste_boundary;
+            in_batch_paste = custom::ncurses_batch_paste_boundary != 0 &&
+                             chars_read - last_chars_read >= custom::ncurses_batch_paste_boundary;
 
             if (in_batch_paste) {
                 // It's pretty likely the user pasted something.  Try to read it all in one batch.
                 TracyMessage("start batch paste", strlen("start batch paste"));
                 timeout(100);
                 ch = getch();
-                if (ch == ERR) {
-                    break;
+                if (ch != ERR) {
+                    process_key_presses(server, client, ch);
                 }
-                process_key_presses(server, client, ch);
                 nodelay(stdscr, TRUE);
             }
 
