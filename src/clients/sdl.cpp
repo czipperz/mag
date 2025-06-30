@@ -1375,7 +1375,7 @@ void run(Server* server, Client* client) {
 
         process_buffer_external_updates(client, client->window);
 
-        server->process_key_chain(client);
+        server->process_key_chain(client, /*in_batch_paste=*/false);
 
         if (client->queue_quit) {
             break;

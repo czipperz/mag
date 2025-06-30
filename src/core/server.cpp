@@ -559,7 +559,16 @@ void Server::receive(Client* client, Key key) {
     }
 }
 
-void Server::process_key_chain(Client* client) {
+static bool handle_batch_paste(cz::Slice<Key> key_chain, size_t* end) {
+    for (*end = 0; *end < key_chain.len; ++*end) {
+        if (!handle_key_press_insert(key_chain[*end])) {
+            break;
+        }
+    }
+    return *end >= 1;
+}
+
+void Server::process_key_chain(Client* client, bool in_batch_paste) {
     ZoneScoped;
 
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
@@ -570,8 +579,11 @@ void Server::process_key_chain(Client* client) {
 
         Command command;
         size_t end;
-        if (do_lookup_key_press(client->key_chain.slice_start(client->key_chain_offset), &command,
-                                &end, &editor, client)) {
+        if (in_batch_paste &&
+            handle_batch_paste(client->key_chain.slice_start(client->key_chain_offset), &end)) {
+            command = {command_insert_char, "command_insert_char"};
+        } else if (do_lookup_key_press(client->key_chain.slice_start(client->key_chain_offset),
+                                       &command, &end, &editor, client)) {
             // We need more keys before we can run a command.
             if (command.function == nullptr) {
                 break;

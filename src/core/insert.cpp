@@ -94,7 +94,20 @@ void command_insert_char(Editor* editor, Command_Source source) {
         return;
     }
 
-    do_command_insert_char(editor, buffer, window, source);
+    if (source.keys.len == 1) {
+        do_command_insert_char(editor, buffer, window, source);
+    } else {
+        cz::String string = {};
+        string.reserve_exact(buffer->commit_buffer_array.allocator(), source.keys.len);
+        for (size_t i = 0; i < source.keys.len; ++i) {
+            string.push(source.keys[i].code);
+        }
+        SSOStr value = SSOStr::from_constant(string);
+        if (value.is_short()) {
+            string.drop(buffer->commit_buffer_array.allocator());
+        }
+        insert(source.client, buffer, window, value, command_insert_char);
+    }
 }
 
 static bool try_merge_spaces_into_tabs(Window_Unified* window, Buffer* buffer, Client* client);

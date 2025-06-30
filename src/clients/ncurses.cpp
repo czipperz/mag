@@ -57,6 +57,8 @@ REGISTER_COMMAND(command_ncurses_log_getch_toggle);
 // Mock input & logging input implementatino
 ////////////////////////////////////////////////////////////////////////////////
 
+static size_t chars_read = 0;
+
 #ifdef MOCK_INPUT
 static bool is_nodelay = false;
 #define nodelay(WINDOW, VALUE) (is_nodelay = (VALUE))
@@ -64,6 +66,10 @@ static bool is_nodelay = false;
 
 static int logging_getch() {
     int val = getch();
+
+    if (val != ERR) {
+        ++chars_read;
+    }
 
     if (log_getch_file.is_open() && val != ERR) {
         cz::Heap_String str = cz::format(val);
@@ -96,12 +102,14 @@ static int mock_getch() {
     auto duration = std::chrono::steady_clock::now() - time_start;
     auto time = std::chrono::milliseconds(times[index]);
     if (duration >= time) {
+        ++chars_read;
         return keys[index++];
     } else {
         if (is_nodelay) {
             return ERR;
         } else {
             std::this_thread::sleep_until(time_start + time);
+            ++chars_read;
             return keys[index++];
         }
     }
@@ -564,6 +572,7 @@ void run(Server* server, Client* client) {
     custom::client_created_callback(&server->editor, client);
 
     std::chrono::system_clock::time_point last_getch_sleep = std::chrono::system_clock::now();
+    size_t last_chars_read = 0;
 
     while (1) {
         ZoneScopedN("ncurses main loop");
@@ -601,10 +610,29 @@ void run(Server* server, Client* client) {
         }
         last_getch_sleep = std::chrono::system_clock::now();
 
+        bool in_batch_paste = false;
         if (ch != ERR) {
             process_key_presses(server, client, ch);
+
+            in_batch_paste =
+                custom::ncurses_batch_paste_boundary != 0 &&
+                chars_read - last_chars_read >= custom::ncurses_batch_paste_boundary;
+
+            if (in_batch_paste) {
+                // It's pretty likely the user pasted something.  Try to read it all in one batch.
+                TracyMessage("start batch paste", strlen("start batch paste"));
+                timeout(100);
+                ch = getch();
+                if (ch == ERR) {
+                    break;
+                }
+                process_key_presses(server, client, ch);
+                nodelay(stdscr, TRUE);
+            }
+
+            last_chars_read = chars_read;
         }
-        server->process_key_chain(client);
+        server->process_key_chain(client, in_batch_paste);
 
         if (client->queue_quit) {
             return;

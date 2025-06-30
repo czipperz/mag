@@ -42,5 +42,7 @@ extern size_t compression_extensions_len;
 extern bool enable_terminal_colors;
 extern bool enable_terminal_mouse;
 
+extern size_t ncurses_batch_paste_boundary;
+
 }
 }

@@ -30,7 +30,7 @@ struct Server {
 
     void receive(Client* client, Key key);
     void release(Client* client, Key key);
-    void process_key_chain(Client* client);
+    void process_key_chain(Client* client, bool in_batch_paste);
 
     bool slurp_jobs();
     bool send_pending_asynchronous_jobs();

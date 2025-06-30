@@ -153,6 +153,18 @@ bool enable_terminal_colors = false;
 /// disable this.  In SDL, copy/paste works with the native buffers so there isn't this problem.
 bool enable_terminal_mouse = false;
 
+/// Ncurses clients can't access the system clipboard.  Pasting into Mag via the terminal
+/// can't be differentiated between typing characters & iterating through pasted text.
+///
+/// To compensate for this, we use a heuristic around the number of typed characters in a single
+/// graphical frame.  This constant defines the minimum number of characters that must be typed
+/// in a single frame before Mag treats the input as a paste.  To disable this behavior, use `0`.
+///
+/// It is useful to detect pastes in order to:
+/// 1. Have a single edit for the insertion.
+/// 2. Avoid auto-indent features that could create incorrect amounts of indent.
+size_t ncurses_batch_paste_boundary = 6;
+
 using namespace basic;
 
 #define BIND(MAP, KEYS, FUNC) ((MAP).bind(KEYS, COMMAND(FUNC)))
