@@ -75,7 +75,7 @@ Open_File_Result open_file_arg(Editor* editor, Client* client, cz::Str user_arg)
 Open_File_Result open_file_buffer(Editor* editor,
                                   cz::Str standardized_path,
                                   cz::Arc<Buffer_Handle>* handle_out,
-                                  cz::Heap_Vector<Key> unprocessed_keys = {},
+                                  cz::Vector<Key> unprocessed_keys = {},
                                   Synchronous_Job callback = open_file_callback_do_nothing());
 
 struct Open_File_Callback_Goto_Line_Column {

@@ -615,8 +615,6 @@ bool find_temp_buffer(Editor* editor,
     return false;
 }
 
-/// Find or open a buffer.  Note that returning `DOESNT_EXIST` will
-/// still create a buffer.  Doesn't increment the reference count.
 Open_File_Result open_file_buffer(Editor* editor,
                                   cz::Str path,
                                   cz::Arc<Buffer_Handle>* handle_out,
