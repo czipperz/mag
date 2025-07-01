@@ -13,4 +13,4 @@ mkdir -p "$directory"
 cd "$directory"
 
 cmake -DCMAKE_BUILD_TYPE="$config" "$@" ../.. >/dev/null
-cmake --build . --config "$config" --parallel
+cmake --build . --config "$config" -- -j
