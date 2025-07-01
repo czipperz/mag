@@ -4,7 +4,7 @@
 
 namespace mag {
 
-/// `Change` displays a sequential, chronoligal view of the changes to a buffer's
+/// `Change` displays a sequential, chronological view of the changes to a buffer's
 /// contents.  Undo and redo both add changes.  This is used for the purpose of
 /// "update listeners" that want to know when the buffer is changing.  For example,
 /// the graphical stack uses changes to know when to redraw the buffer.
