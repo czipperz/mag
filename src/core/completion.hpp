@@ -25,8 +25,11 @@ struct Completion_Filter_Context {
 struct Completion_Engine_Context {
     cz::String query;
 
-    /// This suffix wraps results as they are displayed and/or completed.
+    /// The prefix and suffix wraps results as they are displayed and/or completed.
+    /// The prefix could be used to deduplicate the directory (see `file_completion_engine`).
     /// The suffix is useful to allow for line & column specifiers (see `parse_file_arg`).
+    /// `query` should also be wrapped by the prefix & suffix to make the full buffer contents.
+    cz::String result_prefix;
     cz::String result_suffix;
 
     cz::Buffer_Array results_buffer_array;

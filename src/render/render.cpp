@@ -939,6 +939,7 @@ static void draw_window_completion(Cell* cells,
                 width = window->completion_cache.filter_context.results[r].len;
             }
         }
+        width += window->completion_cache.engine_context.result_prefix.len;
         width += window->completion_cache.engine_context.result_suffix.len;
 
         size_t y = cursor_pos_y;
@@ -979,6 +980,11 @@ static void draw_window_completion(Cell* cells,
             }
 
             cz::Str result = window->completion_cache.filter_context.results[r];
+            for (size_t i = 0;
+                 i < width && i < window->completion_cache.engine_context.result_prefix.len; ++i) {
+                SET_IND(face, window->completion_cache.engine_context.result_prefix[i]);
+                ++x;
+            }
             for (size_t i = 0; i < width && i < result.len; ++i) {
                 SET_IND(face, result[i]);
                 ++x;
@@ -1354,6 +1360,7 @@ static void draw_mini_buffer_results(Cell* cells,
         cz::Str result = completion_cache->filter_context.results[r];
         contents.insert(0, completion_cache->engine_context.result_suffix);
         contents.insert(0, result);
+        contents.insert(0, completion_cache->engine_context.result_prefix);
 
         // TODO: have some sort of scroll or wrap for results?
         if (contents.len > total_cols) {

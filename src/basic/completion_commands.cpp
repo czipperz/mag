@@ -23,7 +23,9 @@ void command_insert_completion(Editor* editor, Command_Source source) {
     result.reserve_exact(
         cz::heap_allocator(),
         completion_cache->filter_context.results[completion_cache->filter_context.selected].len +
+            completion_cache->engine_context.result_prefix.len +
             completion_cache->engine_context.result_suffix.len);
+    result.append(completion_cache->engine_context.result_prefix);
     result.append(
         completion_cache->filter_context.results[completion_cache->filter_context.selected]);
     result.append(completion_cache->engine_context.result_suffix);

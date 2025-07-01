@@ -30,6 +30,7 @@ void Completion_Engine_Context::drop() {
     if (cleanup) {
         cleanup(data);
     }
+    result_prefix.drop(cz::heap_allocator());
     result_suffix.drop(cz::heap_allocator());
     results.drop();
     results_buffer_array.drop();
@@ -42,6 +43,7 @@ void Completion_Engine_Context::reset() {
     }
     cleanup = nullptr;
     data = nullptr;
+    result_prefix.len = 0;
     result_suffix.len = 0;
     results_buffer_array.clear();
     results.len = 0;
@@ -337,10 +339,9 @@ static void file_completion_engine_data_cleanup(void* _data) {
 
 static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
     bool found_dir_sep = false;
-    size_t index = query.len;
-    while (index > 0) {
-        --index;
-        if (cz::path::is_dir_sep(query[index])) {
+    size_t end = query.len;
+    while (end-- > 0) {
+        if (cz::path::is_dir_sep(query[end])) {
             found_dir_sep = true;
             break;
         }
@@ -351,7 +352,7 @@ static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
         if (query.starts_with("~/")) {
             if (user_home_path) {
                 cz::Str home = user_home_path;
-                size_t len = index;
+                size_t len = end;
                 directory->reserve(cz::heap_allocator(), home.len + len + 1);
                 directory->append(home);
                 directory->append({query.buffer + 1, len});
@@ -360,7 +361,7 @@ static cz::Str get_directory_to_list(cz::String* directory, cz::Str query) {
         }
 
         // Normal case: "./u" or "/a/b/c".
-        size_t len = index + 1;
+        size_t len = end + 1;
         directory->reserve(cz::heap_allocator(), len + 1);
         directory->append({query.buffer, len});
         return {query.buffer, len};
@@ -389,13 +390,19 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
 
     data->temp_result.len = 0;
     cz::Str prefix = get_directory_to_list(&data->temp_result, context->query);
-    if (data->temp_result == data->directory) {
+    if (data->temp_result == data->directory && prefix == context->result_prefix) {
         if (!data->has_file_time ||
             !check_out_of_date_and_update_file_time(data->directory.buffer, &data->file_time)) {
             // Directory has not changed so track the selected item.
+            context->query.remove_range(0, prefix.len);
             return false;
         }
     }
+
+    context->result_prefix.len = 0;
+    context->result_prefix.reserve(cz::heap_allocator(), prefix.len);
+    context->result_prefix.append(prefix);
+    context->query.remove_range(0, prefix.len);
 
     cz::swap(data->temp_result, data->directory);
     data->directory.null_terminate();
@@ -428,9 +435,7 @@ bool file_completion_engine(Editor*, Completion_Engine_Context* context, bool) {
             query.len = data->directory.len;
 
             cz::String result = {};
-            result.reserve(context->results_buffer_array.allocator(),
-                           prefix.len + file.len + add_slash);
-            result.append(prefix);
+            result.reserve(context->results_buffer_array.allocator(), file.len + add_slash);
             result.append(file);
             if (add_slash) {
                 result.push('/');
