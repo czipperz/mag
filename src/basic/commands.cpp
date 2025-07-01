@@ -1373,29 +1373,59 @@ REGISTER_COMMAND(command_restore_last_save_point);
 void command_restore_last_save_point(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
 
+    if (buffer->read_only) {
+        source.client->show_message("Buffer is read only");
+        return;
+    }
+
     if (!buffer->saved_commit_id.is_present) {
         // Undo all edits.
         while (buffer->undo()) {
         }
         return;
     }
-
     Commit_Id saved_commit_id = buffer->saved_commit_id.value;
-    for (size_t i = 0; i < buffer->commits.len; ++i) {
-        if (buffer->commits[i].id == saved_commit_id) {
-            while (i < buffer->commit_index) {
-                if (!buffer->undo()) {
-                    return;
-                }
+
+    cz::Heap_Vector<Change> pending_changes = {};
+    CZ_DEFER(pending_changes.drop());
+    for (size_t i = buffer->changes.len; i-- > 0;) {
+        if (buffer->changes[i].commit.id != saved_commit_id || !buffer->changes[i].is_redo) {
+            if (pending_changes.len > 0 &&
+                pending_changes.last().commit.id == buffer->changes[i].commit.id &&
+                pending_changes.last().is_redo == buffer->changes[i].is_redo) {
+                pending_changes.pop();
+            } else {
+                pending_changes.reserve(1);
+                pending_changes.push({buffer->changes[i].commit, !buffer->changes[i].is_redo});
             }
-            while (i >= buffer->commit_index) {
-                if (!buffer->redo()) {
-                    return;
-                }
-            }
-            return;
+            if (buffer->changes[i].commit.id != saved_commit_id)
+                continue;
         }
+
+        for (size_t j = 0; j < pending_changes.len; ++j) {
+            if (pending_changes[j].is_redo) {
+                if (buffer->commit_index < buffer->commits.len &&
+                    pending_changes[j].commit.id == buffer->commits[buffer->commit_index].id) {
+                    CZ_ASSERT(buffer->redo());
+                } else {
+                    buffer->commits.len = buffer->commit_index;
+                    buffer->commits.reserve(cz::heap_allocator(), 1);
+                    buffer->commits.push(pending_changes[j].commit);
+                    CZ_ASSERT(buffer->redo());
+                }
+            } else {
+                CZ_DEBUG_ASSERT(buffer->commit_index > 0);
+                CZ_DEBUG_ASSERT(pending_changes[j].commit.id ==
+                                buffer->commits[buffer->commit_index - 1].id);
+                CZ_ASSERT(buffer->undo());
+            }
+        }
+
+        CZ_DEBUG_ASSERT(buffer->is_unchanged());
+        return;
     }
+
+    CZ_PANIC("Couldn't find commit");
 }
 
 REGISTER_COMMAND(command_undo_all);
