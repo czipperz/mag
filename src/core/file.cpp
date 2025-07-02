@@ -408,6 +408,8 @@ static Open_File_Result load_path_in_buffer(Editor* editor,
     // linux, opening it as a file will succeed even if it is a directory.  Then
     // reading the file will cause an error.
     if (load_directory(buffer, path)) {
+        editor->add_synchronous_job(callback);
+        editor->add_synchronous_job(enqueue_keys_job(unprocessed_keys));
         return Open_File_Result::SUCCESS;
     }
 
