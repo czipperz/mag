@@ -16,6 +16,7 @@ namespace mag {
 namespace prose {
 
 static char empty_file_path[L_tmpnam];
+static void ensure_has_empty_file();
 
 static void run_search(Client* client,
                        Editor* editor,
@@ -37,6 +38,7 @@ static void run_search(Client* client,
 
         if (file) {
             args.push(*file);
+            ensure_has_empty_file();
             args.push(empty_file_path);
         }
     }
@@ -262,7 +264,6 @@ void command_search_in_file_token_at_position(Editor* editor, Command_Source sou
         }
     }
 
-    ensure_has_empty_file();
     run_search(source.client, editor, directory.buffer, query.as_str(), true, &name);
 }
 
