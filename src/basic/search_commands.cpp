@@ -340,6 +340,13 @@ static void do_command_search_x(Editor* editor, Client* client, bool is_forward)
         }
     }
 
+    // If the region is empty then matching it will do
+    // nothing.  Put the user into a prompted search.
+    if (window->cursors[window->selected_cursor].point ==
+        window->cursors[window->selected_cursor].mark) {
+        window->show_marks = 0;
+    }
+
     if (window->show_marks) {
         window->show_marks = 1;
         // Search using the matching region.
