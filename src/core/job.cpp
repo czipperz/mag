@@ -70,6 +70,35 @@ static void process_append_job_kill(void* _data) {
     cz::heap_allocator().dealloc(data);
 }
 
+static void job_show_message_once_no_prompt_kill(void* _data) {
+    cz::String* data = (cz::String*)_data;
+    data->drop(cz::heap_allocator());
+    cz::heap_allocator().dealloc(data);
+}
+
+static Job_Tick_Result job_show_message_once_no_prompt_tick(Editor* editor,
+                                                            Client* client,
+                                                            void* _data) {
+    if (client->_message.tag == Message::NONE) {
+        cz::String* data = (cz::String*)_data;
+        client->show_message(*data);
+        job_show_message_once_no_prompt_kill(data);
+        return Job_Tick_Result::FINISHED;
+    } else {
+        return Job_Tick_Result::STALLED;
+    }
+}
+
+static Synchronous_Job job_show_message_once_no_prompt(cz::String message) {
+    cz::String* data = cz::heap_allocator().clone(message);
+    CZ_ASSERT(data);
+    Synchronous_Job job;
+    job.data = data;
+    job.tick = job_show_message_once_no_prompt_tick;
+    job.kill = job_show_message_once_no_prompt_kill;
+    return job;
+}
+
 static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler* handler, void* _data) {
     ZoneScoped;
 
@@ -106,7 +135,8 @@ static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler* handler
                     WITH_CONST_BUFFER_HANDLE(handle);
                     message = cz::format("Finished: ", buffer->name);
                 }
-                handler->show_message(message);
+                handler->add_synchronous_job(job_show_message_once_no_prompt(message));
+                message = {};
             }
 
             // Cleanup.
