@@ -5,8 +5,11 @@
 namespace mag {
 struct Editor;
 struct Client;
+struct Command_Source;
 
 namespace prose {
+
+void command_open_token_at_relpath(Editor* editor, Command_Source source);
 
 /// If query looks like a path then try to open it and return true.
 bool open_token_as_relpath(Editor* editor, Client* client, cz::Str directory, cz::Str query);
