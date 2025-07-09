@@ -1098,7 +1098,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-g A-t", prose::command_find_file_prefill_token_at_point);
             indent_based_hierarchy_mode(buffer->mode);
             matching_identifier_overlays(&buffer->mode.overlays);
-        } else if (name.ends_with(".md") ||
+        } else if (name.ends_with(".md") || name.ends_with(".markdown") ||
                    // .rst / ReStructured Text files aren't
                    // really markdown but they're often pretty similar.
                    name.ends_with(".rst")) {
