@@ -502,16 +502,23 @@ bool get_token_at_position_no_update(const Buffer* buffer,
     while (1) {
         bool has_token = buffer->mode.next_token(token_iterator, token, &state);
         if (has_previous) {
-            auto low_priority = [](Token_Type type) {
-                return type == Token_Type::OPEN_PAIR || type == Token_Type::CLOSE_PAIR ||
-                       type == Token_Type::DIVIDER_PAIR || type == Token_Type::PREPROCESSOR_IF ||
-                       type == Token_Type::PREPROCESSOR_ELSE ||
-                       type == Token_Type::PREPROCESSOR_ENDIF || type == Token_Type::PUNCTUATION ||
-                       type == Token_Type::DEFAULT || type == Token_Type::COMMENT ||
-                       type == Token_Type::DOC_COMMENT || type == Token_Type::STRING;
+            auto priority = [](Token_Type type) {
+                if (type == Token_Type::OPEN_PAIR || type == Token_Type::CLOSE_PAIR ||
+                    type == Token_Type::DIVIDER_PAIR || type == Token_Type::PUNCTUATION) {
+                    return 0;
+                } else if (type == Token_Type::PREPROCESSOR_IF ||
+                           type == Token_Type::PREPROCESSOR_ELSE ||
+                           type == Token_Type::PREPROCESSOR_ENDIF) {
+                    return 1;
+                } else if (type == Token_Type::DEFAULT || type == Token_Type::COMMENT ||
+                           type == Token_Type::DOC_COMMENT || type == Token_Type::STRING) {
+                    return 2;
+                } else {
+                    return 3;
+                }
             };
             if (!has_token || token->start > position ||
-                (low_priority(token->type) && !low_priority(previous_token.type))) {
+                priority(token->type) < priority(previous_token.type)) {
                 *token = previous_token;
                 token_iterator->retreat_to(token->start);
                 return true;
