@@ -10,12 +10,13 @@ namespace mag {
 namespace prose {
 
 bool open_token_as_relpath(Editor* editor, Client* client, cz::Str directory, cz::Str query) {
-    if ((query.starts_with('"') && query.ends_with('"')) ||
-        (query.starts_with('\'') && query.ends_with('\'')) ||
-        (query.starts_with('<') && query.ends_with('>'))) {
+    bool is_string = (query.starts_with('"') && query.ends_with('"')) ||
+                     (query.starts_with('\'') && query.ends_with('\'')) ||
+                     (query.starts_with('<') && query.ends_with('>'));
+    if (is_string) {
         query = query.slice(1, query.len - 1);
     }
-    if (query.contains(".") || query.contains('/')) {
+    if (is_string || query.contains(".") || query.contains('/')) {
         open_relpath(editor, client, directory, query);
         return true;
     }
