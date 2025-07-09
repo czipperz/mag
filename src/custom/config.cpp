@@ -71,6 +71,7 @@
 #include "overlays/overlay_trailing_spaces.hpp"
 #include "prose/alternate.hpp"
 #include "prose/find_file.hpp"
+#include "prose/open_relpath.hpp"
 #include "prose/repository.hpp"
 #include "prose/search.hpp"
 #include "solarized_dark.hpp"
@@ -179,6 +180,32 @@ void client_created_callback(Editor* editor, Client* client) {
         xclip::use_xclip_clipboard(client);
 #endif
     }
+}
+
+bool open_relpath(Editor* editor,
+                  Client* client,
+                  cz::Option<cz::Str> vc_dir,
+                  cz::Str directory,
+                  cz::Str path,
+                  cz::String* temp) {
+    if (!vc_dir.is_present)
+        return false;
+
+    if (path.starts_with("cz/")) {
+        cz::Heap_String cz_dir = {};
+        CZ_DEFER(cz_dir.drop());
+        if (vc_dir.value.ends_with("/cz")) {
+            cz_dir = cz::format(vc_dir.value, "/include");
+            return prose::try_relative_to(editor, client, cz_dir, path, temp);
+        } else {
+            cz_dir = cz::format(vc_dir.value, "/cz/include");
+            return prose::try_relative_to(editor, client, cz_dir, path, temp);
+        }
+    }
+
+    cz::Heap_String src_dir = cz::format(vc_dir.value, "/src");
+    CZ_DEFER(src_dir.drop());
+    return prose::try_relative_to(editor, client, src_dir, path, temp);
 }
 
 static void create_key_remap(Key_Remap& key_remap) {

@@ -19,6 +19,7 @@
 #include "core/visible_region.hpp"
 #include "ctags.hpp"
 #include "gnu_global.hpp"
+#include "prose/open_relpath.hpp"
 #include "syntax/tokenize_path.hpp"
 
 namespace mag {
@@ -228,6 +229,10 @@ void command_lookup_at_point(Editor* editor, Command_Source source) {
         }
 
         directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
+    }
+
+    if (prose::open_token_as_relpath(editor, source.client, directory, query.as_str())) {
+        return;
     }
 
     lookup_and_prompt(editor, source.client, directory.buffer, query.as_str());
