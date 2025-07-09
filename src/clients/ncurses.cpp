@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
+#include <cz/env.hpp>
 #include <cz/file.hpp>
 #include <cz/format.hpp>
 #include <cz/heap.hpp>
@@ -347,34 +348,42 @@ static void bind_key(int ch, uint16_t modifiers, uint16_t code) {
     key_map[ch] = {modifiers, code};
 }
 
+static bool in_tmux() {
+    cz::String value = {};
+    CZ_DEFER(value.drop(cz::heap_allocator()));
+    return cz::env::get("TMUX", cz::heap_allocator(), &value);
+}
+
 static void bind_arrow_keys() {
     bind_key(KEY_UP, 0, Key_Code::UP);
     bind_key(KEY_DOWN, 0, Key_Code::DOWN);
     bind_key(KEY_LEFT, 0, Key_Code::LEFT);
     bind_key(KEY_RIGHT, 0, Key_Code::RIGHT);
 
-    bind_key(565, ALT, Key_Code::UP);
-    bind_key(524, ALT, Key_Code::DOWN);
-    bind_key(544, ALT, Key_Code::LEFT);
-    bind_key(559, ALT, Key_Code::RIGHT);
-
     bind_key(KEY_SR, SHIFT, Key_Code::UP);
     bind_key(KEY_SF, SHIFT, Key_Code::DOWN);
     bind_key(KEY_SLEFT, SHIFT, Key_Code::LEFT);
     bind_key(KEY_SRIGHT, SHIFT, Key_Code::RIGHT);
 
-    bind_key(567, CONTROL, Key_Code::UP);
-    bind_key(526, CONTROL, Key_Code::DOWN);
-    bind_key(546, CONTROL, Key_Code::LEFT);
-    bind_key(561, CONTROL, Key_Code::RIGHT);
+    int tmux_offset = in_tmux() ? 3 : 0;
 
-    bind_key(569, (CONTROL | ALT), Key_Code::UP);
-    bind_key(528, (CONTROL | ALT), Key_Code::DOWN);
-    bind_key(548, (CONTROL | ALT), Key_Code::LEFT);
-    bind_key(563, (CONTROL | ALT), Key_Code::RIGHT);
+    bind_key(565 + tmux_offset, ALT, Key_Code::UP);
+    bind_key(524 + tmux_offset, ALT, Key_Code::DOWN);
+    bind_key(544 + tmux_offset, ALT, Key_Code::LEFT);
+    bind_key(559 + tmux_offset, ALT, Key_Code::RIGHT);
 
-    bind_key(547, (CONTROL | SHIFT), Key_Code::LEFT);
-    bind_key(562, (CONTROL | SHIFT), Key_Code::RIGHT);
+    bind_key(567 + tmux_offset, CONTROL, Key_Code::UP);
+    bind_key(526 + tmux_offset, CONTROL, Key_Code::DOWN);
+    bind_key(546 + tmux_offset, CONTROL, Key_Code::LEFT);
+    bind_key(561 + tmux_offset, CONTROL, Key_Code::RIGHT);
+
+    bind_key(569 + tmux_offset, (CONTROL | ALT), Key_Code::UP);
+    bind_key(528 + tmux_offset, (CONTROL | ALT), Key_Code::DOWN);
+    bind_key(548 + tmux_offset, (CONTROL | ALT), Key_Code::LEFT);
+    bind_key(563 + tmux_offset, (CONTROL | ALT), Key_Code::RIGHT);
+
+    bind_key(547 + tmux_offset, (CONTROL | SHIFT), Key_Code::LEFT);
+    bind_key(562 + tmux_offset, (CONTROL | SHIFT), Key_Code::RIGHT);
 }
 
 static void bind_function_keys() {
@@ -400,12 +409,14 @@ static void bind_side_special_key(int ch_normal, int ch_shift, int ch_base, Key_
 }
 
 static void bind_side_special_keys() {
-    bind_side_special_key(KEY_HOME, KEY_SHOME, 534, Key_Code::HOME);
-    bind_side_special_key(KEY_END, KEY_SEND, 529, Key_Code::END);
-    bind_side_special_key(KEY_NPAGE, KEY_SNEXT, 549, Key_Code::PAGE_DOWN);
-    bind_side_special_key(KEY_PPAGE, KEY_SPREVIOUS, 554, Key_Code::PAGE_UP);
-    bind_side_special_key(KEY_DC, KEY_SDC, 518, Key_Code::DELETE_);
-    bind_side_special_key(KEY_IC, KEY_SIC, 539, Key_Code::INSERT);
+    int tmux_offset = in_tmux() ? 3 : 0;
+
+    bind_side_special_key(KEY_HOME, KEY_SHOME, 534 + tmux_offset, Key_Code::HOME);
+    bind_side_special_key(KEY_END, KEY_SEND, 529 + tmux_offset, Key_Code::END);
+    bind_side_special_key(KEY_NPAGE, KEY_SNEXT, 549 + tmux_offset, Key_Code::PAGE_DOWN);
+    bind_side_special_key(KEY_PPAGE, KEY_SPREVIOUS, 554 + tmux_offset, Key_Code::PAGE_UP);
+    bind_side_special_key(KEY_DC, KEY_SDC, 518 + tmux_offset, Key_Code::DELETE_);
+    bind_side_special_key(KEY_IC, KEY_SIC, 539 + tmux_offset, Key_Code::INSERT);
 }
 
 static void bind_all_keys() {
