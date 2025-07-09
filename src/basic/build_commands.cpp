@@ -72,9 +72,13 @@ void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
 
         kill_extra_cursors(window, client);
         window->cursors[window->selected_cursor].point = token.start;
-
         iterator.retreat_to(token.start);
-        buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &path);
+
+        cz::String rel_path = {};
+        CZ_DEFER(rel_path.drop(cz::heap_allocator()));
+        buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &rel_path);
+
+        cz::path::make_absolute(rel_path, buffer->directory, cz::heap_allocator(), &path);
     }
 
     open_result(editor, client, path);
@@ -82,17 +86,22 @@ void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
 
 REGISTER_COMMAND(command_build_open_link_at_point);
 void command_build_open_link_at_point(Editor* editor, Command_Source source) {
-    SSOStr path = {};
+    cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     {
+        SSOStr rel_path = {};
+        CZ_DEFER(rel_path.drop(cz::heap_allocator()));
+
         WITH_SELECTED_BUFFER(source.client);
         if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,
-                                            &path))
+                                            &rel_path))
             return;
+
+        cz::path::make_absolute(rel_path.as_str(), buffer->directory, cz::heap_allocator(), &path);
     }
 
-    open_result(editor, source.client, path.as_str());
+    open_result(editor, source.client, path);
 }
 
 }
