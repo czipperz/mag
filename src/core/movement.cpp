@@ -471,10 +471,9 @@ bool get_token_at_position(Buffer* buffer, Contents_Iterator* token_iterator, To
 }
 
 bool get_token_at_position_contents(Buffer* buffer, uint64_t position, SSOStr* contents) {
-    buffer->token_cache.update(buffer);
     Contents_Iterator token_iterator = buffer->contents.iterator_at(position);
     Token token;
-    if (!get_token_at_position_no_update(buffer, &token_iterator, &token)) {
+    if (!get_token_at_position(buffer, &token_iterator, &token)) {
         return false;
     }
     *contents = buffer->contents.slice(cz::heap_allocator(), token_iterator, token.end);
