@@ -410,6 +410,7 @@ struct Diff_Master_Completion_Engine_Data {
 static bool diff_master_completion_engine(Editor* editor,
                                           Completion_Engine_Context* context,
                                           bool is_initial_frame) {
+    context->parse_file_line_column_suffix();
     cz::Str args[] = {"bash", "-c", "git diff --name-only $(git merge-base origin/master HEAD)"};
     Diff_Master_Completion_Engine_Data* data = (Diff_Master_Completion_Engine_Data*)context->data;
     cz::Process_Options options;
