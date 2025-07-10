@@ -11,6 +11,8 @@ void command_start_recording_macro(Editor* editor, Command_Source source) {
     source.client->show_message("Start recording macro");
     source.client->record_key_presses = true;
     source.client->macro_key_chain.len = 0;
+    source.client->key_chain.remove_range(0, source.client->key_chain_offset);
+    source.client->key_chain_offset = 0;
 }
 
 REGISTER_COMMAND(command_stop_recording_macro);
