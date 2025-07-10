@@ -182,12 +182,7 @@ void client_created_callback(Editor* editor, Client* client) {
     }
 }
 
-bool open_relpath(Editor* editor,
-                  Client* client,
-                  cz::Option<cz::Str> vc_dir,
-                  cz::Str directory,
-                  cz::Str path,
-                  cz::String* temp) {
+bool find_relpath(cz::Option<cz::Str> vc_dir, cz::Str directory, cz::Str path, cz::String* out) {
     if (!vc_dir.is_present)
         return false;
 
@@ -196,16 +191,16 @@ bool open_relpath(Editor* editor,
         CZ_DEFER(cz_dir.drop());
         if (vc_dir.value.ends_with("/cz")) {
             cz_dir = cz::format(vc_dir.value, "/include");
-            return prose::try_relative_to(editor, client, cz_dir, path, temp);
+            return prose::try_relative_to(cz_dir, path, out);
         } else {
             cz_dir = cz::format(vc_dir.value, "/cz/include");
-            return prose::try_relative_to(editor, client, cz_dir, path, temp);
+            return prose::try_relative_to(cz_dir, path, out);
         }
     }
 
     cz::Heap_String src_dir = cz::format(vc_dir.value, "/src");
     CZ_DEFER(src_dir.drop());
-    return prose::try_relative_to(editor, client, src_dir, path, temp);
+    return prose::try_relative_to(src_dir, path, out);
 }
 
 static void create_key_remap(Key_Remap& key_remap) {

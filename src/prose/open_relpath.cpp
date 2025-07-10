@@ -51,27 +51,34 @@ bool open_token_as_relpath(Editor* editor, Client* client, cz::Str directory, cz
     return false;
 }
 
+static void push_jump_and_open_file(Editor* editor, Client* client, cz::Str path) {
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        push_jump(window, client, buffer);
+    }
+    open_file(editor, client, path);
+}
+
 void open_relpath(Editor* editor, Client* client, cz::Str directory, cz::Str path) {
     if (cz::path::is_absolute(path)) {
-        open_file(editor, client, path);
-        return;
+        return push_jump_and_open_file(editor, client, path);
     }
 
     cz::String temp = {};
     CZ_DEFER(temp.drop(cz::heap_allocator()));
-    if (try_relative_to(editor, client, directory, path, &temp)) {
-        return;
+    if (try_relative_to(directory, path, &temp)) {
+        return push_jump_and_open_file(editor, client, temp);
     }
 
     cz::String vc_root = {};
     CZ_DEFER(vc_root.drop(cz::heap_allocator()));
     if (version_control::get_root_directory(directory, cz::heap_allocator(), &vc_root)) {
-        if (custom::open_relpath(editor, client, vc_root.as_str(), directory, path, &temp)) {
-            return;
+        if (custom::find_relpath(vc_root.as_str(), directory, path, &temp)) {
+            return push_jump_and_open_file(editor, client, temp);
         }
 
-        if (try_relative_to(editor, client, vc_root, path, &temp)) {
-            return;
+        if (try_relative_to(vc_root, path, &temp)) {
+            return push_jump_and_open_file(editor, client, temp);
         }
 
         vc_root.reserve_exact(cz::heap_allocator(), 2);
@@ -80,8 +87,8 @@ void open_relpath(Editor* editor, Client* client, cz::Str directory, cz::Str pat
         find_file(client, "Find file in version control: ", path, vc_root);
         vc_root = {};
     } else {
-        if (custom::open_relpath(editor, client, {}, directory, path, &temp)) {
-            return;
+        if (custom::find_relpath({}, directory, path, &temp)) {
+            return push_jump_and_open_file(editor, client, temp);
         }
 
         find_file(client, "Find file in current directory: ", path,
@@ -89,19 +96,10 @@ void open_relpath(Editor* editor, Client* client, cz::Str directory, cz::Str pat
     }
 }
 
-bool try_relative_to(Editor* editor,
-                     Client* client,
-                     cz::Str directory,
-                     cz::Str path,
-                     cz::String* temp) {
-    temp->len = 0;
-    cz::path::make_absolute(path, directory, cz::heap_allocator(), temp);
-    if (cz::file::exists(temp->buffer)) {
-        open_file(editor, client, *temp);
-        return true;
-    } else {
-        return false;
-    }
+bool try_relative_to(cz::Str directory, cz::Str path, cz::String* out) {
+    out->len = 0;
+    cz::path::make_absolute(path, directory, cz::heap_allocator(), out);
+    return cz::file::exists(out->buffer);
 }
 
 }

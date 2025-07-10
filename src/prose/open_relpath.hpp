@@ -19,12 +19,8 @@ bool open_token_as_relpath(Editor* editor, Client* client, cz::Str directory, cz
 /// paths to vc root, and relative paths to user-configurable directories.
 void open_relpath(Editor* editor, Client* client, cz::Str directory, cz::Str path);
 
-/// Utility function.  If `directory/path` exists then opens it and returns true.
-bool try_relative_to(Editor* editor,
-                     Client* client,
-                     cz::Str directory,
-                     cz::Str path,
-                     cz::String* temp);
+/// Utility function.  Returns `directory/path` exists.
+bool try_relative_to(cz::Str directory, cz::Str path, cz::String* combined);
 
 }
 }

@@ -30,14 +30,9 @@ void editor_created_callback(Editor* editor);
 /// that we can display partial search results to the user.
 void buffer_created_callback(Editor* editor, Buffer* buffer);
 
-/// Attempt to open a `path` that comes from a substring of a buffer in `directory`.
+/// Attempt to find a file based on `path` that comes from a substring of a buffer in `directory`.
 /// Note that `vc_dir` and `directory` are automatically tested by `prose::open_relpath`.
-bool open_relpath(Editor* editor,
-                  Client* client,
-                  cz::Option<cz::Str> vc_dir,
-                  cz::Str directory,
-                  cz::Str path,
-                  cz::String* temp);
+bool find_relpath(cz::Option<cz::Str> vc_dir, cz::Str directory, cz::Str path, cz::String* out);
 
 extern bool default_use_carriage_returns;
 
