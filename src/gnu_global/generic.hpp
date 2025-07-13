@@ -11,6 +11,7 @@ enum Engine {
     CTAGS,
 };
 bool pick_engine(cz::Str directory, Engine* engine);
+bool try_directory(cz::Str directory, Engine* engine, cz::String* found_directory);
 
 struct Tag {
     /// Null terminated.

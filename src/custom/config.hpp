@@ -2,6 +2,7 @@
 
 #include <cz/str.hpp>
 #include "core/file.hpp"
+#include "gnu_global/generic.hpp"
 
 namespace mag {
 
@@ -33,6 +34,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer);
 /// Attempt to find a file based on `path` that comes from a substring of a buffer in `directory`.
 /// Note that `vc_dir` and `directory` are automatically tested by `prose::open_relpath`.
 bool find_relpath(cz::Option<cz::Str> vc_dir, cz::Str directory, cz::Str path, cz::String* out);
+
+/// Attempt to find a tags file to generate completion in the folder
+/// `directory`.  Use `tags::try_directory` to test a source directory.
+bool find_tags(cz::Str directory, tags::Engine* engine, cz::String* found_directory);
 
 extern bool default_use_carriage_returns;
 

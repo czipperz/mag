@@ -203,6 +203,23 @@ bool find_relpath(cz::Option<cz::Str> vc_dir, cz::Str directory, cz::Str path, c
     return prose::try_relative_to(src_dir, path, out);
 }
 
+bool find_tags(cz::Str directory, tags::Engine* engine, cz::String* found_directory) {
+    // Demo code to jump to $vc_root/src and search for tags from there.
+    if (0) {
+        cz::String src_dir = {};
+        CZ_DEFER(src_dir.drop(cz::heap_allocator()));
+        if (!version_control::get_root_directory(directory, cz::heap_allocator(), &src_dir)) {
+            return false;
+        }
+        src_dir.reserve_exact(cz::heap_allocator(), 5);
+        src_dir.append("/src");
+        src_dir.null_terminate();
+        return tags::try_directory(src_dir, engine, found_directory);
+    }
+
+    return false;
+}
+
 static void create_key_remap(Key_Remap& key_remap) {
     ZoneScoped;
 

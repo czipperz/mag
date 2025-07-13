@@ -18,6 +18,7 @@
 #include "core/token.hpp"
 #include "core/visible_region.hpp"
 #include "ctags.hpp"
+#include "custom/config.hpp"
 #include "gnu_global.hpp"
 #include "prose/open_relpath.hpp"
 #include "syntax/tokenize_path.hpp"
@@ -29,20 +30,18 @@ namespace tags {
 // Engine multiplex
 ///////////////////////////////////////////////////////////////////////////////
 
-bool pick_engine(cz::Str directory, Engine* engine) {
-    cz::String path = {};
-    CZ_DEFER(path.drop(cz::heap_allocator()));
-    path.reserve(cz::heap_allocator(), directory.len);
-
-    path.append(directory);
-    if (cz::find_file_up(cz::heap_allocator(), &path, "GTAGS")) {
+bool try_directory(cz::Str directory, Engine* engine, cz::String* found_directory) {
+    found_directory->len = 0;
+    found_directory->reserve(cz::heap_allocator(), directory.len + 1);
+    found_directory->append(directory);
+    if (cz::find_dir_with_file_up(cz::heap_allocator(), found_directory, "GTAGS")) {
         *engine = GNU_GLOBAL;
         return true;
     }
-    path.len = 0;
 
-    path.append(directory);
-    if (cz::find_file_up(cz::heap_allocator(), &path, "TAGS")) {
+    found_directory->len = 0;
+    found_directory->append(directory);
+    if (cz::find_dir_with_file_up(cz::heap_allocator(), found_directory, "TAGS")) {
         *engine = CTAGS;
         return true;
     }
@@ -50,19 +49,26 @@ bool pick_engine(cz::Str directory, Engine* engine) {
     return false;
 }
 
+bool pick_engine(cz::Str directory, Engine* engine, cz::String* found_directory) {
+    return try_directory(directory, engine, found_directory) ||
+           custom::find_tags(directory, engine, found_directory);
+}
+
 const char* lookup_symbol(const char* directory,
                           cz::Str query,
                           cz::Allocator allocator,
                           cz::Vector<Tag>* tags) {
     Engine engine;
-    if (!pick_engine(directory, &engine))
+    cz::String found_directory = {};
+    CZ_DEFER(found_directory.drop(cz::heap_allocator()));
+    if (!pick_engine(directory, &engine, &found_directory))
         return "Error: no tags file found";
 
     switch (engine) {
     case GNU_GLOBAL:
-        return gnu_global::lookup_symbol(directory, query, allocator, tags);
+        return gnu_global::lookup_symbol(found_directory.buffer, query, allocator, tags);
     case CTAGS:
-        return ctags::lookup_symbol(directory, query, allocator, tags);
+        return ctags::lookup_symbol(found_directory.buffer, query, allocator, tags);
     }
     CZ_PANIC("Invalid engine type");
 }
@@ -282,19 +288,18 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
     ZoneScoped;
 
     Engine engine;
-    char* directory;
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
     cz::String selected_region = {};
     CZ_DEFER(selected_region.drop(cz::heap_allocator()));
     {
         Window_Unified* window = source.client->selected_normal_window;
         WITH_CONST_WINDOW_BUFFER(window);
 
-        if (!pick_engine(buffer->directory, &engine)) {
+        if (!pick_engine(buffer->directory, &engine, &directory)) {
             source.client->show_message("Error: no tags file found");
             return;
         }
-
-        directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer;
 
         get_selected_region(window, buffer, cz::heap_allocator(), &selected_region);
     }
@@ -321,13 +326,14 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
     switch (engine) {
     case GNU_GLOBAL:
         gnu_global::init_completion_engine_context(
-            &source.client->mini_buffer_completion_cache.engine_context, directory);
+            &source.client->mini_buffer_completion_cache.engine_context, directory.buffer);
         break;
     case CTAGS:
         ctags::init_completion_engine_context(
-            &source.client->mini_buffer_completion_cache.engine_context, directory);
+            &source.client->mini_buffer_completion_cache.engine_context, directory.buffer);
         break;
     }
+    directory = {};
 }
 
 REGISTER_COMMAND(command_lookup_previous_command);
@@ -344,7 +350,8 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
     ZoneScoped;
 
     Engine engine;
-    char* directory;
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
     {
         WITH_SELECTED_BUFFER(source.client);
 
@@ -356,12 +363,10 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
             return;
         }
 
-        if (!pick_engine(buffer->directory, &engine)) {
+        if (!pick_engine(buffer->directory, &engine, &directory)) {
             source.client->show_message("Error: no tags file found");
             return;
         }
-
-        directory = buffer->directory.clone_null_terminate(cz::heap_allocator()).buffer;
     }
 
     Window_Unified* window = source.client->selected_window();
@@ -371,12 +376,13 @@ void command_complete_at_point(Editor* editor, Command_Source source) {
     case GNU_GLOBAL:
         window->start_completion(gnu_global::completion_engine);
         return gnu_global::init_completion_engine_context(&window->completion_cache.engine_context,
-                                                          directory);
+                                                          directory.buffer);
     case CTAGS:
         window->start_completion(ctags::completion_engine);
         return ctags::init_completion_engine_context(&window->completion_cache.engine_context,
-                                                     directory);
+                                                     directory.buffer);
     }
+    directory = {};
 }
 
 }
