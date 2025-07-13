@@ -220,10 +220,10 @@ static void handle_number(Contents_Iterator* iterator, Token* token, State* stat
 
 static void punctuation_simple(Contents_Iterator* iterator, Token* token, State* state);
 static void punctuation_set(Contents_Iterator* iterator, Token* token, State* state);
-static void punctuation_double_set(Contents_Iterator* iterator,
-                                   char first_ch,
-                                   Token* token,
-                                   State* state);
+static void punctuation_less_greater(Contents_Iterator* iterator,
+                                     char first_ch,
+                                     Token* token,
+                                     State* state);
 static void punctuation_double_or_set(Contents_Iterator* iterator,
                                       char first_ch,
                                       Token* token,
@@ -331,7 +331,7 @@ retry:
 
     case '<':
     case '>':
-        punctuation_double_set(iterator, first_ch, token, state);
+        punctuation_less_greater(iterator, first_ch, token, state);
         return true;
 
     case '+':
@@ -1084,17 +1084,51 @@ static void punctuation_set(Contents_Iterator* iterator, Token* token, State* st
     state->syntax = SYNTAX_IN_EXPR;
 }
 
-static void punctuation_double_set(Contents_Iterator* iterator,
-                                   char first_ch,
-                                   Token* token,
-                                   State* state) {
-    token->type = Token_Type::PUNCTUATION;
+static void punctuation_less_greater(Contents_Iterator* iterator,
+                                     char first_ch,
+                                     Token* token,
+                                     State* state) {
+    char before = '\0';
+    if (!iterator->at_bob()) {
+        Contents_Iterator it_before = *iterator;
+        it_before.retreat();
+        before = it_before.get();
+    }
+
     token->start = iterator->position;
+    token->type = Token_Type::PUNCTUATION;
     iterator->advance();
-    if (!iterator->at_eob() && iterator->get() == first_ch)
-        iterator->advance();
-    if (!iterator->at_eob() && iterator->get() == '=')
-        iterator->advance();
+    char after = '\0';
+    bool look_for_templates = false;
+    if (!iterator->at_eob()) {
+        after = iterator->get();
+        if (after == first_ch) {
+            iterator->advance(); // << or >>
+            if (looking_at(*iterator, '=')) {
+                iterator->advance(); // <<= or >>=
+            } else if (first_ch == '>' && !cz::is_space(before)) {
+                // Appears to be closing multiple templates.
+                iterator->retreat();
+                look_for_templates = true;
+            }
+        } else if (after == '=') {
+            iterator->advance();  // <= or >=
+        } else {
+            look_for_templates = true;
+        }
+    } else {
+        look_for_templates = true;
+    }
+
+    if (look_for_templates) {
+        if ((cz::is_space(before) && !cz::is_space(after)) || !cz::is_space(before)) {
+            if (first_ch == '<')
+                token->type = Token_Type::OPEN_PAIR;
+            else
+                token->type = Token_Type::CLOSE_PAIR;
+        }
+    }
+
     token->end = iterator->position;
     state->syntax = SYNTAX_IN_EXPR;
 }

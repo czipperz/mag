@@ -182,3 +182,41 @@ TEST_CASE("tokenize_cplusplus identifier and number") {
     CHECK(tokens[1] == Test_Runner::TToken{"123", {8, 11, Token_Type::NUMBER}});
     CHECK(tokens[2] == Test_Runner::TToken{"ident_123", {12, 21, Token_Type::IDENTIFIER}});
 }
+
+TEST_CASE("tokenize_cplusplus template braces") {
+    Test_Runner tr;
+    tr.setup("template <class T> void f(std::vector<T<int>> my_vector) { var>>=3; var<<=3;");
+    tr.set_tokenizer(syntax::cpp_next_token);
+    // tr.tokenize_print_tests();
+
+    auto tokens = tr.tokenize();
+    REQUIRE(tokens.len == 28);
+    CHECK(tokens[0] == Test_Runner::TToken{"template", {0, 8, Token_Type::KEYWORD}});
+    CHECK(tokens[1] == Test_Runner::TToken{"<", {9, 10, Token_Type::OPEN_PAIR}});
+    CHECK(tokens[2] == Test_Runner::TToken{"class", {10, 15, Token_Type::KEYWORD}});
+    CHECK(tokens[3] == Test_Runner::TToken{"T", {16, 17, Token_Type::TYPE}});
+    CHECK(tokens[4] == Test_Runner::TToken{">", {17, 18, Token_Type::CLOSE_PAIR}});
+    CHECK(tokens[5] == Test_Runner::TToken{"void", {19, 23, Token_Type::TYPE}});
+    CHECK(tokens[6] == Test_Runner::TToken{"f", {24, 25, Token_Type::IDENTIFIER}});
+    CHECK(tokens[7] == Test_Runner::TToken{"(", {25, 26, Token_Type::OPEN_PAIR}});
+    CHECK(tokens[8] == Test_Runner::TToken{"std", {26, 29, Token_Type::IDENTIFIER}});
+    CHECK(tokens[9] == Test_Runner::TToken{"::", {29, 31, Token_Type::PUNCTUATION}});
+    CHECK(tokens[10] == Test_Runner::TToken{"vector", {31, 37, Token_Type::IDENTIFIER}});
+    CHECK(tokens[11] == Test_Runner::TToken{"<", {37, 38, Token_Type::OPEN_PAIR}});
+    CHECK(tokens[12] == Test_Runner::TToken{"T", {38, 39, Token_Type::IDENTIFIER}});
+    CHECK(tokens[13] == Test_Runner::TToken{"<", {39, 40, Token_Type::OPEN_PAIR}});
+    CHECK(tokens[14] == Test_Runner::TToken{"int", {40, 43, Token_Type::TYPE}});
+    CHECK(tokens[15] == Test_Runner::TToken{">", {43, 44, Token_Type::CLOSE_PAIR}});
+    CHECK(tokens[16] == Test_Runner::TToken{">", {44, 45, Token_Type::CLOSE_PAIR}});
+    CHECK(tokens[17] == Test_Runner::TToken{"my_vector", {46, 55, Token_Type::IDENTIFIER}});
+    CHECK(tokens[18] == Test_Runner::TToken{")", {55, 56, Token_Type::CLOSE_PAIR}});
+    CHECK(tokens[19] == Test_Runner::TToken{"{", {57, 58, Token_Type::OPEN_PAIR}});
+    CHECK(tokens[20] == Test_Runner::TToken{"var", {59, 62, Token_Type::IDENTIFIER}});
+    CHECK(tokens[21] == Test_Runner::TToken{">>=", {62, 65, Token_Type::PUNCTUATION}});
+    CHECK(tokens[22] == Test_Runner::TToken{"3", {65, 66, Token_Type::NUMBER}});
+    CHECK(tokens[23] == Test_Runner::TToken{";", {66, 67, Token_Type::PUNCTUATION}});
+    CHECK(tokens[24] == Test_Runner::TToken{"var", {68, 71, Token_Type::IDENTIFIER}});
+    CHECK(tokens[25] == Test_Runner::TToken{"<<=", {71, 74, Token_Type::PUNCTUATION}});
+    CHECK(tokens[26] == Test_Runner::TToken{"3", {74, 75, Token_Type::NUMBER}});
+    CHECK(tokens[27] == Test_Runner::TToken{";", {75, 76, Token_Type::PUNCTUATION}});
+}
