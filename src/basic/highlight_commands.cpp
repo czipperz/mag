@@ -17,7 +17,7 @@ static void command_add_highlight_to_buffer_callback(Editor* editor,
                                                      void* _data) {
     WITH_SELECTED_NORMAL_BUFFER(client);
     buffer->mode.overlays.reserve(1);
-    buffer->mode.overlays.push(syntax::overlay_highlight_string(highlight_face, query));
+    buffer->mode.overlays.insert(0, syntax::overlay_highlight_string(highlight_face, query));
 }
 
 REGISTER_COMMAND(command_add_highlight_to_buffer);
@@ -77,7 +77,8 @@ void command_toggle_highlight_on_buffer_token_at_point(Editor* editor, Command_S
         }
     }
     buffer->mode.overlays.reserve(1);
-    buffer->mode.overlays.push(syntax::overlay_highlight_string(highlight_face, query.as_str()));
+    buffer->mode.overlays.insert(0,
+                                 syntax::overlay_highlight_string(highlight_face, query.as_str()));
 }
 
 }
