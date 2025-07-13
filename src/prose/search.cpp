@@ -134,6 +134,12 @@ void command_search_in_version_control_word_prompt(Editor* editor, Command_Sourc
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_search_conflicts);
+void command_search_conflicts(Editor* editor, Command_Source source) {
+    command_search_in_x_callback<copy_version_control_directory, false>(editor, source.client,
+                                                                        "<<<<<<<", nullptr);
+}
+
 template <class Copy_Directory>
 static void search_token_at_position(Editor* editor,
                                      Client* client,

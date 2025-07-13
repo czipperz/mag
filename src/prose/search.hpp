@@ -18,5 +18,7 @@ void command_search_in_file_prompt(Editor* editor, Command_Source source);
 void command_search_in_file_token_at_position(Editor* editor, Command_Source source);
 void command_search_in_file_word_prompt(Editor* editor, Command_Source source);
 
+void command_search_conflicts(Editor* editor, Command_Source source);
+
 }
 }
