@@ -22,9 +22,14 @@ static void command_add_highlight_to_buffer_callback(Editor* editor,
 
 REGISTER_COMMAND(command_add_highlight_to_buffer);
 void command_add_highlight_to_buffer(Editor* editor, Command_Source source) {
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
+    get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
+
     Dialog dialog = {};
     dialog.prompt = "Add highlight in buffer: ";
     dialog.response_callback = command_add_highlight_to_buffer_callback;
+    dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
 }
 
@@ -45,9 +50,14 @@ static void command_remove_highlight_from_buffer_callback(Editor* editor,
 
 REGISTER_COMMAND(command_remove_highlight_from_buffer);
 void command_remove_highlight_from_buffer(Editor* editor, Command_Source source) {
+    cz::String selected_region = {};
+    CZ_DEFER(selected_region.drop(cz::heap_allocator()));
+    get_selected_region(editor, source.client, cz::heap_allocator(), &selected_region);
+
     Dialog dialog = {};
     dialog.prompt = "Remove highlight from buffer: ";
     dialog.response_callback = command_remove_highlight_from_buffer_callback;
+    dialog.mini_buffer_contents = selected_region;
     source.client->show_dialog(dialog);
 }
 
