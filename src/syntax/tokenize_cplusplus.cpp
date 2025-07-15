@@ -1103,9 +1103,9 @@ static void punctuation_less_greater(Contents_Iterator* iterator,
     if (!iterator->at_eob()) {
         after = iterator->get();
         if (after == first_ch) {
-            iterator->advance(); // << or >>
+            iterator->advance();  // << or >>
             if (looking_at(*iterator, '=')) {
-                iterator->advance(); // <<= or >>=
+                iterator->advance();  // <<= or >>=
             } else if (first_ch == '>' && !cz::is_space(before)) {
                 // Appears to be closing multiple templates.
                 iterator->retreat();
@@ -1113,6 +1113,9 @@ static void punctuation_less_greater(Contents_Iterator* iterator,
             }
         } else if (after == '=') {
             iterator->advance();  // <= or >=
+            if (first_ch == '<' && looking_at(*iterator, '>')) {
+                iterator->advance();  // <=>
+            }
         } else {
             look_for_templates = true;
         }

@@ -185,12 +185,13 @@ TEST_CASE("tokenize_cplusplus identifier and number") {
 
 TEST_CASE("tokenize_cplusplus template braces") {
     Test_Runner tr;
-    tr.setup("template <class T> void f(std::vector<T<int>> my_vector) { var>>=3; var<<=3;");
+    tr.setup(
+        "template <class T> void f(std::vector<T<int>> my_vector) { var>>=3; var<<=3; var<=>3;");
     tr.set_tokenizer(syntax::cpp_next_token);
     // tr.tokenize_print_tests();
 
     auto tokens = tr.tokenize();
-    REQUIRE(tokens.len == 28);
+    REQUIRE(tokens.len == 32);
     CHECK(tokens[0] == Test_Runner::TToken{"template", {0, 8, Token_Type::KEYWORD}});
     CHECK(tokens[1] == Test_Runner::TToken{"<", {9, 10, Token_Type::OPEN_PAIR}});
     CHECK(tokens[2] == Test_Runner::TToken{"class", {10, 15, Token_Type::KEYWORD}});
@@ -219,4 +220,8 @@ TEST_CASE("tokenize_cplusplus template braces") {
     CHECK(tokens[25] == Test_Runner::TToken{"<<=", {71, 74, Token_Type::PUNCTUATION}});
     CHECK(tokens[26] == Test_Runner::TToken{"3", {74, 75, Token_Type::NUMBER}});
     CHECK(tokens[27] == Test_Runner::TToken{";", {75, 76, Token_Type::PUNCTUATION}});
+    CHECK(tokens[28] == Test_Runner::TToken{"var", {77, 80, Token_Type::IDENTIFIER}});
+    CHECK(tokens[29] == Test_Runner::TToken{"<=>", {80, 83, Token_Type::PUNCTUATION}});
+    CHECK(tokens[30] == Test_Runner::TToken{"3", {83, 84, Token_Type::NUMBER}});
+    CHECK(tokens[31] == Test_Runner::TToken{";", {84, 85, Token_Type::PUNCTUATION}});
 }
