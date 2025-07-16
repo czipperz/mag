@@ -9,11 +9,19 @@
 namespace mag {
 namespace syntax {
 
+namespace {
+enum State : uint64_t {
+    AT_SOL = 0,
+    IN_MARKDOWN = 1,
+    IN_PATCH = 2,
+};
+}
+
 bool git_commit_edit_message_next_token(Contents_Iterator* iterator,
                                         Token* token,
                                         uint64_t* state) {
     // Show patch.
-    if (*state == 2) {
+    if ((*state & 3) == State::IN_PATCH) {
         uint64_t s2 = (*state >> 2);
         bool result = patch_next_token(iterator, token, &s2);
         *state = ((*state & 3) | s2 << 2);
@@ -26,9 +34,9 @@ bool git_commit_edit_message_next_token(Contents_Iterator* iterator,
 
     token->start = iterator->position;
     char ch = iterator->get();
-    if (*state == 0 && ch == '#') {
+    if ((*state & 3) == State::AT_SOL && ch == '#') {
         if (looking_at(*iterator, "# ------------------------ >8 ------------------------\n")) {
-            *state = 2;
+            *state = State::IN_PATCH;
         }
 
         end_of_line(iterator);
@@ -39,12 +47,12 @@ bool git_commit_edit_message_next_token(Contents_Iterator* iterator,
 
     for (size_t i = 0;; ++i) {
         if (i >= 16 || iterator->at_eob()) {
-            *state = 1;
+            *state = State::IN_MARKDOWN;
             break;
         }
         if (iterator->get() == '\n') {
             iterator->advance();
-            *state = 0;
+            *state = State::AT_SOL;
             break;
         }
         iterator->advance();
