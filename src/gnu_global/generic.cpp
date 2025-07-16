@@ -21,7 +21,9 @@
 #include "custom/config.hpp"
 #include "gnu_global.hpp"
 #include "prose/open_relpath.hpp"
+#include "prose/search.hpp"
 #include "syntax/tokenize_path.hpp"
+#include "version_control/version_control.hpp"
 
 namespace mag {
 namespace tags {
@@ -151,12 +153,19 @@ void prompt_open_tags(Editor* editor,
                       Client* client,
                       cz::Vector<Tag> tags,
                       cz::Buffer_Array ba,
+                      const char* directory,
                       cz::Str query) {
     if (tags.len == 0) {
         tags.drop(cz::heap_allocator());
         ba.drop();
 
-        client->show_message("No global tag results");
+        cz::Heap_String root = {};
+        CZ_DEFER(root.drop());
+        if (version_control::get_root_directory(directory, cz::heap_allocator(), &root)) {
+            prose::run_search(client, editor, root.buffer, query, /*query_word=*/true);
+        } else {
+            prose::run_search(client, editor, directory, query, /*query_word=*/true);
+        }
         return;
     }
 
@@ -208,7 +217,7 @@ void lookup_and_prompt(Editor* editor, Client* client, const char* directory, cz
         return;
     }
 
-    prompt_open_tags(editor, client, tags, ba, query);
+    prompt_open_tags(editor, client, tags, ba, directory, query);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

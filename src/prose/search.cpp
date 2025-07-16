@@ -18,12 +18,12 @@ namespace prose {
 static char empty_file_path[L_tmpnam];
 static void ensure_has_empty_file();
 
-static void run_search(Client* client,
-                       Editor* editor,
-                       const char* directory,
-                       cz::Str query,
-                       bool query_word,
-                       const cz::String* file = nullptr) {
+void run_search(Client* client,
+                Editor* editor,
+                const char* directory,
+                cz::Str query,
+                bool query_word,
+                const cz::String* file) {
     cz::Heap_Vector<cz::Str> args = {};
     CZ_DEFER(args.drop());
     {
