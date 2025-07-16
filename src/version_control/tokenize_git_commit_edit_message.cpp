@@ -4,6 +4,7 @@
 #include "core/match.hpp"
 #include "core/movement.hpp"
 #include "core/token.hpp"
+#include "syntax/tokenize_markdown.hpp"
 #include "tokenize_patch.hpp"
 
 namespace mag {
@@ -32,31 +33,31 @@ bool git_commit_edit_message_next_token(Contents_Iterator* iterator,
         return false;
     }
 
-    token->start = iterator->position;
     char ch = iterator->get();
     if ((*state & 3) == State::AT_SOL && ch == '#') {
+    sol:
         if (looking_at(*iterator, "# ------------------------ >8 ------------------------\n")) {
             *state = State::IN_PATCH;
         }
 
+        token->start = iterator->position;
         end_of_line(iterator);
         token->end = iterator->position;
         token->type = Token_Type::COMMENT;
         return true;
     }
 
-    for (size_t i = 0;; ++i) {
-        if (i >= 16 || iterator->at_eob()) {
-            *state = State::IN_MARKDOWN;
-            break;
-        }
-        if (iterator->get() == '\n') {
-            iterator->advance();
-            *state = State::AT_SOL;
-            break;
-        }
-        iterator->advance();
-    }
+    uint64_t s2 = *state >> 2;
+    bool has_next = md_next_token_stop_at_hash_comment(iterator, token, state);
+    *state = ((*state & 3) | (s2 << 2));
+    if (has_next || iterator->at_eob())
+        return has_next;
+    if (at_start_of_line(*iterator))
+        goto sol;
+
+    CZ_ASSERT(looking_at(*iterator, '#'));
+    token->start = iterator->position;
+    iterator->advance();
     token->end = iterator->position;
     token->type = Token_Type::DEFAULT;
     return true;

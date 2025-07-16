@@ -96,7 +96,10 @@ static bool advance_through_start_to_bold_or_italics_region(Contents_Iterator* i
     return false;
 }
 
-bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+static bool md_next_token_helper(Contents_Iterator* iterator,
+                                 Token* token,
+                                 uint64_t* state,
+                                 bool stop_at_hash_comment) {
     ZoneScoped;
 
     if (!advance_whitespace(iterator, state)) {
@@ -123,6 +126,8 @@ bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
     }
 
     if (*state == START_OF_LINE && first_ch == '#') {
+        if (stop_at_hash_comment)
+            return false;
         iterator->advance();
         while (!iterator->at_eob() && iterator->get() == '#') {
             iterator->advance();
@@ -267,6 +272,16 @@ normal_character:
 ret:
     token->end = iterator->position;
     return true;
+}
+
+bool md_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
+    return md_next_token_helper(iterator, token, state, /*stop_at_hash_comment=*/false);
+}
+
+bool md_next_token_stop_at_hash_comment(Contents_Iterator* iterator,
+                                        Token* token,
+                                        uint64_t* state) {
+    return md_next_token_helper(iterator, token, state, /*stop_at_hash_comment=*/true);
 }
 
 }
