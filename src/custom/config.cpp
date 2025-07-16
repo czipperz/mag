@@ -1125,6 +1125,10 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             BIND(buffer->mode.key_map, "A-x e", cpp::command_extract_variable);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
 
+            if (name.ends_with(".java")) {
+                BIND(buffer->mode.key_map, "A-g A-t", command_java_open_token_at_point);
+            }
+
             static const Token_Type types[] = {
                 Token_Type::KEYWORD, Token_Type::TYPE, Token_Type::IDENTIFIER,
                 Token_Type::PREPROCESSOR_KEYWORD, Token_Type::PREPROCESSOR_ELSE};
