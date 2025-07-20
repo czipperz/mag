@@ -64,6 +64,7 @@ enum {
     SYNTAX_AFTER_TYPE = 3,
     SYNTAX_AFTER_DECL = 4,
     SYNTAX_AT_RAW_STRING_LITERAL = 5,
+    SYNTAX_AFTER_KEYWORD_OPERATOR = 6,
 };
 
 struct State {
@@ -469,7 +470,8 @@ enum Keyword_Type {
     KEYWORD_STATEMENT_PREFIX = 4,    /// e.g. 'static'
     KEYWORD_START_BLOCK = 5,         /// e.g. 'BOOST_AUTO_TEST_SUITE'
     KEYWORD_END_BLOCK = 6,           /// e.g. 'BOOST_AUTO_TEST_SUITE_END'
-    KEYWORD_RAW_STRING_LITERAL = 7,  /// e.g. 'R'
+    KEYWORD_OPERATOR = 7,            /// 'operator'
+    KEYWORD_RAW_STRING_LITERAL = 8,  /// e.g. 'R'
 };
 }
 
@@ -520,6 +522,10 @@ static void handle_identifier(Contents_Iterator* iterator,
         token->type = Token_Type::PREPROCESSOR_ENDIF;
         state->syntax = SYNTAX_AFTER_DECL;
         break;
+    case KEYWORD_OPERATOR:
+        token->type = Token_Type::KEYWORD;
+        state->syntax = SYNTAX_AFTER_KEYWORD_OPERATOR;
+        break;
     case KEYWORD_RAW_STRING_LITERAL:
         if (looking_at(*iterator, '"')) {
             token->type = Token_Type::KEYWORD;
@@ -549,7 +555,8 @@ static void handle_identifier(Contents_Iterator* iterator,
 static bool is_type(Contents_Iterator iterator, State* state) {
     if (state->syntax == SYNTAX_AT_TYPE)
         return true;
-    if (state->syntax == SYNTAX_IN_EXPR || state->syntax == SYNTAX_AFTER_TYPE)
+    if (state->syntax == SYNTAX_IN_EXPR || state->syntax == SYNTAX_AFTER_TYPE ||
+        state->syntax == SYNTAX_AFTER_KEYWORD_OPERATOR)
         return false;
 
     while (1) {
@@ -889,7 +896,7 @@ static Keyword_Type look_for_keyword(Contents_Iterator start, uint64_t len, char
         return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'o':
         if (looking_at_no_bounds_check(start, "operator"))
-            return KEYWORD_GENERAL;
+            return KEYWORD_OPERATOR;
         return NOT_KEYWORD;
     case (8 << 8) | (uint8_t)'r':
         if (looking_at_no_bounds_check(start, "reflexpr"))
@@ -1106,7 +1113,8 @@ static void punctuation_less_greater(Contents_Iterator* iterator,
             iterator->advance();  // << or >>
             if (looking_at(*iterator, '=')) {
                 iterator->advance();  // <<= or >>=
-            } else if (first_ch == '>' && !cz::is_space(before)) {
+            } else if (first_ch == '>' && !cz::is_space(before) &&
+                       state->syntax != SYNTAX_AFTER_KEYWORD_OPERATOR) {
                 // Appears to be closing multiple templates.
                 iterator->retreat();
                 look_for_templates = true;
@@ -1123,7 +1131,7 @@ static void punctuation_less_greater(Contents_Iterator* iterator,
         look_for_templates = true;
     }
 
-    if (look_for_templates) {
+    if (look_for_templates && state->syntax != SYNTAX_AFTER_KEYWORD_OPERATOR) {
         if ((cz::is_space(before) && !cz::is_space(after)) || !cz::is_space(before)) {
             if (first_ch == '<')
                 token->type = Token_Type::OPEN_PAIR;

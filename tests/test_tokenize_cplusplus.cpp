@@ -186,12 +186,13 @@ TEST_CASE("tokenize_cplusplus identifier and number") {
 TEST_CASE("tokenize_cplusplus template braces") {
     Test_Runner tr;
     tr.setup(
-        "template <class T> void f(std::vector<T<int>> my_vector) { var>>=3; var<<=3; var<=>3;");
+        "template <class T> void f(std::vector<T<int>> my_vector) { var>>=3; var<<=3; var<=>3; "
+        "bool operator<(); bool operator>();");
     tr.set_tokenizer(syntax::cpp_next_token);
     // tr.tokenize_print_tests();
 
     auto tokens = tr.tokenize();
-    REQUIRE(tokens.len == 32);
+    REQUIRE(tokens.len == 44);
     CHECK(tokens[0] == Test_Runner::TToken{"template", {0, 8, Token_Type::KEYWORD}});
     CHECK(tokens[1] == Test_Runner::TToken{"<", {9, 10, Token_Type::OPEN_PAIR}});
     CHECK(tokens[2] == Test_Runner::TToken{"class", {10, 15, Token_Type::KEYWORD}});
@@ -224,4 +225,16 @@ TEST_CASE("tokenize_cplusplus template braces") {
     CHECK(tokens[29] == Test_Runner::TToken{"<=>", {80, 83, Token_Type::PUNCTUATION}});
     CHECK(tokens[30] == Test_Runner::TToken{"3", {83, 84, Token_Type::NUMBER}});
     CHECK(tokens[31] == Test_Runner::TToken{";", {84, 85, Token_Type::PUNCTUATION}});
+    CHECK(tokens[32] == Test_Runner::TToken{"bool", {86, 90, Token_Type::TYPE}});
+    CHECK(tokens[33] == Test_Runner::TToken{"operator", {91, 99, Token_Type::KEYWORD}});
+    CHECK(tokens[34] == Test_Runner::TToken{"<", {99, 100, Token_Type::PUNCTUATION}});
+    CHECK(tokens[35] == Test_Runner::TToken{"(", {100, 101, Token_Type::OPEN_PAIR}});
+    CHECK(tokens[36] == Test_Runner::TToken{")", {101, 102, Token_Type::CLOSE_PAIR}});
+    CHECK(tokens[37] == Test_Runner::TToken{";", {102, 103, Token_Type::PUNCTUATION}});
+    CHECK(tokens[38] == Test_Runner::TToken{"bool", {104, 108, Token_Type::TYPE}});
+    CHECK(tokens[39] == Test_Runner::TToken{"operator", {109, 117, Token_Type::KEYWORD}});
+    CHECK(tokens[40] == Test_Runner::TToken{">", {117, 118, Token_Type::PUNCTUATION}});
+    CHECK(tokens[41] == Test_Runner::TToken{"(", {118, 119, Token_Type::OPEN_PAIR}});
+    CHECK(tokens[42] == Test_Runner::TToken{")", {119, 120, Token_Type::CLOSE_PAIR}});
+    CHECK(tokens[43] == Test_Runner::TToken{";", {120, 121, Token_Type::PUNCTUATION}});
 }
