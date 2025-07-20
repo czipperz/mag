@@ -652,11 +652,34 @@ static void command_search_forward_identifier_callback(Editor* editor,
     window->show_marks = false;
 }
 
+static bool try_last_search_result(Editor* editor,
+                                   Client* client,
+                                   Message::Response_Callback response_callback) {
+    if (!client->_select_mini_buffer || client->_message.response_callback != response_callback)
+        return false;
+
+    {
+        WITH_WINDOW_BUFFER(client->_mini_buffer);
+        if (buffer->contents.len != 0)
+            return false;
+
+        // If there is nothing to search then use the last search result.
+        buffer->undo();
+        client->_mini_buffer->update_cursors(buffer);
+    }
+
+    submit_mini_buffer(editor, client);
+    return true;
+}
+
 REGISTER_COMMAND(command_search_backward_identifier);
 void command_search_backward_identifier(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Search backward identifier: ";
     dialog.response_callback = command_search_backward_identifier_callback;
+    if (try_last_search_result(editor, source.client, dialog.response_callback)) {
+        return;
+    }
     {
         WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
         dialog.next_token = buffer->mode.next_token;
@@ -669,6 +692,9 @@ void command_search_forward_identifier(Editor* editor, Command_Source source) {
     Dialog dialog = {};
     dialog.prompt = "Search forward identifier: ";
     dialog.response_callback = command_search_forward_identifier_callback;
+    if (try_last_search_result(editor, source.client, dialog.response_callback)) {
+        return;
+    }
     {
         WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
         dialog.next_token = buffer->mode.next_token;
