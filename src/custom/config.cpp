@@ -25,6 +25,7 @@
 #include "basic/html_commands.hpp"
 #include "basic/ide_commands.hpp"
 #include "basic/indent_commands.hpp"
+#include "basic/java_commands.hpp"
 #include "basic/javascript_commands.hpp"
 #include "basic/macro_commands.hpp"
 #include "basic/markdown_commands.hpp"
