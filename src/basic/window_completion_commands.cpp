@@ -14,7 +14,7 @@ void command_finish_completion(Editor* editor, Command_Source source) {
         return;
     }
 
-    WITH_WINDOW_BUFFER(window);
+    WITH_WINDOW_BUFFER(window, source.client);
     window->finish_completion(source.client, buffer);
 }
 

@@ -59,14 +59,10 @@ Window_Unified* Window_Unified::clone(uint64_t new_id) {
     return window;
 }
 
-void Window_Unified::update_cursors(const Buffer* buffer) {
+void Window_Unified::update_cursors(const Buffer* buffer, Client* client) {
     ZoneScoped;
 
     cz::Slice<const Change> new_changes = buffer->changes.slice_start(change_index);
-
-    if (new_changes.len == 0) {
-        return;
-    }
 
     cz::Slice<Cursor> cursors = this->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
@@ -74,7 +70,9 @@ void Window_Unified::update_cursors(const Buffer* buffer) {
         position_after_changes(new_changes, &cursors[c].mark);
     }
 
-    clear_show_marks_temporarily();
+    if (new_changes.len != 0) {
+        clear_show_marks_temporarily();
+    }
 
     bool was_0 = start_position == 0;
     position_after_changes(new_changes, &start_position);
@@ -89,6 +87,15 @@ void Window_Unified::update_cursors(const Buffer* buffer) {
     }
 
     this->change_index = buffer->changes.len;
+
+    start_position = std::min(start_position, buffer->contents.len);
+
+    for (size_t c = 0; c < cursors.len; ++c) {
+        cursors[c].mark = std::min(cursors[c].mark, buffer->contents.len);
+        cursors[c].point = std::min(cursors[c].point, buffer->contents.len);
+    }
+
+    kill_cursors_at_same_point(this, client);
 }
 
 void Window_Unified::start_completion(Completion_Engine completion_engine) {
@@ -328,6 +335,23 @@ void kill_cursor(Window_Unified* window, Client* client, size_t index) {
     // Make sure the selected cursor is still in bounds.  Prefer moving forwards.
     if (window->selected_cursor > index || window->selected_cursor == window->cursors.len) {
         --window->selected_cursor;
+    }
+}
+
+void kill_cursors_at_same_point(Window_Unified* window, Client* client) {
+    for (size_t i = 0; i + 1 < window->cursors.len;) {
+        if (window->cursors[i].point == window->cursors[i + 1].point) {
+            if (window->cursors.len == 2) {
+                kill_extra_cursors(window, client);
+            } else {
+                window->cursors.remove(i + 1);
+                if (window->selected_cursor > i) {
+                    --window->selected_cursor;
+                }
+            }
+        } else {
+            ++i;
+        }
     }
 }
 

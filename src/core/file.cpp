@@ -714,7 +714,7 @@ Synchronous_Job open_file_callback_goto_line_column(Open_File_Callback_Goto_Line
         Open_File_Callback_Goto_Line_Column* data = (Open_File_Callback_Goto_Line_Column*)_data;
         Window_Unified* window = client->find_window(data->window_id);
         if (window) {
-            WITH_CONST_WINDOW_BUFFER(window);
+            WITH_CONST_WINDOW_BUFFER(window, client);
             kill_extra_cursors(window, client);
             Contents_Iterator iterator =
                 iterator_at_line_column(buffer->contents, data->line, data->column);

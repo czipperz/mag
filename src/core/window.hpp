@@ -73,7 +73,7 @@ struct Window_Unified : Window {
     static Window_Unified* create(cz::Arc<Buffer_Handle> buffer_handle, uint64_t id);
     Window_Unified* clone(uint64_t new_id);
 
-    void update_cursors(const Buffer* buffer);
+    void update_cursors(const Buffer* buffer, Client* client);
 
     void start_completion(Completion_Engine completion_engine);
 
@@ -126,6 +126,7 @@ struct Window_Split : Window {
 struct Client;
 void kill_extra_cursors(Window_Unified* window, Client* client);
 void kill_cursor(Window_Unified* window, Client* client, size_t index);
+void kill_cursors_at_same_point(Window_Unified* window, Client* client);
 
 Contents_Iterator nearest_character(const Window_Unified* window,
                                     const Buffer* buffer,

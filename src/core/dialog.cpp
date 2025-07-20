@@ -24,7 +24,7 @@ void get_selected_region(Editor* editor,
                          cz::Allocator allocator,
                          cz::String* string) {
     Window_Unified* window = client->selected_normal_window;
-    WITH_CONST_WINDOW_BUFFER(window);
+    WITH_CONST_WINDOW_BUFFER(window, client);
     get_selected_region(window, buffer, allocator, string);
 }
 
@@ -33,7 +33,7 @@ void get_selected_window_directory(Editor* editor,
                                    cz::Allocator allocator,
                                    cz::String* string) {
     {
-        WITH_CONST_WINDOW_BUFFER(client->selected_normal_window);
+        WITH_CONST_WINDOW_BUFFER(client->selected_normal_window, client);
         if (buffer->directory.len > 0) {
             string->reserve(allocator, buffer->directory.len);
             string->append(buffer->directory);

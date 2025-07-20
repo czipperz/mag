@@ -343,7 +343,7 @@ void command_create_cursors_undo_nono(Editor* editor, Command_Source source) {
     }
 
     Commit commit = buffer->commits[buffer->commit_index - 1];
-    window->update_cursors(buffer);
+    window->update_cursors(buffer, source.client);
     create_cursors_undo(window, buffer, source.client, commit.edits);
 }
 
@@ -355,7 +355,7 @@ void command_create_cursors_undo(Editor* editor, Command_Source source) {
         return;
     }
 
-    window->update_cursors(buffer);
+    window->update_cursors(buffer, source.client);
     create_cursors_last_change(window, buffer, source.client);
 }
 
@@ -368,7 +368,7 @@ void command_create_cursors_redo_nono(Editor* editor, Command_Source source) {
     }
 
     Commit commit = buffer->commits[buffer->commit_index - 1];
-    window->update_cursors(buffer);
+    window->update_cursors(buffer, source.client);
     create_cursors_redo(window, buffer, source.client, commit.edits);
 }
 
@@ -380,7 +380,7 @@ void command_create_cursors_redo(Editor* editor, Command_Source source) {
         return;
     }
 
-    window->update_cursors(buffer);
+    window->update_cursors(buffer, source.client);
     create_cursors_last_change(window, buffer, source.client);
 }
 

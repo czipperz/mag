@@ -19,16 +19,16 @@
 
 #define WITH_SELECTED_NORMAL_BUFFER(CLIENT)                    \
     Window_Unified* window = (CLIENT)->selected_normal_window; \
-    WITH_WINDOW_BUFFER(window)
+    WITH_WINDOW_BUFFER(window, (CLIENT))
 
 #define WITH_SELECTED_BUFFER(CLIENT)                      \
     Window_Unified* window = (CLIENT)->selected_window(); \
-    WITH_WINDOW_BUFFER(window)
+    WITH_WINDOW_BUFFER(window, (CLIENT))
 
-#define WITH_WINDOW_BUFFER(WINDOW)                           \
+#define WITH_WINDOW_BUFFER(WINDOW, CLIENT)                   \
     cz::Arc<Buffer_Handle> handle = (WINDOW)->buffer_handle; \
     WITH_BUFFER_HANDLE(handle);                              \
-    (WINDOW)->update_cursors(buffer)
+    (WINDOW)->update_cursors(buffer, (CLIENT))
 
 #define WITH_BUFFER_HANDLE(HANDLE)             \
     Buffer* buffer = (HANDLE)->lock_writing(); \
@@ -40,16 +40,16 @@
 
 #define WITH_CONST_SELECTED_NORMAL_BUFFER(CLIENT)              \
     Window_Unified* window = (CLIENT)->selected_normal_window; \
-    WITH_CONST_WINDOW_BUFFER(window)
+    WITH_CONST_WINDOW_BUFFER(window, (CLIENT))
 
 #define WITH_CONST_SELECTED_BUFFER(CLIENT)                \
     Window_Unified* window = (CLIENT)->selected_window(); \
-    WITH_CONST_WINDOW_BUFFER(window)
+    WITH_CONST_WINDOW_BUFFER(window, (CLIENT))
 
-#define WITH_CONST_WINDOW_BUFFER(WINDOW)                     \
+#define WITH_CONST_WINDOW_BUFFER(WINDOW, CLIENT)                     \
     cz::Arc<Buffer_Handle> handle = (WINDOW)->buffer_handle; \
     WITH_CONST_BUFFER_HANDLE(handle);                        \
-    (WINDOW)->update_cursors(buffer)
+    (WINDOW)->update_cursors(buffer, (CLIENT))
 
 #define WITH_CONST_BUFFER_HANDLE(HANDLE)             \
     const Buffer* buffer = (HANDLE)->lock_reading(); \

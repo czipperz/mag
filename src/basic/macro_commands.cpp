@@ -53,7 +53,7 @@ void command_run_macro_forall_lines_in_search(Editor* editor, Command_Source sou
             return;  // invalid
 
         Window_Unified* other2 = (Window_Unified*)other;
-        WITH_CONST_WINDOW_BUFFER(other2);
+        WITH_CONST_WINDOW_BUFFER(other2, source.client);
         uint64_t point = other2->cursors[0].point;
         if (point == buffer->contents.len)
             return;  // done

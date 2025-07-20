@@ -55,7 +55,7 @@ bool goto_jump(Editor* editor, Client* client, Jump* jump) {
     Window_Unified* window = client->selected_window();
     kill_extra_cursors(window, client);
     {
-        WITH_CONST_WINDOW_BUFFER(window);
+        WITH_CONST_WINDOW_BUFFER(window, client);
         jump->update(buffer);
     }
     window->show_marks = false;
@@ -63,7 +63,7 @@ bool goto_jump(Editor* editor, Client* client, Jump* jump) {
     window->cursors[0].mark = window->cursors[0].point;
 
     // And center it.
-    WITH_WINDOW_BUFFER(window);
+    WITH_WINDOW_BUFFER(window, client);
     center_in_window(window, buffer->mode, editor->theme,
                      buffer->contents.iterator_at(jump->position));
 

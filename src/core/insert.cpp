@@ -18,7 +18,7 @@ void insert(Client* client,
             Command_Function committer) {
     ZoneScoped;
 
-    window->update_cursors(buffer);
+    window->update_cursors(buffer, client);
 
     Transaction transaction;
     transaction.init(buffer);

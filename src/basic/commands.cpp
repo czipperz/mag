@@ -212,7 +212,7 @@ void command_delete_backward_char(Editor* editor, Command_Source source) {
 
             CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
             buffer->undo();
-            window->update_cursors(buffer);
+            window->update_cursors(buffer, source.client);
 
             Transaction transaction;
             transaction.init(buffer);
@@ -273,7 +273,7 @@ void command_delete_forward_char(Editor* editor, Command_Source source) {
 
             CZ_DEBUG_ASSERT(commit.edits.len == cursors.len);
             buffer->undo();
-            window->update_cursors(buffer);
+            window->update_cursors(buffer, source.client);
 
             Transaction transaction;
             transaction.init(buffer);
@@ -412,7 +412,7 @@ REGISTER_COMMAND(command_open_line);
 void command_open_line(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
     insert_char(source.client, buffer, window, '\n');
-    window->update_cursors(buffer);
+    window->update_cursors(buffer, source.client);
     TRANSFORM_POINTS(backward_char);
 }
 
@@ -1001,7 +1001,7 @@ void submit_mini_buffer(Editor* editor, Client* client) {
     SSOStr mini_buffer_contents;
     {
         Window_Unified* window = client->mini_buffer_window();
-        WITH_WINDOW_BUFFER(window);
+        WITH_WINDOW_BUFFER(window, client);
         mini_buffer_contents = clear_buffer(client, buffer);
     }
 
@@ -1826,7 +1826,7 @@ void insert_header_helper(Editor* editor,
     if (!transaction.commit(source.client))
         return;
 
-    window->update_cursors(buffer);
+    window->update_cursors(buffer, source.client);
     for (size_t c = 0; c < window->cursors.len; ++c) {
         window->cursors[c].point = cursor_outputs[c];
     }

@@ -31,7 +31,7 @@ void command_insert_completion(Editor* editor, Command_Source source) {
     result.append(completion_cache->engine_context.result_suffix);
 
     Window_Unified* window = source.client->mini_buffer_window();
-    WITH_WINDOW_BUFFER(window);
+    WITH_WINDOW_BUFFER(window, source.client);
 
     cz::String query = buffer->contents.stringify(cz::heap_allocator());
     CZ_DEFER(query.drop(cz::heap_allocator()));

@@ -26,7 +26,7 @@ Test_Runner::Test_Runner() {
 
 void Test_Runner::set_tokenizer(Tokenizer tokenizer) {
     Window_Unified* window = client.selected_window();
-    WITH_WINDOW_BUFFER(window);
+    WITH_WINDOW_BUFFER(window, &client);
     buffer->mode.next_token = tokenizer;
 }
 
@@ -189,7 +189,7 @@ cz::String Test_Runner::stringify(const Window_Unified* window, const Buffer* bu
 
 cz::String Test_Runner::slice(uint64_t start, uint64_t end) {
     Window_Unified* window = client.selected_window();
-    WITH_CONST_WINDOW_BUFFER(window);
+    WITH_CONST_WINDOW_BUFFER(window, &client);
 
     cz::String string = {};
     string.reserve_exact(buffer_array.allocator(), end - start);
@@ -219,7 +219,7 @@ bool Test_Runner::TToken::operator!=(const TToken& other) const {
 
 cz::Vector<Test_Runner::TToken> Test_Runner::tokenize(Tokenizer tokenizer) {
     Window_Unified* window = client.selected_window();
-    WITH_CONST_WINDOW_BUFFER(window);
+    WITH_CONST_WINDOW_BUFFER(window, &client);
 
     if (!tokenizer) {
         tokenizer = buffer->mode.next_token;

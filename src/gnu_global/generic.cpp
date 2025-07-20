@@ -303,7 +303,7 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
     CZ_DEFER(selected_region.drop(cz::heap_allocator()));
     {
         Window_Unified* window = source.client->selected_normal_window;
-        WITH_CONST_WINDOW_BUFFER(window);
+        WITH_CONST_WINDOW_BUFFER(window, source.client);
 
         if (!pick_engine(buffer->directory, &engine, &directory)) {
             source.client->show_message("Error: no tags file found");

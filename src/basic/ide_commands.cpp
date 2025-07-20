@@ -55,7 +55,7 @@ void command_insert_open_pair(Editor* editor, Command_Source source) {
         CZ_PANIC("command_insert_open_pair: no corresponding pair");
     }
 
-    window->update_cursors(buffer);
+    window->update_cursors(buffer, source.client);
 
     // Go to after the open pair.
     for (size_t i = 0; i < cursors.len; ++i) {

@@ -329,7 +329,7 @@ bool Server::run_synchronous_jobs(Client* client) {
         cz::String mini_buffer_contents = {};
         CZ_DEFER(mini_buffer_contents.drop(cz::heap_allocator()));
         {
-            WITH_CONST_WINDOW_BUFFER(client->mini_buffer_window());
+            WITH_CONST_WINDOW_BUFFER(client->mini_buffer_window(), client);
             mini_buffer_contents = buffer->contents.stringify(cz::heap_allocator());
         }
 

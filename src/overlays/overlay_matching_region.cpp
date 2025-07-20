@@ -81,7 +81,7 @@ static void overlay_matching_region_start_frame(Editor* editor,
         data->use_prompt = true;
 
         Window_Unified* window = client->mini_buffer_window();
-        WITH_CONST_WINDOW_BUFFER(window);
+        WITH_CONST_WINDOW_BUFFER(window, client);
         data->prompt.len = 0;
         buffer->contents.stringify_into(cz::heap_allocator(), &data->prompt);
     }

@@ -204,7 +204,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
                                                                    bool* any_animated_scrolling) {
     ZoneScoped;
 
-    window->update_cursors(buffer);
+    window->update_cursors(buffer, client);
 
 // If we're in debug mode assert that we're sorted.  In release mode we just sort the cursors.
 #ifdef NDEBUG
@@ -229,20 +229,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
     CZ_DEBUG_ASSERT(window->selected_cursor < window->cursors.len);
 
     // Delete cursors at the same point.
-    for (size_t i = 0; i + 1 < window->cursors.len;) {
-        if (window->cursors[i].point == window->cursors[i + 1].point) {
-            if (window->cursors.len == 2) {
-                kill_extra_cursors(window, client);
-            } else {
-                window->cursors.remove(i + 1);
-                if (window->selected_cursor > i) {
-                    --window->selected_cursor;
-                }
-            }
-        } else {
-            ++i;
-        }
-    }
+    kill_cursors_at_same_point(window, client);
 
     // Double check that the selected cursor is in bounds.
     CZ_DEBUG_ASSERT(window->selected_cursor < window->cursors.len);
@@ -1082,7 +1069,7 @@ static void draw_window(Cell* cells,
     case Window::UNIFIED: {
         Window_Unified* window = (Window_Unified*)w;
 
-        WITH_CONST_BUFFER_HANDLE(window->buffer_handle);
+        WITH_CONST_WINDOW_BUFFER(window, client);
 
         setup_unified_window_cache(editor, window, buffer, window_cache);
 
@@ -1137,7 +1124,8 @@ static void draw_window(Cell* cells,
     }
 }
 
-static void recalculate_mouse_recursive(const Theme& theme,
+static void recalculate_mouse_recursive(Client* client,
+                                        const Theme& theme,
                                         Window* w,
                                         Mouse_Position* mouse,
                                         size_t start_row,
@@ -1151,7 +1139,7 @@ static void recalculate_mouse_recursive(const Theme& theme,
              mouse->client_column < start_col + window->total_cols) &&
             (start_row <= mouse->client_row && mouse->client_row < start_row + window->rows())) {
             // Mark this window as the mouse's window.
-            WITH_CONST_WINDOW_BUFFER(window);
+            WITH_CONST_WINDOW_BUFFER(window, client);
             mouse->window = window;
             mouse->window_row = (uint32_t)(mouse->client_row - start_row);
             mouse->window_column = (uint32_t)(mouse->client_column - start_col -
@@ -1163,13 +1151,13 @@ static void recalculate_mouse_recursive(const Theme& theme,
     case Window::VERTICAL_SPLIT:
     case Window::HORIZONTAL_SPLIT: {
         Window_Split* window = (Window_Split*)w;
-        recalculate_mouse_recursive(theme, window->first, mouse, start_row, start_col);
+        recalculate_mouse_recursive(client, theme, window->first, mouse, start_row, start_col);
         if (window->tag == Window::VERTICAL_SPLIT) {
             recalculate_mouse_recursive(
-                theme, window->second, mouse, start_row,
+                client, theme, window->second, mouse, start_row,
                 start_col + window->total_cols - window->second->total_cols);
         } else {
-            recalculate_mouse_recursive(theme, window->second, mouse,
+            recalculate_mouse_recursive(client, theme, window->second, mouse,
                                         start_row + window->total_rows - window->second->total_rows,
                                         start_col);
         }
@@ -1180,7 +1168,7 @@ static void recalculate_mouse_recursive(const Theme& theme,
 
 void recalculate_mouse(const Theme& theme, Client* client) {
     client->mouse.window = nullptr;
-    recalculate_mouse_recursive(theme, client->window, &client->mouse, 0, 0);
+    recalculate_mouse_recursive(client, theme, client->window, &client->mouse, 0, 0);
 }
 
 bool load_mini_buffer_completion_cache(Server* server, Client* client) {
@@ -1236,7 +1224,7 @@ void process_buffer_external_updates(Client* client, Window* window) {
     switch (window->tag) {
     case Window::UNIFIED: {
         Window_Unified* w = (Window_Unified*)window;
-        WITH_CONST_WINDOW_BUFFER(w);
+        WITH_CONST_WINDOW_BUFFER(w, client);
 
         if (!buffer->is_unchanged() || !buffer->has_file_time) {
             return;
@@ -1456,7 +1444,7 @@ static size_t draw_mini_buffer(Cell* cells,
     }
 
     Window_Unified* window = client->mini_buffer_window();
-    WITH_CONST_WINDOW_BUFFER(window);
+    WITH_CONST_WINDOW_BUFFER(window, client);
 
     size_t message_width =
         std::min(client->_message.end - client->_message.start, (uint64_t)total_cols);

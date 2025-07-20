@@ -165,7 +165,7 @@ static void interactive_search_response_callback(Editor* editor,
 
     // If the mini buffer hasn't changed then we're already at the result.
     {
-        WITH_CONST_WINDOW_BUFFER(client->_mini_buffer);
+        WITH_CONST_WINDOW_BUFFER(client->_mini_buffer, client);
         if (data->mini_buffer_change_index == buffer->changes.len) {
             return;
         }
@@ -176,7 +176,7 @@ static void interactive_search_response_callback(Editor* editor,
     Window_Unified* window = client->selected_normal_window;
     interactive_search_reset(window, data);
 
-    WITH_CONST_WINDOW_BUFFER(window);
+    WITH_CONST_WINDOW_BUFFER(window, client);
     cz::Slice<Cursor> cursors = window->cursors;
     size_t c = 0;
     size_t i = 0;
@@ -320,10 +320,10 @@ static void do_command_search_x(Editor* editor, Client* client, bool is_forward)
             client->_message.response_callback = callback;
         } else if (data->direction == initial_direction + direction_offset) {
             // If there is nothing to search then use the last search result.
-            WITH_WINDOW_BUFFER(client->_mini_buffer);
+            WITH_WINDOW_BUFFER(client->_mini_buffer, client);
             if (buffer->contents.len == 0) {
                 buffer->undo();
-                client->_mini_buffer->update_cursors(buffer);
+                client->_mini_buffer->update_cursors(buffer, client);
                 data->direction = initial_direction;  // Go to the first search result.
             }
         }
@@ -351,7 +351,7 @@ static void do_command_search_x(Editor* editor, Client* client, bool is_forward)
         window->show_marks = 1;
         // Search using the matching region.
         cz::Slice<Cursor> cursors = window->cursors;
-        WITH_CONST_WINDOW_BUFFER(window);
+        WITH_CONST_WINDOW_BUFFER(window, client);
         for (size_t c = 0; c < cursors.len; ++c) {
             bool created;
             SEARCH_SLICE_THEN(search_slice, created, cursors[c] = new_cursor);
@@ -362,7 +362,7 @@ static void do_command_search_x(Editor* editor, Client* client, bool is_forward)
         dialog.prompt = prompt;
         dialog.response_callback = callback;
         {
-            WITH_CONST_WINDOW_BUFFER(window);
+            WITH_CONST_WINDOW_BUFFER(window, client);
             dialog.next_token = buffer->mode.next_token;
         }
 
@@ -442,7 +442,7 @@ void command_search_backward_expanding(Editor* editor, Command_Source source) {
     dialog.prompt = "Search backward expanding: ";
     dialog.response_callback = command_search_backward_expanding_callback;
     {
-        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window, source.client);
         dialog.next_token = buffer->mode.next_token;
     }
     source.client->show_dialog(dialog);
@@ -454,7 +454,7 @@ void command_search_forward_expanding(Editor* editor, Command_Source source) {
     dialog.prompt = "Search forward expanding: ";
     dialog.response_callback = command_search_forward_expanding_callback;
     {
-        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window, source.client);
         dialog.next_token = buffer->mode.next_token;
     }
     source.client->show_dialog(dialog);
@@ -659,13 +659,13 @@ static bool try_last_search_result(Editor* editor,
         return false;
 
     {
-        WITH_WINDOW_BUFFER(client->_mini_buffer);
+        WITH_WINDOW_BUFFER(client->_mini_buffer, client);
         if (buffer->contents.len != 0)
             return false;
 
         // If there is nothing to search then use the last search result.
         buffer->undo();
-        client->_mini_buffer->update_cursors(buffer);
+        client->_mini_buffer->update_cursors(buffer, client);
     }
 
     submit_mini_buffer(editor, client);
@@ -681,7 +681,7 @@ void command_search_backward_identifier(Editor* editor, Command_Source source) {
         return;
     }
     {
-        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window, source.client);
         dialog.next_token = buffer->mode.next_token;
     }
     source.client->show_dialog(dialog);
@@ -696,7 +696,7 @@ void command_search_forward_identifier(Editor* editor, Command_Source source) {
         return;
     }
     {
-        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window, source.client);
         dialog.next_token = buffer->mode.next_token;
     }
     source.client->show_dialog(dialog);

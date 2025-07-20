@@ -150,8 +150,8 @@ static void server_kill(void*) {
 /// Server Utility
 ///////////////////////////////////////////////////////////////////////////////
 
-static bool test_buffer(Window_Unified* window, cz::Str file, int mode) {
-    WITH_CONST_WINDOW_BUFFER(window);
+static bool test_buffer(Client* client, Window_Unified* window, cz::Str file, int mode) {
+    WITH_CONST_WINDOW_BUFFER(window, client);
 
     if (mode == 1) {
         return buffer->type == Buffer::FILE;
@@ -170,20 +170,20 @@ static bool test_buffer(Window_Unified* window, cz::Str file, int mode) {
     }
 }
 
-static Window_Unified* test_tree(Window* window, cz::Str file, int mode) {
+static Window_Unified* test_tree(Client* client, Window* window, cz::Str file, int mode) {
     if (window->tag == Window::UNIFIED) {
         Window_Unified* unif = (Window_Unified*)window;
-        if (test_buffer(unif, file, mode))
+        if (test_buffer(client, unif, file, mode))
             return unif;
         else
             return nullptr;
     }
 
     Window_Split* split = (Window_Split*)window;
-    Window_Unified* sel = test_tree(split->first, file, mode);
+    Window_Unified* sel = test_tree(client, split->first, file, mode);
     if (sel)
         return sel;
-    return test_tree(split->second, file, mode);
+    return test_tree(client, split->second, file, mode);
 }
 
 static void select_window_for_file(Editor* editor, Client* client, cz::Str file_arg) {
@@ -197,14 +197,15 @@ static void select_window_for_file(Editor* editor, Client* client, cz::Str file_
     client->hide_mini_buffer(editor);
 
     for (int mode = 0; mode < 3; ++mode) {
-        if (test_buffer(client->selected_normal_window, path, mode))
+        if (test_buffer(client, client->selected_normal_window, path, mode))
             return;
 
         Window* child = client->selected_normal_window;
         Window_Split* parent = child->parent;
         while (parent) {
-            Window_Unified* sel = (parent->first == child ? test_tree(parent->second, path, mode)
-                                                          : test_tree(parent->first, path, mode));
+            Window_Unified* sel =
+                (parent->first == child ? test_tree(client, parent->second, path, mode)
+                                        : test_tree(client, parent->first, path, mode));
             if (sel) {
                 client->selected_normal_window = sel;
                 return;

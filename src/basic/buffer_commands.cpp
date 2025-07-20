@@ -95,7 +95,7 @@ void command_open_file_full_path(Editor* editor, Command_Source source) {
                                   &selected_window_path);
 
     {
-        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window);
+        WITH_CONST_WINDOW_BUFFER(source.client->selected_normal_window, source.client);
         selected_window_path.reserve_exact(cz::heap_allocator(), buffer->name.len + 1);
         selected_window_path.append(buffer->name);
         selected_window_path.null_terminate();
@@ -554,7 +554,7 @@ static void command_delete_file_and_kill_buffer_callback(Editor* editor,
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
-        WITH_CONST_WINDOW_BUFFER(window);
+        WITH_CONST_WINDOW_BUFFER(window, client);
 
         // Prevent killing special buffers (*scratch*, *splash
         // page*, *client messages*, and *client mini buffer*).

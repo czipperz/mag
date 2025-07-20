@@ -146,7 +146,7 @@ static void run_paste(Editor* editor, Client* client, Window_Unified* window, Bu
 
     // Put mark at the start of the paste region.
     if (!window->show_marks) {
-        window->update_cursors(buffer);
+        window->update_cursors(buffer, client);
         for (size_t c = 0; c < cursors.len; ++c) {
             cursors[c].mark = befores[c];
         }
@@ -200,9 +200,9 @@ void command_paste_previous(Editor* editor, Command_Source source) {
         }
 
         {
-            WITH_WINDOW_BUFFER(window);
+            WITH_WINDOW_BUFFER(window, source.client);
             buffer->undo();
-            window->update_cursors(buffer);
+            window->update_cursors(buffer, source.client);
             run_paste(editor, source.client, window, buffer);
         }
     } else {
@@ -427,9 +427,9 @@ void command_cursors_paste_previous_as_lines(Editor* editor, Command_Source sour
         }
 
         {
-            WITH_WINDOW_BUFFER(window);
+            WITH_WINDOW_BUFFER(window, source.client);
             buffer->undo();
-            window->update_cursors(buffer);
+            window->update_cursors(buffer, source.client);
             run_paste_as_lines(source.client, cursors, buffer);
         }
     } else {

@@ -272,7 +272,7 @@ static void setup_completion_cache(Client* client) {
 }
 
 void Client::update_mini_buffer_completion_cache() {
-    WITH_WINDOW_BUFFER(mini_buffer_window());
+    WITH_WINDOW_BUFFER(mini_buffer_window(), this);
 
     mini_buffer_completion_cache.update(buffer->changes.len);
 
@@ -287,7 +287,7 @@ void Client::show_dialog(Dialog dialog) {
     {
         // Setup the mini buffer's contents.
         Window_Unified* window = mini_buffer_window();
-        WITH_WINDOW_BUFFER(window);
+        WITH_WINDOW_BUFFER(window, this);
 
         Transaction transaction;
         transaction.init(buffer);
