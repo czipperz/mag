@@ -1113,7 +1113,7 @@ static void punctuation_less_greater(Contents_Iterator* iterator,
             iterator->advance();  // << or >>
             if (looking_at(*iterator, '=')) {
                 iterator->advance();  // <<= or >>=
-            } else if (first_ch == '>' && !cz::is_space(before) &&
+            } else if (first_ch == '>' && !cz::is_space(before) && before != '(' &&
                        state->syntax != SYNTAX_AFTER_KEYWORD_OPERATOR) {
                 // Appears to be closing multiple templates.
                 iterator->retreat();
@@ -1132,7 +1132,7 @@ static void punctuation_less_greater(Contents_Iterator* iterator,
     }
 
     if (look_for_templates && state->syntax != SYNTAX_AFTER_KEYWORD_OPERATOR) {
-        if ((cz::is_space(before) && !cz::is_space(after)) || !cz::is_space(before)) {
+        if ((!cz::is_space(before) || !cz::is_space(after)) && before != '(') {
             if (first_ch == '<')
                 token->type = Token_Type::OPEN_PAIR;
             else
