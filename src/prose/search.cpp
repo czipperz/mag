@@ -209,7 +209,7 @@ static void command_search_in_file_callback(Editor* editor, Client* client, cz::
             return;
         }
 
-        directory = buffer->directory.clone(cz::heap_allocator());
+        directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
         name = buffer->name.clone(cz::heap_allocator());
     }
 
@@ -260,7 +260,7 @@ void command_search_in_file_token_at_position(Editor* editor, Command_Source sou
             return;
         }
 
-        directory = buffer->directory.clone(cz::heap_allocator());
+        directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
         name = buffer->name.clone(cz::heap_allocator());
 
         if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,
