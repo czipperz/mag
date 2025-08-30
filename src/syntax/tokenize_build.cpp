@@ -18,6 +18,17 @@ enum {
     MIDDLE_OF_LINE,
 };
 
+#define MIDDLE_OF_LINE_IDENT_CASES \
+    CZ_ALNUM_CASES:                \
+    case '_'
+
+#define START_OF_LINE_IDENT_CASES '.' : case '/' : case '-'
+
+#define PUNCT_CASES                                                                              \
+    '!' : case '#' : case '$' : case '%' : case '&' : case '*' : case '+' : case ',' : case ':'  \
+        : case ';' : case '<' : case '=' : case '>' : case '?' : case '@' : case '\\' : case '^' \
+        : case '`' : case '|' : case '~' : case '"' : case '\''
+
 static bool try_eating_line_and_column_number(Contents_Iterator* iterator) {
     Contents_Iterator test = *iterator;
 
@@ -36,6 +47,40 @@ static bool try_eating_line_and_column_number(Contents_Iterator* iterator) {
 
     *iterator = test;
     return true;
+}
+
+static void handle_identifier(Contents_Iterator* iterator, Token* token, const uint64_t* state) {
+    token->type = Token_Type::IDENTIFIER;
+    iterator->advance();
+
+    for (; !iterator->at_eob(); iterator->advance()) {
+        switch (iterator->get()) {
+        case MIDDLE_OF_LINE_IDENT_CASES:
+            continue;
+        case START_OF_LINE_IDENT_CASES:
+            if (*state == START_OF_LINE) {
+                // File paths are at start of line and can contain some extra delimiters.
+                continue;
+            } else {
+                break;
+            }
+        default:
+            break;
+        }
+        break;
+    }
+
+    if (*state == START_OF_LINE && try_eating_line_and_column_number(iterator)) {
+        token->type = Token_Type::LINK_HREF;
+    }
+}
+
+static void handle_punctuation(Contents_Iterator* iterator, Token* token, char first_ch) {
+    token->type = Token_Type::PUNCTUATION;
+    iterator->advance();
+    while (looking_at(*iterator, first_ch)) {
+        iterator->advance();
+    }
 }
 
 bool build_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
@@ -62,33 +107,9 @@ bool build_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
 
     token->start = iterator->position;
 
-#define IDENT_CASES \
-    CZ_ALNUM_CASES: \
-    case '.':       \
-    case '/':       \
-    case '_'
-#define PUNCT_CASES                                                                              \
-    '!' : case '#' : case '$' : case '%' : case '&' : case '*' : case '+' : case ',' : case '-'  \
-        : case ':' : case ';' : case '<' : case '=' : case '>' : case '?' : case '@' : case '\\' \
-        : case '^' : case '`' : case '|' : case '~' : case '"' : case '\''
-
     switch (char first_ch = iterator->get()) {
-    case IDENT_CASES:
-        token->type = Token_Type::IDENTIFIER;
-        iterator->advance();
-        for (; !iterator->at_eob(); iterator->advance()) {
-            switch (iterator->get()) {
-            case IDENT_CASES:
-            case '-':
-                continue;
-            default:
-                break;
-            }
-            break;
-        }
-        if (try_eating_line_and_column_number(iterator)) {
-            token->type = Token_Type::LINK_HREF;
-        }
+    case MIDDLE_OF_LINE_IDENT_CASES:
+        handle_identifier(iterator, token, state);
         break;
 
     case '[':
@@ -112,12 +133,16 @@ bool build_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
         iterator->advance();
         break;
 
-    case PUNCT_CASES:
-        token->type = Token_Type::PUNCTUATION;
-        iterator->advance();
-        while (looking_at(*iterator, first_ch)) {
-            iterator->advance();
+    case START_OF_LINE_IDENT_CASES:
+        if (*state == START_OF_LINE) {
+            handle_identifier(iterator, token, state);
+        } else {
+            handle_punctuation(iterator, token, first_ch);
         }
+        break;
+
+    case PUNCT_CASES:
+        handle_punctuation(iterator, token, first_ch);
         break;
 
     default:
