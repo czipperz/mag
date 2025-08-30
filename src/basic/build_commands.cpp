@@ -6,6 +6,7 @@
 #include "core/file.hpp"
 #include "core/job.hpp"
 #include "core/movement.hpp"
+#include "core/token_iterator.hpp"
 #include "version_control/version_control.hpp"
 
 namespace mag {
@@ -51,18 +52,12 @@ void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
     {
         WITH_SELECTED_BUFFER(client);
         buffer->token_cache.update(buffer);
-        Tokenizer_Check_Point check_point =
-            buffer->token_cache.find_check_point(window->cursors[window->selected_cursor].point);
-        Contents_Iterator iterator = buffer->contents.iterator_at(check_point.position);
-        Token token;
+        Forward_Token_Iterator token_iterator;
+        token_iterator.init_at_or_after(buffer, window->cursors[window->selected_cursor].point);
         if (select_next) {
-            while (1) {
-                if (!buffer->mode.next_token(&iterator, &token, &check_point.state))
-                    return;
-                if (token.start > window->cursors[window->selected_cursor].point &&
-                    token.type == Token_Type::LINK_HREF) {
-                    break;
-                }
+            token_iterator.find_after(window->cursors[window->selected_cursor].point + 1);
+            if (!token_iterator.find_type(Token_Type::LINK_HREF)) {
+                return;  // No result found.
             }
         } else {
             // TODO
@@ -70,12 +65,13 @@ void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
         }
 
         kill_extra_cursors(window, client);
-        window->cursors[window->selected_cursor].point = token.start;
-        iterator.retreat_to(token.start);
+        window->cursors[window->selected_cursor].point = token_iterator.token.start;
+        token_iterator.iterator.retreat_to(token_iterator.token.start);
 
         cz::String rel_path = {};
         CZ_DEFER(rel_path.drop(cz::heap_allocator()));
-        buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &rel_path);
+        buffer->contents.slice_into(cz::heap_allocator(), token_iterator.iterator,
+                                    token_iterator.token.end, &rel_path);
 
         cz::path::make_absolute(rel_path, buffer->directory, cz::heap_allocator(), &path);
     }
