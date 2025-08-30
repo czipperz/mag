@@ -34,7 +34,7 @@ struct Server {
 
     bool slurp_jobs();
     bool send_pending_asynchronous_jobs();
-    bool run_synchronous_jobs(Client* client);
+    bool run_synchronous_jobs(Client* client, size_t start_index = 0);
 
     void setup_async_context(Client* client);
     /// At various times the main thread will never be using the `Server`

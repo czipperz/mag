@@ -302,7 +302,7 @@ bool Server::send_pending_asynchronous_jobs() {
     return slurp_jobs();
 }
 
-bool Server::run_synchronous_jobs(Client* client) {
+bool Server::run_synchronous_jobs(Client* client, size_t start_index) {
     ZoneScoped;
 
     bool ran_any_jobs = false;
@@ -312,7 +312,7 @@ bool Server::run_synchronous_jobs(Client* client) {
         pending_message.len = 0;
     }
 
-    for (size_t i = 0; i < editor.synchronous_jobs.len;) {
+    for (size_t i = start_index; i < editor.synchronous_jobs.len;) {
         ran_any_jobs = true;
         Synchronous_Job job = editor.synchronous_jobs[i];
         Job_Tick_Result result = job.tick(&editor, client, job.data);
@@ -571,11 +571,24 @@ static bool handle_batch_paste(cz::Slice<Key> key_chain, size_t* end) {
 void Server::process_key_chain(Client* client, bool in_batch_paste) {
     ZoneScoped;
 
+    size_t starting_num_sync_jobs = editor.synchronous_jobs.len;
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    while (client->key_chain_offset < client->key_chain.len) {
+    while (client->key_chain_offset < client->key_chain.len ||
+           starting_num_sync_jobs != editor.synchronous_jobs.len) {
         std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > 100)
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > 100) {
             break;
+        }
+
+        // open_file and some other I/O based operations will steal the key chain until
+        // their synchronous jobs are ran.  But if the file is already open, there is no
+        // work to do -- you just have to run the job to get the keys back.  If the file
+        // is not open then we can try to open it here until the timer goes off above.
+        run_synchronous_jobs(client, starting_num_sync_jobs);
+        if (client->key_chain_offset == client->key_chain.len &&
+            starting_num_sync_jobs != editor.synchronous_jobs.len) {
+            continue;
+        }
 
         Command command;
         size_t end;
