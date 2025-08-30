@@ -19,27 +19,19 @@ enum {
 
 static bool try_eating_line_and_column_number(Contents_Iterator* iterator) {
     Contents_Iterator test = *iterator;
-    if (!looking_at(test, ':'))
-        return false;
-    test.advance();
-    if (test.at_eob())
-        return false;
-    if (!cz::is_digit(test.get()))
-        return false;
-    test.advance();
-    while (!test.at_eob() && cz::is_digit(test.get()))
-        test.advance();
 
-    if (!looking_at(test, ':'))
-        return false;
-    test.advance();
-    if (test.at_eob())
-        return false;
-    if (!cz::is_digit(test.get()))
-        return false;
-    test.advance();
-    while (!test.at_eob() && cz::is_digit(test.get()))
+    for (int i = 0; i < 2; ++i) {
+        if (!looking_at(test, ':'))
+            return false;
         test.advance();
+        if (test.at_eob())
+            return false;
+        if (!cz::is_digit(test.get()))
+            return false;
+        test.advance();
+        while (!test.at_eob() && cz::is_digit(test.get()))
+            test.advance();
+    }
 
     *iterator = test;
     return true;
