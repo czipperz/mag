@@ -73,6 +73,7 @@ bool build_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
         for (; !iterator->at_eob(); iterator->advance()) {
             switch (iterator->get()) {
             case IDENT_CASES:
+            case '-':
                 continue;
             default:
                 break;
