@@ -488,11 +488,9 @@ static void draw_buffer_contents(Cell* cells,
     // update_cursors_and_run_animated_scrolling.
     CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
     {
-        Tokenizer_Check_Point check_point;
-        if (buffer->token_cache.find_check_point(iterator.position, &check_point)) {
-            token.end = check_point.position;
-            state = check_point.state;
-        }
+        Tokenizer_Check_Point check_point = buffer->token_cache.find_check_point(iterator.position);
+        token.end = check_point.position;
+        state = check_point.state;
     }
 
     cz::Slice<Cursor> cursors = window->cursors;

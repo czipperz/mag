@@ -487,11 +487,10 @@ bool get_token_at_position_no_update(const Buffer* buffer,
 
     uint64_t position = token_iterator->position;
 
-    Tokenizer_Check_Point check_point = {};
     // Subtract one from the position so we can check if the previous
     // token is a better match if we happen to be between two tokens.
-    buffer->token_cache.find_check_point(
-        token_iterator->position > 0 ? token_iterator->position - 1 : 0, &check_point);
+    Tokenizer_Check_Point check_point = buffer->token_cache.find_check_point(
+        token_iterator->position > 0 ? token_iterator->position - 1 : 0);
 
     token_iterator->retreat_to(check_point.position);
     uint64_t state = check_point.state;

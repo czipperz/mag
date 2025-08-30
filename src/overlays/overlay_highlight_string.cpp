@@ -46,8 +46,7 @@ static void overlay_highlight_string_start_frame(Editor*,
     data->countdown_cursor_region = 0;
 
     if (data->token_type != Token_Type::length) {
-        Tokenizer_Check_Point check_point = {};
-        buffer->token_cache.find_check_point(iterator.position, &check_point);
+        Tokenizer_Check_Point check_point = buffer->token_cache.find_check_point(iterator.position);
 
         Contents_Iterator it = buffer->contents.iterator_at(check_point.position);
         uint64_t state = check_point.state;

@@ -51,9 +51,8 @@ void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
     {
         WITH_SELECTED_BUFFER(client);
         buffer->token_cache.update(buffer);
-        Tokenizer_Check_Point check_point = {};
-        buffer->token_cache.find_check_point(window->cursors[window->selected_cursor].point,
-                                             &check_point);
+        Tokenizer_Check_Point check_point =
+            buffer->token_cache.find_check_point(window->cursors[window->selected_cursor].point);
         Contents_Iterator iterator = buffer->contents.iterator_at(check_point.position);
         Token token;
         if (select_next) {

@@ -100,8 +100,8 @@ static void overlay_matching_tokens_start_frame(Editor* editor,
 
     // The token cache is updated in the main render loop.
     CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
-    Tokenizer_Check_Point check_point = {};
-    buffer->token_cache.find_check_point(window->start_position, &check_point);
+    Tokenizer_Check_Point check_point =
+        buffer->token_cache.find_check_point(window->start_position);
 
     // Use `go_to` because if we're animating then
     // `window->start_position` is much later than the start position.

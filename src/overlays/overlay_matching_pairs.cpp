@@ -72,8 +72,8 @@ static void overlay_matching_pairs_start_frame(Editor* editor,
 
     // Note: we update the token cache in the render loop.
     CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
-    Tokenizer_Check_Point check_point = {};
-    buffer->token_cache.find_check_point(start_position_iterator.position, &check_point);
+    Tokenizer_Check_Point check_point =
+        buffer->token_cache.find_check_point(start_position_iterator.position);
 
     cz::Vector<Token> tokens = {};
     tokens.reserve(cz::heap_allocator(), 8);

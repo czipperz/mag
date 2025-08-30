@@ -29,9 +29,10 @@ struct Token_Cache {
     /// This isn't needed if you use `Contents::append` though.
     void reset();
 
-    /// Find the last check point before the start position
-    bool find_check_point(uint64_t position, Tokenizer_Check_Point*) const;
-    bool find_check_point(uint64_t position, size_t* index) const;
+    /// Find the index of the last check point before the start position.
+    /// Please bounds check the return value of `find_check_point_index`.
+    size_t find_check_point_index(uint64_t position) const;
+    Tokenizer_Check_Point find_check_point(uint64_t position) const;
 
     /// Update the cache based on recent changes.  Returns `true` on success, `false`
     /// if a change has invalidated part of the cache and it must be re-generated.

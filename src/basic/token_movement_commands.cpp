@@ -69,11 +69,9 @@ bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_
 
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.update(buffer);
-    size_t check_point_index;
-    if (buffer->token_cache.find_check_point(token_iterator.position, &check_point_index)) {
+    size_t check_point_index = buffer->token_cache.find_check_point_index(token_iterator.position);
+    if (check_point_index < buffer->token_cache.check_points.len) {
         check_point = buffer->token_cache.check_points[check_point_index];
-    } else {
-        check_point_index = 0;
     }
 
     cz::Vector<Token> tokens = {};
@@ -127,9 +125,9 @@ bool get_token_after_position(Buffer* buffer,
                               Token* token) {
     uint64_t end_position = token_iterator->position;
 
-    Tokenizer_Check_Point check_point = {};
     buffer->token_cache.update(buffer);
-    buffer->token_cache.find_check_point(token_iterator->position, &check_point);
+    Tokenizer_Check_Point check_point =
+        buffer->token_cache.find_check_point(token_iterator->position);
     token_iterator->retreat_to(check_point.position);
     *state = check_point.state;
 
@@ -153,11 +151,9 @@ bool get_token_before_position(Buffer* buffer,
 
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.update(buffer);
-    size_t check_point_index;
-    if (buffer->token_cache.find_check_point(token_iterator->position, &check_point_index)) {
+    size_t check_point_index = buffer->token_cache.find_check_point_index(token_iterator->position);
+    if (check_point_index < buffer->token_cache.check_points.len) {
         check_point = buffer->token_cache.check_points[check_point_index];
-    } else {
-        check_point_index = 0;
     }
 
     while (1) {
@@ -504,11 +500,9 @@ int find_backward_matching_token(Buffer* buffer,
     Token token;
     Tokenizer_Check_Point check_point = {};
     buffer->token_cache.update(buffer);
-    size_t check_point_index;
-    if (buffer->token_cache.find_check_point(token_to_match.start, &check_point_index)) {
+    size_t check_point_index = buffer->token_cache.find_check_point_index(token_to_match.start);
+    if (check_point_index < buffer->token_cache.check_points.len) {
         check_point = buffer->token_cache.check_points[check_point_index];
-    } else {
-        check_point_index = 0;
     }
 
     token_iterator.retreat_to(check_point.position);
@@ -600,9 +594,9 @@ int find_forward_matching_token(Buffer* buffer,
     uint64_t end_position = token_to_match.end;
 
     Contents_Iterator token_iterator = iterator;
-    Tokenizer_Check_Point check_point = {};
     buffer->token_cache.update(buffer);
-    buffer->token_cache.find_check_point(token_iterator.position, &check_point);
+    Tokenizer_Check_Point check_point =
+        buffer->token_cache.find_check_point(token_iterator.position);
     token_iterator.retreat_to(check_point.position);
     uint64_t state = check_point.state;
 

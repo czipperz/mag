@@ -27,17 +27,16 @@ void Token_Cache::reset() {
     ran_to_end = false;
 }
 
-bool Token_Cache::find_check_point(uint64_t position, Tokenizer_Check_Point* cp) const {
-    size_t result_index;
-    if (find_check_point(position, &result_index)) {
-        *cp = check_points[result_index];
-        return true;
+Tokenizer_Check_Point Token_Cache::find_check_point(uint64_t position) const {
+    size_t index = find_check_point_index(position);
+    if (index < check_points.len) {
+        return check_points[index];
     } else {
-        return false;
+        return {};  // It's always fine to just restart tokenization.
     }
 }
 
-bool Token_Cache::find_check_point(uint64_t position, size_t* index_out) const {
+size_t Token_Cache::find_check_point_index(uint64_t position) const {
     ZoneScoped;
 
     size_t start = 0;
@@ -55,13 +54,7 @@ bool Token_Cache::find_check_point(uint64_t position, size_t* index_out) const {
             end = mid;
         }
     }
-
-    if (result_index < check_points.len) {
-        *index_out = result_index;
-        return true;
-    } else {
-        return false;
-    }
+    return result_index;
 }
 
 static bool any_changes_after(cz::Slice<const Change> changes, uint64_t position) {
