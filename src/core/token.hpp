@@ -117,6 +117,7 @@ struct Token {
     uint64_t end;
     Token_Type type;
 
+    bool is_valid(uint64_t contents_len) const;
     void assert_valid(uint64_t contents_len) const;
 };
 

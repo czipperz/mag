@@ -73,6 +73,18 @@ Face decode(Token_Type type) {
 
 }
 
+bool Token::is_valid(uint64_t contents_len) const {
+    if (start > end)
+        return false;
+    if (end > contents_len)
+        return false;
+    if (!(type & Token_Type::CUSTOM)) {
+        if (type >= Token_Type::length)
+            return false;
+    }
+    return true;
+}
+
 void Token::assert_valid(uint64_t contents_len) const {
     CZ_ASSERT(start <= end);
     CZ_ASSERT(end <= contents_len);
