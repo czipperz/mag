@@ -872,7 +872,6 @@ static void cpp_comments_key_map(Key_Map& key_map) {
 static void build_log_mode(Mode& mode) {
     mode.next_token = syntax::build_next_token;
     mode.perform_iteration = basic::build_buffer_iterate;
-    BIND(mode.key_map, "g", command_search_buffer_reload);
     BIND(mode.key_map, "ENTER", command_build_open_link_at_point);
 }
 
@@ -1071,6 +1070,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             search_key_map(buffer->mode.key_map);
         } else if (buffer->name.starts_with("*build ")) {
             build_log_mode(buffer->mode);
+            BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
         }
         break;
     }
