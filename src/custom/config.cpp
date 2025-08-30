@@ -869,6 +869,13 @@ static void cpp_comments_key_map(Key_Map& key_map) {
     BIND(key_map, "A-c h 2", cpp::command_insert_header_120);
 }
 
+static void build_log_mode(Mode& mode) {
+    mode.next_token = syntax::build_next_token;
+    mode.perform_iteration = basic::build_buffer_iterate;
+    BIND(mode.key_map, "g", command_search_buffer_reload);
+    BIND(mode.key_map, "ENTER", command_build_open_link_at_point);
+}
+
 /// See if there are any C style comments at start of lines as a simple heuristic.
 static bool has_c_style_comments(const Contents& contents) {
     Contents_Iterator it = contents.start();
@@ -1063,10 +1070,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.perform_iteration = basic::search_buffer_iterate;
             search_key_map(buffer->mode.key_map);
         } else if (buffer->name.starts_with("*build ")) {
-            buffer->mode.next_token = syntax::build_next_token;
-            buffer->mode.perform_iteration = basic::build_buffer_iterate;
-            BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
-            BIND(buffer->mode.key_map, "ENTER", command_build_open_link_at_point);
+            build_log_mode(buffer->mode);
         }
         break;
     }
@@ -1280,6 +1284,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             indent_based_hierarchy_mode(buffer->mode);
         } else if (name == ".vimrc" || name.ends_with(".vim")) {
             buffer->mode.next_token = syntax::vim_script_next_token;
+        } else if (name == "build.log") {
+            build_log_mode(buffer->mode);
         } else if (name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
             indent_based_hierarchy_mode(buffer->mode);
