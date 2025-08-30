@@ -255,6 +255,8 @@ void Token_Cache::generate_check_points_until(const Buffer* buffer, uint64_t pos
     }
 }
 
+static constexpr size_t TOKENIZATION_DISTANCE = 1024;
+
 bool Token_Cache::next_check_point(const Buffer* buffer,
                                    Contents_Iterator* iterator,
                                    uint64_t* state) {
@@ -262,7 +264,7 @@ bool Token_Cache::next_check_point(const Buffer* buffer,
 
     uint64_t start_position = iterator->position;
     while (!iterator->at_eob()) {
-        if (iterator->position >= start_position + 1024) {
+        if (iterator->position >= start_position + TOKENIZATION_DISTANCE) {
             Tokenizer_Check_Point check_point;
             check_point.position = iterator->position;
             check_point.state = *state;
@@ -301,7 +303,7 @@ bool Token_Cache::is_covered(uint64_t position) const {
     if (check_points.len > 0) {
         cpp = check_points.last().position;
     }
-    return position < cpp + 1024;
+    return position < cpp + TOKENIZATION_DISTANCE;
 }
 
 struct Job_Syntax_Highlight_Buffer_Data {
