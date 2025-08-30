@@ -14,7 +14,8 @@ namespace syntax {
 
 enum {
     FIRST_LINE,
-    IN_CONTENTS,
+    START_OF_LINE,
+    MIDDLE_OF_LINE,
 };
 
 static bool try_eating_line_and_column_number(Contents_Iterator* iterator) {
@@ -47,11 +48,16 @@ bool build_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
         token->start = iterator->position;
         end_of_line(iterator);
         token->end = iterator->position;
-        *state = IN_CONTENTS;
+        *state = MIDDLE_OF_LINE;
         goto ret;
     }
     if (!advance_whitespace(iterator)) {
         return false;
+    }
+    if (at_start_of_line(*iterator)) {
+        *state = START_OF_LINE;
+    } else if (*state == START_OF_LINE) {
+        *state = MIDDLE_OF_LINE;
     }
 
     token->start = iterator->position;
@@ -86,6 +92,14 @@ bool build_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
         break;
 
     case '[':
+        if (*state == START_OF_LINE) {
+            // [  0%] Building CXX object CMakeFiles/magl.dir/src/syntax/tokenize_build.cpp.o
+            token->type = Token_Type::PATCH_COMMIT_CONTEXT;
+            end_of_line(iterator);
+            break;
+        }
+        // fallthrough
+
     case '{':
     case '(':
         token->type = Token_Type::OPEN_PAIR;
