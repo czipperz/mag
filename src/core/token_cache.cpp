@@ -199,7 +199,7 @@ bool Token_Cache::update(const Buffer* buffer) {
                 }
 
 #ifndef NDEBUG
-                token.check_valid(buffer->contents.len);
+                token.assert_valid(buffer->contents.len);
 #endif
             }
             if (!has_token) {
@@ -277,7 +277,7 @@ bool Token_Cache::next_check_point(const Buffer* buffer,
         }
 
 #ifndef NDEBUG
-        token.check_valid(buffer->contents.len);
+        token.assert_valid(buffer->contents.len);
 #endif
     }
 

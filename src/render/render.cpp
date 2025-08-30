@@ -581,7 +581,7 @@ static void draw_buffer_contents(Cell* cells,
             has_token = buffer->mode.next_token(&token_iterator, &token, &state);
 #ifndef NDEBUG
             if (has_token) {
-                token.check_valid(buffer->contents.len);
+                token.assert_valid(buffer->contents.len);
             }
 #endif
         }
@@ -1362,7 +1362,7 @@ static void draw_mini_buffer_results(Cell* cells,
         bool has_token = minibuffer_next_token(&token_iterator, &token, &state);
 #ifndef NDEBUG
         if (has_token) {
-            token.check_valid(contents.len);
+            token.assert_valid(contents.len);
         }
 #endif
 
@@ -1395,7 +1395,7 @@ static void draw_mini_buffer_results(Cell* cells,
                     has_token = minibuffer_next_token(&token_iterator, &token, &state);
 #ifndef NDEBUG
                     if (has_token) {
-                        token.check_valid(contents.len);
+                        token.assert_valid(contents.len);
                     }
 #endif
                     continue;

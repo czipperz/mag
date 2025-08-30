@@ -231,7 +231,7 @@ cz::Vector<Test_Runner::TToken> Test_Runner::tokenize(Tokenizer tokenizer) {
     Token token = INVALID_TOKEN;
     uint64_t state = 0;
     while (tokenizer(&it, &token, &state)) {
-        token.check_valid(buffer->contents.len);
+        token.assert_valid(buffer->contents.len);
         tokens.reserve(buffer_array.allocator(), 1);
         tokens.push({{}, token});
         token = INVALID_TOKEN;
