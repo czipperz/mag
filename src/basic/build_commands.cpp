@@ -56,22 +56,23 @@ void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
         token_iterator.init_at_or_after(buffer, window->cursors[window->selected_cursor].point);
         if (select_next) {
             token_iterator.find_after(window->cursors[window->selected_cursor].point + 1);
-            if (!token_iterator.find_type(Token_Type::LINK_HREF)) {
-                return;  // No result found.
-            }
+            token_iterator.find_type(Token_Type::LINK_HREF);
         } else {
             // TODO
             return;
         }
+        if (!token_iterator.has_token()) {
+            return;
+        }
+        Token token = token_iterator.token();
+        Contents_Iterator iterator = token_iterator.iterator_at_token_start();
 
         kill_extra_cursors(window, client);
-        window->cursors[window->selected_cursor].point = token_iterator.token.start;
-        token_iterator.iterator.retreat_to(token_iterator.token.start);
+        window->cursors[window->selected_cursor].point = token.start;
 
         cz::String rel_path = {};
         CZ_DEFER(rel_path.drop(cz::heap_allocator()));
-        buffer->contents.slice_into(cz::heap_allocator(), token_iterator.iterator,
-                                    token_iterator.token.end, &rel_path);
+        buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &rel_path);
 
         cz::path::make_absolute(rel_path, buffer->directory, cz::heap_allocator(), &path);
     }

@@ -16,8 +16,15 @@ struct Forward_Token_Iterator {
     bool find_type(Token_Type type);
 
     Tokenizer tokenizer;
-    Contents_Iterator iterator;
-    Token token;  /// Note: check if a token has been found via Token::is_valid().
     uint64_t state;
+    const Contents_Iterator& iterator_at_tokenization_position() const { return iterator_; }
+
+    bool has_token() const;
+    const Token& token() const;  /// Note: asserts the token is valid.
+    Contents_Iterator iterator_at_token_start() const; /// Note: asserts the token is valid.
+
+private:
+    Token token_;
+    Contents_Iterator iterator_;
 };
 }
