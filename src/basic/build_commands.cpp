@@ -95,13 +95,43 @@ void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
     }
 }
 
-REGISTER_COMMAND(command_build_open_link_at_point);
-void command_build_open_link_at_point(Editor* editor, Command_Source source) {
+static void helper(Editor* editor,
+                   const Command_Source& source,
+                   bool select_next,
+                   bool move_cursor,
+                   bool no_swap) {
     cz::Heap_String path = {};
     CZ_DEFER(path.drop());
-    if (find_path_in_direction(editor, source.client, false, false, &path)) {
+    if (find_path_in_direction(editor, source.client, select_next, move_cursor, &path)) {
         open_result(editor, source.client, path);
+        if (no_swap) {
+            toggle_cycle_window(source.client);
+        }
     }
+}
+REGISTER_COMMAND(command_build_open_link_at_point);
+void command_build_open_link_at_point(Editor* editor, Command_Source source) {
+    helper(editor, source, false, false, false);
+}
+REGISTER_COMMAND(command_build_open_link_at_point_no_swap);
+void command_build_open_link_at_point_no_swap(Editor* editor, Command_Source source) {
+    helper(editor, source, false, false, true);
+}
+REGISTER_COMMAND(command_build_open_next_link);
+void command_build_open_next_link(Editor* editor, Command_Source source) {
+    helper(editor, source, true, true, false);
+}
+REGISTER_COMMAND(command_build_open_next_link_no_swap);
+void command_build_open_next_link_no_swap(Editor* editor, Command_Source source) {
+    helper(editor, source, true, true, true);
+}
+REGISTER_COMMAND(command_build_open_previous_link);
+void command_build_open_previous_link(Editor* editor, Command_Source source) {
+    helper(editor, source, false, true, false);
+}
+REGISTER_COMMAND(command_build_open_previous_link_no_swap);
+void command_build_open_previous_link_no_swap(Editor* editor, Command_Source source) {
+    helper(editor, source, false, true, true);
 }
 
 }

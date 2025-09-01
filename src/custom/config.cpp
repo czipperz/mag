@@ -873,6 +873,11 @@ static void build_log_mode(Mode& mode) {
     mode.next_token = syntax::build_next_token;
     mode.perform_iteration = basic::build_buffer_iterate;
     BIND(mode.key_map, "ENTER", command_build_open_link_at_point);
+    BIND(mode.key_map, "o", command_build_open_link_at_point_no_swap);
+    BIND(mode.key_map, "n", command_build_open_next_link_no_swap);
+    BIND(mode.key_map, "p", command_build_open_previous_link_no_swap);
+    BIND(mode.key_map, "N", command_build_open_next_link);
+    BIND(mode.key_map, "P", command_build_open_previous_link);
 }
 
 /// See if there are any C style comments at start of lines as a simple heuristic.
