@@ -64,7 +64,7 @@ static bool find_path_in_direction(Editor* editor,
     Contents_Iterator iterator;
     if (direction == Direction::NEXT) {
         Forward_Token_Iterator token_iterator;
-        token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point + 1);
+        token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point);
         if (!token_iterator.find_type(Token_Type::LINK_HREF)) {
             return false;
         }

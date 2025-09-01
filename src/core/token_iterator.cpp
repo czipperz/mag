@@ -49,7 +49,7 @@ bool Forward_Token_Iterator::find_after(uint64_t position) {
     if (!find_at_or_after(position)) {
         return false;
     }
-    if (token_.start >= position) {
+    if (token_.start > position) {
         return true;
     }
     return next();
