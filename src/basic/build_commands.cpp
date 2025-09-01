@@ -97,7 +97,8 @@ static bool find_path_in_direction(Editor* editor,
 void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
     cz::Heap_String path = {};
     CZ_DEFER(path.drop());
-    if (find_path_in_direction(editor, client, select_next ? Direction::NEXT : Direction::PREVIOUS, &path)) {
+    if (find_path_in_direction(editor, client, select_next ? Direction::NEXT : Direction::PREVIOUS,
+                               &path)) {
         open_result(editor, client, path);
     }
 }
