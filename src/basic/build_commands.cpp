@@ -45,66 +45,63 @@ static void open_result(Editor* editor, Client* client, cz::Str path) {
     open_file_arg(editor, client, path);
 }
 
-void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
-    cz::String path = {};
-    CZ_DEFER(path.drop(cz::heap_allocator()));
+static bool find_path_in_direction(Editor* editor,
+                                   Client* client,
+                                   bool select_next,
+                                   bool move_cursor,
+                                   cz::Heap_String* path) {
+    WITH_SELECTED_BUFFER(client);
+    buffer->token_cache.update(buffer);
 
-    {
-        WITH_SELECTED_BUFFER(client);
-        buffer->token_cache.update(buffer);
-
-        Token token;
-        Contents_Iterator iterator;
-        if (select_next) {
-            Forward_Token_Iterator token_iterator;
-            token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point + 1);
-            if (!token_iterator.find_type(Token_Type::LINK_HREF)) {
-                return;
-            }
-            token = token_iterator.token();
-            iterator = token_iterator.iterator_at_token_start();
-        } else {
-            Backward_Token_Iterator token_iterator;
-            token_iterator.init_at_or_before(buffer,
-                                             window->cursors[window->selected_cursor].point - 1);
-            if (!token_iterator.rfind_type(Token_Type::LINK_HREF)) {
-                return;
-            }
-            token = token_iterator.token();
-            iterator = token_iterator.iterator_at_token_start();
+    Token token;
+    Contents_Iterator iterator;
+    if (select_next) {
+        Forward_Token_Iterator token_iterator;
+        token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point + 1);
+        if (!token_iterator.find_type(Token_Type::LINK_HREF)) {
+            return false;
         }
-
-        kill_extra_cursors(window, client);
-        window->cursors[window->selected_cursor].point = token.start;
-
-        cz::String rel_path = {};
-        CZ_DEFER(rel_path.drop(cz::heap_allocator()));
-        buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &rel_path);
-
-        cz::path::make_absolute(rel_path, buffer->directory, cz::heap_allocator(), &path);
+        token = token_iterator.token();
+        iterator = token_iterator.iterator_at_token_start();
+    } else {
+        Backward_Token_Iterator token_iterator;
+        token_iterator.init_at_or_before(buffer,
+                                         window->cursors[window->selected_cursor].point - 1);
+        if (!token_iterator.rfind_type(Token_Type::LINK_HREF)) {
+            return false;
+        }
+        token = token_iterator.token();
+        iterator = token_iterator.iterator_at_token_start();
     }
 
-    open_result(editor, client, path);
+    if (move_cursor) {
+        kill_extra_cursors(window, client);
+        window->cursors[window->selected_cursor].point = token.start;
+    }
+
+    cz::String rel_path = {};
+    CZ_DEFER(rel_path.drop(cz::heap_allocator()));
+    buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &rel_path);
+
+    cz::path::make_absolute(rel_path, buffer->directory, cz::heap_allocator(), path);
+    return true;
+}
+
+void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
+    cz::Heap_String path = {};
+    CZ_DEFER(path.drop());
+    if (find_path_in_direction(editor, client, select_next, true, &path)) {
+        open_result(editor, client, path);
+    }
 }
 
 REGISTER_COMMAND(command_build_open_link_at_point);
 void command_build_open_link_at_point(Editor* editor, Command_Source source) {
-    cz::String path = {};
-    CZ_DEFER(path.drop(cz::heap_allocator()));
-
-    {
-        SSOStr rel_path = {};
-        CZ_DEFER(rel_path.drop(cz::heap_allocator()));
-
-        WITH_SELECTED_BUFFER(source.client);
-        if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,
-                                            &rel_path))
-            return;
-
-        cz::path::make_absolute(rel_path.as_str(), buffer->directory, cz::heap_allocator(), &path);
+    cz::Heap_String path = {};
+    CZ_DEFER(path.drop());
+    if (find_path_in_direction(editor, source.client, false, false, &path)) {
+        open_result(editor, source.client, path);
     }
-
-    open_result(editor, source.client, path);
 }
 
 }
