@@ -2,6 +2,7 @@
 
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include "basic/visible_region_commands.hpp"
 #include "core/command_macros.hpp"
 #include "core/file.hpp"
 #include "core/job.hpp"
@@ -84,6 +85,7 @@ static bool find_path_in_direction(Editor* editor,
     if (direction != Direction::CURRENT) {
         kill_extra_cursors(window, client);
         window->cursors[window->selected_cursor].point = token.start;
+        basic::center_selected_cursor(editor, window, buffer);
     }
 
     cz::String rel_path = {};
@@ -160,6 +162,8 @@ void command_build_next_file(Editor* editor, Command_Source source) {
 
     kill_extra_cursors(window, source.client);
     window->cursors[window->selected_cursor].point = position;
+    window->start_position = window->cursors[window->selected_cursor].point;
+    window->column_offset = 0;
 }
 
 REGISTER_COMMAND(command_build_previous_file);
@@ -180,6 +184,8 @@ void command_build_previous_file(Editor* editor, Command_Source source) {
 
     kill_extra_cursors(window, source.client);
     window->cursors[window->selected_cursor].point = position;
+    window->start_position = window->cursors[window->selected_cursor].point;
+    window->column_offset = 0;
 }
 
 }
