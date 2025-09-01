@@ -141,5 +141,46 @@ void command_build_open_previous_link_no_swap(Editor* editor, Command_Source sou
     helper(editor, source, Direction::PREVIOUS, true);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+REGISTER_COMMAND(command_build_next_file);
+void command_build_next_file(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    buffer->token_cache.update(buffer);
+
+    Forward_Token_Iterator token_iterator;
+    token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point);
+
+    uint64_t position;
+    if (token_iterator.find_type(Token_Type::PATCH_COMMIT_CONTEXT)) {
+        position = token_iterator.token().start;
+    } else {
+        position = buffer->contents.len;
+    }
+
+    kill_extra_cursors(window, source.client);
+    window->cursors[window->selected_cursor].point = position;
+}
+
+REGISTER_COMMAND(command_build_previous_file);
+void command_build_previous_file(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    buffer->token_cache.update(buffer);
+
+    Backward_Token_Iterator token_iterator;
+    token_iterator.init_at_or_before(
+        buffer, std::max(window->cursors[window->selected_cursor].point, (uint64_t)1) - 1);
+
+    uint64_t position;
+    if (token_iterator.rfind_type(Token_Type::PATCH_COMMIT_CONTEXT)) {
+        position = token_iterator.token().start;
+    } else {
+        position = 0;
+    }
+
+    kill_extra_cursors(window, source.client);
+    window->cursors[window->selected_cursor].point = position;
+}
+
 }
 }

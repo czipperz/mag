@@ -16,5 +16,8 @@ void command_build_open_next_link_no_swap(Editor* editor, Command_Source source)
 void command_build_open_previous_link(Editor* editor, Command_Source source);
 void command_build_open_previous_link_no_swap(Editor* editor, Command_Source source);
 
+void command_build_next_file(Editor* editor, Command_Source source);
+void command_build_previous_file(Editor* editor, Command_Source source);
+
 }
 }
