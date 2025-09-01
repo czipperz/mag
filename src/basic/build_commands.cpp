@@ -2,6 +2,7 @@
 
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include "basic/search_buffer_commands.hpp"
 #include "basic/visible_region_commands.hpp"
 #include "core/command_macros.hpp"
 #include "core/file.hpp"
@@ -59,6 +60,16 @@ static bool find_path_in_direction(Editor* editor,
                                    Direction direction,
                                    cz::Heap_String* path) {
     WITH_SELECTED_BUFFER(client);
+
+    if (direction != Direction::CURRENT && (window->cursors.len > 1 || window->show_marks)) {
+        Contents_Iterator it =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+        basic::iterate_cursors(window, buffer, direction == Direction::NEXT, &it);
+
+        basic::center_selected_cursor(editor, window, buffer);
+        direction = Direction::CURRENT;
+    }
+
     buffer->token_cache.update(buffer);
 
     Token token;
