@@ -45,17 +45,24 @@ static void open_result(Editor* editor, Client* client, cz::Str path) {
     open_file_arg(editor, client, path);
 }
 
+namespace {
+enum class Direction {
+    CURRENT,
+    NEXT,
+    PREVIOUS,
+};
+}
+
 static bool find_path_in_direction(Editor* editor,
                                    Client* client,
-                                   bool select_next,
-                                   bool move_cursor,
+                                   Direction direction,
                                    cz::Heap_String* path) {
     WITH_SELECTED_BUFFER(client);
     buffer->token_cache.update(buffer);
 
     Token token;
     Contents_Iterator iterator;
-    if (select_next) {
+    if (direction == Direction::NEXT) {
         Forward_Token_Iterator token_iterator;
         token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point + 1);
         if (!token_iterator.find_type(Token_Type::LINK_HREF)) {
@@ -65,8 +72,8 @@ static bool find_path_in_direction(Editor* editor,
         iterator = token_iterator.iterator_at_token_start();
     } else {
         Backward_Token_Iterator token_iterator;
-        token_iterator.init_at_or_before(buffer,
-                                         window->cursors[window->selected_cursor].point - 1);
+        token_iterator.init_at_or_before(buffer, window->cursors[window->selected_cursor].point -
+                                                     (direction == Direction::PREVIOUS));
         if (!token_iterator.rfind_type(Token_Type::LINK_HREF)) {
             return false;
         }
@@ -74,7 +81,7 @@ static bool find_path_in_direction(Editor* editor,
         iterator = token_iterator.iterator_at_token_start();
     }
 
-    if (move_cursor) {
+    if (direction != Direction::CURRENT) {
         kill_extra_cursors(window, client);
         window->cursors[window->selected_cursor].point = token.start;
     }
@@ -90,19 +97,18 @@ static bool find_path_in_direction(Editor* editor,
 void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
     cz::Heap_String path = {};
     CZ_DEFER(path.drop());
-    if (find_path_in_direction(editor, client, select_next, true, &path)) {
+    if (find_path_in_direction(editor, client, select_next ? Direction::NEXT : Direction::PREVIOUS, &path)) {
         open_result(editor, client, path);
     }
 }
 
 static void helper(Editor* editor,
                    const Command_Source& source,
-                   bool select_next,
-                   bool move_cursor,
+                   Direction direction,
                    bool no_swap) {
     cz::Heap_String path = {};
     CZ_DEFER(path.drop());
-    if (find_path_in_direction(editor, source.client, select_next, move_cursor, &path)) {
+    if (find_path_in_direction(editor, source.client, direction, &path)) {
         open_result(editor, source.client, path);
         if (no_swap) {
             toggle_cycle_window(source.client);
@@ -111,27 +117,27 @@ static void helper(Editor* editor,
 }
 REGISTER_COMMAND(command_build_open_link_at_point);
 void command_build_open_link_at_point(Editor* editor, Command_Source source) {
-    helper(editor, source, false, false, false);
+    helper(editor, source, Direction::CURRENT, false);
 }
 REGISTER_COMMAND(command_build_open_link_at_point_no_swap);
 void command_build_open_link_at_point_no_swap(Editor* editor, Command_Source source) {
-    helper(editor, source, false, false, true);
+    helper(editor, source, Direction::CURRENT, true);
 }
 REGISTER_COMMAND(command_build_open_next_link);
 void command_build_open_next_link(Editor* editor, Command_Source source) {
-    helper(editor, source, true, true, false);
+    helper(editor, source, Direction::NEXT, false);
 }
 REGISTER_COMMAND(command_build_open_next_link_no_swap);
 void command_build_open_next_link_no_swap(Editor* editor, Command_Source source) {
-    helper(editor, source, true, true, true);
+    helper(editor, source, Direction::NEXT, true);
 }
 REGISTER_COMMAND(command_build_open_previous_link);
 void command_build_open_previous_link(Editor* editor, Command_Source source) {
-    helper(editor, source, false, true, false);
+    helper(editor, source, Direction::PREVIOUS, false);
 }
 REGISTER_COMMAND(command_build_open_previous_link_no_swap);
 void command_build_open_previous_link_no_swap(Editor* editor, Command_Source source) {
-    helper(editor, source, false, true, true);
+    helper(editor, source, Direction::PREVIOUS, true);
 }
 
 }
