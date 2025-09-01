@@ -105,6 +105,20 @@ void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
     }
 }
 
+REGISTER_COMMAND(command_build_next_link);
+void command_build_next_link(Editor* editor, Command_Source source) {
+    cz::Heap_String path = {};
+    CZ_DEFER(path.drop());
+    find_path_in_direction(editor, source.client, Direction::NEXT, &path);
+}
+
+REGISTER_COMMAND(command_build_previous_link);
+void command_build_previous_link(Editor* editor, Command_Source source) {
+    cz::Heap_String path = {};
+    CZ_DEFER(path.drop());
+    find_path_in_direction(editor, source.client, Direction::PREVIOUS, &path);
+}
+
 static void helper(Editor* editor,
                    const Command_Source& source,
                    Direction direction,

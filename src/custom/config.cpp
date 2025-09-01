@@ -876,8 +876,8 @@ static void build_log_mode(Mode& mode) {
     BIND(mode.key_map, "o", command_build_open_link_at_point_no_swap);
     BIND(mode.key_map, "n", command_build_open_next_link_no_swap);
     BIND(mode.key_map, "p", command_build_open_previous_link_no_swap);
-    BIND(mode.key_map, "N", command_build_open_next_link);
-    BIND(mode.key_map, "P", command_build_open_previous_link);
+    BIND(mode.key_map, "N", command_build_next_link);
+    BIND(mode.key_map, "P", command_build_previous_link);
 
     BIND(mode.key_map, "f", command_build_next_file);
     BIND(mode.key_map, "F", command_build_previous_file);
