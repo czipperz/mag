@@ -79,4 +79,84 @@ Contents_Iterator Forward_Token_Iterator::iterator_at_token_start() const {
     it.retreat_to(token_.start);
     return it;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Backward_Token_Iterator::drop() {
+    tokens_since_check_point.drop();
+}
+
+bool Backward_Token_Iterator::init_at_or_before(const Buffer* buffer, uint64_t position) {
+    *this = {};
+    buffer_ = buffer;
+    token_ = INVALID_TOKEN;
+    return cache_until(jump_to_check_point(position), position);
+}
+
+Forward_Token_Iterator Backward_Token_Iterator::jump_to_check_point(uint64_t position) {
+    Forward_Token_Iterator it;
+    it.init_at_check_point(buffer_, position);
+    check_point_iterator = it.tokenization_iterator;
+    return it;
+}
+
+bool Backward_Token_Iterator::cache_until(Forward_Token_Iterator it, uint64_t position) {
+    while (it.next()) {
+        const auto& token = it.token();
+        tokens_since_check_point.reserve(1);
+        tokens_since_check_point.push(token);
+        if (token.end >= position) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Backward_Token_Iterator::cache_previous_check_point() {
+    return cache_until(jump_to_check_point(check_point_iterator.position - 1),
+                       check_point_iterator.position);
+}
+
+bool Backward_Token_Iterator::previous() {
+    while (1) {
+        if (tokens_since_check_point.len != 0) {
+            token_ = tokens_since_check_point.last();
+            --tokens_since_check_point.len;
+            return true;
+        }
+
+        if (check_point_iterator.position == 0) {
+            token_ = INVALID_TOKEN;
+            return false;
+        }
+
+        cache_previous_check_point();
+    }
+}
+
+bool Backward_Token_Iterator::rfind_type(Token_Type type) {
+    if (has_token() && token_.type == type) {
+        return true;
+    }
+    while (previous()) {
+        if (token_.type == type) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Backward_Token_Iterator::has_token() const {
+    return token_.is_valid(check_point_iterator.contents->len);
+}
+const Token& Backward_Token_Iterator::token() const {
+    token_.assert_valid(check_point_iterator.contents->len);
+    return token_;
+}
+Contents_Iterator Backward_Token_Iterator::iterator_at_token_start() const {
+    token_.assert_valid(check_point_iterator.contents->len);
+    Contents_Iterator it = check_point_iterator;
+    it.advance_to(token_.start);
+    return it;
+}
 }

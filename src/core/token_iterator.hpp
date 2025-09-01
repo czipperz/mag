@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cz/heap_vector.hpp>
 #include "core/buffer.hpp"
 #include "core/token.hpp"
 
@@ -24,6 +25,30 @@ struct Forward_Token_Iterator {
     Contents_Iterator iterator_at_token_start() const;  /// Note: asserts the token is valid.
 
 private:
+    Token token_;
+};
+
+struct Backward_Token_Iterator {
+    void drop();
+
+    bool init_at_or_before(const Buffer* buffer, uint64_t position);
+
+    Forward_Token_Iterator jump_to_check_point(uint64_t position);
+    bool cache_until(Forward_Token_Iterator it, uint64_t position);
+    bool cache_previous_check_point();
+
+    bool previous();
+    bool rfind_type(Token_Type type);
+
+    bool has_token() const;
+    const Token& token() const;                         /// Note: asserts the token is valid.
+    Contents_Iterator iterator_at_token_start() const;  /// Note: asserts the token is valid.
+
+    Contents_Iterator check_point_iterator;
+    cz::Heap_Vector<Token> tokens_since_check_point;
+
+private:
+    const Buffer* buffer_;
     Token token_;
 };
 }
