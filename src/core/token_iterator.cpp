@@ -7,7 +7,7 @@ void Forward_Token_Iterator::init_at_check_point(const Buffer* buffer, uint64_t 
     token_ = INVALID_TOKEN;
 
     Tokenizer_Check_Point check_point = buffer->token_cache.find_check_point(position);
-    iterator_ = buffer->contents.iterator_at(check_point.position);
+    tokenization_iterator = buffer->contents.iterator_at(check_point.position);
     state = check_point.state;
 }
 
@@ -22,10 +22,10 @@ bool Forward_Token_Iterator::init_after(const Buffer* buffer, uint64_t position)
 }
 
 bool Forward_Token_Iterator::next() {
-    bool found = (*tokenizer)(&iterator_, &token_, &state);
+    bool found = (*tokenizer)(&tokenization_iterator, &token_, &state);
 #ifndef NDEBUG
     if (found) {
-        token_.assert_valid(iterator_.contents->len);
+        token_.assert_valid(tokenization_iterator.contents->len);
     }
 #endif
     if (!found) {
@@ -35,7 +35,7 @@ bool Forward_Token_Iterator::next() {
 }
 
 bool Forward_Token_Iterator::find_at_or_after(uint64_t position) {
-    if (token_.is_valid(iterator_.contents->len) && token_.end >= position) {
+    if (has_token() && token_.end >= position) {
         return true;
     }
     while (next()) {
@@ -56,7 +56,7 @@ bool Forward_Token_Iterator::find_after(uint64_t position) {
 }
 
 bool Forward_Token_Iterator::find_type(Token_Type type) {
-    if (token_.is_valid(iterator_.contents->len) && token_.type == type) {
+    if (has_token() && token_.type == type) {
         return true;
     }
     while (next()) {
@@ -67,15 +67,15 @@ bool Forward_Token_Iterator::find_type(Token_Type type) {
 }
 
 bool Forward_Token_Iterator::has_token() const {
-    return token_.is_valid(iterator_.contents->len);
+    return token_.is_valid(tokenization_iterator.contents->len);
 }
 const Token& Forward_Token_Iterator::token() const {
-    token_.assert_valid(iterator_.contents->len);
+    token_.assert_valid(tokenization_iterator.contents->len);
     return token_;
 }
 Contents_Iterator Forward_Token_Iterator::iterator_at_token_start() const {
-    token_.assert_valid(iterator_.contents->len);
-    Contents_Iterator it = iterator_;
+    token_.assert_valid(tokenization_iterator.contents->len);
+    Contents_Iterator it = tokenization_iterator;
     it.retreat_to(token_.start);
     return it;
 }

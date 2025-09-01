@@ -17,14 +17,13 @@ struct Forward_Token_Iterator {
 
     Tokenizer tokenizer;
     uint64_t state;
-    const Contents_Iterator& iterator_at_tokenization_position() const { return iterator_; }
+    Contents_Iterator tokenization_iterator;
 
     bool has_token() const;
-    const Token& token() const;  /// Note: asserts the token is valid.
-    Contents_Iterator iterator_at_token_start() const; /// Note: asserts the token is valid.
+    const Token& token() const;                         /// Note: asserts the token is valid.
+    Contents_Iterator iterator_at_token_start() const;  /// Note: asserts the token is valid.
 
 private:
     Token token_;
-    Contents_Iterator iterator_;
 };
 }
