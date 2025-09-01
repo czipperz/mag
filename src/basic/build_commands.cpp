@@ -52,20 +52,27 @@ void build_buffer_iterate(Editor* editor, Client* client, bool select_next) {
     {
         WITH_SELECTED_BUFFER(client);
         buffer->token_cache.update(buffer);
-        Forward_Token_Iterator token_iterator;
-        token_iterator.init_at_or_after(buffer, window->cursors[window->selected_cursor].point);
+
+        Token token;
+        Contents_Iterator iterator;
         if (select_next) {
-            token_iterator.find_after(window->cursors[window->selected_cursor].point + 1);
-            token_iterator.find_type(Token_Type::LINK_HREF);
+            Forward_Token_Iterator token_iterator;
+            token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point + 1);
+            if (!token_iterator.find_type(Token_Type::LINK_HREF)) {
+                return;
+            }
+            token = token_iterator.token();
+            iterator = token_iterator.iterator_at_token_start();
         } else {
-            // TODO
-            return;
+            Backward_Token_Iterator token_iterator;
+            token_iterator.init_at_or_before(buffer,
+                                             window->cursors[window->selected_cursor].point - 1);
+            if (!token_iterator.rfind_type(Token_Type::LINK_HREF)) {
+                return;
+            }
+            token = token_iterator.token();
+            iterator = token_iterator.iterator_at_token_start();
         }
-        if (!token_iterator.has_token()) {
-            return;
-        }
-        Token token = token_iterator.token();
-        Contents_Iterator iterator = token_iterator.iterator_at_token_start();
 
         kill_extra_cursors(window, client);
         window->cursors[window->selected_cursor].point = token.start;
