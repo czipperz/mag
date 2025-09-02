@@ -54,9 +54,11 @@ bool patch_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
         }
         break;
     case 'd':
+    case 'i':
         token->type = Token_Type::DEFAULT;
-        if (looking_at(*iterator, "diff ")) {
+        if (looking_at(*iterator, "diff ")|| looking_at(*iterator, "index ")) {
             *state = IN_DIFF;
+            token->type = Token_Type::PATCH_FILE_CONTEXT;
         }
         break;
     default:

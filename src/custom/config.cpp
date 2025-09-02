@@ -649,6 +649,7 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::LINK_HREF] = {{}, {}, Face::UNDERSCORE};
 
     theme.token_faces[Token_Type::PATCH_COMMIT_CONTEXT] = {{}, {}, Face::REVERSE};
+    theme.token_faces[Token_Type::PATCH_FILE_CONTEXT] = {7, 129, 0};
     theme.token_faces[Token_Type::PATCH_REMOVE] = {1, {}, 0};
     theme.token_faces[Token_Type::PATCH_ADD] = {76, {}, 0};
     theme.token_faces[Token_Type::PATCH_NEUTRAL] = {246, {}, 0};
