@@ -17,7 +17,7 @@ src/custom/config-2.cpp:1190:39: error: message
     REQUIRE(tokens.len == 20);
     CHECK(tokens[0] == Test_Runner::TToken{"command", {0, 7, Token_Type::SEARCH_COMMAND}});
     CHECK(tokens[1] ==
-          Test_Runner::TToken{"src/custom/config-2.cpp:1190:39", {8, 39, Token_Type::LINK_HREF}});
+          Test_Runner::TToken{"src/custom/config-2.cpp:1190:39", {8, 39, Token_Type::BUILD_LOG_LINK}});
     CHECK(tokens[2] == Test_Runner::TToken{":", {39, 40, Token_Type::PUNCTUATION}});
     CHECK(tokens[3] == Test_Runner::TToken{"error", {41, 46, Token_Type::IDENTIFIER}});
     CHECK(tokens[4] == Test_Runner::TToken{":", {46, 47, Token_Type::PUNCTUATION}});

@@ -77,7 +77,7 @@ static bool find_path_in_direction(Editor* editor,
     if (direction == Direction::NEXT) {
         Forward_Token_Iterator token_iterator;
         token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point);
-        if (!token_iterator.find_type(Token_Type::LINK_HREF)) {
+        if (!token_iterator.find_type(Token_Type::BUILD_LOG_LINK)) {
             return false;
         }
         token = token_iterator.token();
@@ -86,7 +86,7 @@ static bool find_path_in_direction(Editor* editor,
         Backward_Token_Iterator token_iterator;
         token_iterator.init_at_or_before(buffer, window->cursors[window->selected_cursor].point -
                                                      (direction == Direction::PREVIOUS));
-        if (!token_iterator.rfind_type(Token_Type::LINK_HREF)) {
+        if (!token_iterator.rfind_type(Token_Type::BUILD_LOG_LINK)) {
             return false;
         }
         token = token_iterator.token();
@@ -179,7 +179,7 @@ void command_build_next_file(Editor* editor, Command_Source source) {
     token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point);
 
     uint64_t position;
-    if (token_iterator.find_type(Token_Type::PATCH_COMMIT_CONTEXT)) {
+    if (token_iterator.find_type(Token_Type::BUILD_LOG_FILE_HEADER)) {
         position = token_iterator.token().start;
     } else {
         position = buffer->contents.len;
@@ -201,7 +201,7 @@ void command_build_previous_file(Editor* editor, Command_Source source) {
         buffer, std::max(window->cursors[window->selected_cursor].point, (uint64_t)1) - 1);
 
     uint64_t position;
-    if (token_iterator.rfind_type(Token_Type::PATCH_COMMIT_CONTEXT)) {
+    if (token_iterator.rfind_type(Token_Type::BUILD_LOG_FILE_HEADER)) {
         position = token_iterator.token().start;
     } else {
         position = 0;

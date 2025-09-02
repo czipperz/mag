@@ -71,7 +71,7 @@ static void handle_identifier(Contents_Iterator* iterator, Token* token, const u
     }
 
     if (*state == START_OF_LINE && try_eating_line_and_column_number(iterator)) {
-        token->type = Token_Type::LINK_HREF;
+        token->type = Token_Type::BUILD_LOG_LINK;
     }
 }
 
@@ -115,7 +115,7 @@ bool build_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
     case '[':
         if (*state == START_OF_LINE) {
             // [  0%] Building CXX object CMakeFiles/magl.dir/src/syntax/tokenize_build.cpp.o
-            token->type = Token_Type::PATCH_COMMIT_CONTEXT;
+            token->type = Token_Type::BUILD_LOG_FILE_HEADER;
             end_of_line(iterator);
             break;
         }

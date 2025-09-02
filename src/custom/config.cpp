@@ -694,6 +694,9 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::BLAME_DATE] = {46, {}, 0};
     theme.token_faces[Token_Type::BLAME_CONTENTS] = {{}, {}, 0};
 
+    theme.token_faces[Token_Type::BUILD_LOG_FILE_HEADER] = {{}, {}, Face::REVERSE};
+    theme.token_faces[Token_Type::BUILD_LOG_LINK] = {{}, {}, Face::UNDERSCORE};
+
     theme.token_faces[Token_Type::BUFFER_TEMPORARY_NAME] = {177, {}, 0};
 
     theme.decorations.reserve(5);
