@@ -652,7 +652,7 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::PATCH_REMOVE] = {1, {}, 0};
     theme.token_faces[Token_Type::PATCH_ADD] = {76, {}, 0};
     theme.token_faces[Token_Type::PATCH_NEUTRAL] = {246, {}, 0};
-    theme.token_faces[Token_Type::PATCH_ANNOTATION] = {{}, {}, 0};
+    theme.token_faces[Token_Type::PATCH_ANNOTATION] = {45, {}, 0};
 
     theme.token_faces[Token_Type::GIT_REBASE_TODO_COMMAND] = {1, {}, 0};
     theme.token_faces[Token_Type::GIT_REBASE_TODO_SHA] = {3, {}, 0};
