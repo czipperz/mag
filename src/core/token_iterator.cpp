@@ -103,13 +103,16 @@ Forward_Token_Iterator Backward_Token_Iterator::jump_to_check_point(uint64_t pos
 bool Backward_Token_Iterator::cache_until(Forward_Token_Iterator it, uint64_t position) {
     while (it.next()) {
         const auto& token = it.token();
+        if (token.start > position) {
+            break;
+        }
         tokens_since_check_point.reserve(1);
         tokens_since_check_point.push(token);
         if (token.end >= position) {
-            return true;
+            break;
         }
     }
-    return false;
+    return tokens_since_check_point.len > 0;
 }
 
 bool Backward_Token_Iterator::cache_previous_check_point() {
