@@ -1298,6 +1298,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
             buffer->mode.next_token = syntax::vim_script_next_token;
         } else if (name == "build.log") {
             build_log_mode(buffer->mode);
+            add_indent_overlays = false;
         } else if (name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
             indent_based_hierarchy_mode(buffer->mode);
