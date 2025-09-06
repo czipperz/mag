@@ -1038,6 +1038,8 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.starts_with("*diff ")) {
             buffer->mode.next_token = syntax::diff_next_token;
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
+        } else if (handle_git_show_file(editor, buffer)) {
+            return;
         } else if (buffer->name.starts_with("*git last-edit ") ||
                    buffer->name.starts_with("*git show ") ||
                    buffer->name.starts_with("*git line-history ") ||
@@ -1045,9 +1047,6 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
                    is_shell_command_prefix("*shell git log") ||
                    is_shell_command_prefix("*shell git diff") ||
                    is_shell_command_prefix("*shell git show")) {
-            if (handle_git_show_file(editor, buffer))
-                return;
-
             buffer->mode.next_token = syntax::patch_next_token;
             buffer->mode.perform_iteration = version_control::log_buffer_iterate;
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
