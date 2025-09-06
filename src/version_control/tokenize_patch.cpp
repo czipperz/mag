@@ -12,6 +12,7 @@ namespace {
 enum State : uint64_t {
     IN_DIFF = 0,
     IN_COMMIT_MESSAGE = 1,
+    IN_FILE_CONTEXT = 2,
 };
 }
 
@@ -49,21 +50,28 @@ bool patch_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
             // message which we would like to format as normal text.
             *state = IN_COMMIT_MESSAGE;
             token->type = Token_Type::PATCH_COMMIT_CONTEXT;
-        } else {
-            token->type = Token_Type::DEFAULT;
+            break;
         }
-        break;
+        goto default_case;
     case 'd':
     case 'i':
-        token->type = Token_Type::DEFAULT;
-        if (looking_at(*iterator, "diff ")|| looking_at(*iterator, "index ")) {
+        if (looking_at(*iterator, "diff ")) {
+            *state = IN_FILE_CONTEXT;
+            token->type = Token_Type::PATCH_FILE_CONTEXT;
+            break;
+        }
+        if (looking_at(*iterator, "index ")) {
             *state = IN_DIFF;
             token->type = Token_Type::PATCH_FILE_CONTEXT;
+            break;
         }
-        break;
+        goto default_case;
     default:
+    default_case:
         if (*state == IN_COMMIT_MESSAGE)
             token->type = Token_Type::PATCH_COMMIT_CONTEXT;
+        else if (*state == IN_FILE_CONTEXT)
+            token->type = Token_Type::PATCH_FILE_CONTEXT;
         else
             token->type = Token_Type::DEFAULT;
         break;
