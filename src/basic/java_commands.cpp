@@ -2,8 +2,9 @@
 
 #include "core/command_macros.hpp"
 #include "core/movement.hpp"
-#include "prose/helpers.hpp"
 #include "prose/find_file.hpp"
+#include "prose/helpers.hpp"
+#include "prose/search.hpp"
 
 namespace mag {
 namespace basic {
@@ -30,10 +31,14 @@ void command_java_open_token_at_point(Editor* editor, Command_Source source) {
         }
     }
 
-    cz::Heap_String query = cz::format("%", token.as_str(), ".java$");
-    CZ_DEFER(query.drop());
-
-    prose::find_file(source.client, "Find file in version control: ", query, directory);
+    if (token.as_str().len > 0 && cz::is_upper(token.as_str()[0])) {
+        cz::Heap_String query = cz::format("%", token.as_str(), ".java$");
+        CZ_DEFER(query.drop());
+        prose::find_file(source.client, "Find file in version control: ", query, directory);
+    } else {
+        prose::run_search(source.client, editor, directory.buffer, token.as_str(),
+                          /*query_word=*/false);
+    }
 }
 
 }
