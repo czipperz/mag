@@ -176,6 +176,20 @@ void Client::set_selected_buffer(cz::Arc<Buffer_Handle> buffer_handle) {
     save_removed_window(old_selected_window);
 }
 
+void Client::select_window_for_buffer_or_replace_current(cz::Arc<Buffer_Handle> buffer_handle) {
+    if (selected_window()->buffer_handle.get() == buffer_handle.get()) {
+        return;
+    }
+
+    Window_Unified* out;
+    if (find_window_for_buffer(this->window, buffer_handle, &out)) {
+        selected_normal_window = out;
+        return;
+    }
+
+    set_selected_buffer(buffer_handle);
+}
+
 void Client::close_fused_paired_windows() {
     Window_Unified* selected = selected_normal_window;
     Window_Split* parent = selected->parent;

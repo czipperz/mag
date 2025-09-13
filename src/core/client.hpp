@@ -121,8 +121,15 @@ struct Client {
     /// Save to offscreen_windows unless it is on the screen or already in the offscreen_windows.
     void save_removed_window(Window_Unified* removed_window);
 
-    /// Clones the handle.
+    /// Change the buffer for the selected window.  Clones the handle if necessary.
     void set_selected_buffer(cz::Arc<Buffer_Handle> buffer_handle);
+
+    /// If there are any visible windows for the given buffer, selects to the first
+    /// one.  Otherwise changes the buffer for the selected window.  If the target
+    /// buffer is already selected then does nothing.  Clones the handle if necessary.
+    ///
+    /// Generally you'll want to use this when generating a temp buffer, for example to rerun a build, to allow for the user's .
+    void select_window_for_buffer_or_replace_current(cz::Arc<Buffer_Handle> buffer_handle);
 
     void replace_window(const Window* o, Window* n);
 

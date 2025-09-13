@@ -65,7 +65,7 @@ void command_dump_key_map(Editor* editor, Command_Source source) {
 
     add_key_map(&buffer->contents, &prefix, editor->key_map);
 
-    source.client->set_selected_buffer(handle);
+    source.client->select_window_for_buffer_or_replace_current(handle);
 }
 
 /// Append all commands in the key map to the results.  All strings are allocated with `allocator`.

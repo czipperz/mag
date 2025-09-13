@@ -320,7 +320,7 @@ Run_Console_Command_Result run_console_command(Client* client,
         buffer->contents.append("\n");
     }
 
-    client->set_selected_buffer(handle);
+    client->select_window_for_buffer_or_replace_current(handle);
 
     if (!run_console_command_in(client, editor, handle, working_directory, script)) {
         return Run_Console_Command_Result::FAILED;

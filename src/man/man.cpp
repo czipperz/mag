@@ -448,7 +448,7 @@ static void command_man_response(Editor* editor, Client* client, cz::Str query, 
     if (!find_temp_buffer(editor, client, name, {}, &handle)) {
         handle = editor->create_buffer(create_temp_buffer(name));
     }
-    client->set_selected_buffer(handle);
+    client->select_window_for_buffer_or_replace_current(handle);
 
     {
         WITH_BUFFER_HANDLE(handle);

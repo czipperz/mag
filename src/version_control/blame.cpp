@@ -329,7 +329,7 @@ void command_blame(Editor* editor, Command_Source source) {
     } else {
         handle = editor->create_buffer(create_temp_buffer(buffer_name, wd));
     }
-    source.client->set_selected_buffer(handle);
+    source.client->select_window_for_buffer_or_replace_current(handle);
 
     do_blame(editor, source.client, path, root, handle, line);
 }
