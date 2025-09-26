@@ -96,6 +96,48 @@ static bool advance_through_start_to_bold_or_italics_region(Contents_Iterator* i
     return false;
 }
 
+static bool at_word_boundary(Contents_Iterator iterator) {
+    if (iterator.at_eob()) {
+        return true;
+    }
+    char ch = iterator.get();
+    if (ch == ')' || ch == ']' || ch == '}') {
+        iterator.advance();
+        if (iterator.at_eob()) {
+            return true;
+        }
+        ch = iterator.get();
+    }
+    if (ch == ',' || ch == '.' || ch == ';' || ch == '?') {
+        iterator.advance();
+        if (iterator.at_eob()) {
+            return true;
+        }
+        ch = iterator.get();
+
+        if (ch == ')' || ch == ']' || ch == '}') {
+            iterator.advance();
+            if (iterator.at_eob()) {
+                return true;
+            }
+            ch = iterator.get();
+        }
+    }
+    return cz::is_space(ch);
+}
+
+bool find_end_of_bold_or_italics_region_this_line(Contents_Iterator* iterator,
+                                                  Contents_Iterator start) {
+    size_t pattern_length = iterator->position - start.position;
+    char end_pattern[3];
+    CZ_DEBUG_ASSERT(pattern_length <= sizeof(end_pattern));
+    start.contents->slice_into(start, iterator->position, end_pattern);
+    if (pattern_length >= 2) {
+        std::swap(end_pattern[0], end_pattern[pattern_length - 1]);
+    }
+    return find_this_line(iterator, {end_pattern, pattern_length});
+}
+
 static bool md_next_token_helper(Contents_Iterator* iterator,
                                  Token* token,
                                  uint64_t* state,
@@ -201,6 +243,21 @@ static bool md_next_token_helper(Contents_Iterator* iterator,
         goto ret;
     }
 
+    if (first_ch == '(' || first_ch == '[' || first_ch == '{') {
+        Contents_Iterator test = *iterator;
+        test.advance();
+        Contents_Iterator start = test;
+        char second_ch = test.get();
+        if ((second_ch == '*' || second_ch == '_') &&
+            advance_through_start_to_bold_or_italics_region(&test, second_ch)) {
+            if (find_end_of_bold_or_italics_region_this_line(&test, start)) {
+                *iterator = start;
+                token->type = Token_Type::DEFAULT;
+                goto ret;
+            }
+        }
+    }
+
     if (first_ch == '*' || first_ch == '_') {
         // All possible combinations:
         // *   _   **   __   **_   *__   __*   _**
@@ -210,22 +267,15 @@ static bool md_next_token_helper(Contents_Iterator* iterator,
             *iterator = start;
             goto normal_character;
         }
-
-        char end_pattern[3];
         size_t pattern_length = iterator->position - start.position;
-        CZ_DEBUG_ASSERT(pattern_length <= sizeof(end_pattern));
-        start.contents->slice_into(start, iterator->position, end_pattern);
-        if (pattern_length >= 2) {
-            std::swap(end_pattern[0], end_pattern[pattern_length - 1]);
-        }
 
-        if (!find_this_line(iterator, {end_pattern, pattern_length})) {
+        if (!find_end_of_bold_or_italics_region_this_line(iterator, start)) {
             // Only capture bold/italics on same line to prevent it getting out of control.
             *iterator = start;
             goto normal_character;
         }
         iterator->advance(pattern_length);
-        if (!iterator->at_eob() && !cz::is_space(iterator->get())) {
+        if (!at_word_boundary(*iterator)) {
             // Only capture if end is at word boundary.
             *iterator = start;
             goto normal_character;

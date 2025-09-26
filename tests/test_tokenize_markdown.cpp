@@ -73,3 +73,38 @@ TEST_CASE("tokenize_markdown bold/italics middle of word") {
     CHECK(tokens[4] == Test_Runner::TToken{"x__y__", {24, 30, Token_Type::DEFAULT}});
     CHECK(tokens[5] == Test_Runner::TToken{"__y__z", {31, 37, Token_Type::DEFAULT}});
 }
+
+TEST_CASE("tokenize_markdown bold/italics end of sentence and parenthesis") {
+    Test_Runner tr;
+    tr.setup(
+        "*y*.\n"
+        "*y*?\n"
+        "*y*;\n"
+        "(*y*)\n"
+        "(*y*\n"
+        "*y*,)\n"
+        "*y*),\n"
+        "**y**,\n");
+    tr.set_tokenizer(syntax::md_next_token);
+    // tr.tokenize_print_tests();
+
+    auto tokens = tr.tokenize();
+    REQUIRE(tokens.len == 17);
+    CHECK(tokens[0] == Test_Runner::TToken{"*y*", {0, 3, Token_Type::PROCESS_ITALICS}});
+    CHECK(tokens[1] == Test_Runner::TToken{".", {3, 4, Token_Type::DEFAULT}});
+    CHECK(tokens[2] == Test_Runner::TToken{"*y*", {5, 8, Token_Type::PROCESS_ITALICS}});
+    CHECK(tokens[3] == Test_Runner::TToken{"?", {8, 9, Token_Type::DEFAULT}});
+    CHECK(tokens[4] == Test_Runner::TToken{"*y*", {10, 13, Token_Type::PROCESS_ITALICS}});
+    CHECK(tokens[5] == Test_Runner::TToken{";", {13, 14, Token_Type::DEFAULT}});
+    CHECK(tokens[6] == Test_Runner::TToken{"(", {15, 16, Token_Type::DEFAULT}});
+    CHECK(tokens[7] == Test_Runner::TToken{"*y*", {16, 19, Token_Type::PROCESS_ITALICS}});
+    CHECK(tokens[8] == Test_Runner::TToken{")", {19, 20, Token_Type::DEFAULT}});
+    CHECK(tokens[9] == Test_Runner::TToken{"(", {21, 22, Token_Type::DEFAULT}});
+    CHECK(tokens[10] == Test_Runner::TToken{"*y*", {22, 25, Token_Type::PROCESS_ITALICS}});
+    CHECK(tokens[11] == Test_Runner::TToken{"*y*", {26, 29, Token_Type::PROCESS_ITALICS}});
+    CHECK(tokens[12] == Test_Runner::TToken{",)", {29, 31, Token_Type::DEFAULT}});
+    CHECK(tokens[13] == Test_Runner::TToken{"*y*", {32, 35, Token_Type::PROCESS_ITALICS}});
+    CHECK(tokens[14] == Test_Runner::TToken{"),", {35, 37, Token_Type::DEFAULT}});
+    CHECK(tokens[15] == Test_Runner::TToken{"**y**", {38, 43, Token_Type::PROCESS_BOLD}});
+    CHECK(tokens[16] == Test_Runner::TToken{",", {43, 44, Token_Type::DEFAULT}});
+}
