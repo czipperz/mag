@@ -404,6 +404,69 @@ Window_Unified* window_last(Window* window) {
     CZ_PANIC("");
 }
 
+Window_Unified* window_first_ignoring_iterable(Window* window) {
+    switch (window->tag) {
+    case Window::UNIFIED: {
+        Window_Unified* w = (Window_Unified*)window;
+        WITH_CONST_BUFFER_HANDLE(w->buffer_handle);
+        if (buffer->mode.perform_iteration) {
+            return nullptr;
+        }
+        return (Window_Unified*)window;
+    }
+
+    case Window::VERTICAL_SPLIT:
+    case Window::HORIZONTAL_SPLIT: {
+        Window_Unified* first = window_first_ignoring_iterable(((Window_Split*)window)->first);
+        if (first) {
+            return first;
+        }
+        return window_first_ignoring_iterable(((Window_Split*)window)->second);
+    }
+    }
+
+    CZ_PANIC("");
+}
+
+Window_Unified* window_last_ignoring_iterable(Window* window) {
+    switch (window->tag) {
+    case Window::UNIFIED: {
+        Window_Unified* w = (Window_Unified*)window;
+        WITH_CONST_BUFFER_HANDLE(w->buffer_handle);
+        if (buffer->mode.perform_iteration) {
+            return nullptr;
+        }
+        return (Window_Unified*)window;
+    }
+
+    case Window::VERTICAL_SPLIT:
+    case Window::HORIZONTAL_SPLIT:
+        Window_Unified* second = window_last_ignoring_iterable(((Window_Split*)window)->second);
+        if (second) {
+            return second;
+        }
+        return window_last_ignoring_iterable(((Window_Split*)window)->first);
+    }
+
+    CZ_PANIC("");
+}
+
+Window_Unified* window_first_prefer_not_iterable(Window* window) {
+    Window_Unified* w = window_first_ignoring_iterable(window);
+    if (w) {
+        return w;
+    }
+    return window_first(window);
+}
+
+Window_Unified* window_last_prefer_not_iterable(Window* window) {
+    Window_Unified* w = window_last_ignoring_iterable(window);
+    if (w) {
+        return w;
+    }
+    return window_last(window);
+}
+
 void toggle_cycle_window(Client* client) {
     Window* window = client->selected_normal_window;
     if (!window->parent) {

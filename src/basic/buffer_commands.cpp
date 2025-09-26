@@ -267,7 +267,7 @@ static int remove_windows_matching(Window** w,
             Window_Split::drop_non_recursive(window);
 
             if (left_matches == 2) {
-                *selected_window = window_first(*w);
+                *selected_window = window_first_prefer_not_iterable(*w);
             }
 
             return 0;
@@ -281,7 +281,7 @@ static int remove_windows_matching(Window** w,
             Window_Split::drop_non_recursive(window);
 
             if (right_matches == 2) {
-                *selected_window = window_first(*w);
+                *selected_window = window_first_prefer_not_iterable(*w);
             }
 
             return 0;

@@ -90,11 +90,11 @@ void command_close_window(Editor* editor, Command_Source source) {
     if (parent) {
         if (parent->first == child) {
             source.client->replace_window(parent, parent->second);
-            source.client->selected_normal_window = window_first(parent->second);
+            source.client->selected_normal_window = window_first_prefer_not_iterable(parent->second);
         } else {
             CZ_DEBUG_ASSERT(parent->second == child);
             source.client->replace_window(parent, parent->first);
-            source.client->selected_normal_window = window_last(parent->first);
+            source.client->selected_normal_window = window_last_prefer_not_iterable(parent->first);
         }
         source.client->save_removed_window(child);
         Window_Split::drop_non_recursive(parent);

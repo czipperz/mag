@@ -136,6 +136,11 @@ Contents_Iterator nearest_character(const Window_Unified* window,
 
 Window_Unified* window_first(Window* window);
 Window_Unified* window_last(Window* window);
+/// The `window_*_ignoring_iterable` routines return null if all windows are iterable!
+Window_Unified* window_first_ignoring_iterable(Window* window);
+Window_Unified* window_last_ignoring_iterable(Window* window);
+Window_Unified* window_first_prefer_not_iterable(Window* window);
+Window_Unified* window_last_prefer_not_iterable(Window* window);
 
 /// Toggle between the children of the selected window's split.
 void toggle_cycle_window(Client* client);
