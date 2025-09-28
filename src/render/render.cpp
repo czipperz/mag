@@ -474,8 +474,13 @@ static void draw_buffer_contents(Cell* cells,
                                  size_t start_col,
                                  size_t* cursor_pos_y,
                                  size_t* cursor_pos_x,
-                                 Contents_Iterator iterator) {
+                                 bool* any_animated_scrolling) {
     ZoneScoped;
+
+    // Iterator is initialized to point to the first character that we want to render to the screen.
+    Contents_Iterator iterator =
+        update_cursors_and_run_animated_scrolling(editor, client, window, window->buffer_handle,
+                                                  buffer, window_cache, any_animated_scrolling);
 
     size_t y = 0;
     size_t x = 0;
@@ -1020,13 +1025,9 @@ static void draw_buffer(Cell* cells,
         update_working_directory(buffer->directory);
     }
 
-    Contents_Iterator iterator =
-        update_cursors_and_run_animated_scrolling(editor, client, window, window->buffer_handle,
-                                                  buffer, window_cache, any_animated_scrolling);
-
     size_t cursor_pos_y = 0, cursor_pos_x = 0;
     draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
-                         start_col, &cursor_pos_y, &cursor_pos_x, iterator);
+                         start_col, &cursor_pos_y, &cursor_pos_x, any_animated_scrolling);
     draw_buffer_decoration(cells, total_cols, editor, client, window, buffer, is_selected_window,
                            start_row, start_col);
     draw_window_completion(cells, editor, client, window, buffer, total_cols, start_row, start_col,
@@ -1297,12 +1298,10 @@ static void draw_mini_buffer_buffer(Cell* cells,
     if (client->_message.tag > Message::SHOW) {
         start_col = x;
 
-        Contents_Iterator iterator = update_cursors_and_run_animated_scrolling(
-            editor, client, window, handle, buffer, *mini_buffer_window_cache,
-            any_animated_scrolling);
         size_t cursor_pos_y, cursor_pos_x;
         draw_buffer_contents(cells, *mini_buffer_window_cache, total_cols, editor, client, buffer,
-                             window, start_row, start_col, &cursor_pos_y, &cursor_pos_x, iterator);
+                             window, start_row, start_col, &cursor_pos_y, &cursor_pos_x,
+                             any_animated_scrolling);
     } else {
         y = 0;
         for (; x < total_cols; ++x) {
