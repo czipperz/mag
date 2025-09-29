@@ -566,25 +566,26 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
             line_number_buffer.len = ret;
 
             size_t i = 0;
-            Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
+            Face line_number_face =
+                editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
             for (; i < line_number_buffer.cap - 1; ++i) {
                 char ch = line_number_buffer[i];
                 if (ch != ' ') {
                     break;
                 }
-                drawing_context.set_body(window, y, x, {face, ch});
+                drawing_context.set_body(window, y, x, {line_number_face, ch});
                 ++x;
             }
 
-            face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
+            line_number_face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
             for (; i < line_number_buffer.cap - 1; ++i) {
                 char ch = line_number_buffer[i];
-                drawing_context.set_body(window, y, x, {face, ch});
+                drawing_context.set_body(window, y, x, {line_number_face, ch});
                 ++x;
             }
 
-            face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
-            drawing_context.set_body(window, y, x, {face, ' '});
+            line_number_face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
+            drawing_context.set_body(window, y, x, {line_number_face, ' '});
             ++x;
         }
     }
@@ -631,10 +632,10 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
         }
 
         if (buffer->mode.render_bucket_boundaries && iterator.index == 0) {
-            Face face = {};
-            face.background = {1};
+            Face bucket_boundary_face = {};
+            bucket_boundary_face.background = {1};
             if (!addch(drawing_context, editor, buffer, draw_line_numbers, line_number_buffer.cap,
-                       window, &y, &x, &column, {face, '\''})) {
+                       window, &y, &x, &column, {bucket_boundary_face, '\''})) {
                 return;
             }
         }
@@ -697,20 +698,20 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
 
             // Draw newline padding with faces from overlays
             {
-                Face face;
+                Face newline_padding_face;
                 size_t j = 0;
                 for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
                     const Overlay* overlay = &editor->theme.overlays[i];
                     Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
-                    apply_face(&face, overlay_face);
+                    apply_face(&newline_padding_face, overlay_face);
                 }
                 for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
                     const Overlay* overlay = &buffer->mode.overlays[i];
                     Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
-                    apply_face(&face, overlay_face);
+                    apply_face(&newline_padding_face, overlay_face);
                 }
                 column = 0;
-                if (!add_newline(drawing_context, window, &y, &x, face)) {
+                if (!add_newline(drawing_context, window, &y, &x, newline_padding_face)) {
                     return;
                 }
             }
@@ -724,25 +725,27 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
                     line_number_buffer.len = ret;
 
                     size_t i = 0;
-                    Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
+                    Face line_number_face =
+                        editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
                     for (; i < line_number_buffer.cap - 1; ++i) {
                         char ch = line_number_buffer[i];
                         if (ch != ' ') {
                             break;
                         }
-                        drawing_context.set_body(window, y, x, {face, ch});
+                        drawing_context.set_body(window, y, x, {line_number_face, ch});
                         ++x;
                     }
 
-                    face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
+                    line_number_face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
                     for (; i < line_number_buffer.cap - 1; ++i) {
                         char ch = line_number_buffer[i];
-                        drawing_context.set_body(window, y, x, {face, ch});
+                        drawing_context.set_body(window, y, x, {line_number_face, ch});
                         ++x;
                     }
 
-                    face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
-                    drawing_context.set_body(window, y, x, {face, ' '});
+                    line_number_face =
+                        editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
+                    drawing_context.set_body(window, y, x, {line_number_face, ' '});
                     ++x;
                 }
             }
@@ -799,15 +802,15 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
 
     // Draw cursor at end of file.
     if (cursors.last().point == buffer->contents.len) {
-        Face face = {};
+        Face cursor_face = {};
         if (cursors.len - 1 == window->selected_cursor) {
-            apply_face(&face, editor->theme.special_faces[Face_Type::SELECTED_CURSOR]);
+            apply_face(&cursor_face, editor->theme.special_faces[Face_Type::SELECTED_CURSOR]);
         } else {
-            apply_face(&face, editor->theme.special_faces[Face_Type::OTHER_CURSOR]);
+            apply_face(&cursor_face, editor->theme.special_faces[Face_Type::OTHER_CURSOR]);
         }
 
         if (x < window->total_cols) {
-            drawing_context.set_body(window, y, x, {face, ' '});
+            drawing_context.set_body(window, y, x, {cursor_face, ' '});
         }
         ++x;
     }
