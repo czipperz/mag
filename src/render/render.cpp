@@ -478,6 +478,61 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
     return iterator;
 }
 
+Face calculate_face(Editor* editor,
+                    const Buffer* buffer,
+                    Window_Unified* window,
+                    bool has_cursor,
+                    bool has_selected_cursor,
+                    int mark_depth,
+                    int selected_mark_depth,
+                    bool has_token,
+                    const Token& token,
+                    const Contents_Iterator& iterator) {
+    Face face = {};
+
+    if (has_cursor) {
+        if (has_selected_cursor) {
+            apply_face(&face, editor->theme.special_faces[Face_Type::SELECTED_CURSOR]);
+        } else {
+            apply_face(&face, editor->theme.special_faces[Face_Type::OTHER_CURSOR]);
+        }
+    }
+
+    if (mark_depth > 0) {
+        if (selected_mark_depth > 0) {
+            apply_face(&face, editor->theme.special_faces[Face_Type::SELECTED_REGION]);
+        } else {
+            apply_face(&face, editor->theme.special_faces[Face_Type::OTHER_REGION]);
+        }
+    }
+
+    {
+        size_t j = 0;
+        for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
+            const Overlay* overlay = &editor->theme.overlays[i];
+            Face overlay_face = overlay->get_face_and_advance(buffer, window, iterator);
+            apply_face(&face, overlay_face);
+        }
+        for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
+            const Overlay* overlay = &buffer->mode.overlays[i];
+            Face overlay_face = overlay->get_face_and_advance(buffer, window, iterator);
+            apply_face(&face, overlay_face);
+        }
+    }
+
+    if (has_token && iterator.position >= token.start && iterator.position < token.end) {
+        if (token.type & Token_Type::CUSTOM) {
+            apply_face(&face, Token_Type_::decode(token.type));
+        } else {
+            apply_face(&face, editor->theme.token_faces[token.type]);
+        }
+    } else {
+        apply_face(&face, editor->theme.token_faces[Token_Type::DEFAULT]);
+    }
+
+    return face;
+}
+
 static void draw_buffer_contents(const DrawingContext& drawing_context,
                                  Window_Cache* window_cache,
                                  Editor* editor,
@@ -640,48 +695,8 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
             }
         }
 
-        Face face = {};
-        if (has_cursor) {
-            if (has_selected_cursor) {
-                apply_face(&face, editor->theme.special_faces[Face_Type::SELECTED_CURSOR]);
-            } else {
-                apply_face(&face, editor->theme.special_faces[Face_Type::OTHER_CURSOR]);
-            }
-        }
-
-        if (mark_depth > 0) {
-            if (selected_mark_depth > 0) {
-                apply_face(&face, editor->theme.special_faces[Face_Type::SELECTED_REGION]);
-            } else {
-                apply_face(&face, editor->theme.special_faces[Face_Type::OTHER_REGION]);
-            }
-        }
-
-        {
-            size_t j = 0;
-            for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
-                const Overlay* overlay = &editor->theme.overlays[i];
-                Face overlay_face = overlay->get_face_and_advance(buffer, window, iterator);
-                apply_face(&face, overlay_face);
-            }
-            for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
-                const Overlay* overlay = &buffer->mode.overlays[i];
-                Face overlay_face = overlay->get_face_and_advance(buffer, window, iterator);
-                apply_face(&face, overlay_face);
-            }
-        }
-
-        Face token_face;
-        if (has_token && iterator.position >= token.start && iterator.position < token.end) {
-            if (token.type & Token_Type::CUSTOM) {
-                token_face = Token_Type_::decode(token.type);
-            } else {
-                token_face = editor->theme.token_faces[token.type];
-            }
-        } else {
-            token_face = editor->theme.token_faces[Token_Type::DEFAULT];
-        }
-        apply_face(&face, token_face);
+        Face face = calculate_face(editor, buffer, window, has_cursor, has_selected_cursor,
+                                   mark_depth, selected_mark_depth, has_token, token, iterator);
 
         if (face.flags & Face::INVISIBLE) {
             // Skip rendering this character as it is invisible
