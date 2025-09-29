@@ -26,31 +26,33 @@ static bool load_completion_cache(Editor* editor,
                                   Completion_Cache* completion_cache,
                                   Completion_Filter completion_filter);
 
-#define SET_IND(FACE, CH)                                                    \
-    do {                                                                     \
-        Cell* cell = &cells[(y + start_row) * total_cols + (x + start_col)]; \
-        cell->face = FACE;                                                   \
-        cell->code = CH;                                                     \
-    } while (0)
+struct DrawingContext {
+    Cell* cells;
+    size_t total_cols;
+    size_t start_row;
+    size_t start_col;
 
-#define SET_BODY(FACE, CH)                       \
-    do {                                         \
-        CZ_DEBUG_ASSERT(y < window->rows());     \
-        CZ_DEBUG_ASSERT(x < window->total_cols); \
-                                                 \
-        SET_IND(FACE, CH);                       \
-    } while (0)
+    void set_ind(size_t y, size_t x, const Cell& cell) const {
+        cells[(y + start_row) * total_cols + (x + start_col)] = cell;
+    }
 
-#define ADD_NEWLINE(FACE)                     \
-    do {                                      \
-        for (; x < window->total_cols; ++x) { \
-            SET_BODY(FACE, ' ');              \
-        }                                     \
-        ++y;                                  \
-        x = 0;                                \
-        if (y == window->rows()) {            \
-            return;                           \
-        }                                     \
+    void set_body(Window_Unified* window, size_t y, size_t x, const Cell& cell) const {
+        CZ_DEBUG_ASSERT(y < window->rows());
+        CZ_DEBUG_ASSERT(x < window->total_cols);
+        set_ind(y, x, cell);
+    }
+};
+
+#define ADD_NEWLINE(FACE)                                        \
+    do {                                                         \
+        for (; x < window->total_cols; ++x) {                    \
+            drawing_context.set_body(window, y, x, {FACE, ' '}); \
+        }                                                        \
+        ++y;                                                     \
+        x = 0;                                                   \
+        if (y == window->rows()) {                               \
+            return;                                              \
+        }                                                        \
     } while (0)
 
 #define ADDCH(FACE, CH)                                                                       \
@@ -60,7 +62,7 @@ static bool load_completion_cache(Editor* editor,
             (column >= window->column_offset &&                                               \
              column < window->column_offset + window->total_cols -                            \
                           draw_line_numbers * line_number_buffer.cap)) {                      \
-            SET_BODY(FACE, CH);                                                               \
+            drawing_context.set_body(window, y, x, {FACE, CH});                               \
             ++x;                                                                              \
         }                                                                                     \
         ++column;                                                                             \
@@ -71,12 +73,12 @@ static bool load_completion_cache(Editor* editor,
             if (draw_line_numbers) {                                                          \
                 Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING]; \
                 for (size_t i = 0; i < line_number_buffer.cap - 1; ++i) {                     \
-                    SET_BODY(face, ' ');                                                      \
+                    drawing_context.set_body(window, y, x, {face, ' '});                      \
                     ++x;                                                                      \
                 }                                                                             \
                                                                                               \
                 face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];     \
-                SET_BODY(face, ' ');                                                          \
+                drawing_context.set_body(window, y, x, {face, ' '});                          \
                 ++x;                                                                          \
             }                                                                                 \
         }                                                                                     \
@@ -463,15 +465,12 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
     return iterator;
 }
 
-static void draw_buffer_contents(Cell* cells,
+static void draw_buffer_contents(const DrawingContext& drawing_context,
                                  Window_Cache* window_cache,
-                                 size_t total_cols,
                                  Editor* editor,
                                  Client* client,
                                  const Buffer* buffer,
                                  Window_Unified* window,
-                                 size_t start_row,
-                                 size_t start_col,
                                  size_t* cursor_pos_y,
                                  size_t* cursor_pos_x,
                                  bool* any_animated_scrolling) {
@@ -560,19 +559,19 @@ static void draw_buffer_contents(Cell* cells,
                 if (ch != ' ') {
                     break;
                 }
-                SET_BODY(face, ch);
+                drawing_context.set_body(window, y, x, {face, ch});
                 ++x;
             }
 
             face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
             for (; i < line_number_buffer.cap - 1; ++i) {
                 char ch = line_number_buffer[i];
-                SET_BODY(face, ch);
+                drawing_context.set_body(window, y, x, {face, ch});
                 ++x;
             }
 
             face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
-            SET_BODY(face, ' ');
+            drawing_context.set_body(window, y, x, {face, ' '});
             ++x;
         }
     }
@@ -675,7 +674,7 @@ static void draw_buffer_contents(Cell* cells,
         char ch = iterator.get();
         if (ch == '\n') {
             if (x < window->total_cols) {
-                SET_BODY(face, ' ');
+                drawing_context.set_body(window, y, x, {face, ' '});
             }
             ++x;
             ++column;
@@ -713,19 +712,19 @@ static void draw_buffer_contents(Cell* cells,
                         if (ch != ' ') {
                             break;
                         }
-                        SET_BODY(face, ch);
+                        drawing_context.set_body(window, y, x, {face, ch});
                         ++x;
                     }
 
                     face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
                     for (; i < line_number_buffer.cap - 1; ++i) {
                         char ch = line_number_buffer[i];
-                        SET_BODY(face, ch);
+                        drawing_context.set_body(window, y, x, {face, ch});
                         ++x;
                     }
 
                     face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
-                    SET_BODY(face, ' ');
+                    drawing_context.set_body(window, y, x, {face, ' '});
                     ++x;
                 }
             }
@@ -743,13 +742,13 @@ static void draw_buffer_contents(Cell* cells,
             bool already = false;
             unsigned uch = ch;
             if ((uch / 100) % 10) {
-                ADDCH(face, (uch / 100) % 10 + '0');
+                ADDCH(face, (char)((uch / 100) % 10 + '0'));
                 already = true;
             }
             if ((uch / 10) % 10 || already) {
-                ADDCH(face, (uch / 10) % 10 + '0');
+                ADDCH(face, (char)((uch / 10) % 10 + '0'));
             }
-            ADDCH(face, uch % 10 + '0');
+            ADDCH(face, (char)(uch % 10 + '0'));
             ADDCH(face, ';');
         }
     }
@@ -764,7 +763,7 @@ static void draw_buffer_contents(Cell* cells,
         }
 
         if (x < window->total_cols) {
-            SET_BODY(face, ' ');
+            drawing_context.set_body(window, y, x, {face, ' '});
         }
         ++x;
     }
@@ -772,21 +771,18 @@ static void draw_buffer_contents(Cell* cells,
     // Clear the rest of the window.
     for (; y < window->rows(); ++y) {
         for (; x < window->total_cols; ++x) {
-            SET_BODY({}, ' ');
+            drawing_context.set_body(window, y, x, {{}, ' '});
         }
         x = 0;
     }
 }
 
-static void draw_buffer_decoration(Cell* cells,
-                                   size_t total_cols,
+static void draw_buffer_decoration(const DrawingContext& drawing_context,
                                    Editor* editor,
                                    Client* client,
                                    Window_Unified* window,
                                    const Buffer* buffer,
-                                   bool is_selected_window,
-                                   size_t start_row,
-                                   size_t start_col) {
+                                   bool is_selected_window) {
     ZoneScoped;
 
     Face face = {};
@@ -869,22 +865,19 @@ static void draw_buffer_decoration(Cell* cells,
     size_t x = 0;
     size_t max = cz::min<size_t>(string.len, window->total_cols);
     for (size_t i = 0; i < max; ++i) {
-        SET_IND(face, string[i]);
+        drawing_context.set_ind(y, x, {face, string[i]});
         ++x;
     }
     for (; x < window->total_cols; ++x) {
-        SET_IND(face, ' ');
+        drawing_context.set_ind(y, x, {face, ' '});
     }
 }
 
-static void draw_window_completion(Cell* cells,
+static void draw_window_completion(const DrawingContext& drawing_context,
                                    Editor* editor,
                                    Client* client,
                                    Window_Unified* window,
                                    const Buffer* buffer,
-                                   size_t total_cols,
-                                   size_t start_row,
-                                   size_t start_col,
                                    size_t cursor_pos_y,
                                    size_t cursor_pos_x) {
     if (!window->completing) {
@@ -972,21 +965,23 @@ static void draw_window_completion(Cell* cells,
             cz::Str result = window->completion_cache.filter_context.results[r];
             for (size_t i = 0;
                  i < width && i < window->completion_cache.engine_context.result_prefix.len; ++i) {
-                SET_IND(face, window->completion_cache.engine_context.result_prefix[i]);
+                drawing_context.set_ind(
+                    y, x, {face, window->completion_cache.engine_context.result_prefix[i]});
                 ++x;
             }
             for (size_t i = 0; i < width && i < result.len; ++i) {
-                SET_IND(face, result[i]);
+                drawing_context.set_ind(y, x, {face, result[i]});
                 ++x;
             }
             for (size_t i = 0;
                  i < width && i < window->completion_cache.engine_context.result_suffix.len; ++i) {
-                SET_IND(face, window->completion_cache.engine_context.result_suffix[i]);
+                drawing_context.set_ind(
+                    y, x, {face, window->completion_cache.engine_context.result_suffix[i]});
                 ++x;
             }
 
             for (; x < start_x + width; ++x) {
-                SET_IND(face, ' ');
+                drawing_context.set_ind(y, x, {face, ' '});
             }
 
             x = start_x;
@@ -1025,13 +1020,13 @@ static void draw_buffer(Cell* cells,
         update_working_directory(buffer->directory);
     }
 
+    DrawingContext drawing_context = {cells, total_cols, start_row, start_col};
     size_t cursor_pos_y = 0, cursor_pos_x = 0;
-    draw_buffer_contents(cells, window_cache, total_cols, editor, client, buffer, window, start_row,
-                         start_col, &cursor_pos_y, &cursor_pos_x, any_animated_scrolling);
-    draw_buffer_decoration(cells, total_cols, editor, client, window, buffer, is_selected_window,
-                           start_row, start_col);
-    draw_window_completion(cells, editor, client, window, buffer, total_cols, start_row, start_col,
-                           cursor_pos_y, cursor_pos_x);
+    draw_buffer_contents(drawing_context, window_cache, editor, client, buffer, window,
+                         &cursor_pos_y, &cursor_pos_x, any_animated_scrolling);
+    draw_buffer_decoration(drawing_context, editor, client, window, buffer, is_selected_window);
+    draw_window_completion(drawing_context, editor, client, window, buffer, cursor_pos_y,
+                           cursor_pos_x);
     client->cursor_pos_y = cursor_pos_y;
     client->cursor_pos_x = cursor_pos_x;
 }
@@ -1098,9 +1093,10 @@ static void draw_window(Cell* cells,
                         start_col);
 
             {
+                DrawingContext drawing_context = {cells, total_cols, start_row, start_col};
                 size_t x = window->first->total_cols;
                 for (size_t y = 0; y < window->total_rows; ++y) {
-                    SET_IND({}, '|');
+                    drawing_context.set_ind(y, x, {{}, '|'});
                 }
             }
 
@@ -1271,8 +1267,9 @@ static void draw_mini_buffer_buffer(Cell* cells,
                                     size_t message_width) {
     size_t y = 0;
     size_t x = 0;
-    size_t start_row = total_rows - mini_buffer_height - results_height;
-    size_t start_col = 0;
+    DrawingContext drawing_context = {
+        cells, total_cols, /*start_row=*/total_rows - mini_buffer_height - results_height,
+        /*start_col=*/0};
 
     Face minibuffer_prompt_face = {};
     apply_face(&minibuffer_prompt_face, editor->theme.special_faces[Face_Type::MINI_BUFFER_PROMPT]);
@@ -1282,7 +1279,7 @@ static void draw_mini_buffer_buffer(Cell* cells,
         Contents_Iterator it = buffer->contents.iterator_at(client->_message.start);
         // TODO: handle multi line mini buffer message
         for (; x < message_width; it.advance()) {
-            SET_IND(minibuffer_prompt_face, it.get());
+            drawing_context.set_ind(y, x, {minibuffer_prompt_face, it.get()});
             ++x;
         }
     }
@@ -1291,21 +1288,20 @@ static void draw_mini_buffer_buffer(Cell* cells,
     for (y = 1; y < window->rows(); ++y) {
         // TODO: handle multi line mini buffer message
         for (x = 0; x < message_width; ++x) {
-            SET_IND(minibuffer_prompt_face, ' ');
+            drawing_context.set_ind(y, x, {minibuffer_prompt_face, ' '});
         }
     }
 
     if (client->_message.tag > Message::SHOW) {
-        start_col = x;
+        drawing_context.start_col = x;
 
         size_t cursor_pos_y, cursor_pos_x;
-        draw_buffer_contents(cells, *mini_buffer_window_cache, total_cols, editor, client, buffer,
-                             window, start_row, start_col, &cursor_pos_y, &cursor_pos_x,
-                             any_animated_scrolling);
+        draw_buffer_contents(drawing_context, *mini_buffer_window_cache, editor, client, buffer,
+                             window, &cursor_pos_y, &cursor_pos_x, any_animated_scrolling);
     } else {
         y = 0;
         for (; x < total_cols; ++x) {
-            SET_IND({}, ' ');
+            drawing_context.set_ind(y, x, {{}, ' '});
         }
 
         if (std::chrono::system_clock::now() - client->_message_time > std::chrono::seconds(5)) {
@@ -1325,8 +1321,8 @@ static void draw_mini_buffer_results(Cell* cells,
                                      Completion_Cache* completion_cache) {
     size_t y = 0;
     size_t x = 0;
-    size_t start_row = total_rows - results_height;
-    size_t start_col = 0;
+    DrawingContext drawing_context = {cells, total_cols, /*start_row=*/total_rows - results_height,
+                                      /*start_col=*/0};
     size_t offset = completion_cache->filter_context.selected;
     if (offset >= completion_cache->filter_context.results.len - results_height / 2) {
         offset = completion_cache->filter_context.results.len - results_height;
@@ -1401,12 +1397,12 @@ static void draw_mini_buffer_results(Cell* cells,
                 }
             }
 
-            SET_IND(face, it.get());
+            drawing_context.set_ind(y, x, {face, it.get()});
             ++x;
         }
 
         for (; x < total_cols; ++x) {
-            SET_IND({}, ' ');
+            drawing_context.set_ind(y, x, {{}, ' '});
         }
 
         x = 0;
