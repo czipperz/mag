@@ -647,7 +647,7 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
             line_number_buffer.reserve_exact(cz::heap_allocator(), cols);
     }
 
-    uint64_t line_number = buffer->contents.get_line_number(iterator.position) + 1;
+    uint64_t line_number = buffer->contents.get_line_number(iterator.position);
 
     // Draw line number for first line.
     if (draw_line_numbers) {
