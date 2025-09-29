@@ -43,46 +43,59 @@ struct DrawingContext {
     }
 };
 
-#define ADD_NEWLINE(FACE)                                        \
-    do {                                                         \
-        for (; x < window->total_cols; ++x) {                    \
-            drawing_context.set_body(window, y, x, {FACE, ' '}); \
-        }                                                        \
-        ++y;                                                     \
-        x = 0;                                                   \
-        if (y == window->rows()) {                               \
-            return;                                              \
-        }                                                        \
-    } while (0)
+[[nodiscard]] static bool add_newline(const DrawingContext& drawing_context,
+                                      Window_Unified* window,
+                                      size_t* y,
+                                      size_t* x,
+                                      const Face& face) {
+    for (; *x < window->total_cols; ++*x) {
+        drawing_context.set_body(window, *y, *x, {face, ' '});
+    }
+    ++*y;
+    *x = 0;
+    return *y != window->rows();
+}
 
-#define ADDCH(FACE, CH)                                                                       \
-    do {                                                                                      \
-        /* If we are between the start and end column then render. */                         \
-        if (buffer->mode.wrap_long_lines ||                                                   \
-            (column >= window->column_offset &&                                               \
-             column < window->column_offset + window->total_cols -                            \
-                          draw_line_numbers * line_number_buffer.cap)) {                      \
-            drawing_context.set_body(window, y, x, {FACE, CH});                               \
-            ++x;                                                                              \
-        }                                                                                     \
-        ++column;                                                                             \
-                                                                                              \
-        if (buffer->mode.wrap_long_lines && x == window->total_cols) {                        \
-            ADD_NEWLINE({});                                                                  \
-                                                                                              \
-            if (draw_line_numbers) {                                                          \
-                Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING]; \
-                for (size_t i = 0; i < line_number_buffer.cap - 1; ++i) {                     \
-                    drawing_context.set_body(window, y, x, {face, ' '});                      \
-                    ++x;                                                                      \
-                }                                                                             \
-                                                                                              \
-                face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];     \
-                drawing_context.set_body(window, y, x, {face, ' '});                          \
-                ++x;                                                                          \
-            }                                                                                 \
-        }                                                                                     \
-    } while (0)
+[[nodiscard]] static bool addch(const DrawingContext& drawing_context,
+                                Editor* editor,
+                                const Buffer* buffer,
+                                bool draw_line_numbers,
+                                size_t line_number_buffer_cap,
+                                Window_Unified* window,
+                                size_t* y,
+                                size_t* x,
+                                size_t* column,
+                                const Cell& cell) {
+    /* If we are between the start and end column then render. */
+    if (buffer->mode.wrap_long_lines ||
+        (*column >= window->column_offset &&
+         *column < window->column_offset + window->total_cols -
+                       draw_line_numbers * line_number_buffer_cap)) {
+        drawing_context.set_body(window, *y, *x, cell);
+        ++*x;
+    }
+    ++*column;
+
+    if (buffer->mode.wrap_long_lines && *x == window->total_cols) {
+        if (!add_newline(drawing_context, window, y, x, {})) {
+            return false;
+        }
+
+        if (draw_line_numbers) {
+            Face face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
+            for (size_t i = 0; i < line_number_buffer_cap - 1; ++i) {
+                drawing_context.set_body(window, *y, *x, {face, ' '});
+                ++*x;
+            }
+
+            face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
+            drawing_context.set_body(window, *y, *x, {face, ' '});
+            ++*x;
+        }
+    }
+
+    return true;
+}
 
 static void apply_face(Face* face, Face layer) {
     face->flags |= (layer.flags & ~Face::Flags::REVERSE);
@@ -620,7 +633,10 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
         if (buffer->mode.render_bucket_boundaries && iterator.index == 0) {
             Face face = {};
             face.background = {1};
-            ADDCH(face, '\'');
+            if (!addch(drawing_context, editor, buffer, draw_line_numbers, line_number_buffer.cap,
+                       window, &y, &x, &column, {face, '\''})) {
+                return;
+            }
         }
 
         Face face = {};
@@ -694,7 +710,9 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
                     apply_face(&face, overlay_face);
                 }
                 column = 0;
-                ADD_NEWLINE(face);
+                if (!add_newline(drawing_context, window, &y, &x, face)) {
+                    return;
+                }
             }
 
             // Draw line number.  Note the first line number is drawn before the loop.
@@ -732,24 +750,50 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
             size_t end_column = column + buffer->mode.tab_width;
             end_column -= end_column % buffer->mode.tab_width;
             for (size_t i = column; i < end_column; ++i) {
-                ADDCH(face, ' ');
+                if (!addch(drawing_context, editor, buffer, draw_line_numbers,
+                           line_number_buffer.cap, window, &y, &x, &column, {face, ' '})) {
+                    return;
+                }
             }
         } else if (cz::is_print(ch)) {
-            ADDCH(face, ch);
+            if (!addch(drawing_context, editor, buffer, draw_line_numbers, line_number_buffer.cap,
+                       window, &y, &x, &column, {face, ch})) {
+                return;
+            }
         } else {
-            ADDCH(face, '\\');
-            ADDCH(face, '[');
+            if (!addch(drawing_context, editor, buffer, draw_line_numbers, line_number_buffer.cap,
+                       window, &y, &x, &column, {face, '\\'})) {
+                return;
+            }
+            if (!addch(drawing_context, editor, buffer, draw_line_numbers, line_number_buffer.cap,
+                       window, &y, &x, &column, {face, '['})) {
+                return;
+            }
             bool already = false;
             unsigned uch = ch;
             if ((uch / 100) % 10) {
-                ADDCH(face, (char)((uch / 100) % 10 + '0'));
+                if (!addch(drawing_context, editor, buffer, draw_line_numbers,
+                           line_number_buffer.cap, window, &y, &x, &column,
+                           {face, (char)((uch / 100) % 10 + '0')})) {
+                    return;
+                }
                 already = true;
             }
             if ((uch / 10) % 10 || already) {
-                ADDCH(face, (char)((uch / 10) % 10 + '0'));
+                if (!addch(drawing_context, editor, buffer, draw_line_numbers,
+                           line_number_buffer.cap, window, &y, &x, &column,
+                           {face, (char)((uch / 10) % 10 + '0')})) {
+                    return;
+                }
             }
-            ADDCH(face, (char)(uch % 10 + '0'));
-            ADDCH(face, ';');
+            if (!addch(drawing_context, editor, buffer, draw_line_numbers, line_number_buffer.cap,
+                       window, &y, &x, &column, {face, (char)(uch % 10 + '0')})) {
+                return;
+            }
+            if (!addch(drawing_context, editor, buffer, draw_line_numbers, line_number_buffer.cap,
+                       window, &y, &x, &column, {face, ';'})) {
+                return;
+            }
         }
     }
 
