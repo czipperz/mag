@@ -97,6 +97,42 @@ struct DrawingContext {
     return true;
 }
 
+void do_draw_line_numbers(const DrawingContext& drawing_context,
+                          Editor* editor,
+                          Window_Unified* window,
+                          size_t y,
+                          size_t* x,
+                          uint64_t line_number,
+                          cz::String* line_number_buffer) {
+    int ret = snprintf(line_number_buffer->buffer, line_number_buffer->cap, "%*zu",
+                       (int)(line_number_buffer->cap - 1), line_number);
+    if (ret > 0) {
+        line_number_buffer->len = ret;
+
+        size_t i = 0;
+        Face line_number_face = editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
+        for (; i < line_number_buffer->cap - 1; ++i) {
+            char ch = (*line_number_buffer)[i];
+            if (ch != ' ') {
+                break;
+            }
+            drawing_context.set_body(window, y, *x, {line_number_face, ch});
+            ++*x;
+        }
+
+        line_number_face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
+        for (; i < line_number_buffer->cap - 1; ++i) {
+            char ch = (*line_number_buffer)[i];
+            drawing_context.set_body(window, y, *x, {line_number_face, ch});
+            ++*x;
+        }
+
+        line_number_face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
+        drawing_context.set_body(window, y, *x, {line_number_face, ' '});
+        ++*x;
+    }
+}
+
 static void apply_face(Face* face, Face layer) {
     face->flags |= (layer.flags & ~Face::Flags::REVERSE);
     face->flags ^= (layer.flags & Face::Flags::REVERSE);
@@ -615,34 +651,8 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
 
     // Draw line number for first line.
     if (draw_line_numbers) {
-        int ret = snprintf(line_number_buffer.buffer, line_number_buffer.cap, "%*zu",
-                           (int)(line_number_buffer.cap - 1), line_number);
-        if (ret > 0) {
-            line_number_buffer.len = ret;
-
-            size_t i = 0;
-            Face line_number_face =
-                editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
-            for (; i < line_number_buffer.cap - 1; ++i) {
-                char ch = line_number_buffer[i];
-                if (ch != ' ') {
-                    break;
-                }
-                drawing_context.set_body(window, y, x, {line_number_face, ch});
-                ++x;
-            }
-
-            line_number_face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
-            for (; i < line_number_buffer.cap - 1; ++i) {
-                char ch = line_number_buffer[i];
-                drawing_context.set_body(window, y, x, {line_number_face, ch});
-                ++x;
-            }
-
-            line_number_face = editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
-            drawing_context.set_body(window, y, x, {line_number_face, ' '});
-            ++x;
-        }
+        do_draw_line_numbers(drawing_context, editor, window, y, &x, line_number,
+                             &line_number_buffer);
     }
 
     Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
@@ -734,35 +744,8 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
             // Draw line number.  Note the first line number is drawn before the loop.
             if (draw_line_numbers) {
                 line_number += 1;
-                int ret = snprintf(line_number_buffer.buffer, line_number_buffer.cap, "%*zu",
-                                   (int)(line_number_buffer.cap - 1), line_number);
-                if (ret > 0) {
-                    line_number_buffer.len = ret;
-
-                    size_t i = 0;
-                    Face line_number_face =
-                        editor->theme.special_faces[Face_Type::LINE_NUMBER_LEFT_PADDING];
-                    for (; i < line_number_buffer.cap - 1; ++i) {
-                        char ch = line_number_buffer[i];
-                        if (ch != ' ') {
-                            break;
-                        }
-                        drawing_context.set_body(window, y, x, {line_number_face, ch});
-                        ++x;
-                    }
-
-                    line_number_face = editor->theme.special_faces[Face_Type::LINE_NUMBER];
-                    for (; i < line_number_buffer.cap - 1; ++i) {
-                        char ch = line_number_buffer[i];
-                        drawing_context.set_body(window, y, x, {line_number_face, ch});
-                        ++x;
-                    }
-
-                    line_number_face =
-                        editor->theme.special_faces[Face_Type::LINE_NUMBER_RIGHT_PADDING];
-                    drawing_context.set_body(window, y, x, {line_number_face, ' '});
-                    ++x;
-                }
+                do_draw_line_numbers(drawing_context, editor, window, y, &x, line_number,
+                                     &line_number_buffer);
             }
         } else if (ch == '\t') {
             size_t end_column = column + buffer->mode.tab_width;
