@@ -753,10 +753,32 @@ bool parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t
         return false;
     }
 
-    // Test FILE:LINE.  If these tests fail then it's not of this form.  If the FILE component
+    // Test {file}:{line}.  If these tests fail then it's not of this form.  If the {file} component
     // doesn't exist then the file being opened just has a colon and a bunch of numbers in its path.
     const char* colon = arg.rfind(':');
     if (!colon) {
+        // Test {file}#L{line}.
+        const char* anchor = arg.rfind("#L");
+        if (!anchor) {
+            goto open;
+        }
+
+        cz::Str line_string = arg.slice_start(anchor + 2);
+        uint64_t line = 0;
+        if (cz::parse(line_string, &line) != (int64_t)line_string.len) {
+            goto open;
+        }
+
+        cz::String path = arg.slice_end(anchor).clone_null_terminate(cz::heap_allocator());
+        CZ_DEFER(path.drop(cz::heap_allocator()));
+
+        if (cz::file::exists(path.buffer)) {
+            // Argument is of form {file}#L{line}.
+            *file_out = arg.slice_end(path.len);
+            *line_out = line;
+            return true;
+        }
+
         goto open;
     }
 
@@ -770,15 +792,15 @@ bool parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t
     CZ_DEFER(path.drop(cz::heap_allocator()));
 
     if (cz::file::exists(path.buffer)) {
-        // Argument is of form FILE:LINE.
+        // Argument is of form {file}:{line}.
         *file_out = arg.slice_end(path.len);
         *line_out = line;
         return true;
     }
 
-    // Test FILE:LINE:COLUMN.  If these tests fail then it's not of this
-    // form.  If the FILE component doesn't exist then the file being
-    // opened just has a colon and a bunch of numbers in its path.
+    // Test {file}:{line}:{column}.  If these tests fail then it's not of
+    // this form.  If the {file} component doesn't exist then the file
+    // being opened just has a colon and a bunch of numbers in its path.
     colon = path.rfind(':');
     if (!colon) {
         goto open;
@@ -795,7 +817,7 @@ bool parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t
     path.null_terminate();
 
     if (cz::file::exists(path.buffer)) {
-        // Argument is of form FILE:LINE:COLUMN.
+        // Argument is of form {file}:{line}:{column}.
         *file_out = arg.slice_end(path.len);
         *line_out = line;
         *column_out = column;
@@ -813,6 +835,24 @@ bool parse_file_arg_no_disk(cz::Str arg,
 
     const char* colon = arg.rfind(':');
     if (!colon) {
+        {
+            const char* anchor = arg.rfind("#L");
+            if (!anchor) {
+                goto no_line_number;
+            }
+
+            // See if there are any numbers at all.
+            uint64_t last_number;
+            cz::Str last_number_string = arg.slice_start(anchor + 2);
+            if (cz::parse(last_number_string, &last_number) != (int64_t)last_number_string.len) {
+                goto no_line_number;
+            }
+
+            *file_out = arg.slice_end(anchor);
+            *line_out = last_number;
+            return true;
+        }
+
     no_line_number:
         *file_out = arg;
         return false;
