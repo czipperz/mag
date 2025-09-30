@@ -10,6 +10,7 @@
 #include "core/overlay.hpp"
 #include "core/token.hpp"
 #include "core/token_cache.hpp"
+#include "core/token_iterator.hpp"
 
 namespace mag {
 struct Buffer;
@@ -26,9 +27,7 @@ struct Data {
     Matching_Algo matching_algo;
 
     Token_Type token_type;
-    Contents_Iterator token_it;
-    uint64_t token_state;
-    Token token_token;
+    Forward_Token_Iterator token_it;
 
     size_t countdown_cursor_region;
 };
@@ -46,23 +45,7 @@ static void overlay_highlight_string_start_frame(Editor*,
     data->countdown_cursor_region = 0;
 
     if (data->token_type != Token_Type::length) {
-        Tokenizer_Check_Point check_point = buffer->token_cache.find_check_point(iterator.position);
-
-        Contents_Iterator it = buffer->contents.iterator_at(check_point.position);
-        uint64_t state = check_point.state;
-        Token token;
-        token.end = it.position;
-
-        while (token.end <= iterator.position) {
-            if (!buffer->mode.next_token(&it, &token, &state)) {
-                data->enabled = false;
-                return;
-            }
-        }
-
-        data->token_it = it;
-        data->token_state = state;
-        data->token_token = token;
+        data->token_it.init_at_or_after(buffer, iterator.position);
     }
 }
 
@@ -84,34 +67,32 @@ static Face overlay_highlight_string_get_face_and_advance(const Buffer* buffer,
 
     if (data->countdown_cursor_region == 0) {
         if (data->token_type != Token_Type::length) {
-            while (data->token_token.end <= iterator.position) {
-                if (!buffer->mode.next_token(&data->token_it, &data->token_token,
-                                             &data->token_state)) {
-                    data->enabled = false;
-                    return {};
-                }
+            data->token_it.find_at_or_after(iterator.position);
+            if (!data->token_it.has_token()) {
+                data->enabled = false;
+                return {};
             }
 
-            if (data->token_token.type != data->token_type) {
+            const Token& token = data->token_it.token();
+            if (token.type != data->token_type) {
                 return {};
             }
 
             switch (data->matching_algo) {
             case Matching_Algo::CONTAINS:
-                if (iterator.position < data->token_token.start)
+                if (iterator.position < token.start)
                     return {};
                 break;
             case Matching_Algo::EXACT_MATCH:
-                if (iterator.position != data->token_token.start ||
-                    data->token_token.end - data->token_token.start != data->string.len)
+                if (iterator.position != token.start || token.end - token.start != data->string.len)
                     return {};
                 break;
             case Matching_Algo::PREFIX:
-                if (iterator.position != data->token_token.start)
+                if (iterator.position != token.start)
                     return {};
                 break;
             case Matching_Algo::SUFFIX:
-                if (iterator.position + data->string.len != data->token_token.end)
+                if (iterator.position + data->string.len != token.end)
                     return {};
                 break;
             }
