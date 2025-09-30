@@ -243,7 +243,9 @@ static void animate_scrolling(bool allow_animated_scrolling,
         current_line = get_current_line();
     }
 
-    *iterator = start_of_line_position(buffer->contents, current_line);
+    if (current_line != target_line) {
+        *iterator = start_of_line_position(buffer->contents, current_line);
+    }
 }
 
 static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* editor,
