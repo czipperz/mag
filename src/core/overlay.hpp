@@ -27,6 +27,11 @@ struct Overlay {
                                          Window_Unified*,
                                          Contents_Iterator end_of_line_iterator,
                                          void*);
+        void (*skip_forward_same_line)(const Buffer*,
+                                       Window_Unified*,
+                                       Contents_Iterator start,
+                                       uint64_t end,
+                                       void*);
         void (*end_frame)(void*);
         void (*cleanup)(void*);
     };
@@ -52,6 +57,13 @@ struct Overlay {
                                   Window_Unified* window,
                                   Contents_Iterator iterator) const {
         return vtable->get_face_newline_padding(buffer, window, iterator, data);
+    }
+
+    void skip_forward_same_line(const Buffer* buffer,
+                                Window_Unified* window,
+                                Contents_Iterator start,
+                                uint64_t end) const {
+        return vtable->skip_forward_same_line(buffer, window, start, end, data);
     }
 
     void end_frame() const { vtable->end_frame(data); }

@@ -110,6 +110,12 @@ static Face overlay_merge_conflict_get_face_newline_padding(const Buffer* buffer
     return face;
 }
 
+static void overlay_merge_conflict_skip_forward_same_line(const Buffer*,
+                                                          Window_Unified*,
+                                                          Contents_Iterator start,
+                                                          uint64_t end,
+                                                          void* _data) {}
+
 static void overlay_merge_conflict_end_frame(void* _data) {}
 
 static void overlay_merge_conflict_cleanup(void* _data) {
@@ -122,6 +128,7 @@ Overlay overlay_merge_conflicts(Face dividers, Face top, Face bottom) {
         overlay_merge_conflict_start_frame,
         overlay_merge_conflict_get_face_and_advance,
         overlay_merge_conflict_get_face_newline_padding,
+        overlay_merge_conflict_skip_forward_same_line,
         overlay_merge_conflict_end_frame,
         overlay_merge_conflict_cleanup,
     };

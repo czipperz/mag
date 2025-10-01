@@ -132,6 +132,20 @@ static Face overlay_matching_region_get_face_newline_padding(const Buffer* buffe
     return {};
 }
 
+static void overlay_matching_region_skip_forward_same_line(const Buffer* buffer,
+                                                           Window_Unified* window,
+                                                           Contents_Iterator start,
+                                                           uint64_t end,
+                                                           void* _data) {
+    ZoneScoped;
+    // TODO -- subtract from countdown_cursor_region.  If exhausted, jump to end - (use_prompt
+    // ?  prompt.len : end_marked_region - start_marked_region) and iterate from there.
+    while (start.position != end) {
+        overlay_matching_region_get_face_and_advance(buffer, window, start, _data);
+        start.advance();
+    }
+}
+
 static void overlay_matching_region_end_frame(void* _data) {}
 
 static void overlay_matching_region_cleanup(void* data) {
@@ -143,6 +157,7 @@ Overlay overlay_matching_region(Face face) {
         overlay_matching_region_start_frame,
         overlay_matching_region_get_face_and_advance,
         overlay_matching_region_get_face_newline_padding,
+        overlay_matching_region_skip_forward_same_line,
         overlay_matching_region_end_frame,
         overlay_matching_region_cleanup,
     };

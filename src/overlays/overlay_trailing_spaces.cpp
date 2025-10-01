@@ -62,6 +62,12 @@ static Face overlay_trailing_spaces_get_face_newline_padding(const Buffer* buffe
     return {};
 }
 
+static void overlay_trailing_spaces_skip_forward_same_line(const Buffer*,
+                                                           Window_Unified*,
+                                                           Contents_Iterator start,
+                                                           uint64_t end,
+                                                           void* _data) {}
+
 static void overlay_trailing_spaces_end_frame(void* data) {}
 
 static void overlay_trailing_spaces_cleanup(void* data) {
@@ -73,6 +79,7 @@ Overlay overlay_trailing_spaces(Face face) {
         overlay_trailing_spaces_start_frame,
         overlay_trailing_spaces_get_face_and_advance,
         overlay_trailing_spaces_get_face_newline_padding,
+        overlay_trailing_spaces_skip_forward_same_line,
         overlay_trailing_spaces_end_frame,
         overlay_trailing_spaces_cleanup,
     };

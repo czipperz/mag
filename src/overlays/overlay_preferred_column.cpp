@@ -60,6 +60,20 @@ static Face overlay_preferred_column_get_face_newline_padding(const Buffer* buff
     return {};
 }
 
+static void overlay_preferred_column_skip_forward_same_line(const Buffer* buffer,
+                                                            Window_Unified* window,
+                                                            Contents_Iterator start,
+                                                            uint64_t end,
+                                                            void* _data) {
+    ZoneScoped;
+    // TODO -- if preferred_column==-1 or column>=preferred_column then just do data->column
+    // += end - start.  Otherwise I'd just estimate width=1 unless the jump is very small.
+    while (start.position != end) {
+        overlay_preferred_column_get_face_and_advance(buffer, window, start, _data);
+        start.advance();
+    }
+}
+
 static void overlay_preferred_column_end_frame(void* data) {}
 
 static void overlay_preferred_column_cleanup(void* data) {
@@ -71,6 +85,7 @@ Overlay overlay_preferred_column(Face face) {
         overlay_preferred_column_start_frame,
         overlay_preferred_column_get_face_and_advance,
         overlay_preferred_column_get_face_newline_padding,
+        overlay_preferred_column_skip_forward_same_line,
         overlay_preferred_column_end_frame,
         overlay_preferred_column_cleanup,
     };

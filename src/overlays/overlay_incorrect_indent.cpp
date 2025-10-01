@@ -90,6 +90,20 @@ static Face overlay_incorrect_indent_get_face_newline_padding(
     return {};
 }
 
+static void overlay_incorrect_indent_skip_forward_same_line(const Buffer* buffer,
+                                                            Window_Unified* window,
+                                                            Contents_Iterator start,
+                                                            uint64_t end,
+                                                            void* _data) {
+    ZoneScoped;
+    // TODO unless jump is tiny: set not at start of line, set coundown=0
+    while (start.position != end) {
+        overlay_incorrect_indent_get_face_and_advance(buffer, window, start,
+                                                                              _data);
+        start.advance();
+    }
+}
+
 static void overlay_incorrect_indent_end_frame(void* data) {}
 
 static void overlay_incorrect_indent_cleanup(void* data) {
@@ -101,6 +115,7 @@ Overlay overlay_incorrect_indent(Face face) {
         overlay_incorrect_indent_start_frame,
         overlay_incorrect_indent_get_face_and_advance,
         overlay_incorrect_indent_get_face_newline_padding,
+        overlay_incorrect_indent_skip_forward_same_line,
         overlay_incorrect_indent_end_frame,
         overlay_incorrect_indent_cleanup,
     };

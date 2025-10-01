@@ -118,6 +118,23 @@ static Face overlay_nearest_matching_identifier_before_after_get_face_newline_pa
     return {};
 }
 
+static void overlay_nearest_matching_identifier_before_after_skip_forward_same_line(
+    const Buffer* buffer,
+    Window_Unified* window,
+    Contents_Iterator start,
+    uint64_t end,
+    void* _data) {
+    ZoneScoped;
+    // TODO -- jump to end.  If end - start.position < countdown then
+    // just subtract from countdown and return.  If in identifier then
+    // go backwards to start and set countdown and countdown_highlight.
+    while (start.position != end) {
+        overlay_nearest_matching_identifier_before_after_get_face_and_advance(buffer, window, start,
+                                                                              _data);
+        start.advance();
+    }
+}
+
 static void overlay_nearest_matching_identifier_before_after_end_frame(void* _data) {}
 
 static void overlay_nearest_matching_identifier_before_after_cleanup(void* data) {
@@ -129,6 +146,7 @@ Overlay overlay_nearest_matching_identifier_before_after(Face face) {
         overlay_nearest_matching_identifier_before_after_start_frame,
         overlay_nearest_matching_identifier_before_after_get_face_and_advance,
         overlay_nearest_matching_identifier_before_after_get_face_newline_padding,
+        overlay_nearest_matching_identifier_before_after_skip_forward_same_line,
         overlay_nearest_matching_identifier_before_after_end_frame,
         overlay_nearest_matching_identifier_before_after_cleanup,
     };

@@ -187,6 +187,19 @@ static Face overlay_matching_pairs_get_face_newline_padding(const Buffer* buffer
     return {};
 }
 
+static void overlay_matching_pairs_skip_forward_same_line(const Buffer* buffer,
+                                                          Window_Unified* window,
+                                                          Contents_Iterator start,
+                                                          uint64_t end,
+                                                          void* _data) {
+    ZoneScoped;
+    // TODO -- quick iterate over data->points until we reach end
+    while (start.position != end) {
+        overlay_matching_pairs_get_face_and_advance(buffer, window, start, _data);
+        start.advance();
+    }
+}
+
 static void overlay_matching_pairs_end_frame(void* _data) {}
 
 static void overlay_matching_pairs_cleanup(void* _data) {
@@ -200,6 +213,7 @@ Overlay overlay_matching_pairs(Face face) {
         overlay_matching_pairs_start_frame,
         overlay_matching_pairs_get_face_and_advance,
         overlay_matching_pairs_get_face_newline_padding,
+        overlay_matching_pairs_skip_forward_same_line,
         overlay_matching_pairs_end_frame,
         overlay_matching_pairs_cleanup,
     };

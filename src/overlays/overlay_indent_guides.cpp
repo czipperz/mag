@@ -94,6 +94,12 @@ static Face overlay_indent_guides_get_face_newline_padding(const Buffer*,
     return {};
 }
 
+static void overlay_indent_guides_skip_forward_same_line(const Buffer*,
+                                                         Window_Unified*,
+                                                         Contents_Iterator start,
+                                                         uint64_t end,
+                                                         void* _data) {}
+
 static void overlay_indent_guides_end_frame(void* data) {}
 
 static void overlay_indent_guides_cleanup(void* _data) {
@@ -107,6 +113,7 @@ Overlay overlay_indent_guides(Face face) {
         overlay_indent_guides_start_frame,
         overlay_indent_guides_get_face_and_advance,
         overlay_indent_guides_get_face_newline_padding,
+        overlay_indent_guides_skip_forward_same_line,
         overlay_indent_guides_end_frame,
         overlay_indent_guides_cleanup,
     };

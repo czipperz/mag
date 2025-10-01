@@ -118,6 +118,41 @@ static Face overlay_highlight_string_get_face_newline_padding(
     return {};
 }
 
+static void overlay_highlight_string_skip_forward_same_line(const Buffer* buffer,
+                                                            Window_Unified* window,
+                                                            Contents_Iterator start,
+                                                            uint64_t end,
+                                                            void* _data) {
+    ZoneScoped;
+    Data* data = (Data*)_data;
+
+    if (!data->enabled) {
+        return;
+    }
+
+    uint64_t target = end - cz::min(end, data->string.len);
+
+    // Small jump -- just iterate through the region.
+    if (end - start.position <= data->countdown_cursor_region || target <= start.position) {
+        do {
+            overlay_highlight_string_get_face_and_advance(buffer, window, start, _data);
+            start.advance();
+        } while (end - start.position <= data->countdown_cursor_region);
+        return;
+    }
+
+    // Big jump.
+    if (data->token_type != Token_Type::length) {
+        data->token_it.init_at_or_after(buffer, target);
+    }
+    data->countdown_cursor_region = 0;
+    start.advance_to(target);
+    while (start.position != end) {
+        overlay_highlight_string_get_face_and_advance(buffer, window, start, _data);
+        start.advance();
+    }
+}
+
 static void overlay_highlight_string_end_frame(void* data) {}
 
 static void overlay_highlight_string_cleanup(void* _data) {
@@ -130,6 +165,7 @@ static const Overlay::VTable vtable = {
     overlay_highlight_string_start_frame,
     overlay_highlight_string_get_face_and_advance,
     overlay_highlight_string_get_face_newline_padding,
+    overlay_highlight_string_skip_forward_same_line,
     overlay_highlight_string_end_frame,
     overlay_highlight_string_cleanup,
 };

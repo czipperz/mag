@@ -56,6 +56,12 @@ static Face overlay_selected_line_get_face_and_advance(const Buffer* buffer,
     return face;
 }
 
+static void overlay_selected_line_skip_forward_same_line(const Buffer*,
+                                                         Window_Unified*,
+                                                         Contents_Iterator start,
+                                                         uint64_t end,
+                                                         void* _data) {}
+
 static void overlay_selected_line_end_frame(void* data) {}
 
 static void overlay_selected_line_cleanup(void* data) {
@@ -67,6 +73,7 @@ Overlay overlay_selected_line(Face face) {
         overlay_selected_line_start_frame,
         overlay_selected_line_get_face_and_advance,
         overlay_selected_line_get_face_and_advance,  // newline padding = normal line text
+        overlay_selected_line_skip_forward_same_line,
         overlay_selected_line_end_frame,
         overlay_selected_line_cleanup,
     };
