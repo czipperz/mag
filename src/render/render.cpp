@@ -651,10 +651,8 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
     for (; !iterator.at_eob(); iterator.advance()) {
         token_it.find_at_or_after(iterator.position);
 
-        bool has_selected_cursor = false;
-        bool has_cursor = false;
-        for (size_t c = 0; c < cursors.len; ++c) {
-            if (window->show_marks) {
+        if (window->show_marks) {
+            for (size_t c = 0; c < cursors.len; ++c) {
                 if (iterator.position == cursors[c].start()) {
                     ++mark_depth;
                     if (c == window->selected_cursor) {
@@ -668,6 +666,11 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
                     }
                 }
             }
+        }
+
+        bool has_selected_cursor = false;
+        bool has_cursor = false;
+        for (size_t c = 0; c < cursors.len; ++c) {
             if (iterator.position == cursors[c].point) {
                 has_cursor = true;
                 if (c == window->selected_cursor) {
