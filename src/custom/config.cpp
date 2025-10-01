@@ -911,7 +911,9 @@ static void matching_identifier_overlays(
     overlays->push(syntax::overlay_matching_tokens({-1, 237, 0}, types));
 }
 
-static bool handle_git_show_file(Editor* editor, Buffer* buffer) {
+static bool handle_git_show_file(Editor* editor,
+                                 Buffer* buffer,
+                                 const cz::Arc<Buffer_Handle>& buffer_handle) {
     if (!buffer->name.starts_with("*shell git show ") || !buffer->name.ends_with('*'))
         return false;
 
@@ -948,11 +950,13 @@ static bool handle_git_show_file(Editor* editor, Buffer* buffer) {
         return false;
     }
 
-    reset_mode_as_if(editor, buffer, name, directory, type);
+    reset_mode_as_if(editor, buffer, buffer_handle, name, directory, type);
     return true;
 }
 
-void buffer_created_callback(Editor* editor, Buffer* buffer) {
+void buffer_created_callback(Editor* editor,
+                             Buffer* buffer,
+                             const cz::Arc<Buffer_Handle>& buffer_handle) {
     ZoneScoped;
 
     buffer->mode.indent_width = 4;
@@ -1038,7 +1042,7 @@ void buffer_created_callback(Editor* editor, Buffer* buffer) {
         } else if (buffer->name.starts_with("*diff ")) {
             buffer->mode.next_token = syntax::diff_next_token;
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
-        } else if (handle_git_show_file(editor, buffer)) {
+        } else if (handle_git_show_file(editor, buffer, buffer_handle)) {
             return;
         } else if (buffer->name.starts_with("*git last-edit ") ||
                    buffer->name.starts_with("*git show ") ||

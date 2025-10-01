@@ -61,7 +61,7 @@ void Editor::create_buffer(cz::Arc<Buffer_Handle> buffer_handle) {
     {
         WITH_BUFFER_HANDLE(buffer_handle);
         buffer->id = {buffer_counter++};
-        custom::buffer_created_callback(this, buffer);
+        custom::buffer_created_callback(this, buffer, buffer_handle);
     }
 
     buffers.reserve(cz::heap_allocator(), 1);

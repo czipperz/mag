@@ -21,17 +21,22 @@
 namespace mag {
 namespace basic {
 
-void reset_mode(Editor* editor, Buffer* buffer) {
+void reset_mode(Editor* editor, Buffer* buffer, const cz::Arc<Buffer_Handle>& buffer_handle) {
+    Tokenizer old_next_token = buffer->mode.next_token;
     buffer->mode.drop();
     buffer->mode = {};
 
-    buffer->token_cache.reset();
+    custom::buffer_created_callback(editor, buffer, buffer_handle);
 
-    custom::buffer_created_callback(editor, buffer);
+    if (buffer->mode.next_token != old_next_token) {
+        buffer->token_cache.reset();
+        editor->add_asynchronous_job(job_syntax_highlight_buffer(buffer_handle.clone_downgrade()));
+    }
 }
 
 void reset_mode_as_if(Editor* editor,
                       Buffer* buffer,
+                      const cz::Arc<Buffer_Handle>& buffer_handle,
                       cz::Str name,
                       cz::Str directory,
                       Buffer::Type type) {
@@ -49,16 +54,19 @@ void reset_mode_as_if(Editor* editor,
     CZ_DEFER(buffer->directory = bdirectory);
     CZ_DEFER(buffer->directory.drop(cz::heap_allocator()));
 
-    reset_mode(editor, buffer);
+    reset_mode(editor, buffer, buffer_handle);
 }
 
-bool reset_mode_as_if_named(Editor* editor, Buffer* buffer, cz::Str path) {
+bool reset_mode_as_if_named(Editor* editor,
+                            Buffer* buffer,
+                            const cz::Arc<Buffer_Handle>& buffer_handle,
+                            cz::Str path) {
     cz::Str name, directory;
     Buffer::Type type;
     if (!parse_rendered_buffer_name(path, &name, &directory, &type)) {
         return false;
     }
-    reset_mode_as_if(editor, buffer, name, directory, type);
+    reset_mode_as_if(editor, buffer, buffer_handle, name, directory, type);
     return true;
 }
 
@@ -437,7 +445,7 @@ static void command_rename_buffer_callback(Editor* editor,
     cz::swap(buffer->directory, directory_clone);
     buffer->type = type;
 
-    reset_mode(editor, buffer);
+    reset_mode(editor, buffer, handle);
 }
 
 REGISTER_COMMAND(command_rename_buffer);
@@ -493,7 +501,7 @@ static void command_save_buffer_to_callback(Editor* editor,
         client->show_message("Error saving file");
     }
 
-    reset_mode(editor, buffer);
+    reset_mode(editor, buffer, handle);
 }
 
 REGISTER_COMMAND(command_save_buffer_to);
@@ -521,7 +529,7 @@ static void command_pretend_rename_buffer_callback(Editor* editor,
                                                    cz::Str path,
                                                    void* data) {
     WITH_SELECTED_BUFFER(client);
-    if (!reset_mode_as_if_named(editor, buffer, path))
+    if (!reset_mode_as_if_named(editor, buffer, handle, path))
         client->show_message("Error: invalid path");
 }
 

@@ -106,7 +106,11 @@ static bool setup_paste(cz::Slice<Cursor> cursors, Copy_Chain* global_copy_chain
     return true;
 }
 
-static void run_paste(Editor* editor, Client* client, Window_Unified* window, Buffer* buffer) {
+static void run_paste(Editor* editor,
+                      Client* client,
+                      Window_Unified* window,
+                      Buffer* buffer,
+                      const cz::Arc<Buffer_Handle>& buffer_handle) {
     // :CopyLeak Probably we will need to copy all the values here.
     Transaction transaction;
     transaction.init(buffer);
@@ -154,7 +158,7 @@ static void run_paste(Editor* editor, Client* client, Window_Unified* window, Bu
 
     // The only change to this buffer is pasting.  Try reloading syntax highlighting.
     if (buffer->commit_index == 1) {
-        reset_mode(editor, buffer);
+        reset_mode(editor, buffer, buffer_handle);
     }
 }
 
@@ -166,7 +170,7 @@ void command_paste(Editor* editor, Command_Source source) {
         return;
     }
 
-    run_paste(editor, source.client, window, buffer);
+    run_paste(editor, source.client, window, buffer, handle);
 }
 
 REGISTER_COMMAND(command_paste_previous);
@@ -203,7 +207,7 @@ void command_paste_previous(Editor* editor, Command_Source source) {
             WITH_WINDOW_BUFFER(window, source.client);
             buffer->undo();
             window->update_cursors(buffer, source.client);
-            run_paste(editor, source.client, window, buffer);
+            run_paste(editor, source.client, window, buffer, handle);
         }
     } else {
         source.client->show_message("Error: previous command was not paste");

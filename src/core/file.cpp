@@ -148,7 +148,7 @@ static Job_Tick_Result reset_buffer_mode_job_tick(Editor* editor, Client* client
     if (data->upgrade(&buffer_handle)) {
         CZ_DEFER(buffer_handle.drop());
         WITH_BUFFER_HANDLE(buffer_handle);
-        basic::reset_mode(editor, buffer);
+        basic::reset_mode(editor, buffer, buffer_handle);
     }
     reset_buffer_mode_job_kill(_data);
     return Job_Tick_Result::FINISHED;

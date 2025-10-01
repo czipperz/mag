@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cz/arc.hpp>
 #include <cz/str.hpp>
 #include "core/file.hpp"
 #include "gnu_global/generic.hpp"
@@ -9,6 +10,7 @@ namespace mag {
 struct Client;
 struct Editor;
 struct Buffer;
+struct Buffer_Handle;
 
 namespace custom {
 
@@ -29,7 +31,9 @@ void editor_created_callback(Editor* editor);
 /// filled by the time this method is invoked.  However the contents of the buffer may be loaded
 /// after this method is called (for example `prose::command_search_in_current_directory`) so
 /// that we can display partial search results to the user.
-void buffer_created_callback(Editor* editor, Buffer* buffer);
+void buffer_created_callback(Editor* editor,
+                             Buffer* buffer,
+                             const cz::Arc<Buffer_Handle>& buffer_handle);
 
 /// Attempt to find a file based on `path` that comes from a substring of a buffer in `directory`.
 /// Note that `vc_dir` and `directory` are automatically tested by `prose::open_relpath`.
