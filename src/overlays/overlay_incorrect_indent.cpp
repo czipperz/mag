@@ -65,7 +65,7 @@ static Face overlay_incorrect_indent_get_face_and_advance(
         it.advance();
     }
 
-    // Tabs much come before spaces.
+    // Tabs must come before spaces.
     if (!it.at_eob() && it.get() == '\t') {
         CZ_DEBUG_ASSERT(it.position > current_position_iterator.position);
         data->highlight_countdown = it.position - current_position_iterator.position - 1;
