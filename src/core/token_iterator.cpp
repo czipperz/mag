@@ -35,11 +35,11 @@ bool Forward_Token_Iterator::next() {
 }
 
 bool Forward_Token_Iterator::find_at_or_after(uint64_t position) {
-    if (has_token() && token_.end >= position) {
+    if (has_token() && token_.end > position) {
         return true;
     }
     while (next()) {
-        if (token_.end >= position)
+        if (token_.end > position)
             return true;
     }
     return false;

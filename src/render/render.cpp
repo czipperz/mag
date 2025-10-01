@@ -650,9 +650,7 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
     }
 
     for (; !iterator.at_eob(); iterator.advance()) {
-        while (token_it.has_token() && iterator.position >= token_it.token().end) {
-            token_it.next();
-        }
+        token_it.find_at_or_after(iterator.position);
 
         bool has_selected_cursor = false;
         bool has_cursor = false;
