@@ -71,6 +71,7 @@ static void overlay_merge_conflict_start_frame(Editor*,
     data->state = NOTHING;
     at_newline(data, start_position_iterator);
 }
+
 static Face overlay_merge_conflict_get_face_and_advance(const Buffer* buffer,
                                                         Window_Unified*,
                                                         Contents_Iterator iterator,
@@ -87,6 +88,7 @@ static Face overlay_merge_conflict_get_face_and_advance(const Buffer* buffer,
         return data->dividers;
     }
 }
+
 static Face overlay_merge_conflict_get_face_newline_padding(const Buffer* buffer,
                                                             Window_Unified*,
                                                             Contents_Iterator end_of_line_iterator,
@@ -107,17 +109,22 @@ static Face overlay_merge_conflict_get_face_newline_padding(const Buffer* buffer
     at_newline(data, end_of_line_iterator);
     return face;
 }
+
 static void overlay_merge_conflict_end_frame(void* _data) {}
+
 static void overlay_merge_conflict_cleanup(void* _data) {
     Data* data = (Data*)_data;
     cz::heap_allocator().dealloc(data);
 }
 
 Overlay overlay_merge_conflicts(Face dividers, Face top, Face bottom) {
-    static const Overlay::VTable vtable{
-        overlay_merge_conflict_start_frame, overlay_merge_conflict_get_face_and_advance,
-        overlay_merge_conflict_get_face_newline_padding, overlay_merge_conflict_end_frame,
-        overlay_merge_conflict_cleanup};
+    static const Overlay::VTable vtable = {
+        overlay_merge_conflict_start_frame,
+        overlay_merge_conflict_get_face_and_advance,
+        overlay_merge_conflict_get_face_newline_padding,
+        overlay_merge_conflict_end_frame,
+        overlay_merge_conflict_cleanup,
+    };
 
     Data* data = cz::heap_allocator().alloc<Data>();
     *data = {};
