@@ -12,6 +12,7 @@ void Forward_Token_Iterator::init_at_check_point(const Buffer* buffer, uint64_t 
 }
 
 bool Forward_Token_Iterator::init_at_or_after(const Buffer* buffer, uint64_t position) {
+    ZoneScoped;
     init_at_check_point(buffer, position);
     return find_at_or_after(position);
 }
@@ -87,6 +88,7 @@ void Backward_Token_Iterator::drop() {
 }
 
 bool Backward_Token_Iterator::init_at_or_before(const Buffer* buffer, uint64_t position) {
+    ZoneScoped;
     *this = {};
     buffer_ = buffer;
     token_ = INVALID_TOKEN;
@@ -101,6 +103,7 @@ Forward_Token_Iterator Backward_Token_Iterator::jump_to_check_point(uint64_t pos
 }
 
 bool Backward_Token_Iterator::cache_until(Forward_Token_Iterator it, uint64_t position) {
+    ZoneScoped;
     while (it.next()) {
         const auto& token = it.token();
         if (token.start > position) {
