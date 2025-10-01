@@ -15,6 +15,7 @@
 #include "core/overlay.hpp"
 #include "core/server.hpp"
 #include "core/token.hpp"
+#include "core/token_iterator.hpp"
 #include "core/tracy_format.hpp"
 #include "core/visible_region.hpp"
 #include "version_control/version_control.hpp"
@@ -523,8 +524,7 @@ Face calculate_face(Editor* editor,
                     bool has_selected_cursor,
                     int mark_depth,
                     int selected_mark_depth,
-                    bool has_token,
-                    const Token& token,
+                    const Forward_Token_Iterator& token_it,
                     const Contents_Iterator& iterator) {
     Face face = {};
 
@@ -558,11 +558,12 @@ Face calculate_face(Editor* editor,
         }
     }
 
-    if (has_token && iterator.position >= token.start && iterator.position < token.end) {
-        if (token.type & Token_Type::CUSTOM) {
-            apply_face(&face, Token_Type_::decode(token.type));
+    if (token_it.has_token() && iterator.position >= token_it.token().start &&
+        iterator.position < token_it.token().end) {
+        if (token_it.token().type & Token_Type::CUSTOM) {
+            apply_face(&face, Token_Type_::decode(token_it.token().type));
         } else {
-            apply_face(&face, editor->theme.token_faces[token.type]);
+            apply_face(&face, editor->theme.token_faces[token_it.token().type]);
         }
     } else {
         apply_face(&face, editor->theme.token_faces[Token_Type::DEFAULT]);
@@ -591,17 +592,8 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
     size_t x = 0;
     size_t column = get_visual_column(buffer->mode, iterator);
 
-    Token token = {};
-    uint64_t state = 0;
-    bool has_token = true;
-    // Note: we run `buffer->token_cache.update(buffer)` in
-    // update_cursors_and_run_animated_scrolling.
-    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
-    {
-        Tokenizer_Check_Point check_point = buffer->token_cache.find_check_point(iterator.position);
-        token.end = check_point.position;
-        state = check_point.state;
-    }
+    Forward_Token_Iterator token_it;
+    token_it.init_at_or_after(buffer, iterator.position);
 
     cz::Slice<Cursor> cursors = window->cursors;
 
@@ -657,18 +649,9 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
                              &line_number_buffer);
     }
 
-    Contents_Iterator token_iterator = buffer->contents.iterator_at(token.end);
     for (; !iterator.at_eob(); iterator.advance()) {
-        while (has_token && iterator.position >= token.end) {
-#ifndef NDEBUG
-            token = INVALID_TOKEN;
-#endif
-            has_token = buffer->mode.next_token(&token_iterator, &token, &state);
-#ifndef NDEBUG
-            if (has_token) {
-                token.assert_valid(buffer->contents.len);
-            }
-#endif
+        while (token_it.has_token() && iterator.position >= token_it.token().end) {
+            token_it.next();
         }
 
         bool has_selected_cursor = false;
@@ -708,7 +691,7 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
         }
 
         Face face = calculate_face(editor, buffer, window, has_cursor, has_selected_cursor,
-                                   mark_depth, selected_mark_depth, has_token, token, iterator);
+                                   mark_depth, selected_mark_depth, token_it, iterator);
 
         if (face.flags & Face::INVISIBLE) {
             // Skip rendering this character as it is invisible
