@@ -281,7 +281,7 @@ bool Token_Cache::next_check_point(const Buffer* buffer,
 #endif
     }
 
-    ran_to_end = true;
+    ran_to_end = (buffer->contents.len > 0);
     return false;
 }
 
