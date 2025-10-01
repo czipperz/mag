@@ -62,6 +62,7 @@ Open_File_Result open_file_at(Editor* editor,
 /// * `{file}:{line}` -> set file and line, return true
 /// * `{file}:{line}:{column}` -> set file and line and column, return true
 /// * `{file}#L{line}` -> set file and line (`#L` is treated as `:`), return true
+/// * `{file}({line})` -> set file and line, return true
 ///
 /// `parse_file_arg` will only find `line`/`column` if the path exists after removing the suffix
 /// whereas `parse_file_arg_no_disk` will always find `line`/`column` if they are in the string.

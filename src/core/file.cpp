@@ -793,25 +793,23 @@ static bool parse_file_arg_colons(cz::Str arg,
     return true;
 }
 
-static bool parse_file_arg_anchor(cz::Str arg,
-                                  const char* anchor,
-                                  cz::Str* file_out,
-                                  uint64_t* line_out) {
-    cz::Str line_string = arg.slice_start(anchor + 2);
+static bool parse_file_arg_line_only(cz::Str path_string,
+                                     cz::Str line_string,
+                                     cz::Str* file_out,
+                                     uint64_t* line_out) {
     uint64_t line = 0;
     if (cz::parse(line_string, &line) != (int64_t)line_string.len) {
         return false;
     }
 
-    cz::String path = arg.slice_end(anchor).clone_null_terminate(cz::heap_allocator());
+    cz::String path = path_string.clone_null_terminate(cz::heap_allocator());
     CZ_DEFER(path.drop(cz::heap_allocator()));
-
     if (!cz::file::exists(path.buffer)) {
         return false;
     }
 
     // Argument is of form {file}#L{line}.
-    *file_out = arg.slice_end(path.len);
+    *file_out = path_string;
     *line_out = line;
     return true;
 }
@@ -834,7 +832,17 @@ bool parse_file_arg(cz::Str arg, cz::Str* file_out, uint64_t* line_out, uint64_t
 
     // Test {file}#L{line}.
     const char* anchor = arg.rfind("#L");
-    if (anchor && parse_file_arg_anchor(arg, anchor, file_out, line_out)) {
+    if (anchor &&
+        parse_file_arg_line_only(arg.slice_end(anchor), arg.slice_start(anchor + strlen("#L")),
+                                 file_out, line_out)) {
+        return true;
+    }
+
+    // Test {file}({line}).
+    const char* paren = arg.rfind("(");
+    if (arg.ends_with(')') && paren &&
+        parse_file_arg_line_only(arg.slice_end(paren), arg.slice(paren + strlen("("), arg.len - 1),
+                                 file_out, line_out)) {
         return true;
     }
 
@@ -876,19 +884,18 @@ static bool parse_file_arg_no_disk_colons(cz::Str arg,
     return true;
 }
 
-static bool parse_file_arg_no_disk_anchor(cz::Str arg,
-                                          const char* anchor,
-                                          cz::Str* file_out,
-                                          uint64_t* line_out) {
+static bool parse_file_arg_no_disk_line_only(cz::Str path_string,
+                                             cz::Str line_string,
+                                             cz::Str* file_out,
+                                             uint64_t* line_out) {
     // See if there are any numbers at all.
-    uint64_t last_number;
-    cz::Str last_number_string = arg.slice_start(anchor + 2);
-    if (cz::parse(last_number_string, &last_number) != (int64_t)last_number_string.len) {
+    uint64_t line;
+    if (cz::parse(line_string, &line) != (int64_t)line_string.len) {
         return false;
     }
 
-    *file_out = arg.slice_end(anchor);
-    *line_out = last_number;
+    *file_out = path_string;
+    *line_out = line;
     return true;
 }
 
@@ -904,7 +911,17 @@ bool parse_file_arg_no_disk(cz::Str arg,
     }
 
     const char* anchor = arg.rfind("#L");
-    if (anchor && parse_file_arg_no_disk_anchor(arg, anchor, file_out, line_out)) {
+    if (anchor &&
+        parse_file_arg_no_disk_line_only(
+            arg.slice_end(anchor), arg.slice_start(anchor + strlen("#L")), file_out, line_out)) {
+        return true;
+    }
+
+    const char* paren = arg.rfind('(');
+    if (arg.ends_with(')') && paren &&
+        parse_file_arg_no_disk_line_only(arg.slice_end(paren),
+                                         arg.slice(paren + strlen("("), arg.len - 1), file_out,
+                                         line_out)) {
         return true;
     }
 
