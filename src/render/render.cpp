@@ -545,13 +545,12 @@ Face calculate_face(Editor* editor,
     }
 
     {
-        size_t j = 0;
-        for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
+        for (size_t i = 0; i < editor->theme.overlays.len; ++i) {
             const Overlay* overlay = &editor->theme.overlays[i];
             Face overlay_face = overlay->get_face_and_advance(buffer, window, iterator);
             apply_face(&face, overlay_face);
         }
-        for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
+        for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
             const Overlay* overlay = &buffer->mode.overlays[i];
             Face overlay_face = overlay->get_face_and_advance(buffer, window, iterator);
             apply_face(&face, overlay_face);
@@ -707,13 +706,12 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
             // Draw newline padding with faces from overlays
             {
                 Face newline_padding_face;
-                size_t j = 0;
-                for (size_t i = 0; i < editor->theme.overlays.len; ++i, ++j) {
+                for (size_t i = 0; i < editor->theme.overlays.len; ++i) {
                     const Overlay* overlay = &editor->theme.overlays[i];
                     Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
                     apply_face(&newline_padding_face, overlay_face);
                 }
-                for (size_t i = 0; i < buffer->mode.overlays.len; ++i, ++j) {
+                for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
                     const Overlay* overlay = &buffer->mode.overlays[i];
                     Face overlay_face = overlay->get_face_newline_padding(buffer, window, iterator);
                     apply_face(&newline_padding_face, overlay_face);
