@@ -22,7 +22,7 @@ void command_open_token_at_relpath(Editor* editor, Command_Source source) {
     CZ_DEFER(directory.drop(cz::heap_allocator()));
 
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
 
         if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,
                                             &query)) {

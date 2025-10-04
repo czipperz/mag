@@ -59,7 +59,7 @@ static bool find_path_in_direction(Editor* editor,
                                    Client* client,
                                    Direction direction,
                                    cz::Heap_String* path) {
-    WITH_SELECTED_BUFFER(client);
+    WITH_CONST_SELECTED_BUFFER(client);
 
     if (direction != Direction::CURRENT && (window->cursors.len > 1 || window->show_marks)) {
         Contents_Iterator it =
@@ -69,8 +69,6 @@ static bool find_path_in_direction(Editor* editor,
         basic::center_selected_cursor(editor, window, buffer);
         direction = Direction::CURRENT;
     }
-
-    buffer->token_cache.update(buffer);
 
     Token token;
     Contents_Iterator iterator;
@@ -172,8 +170,7 @@ void command_build_open_previous_link_no_swap(Editor* editor, Command_Source sou
 
 REGISTER_COMMAND(command_build_next_file);
 void command_build_next_file(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-    buffer->token_cache.update(buffer);
+    WITH_CONST_SELECTED_BUFFER(source.client);
 
     Forward_Token_Iterator token_iterator;
     token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point);
@@ -193,8 +190,7 @@ void command_build_next_file(Editor* editor, Command_Source source) {
 
 REGISTER_COMMAND(command_build_previous_file);
 void command_build_previous_file(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-    buffer->token_cache.update(buffer);
+    WITH_CONST_SELECTED_BUFFER(source.client);
 
     Backward_Token_Iterator token_iterator;
     token_iterator.init_at_or_before(

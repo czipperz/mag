@@ -134,6 +134,8 @@ bool Buffer::undo() {
 
     last_committer = nullptr;
 
+    token_cache.update(this);
+
     return true;
 }
 
@@ -162,6 +164,8 @@ bool Buffer::redo() {
     ++commit_index;
 
     last_committer = nullptr;
+
+    token_cache.update(this);
 
     return true;
 }
@@ -196,6 +200,9 @@ bool Buffer::commit(cz::Slice<Edit> edits, Command_Function committer) {
     ++commit_index;
 
     last_committer = committer;
+
+    token_cache.update(this);
+
     return true;
 }
 

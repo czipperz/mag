@@ -37,6 +37,7 @@ struct Token_Cache {
     /// Update the cache based on recent changes.  Returns `true` on success, `false`
     /// if a change has invalidated part of the cache and it must be re-generated.
     bool update(const Buffer* buffer);
+    // TODO inject Editor/Async_Context to allow for update to create an async syntax highlighter.
 
     /// Check if a position is covered by a check point.
     bool is_covered(uint64_t position) const;

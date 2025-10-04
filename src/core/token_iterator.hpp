@@ -5,7 +5,6 @@
 #include "core/token.hpp"
 
 namespace mag {
-/// Note: call buffer.token_cache.update() before initializing.
 struct Forward_Token_Iterator {
     void init_at_check_point(const Buffer* buffer, uint64_t position);
     bool init_at_or_after(const Buffer* buffer, uint64_t position);

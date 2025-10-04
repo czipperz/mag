@@ -464,13 +464,7 @@ Contents_Iterator iterator_at_line_column(const Contents& contents,
     return iterator;
 }
 
-bool get_token_at_position(Buffer* buffer, Contents_Iterator* token_iterator, Token* token) {
-    buffer->token_cache.update(buffer);
-
-    return get_token_at_position_no_update(buffer, token_iterator, token);
-}
-
-bool get_token_at_position_contents(Buffer* buffer, uint64_t position, SSOStr* contents) {
+bool get_token_at_position_contents(const Buffer* buffer, uint64_t position, SSOStr* contents) {
     Contents_Iterator token_iterator = buffer->contents.iterator_at(position);
     Token token;
     if (!get_token_at_position(buffer, &token_iterator, &token)) {
@@ -480,7 +474,7 @@ bool get_token_at_position_contents(Buffer* buffer, uint64_t position, SSOStr* c
     return true;
 }
 
-bool get_token_at_position_no_update(const Buffer* buffer,
+bool get_token_at_position(const Buffer* buffer,
                                      Contents_Iterator* token_iterator,
                                      Token* token) {
     ZoneScoped;

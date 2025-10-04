@@ -288,14 +288,6 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
     // Double check that the selected cursor is in bounds.
     CZ_DEBUG_ASSERT(window->selected_cursor < window->cursors.len);
 
-    // Lock in write mode if the token cache is out of date.
-    Buffer* buffer_mut = nullptr;
-    bool token_cache_was_invalidated = false;
-    if (buffer->changes.len != buffer->token_cache.change_index) {
-        buffer_mut = handle->increase_reading_to_writing();
-        token_cache_was_invalidated = !buffer_mut->token_cache.update(buffer);
-    }
-
     Contents_Iterator iterator = buffer->contents.iterator_at(window->start_position);
     {
         // Do `start_of_visual_line` except handle the case where
@@ -490,11 +482,9 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
     }
 
     // If we moved into an area that isn't covered then we need to generate check points.
-    if (!buffer_mut && !buffer->token_cache.is_covered(iterator.position)) {
-        buffer_mut = handle->increase_reading_to_writing();
-    }
+    if (!buffer->token_cache.is_covered(iterator.position)) {
+        Buffer* buffer_mut = handle->increase_reading_to_writing();
 
-    if (buffer_mut) {
         // Note: we update the token cache at the top of this function.
         CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
 
@@ -502,7 +492,7 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
         bool had_no_check_points = buffer->token_cache.check_points.len == 0;
         buffer_mut->token_cache.generate_check_points_until(buffer, iterator.position);
 
-        if (token_cache_was_invalidated || had_no_check_points) {
+        if (had_no_check_points) {
             // Start asynchronous syntax highlighting.
             TracyFormat(message, len, 1024, "Start syntax highlighting: %.*s",
                         (int)buffer->name.len, buffer->name.buffer);
@@ -648,7 +638,7 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
                              &line_number_buffer);
     }
 
-    for (; !iterator.at_eob();) {
+    for (; !iterator.at_eob(); iterator.advance()) {
         token_it.find_at_or_after(iterator.position);
 
         if (window->show_marks) {
@@ -695,7 +685,6 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
 
         if (face.flags & Face::INVISIBLE) {
             // Skip rendering this character as it is invisible
-            iterator.advance();
             continue;
         }
 
@@ -780,45 +769,6 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
                        window, &y, &x, &column, {face, ';'})) {
                 return;
             }
-        }
-
-        if (x >= window->total_cols) {
-            // If the rest of the line is off the screen then skip forward to the end of the line.
-            Contents_Iterator eol = iterator;
-            end_of_line(&eol);
-
-            for (size_t i = 0; i < editor->theme.overlays.len; ++i) {
-                const Overlay* overlay = &editor->theme.overlays[i];
-                overlay->skip_forward_same_line(buffer, window, iterator, eol.position);
-            }
-            for (size_t i = 0; i < buffer->mode.overlays.len; ++i) {
-                const Overlay* overlay = &buffer->mode.overlays[i];
-                overlay->skip_forward_same_line(buffer, window, iterator, eol.position);
-            }
-
-            token_it.init_at_or_after(buffer, eol.position);
-
-            if (window->show_marks) {
-                for (size_t c = 0; c < cursors.len; ++c) {
-                    if (cursors[c].start() > iterator.position &&
-                        cursors[c].start() < eol.position) {
-                        ++mark_depth;
-                        if (c == window->selected_cursor) {
-                            ++selected_mark_depth;
-                        }
-                    }
-                    if (cursors[c].end() > iterator.position && cursors[c].end() < eol.position) {
-                        --mark_depth;
-                        if (c == window->selected_cursor) {
-                            --selected_mark_depth;
-                        }
-                    }
-                }
-            }
-
-            iterator = eol;
-        } else {
-            iterator.advance();
         }
     }
 

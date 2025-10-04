@@ -17,7 +17,7 @@ void command_java_open_token_at_point(Editor* editor, Command_Source source) {
     CZ_DEFER(token.drop(cz::heap_allocator()));
 
     {
-        WITH_SELECTED_NORMAL_BUFFER(source.client);
+        WITH_CONST_SELECTED_NORMAL_BUFFER(source.client);
 
         // TODO handle import lines.
         if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,

@@ -16,8 +16,7 @@ namespace basic {
 
 REGISTER_COMMAND(command_print_token_at_point);
 void command_print_token_at_point(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-    buffer->token_cache.update(buffer);
+    WITH_CONST_SELECTED_BUFFER(source.client);
     Contents_Iterator it =
         buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
     Token token;
@@ -35,9 +34,7 @@ void command_print_token_at_point(Editor* editor, Command_Source source) {
 // Backward up token pair
 ////////////////////////////////////////////////////////////////////////////////
 
-bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_pairs) {
-    buffer->token_cache.update(buffer);
-
+bool backward_up_token_pair(const Buffer* buffer, Contents_Iterator* cursor, bool non_pairs) {
     Backward_Token_Iterator token_it;
     token_it.init_before(buffer, cursor->position);
     CZ_DEFER(token_it.drop());
@@ -77,13 +74,12 @@ bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_
 // Get token before/after position
 ////////////////////////////////////////////////////////////////////////////////
 
-bool get_token_after_position(Buffer* buffer,
+bool get_token_after_position(const Buffer* buffer,
                               Contents_Iterator* token_iterator,
                               uint64_t* state,
                               Token* token) {
     uint64_t end_position = token_iterator->position;
 
-    buffer->token_cache.update(buffer);
     Tokenizer_Check_Point check_point =
         buffer->token_cache.find_check_point(token_iterator->position);
     token_iterator->retreat_to(check_point.position);
@@ -101,14 +97,13 @@ bool get_token_after_position(Buffer* buffer,
     }
 }
 
-bool get_token_before_position(Buffer* buffer,
+bool get_token_before_position(const Buffer* buffer,
                                Contents_Iterator* token_iterator,
                                uint64_t* state,
                                Token* token) {
     uint64_t end_position = token_iterator->position;
 
     Tokenizer_Check_Point check_point = {};
-    buffer->token_cache.update(buffer);
     size_t check_point_index = buffer->token_cache.find_check_point_index(token_iterator->position);
     if (check_point_index < buffer->token_cache.check_points.len) {
         check_point = buffer->token_cache.check_points[check_point_index];
@@ -152,7 +147,7 @@ bool get_token_before_position(Buffer* buffer,
 // Forward up token pair
 ////////////////////////////////////////////////////////////////////////////////
 
-bool forward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_pair) {
+bool forward_up_token_pair(const Buffer* buffer, Contents_Iterator* cursor, bool non_pair) {
     Contents_Iterator token_iterator = *cursor;
 
     Token token;
@@ -442,7 +437,7 @@ void command_backward_token_pair(Editor* editor, Command_Source source) {
 // Matching token
 ////////////////////////////////////////////////////////////////////////////////
 
-int find_backward_matching_token(Buffer* buffer,
+int find_backward_matching_token(const Buffer* buffer,
                                  Contents_Iterator iterator,
                                  Token* this_token,
                                  Token* matching_token) {
@@ -457,7 +452,6 @@ int find_backward_matching_token(Buffer* buffer,
     Contents_Iterator token_iterator = iterator;
     Token token;
     Tokenizer_Check_Point check_point = {};
-    buffer->token_cache.update(buffer);
     size_t check_point_index = buffer->token_cache.find_check_point_index(token_to_match.start);
     if (check_point_index < buffer->token_cache.check_points.len) {
         check_point = buffer->token_cache.check_points[check_point_index];
@@ -538,7 +532,7 @@ void command_backward_matching_token(Editor* editor, Command_Source source) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int find_forward_matching_token(Buffer* buffer,
+int find_forward_matching_token(const Buffer* buffer,
                                 Contents_Iterator iterator,
                                 Token* this_token,
                                 Token* matching_token) {
@@ -552,7 +546,6 @@ int find_forward_matching_token(Buffer* buffer,
     uint64_t end_position = token_to_match.end;
 
     Contents_Iterator token_iterator = iterator;
-    buffer->token_cache.update(buffer);
     Tokenizer_Check_Point check_point =
         buffer->token_cache.find_check_point(token_iterator.position);
     token_iterator.retreat_to(check_point.position);

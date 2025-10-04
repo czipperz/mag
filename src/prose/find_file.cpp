@@ -462,7 +462,7 @@ void command_find_file_prefill_token_at_point(Editor* editor, Command_Source sou
     CZ_DEFER(buffer_directory.drop(cz::heap_allocator()));
 
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
 
         if (!get_token_at_position_contents(buffer, window->cursors[window->selected_cursor].point,
                                             &query_storage)) {

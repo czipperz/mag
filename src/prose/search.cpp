@@ -151,7 +151,7 @@ static void search_token_at_position(Editor* editor,
     CZ_DEFER(query.drop(cz::heap_allocator()));
 
     {
-        WITH_SELECTED_BUFFER(client);
+        WITH_CONST_SELECTED_BUFFER(client);
 
         if (!copy_directory(client, buffer->directory, &directory)) {
             return;
@@ -254,7 +254,7 @@ void command_search_in_file_token_at_position(Editor* editor, Command_Source sou
     CZ_DEFER(query.drop(cz::heap_allocator()));
 
     {
-        WITH_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(source.client);
         if (buffer->type != Buffer::FILE) {
             source.client->show_message("Buffer is not a file");
             return;
