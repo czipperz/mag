@@ -136,8 +136,8 @@ bool Token_Cache::update(const Buffer* buffer) {
     CZ_DEFER(changed_check_points.drop(cz::heap_allocator()));
 
     // Detect check points that changed
-    for (size_t i = 1; i < check_points.len; ++i) {
-        if (any_changes_inbetween(pending_changes, check_points[i - 1].position,
+    for (size_t i = 0; i < check_points.len; ++i) {
+        if (any_changes_inbetween(pending_changes, i == 0 ? 0 : check_points[i - 1].position,
                                   check_points[i].position)) {
             changed_check_points.set(i);
         }
@@ -159,14 +159,14 @@ bool Token_Cache::update(const Buffer* buffer) {
 
     Contents_Iterator iterator = buffer->contents.start();
     // Fix check points that were changed
-    for (size_t i = 1; i < check_points.len; ++i) {
+    for (size_t i = 0; i < check_points.len; ++i) {
         if (!changed_check_points.get(i))
             continue;
 
-        iterator.advance_to(check_points[i - 1].position);
+        iterator.advance_to(i == 0 ? 0 : check_points[i - 1].position);
         uint64_t end_position = check_points[i].position;
         Token token;
-        uint64_t state = check_points[i - 1].state;
+        uint64_t state = i == 0 ? 0 : check_points[i - 1].state;
         size_t start = i;
         // Efficiently loop without recalculating the iterator so long as
         // the edit is screwing up future check points.
