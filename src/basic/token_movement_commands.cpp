@@ -98,48 +98,15 @@ bool get_token_after_position(const Buffer* buffer,
 
 bool get_token_before_position(const Buffer* buffer,
                                Contents_Iterator* token_iterator,
-                               uint64_t* state,
                                Token* token) {
-    uint64_t end_position = token_iterator->position;
-
-    Tokenizer_Check_Point check_point = {};
-    size_t check_point_index = buffer->token_cache.find_check_point_index(token_iterator->position);
-    if (check_point_index < buffer->token_cache.check_points.len) {
-        check_point = buffer->token_cache.check_points[check_point_index];
+    Backward_Token_Iterator token_it = {};
+    CZ_DEFER(token_it.drop());
+    if (!token_it.init_before(buffer, token_iterator->position)) {
+        return false;
     }
-
-    while (1) {
-        token_iterator->retreat_to(check_point.position);
-        *state = check_point.state;
-
-        bool has_token = buffer->mode.next_token(token_iterator, token, state);
-        if (!has_token) {
-            return false;
-        }
-
-        if (token->start >= end_position) {
-            if (check_point_index == 0) {
-                return false;
-            }
-
-            --check_point_index;
-            end_position = check_point.position;
-            check_point = buffer->token_cache.check_points[check_point_index];
-            continue;
-        }
-
-        while (1) {
-            Token previous_token = *token;
-            uint64_t previous_state = *state;
-            bool has_token = buffer->mode.next_token(token_iterator, token, state);
-            if (!has_token || token->start >= end_position) {
-                *token = previous_token;
-                *state = previous_state;
-                token_iterator->retreat_to(previous_token.end);
-                return true;
-            }
-        }
-    }
+    *token = token_it.token();
+    token_iterator->go_to(token->end);
+    return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -400,9 +367,8 @@ void command_forward_token_pair(Editor* editor, Command_Source source) {
 
 bool backward_token_pair(Buffer* buffer, Contents_Iterator* iterator, bool non_pair) {
     Token token;
-    uint64_t state;
     Contents_Iterator backup = *iterator;
-    if (!get_token_before_position(buffer, iterator, &state, &token)) {
+    if (!get_token_before_position(buffer, iterator, &token)) {
         *iterator = backup;
         return false;
     }
@@ -843,8 +809,7 @@ void command_delete_backward_token(Editor* editor, Command_Source source) {
         it.go_to(cursors[c].point);
 
         Token token;
-        uint64_t state;
-        if (!get_token_before_position(buffer, &it, &state, &token)) {
+        if (!get_token_before_position(buffer, &it, &token)) {
             break;
         }
 
@@ -918,6 +883,27 @@ void command_duplicate_token(Editor* editor, Command_Source source) {
 // Transpose token
 ////////////////////////////////////////////////////////////////////////////////
 
+static bool get_tokens_before_and_after(const Buffer* buffer,
+                                        uint64_t position,
+                                        Token* before_token,
+                                        Token* after_token) {
+    // Not super efficient to iterate twice but it ain't that bad
+    // since we have check points and this is only used interactively.
+    Backward_Token_Iterator backward_it = {};
+    CZ_DEFER(backward_it.drop());
+    if (!backward_it.init_before(buffer, position)) {
+        return false;
+    }
+    *before_token = backward_it.token();
+
+    Forward_Token_Iterator forward_it;
+    if (!forward_it.init_at_or_after(buffer, backward_it.token().end)) {
+        return false;
+    }
+    *after_token = forward_it.token();
+    return true;
+}
+
 REGISTER_COMMAND(command_transpose_tokens);
 void command_transpose_tokens(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
@@ -929,16 +915,8 @@ void command_transpose_tokens(Editor* editor, Command_Source source) {
     cz::Slice<Cursor> cursors = window->cursors;
     Contents_Iterator it = buffer->contents.start();
     for (size_t c = 0; c < cursors.len; ++c) {
-        it.go_to(cursors[c].point);
-
-        uint64_t state;
-        Token before_token;
-        if (!get_token_before_position(buffer, &it, &state, &before_token)) {
-            continue;
-        }
-
-        Token after_token;
-        if (!buffer->mode.next_token(&it, &after_token, &state)) {
+        Token before_token, after_token;
+        if (!get_tokens_before_and_after(buffer, cursors[c].point, &before_token, &after_token)) {
             continue;
         }
 

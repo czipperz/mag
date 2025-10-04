@@ -78,9 +78,8 @@ uint64_t find_indent_width(Buffer* buffer,
             }
 
             // We found an open pair but no other tokens so just indent one level.
-            uint64_t state;
             Token token;
-            if (!get_token_before_position(buffer, &it, &state, &token)) {
+            if (!get_token_before_position(buffer, &it, &token)) {
                 return base_columns;
             }
 

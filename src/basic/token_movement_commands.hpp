@@ -68,7 +68,6 @@ int find_backward_matching_token(const Buffer* buffer,
 
 bool get_token_before_position(const Buffer* buffer,
                                Contents_Iterator* token_iterator,
-                               uint64_t* state,
                                Token* token);
 
 bool get_token_after_position(const Buffer* buffer,
