@@ -128,7 +128,8 @@ struct Client {
     /// one.  Otherwise changes the buffer for the selected window.  If the target
     /// buffer is already selected then does nothing.  Clones the handle if necessary.
     ///
-    /// Generally you'll want to use this when generating a temp buffer, for example to rerun a build, to allow for the user's .
+    /// Generally you'll want to use this when generating a temp buffer, for
+    /// example to rerun a build, to not trample the existing window layout.
     void select_window_for_buffer_or_replace_current(cz::Arc<Buffer_Handle> buffer_handle);
 
     void replace_window(const Window* o, Window* n);

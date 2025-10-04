@@ -292,11 +292,10 @@ bool sh_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
         } else if (top == AT_START_OF_STATEMENT && matches(start, iterator->position, "for")) {
             token->type = Token_Type::OPEN_PAIR;
             new_transient = TRANSIENT_AFTER_DOLLAR;
-        } else if (top == AT_START_OF_STATEMENT &&
-                   (matches(start, iterator->position, ".") ||
-                    matches(start, iterator->position, "then") ||
-                    matches(start, iterator->position,
-                            "do") || matches(start, iterator->position, "in"))) {
+        } else if (top == AT_START_OF_STATEMENT && (matches(start, iterator->position, ".") ||
+                                                    matches(start, iterator->position, "then") ||
+                                                    matches(start, iterator->position, "do") ||
+                                                    matches(start, iterator->position, "in"))) {
             token->type = Token_Type::KEYWORD;
             top = AT_START_OF_STATEMENT;
             goto ret;

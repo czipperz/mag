@@ -474,9 +474,7 @@ bool get_token_at_position_contents(const Buffer* buffer, uint64_t position, SSO
     return true;
 }
 
-bool get_token_at_position(const Buffer* buffer,
-                                     Contents_Iterator* token_iterator,
-                                     Token* token) {
+bool get_token_at_position(const Buffer* buffer, Contents_Iterator* token_iterator, Token* token) {
     ZoneScoped;
 
     uint64_t position = token_iterator->position;

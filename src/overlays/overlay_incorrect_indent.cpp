@@ -98,8 +98,7 @@ static void overlay_incorrect_indent_skip_forward_same_line(const Buffer* buffer
     ZoneScoped;
     // TODO unless jump is tiny: set not at start of line, set coundown=0
     while (start.position != end) {
-        overlay_incorrect_indent_get_face_and_advance(buffer, window, start,
-                                                                              _data);
+        overlay_incorrect_indent_get_face_and_advance(buffer, window, start, _data);
         start.advance();
     }
 }

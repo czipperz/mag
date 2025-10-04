@@ -46,7 +46,7 @@
     Window_Unified* window = (CLIENT)->selected_window(); \
     WITH_CONST_WINDOW_BUFFER(window, (CLIENT))
 
-#define WITH_CONST_WINDOW_BUFFER(WINDOW, CLIENT)                     \
+#define WITH_CONST_WINDOW_BUFFER(WINDOW, CLIENT)             \
     cz::Arc<Buffer_Handle> handle = (WINDOW)->buffer_handle; \
     WITH_CONST_BUFFER_HANDLE(handle);                        \
     (WINDOW)->update_cursors(buffer, (CLIENT))

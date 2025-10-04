@@ -200,16 +200,15 @@ static Face overlay_matching_tokens_get_face_newline_padding(const Buffer* buffe
     return {};
 }
 
-static void overlay_matching_tokens_skip_forward_same_line(const Buffer*buffer,
-                                                           Window_Unified*window,
+static void overlay_matching_tokens_skip_forward_same_line(const Buffer* buffer,
+                                                           Window_Unified* window,
                                                            Contents_Iterator start,
                                                            uint64_t end,
                                                            void* _data) {
     ZoneScoped;
     // TODO -- convert to Forward_Token_Iterator, use init_at_or_after, set_token_matches
     while (start.position != end) {
-        overlay_matching_tokens_get_face_and_advance(buffer, window, start,
-                                                                              _data);
+        overlay_matching_tokens_get_face_and_advance(buffer, window, start, _data);
         start.advance();
     }
 }
