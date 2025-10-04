@@ -413,49 +413,22 @@ int find_backward_matching_token(const Buffer* buffer,
     }
     *this_token = token_to_match;
 
-    uint64_t end_position = token_to_match.start;
-    Contents_Iterator token_iterator = iterator;
-    Token token;
-    Tokenizer_Check_Point check_point = {};
-    size_t check_point_index = buffer->token_cache.find_check_point_index(token_to_match.start);
-    if (check_point_index < buffer->token_cache.check_points.len) {
-        check_point = buffer->token_cache.check_points[check_point_index];
+    Backward_Token_Iterator it = {};
+    CZ_DEFER(it.drop());
+    if (!it.init_before(buffer, token_to_match.start)) {
+        return 0;
     }
-
-    token_iterator.retreat_to(check_point.position);
-    uint64_t state = check_point.state;
-
-    bool found_token_this_loop = false;
-
     while (1) {
-        bool has_token = buffer->mode.next_token(&token_iterator, &token, &state);
-        if (!has_token) {
+        Contents_Iterator test_it = it.iterator_at_token_start();
+        if ((it.token().type == Token_Type::DEFAULT) ==
+                (token_to_match.type == Token_Type::DEFAULT) &&
+            matches(token_to_match_iterator, token_to_match.end, test_it, it.token().end)) {
+            *matching_token = it.token();
+            return 1;
+        }
+
+        if (!it.previous()) {
             return 0;
-        }
-
-        if (token.start >= end_position) {
-            if (found_token_this_loop) {
-                return 1;
-            }
-            if (check_point_index == 0) {
-                return 0;
-            }
-
-            --check_point_index;
-            end_position = check_point.position;
-            check_point = buffer->token_cache.check_points[check_point_index];
-
-            token_iterator.retreat_to(check_point.position);
-            state = check_point.state;
-            continue;
-        }
-
-        Contents_Iterator test_it = token_iterator;
-        test_it.retreat_to(token.start);
-        if ((token.type == Token_Type::DEFAULT) == (token_to_match.type == Token_Type::DEFAULT) &&
-            matches(token_to_match_iterator, token_to_match.end, test_it, token.end)) {
-            found_token_this_loop = true;
-            *matching_token = token;
         }
     }
 }
