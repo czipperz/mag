@@ -81,7 +81,8 @@ static bool find_path_in_direction(Editor* editor,
         token = token_iterator.token();
         iterator = token_iterator.iterator_at_token_start();
     } else {
-        Backward_Token_Iterator token_iterator;
+        Backward_Token_Iterator token_iterator = {};
+        CZ_DEFER(token_iterator.drop());
         token_iterator.init_at_or_before(buffer, window->cursors[window->selected_cursor].point -
                                                      (direction == Direction::PREVIOUS));
         if (!token_iterator.rfind_type(Token_Type::BUILD_LOG_LINK)) {
@@ -192,7 +193,8 @@ REGISTER_COMMAND(command_build_previous_file);
 void command_build_previous_file(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
-    Backward_Token_Iterator token_iterator;
+    Backward_Token_Iterator token_iterator = {};
+    CZ_DEFER(token_iterator.drop());
     token_iterator.init_at_or_before(
         buffer, std::max(window->cursors[window->selected_cursor].point, (uint64_t)1) - 1);
 

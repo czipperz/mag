@@ -35,10 +35,9 @@ void command_print_token_at_point(Editor* editor, Command_Source source) {
 ////////////////////////////////////////////////////////////////////////////////
 
 bool backward_up_token_pair(const Buffer* buffer, Contents_Iterator* cursor, bool non_pairs) {
-    Backward_Token_Iterator token_it;
-    token_it.init_before(buffer, cursor->position);
+    Backward_Token_Iterator token_it = {};
     CZ_DEFER(token_it.drop());
-    if (!token_it.has_token()) {
+    if (!token_it.init_before(buffer, cursor->position)) {
         return false;
     }
 
