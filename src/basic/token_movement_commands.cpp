@@ -8,6 +8,7 @@
 #include "core/match.hpp"
 #include "core/movement.hpp"
 #include "core/token.hpp"
+#include "core/token_iterator.hpp"
 #include "cursor_commands.hpp"
 
 namespace mag {
@@ -34,84 +35,41 @@ void command_print_token_at_point(Editor* editor, Command_Source source) {
 // Backward up token pair
 ////////////////////////////////////////////////////////////////////////////////
 
-static void tokenize_recording_pairs(Tokenizer_Check_Point check_point,
-                                     Contents_Iterator token_iterator,
-                                     uint64_t end_position,
-                                     Buffer* buffer,
-                                     cz::Vector<Token>* tokens,
-                                     bool non_pairs) {
-    Token token;
-    token.end = check_point.position;
-    uint64_t state = check_point.state;
-    while (1) {
-        bool has_token = buffer->mode.next_token(&token_iterator, &token, &state);
-        if (has_token) {
-            if (token.end > end_position) {
-                break;
-            }
-            if (token.type == Token_Type::OPEN_PAIR || token.type == Token_Type::CLOSE_PAIR ||
-                token.type == Token_Type::DIVIDER_PAIR ||
-                (non_pairs && (token.type == Token_Type::PREPROCESSOR_IF ||
-                               token.type == Token_Type::PREPROCESSOR_ELSE ||
-                               token.type == Token_Type::PREPROCESSOR_ENDIF))) {
-                tokens->reserve(cz::heap_allocator(), 1);
-                tokens->push(token);
-            }
-        } else {
-            break;
-        }
-    }
-}
-
 bool backward_up_token_pair(Buffer* buffer, Contents_Iterator* cursor, bool non_pairs) {
-    uint64_t end_position = cursor->position;
-    Contents_Iterator token_iterator = *cursor;
-
-    Tokenizer_Check_Point check_point = {};
     buffer->token_cache.update(buffer);
-    size_t check_point_index = buffer->token_cache.find_check_point_index(token_iterator.position);
-    if (check_point_index < buffer->token_cache.check_points.len) {
-        check_point = buffer->token_cache.check_points[check_point_index];
-    }
 
-    cz::Vector<Token> tokens = {};
-    tokens.reserve(cz::heap_allocator(), 8);
-    CZ_DEFER(tokens.drop(cz::heap_allocator()));
+    Backward_Token_Iterator token_it;
+    token_it.init_before(buffer, cursor->position);
+    CZ_DEFER(token_it.drop());
+    if (!token_it.has_token()) {
+        return false;
+    }
 
     size_t depth = 0;
     while (1) {
-        token_iterator.retreat_to(check_point.position);
-        tokenize_recording_pairs(check_point, token_iterator, end_position, buffer, &tokens,
-                                 non_pairs);
-
-        for (size_t i = tokens.len; i-- > 0;) {
-            if (tokens[i].type == Token_Type::OPEN_PAIR ||
-                (non_pairs && tokens[i].type == Token_Type::PREPROCESSOR_IF)) {
-                if (depth == 0) {
-                    cursor->retreat_to(tokens[i].start);
-                    return true;
-                }
-
-                --depth;
-            } else if (tokens[i].type == Token_Type::DIVIDER_PAIR ||
-                       (non_pairs && tokens[i].type == Token_Type::PREPROCESSOR_ELSE)) {
-                if (depth == 0) {
-                    cursor->retreat_to(tokens[i].start);
-                    return true;
-                }
-            } else {
-                ++depth;
+        const Token& token = token_it.token();
+        if (token.type == Token_Type::OPEN_PAIR ||
+            (non_pairs && token.type == Token_Type::PREPROCESSOR_IF)) {
+            if (depth == 0) {
+                cursor->retreat_to(token.start);
+                return true;
             }
+
+            --depth;
+        } else if (token.type == Token_Type::DIVIDER_PAIR ||
+                   (non_pairs && token.type == Token_Type::PREPROCESSOR_ELSE)) {
+            if (depth == 0) {
+                cursor->retreat_to(token.start);
+                return true;
+            }
+        } else if (token.type == Token_Type::CLOSE_PAIR ||
+                   (non_pairs && token.type == Token_Type::PREPROCESSOR_ENDIF)) {
+            ++depth;
         }
 
-        if (check_point_index == 0) {
+        if (!token_it.previous()) {
             return false;
         }
-
-        --check_point_index;
-        end_position = check_point.position;
-        check_point = buffer->token_cache.check_points[check_point_index];
-        tokens.len = 0;
     }
 }
 
