@@ -32,6 +32,7 @@ struct Backward_Token_Iterator {
     void drop();
 
     bool init_at_or_before(const Buffer* buffer, uint64_t position);
+    bool init_before(const Buffer* buffer, uint64_t position);
 
     Forward_Token_Iterator jump_to_check_point(uint64_t position);
     bool cache_until(Forward_Token_Iterator it, uint64_t position);

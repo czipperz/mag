@@ -92,7 +92,21 @@ bool Backward_Token_Iterator::init_at_or_before(const Buffer* buffer, uint64_t p
     *this = {};
     buffer_ = buffer;
     token_ = INVALID_TOKEN;
-    return cache_until(jump_to_check_point(position), position);
+    if (!cache_until(jump_to_check_point(position), position)) {
+        return false;
+    }
+    return previous();
+}
+
+bool Backward_Token_Iterator::init_before(const Buffer* buffer, uint64_t position) {
+    if (!init_at_or_before(buffer, position)) {
+        return false;
+    }
+    CZ_DEBUG_ASSERT(token_.start <= position);
+    if (token_.start == position) {
+        return previous();
+    }
+    return true;
 }
 
 Forward_Token_Iterator Backward_Token_Iterator::jump_to_check_point(uint64_t position) {
