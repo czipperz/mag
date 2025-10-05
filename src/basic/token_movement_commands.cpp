@@ -36,8 +36,8 @@ void command_print_token_at_point(Editor* editor, Command_Source source) {
 
 bool backward_up_token_pair(const Buffer* buffer, Contents_Iterator* cursor, bool non_pairs) {
     Backward_Token_Iterator token_it = {};
-    CZ_DEFER(token_it.drop());
-    if (!token_it.init_before(buffer, cursor->position)) {
+    CZ_DEFER(token_it.drop(cz::heap_allocator()));
+    if (!token_it.init_before(cz::heap_allocator(), buffer, cursor->position)) {
         return false;
     }
 
@@ -63,7 +63,7 @@ bool backward_up_token_pair(const Buffer* buffer, Contents_Iterator* cursor, boo
             ++depth;
         }
 
-        if (!token_it.previous()) {
+        if (!token_it.previous(cz::heap_allocator())) {
             return false;
         }
     }
@@ -100,8 +100,8 @@ bool get_token_before_position(const Buffer* buffer,
                                Contents_Iterator* token_iterator,
                                Token* token) {
     Backward_Token_Iterator token_it = {};
-    CZ_DEFER(token_it.drop());
-    if (!token_it.init_before(buffer, token_iterator->position)) {
+    CZ_DEFER(token_it.drop(cz::heap_allocator()));
+    if (!token_it.init_before(cz::heap_allocator(), buffer, token_iterator->position)) {
         return false;
     }
     *token = token_it.token();
@@ -414,8 +414,8 @@ int find_backward_matching_token(const Buffer* buffer,
     *this_token = token_to_match;
 
     Backward_Token_Iterator it = {};
-    CZ_DEFER(it.drop());
-    if (!it.init_before(buffer, token_to_match.start)) {
+    CZ_DEFER(it.drop(cz::heap_allocator()));
+    if (!it.init_before(cz::heap_allocator(), buffer, token_to_match.start)) {
         return 0;
     }
     while (1) {
@@ -427,7 +427,7 @@ int find_backward_matching_token(const Buffer* buffer,
             return 1;
         }
 
-        if (!it.previous()) {
+        if (!it.previous(cz::heap_allocator())) {
             return 0;
         }
     }
@@ -863,8 +863,8 @@ static bool get_tokens_before_and_after(const Buffer* buffer,
     // Not super efficient to iterate twice but it ain't that bad
     // since we have check points and this is only used interactively.
     Backward_Token_Iterator backward_it = {};
-    CZ_DEFER(backward_it.drop());
-    if (!backward_it.init_before(buffer, position)) {
+    CZ_DEFER(backward_it.drop(cz::heap_allocator()));
+    if (!backward_it.init_before(cz::heap_allocator(), buffer, position)) {
         return false;
     }
     *before_token = backward_it.token();

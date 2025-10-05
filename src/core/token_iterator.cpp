@@ -83,28 +83,32 @@ Contents_Iterator Forward_Token_Iterator::iterator_at_token_start() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Backward_Token_Iterator::drop() {
-    tokens_since_check_point.drop();
+void Backward_Token_Iterator::drop(cz::Allocator allocator) {
+    tokens_since_check_point.drop(allocator);
 }
 
-bool Backward_Token_Iterator::init_at_or_before(const Buffer* buffer, uint64_t position) {
+bool Backward_Token_Iterator::init_at_or_before(cz::Allocator allocator,
+                                                const Buffer* buffer,
+                                                uint64_t position) {
     ZoneScoped;
     *this = {};
     buffer_ = buffer;
     token_ = INVALID_TOKEN;
-    if (!cache_until(jump_to_check_point(position), position)) {
+    if (!cache_until(allocator, jump_to_check_point(position), position)) {
         return false;
     }
-    return previous();
+    return previous(allocator);
 }
 
-bool Backward_Token_Iterator::init_before(const Buffer* buffer, uint64_t position) {
-    if (!init_at_or_before(buffer, position)) {
+bool Backward_Token_Iterator::init_before(cz::Allocator allocator,
+                                          const Buffer* buffer,
+                                          uint64_t position) {
+    if (!init_at_or_before(allocator, buffer, position)) {
         return false;
     }
     CZ_DEBUG_ASSERT(token_.start <= position);
     if (token_.start == position) {
-        return previous();
+        return previous(allocator);
     }
     return true;
 }
@@ -113,17 +117,20 @@ Forward_Token_Iterator Backward_Token_Iterator::jump_to_check_point(uint64_t pos
     Forward_Token_Iterator it;
     it.init_at_check_point(buffer_, position);
     check_point_iterator = it.tokenization_iterator;
+    tokens_since_check_point.len = 0;
     return it;
 }
 
-bool Backward_Token_Iterator::cache_until(Forward_Token_Iterator it, uint64_t position) {
+bool Backward_Token_Iterator::cache_until(cz::Allocator allocator,
+                                          Forward_Token_Iterator it,
+                                          uint64_t position) {
     ZoneScoped;
     while (it.next()) {
         const auto& token = it.token();
         if (token.start > position) {
             break;
         }
-        tokens_since_check_point.reserve(1);
+        tokens_since_check_point.reserve(allocator, 1);
         tokens_since_check_point.push(token);
         if (token.end >= position) {
             break;
@@ -132,12 +139,12 @@ bool Backward_Token_Iterator::cache_until(Forward_Token_Iterator it, uint64_t po
     return tokens_since_check_point.len > 0;
 }
 
-bool Backward_Token_Iterator::cache_previous_check_point() {
-    return cache_until(jump_to_check_point(check_point_iterator.position - 1),
+bool Backward_Token_Iterator::cache_previous_check_point(cz::Allocator allocator) {
+    return cache_until(allocator, jump_to_check_point(check_point_iterator.position - 1),
                        check_point_iterator.position);
 }
 
-bool Backward_Token_Iterator::previous() {
+bool Backward_Token_Iterator::previous(cz::Allocator allocator) {
     while (1) {
         if (tokens_since_check_point.len != 0) {
             token_ = tokens_since_check_point.last();
@@ -150,15 +157,15 @@ bool Backward_Token_Iterator::previous() {
             return false;
         }
 
-        cache_previous_check_point();
+        cache_previous_check_point(allocator);
     }
 }
 
-bool Backward_Token_Iterator::rfind_type(Token_Type type) {
+bool Backward_Token_Iterator::rfind_type(cz::Allocator allocator, Token_Type type) {
     if (has_token() && token_.type == type) {
         return true;
     }
-    while (previous()) {
+    while (previous(allocator)) {
         if (token_.type == type) {
             return true;
         }

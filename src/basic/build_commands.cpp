@@ -82,10 +82,11 @@ static bool find_path_in_direction(Editor* editor,
         iterator = token_iterator.iterator_at_token_start();
     } else {
         Backward_Token_Iterator token_iterator = {};
-        CZ_DEFER(token_iterator.drop());
-        token_iterator.init_at_or_before(buffer, window->cursors[window->selected_cursor].point -
-                                                     (direction == Direction::PREVIOUS));
-        if (!token_iterator.rfind_type(Token_Type::BUILD_LOG_LINK)) {
+        CZ_DEFER(token_iterator.drop(cz::heap_allocator()));
+        token_iterator.init_at_or_before(
+            cz::heap_allocator(), buffer,
+            window->cursors[window->selected_cursor].point - (direction == Direction::PREVIOUS));
+        if (!token_iterator.rfind_type(cz::heap_allocator(), Token_Type::BUILD_LOG_LINK)) {
             return false;
         }
         token = token_iterator.token();
@@ -194,12 +195,13 @@ void command_build_previous_file(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
 
     Backward_Token_Iterator token_iterator = {};
-    CZ_DEFER(token_iterator.drop());
+    CZ_DEFER(token_iterator.drop(cz::heap_allocator()));
     token_iterator.init_at_or_before(
-        buffer, std::max(window->cursors[window->selected_cursor].point, (uint64_t)1) - 1);
+        cz::heap_allocator(), buffer,
+        std::max(window->cursors[window->selected_cursor].point, (uint64_t)1) - 1);
 
     uint64_t position;
-    if (token_iterator.rfind_type(Token_Type::BUILD_LOG_FILE_HEADER)) {
+    if (token_iterator.rfind_type(cz::heap_allocator(), Token_Type::BUILD_LOG_FILE_HEADER)) {
         position = token_iterator.token().start;
     } else {
         position = 0;
