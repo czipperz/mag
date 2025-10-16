@@ -33,7 +33,7 @@ static bool eat_number(Contents_Iterator* iterator) {
 
 // Note: ignore the '    Start #3000: test_name' headers because they don't really matter.
 // '1/5 Test #3: TestName'
-// '   1/5000 Test #3000: TestName'
+// '   1/5000 Test   #30: TestName'
 static bool looking_at_test_file_result_start(Contents_Iterator iterator) {
     forward_through_whitespace(&iterator);
 
@@ -46,10 +46,14 @@ static bool looking_at_test_file_result_start(Contents_Iterator iterator) {
     if (!eat_character(&iterator, ' '))
         return false;
 
-    if (!looking_at(iterator, "Test #"))
+    if (!looking_at(iterator, "Test "))
         return false;
-    iterator.advance(strlen("Test #"));
+    iterator.advance(strlen("Test "));
+    while (eat_character(&iterator, ' ')) {
+    }
 
+    if (!eat_character(&iterator, '#'))
+        return false;
     if (!eat_number(&iterator))
         return false;
 
@@ -87,7 +91,7 @@ static bool looking_at_test_case_header(Contents_Iterator iterator) {
     if (!eat_number(&iterator))
         return false;
     return looking_at(iterator, "): Entering test case \"") ||
-    looking_at(iterator, "): Leaving test case \"");
+           looking_at(iterator, "): Leaving test case \"");
 }
 
 bool ctest_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state) {
