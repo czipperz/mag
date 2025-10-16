@@ -29,7 +29,7 @@ void reset_mode(Editor* editor, Buffer* buffer, const cz::Arc<Buffer_Handle>& bu
     custom::buffer_created_callback(editor, buffer, buffer_handle);
 
     if (buffer->mode.next_token != old_next_token) {
-        buffer->token_cache.reset();
+        buffer->token_cache.reset(buffer);
         editor->add_asynchronous_job(job_syntax_highlight_buffer(buffer_handle.clone_downgrade()));
     }
 }

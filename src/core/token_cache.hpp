@@ -27,7 +27,7 @@ struct Token_Cache {
     ///
     /// Use this when you are editing the buffer's contents directly.
     /// This isn't needed if you use `Contents::append` though.
-    void reset();
+    void reset(const Buffer* buffer);
 
     /// Find the last check point before the start position.
     Tokenizer_Check_Point find_check_point(uint64_t position) const;

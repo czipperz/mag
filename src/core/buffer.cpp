@@ -313,7 +313,7 @@ void Buffer::set_tokenizer(Tokenizer tokenizer) {
     }
 
     mode.next_token = tokenizer;
-    token_cache.reset();
+    token_cache.reset(this);
 }
 
 Buffer create_temp_buffer(cz::Str temp_name, cz::Option<cz::Str> dir) {

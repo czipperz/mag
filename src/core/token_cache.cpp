@@ -21,8 +21,8 @@ void Token_Cache::drop() {
     check_points.drop(cz::heap_allocator());
 }
 
-void Token_Cache::reset() {
-    change_index = 0;
+void Token_Cache::reset(const Buffer* buffer) {
+    change_index = buffer->changes.len;
     check_points.len = 0;
     ran_to_end = false;
 }
