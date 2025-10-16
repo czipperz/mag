@@ -89,6 +89,10 @@ struct Face;
     MAG_TOKEN_TYPE(BUILD_LOG_FILE_HEADER)                                     \
     MAG_TOKEN_TYPE(BUILD_LOG_LINK)                                            \
                                                                               \
+    MAG_TOKEN_TYPE(TEST_LOG_FILE_HEADER)                                      \
+    MAG_TOKEN_TYPE(TEST_LOG_TEST_CASE_HEADER)                                 \
+    MAG_TOKEN_TYPE(TEST_LOG_LINK)                                             \
+                                                                              \
     MAG_TOKEN_TYPE(BUFFER_TEMPORARY_NAME)
 // clang-format on
 

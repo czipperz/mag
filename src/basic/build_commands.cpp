@@ -170,29 +170,27 @@ void command_build_open_previous_link_no_swap(Editor* editor, Command_Source sou
 
 ////////////////////////////////////////////////////////////////////////////////
 
-REGISTER_COMMAND(command_build_next_file);
-void command_build_next_file(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
+void forward_to(Editor* editor, Client* client, Token_Type token_type) {
+    WITH_CONST_SELECTED_BUFFER(client);
 
     Forward_Token_Iterator token_iterator;
     token_iterator.init_after(buffer, window->cursors[window->selected_cursor].point);
 
     uint64_t position;
-    if (token_iterator.find_type(Token_Type::BUILD_LOG_FILE_HEADER)) {
+    if (token_iterator.find_type(token_type)) {
         position = token_iterator.token().start;
     } else {
         position = buffer->contents.len;
     }
 
-    kill_extra_cursors(window, source.client);
+    kill_extra_cursors(window, client);
     window->cursors[window->selected_cursor].point = position;
     window->start_position = window->cursors[window->selected_cursor].point;
     window->column_offset = 0;
 }
 
-REGISTER_COMMAND(command_build_previous_file);
-void command_build_previous_file(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
+void backward_to(Editor* editor, Client* client, Token_Type token_type) {
+    WITH_CONST_SELECTED_BUFFER(client);
 
     Backward_Token_Iterator token_iterator = {};
     CZ_DEFER(token_iterator.drop(cz::heap_allocator()));
@@ -201,16 +199,46 @@ void command_build_previous_file(Editor* editor, Command_Source source) {
         std::max(window->cursors[window->selected_cursor].point, (uint64_t)1) - 1);
 
     uint64_t position;
-    if (token_iterator.rfind_type(cz::heap_allocator(), Token_Type::BUILD_LOG_FILE_HEADER)) {
+    if (token_iterator.rfind_type(cz::heap_allocator(), token_type)) {
         position = token_iterator.token().start;
     } else {
         position = 0;
     }
 
-    kill_extra_cursors(window, source.client);
+    kill_extra_cursors(window, client);
     window->cursors[window->selected_cursor].point = position;
     window->start_position = window->cursors[window->selected_cursor].point;
     window->column_offset = 0;
+}
+
+REGISTER_COMMAND(command_build_next_file);
+void command_build_next_file(Editor* editor, Command_Source source) {
+    forward_to(editor, source.client, Token_Type::BUILD_LOG_FILE_HEADER);
+}
+
+REGISTER_COMMAND(command_build_previous_file);
+void command_build_previous_file(Editor* editor, Command_Source source) {
+    backward_to(editor, source.client, Token_Type::BUILD_LOG_FILE_HEADER);
+}
+
+REGISTER_COMMAND(command_ctest_next_file);
+void command_ctest_next_file(Editor* editor, Command_Source source) {
+    forward_to(editor, source.client, Token_Type::TEST_LOG_FILE_HEADER);
+}
+
+REGISTER_COMMAND(command_ctest_previous_file);
+void command_ctest_previous_file(Editor* editor, Command_Source source) {
+    backward_to(editor, source.client, Token_Type::TEST_LOG_FILE_HEADER);
+}
+
+REGISTER_COMMAND(command_ctest_next_test_case);
+void command_ctest_next_test_case(Editor* editor, Command_Source source) {
+    forward_to(editor, source.client, Token_Type::TEST_LOG_TEST_CASE_HEADER);
+}
+
+REGISTER_COMMAND(command_ctest_previous_test_case);
+void command_ctest_previous_test_case(Editor* editor, Command_Source source) {
+    backward_to(editor, source.client, Token_Type::TEST_LOG_TEST_CASE_HEADER);
 }
 
 }

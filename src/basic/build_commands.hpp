@@ -22,5 +22,13 @@ void command_build_open_previous_link_no_swap(Editor* editor, Command_Source sou
 void command_build_next_file(Editor* editor, Command_Source source);
 void command_build_previous_file(Editor* editor, Command_Source source);
 
+void forward_to(Editor* editor, Client* client, Token_Type token_type);
+void backward_to(Editor* editor, Client* client, Token_Type token_type);
+
+void command_ctest_next_file(Editor* editor, Command_Source source);
+void command_ctest_previous_file(Editor* editor, Command_Source source);
+void command_ctest_next_test_case(Editor* editor, Command_Source source);
+void command_ctest_previous_test_case(Editor* editor, Command_Source source);
+
 }
 }

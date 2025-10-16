@@ -81,6 +81,7 @@
 #include "syntax/tokenize_color_test.hpp"
 #include "syntax/tokenize_cplusplus.hpp"
 #include "syntax/tokenize_css.hpp"
+#include "syntax/tokenize_ctest.hpp"
 #include "syntax/tokenize_directory.hpp"
 #include "syntax/tokenize_general.hpp"
 #include "syntax/tokenize_general_c_comments.hpp"
@@ -697,6 +698,10 @@ static void create_theme(Theme& theme) {
     theme.token_faces[Token_Type::BUILD_LOG_FILE_HEADER] = {{}, {}, Face::REVERSE};
     theme.token_faces[Token_Type::BUILD_LOG_LINK] = {{}, {}, Face::UNDERSCORE};
 
+    theme.token_faces[Token_Type::TEST_LOG_FILE_HEADER] = {{}, {}, Face::REVERSE};
+    theme.token_faces[Token_Type::TEST_LOG_TEST_CASE_HEADER] = {7, 129, 0};
+    theme.token_faces[Token_Type::TEST_LOG_LINK] = {{}, {}, Face::UNDERSCORE};
+
     theme.token_faces[Token_Type::BUFFER_TEMPORARY_NAME] = {177, {}, 0};
 
     theme.decorations.reserve(5);
@@ -885,6 +890,17 @@ static void build_log_mode(Mode& mode) {
 
     BIND(mode.key_map, "f", command_build_next_file);
     BIND(mode.key_map, "F", command_build_previous_file);
+}
+
+static void ctest_log_mode(Mode& mode) {
+    mode.next_token = syntax::ctest_next_token;
+    // I didn't implement iteration and links because the syntax for
+    // these will differ based on the logging and test framework.
+
+    BIND(mode.key_map, "f", command_ctest_next_file);
+    BIND(mode.key_map, "F", command_ctest_previous_file);
+    BIND(mode.key_map, "t", command_ctest_next_test_case);
+    BIND(mode.key_map, "T", command_ctest_previous_test_case);
 }
 
 /// See if there are any C style comments at start of lines as a simple heuristic.
@@ -1301,6 +1317,9 @@ void buffer_created_callback(Editor* editor,
             buffer->mode.next_token = syntax::vim_script_next_token;
         } else if (name == "build.log") {
             build_log_mode(buffer->mode);
+            add_indent_overlays = false;
+        } else if (name == "ctest.log") {
+            ctest_log_mode(buffer->mode);
             add_indent_overlays = false;
         } else if (name == "color test") {
             buffer->mode.next_token = syntax::color_test_next_token;
