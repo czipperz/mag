@@ -442,33 +442,34 @@ static Open_File_Result load_path_in_buffer(Editor* editor,
     // Inflate compressed files.
     for (size_t i = 0; i < custom::compression_extensions_len; ++i) {
         const auto& ext = custom::compression_extensions[i];
-        if (path.ends_with(ext.extension)) {
-            buffer->read_only = true;
-            cz::Process process;
-            cz::Input_File std_out;
-            CZ_DEFER(std_out.close());
-            {
-                cz::Process_Options options;
-                options.std_in = file;
-                if (!cz::create_process_output_pipe(&options.std_out, &std_out)) {
-                    return Open_File_Result::FAILURE;
-                }
-                CZ_DEFER(options.std_out.close());
-                if (!std_out.set_non_blocking()) {
-                    return Open_File_Result::FAILURE;
-                }
-                cz::Str args[] = {ext.process};
-                if (!process.launch_program(args, options)) {
-                    return Open_File_Result::FAILURE;
-                }
+        if (!ext.matches(path))
+            continue;
+
+        buffer->read_only = true;
+        cz::Process process;
+        cz::Input_File std_out;
+        CZ_DEFER(std_out.close());
+        {
+            cz::Process_Options options;
+            options.std_in = file;
+            if (!cz::create_process_output_pipe(&options.std_out, &std_out)) {
+                return Open_File_Result::FAILURE;
             }
-            file.close();
-            file = {};
-            process.detach();  // TODO show stderr / exit code
-            start_loading_text_file(editor, buffer_handle, std_out, unprocessed_keys, callback);
-            std_out = {};  // Prevent destroying.
-            return Open_File_Result::SUCCESS;
+            CZ_DEFER(options.std_out.close());
+            if (!std_out.set_non_blocking()) {
+                return Open_File_Result::FAILURE;
+            }
+            cz::Str args[] = {ext.process};
+            if (!process.launch_program(args, options)) {
+                return Open_File_Result::FAILURE;
+            }
         }
+        file.close();
+        file = {};
+        process.detach();  // TODO show stderr / exit code
+        start_loading_text_file(editor, buffer_handle, std_out, unprocessed_keys, callback);
+        std_out = {};  // Prevent destroying.
+        return Open_File_Result::SUCCESS;
     }
 
     (void)file.set_non_blocking();
@@ -941,17 +942,17 @@ Open_File_Result open_file_arg(Editor* editor, Client* client, cz::Str user_arg)
 }
 
 bool save_buffer(Buffer* buffer) {
-    // Disable saving compressed files because they we don't currently support deflation.
-    for (size_t i = 0; i < custom::compression_extensions_len; ++i) {
-        const auto& ext = custom::compression_extensions[i];
-        if (buffer->name.ends_with(ext.extension))
-            return false;
-    }
-
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     if (!buffer->get_path(cz::heap_allocator(), &path)) {
         return false;
+    }
+
+    // Disable saving compressed files because they we don't currently support deflation.
+    for (size_t i = 0; i < custom::compression_extensions_len; ++i) {
+        const auto& ext = custom::compression_extensions[i];
+        if (ext.matches(path))
+            return false;
     }
 
     if (!save_buffer_to(buffer, path.buffer)) {

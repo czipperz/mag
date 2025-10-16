@@ -141,8 +141,8 @@ bool default_use_carriage_returns = false;
 #endif
 
 CompressionExtensions compression_extensions[] = {
-    {".zst", "unzstd"},
-    {".gz", "gunzip"},
+    {[](cz::Str path) { return path.ends_with(".zst"); }, "unzstd"},
+    {[](cz::Str path) { return path.ends_with(".gz"); }, "gunzip"},
 };
 size_t compression_extensions_len =
     sizeof(compression_extensions) / sizeof(*compression_extensions);

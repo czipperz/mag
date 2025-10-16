@@ -46,7 +46,7 @@ bool find_tags(cz::Str directory, tags::Engine* engine, cz::String* found_direct
 extern bool default_use_carriage_returns;
 
 struct CompressionExtensions {
-    const char* extension;
+    bool (*matches)(cz::Str path);
     cz::Str process;
 };
 extern CompressionExtensions compression_extensions[];
