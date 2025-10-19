@@ -2,6 +2,7 @@
 
 #include <cz/char_type.hpp>
 #include "core/contents.hpp"
+#include "core/eat.hpp"
 #include "core/match.hpp"
 #include "core/movement.hpp"
 #include "core/token.hpp"
@@ -13,22 +14,6 @@ namespace {
 enum State {
     CTEST_HEADER,
 };
-}
-
-static bool eat_character(Contents_Iterator* iterator, char ch) {
-    if (!looking_at(*iterator, ch))
-        return false;
-    iterator->advance();
-    return true;
-}
-
-static bool eat_number(Contents_Iterator* iterator) {
-    if (iterator->at_eob() || !cz::is_digit(iterator->get()))
-        return false;
-    do {
-        iterator->advance();
-    } while (!iterator->at_eob() && cz::is_digit(iterator->get()));
-    return true;
 }
 
 // Note: ignore the '    Start #3000: test_name' headers because they don't really matter.
