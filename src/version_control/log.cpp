@@ -605,5 +605,20 @@ void command_git_log_add_filter(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_git_diff_master);
+void command_git_diff_master(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    cz::String root = {};
+    CZ_DEFER(root.drop(cz::heap_allocator()));
+    if (!get_root_directory(buffer->directory, cz::heap_allocator(), &root)) {
+        source.client->show_message("Error: couldn't find vc root");
+        return;
+    }
+
+    run_console_command(source.client, editor, root.buffer,
+                        "git diff \"$(git merge-base origin/\"$(git default-branch)\" HEAD)\"", "git dm");
+}
+
 }
 }

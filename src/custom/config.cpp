@@ -248,6 +248,7 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "F1", command_dump_key_map);
     BIND(key_map, "C-x", command_run_command_by_name);
     BIND(key_map, "F2", tags::command_lookup_previous_command);
+    BIND(key_map, "F3", version_control::command_git_diff_master);
     BIND(key_map, "F5", command_reload_buffer);
 
     BIND(key_map, "C-SPACE", command_set_mark);
@@ -1064,6 +1065,7 @@ void buffer_created_callback(Editor* editor,
                    buffer->name.starts_with("*git show ") ||
                    buffer->name.starts_with("*git line-history ") ||
                    buffer->name.starts_with("*git log ") ||
+                   buffer->name == "*git dm*" ||
                    is_shell_command_prefix("*shell git log") ||
                    is_shell_command_prefix("*shell git diff") ||
                    is_shell_command_prefix("*shell git show")) {

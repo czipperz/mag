@@ -41,5 +41,7 @@ void command_line_history(Editor* editor, Command_Source source);
 /// Open a new buffer that filters the shown results via -G.
 void command_git_log_add_filter(Editor* editor, Command_Source source);
 
+void command_git_diff_master(Editor* editor, Command_Source source);
+
 }
 }
