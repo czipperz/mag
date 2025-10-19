@@ -535,18 +535,18 @@ static void command_pretend_rename_buffer_callback(Editor* editor,
 
 REGISTER_COMMAND(command_pretend_rename_buffer);
 void command_pretend_rename_buffer(Editor* editor, Command_Source source) {
+    bool is_temporary;
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        path.reserve(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
-        path.append(buffer->directory);
-        path.append(buffer->name);
+        is_temporary = buffer->type == Buffer::TEMPORARY;
+        buffer->render_name(cz::heap_allocator(), &path);
     }
 
     Dialog dialog = {};
     dialog.prompt = "Pretend rename buffer to: ";
-    dialog.completion_engine = file_completion_engine;
+    dialog.completion_engine = is_temporary ? no_completion_engine : file_completion_engine;
     dialog.response_callback = command_pretend_rename_buffer_callback;
     dialog.next_token = syntax::path_next_token;
     dialog.mini_buffer_contents = path;
