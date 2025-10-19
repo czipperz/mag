@@ -18,10 +18,10 @@ enum {
     MIDDLE_OF_LINE,
 };
 
+// @OverlayBuildSeveritiesParsing make sure to update there too.
 #define MIDDLE_OF_LINE_IDENT_CASES \
     CZ_ALNUM_CASES:                \
     case '_'
-
 #define START_OF_LINE_IDENT_CASES '.' : case '/' : case '-'
 
 #define PUNCT_CASES                                                                              \

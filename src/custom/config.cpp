@@ -61,6 +61,7 @@
 #include "decorations/decoration_read_only_indicator.hpp"
 #include "gnu_global/generic.hpp"
 #include "man/man.hpp"
+#include "overlays/overlay_build_severities.hpp"
 #include "overlays/overlay_highlight_string.hpp"
 #include "overlays/overlay_incorrect_indent.hpp"
 #include "overlays/overlay_matching_pairs.hpp"
@@ -881,6 +882,10 @@ static void cpp_comments_key_map(Key_Map& key_map) {
 
 static void build_log_mode(Mode& mode) {
     mode.next_token = syntax::build_next_token;
+
+    mode.overlays.reserve(1);
+    mode.overlays.push(syntax::overlay_build_severities());
+
     mode.perform_iteration = basic::build_buffer_iterate;
     BIND(mode.key_map, "ENTER", command_build_open_link_at_point);
     BIND(mode.key_map, "o", command_build_open_link_at_point_no_swap);
