@@ -1,5 +1,6 @@
 #include "macro_commands.hpp"
 
+#include "basic/search_commands.hpp"
 #include "core/client.hpp"
 #include "core/command_macros.hpp"
 
@@ -43,25 +44,32 @@ void command_run_macro_forall_lines_in_search(Editor* editor, Command_Source sou
 
     // If cursor in other window is at eob then stop.
     {
-        Window_Unified* window = source.client->selected_normal_window;
-        if (!window->parent)
+        Window_Unified* selected = source.client->selected_normal_window;
+        if (!selected->parent)
             return;  // invalid
 
-        Window* other =
-            (window->parent->first == window ? window->parent->second : window->parent->first);
-        if (other->tag != Window::UNIFIED)
+        Window* other_base = (selected->parent->first == selected ? selected->parent->second
+                                                                  : selected->parent->first);
+        if (other_base->tag != Window::UNIFIED)
             return;  // invalid
 
-        Window_Unified* other2 = (Window_Unified*)other;
-        WITH_CONST_WINDOW_BUFFER(other2, source.client);
-        uint64_t point = other2->cursors[0].point;
-        if (point == buffer->contents.len)
-            return;  // done
+        Window_Unified* other = (Window_Unified*)other_base;
+        WITH_CONST_WINDOW_BUFFER(other, source.client);
 
-        // In multi-cursor mode, the cursor doesn't ever point to the end
-        // of the buffer.  So instead we detect if we're on the last
-        // cursor.  If so then run the command one more time and then stop.
-        recurse = (other2->cursors.len == 1 || other2->selected_cursor + 1 < other2->cursors.len);
+        // In multi-cursor mode or matching mode, the cursor doesn't ever point to
+        // the end of the buffer.  So instead we detect if we're on the last cursor
+        // or match.  If so then run the command one more time and then stop.
+        if (other->cursors.len > 1) {
+            recurse = (other->selected_cursor + 1 < other->cursors.len);
+        } else if (other->show_marks) {
+            const Cursor& cursor = other->cursors[other->selected_cursor];
+            Contents_Iterator it = buffer->contents.iterator_at(cursor.start());
+            recurse = search_forward_slice(buffer, &it, cursor.end());
+        } else {
+            if (other->cursors[0].point == buffer->contents.len)
+                return;
+            recurse = true;
+        }
     }
 
     // Push the macro.
