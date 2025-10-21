@@ -616,8 +616,12 @@ void command_git_diff_master(Editor* editor, Command_Source source) {
         return;
     }
 
-    run_console_command(source.client, editor, root.buffer,
-                        "git diff \"$(git merge-base origin/\"$(git default-branch)\" HEAD)\"", "git dm");
+    run_console_command(
+        source.client, editor, root.buffer,
+        "git diff \"$(git merge-base "
+        "origin/\"$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')\""
+        " HEAD)\"",
+        "git dm");
 }
 
 }
