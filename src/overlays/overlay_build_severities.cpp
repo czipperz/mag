@@ -19,7 +19,7 @@ struct Data {
 #define MIDDLE_OF_LINE_IDENT_CASES \
     CZ_ALNUM_CASES:                \
     case '_'
-#define START_OF_LINE_IDENT_CASES '.' : case '/' : case '-'
+#define START_OF_LINE_IDENT_CASES '.' : case '/' : case '-' : case '+'
 
 static bool is_ident(char ch) {
     switch (ch) {

@@ -22,12 +22,12 @@ enum {
 #define MIDDLE_OF_LINE_IDENT_CASES \
     CZ_ALNUM_CASES:                \
     case '_'
-#define START_OF_LINE_IDENT_CASES '.' : case '/' : case '-'
+#define START_OF_LINE_IDENT_CASES '.' : case '/' : case '-' : case '+'
 
 #define PUNCT_CASES                                                                              \
-    '!' : case '#' : case '$' : case '%' : case '&' : case '*' : case '+' : case ',' : case ':'  \
-        : case ';' : case '<' : case '=' : case '>' : case '?' : case '@' : case '\\' : case '^' \
-        : case '`' : case '|' : case '~' : case '"' : case '\''
+    '!' : case '#' : case '$' : case '%' : case '&' : case '*' : case ',' : case ':' : case ';'  \
+        : case '<' : case '=' : case '>' : case '?' : case '@' : case '\\' : case '^' : case '`' \
+        : case '|' : case '~' : case '"' : case '\''
 
 static bool try_eating_line_and_column_number(Contents_Iterator* iterator) {
     Contents_Iterator test = *iterator;
