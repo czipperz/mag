@@ -92,6 +92,11 @@ void command_realign_table(Editor* editor, Command_Source source) {
         forward_char(&it);
     }
 
+    if (max_pipes_per_line == 0) {
+        source.client->show_message("Couldn't find the table to realign");
+        return;
+    }
+
     // Calculate the desired width of each column.
     cz::Vector<uint64_t> desired_widths = {};
     desired_widths.reserve_exact(cz::heap_allocator(), max_pipes_per_line - 1);
