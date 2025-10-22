@@ -179,6 +179,11 @@ void forward_to(Editor* editor, Client* client, Token_Type token_type) {
     uint64_t position;
     if (token_iterator.find_type(token_type)) {
         position = token_iterator.token().start;
+
+        // If there are multiple in a row then go to the last one.
+        while (token_iterator.next() && token_iterator.token().type == token_type) {
+            position = token_iterator.token().start;
+        }
     } else {
         position = buffer->contents.len;
     }
@@ -194,9 +199,16 @@ void backward_to(Editor* editor, Client* client, Token_Type token_type) {
 
     Backward_Token_Iterator token_iterator = {};
     CZ_DEFER(token_iterator.drop(cz::heap_allocator()));
-    token_iterator.init_at_or_before(
-        cz::heap_allocator(), buffer,
-        std::max(window->cursors[window->selected_cursor].point, (uint64_t)1) - 1);
+    token_iterator.init_before(cz::heap_allocator(), buffer,
+                               window->cursors[window->selected_cursor].point);
+
+    // We want to select the last token in each block of the same token and thus if we're already
+    // in a block then we should retreat to before it so we can go to the previous block.
+    if (token_iterator.has_token() && token_iterator.token().type == token_type) {
+        while (token_iterator.previous(cz::heap_allocator()) &&
+               token_iterator.token().type == token_type) {
+        }
+    }
 
     uint64_t position;
     if (token_iterator.rfind_type(cz::heap_allocator(), token_type)) {
