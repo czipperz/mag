@@ -1069,8 +1069,7 @@ void buffer_created_callback(Editor* editor,
         } else if (buffer->name.starts_with("*git last-edit ") ||
                    buffer->name.starts_with("*git show ") ||
                    buffer->name.starts_with("*git line-history ") ||
-                   buffer->name.starts_with("*git log ") ||
-                   buffer->name == "*git dm*" ||
+                   buffer->name.starts_with("*git log ") || buffer->name == "*git dm*" ||
                    is_shell_command_prefix("*shell git log") ||
                    is_shell_command_prefix("*shell git diff") ||
                    is_shell_command_prefix("*shell git show")) {
