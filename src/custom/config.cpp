@@ -1351,16 +1351,18 @@ void buffer_created_callback(Editor* editor,
             }
 
             // Recognize Emacs file declarations.
-            if (first_line.ends_with("-*-") &&
-                first_line.slice_end(first_line.len - 1).contains("-*-")) {
-                if (first_line.contains_case_insensitive("python")) {
+            const char* emacs_end = first_line.rfind("-*-");
+            if (emacs_end && first_line.slice_end(emacs_end).contains("-*-")) {
+                const char* emacs_start = first_line.slice_end(emacs_end).rfind("-*-") + 3;
+                cz::Str emacs_info = first_line.slice(emacs_start, emacs_end);
+                if (emacs_info.contains_case_insensitive("python")) {
                     goto python;
-                } else if (first_line.contains_case_insensitive("shell-script")) {
+                } else if (emacs_info.contains_case_insensitive("shell-script")) {
                     goto shell;
-                } else if (first_line.contains_case_insensitive("javascript")) {
+                } else if (emacs_info.contains_case_insensitive("javascript")) {
                     goto javascript;
-                } else if (first_line.contains_case_insensitive("c++") ||
-                           first_line.contains_case_insensitive("c")) {
+                } else if (emacs_info.contains_case_insensitive("c++") ||
+                           emacs_info.contains_case_insensitive("c")) {
                     goto cpp;
                 }
             }
