@@ -68,42 +68,52 @@ static void push_jump_and_open_file(Editor* editor,
     }
 }
 
+bool get_relpath(cz::Str directory,
+                 cz::Str path,
+                 cz::Allocator allocator,
+                 cz::String* found_path,
+                 cz::String* vc_root) {
+    if (cz::path::is_absolute(path)) {
+        found_path->reserve_exact(allocator, path.len);
+        found_path->append(path);
+        return true;
+    }
+
+    if (try_relative_to(directory, path, found_path)) {
+        return true;
+    }
+
+    if (version_control::get_root_directory(directory, allocator, vc_root)) {
+        if (custom::find_relpath(vc_root->as_str(), directory, path, found_path)) {
+            return true;
+        }
+
+        return try_relative_to(*vc_root, path, found_path);
+    } else {
+        vc_root->len = 0;
+
+        return custom::find_relpath({}, directory, path, found_path);
+    }
+}
+
 void open_relpath(Editor* editor, Client* client, cz::Str directory, cz::Str arg) {
     cz::Str path;
     uint64_t line, column = 0;
     bool has_line = parse_file_arg_no_disk(arg, &path, &line, &column);
 
-    if (cz::path::is_absolute(path)) {
-        return push_jump_and_open_file(editor, client, path, has_line, line, column);
-    }
-
-    cz::String temp = {};
-    CZ_DEFER(temp.drop(cz::heap_allocator()));
-    if (try_relative_to(directory, path, &temp)) {
-        return push_jump_and_open_file(editor, client, temp, has_line, line, column);
-    }
-
-    cz::String vc_root = {};
+    cz::String found_path;
+    cz::String vc_root;
+    CZ_DEFER(found_path.drop(cz::heap_allocator()));
     CZ_DEFER(vc_root.drop(cz::heap_allocator()));
-    if (version_control::get_root_directory(directory, cz::heap_allocator(), &vc_root)) {
-        if (custom::find_relpath(vc_root.as_str(), directory, path, &temp)) {
-            return push_jump_and_open_file(editor, client, temp, has_line, line, column);
-        }
-
-        if (try_relative_to(vc_root, path, &temp)) {
-            return push_jump_and_open_file(editor, client, temp, has_line, line, column);
-        }
-
+    if (get_relpath(directory, path, cz::heap_allocator(), &found_path, &vc_root)) {
+        return push_jump_and_open_file(editor, client, found_path, has_line, line, column);
+    } else if (vc_root.len > 0) {
         vc_root.reserve_exact(cz::heap_allocator(), 2);
         vc_root.push('/');
         vc_root.null_terminate();
         find_file(client, "Find file in version control: ", arg, vc_root);
         vc_root = {};
     } else {
-        if (custom::find_relpath({}, directory, path, &temp)) {
-            return push_jump_and_open_file(editor, client, temp, has_line, line, column);
-        }
-
         find_file(client, "Find file in current directory: ", arg,
                   directory.clone(cz::heap_allocator()));
     }
