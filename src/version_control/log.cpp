@@ -353,13 +353,15 @@ static SelectedCommitOrDiffResult get_selected_commit_or_diff(Editor* editor,
         if (!rfind(&iterator, "\ndiff --git "))
             return SelectedCommitOrDiffResult::FAILURE;
         iterator.advance(strlen("\ndiff --git "));
+        if (!find_this_line(&iterator, ' '))
+            return SelectedCommitOrDiffResult::FAILURE;
+        iterator.advance();
         if (looking_at(iterator, "a/") || looking_at(iterator, "b/"))
             iterator.advance(2);
-        Contents_Iterator space = iterator;
-        if (!find_this_line(&space, ' '))
-            return SelectedCommitOrDiffResult::FAILURE;
+        Contents_Iterator eol = iterator;
+        end_of_line(&eol);
         cz::append(path, buffer->directory);
-        buffer->contents.slice_into(cz::heap_allocator(), iterator, space.position, path);
+        buffer->contents.slice_into(cz::heap_allocator(), iterator, eol.position, path);
     }
 
     return SelectedCommitOrDiffResult::DIFF;
