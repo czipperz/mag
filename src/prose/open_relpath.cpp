@@ -79,20 +79,37 @@ bool get_relpath(cz::Str directory,
         return true;
     }
 
-    if (try_relative_to(directory, path, found_path)) {
-        return true;
-    }
-
-    if (version_control::get_root_directory(directory, allocator, vc_root)) {
-        if (custom::find_relpath(vc_root->as_str(), directory, path, found_path)) {
+    bool got_vc_root = false;
+    while (1) {
+        if (try_relative_to(directory, path, found_path)) {
             return true;
         }
 
-        return try_relative_to(*vc_root, path, found_path);
-    } else {
-        vc_root->len = 0;
+        if (!got_vc_root) {
+            got_vc_root = true;
+            if (!version_control::get_root_directory(directory, allocator, vc_root))
+                vc_root->len = 0;
+        }
 
-        return custom::find_relpath({}, directory, path, found_path);
+        if (vc_root->len != 0) {
+            if (custom::find_relpath(vc_root->as_str(), directory, path, found_path)) {
+                return true;
+            }
+
+            if (try_relative_to(*vc_root, path, found_path)) {
+                return true;
+            }
+        } else {
+            if (custom::find_relpath({}, directory, path, found_path)) {
+                return true;
+            }
+        }
+
+        if (path.starts_with("../")) {
+            path = path.slice_start(strlen("../"));
+        } else {
+            return false;
+        }
     }
 }
 
