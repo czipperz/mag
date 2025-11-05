@@ -9,6 +9,7 @@
 #include "core/job.hpp"
 #include "core/movement.hpp"
 #include "core/token_iterator.hpp"
+#include "prose/open_relpath.hpp"
 #include "version_control/version_control.hpp"
 
 namespace mag {
@@ -58,7 +59,7 @@ enum class Direction {
 static bool find_path_in_direction(Editor* editor,
                                    Client* client,
                                    Direction direction,
-                                   cz::Heap_String* path) {
+                                   cz::Heap_String* path_out) {
     WITH_CONST_SELECTED_BUFFER(client);
 
     if (direction != Direction::CURRENT && (window->cursors.len > 1 || window->show_marks)) {
@@ -99,11 +100,22 @@ static bool find_path_in_direction(Editor* editor,
         basic::center_selected_cursor(editor, window, buffer);
     }
 
-    cz::String rel_path = {};
-    CZ_DEFER(rel_path.drop(cz::heap_allocator()));
-    buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &rel_path);
+    cz::String arg = {};
+    CZ_DEFER(arg.drop(cz::heap_allocator()));
+    buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &arg);
 
-    cz::path::make_absolute(rel_path, buffer->directory, cz::heap_allocator(), path);
+    cz::Str path;
+    uint64_t line, column = 0;
+    bool has_line = parse_file_arg_no_disk(arg, &path, &line, &column);
+
+    cz::String vc_dir = {};
+    CZ_DEFER(vc_dir.drop(cz::heap_allocator()));
+    if (!prose::get_relpath(buffer->directory, path, cz::heap_allocator(), path_out, &vc_dir)) {
+        return false;
+    }
+    if (has_line) {
+        cz::append(cz::heap_allocator(), path_out, ':', line, ':', column);
+    }
     return true;
 }
 
