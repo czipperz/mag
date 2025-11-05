@@ -605,6 +605,23 @@ void command_git_log_add_filter(Editor* editor, Command_Source source) {
     source.client->show_dialog(dialog);
 }
 
+REGISTER_COMMAND(command_git_log_add_follow);
+void command_git_log_add_follow(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    if (buffer->type != Buffer::TEMPORARY || !buffer->name.starts_with("*git log ") ||
+        !buffer->name.ends_with("*")) {
+        source.client->show_message("Must be ran from a *git log ...* buffer");
+        return;
+    }
+
+    cz::Str old_command = buffer->name.slice(1, buffer->name.len - 1);
+    cz::Heap_String new_command = cz::format(old_command.slice_end(strlen("git log ")), "--follow ",
+                                             old_command.slice_start(strlen("git log ")));
+    CZ_DEFER(new_command.drop());
+    run_console_command(source.client, editor, buffer->directory.buffer, new_command.buffer,
+                        new_command);
+}
+
 REGISTER_COMMAND(command_git_diff_master);
 void command_git_diff_master(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
