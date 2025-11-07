@@ -118,8 +118,8 @@ void open_relpath(Editor* editor, Client* client, cz::Str directory, cz::Str arg
     uint64_t line, column = 0;
     bool has_line = parse_file_arg_no_disk(arg, &path, &line, &column);
 
-    cz::String found_path;
-    cz::String vc_root;
+    cz::String found_path = {};
+    cz::String vc_root = {};
     CZ_DEFER(found_path.drop(cz::heap_allocator()));
     CZ_DEFER(vc_root.drop(cz::heap_allocator()));
     if (get_relpath(directory, path, cz::heap_allocator(), &found_path, &vc_root)) {
