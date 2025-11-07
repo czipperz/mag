@@ -46,7 +46,7 @@ static Face recalculate_face(Contents_Iterator it) {
     if (!eat_number(&it))
         return {};
 
-    if (looking_at(it, ": error:")) {
+    if (looking_at(it, ": error:") || looking_at(it, ": fatal error:")) {
         return {1, 0, {}};
     } else if (looking_at(it, ": warning:")) {
         return {7, 0, {}};
