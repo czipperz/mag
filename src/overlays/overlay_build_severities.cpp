@@ -5,6 +5,7 @@
 #include "core/match.hpp"
 #include "core/movement.hpp"
 #include "core/overlay.hpp"
+#include "syntax/tokenize_build.hpp"
 
 namespace mag {
 namespace syntax {
@@ -15,35 +16,8 @@ struct Data {
 };
 }
 
-// @OverlayBuildSeveritiesParsing
-#define MIDDLE_OF_LINE_IDENT_CASES \
-    CZ_ALNUM_CASES:                \
-    case '_'
-#define START_OF_LINE_IDENT_CASES '.' : case '/' : case '-' : case '+'
-
-static bool is_ident(char ch) {
-    switch (ch) {
-    case MIDDLE_OF_LINE_IDENT_CASES:
-    case START_OF_LINE_IDENT_CASES:
-        return true;
-    default:
-        return false;
-    }
-}
-
 static Face recalculate_face(Contents_Iterator it) {
-    if (it.at_eob() || !is_ident(it.get()))
-        return {};
-    it.advance();
-    for (; !it.at_eob() && is_ident(it.get()); it.advance()) {
-    }
-    if (!eat_character(&it, ':'))
-        return {};
-    if (!eat_number(&it))
-        return {};
-    if (!eat_character(&it, ':'))
-        return {};
-    if (!eat_number(&it))
+    if (!syntax::build_eat_link(&it))
         return {};
 
     if (looking_at(it, ": error:") || looking_at(it, ": fatal error:")) {

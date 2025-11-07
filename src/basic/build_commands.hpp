@@ -30,5 +30,8 @@ void command_ctest_previous_file(Editor* editor, Command_Source source);
 void command_ctest_next_test_case(Editor* editor, Command_Source source);
 void command_ctest_previous_test_case(Editor* editor, Command_Source source);
 
+void command_build_next_error(Editor* editor, Command_Source source);
+void command_build_previous_error(Editor* editor, Command_Source source);
+
 }
 }

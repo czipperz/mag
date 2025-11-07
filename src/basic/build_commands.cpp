@@ -7,9 +7,11 @@
 #include "core/command_macros.hpp"
 #include "core/file.hpp"
 #include "core/job.hpp"
+#include "core/match.hpp"
 #include "core/movement.hpp"
 #include "core/token_iterator.hpp"
 #include "prose/open_relpath.hpp"
+#include "syntax/tokenize_build.hpp"
 #include "version_control/version_control.hpp"
 
 namespace mag {
@@ -263,6 +265,48 @@ void command_ctest_next_test_case(Editor* editor, Command_Source source) {
 REGISTER_COMMAND(command_ctest_previous_test_case);
 void command_ctest_previous_test_case(Editor* editor, Command_Source source) {
     backward_to(editor, source.client, Token_Type::TEST_LOG_TEST_CASE_HEADER);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Build error navigation
+////////////////////////////////////////////////////////////////////////////////
+
+static bool at_error(Contents_Iterator it) {
+    if (!syntax::build_eat_link(&it))
+        return false;
+    return (looking_at(it, ": error:") || looking_at(it, ": fatal error:"));
+}
+
+REGISTER_COMMAND(command_build_next_error);
+void command_build_next_error(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator it = buffer->contents.iterator_at(window->sel().point);
+    do {
+        end_of_line(&it);
+        forward_char(&it);
+    } while (!it.at_eob() && !at_error(it));
+
+    kill_extra_cursors(window, source.client);
+    window->cursors[window->selected_cursor].point = it.position;
+    window->start_position = window->cursors[window->selected_cursor].point;
+    window->column_offset = 0;
+}
+
+REGISTER_COMMAND(command_build_previous_error);
+void command_build_previous_error(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+
+    Contents_Iterator it = buffer->contents.iterator_at(window->sel().point);
+    do {
+        backward_char(&it);
+        start_of_line(&it);
+    } while (!it.at_bob() && !at_error(it));
+
+    kill_extra_cursors(window, source.client);
+    window->cursors[window->selected_cursor].point = it.position;
+    window->start_position = window->cursors[window->selected_cursor].point;
+    window->column_offset = 0;
 }
 
 }

@@ -4,6 +4,7 @@
 #include <tracy/Tracy.hpp>
 #include "common.hpp"
 #include "core/contents.hpp"
+#include "core/eat.hpp"
 #include "core/face.hpp"
 #include "core/match.hpp"
 #include "core/movement.hpp"
@@ -28,6 +29,16 @@ enum {
     '!' : case '#' : case '$' : case '%' : case '&' : case '*' : case ',' : case ':' : case ';'  \
         : case '<' : case '=' : case '>' : case '?' : case '@' : case '\\' : case '^' : case '`' \
         : case '|' : case '~' : case '"' : case '\''
+
+static bool is_ident(char ch) {
+    switch (ch) {
+    case MIDDLE_OF_LINE_IDENT_CASES:
+    case START_OF_LINE_IDENT_CASES:
+        return true;
+    default:
+        return false;
+    }
+}
 
 static bool try_eating_line_and_column_number(Contents_Iterator* iterator) {
     Contents_Iterator test = *iterator;
@@ -153,6 +164,23 @@ bool build_next_token(Contents_Iterator* iterator, Token* token, uint64_t* state
 
 ret:
     token->end = iterator->position;
+    return true;
+}
+
+bool build_eat_link(Contents_Iterator* it) {
+    if (it->at_eob() || !is_ident(it->get()))
+        return false;
+    it->advance();
+    for (; !it->at_eob() && is_ident(it->get()); it->advance()) {
+    }
+    if (!eat_character(it, ':'))
+        return false;
+    if (!eat_number(it))
+        return false;
+    if (!eat_character(it, ':'))
+        return false;
+    if (!eat_number(it))
+        return false;
     return true;
 }
 

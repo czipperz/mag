@@ -896,6 +896,8 @@ static void build_log_mode(Mode& mode) {
 
     BIND(mode.key_map, "f", command_build_next_file);
     BIND(mode.key_map, "F", command_build_previous_file);
+    BIND(mode.key_map, "e", command_build_next_error);
+    BIND(mode.key_map, "E", command_build_previous_error);
 }
 
 static void ctest_log_mode(Mode& mode) {
