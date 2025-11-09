@@ -88,11 +88,17 @@ static void calculate_desired_widths_for_each_column(Contents_Iterator it,
                                                      cz::Slice<uint64_t> pipe_positions,
                                                      cz::Slice<size_t> line_pipe_index,
                                                      size_t max_pipes_per_line,
+                                                     cz::Vector<uint64_t>* actual_widths,
                                                      cz::Vector<uint64_t>* desired_widths) {
+    actual_widths->reserve_exact(cz::heap_allocator(), max_pipes_per_line - 1);
+    for (size_t i = 1; i < max_pipes_per_line; ++i) {
+        actual_widths->push(0);
+    }
     desired_widths->reserve_exact(cz::heap_allocator(), max_pipes_per_line - 1);
     for (size_t i = 1; i < max_pipes_per_line; ++i) {
         desired_widths->push(0);
     }
+
     for (size_t l = 0; l < line_pipe_index.len - 1; ++l) {
         size_t base_index = line_pipe_index[l];
         size_t end_index = line_pipe_index[l + 1];
@@ -111,6 +117,10 @@ static void calculate_desired_widths_for_each_column(Contents_Iterator it,
             uint64_t end = (base_index + i < end_index ? pipe_positions[base_index + i]  //
                                                        : it.position);
 
+            uint64_t actual_width = end - start;
+            if (actual_width > (*actual_widths)[i - 1])
+                (*actual_widths)[i - 1] = actual_width;
+
             if (base_index + i < end_index) {
                 it2.advance_to(end);
                 while (!it2.at_bob()) {
@@ -123,31 +133,35 @@ static void calculate_desired_widths_for_each_column(Contents_Iterator it,
                 end = it2.position;
             }
 
-            uint64_t width = end - start;
-            if (width > (*desired_widths)[i - 1])
-                (*desired_widths)[i - 1] = width;
+            uint64_t desired_width = end - start;
+            if (desired_width > (*desired_widths)[i - 1])
+                (*desired_widths)[i - 1] = desired_width;
         }
         forward_char(&it);
     }
 }
 
-static void allocate_strings_of_biggest_desired_width(cz::Slice<uint64_t> desired_widths,
-                                                      cz::Allocator allocator,
-                                                      cz::String* spaces,
-                                                      cz::String* dashes) {
+static void allocate_strings_of_biggest_width(cz::Slice<uint64_t> actual_widths,
+                                              cz::Slice<uint64_t> desired_widths,
+                                              cz::Allocator allocator,
+                                              cz::String* spaces,
+                                              cz::String* dashes) {
     // Find the biggest desired width.
-    uint64_t biggest_desired_width = 0;
+    uint64_t biggest_width = 0;
+    CZ_DEBUG_ASSERT(actual_widths.len == desired_widths.len);
     for (size_t i = 0; i < desired_widths.len; ++i) {
-        if (desired_widths[i] > biggest_desired_width)
-            biggest_desired_width = desired_widths[i];
+        if (actual_widths[i] - desired_widths[i] > biggest_width)
+            biggest_width = actual_widths[i] - desired_widths[i];
+        if (desired_widths[i] > biggest_width)
+            biggest_width = desired_widths[i];
     }
 
-    spaces->reserve_exact(allocator, biggest_desired_width + 1);
-    spaces->push_many(' ', biggest_desired_width);
+    spaces->reserve_exact(allocator, biggest_width + 1);
+    spaces->push_many(' ', biggest_width);
     spaces->push('|');
 
-    dashes->reserve_exact(allocator, biggest_desired_width + 1);
-    dashes->push_many('-', biggest_desired_width);
+    dashes->reserve_exact(allocator, biggest_width + 1);
+    dashes->push_many('-', biggest_width);
     dashes->push('|');
 }
 
@@ -155,12 +169,13 @@ static void create_edits(Contents_Iterator it,
                          cz::Slice<uint64_t> pipe_positions,
                          cz::Slice<size_t> line_pipe_index,
                          size_t max_pipes_per_line,
+                         cz::Slice<uint64_t> actual_widths,
                          cz::Slice<uint64_t> desired_widths,
                          Transaction* transaction) {
     // Allocate a string of the biggest desired width.
     cz::String spaces = {}, dashes = {};
-    allocate_strings_of_biggest_desired_width(desired_widths, transaction->value_allocator(),
-                                              &spaces, &dashes);
+    allocate_strings_of_biggest_width(actual_widths, desired_widths, transaction->value_allocator(),
+                                      &spaces, &dashes);
 
     // Align the columns.
     // Note: assumes the first pipe is aligned for all the lines.
@@ -251,15 +266,17 @@ void command_realign_table(Editor* editor, Command_Source source) {
     // Calculate the desired width of each column.
     cz::Vector<uint64_t> desired_widths = {};
     CZ_DEFER(desired_widths.drop(cz::heap_allocator()));
+    cz::Vector<uint64_t> actual_widths = {};
+    CZ_DEFER(actual_widths.drop(cz::heap_allocator()));
     calculate_desired_widths_for_each_column(start, pipe_positions, line_pipe_index,
-                                             max_pipes_per_line, &desired_widths);
+                                             max_pipes_per_line, &actual_widths, &desired_widths);
 
     Transaction transaction;
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
-    create_edits(start, pipe_positions, line_pipe_index, max_pipes_per_line, desired_widths,
-                 &transaction);
+    create_edits(start, pipe_positions, line_pipe_index, max_pipes_per_line, actual_widths,
+                 desired_widths, &transaction);
 
     transaction.commit(source.client);
 }
