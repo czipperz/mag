@@ -1,5 +1,6 @@
 #include "table_commands.hpp"
 
+#include <cz/util.hpp>
 #include "core/command_macros.hpp"
 #include "core/match.hpp"
 #include "core/movement.hpp"
@@ -7,65 +8,54 @@
 namespace mag {
 namespace basic {
 
-REGISTER_COMMAND(command_realign_table);
-void command_realign_table(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-
-    // Assume for now that all cursors are in the same table.
-    uint64_t point = window->cursors[window->selected_cursor].point;
-    Contents_Iterator start = buffer->contents.iterator_at(point);
-    Contents_Iterator end = start;
-
-    // Find start of table.
+static void rfind_start_of_table(Contents_Iterator* start) {
     while (1) {
-        start_of_line(&start);
+        start_of_line(start);
 
         // Rough heuristic that every line in a table starts with '|'.
-        if (!looking_at(start, '|')) {
-            Contents_Iterator it2 = start;
+        if (!looking_at(*start, '|')) {
+            Contents_Iterator it2 = *start;
             end_of_line(&it2);
             if (it2.at_eob())
                 break;
             it2.advance();
-            start = it2;
+            *start = it2;
             break;
         }
 
-        if (start.at_bob())
+        if (start->at_bob())
             break;
-        start.retreat();
+        start->retreat();
     }
+}
 
-    // Find end of table.
+static void find_end_of_table(Contents_Iterator* end) {
     while (1) {
-        end_of_line(&end);
-        if (end.at_eob()) {
+        end_of_line(end);
+        if (end->at_eob()) {
             // TODO handle tables without trailing newline.
-            start_of_line(&end);
+            start_of_line(end);
             break;
         }
 
-        end.advance();
+        end->advance();
         // Rough heuristic that every line in a table starts with '|'.
-        if (!looking_at(end, '|'))
+        if (!looking_at(*end, '|'))
             break;
     }
+}
 
-    cz::Vector<uint64_t> pipe_positions = {};
-    CZ_DEFER(pipe_positions.drop(cz::heap_allocator()));
-    cz::Vector<uint64_t> line_pipe_index = {};
-    CZ_DEFER(line_pipe_index.drop(cz::heap_allocator()));
-    uint64_t max_pipes_per_line = 0;
+static void find_all_pipes(Contents_Iterator it,
+                           uint64_t end,
+                           cz::Vector<uint64_t>* pipe_positions,
+                           cz::Vector<size_t>* line_pipe_index) {
+    line_pipe_index->reserve(cz::heap_allocator(), 1);
+    line_pipe_index->push(0);
 
-    line_pipe_index.reserve(cz::heap_allocator(), 1);
-    line_pipe_index.push(0);
-
-    // Analyze the table to find all the pipes.
-    Contents_Iterator it = start;
-    while (it.position < end.position) {
+    while (it.position < end) {
         CZ_DEBUG_ASSERT(looking_at(it, '|'));
-        pipe_positions.reserve(cz::heap_allocator(), 1);
-        pipe_positions.push(it.position);
+        pipe_positions->reserve(cz::heap_allocator(), 1);
+        pipe_positions->push(it.position);
         it.advance();
 
         Contents_Iterator eol = it;
@@ -76,53 +66,58 @@ void command_realign_table(Editor* editor, Command_Source source) {
             if (!found)
                 break;
 
-            pipe_positions.reserve(cz::heap_allocator(), 1);
-            pipe_positions.push(it.position);
+            pipe_positions->reserve(cz::heap_allocator(), 1);
+            pipe_positions->push(it.position);
             it.advance();
         }
 
-        line_pipe_index.reserve(cz::heap_allocator(), 1);
-        line_pipe_index.push(pipe_positions.len);
-        size_t num_pipes =
-            line_pipe_index[line_pipe_index.len - 1] - line_pipe_index[line_pipe_index.len - 2];
-        if (num_pipes > max_pipes_per_line)
-            max_pipes_per_line = num_pipes;
+        line_pipe_index->reserve(cz::heap_allocator(), 1);
+        line_pipe_index->push(pipe_positions->len);
 
         it = eol;
         forward_char(&it);
     }
+}
 
-    if (max_pipes_per_line == 0) {
-        source.client->show_message("Couldn't find the table to realign");
-        return;
+static uint64_t get_max_pipes_per_line(cz::Slice<uint64_t> line_pipe_index) {
+    uint64_t max_pipes_per_line = 0;
+    for (size_t i = 1; i < line_pipe_index.len; ++i) {
+        max_pipes_per_line =
+            cz::max(max_pipes_per_line, line_pipe_index[i] - line_pipe_index[i - 1]);
     }
+    return max_pipes_per_line;
+}
 
-    // Calculate the desired width of each column.
-    cz::Vector<uint64_t> desired_widths = {};
-    CZ_DEFER(desired_widths.drop(cz::heap_allocator()));
-    desired_widths.reserve_exact(cz::heap_allocator(), max_pipes_per_line - 1);
+static bool look_for_any_non_dash_characters_and_go_to_end_of_line(Contents_Iterator* it) {
+    while (!it->at_eob()) {
+        char ch = it->get();
+        if (ch == '\n')
+            break;
+        if (ch != '|' && ch != '-') {
+            end_of_line(it);
+            return false;
+        }
+        it->advance();
+    }
+    return true;
+}
+
+static void calculate_desired_widths_for_each_column(Contents_Iterator it,
+                                                     cz::Slice<uint64_t> pipe_positions,
+                                                     cz::Slice<size_t> line_pipe_index,
+                                                     size_t max_pipes_per_line,
+                                                     cz::Vector<uint64_t>* desired_widths) {
+    desired_widths->reserve_exact(cz::heap_allocator(), max_pipes_per_line - 1);
     for (size_t i = 1; i < max_pipes_per_line; ++i) {
-        desired_widths.push(0);
+        desired_widths->push(0);
     }
-    it.retreat_to(start.position);
     for (size_t l = 0; l < line_pipe_index.len - 1; ++l) {
         size_t base_index = line_pipe_index[l];
         size_t end_index = line_pipe_index[l + 1];
         Contents_Iterator it2 = it;
 
         // Look for any non-dash characters in the line.
-        bool all_dashes = true;
-        while (!it.at_eob()) {
-            char ch = it.get();
-            if (ch == '\n')
-                break;
-            if (ch != '|' && ch != '-') {
-                all_dashes = false;
-                end_of_line(&it);
-                break;
-            }
-            it.advance();
-        }
+        bool all_dashes = look_for_any_non_dash_characters_and_go_to_end_of_line(&it);
         if (all_dashes) {
             forward_char(&it);
             continue;  // don't count all dash lines
@@ -148,12 +143,17 @@ void command_realign_table(Editor* editor, Command_Source source) {
 
             uint64_t width = end - start;
             // width++;  // extra padding space
-            if (width > desired_widths[i - 1])
-                desired_widths[i - 1] = width;
+            if (width > (*desired_widths)[i - 1])
+                (*desired_widths)[i - 1] = width;
         }
         forward_char(&it);
     }
+}
 
+static void allocate_strings_of_biggest_desired_width(cz::Slice<uint64_t> desired_widths,
+                                                      cz::Allocator allocator,
+                                                      cz::String* spaces,
+                                                      cz::String* dashes) {
     // Find the biggest desired width.
     uint64_t biggest_desired_width = 0;
     for (size_t i = 0; i < desired_widths.len; ++i) {
@@ -161,41 +161,35 @@ void command_realign_table(Editor* editor, Command_Source source) {
             biggest_desired_width = desired_widths[i];
     }
 
-    Transaction transaction;
-    transaction.init(buffer);
-    CZ_DEFER(transaction.drop());
+    spaces->reserve_exact(allocator, biggest_desired_width + 1);
+    spaces->push_many(' ', biggest_desired_width);
+    spaces->push('|');
 
+    dashes->reserve_exact(allocator, biggest_desired_width + 1);
+    dashes->push_many('-', biggest_desired_width);
+    dashes->push('|');
+}
+
+static void create_edits(Contents_Iterator it,
+                         cz::Slice<uint64_t> pipe_positions,
+                         cz::Slice<size_t> line_pipe_index,
+                         size_t max_pipes_per_line,
+                         cz::Slice<uint64_t> desired_widths,
+                         Transaction* transaction) {
     // Allocate a string of the biggest desired width.
-    cz::String spaces = {};
-    spaces.reserve_exact(transaction.value_allocator(), biggest_desired_width + 1);
-    spaces.push_many(' ', biggest_desired_width);
-    spaces.push('|');
-    cz::String dashes = {};
-    dashes.reserve_exact(transaction.value_allocator(), biggest_desired_width + 1);
-    dashes.push_many('-', biggest_desired_width);
-    dashes.push('|');
+    cz::String spaces = {}, dashes = {};
+    allocate_strings_of_biggest_desired_width(desired_widths, transaction->value_allocator(),
+                                              &spaces, &dashes);
 
     // Align the columns.
     // Note: assumes the first pipe is aligned for all the lines.
     uint64_t offset = 0;
-    it.retreat_to(start.position);
     for (size_t l = 0; l < line_pipe_index.len - 1; ++l) {
         size_t base_index = line_pipe_index[l];
         size_t end_index = line_pipe_index[l + 1];
 
         // Look for any non-dash characters in the line.
-        bool all_dashes = true;
-        while (!it.at_eob()) {
-            char ch = it.get();
-            if (ch == '\n')
-                break;
-            if (ch != '|' && ch != '-') {
-                all_dashes = false;
-                end_of_line(&it);
-                break;
-            }
-            it.advance();
-        }
+        bool all_dashes = look_for_any_non_dash_characters_and_go_to_end_of_line(&it);
         cz::Str base_string = (all_dashes ? dashes : spaces);
 
         for (size_t i = 1; i < max_pipes_per_line; ++i) {
@@ -222,7 +216,7 @@ void command_realign_table(Editor* editor, Command_Source source) {
                 edit.flags = Edit::REMOVE;
                 edit.position = end + offset - str.len;
                 edit.value = SSOStr::from_constant(str);
-                transaction.push(edit);
+                transaction->push(edit);
 
                 offset -= str.len;
 
@@ -241,7 +235,7 @@ void command_realign_table(Editor* editor, Command_Source source) {
                 edit.flags = Edit::INSERT;
                 edit.position = end + offset;
                 edit.value = SSOStr::from_constant(str);
-                transaction.push(edit);
+                transaction->push(edit);
 
                 offset += str.len;
             }
@@ -249,6 +243,44 @@ void command_realign_table(Editor* editor, Command_Source source) {
 
         forward_char(&it);
     }
+}
+
+REGISTER_COMMAND(command_realign_table);
+void command_realign_table(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    // Assume for now that all cursors are in the same table.
+    Contents_Iterator start =
+        buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+    Contents_Iterator end = start;
+    rfind_start_of_table(&start);
+    find_end_of_table(&end);
+
+    cz::Vector<uint64_t> pipe_positions = {};
+    CZ_DEFER(pipe_positions.drop(cz::heap_allocator()));
+    cz::Vector<size_t> line_pipe_index = {};
+    CZ_DEFER(line_pipe_index.drop(cz::heap_allocator()));
+
+    find_all_pipes(start, end.position, &pipe_positions, &line_pipe_index);
+
+    size_t max_pipes_per_line = get_max_pipes_per_line(line_pipe_index);
+    if (max_pipes_per_line == 0) {
+        source.client->show_message("Couldn't find the table to realign");
+        return;
+    }
+
+    // Calculate the desired width of each column.
+    cz::Vector<uint64_t> desired_widths = {};
+    CZ_DEFER(desired_widths.drop(cz::heap_allocator()));
+    calculate_desired_widths_for_each_column(start, pipe_positions, line_pipe_index,
+                                             max_pipes_per_line, &desired_widths);
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    create_edits(start, pipe_positions, line_pipe_index, max_pipes_per_line, desired_widths,
+                 &transaction);
 
     transaction.commit(source.client);
 }
