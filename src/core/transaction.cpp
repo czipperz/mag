@@ -1,6 +1,5 @@
 #include "transaction.hpp"
 
-#include <cz/debug.hpp>
 #include <cz/heap.hpp>
 #include "core/buffer.hpp"
 #include "core/client.hpp"
@@ -69,7 +68,6 @@ const char* Transaction::commit_get_message(Command_Function committer) {
 
     auto edits_clone = edits.clone(buffer->commit_buffer_array.allocator());
     if (!buffer->commit(edits_clone, committer)) {
-        cz::dbreak();
         return "Error: invalid edit";
     }
 

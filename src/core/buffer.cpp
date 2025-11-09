@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <cz/bit_array.hpp>
+#include <cz/debug.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
 #include <tracy/Tracy.hpp>
@@ -51,6 +52,7 @@ void Buffer::drop() {
 
 static bool insert(Contents* contents, uint64_t position, cz::Str str) {
     if (position > contents->len) {
+        cz::dbreak();
         return false;
     }
 
@@ -59,7 +61,9 @@ static bool insert(Contents* contents, uint64_t position, cz::Str str) {
 }
 
 static bool remove(Contents* contents, uint64_t position, cz::Str str) {
-    if (!looking_at(contents->iterator_at(position), str)) {
+    Contents_Iterator it = contents->iterator_at(position);
+    if (!looking_at(it, str)) {
+        cz::dbreak();  // p it.contents->buckets[it.bucket].elems + it.index
         return false;
     }
 
