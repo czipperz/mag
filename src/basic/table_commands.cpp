@@ -29,31 +29,13 @@ static void rfind_start_of_table(Contents_Iterator* start) {
     }
 }
 
-static void find_end_of_table(Contents_Iterator* end) {
-    while (1) {
-        end_of_line(end);
-        if (end->at_eob()) {
-            // TODO handle tables without trailing newline.
-            start_of_line(end);
-            break;
-        }
-
-        end->advance();
-        // Rough heuristic that every line in a table starts with '|'.
-        if (!looking_at(*end, '|'))
-            break;
-    }
-}
-
 static void find_all_pipes(Contents_Iterator it,
-                           uint64_t end,
                            cz::Vector<uint64_t>* pipe_positions,
                            cz::Vector<size_t>* line_pipe_index) {
     line_pipe_index->reserve(cz::heap_allocator(), 1);
     line_pipe_index->push(0);
 
-    while (it.position < end) {
-        CZ_DEBUG_ASSERT(looking_at(it, '|'));
+    while (looking_at(it, '|')) {
         pipe_positions->reserve(cz::heap_allocator(), 1);
         pipe_positions->push(it.position);
         it.advance();
@@ -252,16 +234,14 @@ void command_realign_table(Editor* editor, Command_Source source) {
     // Assume for now that all cursors are in the same table.
     Contents_Iterator start =
         buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-    Contents_Iterator end = start;
     rfind_start_of_table(&start);
-    find_end_of_table(&end);
 
     cz::Vector<uint64_t> pipe_positions = {};
     CZ_DEFER(pipe_positions.drop(cz::heap_allocator()));
     cz::Vector<size_t> line_pipe_index = {};
     CZ_DEFER(line_pipe_index.drop(cz::heap_allocator()));
 
-    find_all_pipes(start, end.position, &pipe_positions, &line_pipe_index);
+    find_all_pipes(start, &pipe_positions, &line_pipe_index);
 
     size_t max_pipes_per_line = get_max_pipes_per_line(line_pipe_index);
     if (max_pipes_per_line == 0) {
