@@ -124,7 +124,6 @@ static void calculate_desired_widths_for_each_column(Contents_Iterator it,
             }
 
             uint64_t width = end - start;
-            // width++;  // extra padding space
             if (width > (*desired_widths)[i - 1])
                 (*desired_widths)[i - 1] = width;
         }
