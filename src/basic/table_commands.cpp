@@ -99,6 +99,7 @@ void command_realign_table(Editor* editor, Command_Source source) {
 
     // Calculate the desired width of each column.
     cz::Vector<uint64_t> desired_widths = {};
+    CZ_DEFER(desired_widths.drop(cz::heap_allocator()));
     desired_widths.reserve_exact(cz::heap_allocator(), max_pipes_per_line - 1);
     for (size_t i = 1; i < max_pipes_per_line; ++i) {
         desired_widths.push(0);
