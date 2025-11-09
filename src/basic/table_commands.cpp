@@ -263,11 +263,11 @@ void command_realign_table(Editor* editor, Command_Source source) {
         return;
     }
 
-    // Calculate the desired width of each column.
-    cz::Vector<uint64_t> desired_widths = {};
-    CZ_DEFER(desired_widths.drop(cz::heap_allocator()));
+    // Calculate the maximum actual and desired width of each column.
     cz::Vector<uint64_t> actual_widths = {};
     CZ_DEFER(actual_widths.drop(cz::heap_allocator()));
+    cz::Vector<uint64_t> desired_widths = {};
+    CZ_DEFER(desired_widths.drop(cz::heap_allocator()));
     calculate_desired_widths_for_each_column(start, pipe_positions, line_pipe_index,
                                              max_pipes_per_line, &actual_widths, &desired_widths);
 
