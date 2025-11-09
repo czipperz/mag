@@ -5,6 +5,7 @@
 #include "basic/search_buffer_commands.hpp"
 #include "basic/visible_region_commands.hpp"
 #include "core/command_macros.hpp"
+#include "core/eat.hpp"
 #include "core/file.hpp"
 #include "core/job.hpp"
 #include "core/match.hpp"
@@ -58,6 +59,25 @@ enum class Direction {
 };
 }
 
+static bool eat_cmake_build_prefix(Contents_Iterator* iterator) {
+    Contents_Iterator test = *iterator;
+    // [  0%] Building CXX object CMakeFiles/magl.dir/src/custom/config.cpp.o
+    if (!eat_character(&test, '['))
+        return false;
+    while (eat_character(&test, ' ')) {
+    }
+    if (!eat_number(&test))
+        return false;
+    if (!eat_string(&test, "%] Building CXX object CMakeFiles/"))
+        return false;
+    if (!find_this_line(&test, '/'))
+        return false;
+    test.advance();
+
+    *iterator = test;
+    return true;
+}
+
 static bool find_path_in_direction(Editor* editor,
                                    Client* client,
                                    Direction direction,
@@ -89,10 +109,24 @@ static bool find_path_in_direction(Editor* editor,
         token_iterator.init_at_or_before(
             cz::heap_allocator(), buffer,
             window->cursors[window->selected_cursor].point - (direction == Direction::PREVIOUS));
-        if (!token_iterator.rfind_type(cz::heap_allocator(), Token_Type::BUILD_LOG_LINK)) {
-            return false;
+
+        if (direction == Direction::CURRENT) {
+            while (1) {
+                token = token_iterator.token();
+                if (token.type == Token_Type::BUILD_LOG_LINK ||
+                    token.type == Token_Type::BUILD_LOG_FILE_HEADER) {
+                    break;
+                }
+                if (!token_iterator.previous(cz::heap_allocator())) {
+                    return false;
+                }
+            }
+        } else {
+            if (!token_iterator.rfind_type(cz::heap_allocator(), Token_Type::BUILD_LOG_LINK))
+                return false;
+            token = token_iterator.token();
         }
-        token = token_iterator.token();
+
         iterator = token_iterator.iterator_at_token_start();
     }
 
@@ -102,9 +136,23 @@ static bool find_path_in_direction(Editor* editor,
         basic::center_selected_cursor(editor, window, buffer);
     }
 
+    if (token.type == Token_Type::BUILD_LOG_FILE_HEADER) {
+        eat_cmake_build_prefix(&iterator);
+    }
+
     cz::String arg = {};
     CZ_DEFER(arg.drop(cz::heap_allocator()));
     buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &arg);
+
+    if (token.type == Token_Type::BUILD_LOG_FILE_HEADER) {
+        if (arg.ends_with(".cpp.o")) {
+            arg.len -= 2;
+        } else if (arg.ends_with(".o")) {
+            --arg.len;
+            arg.reserve_exact(cz::heap_allocator(), 3);
+            arg.append("cpp");
+        }
+    }
 
     cz::Str path;
     uint64_t line, column = 0;
