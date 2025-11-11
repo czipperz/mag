@@ -543,6 +543,7 @@ static void create_key_map(Key_Map& key_map) {
 
     BIND(key_map, "A-g a", prose::command_alternate);
     BIND(key_map, "A-g b", prose::command_alternate_and_rfind_token_at_cursor);
+    BIND(key_map, "A-g A-b", command_toggle_highlight_on_buffer_token_at_point);
 
     BIND(key_map, "A-g s", prose::command_search_in_version_control_prompt);
     BIND(key_map, "A-g A-s", prose::command_search_in_version_control_token_at_position);
