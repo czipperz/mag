@@ -81,6 +81,9 @@ bool get_relpath(cz::Str directory,
 
     bool got_vc_root = false;
     while (1) {
+        if (custom::find_relpath_in_directory(directory, path, found_path)) {
+            return true;
+        }
         if (try_relative_to(directory, path, found_path)) {
             return true;
         }
@@ -92,17 +95,16 @@ bool get_relpath(cz::Str directory,
         }
 
         if (vc_root->len != 0) {
-            if (custom::find_relpath(vc_root->as_str(), directory, path, found_path)) {
+            if (custom::find_relpath_in_vc(vc_root->as_str(), directory, path, found_path)) {
                 return true;
             }
-
             if (try_relative_to(*vc_root, path, found_path)) {
                 return true;
             }
-        } else {
-            if (custom::find_relpath({}, directory, path, found_path)) {
-                return true;
-            }
+        }
+
+        if (custom::find_relpath_globally(path, found_path)) {
+            return true;
         }
 
         if (path.starts_with("../")) {

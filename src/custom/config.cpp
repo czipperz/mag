@@ -1,6 +1,7 @@
 #include "config.hpp"
 
 #include <cz/defer.hpp>
+#include <cz/directory.hpp>
 #include <cz/file.hpp>
 #include <cz/path.hpp>
 #include <cz/sort.hpp>
@@ -185,25 +186,45 @@ void client_created_callback(Editor* editor, Client* client) {
     }
 }
 
-bool find_relpath(cz::Option<cz::Str> vc_dir, cz::Str directory, cz::Str path, cz::String* out) {
-    if (!vc_dir.is_present)
-        return false;
+bool find_relpath_in_directory(cz::Str directory, cz::Str path, cz::String* out) { return false; }
 
+bool find_relpath_in_vc(cz::Str vc_dir, cz::Str directory, cz::Str path, cz::String* out) {
     if (path.starts_with("cz/")) {
         cz::Heap_String cz_dir = {};
         CZ_DEFER(cz_dir.drop());
-        if (vc_dir.value.ends_with("/cz")) {
-            cz_dir = cz::format(vc_dir.value, "/include");
+        if (vc_dir.ends_with("/cz")) {
+            cz_dir = cz::format(vc_dir, "/include");
             return prose::try_relative_to(cz_dir, path, out);
         } else {
-            cz_dir = cz::format(vc_dir.value, "/cz/include");
+            cz_dir = cz::format(vc_dir, "/cz/include");
             return prose::try_relative_to(cz_dir, path, out);
         }
     }
 
-    cz::Heap_String src_dir = cz::format(vc_dir.value, "/src");
+    cz::Heap_String src_dir = cz::format(vc_dir, "/src");
     CZ_DEFER(src_dir.drop());
     return prose::try_relative_to(src_dir, path, out);
+}
+
+bool find_relpath_globally(cz::Str path, cz::String* out) {
+    static char* cpp_subdir = [&]() -> char* {
+        cz::Directory_Iterator iterator;
+        if (iterator.init("/usr/include/c++") <= 0)
+            return nullptr;
+        CZ_DEFER(iterator.drop());
+        return cz::format("/usr/include/c++/", iterator.str_name()).buffer;
+    }();
+    static char* gnu_subdir = [&]() -> char* {
+        cz::Directory_Iterator iterator;
+        if (iterator.init("/usr/include/x86_64-linux-gnu/c++") <= 0)
+            return nullptr;
+        CZ_DEFER(iterator.drop());
+        return cz::format("/usr/include/x86_64-linux-gnu/c++/", iterator.str_name()).buffer;
+    }();
+    return prose::try_relative_to("/usr/include", path, out) ||
+           prose::try_relative_to("/usr/include/x86_64-linux-gnu", path, out) ||
+           (cpp_subdir && prose::try_relative_to(cpp_subdir, path, out)) ||
+           (gnu_subdir && prose::try_relative_to(gnu_subdir, path, out));
 }
 
 bool find_tags(cz::Str directory, tags::Engine* engine, cz::String* found_directory) {

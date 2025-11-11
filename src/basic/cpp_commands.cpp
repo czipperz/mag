@@ -1,5 +1,6 @@
 #include "cpp_commands.hpp"
 
+#include <bits/stdc++.h>
 #include <cz/char_type.hpp>
 #include <cz/format.hpp>
 #include <cz/sort.hpp>

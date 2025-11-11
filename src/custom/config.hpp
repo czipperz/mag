@@ -37,7 +37,10 @@ void buffer_created_callback(Editor* editor,
 
 /// Attempt to find a file based on `path` that comes from a substring of a buffer in `directory`.
 /// Note that `vc_dir` and `directory` are automatically tested by `prose::open_relpath`.
-bool find_relpath(cz::Option<cz::Str> vc_dir, cz::Str directory, cz::Str path, cz::String* out);
+/// These functions are tried from top to bottom.  The first one to return true will be opened.
+bool find_relpath_in_directory(cz::Str directory, cz::Str path, cz::String* out);
+bool find_relpath_in_vc(cz::Str vc_dir, cz::Str directory, cz::Str path, cz::String* out);
+bool find_relpath_globally(cz::Str path, cz::String* out);
 
 /// Attempt to find a tags file to generate completion in the folder
 /// `directory`.  Use `tags::try_directory` to test a source directory.
