@@ -70,6 +70,7 @@ static bool already_locked(cz::Slice<uint64_t> associated_threads, size_t* index
 
 #ifndef NDEBUG
 static thread_local cz::Heap_Vector<cz::String> acquired_buffers = {};
+static thread_local uint64_t num_writers = 0;
 
 static void push_acquired_buffer(Buffer* buffer) {
     acquired_buffers.reserve(1);
@@ -117,6 +118,7 @@ Buffer* Buffer_Handle::lock_writing() {
 
 #ifndef NDEBUG
         push_acquired_buffer(&buffer);
+        ++num_writers;
 
         associated_threads.reserve(cz::heap_allocator(), 1);
         associated_threads.push(tracy::GetThreadHandle());
@@ -151,6 +153,12 @@ const Buffer* Buffer_Handle::lock_reading() {
                     "Buffer_Handle::lock_reading: This thread has already "
                     "locked the Buffer_Handle so we are deadlocking");
             }
+        }
+
+        if (num_writers != 0) {
+            CZ_PANIC(
+                "To prevent any potential deadlocks, each thread can only acquire a read lock on "
+                "a Buffer if it is not write-locking any Buffers");
         }
 #endif
 
@@ -258,6 +266,11 @@ void Buffer_Handle::reduce_writing_to_reading() {
         waiters_condition.signal_all();
     }
 
+#ifndef NDEBUG
+    CZ_DEBUG_ASSERT(num_writers >= 1);
+    --num_writers;
+#endif
+
 #ifdef TRACY_ENABLE
     if (run_after) {
         context->AfterLockShared();
@@ -271,6 +284,14 @@ Buffer* Buffer_Handle::increase_reading_to_writing() {
 #ifdef TRACY_ENABLE
     context->AfterUnlockShared();
     const auto run_after = context->BeforeLock();
+#endif
+
+#ifndef NDEBUG
+    if (num_writers != 0) {
+        CZ_PANIC(
+            "To prevent any potential deadlocks, each thread can only acquire a write lock on "
+            "a Buffer if it is not locking any other Buffers");
+    }
 #endif
 
     do {
@@ -304,6 +325,10 @@ Buffer* Buffer_Handle::increase_reading_to_writing() {
         }
     } while (0);
 
+#ifndef NDEBUG
+    ++num_writers;
+#endif
+
 #ifdef TRACY_ENABLE
     if (run_after) {
         context->AfterLock();
@@ -331,6 +356,13 @@ void Buffer_Handle::unlock() {
 #endif
 
         CZ_DEBUG_ASSERT(active_state != UNLOCKED);
+
+#ifndef NDEBUG
+        if (active_state == LOCKED_WRITING) {
+            CZ_DEBUG_ASSERT(num_writers >= 1);
+            --num_writers;
+        }
+#endif
 
 #ifdef TRACY_ENABLE
         if (active_state == LOCKED_WRITING) {
