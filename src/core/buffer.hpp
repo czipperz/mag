@@ -26,8 +26,8 @@ struct Buffer {
     /// Should be delineated by forward slashes (`'/'`).  Should be terminated by a forward slash
     /// and a null terminator (`'\0'`).
     ///
-    /// If it doesn't make sense for this buffer to have an associated directory, leave this
-    /// completely empty.
+    /// If it doesn't make sense for this buffer to have an associated
+    /// directory, leave this empty with `buffer.directory = nullptr`.
     cz::String directory;
     /// The name of the buffer.
     ///
