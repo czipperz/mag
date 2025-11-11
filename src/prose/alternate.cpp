@@ -1,8 +1,10 @@
 #include "alternate.hpp"
 
 #include <cz/file.hpp>
+#include "basic/search_commands.hpp"
 #include "core/command_macros.hpp"
 #include "core/file.hpp"
+#include "core/movement.hpp"
 
 namespace mag {
 namespace prose {
@@ -124,6 +126,38 @@ void command_alternate(Editor* editor, Command_Source source) {
     }
 
     open_file(editor, source.client, path);
+}
+
+REGISTER_COMMAND(command_alternate_and_rfind_token_at_cursor);
+void command_alternate_and_rfind_token_at_cursor(Editor* editor, Command_Source source) {
+    cz::String token_contents = {};
+    CZ_DEFER(token_contents.drop(cz::heap_allocator()));
+
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        Token token;
+        Contents_Iterator iterator =
+            buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+        if (!get_token_at_position(buffer, &iterator, &token)) {
+            source.client->show_message("Couldn't find token to search for");
+            return;
+        }
+        buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &token_contents);
+    }
+
+    command_alternate(editor, source);
+
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        kill_extra_cursors(window, source.client);
+        window->cursors[0].point = window->cursors[0].mark = 0;
+        window->show_marks = false;
+
+        Contents_Iterator iterator = buffer->contents.end();
+        if (basic::rfind_identifier(&iterator, token_contents)) {
+            window->cursors[0].point = iterator.position;
+        }
+    }
 }
 
 }

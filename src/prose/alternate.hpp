@@ -43,5 +43,7 @@ FindAlternativeFileResult find_alternate_file(cz::String* path);
 
 void command_alternate(Editor* editor, Command_Source source);
 
+void command_alternate_and_rfind_token_at_cursor(Editor* editor, Command_Source source);
+
 }
 }

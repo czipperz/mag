@@ -536,7 +536,7 @@ static bool look_in(cz::Slice<char> bucket,
     return false;
 }
 
-static bool rfind_identifier(Contents_Iterator* iterator, cz::Str query) {
+bool rfind_identifier(Contents_Iterator* iterator, cz::Str query) {
     Contents_Iterator backward;
     backward = *iterator;
     backward.retreat(backward.index);
@@ -564,7 +564,7 @@ static bool rfind_identifier(Contents_Iterator* iterator, cz::Str query) {
     return false;
 }
 
-static bool find_identifier(Contents_Iterator* iterator, cz::Str query) {
+bool find_identifier(Contents_Iterator* iterator, cz::Str query) {
     Contents_Iterator forward;
     forward = *iterator;
     forward.retreat(forward.index);
