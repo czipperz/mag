@@ -4,7 +4,10 @@
 #include "core/editor.hpp"
 
 namespace mag {
+struct Copy_Chain;
 namespace basic {
+
+void save_copy(Copy_Chain** cursor_chain, Editor* editor, SSOStr value, Client* client);
 
 void command_cut(Editor* editor, Command_Source source);
 void command_copy(Editor* editor, Command_Source source);

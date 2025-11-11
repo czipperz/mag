@@ -8,7 +8,7 @@
 namespace mag {
 namespace basic {
 
-static void save_copy(Copy_Chain** cursor_chain, Editor* editor, SSOStr value, Client* client) {
+void save_copy(Copy_Chain** cursor_chain, Editor* editor, SSOStr value, Client* client) {
     Copy_Chain* chain = editor->copy_buffer.allocator().alloc<Copy_Chain>();
     chain->value = value;
     chain->previous = *cursor_chain;

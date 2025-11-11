@@ -4,6 +4,7 @@
 #include <cz/format.hpp>
 #include <cz/sort.hpp>
 #include "basic/commands.hpp"
+#include "basic/copy_commands.hpp"
 #include "core/command_macros.hpp"
 #include "core/comment.hpp"
 #include "core/editor.hpp"
@@ -14,6 +15,7 @@
 #include "core/window.hpp"
 #include "prose/alternate.hpp"
 #include "reformat_commands.hpp"
+#include "version_control/version_control.hpp"
 
 namespace mag {
 namespace cpp {
@@ -492,6 +494,42 @@ void command_extract_variable(Editor* editor, Command_Source source) {
 
     // We manually fixed the cursors so the window doesn't need to do any updates.
     window->change_index = buffer->changes.len;
+}
+
+REGISTER_COMMAND(command_copy_path_as_include);
+void command_copy_path_as_include(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    if (buffer->type != Buffer::FILE) {
+        source.client->show_message("Must run from a file buffer");
+        return;
+    }
+
+    cz::String vc_root = {};
+    CZ_DEFER(vc_root.drop(cz::heap_allocator()));
+    if (!version_control::get_root_directory(buffer->directory, cz::heap_allocator(), &vc_root)) {
+        source.client->show_message("Couldn't find vc dir");
+        return;
+    }
+
+    cz::Heap_String raw_path = {};
+    CZ_DEFER(raw_path.drop());
+    buffer->get_path(cz::heap_allocator(), &raw_path);
+
+    cz::Heap_String relative_path = {};
+    CZ_DEFER(relative_path.drop());
+    cz::path::make_absolute(raw_path, cz::heap_allocator(), &relative_path);
+    CZ_ASSERT(relative_path.starts_with(vc_root));
+    CZ_ASSERT(relative_path.slice_start(vc_root.len).starts_with('/'));
+    relative_path.remove_many(0, vc_root.len + 1);
+
+    if (relative_path.starts_with("src/"))
+        relative_path.remove_many(0, strlen("src/"));
+    else if (relative_path.starts_with("include/"))
+        relative_path.remove_many(0, strlen("include/"));
+
+    basic::save_copy(&source.client->global_copy_chain, editor,
+                     SSOStr::from_constant(cz::format("#include \"", relative_path, "\"\n")),
+                     source.client);
 }
 
 REGISTER_COMMAND(command_insert_divider_60);

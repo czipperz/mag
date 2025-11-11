@@ -1168,6 +1168,7 @@ void buffer_created_callback(Editor* editor,
             BIND(buffer->mode.key_map, "A-x &", cpp::command_make_direct);
             BIND(buffer->mode.key_map, "A-x e", cpp::command_extract_variable);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
+            BIND(buffer->mode.key_map, "A-x y", cpp::command_copy_path_as_include);
 
             if (name.ends_with(".java")) {
                 BIND(buffer->mode.key_map, "A-g A-t", command_java_open_token_at_point);
