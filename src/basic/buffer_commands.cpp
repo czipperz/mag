@@ -601,27 +601,32 @@ static void command_diff_buffer_contents_against_callback(Editor* editor,
                                                           Client* client,
                                                           cz::Str path,
                                                           void* data) {
-    WITH_CONST_SELECTED_BUFFER(client);
-
     char temp_file_buffer[L_tmpnam];
-    if (!tmpnam(temp_file_buffer)) {
-        client->show_message("No temporary file available");
-        return;
-    }
-
-    if (!save_buffer_to(buffer, temp_file_buffer)) {
-        client->show_message("Couldn't save to temporary file");
-        return;
-    }
-
     cz::Heap_String name = {};
     CZ_DEFER(name.drop());
-    name = cz::format("diff ", path, " ");
-    buffer->render_name(cz::heap_allocator(), &name);
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        if (!tmpnam(temp_file_buffer)) {
+            client->show_message("No temporary file available");
+            return;
+        }
+
+        if (!save_buffer_to(buffer, temp_file_buffer)) {
+            client->show_message("Couldn't save to temporary file");
+            return;
+        }
+
+        name = cz::format("diff ", path, " ");
+        buffer->render_name(cz::heap_allocator(), &name);
+
+        directory = buffer->directory.clone_null_terminate_or_propagate_null(cz::heap_allocator());
+    }
 
     cz::Str args[] = {"diff", path, temp_file_buffer};
-
-    run_console_command(client, editor, buffer->directory.buffer, args, name);
+    run_console_command(client, editor, directory.buffer, args, name);
 }
 
 static void command_diff_buffer_file_against_callback(Editor* editor,
@@ -633,23 +638,30 @@ static void command_diff_buffer_file_against_callback(Editor* editor,
         (void)save_buffer(buffer);
     }
 
-    WITH_CONST_SELECTED_BUFFER(client);
-    cz::String buffer_path = {};
-    CZ_DEFER(buffer_path.drop(cz::heap_allocator()));
-
-    buffer_path.reserve(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
-    if (buffer->type != Buffer::FILE) {
-        client->show_message("Error: buffer must be a file");
-        return;
-    }
-    buffer_path.append(buffer->directory);
-    buffer_path.append(buffer->name);
-
     cz::Heap_String command = {};
     CZ_DEFER(command.drop());
-    command = cz::format("diff ", cz::Process::escape_arg(input_path), " ",
-                         cz::Process::escape_arg(buffer_path));
-    run_console_command(client, editor, buffer->directory.buffer, command.buffer, command);
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        cz::String buffer_path = {};
+        CZ_DEFER(buffer_path.drop(cz::heap_allocator()));
+
+        buffer_path.reserve(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
+        if (buffer->type != Buffer::FILE) {
+            client->show_message("Error: buffer must be a file");
+            return;
+        }
+        buffer_path.append(buffer->directory);
+        buffer_path.append(buffer->name);
+
+        command = cz::format("diff ", cz::Process::escape_arg(input_path), " ",
+                             cz::Process::escape_arg(buffer_path));
+        directory = buffer->directory.clone_null_terminate_or_propagate_null(cz::heap_allocator());
+    }
+
+    run_console_command(client, editor, directory.buffer, command.buffer, command);
 }
 
 REGISTER_COMMAND(command_diff_buffer_contents_against);

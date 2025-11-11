@@ -1459,18 +1459,22 @@ static void command_run_command_for_result_callback(Editor* editor,
 
     client->close_fused_paired_windows();
 
-    WITH_CONST_SELECTED_BUFFER(client);
-    cz::Heap_String directory = {};
-    CZ_DEFER(directory.drop());
-    if (in_vc_root) {
-        if (!version_control::get_root_directory(buffer->directory, cz::heap_allocator(),
-                                                 &directory)) {
-            client->show_message("Failed to find vc root directory");
-            return;
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        if (in_vc_root) {
+            if (!version_control::get_root_directory(buffer->directory, cz::heap_allocator(),
+                                                     &directory)) {
+                client->show_message("Failed to find vc root directory");
+                return;
+            }
+        } else {
+            directory =
+                buffer->directory.clone_null_terminate_or_propagate_null(cz::heap_allocator());
         }
     }
-    run_console_command(client, editor, in_vc_root ? directory.buffer : buffer->directory.buffer,
-                        script, buffer_name);
+    run_console_command(client, editor, directory.buffer, script, buffer_name);
 }
 
 struct Process_Ignore_Result_Job_Data {

@@ -455,32 +455,35 @@ static void command_git_log_common(Editor* editor,
                                    Client* client,
                                    cz::Str filter,
                                    bool show_patch) {
-    WITH_CONST_SELECTED_BUFFER(client);
-
     cz::String root = {};
     CZ_DEFER(root.drop(cz::heap_allocator()));
-    if (!get_root_directory(buffer->directory, cz::heap_allocator(), &root)) {
-        client->show_message("Error: couldn't find vc root");
-        return;
-    }
-
-    cz::String path = {};
-    CZ_DEFER(path.drop(cz::heap_allocator()));
-    if (!buffer->get_path(cz::heap_allocator(), &path)) {
-        client->show_message("Error: couldn't get buffer path");
-        return;
-    }
-
     cz::Heap_String command = {};
     CZ_DEFER(command.drop());
-    cz::append(&command, "git log ");
-    if (filter.len > 0)
-        cz::append(&command, "-G ", cz::Process::escape_arg(filter), " ");
-    if (show_patch)
-        cz::append(&command, "-p ");
-    cz::append(&command, cz::Process::escape_arg(path));
-    command.reserve_exact(1);
-    command.null_terminate();
+
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+
+        if (!get_root_directory(buffer->directory, cz::heap_allocator(), &root)) {
+            client->show_message("Error: couldn't find vc root");
+            return;
+        }
+
+        cz::String path = {};
+        CZ_DEFER(path.drop(cz::heap_allocator()));
+        if (!buffer->get_path(cz::heap_allocator(), &path)) {
+            client->show_message("Error: couldn't get buffer path");
+            return;
+        }
+
+        cz::append(&command, "git log ");
+        if (filter.len > 0)
+            cz::append(&command, "-G ", cz::Process::escape_arg(filter), " ");
+        if (show_patch)
+            cz::append(&command, "-p ");
+        cz::append(&command, cz::Process::escape_arg(path));
+        command.reserve_exact(1);
+        command.null_terminate();
+    }
 
     run_console_command(client, editor, root.buffer, command.buffer, command);
 }
@@ -524,50 +527,55 @@ void command_file_history_filtered(Editor* editor, Command_Source source) {
 
 REGISTER_COMMAND(command_line_history);
 void command_line_history(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
-
-    if (buffer->type != Buffer::FILE) {
-        source.client->show_message("Error: buffer must be a file");
-        return;
-    }
-
-    Contents_Iterator iterator = buffer->contents.iterator_at(
-        window->show_marks ? window->cursors[0].start() : window->cursors[0].point);
-    uint64_t line_number_range[2] = {iterator.get_line_number()};
-
-    if (window->show_marks) {
-        iterator.go_to(window->cursors[0].end());
-        if (at_start_of_line(iterator) && iterator.position > window->cursors[0].start()) {
-            iterator.retreat();
-        }
-        line_number_range[1] = iterator.get_line_number();
-    } else {
-        line_number_range[1] = line_number_range[0];
-    }
-
     cz::String root = {};
     CZ_DEFER(root.drop(cz::heap_allocator()));
-    if (!get_root_directory(buffer->directory, cz::heap_allocator(), &root)) {
-        source.client->show_message("Error: couldn't find vc root");
-        return;
-    }
-
-    if (!line_numbers_before_changes_to_path(buffer->directory.buffer, buffer->name,
-                                             line_number_range)) {
-        source.client->show_message("Error: couldn't calculate line numbers before diff");
-        return;
-    }
-
-    cz::String path = {};
-    CZ_DEFER(path.drop(cz::heap_allocator()));
-    cz::append(cz::heap_allocator(), &path, line_number_range[0], ',', line_number_range[1], ':');
-    if (!buffer->get_path(cz::heap_allocator(), &path)) {
-        source.client->show_message("Error: couldn't get buffer path");
-        return;
-    }
-
-    cz::Heap_String command = cz::format("git log -L ", cz::Process::escape_arg(path));
+    cz::Heap_String command = {};
     CZ_DEFER(command.drop());
+
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+
+        if (buffer->type != Buffer::FILE) {
+            source.client->show_message("Error: buffer must be a file");
+            return;
+        }
+
+        Contents_Iterator iterator = buffer->contents.iterator_at(
+            window->show_marks ? window->cursors[0].start() : window->cursors[0].point);
+        uint64_t line_number_range[2] = {iterator.get_line_number()};
+
+        if (window->show_marks) {
+            iterator.go_to(window->cursors[0].end());
+            if (at_start_of_line(iterator) && iterator.position > window->cursors[0].start()) {
+                iterator.retreat();
+            }
+            line_number_range[1] = iterator.get_line_number();
+        } else {
+            line_number_range[1] = line_number_range[0];
+        }
+
+        if (!get_root_directory(buffer->directory, cz::heap_allocator(), &root)) {
+            source.client->show_message("Error: couldn't find vc root");
+            return;
+        }
+
+        if (!line_numbers_before_changes_to_path(buffer->directory.buffer, buffer->name,
+                                                 line_number_range)) {
+            source.client->show_message("Error: couldn't calculate line numbers before diff");
+            return;
+        }
+
+        cz::String path = {};
+        CZ_DEFER(path.drop(cz::heap_allocator()));
+        cz::append(cz::heap_allocator(), &path, line_number_range[0], ',', line_number_range[1],
+                   ':');
+        if (!buffer->get_path(cz::heap_allocator(), &path)) {
+            source.client->show_message("Error: couldn't get buffer path");
+            return;
+        }
+        command = cz::format("git log -L ", cz::Process::escape_arg(path));
+    }
+
     run_console_command(source.client, editor, root.buffer, command.buffer, command);
 }
 
@@ -579,19 +587,28 @@ static void command_git_log_add_filter_callback(Editor* editor,
                                                 Client* client,
                                                 cz::Str query,
                                                 void*) {
-    WITH_CONST_SELECTED_BUFFER(client);
-    if (buffer->type != Buffer::TEMPORARY || !buffer->name.starts_with("*git log ") ||
-        !buffer->name.ends_with("*")) {
-        client->show_message("Must be ran from a *git log ...* buffer");
-        return;
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+    cz::Heap_String new_command = {};
+    CZ_DEFER(new_command.drop());
+
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        if (buffer->type != Buffer::TEMPORARY || !buffer->name.starts_with("*git log ") ||
+            !buffer->name.ends_with("*")) {
+            client->show_message("Must be ran from a *git log ...* buffer");
+            return;
+        }
+
+        cz::Str old_command = buffer->name.slice(1, buffer->name.len - 1);
+        new_command = cz::format(old_command.slice_end(strlen("git log ")), "-G ",
+                                 cz::Process::escape_arg(query), " ",
+                                 old_command.slice_start(strlen("git log ")));
+
+        directory = buffer->directory.clone_null_terminate_or_propagate_null(cz::heap_allocator());
     }
 
-    cz::Str old_command = buffer->name.slice(1, buffer->name.len - 1);
-    cz::Heap_String new_command =
-        cz::format(old_command.slice_end(strlen("git log ")), "-G ", cz::Process::escape_arg(query),
-                   " ", old_command.slice_start(strlen("git log ")));
-    CZ_DEFER(new_command.drop());
-    run_console_command(client, editor, buffer->directory.buffer, new_command.buffer, new_command);
+    run_console_command(client, editor, directory.buffer, new_command.buffer, new_command);
 }
 
 REGISTER_COMMAND(command_git_log_add_filter);
@@ -609,30 +626,39 @@ void command_git_log_add_filter(Editor* editor, Command_Source source) {
 
 REGISTER_COMMAND(command_git_log_add_follow);
 void command_git_log_add_follow(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
-    if (buffer->type != Buffer::TEMPORARY || !buffer->name.starts_with("*git log ") ||
-        !buffer->name.ends_with("*")) {
-        source.client->show_message("Must be ran from a *git log ...* buffer");
-        return;
+    cz::String directory = {};
+    CZ_DEFER(directory.drop(cz::heap_allocator()));
+    cz::Heap_String new_command = {};
+    CZ_DEFER(new_command.drop());
+
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        if (buffer->type != Buffer::TEMPORARY || !buffer->name.starts_with("*git log ") ||
+            !buffer->name.ends_with("*")) {
+            source.client->show_message("Must be ran from a *git log ...* buffer");
+            return;
+        }
+
+        cz::Str old_command = buffer->name.slice(1, buffer->name.len - 1);
+        new_command = cz::format(old_command.slice_end(strlen("git log ")), "--follow ",
+                                 old_command.slice_start(strlen("git log ")));
+
+        directory = buffer->directory.clone_null_terminate_or_propagate_null(cz::heap_allocator());
     }
 
-    cz::Str old_command = buffer->name.slice(1, buffer->name.len - 1);
-    cz::Heap_String new_command = cz::format(old_command.slice_end(strlen("git log ")), "--follow ",
-                                             old_command.slice_start(strlen("git log ")));
-    CZ_DEFER(new_command.drop());
-    run_console_command(source.client, editor, buffer->directory.buffer, new_command.buffer,
-                        new_command);
+    run_console_command(source.client, editor, directory.buffer, new_command.buffer, new_command);
 }
 
 REGISTER_COMMAND(command_git_diff_master);
 void command_git_diff_master(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
-
     cz::String root = {};
     CZ_DEFER(root.drop(cz::heap_allocator()));
-    if (!get_root_directory(buffer->directory, cz::heap_allocator(), &root)) {
-        source.client->show_message("Error: couldn't find vc root");
-        return;
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        if (!get_root_directory(buffer->directory, cz::heap_allocator(), &root)) {
+            source.client->show_message("Error: couldn't find vc root");
+            return;
+        }
     }
 
     run_console_command(
