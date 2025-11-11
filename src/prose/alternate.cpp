@@ -46,9 +46,9 @@ static bool try_to_find_exact_match_with_new_extension(cz::String* path,
     return false;
 }
 
-static int test_extensions(cz::String* path,
-                           cz::Slice<cz::Str> src_extensions,
-                           cz::Slice<cz::Str> dest_extensions) {
+static FindAlternativeFileResult test_extensions(cz::String* path,
+                                                 cz::Slice<cz::Str> src_extensions,
+                                                 cz::Slice<cz::Str> dest_extensions) {
     bool any_match = false;
     size_t match;
 
@@ -59,7 +59,7 @@ static int test_extensions(cz::String* path,
 
         // See if we can find a file on disk that uses a dest extension.
         if (try_to_find_exact_match_with_new_extension(path, src_extensions[i], dest_extensions)) {
-            return 2;
+            return FindAlternativeFileResult::SUCCESS;
         }
 
         // We can't find an exact match; maybe another extension yields an actual file.
@@ -77,13 +77,13 @@ static int test_extensions(cz::String* path,
     if (any_match) {
         path->len = path->len - src_extensions[match].len;
         path->append(dest_extensions[match]);
-        return 1;
+        return FindAlternativeFileResult::COULDNT_FIND_ALTERNATE_FILE;
     }
 
-    return 0;
+    return FindAlternativeFileResult::UNSUPPORTED_EXTENSION;
 }
 
-int find_alternate_file(cz::String* path) {
+FindAlternativeFileResult find_alternate_file(cz::String* path) {
     // Apply all `alternate_path` rules.
     for (size_t i = 0; i < alternate_path_len; ++i) {
         if (!replace_if_contains(path, alternate_path_1[i], alternate_path_2[i]))
@@ -93,8 +93,8 @@ int find_alternate_file(cz::String* path) {
     cz::Slice<cz::Str> extensions_1 = {alternate_extensions_1, alternate_extensions_len};
     cz::Slice<cz::Str> extensions_2 = {alternate_extensions_2, alternate_extensions_len};
 
-    int result = test_extensions(path, extensions_1, extensions_2);
-    if (result == 0) {
+    FindAlternativeFileResult result = test_extensions(path, extensions_1, extensions_2);
+    if (result == FindAlternativeFileResult::UNSUPPORTED_EXTENSION) {
         result = test_extensions(path, extensions_2, extensions_1);
     }
     return result;
@@ -112,14 +112,14 @@ void command_alternate(Editor* editor, Command_Source source) {
         }
     }
 
-    int result = find_alternate_file(&path);
+    FindAlternativeFileResult result = find_alternate_file(&path);
 
-    if (result == 0) {
+    if (result == FindAlternativeFileResult::UNSUPPORTED_EXTENSION) {
         source.client->show_message("File doesn't have a supported extension");
         return;
     }
 
-    if (result == 1) {
+    if (result == FindAlternativeFileResult::COULDNT_FIND_ALTERNATE_FILE) {
         source.client->show_message("Couldn't find the alternate file; guessing on the extension");
     }
 

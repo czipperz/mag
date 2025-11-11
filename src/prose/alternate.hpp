@@ -26,11 +26,20 @@ extern cz::Str alternate_extensions_1[];
 extern cz::Str alternate_extensions_2[];
 extern size_t alternate_extensions_len;
 
+namespace FindAlternativeFileResult_ {
+enum FindAlternativeFileResult {
+    SUCCESS,
+    UNSUPPORTED_EXTENSION,
+    COULDNT_FIND_ALTERNATE_FILE,
+};
+}
+using FindAlternativeFileResult_::FindAlternativeFileResult;
+
 /// Find the alternate file.
 /// Returns 0 if `path` doesn't match any rules.  Note that `path` may be changed by this function
 /// in this case!  Returns 1 if a match is guessed.  This happens when creating a new alternate
 /// file. Returns 2 if an exact match is found on disk.
-int find_alternate_file(cz::String* path);
+FindAlternativeFileResult find_alternate_file(cz::String* path);
 
 void command_alternate(Editor* editor, Command_Source source);
 
