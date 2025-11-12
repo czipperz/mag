@@ -62,17 +62,20 @@ enum class Direction {
 static bool eat_cmake_build_prefix(Contents_Iterator* iterator) {
     Contents_Iterator test = *iterator;
     // [  0%] Building CXX object CMakeFiles/magl.dir/src/custom/config.cpp.o
+    // [1/20] Compiling src/custom/config.o
     if (!eat_character(&test, '['))
         return false;
-    while (eat_character(&test, ' ')) {
+    if (!find_this_line(&test, "] "))
+        return false;
+    test.advance(2);
+
+    if (eat_string(&test, "Building CXX object CMakeFiles/")) {
+        if (!find_this_line(&test, '/'))
+            return false;
+        test.advance();
+    } else if (!eat_string(&test, "Compiling ")) {
+        return false;
     }
-    if (!eat_number(&test))
-        return false;
-    if (!eat_string(&test, "%] Building CXX object CMakeFiles/"))
-        return false;
-    if (!find_this_line(&test, '/'))
-        return false;
-    test.advance();
 
     *iterator = test;
     return true;
