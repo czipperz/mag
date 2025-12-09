@@ -108,3 +108,17 @@ TEST_CASE("tokenize_markdown bold/italics end of sentence and parenthesis") {
     CHECK(tokens[15] == Test_Runner::TToken{"**y**", {38, 43, Token_Type::PROCESS_BOLD}});
     CHECK(tokens[16] == Test_Runner::TToken{",", {43, 44, Token_Type::DEFAULT}});
 }
+
+TEST_CASE("tokenize_markdown inline code in parens") {
+    Test_Runner tr;
+    tr.setup("`abc` (`def`)");
+    tr.set_tokenizer(syntax::md_next_token);
+    // tr.tokenize_print_tests();
+
+    auto tokens = tr.tokenize();
+    REQUIRE(tokens.len == 4);
+    CHECK(tokens[0] == Test_Runner::TToken{"`abc`", {0, 5, Token_Type::CODE}});
+    CHECK(tokens[1] == Test_Runner::TToken{"(", {6, 7, Token_Type::DEFAULT}});
+    CHECK(tokens[2] == Test_Runner::TToken{"`def`", {7, 12, Token_Type::CODE}});
+    CHECK(tokens[3] == Test_Runner::TToken{")", {12, 13, Token_Type::DEFAULT}});
+}

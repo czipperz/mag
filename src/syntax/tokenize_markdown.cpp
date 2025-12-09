@@ -248,7 +248,11 @@ static bool md_next_token_helper(Contents_Iterator* iterator,
         test.advance();
         Contents_Iterator start = test;
         char second_ch = test.get();
-        if ((second_ch == '*' || second_ch == '_') &&
+        if (second_ch == '`') {
+            *iterator = start;
+            token->type = Token_Type::DEFAULT;
+            goto ret;
+        } else if ((second_ch == '*' || second_ch == '_') &&
             advance_through_start_to_bold_or_italics_region(&test, second_ch)) {
             if (find_end_of_bold_or_italics_region_this_line(&test, start)) {
                 *iterator = start;
