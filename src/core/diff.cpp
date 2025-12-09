@@ -281,6 +281,9 @@ const char* reload_file(Buffer* buffer) {
     buffer->read_only = false;
     CZ_DEFER(buffer->read_only = old_read_only);
 
+    if (buffer->type == Buffer::TEMPORARY) {
+        return "Temp buffers can't be reloaded";
+    }
     if (buffer->type == Buffer::DIRECTORY) {
         if (!reload_directory_buffer(buffer)) {
             return "Couldn't reload directory";
