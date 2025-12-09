@@ -347,6 +347,10 @@ void command_lookup_prompt(Editor* editor, Command_Source source) {
 
 REGISTER_COMMAND(command_lookup_previous_command);
 void command_lookup_previous_command(Editor* editor, Command_Source source) {
+    if (!source.previous_command.string) {
+        source.client->show_message("No previous command found");
+        return;
+    }
     lookup_and_prompt(editor, source.client, mag_build_directory, source.previous_command.string);
 }
 
