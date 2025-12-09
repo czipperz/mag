@@ -102,12 +102,11 @@ FindAlternativeFileResult find_alternate_file(cz::String* path) {
     return result;
 }
 
-REGISTER_COMMAND(command_alternate);
-void command_alternate(Editor* editor, Command_Source source) {
+static void do_alternate(Editor* editor, Client* client, Synchronous_Job callback) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     {
-        WITH_CONST_SELECTED_BUFFER(source.client);
+        WITH_CONST_SELECTED_BUFFER(client);
 
         if (!buffer->get_path(cz::heap_allocator(), &path)) {
             return;
@@ -117,15 +116,45 @@ void command_alternate(Editor* editor, Command_Source source) {
     FindAlternativeFileResult result = find_alternate_file(&path);
 
     if (result == FindAlternativeFileResult::UNSUPPORTED_EXTENSION) {
-        source.client->show_message("File doesn't have a supported extension");
+        client->show_message("File doesn't have a supported extension");
         return;
     }
 
     if (result == FindAlternativeFileResult::COULDNT_FIND_ALTERNATE_FILE) {
-        source.client->show_message("Couldn't find the alternate file; guessing on the extension");
+        client->show_message("Couldn't find the alternate file; guessing on the extension");
     }
 
-    open_file(editor, source.client, path);
+    open_file(editor, client, path, callback);
+}
+
+REGISTER_COMMAND(command_alternate);
+void command_alternate(Editor* editor, Command_Source source) {
+    do_alternate(editor, source.client, open_file_callback_do_nothing());
+}
+
+static Synchronous_Job callback_rsearch_for(cz::Str token_contents) {
+    Synchronous_Job job;
+    job.tick = [](Editor* editor, Client* client, void* _data) {
+        cz::String* token_contents = (cz::String*)_data;
+
+        WITH_CONST_SELECTED_BUFFER(client);
+        kill_extra_cursors(window, client);
+        window->cursors[0].point = window->cursors[0].mark = 0;
+        window->show_marks = false;
+
+        Contents_Iterator iterator = buffer->contents.end();
+        if (basic::rfind_identifier(&iterator, *token_contents)) {
+            window->cursors[0].point = iterator.position;
+        }
+
+        token_contents->drop(cz::heap_allocator());
+        cz::heap_allocator().dealloc(token_contents);
+        return Job_Tick_Result::FINISHED;
+    };
+    job.kill = [](void* _data) { cz::heap_allocator().dealloc((cz::String*)_data); };
+    job.data = cz::heap_allocator().clone(token_contents.clone(cz::heap_allocator()));
+    CZ_ASSERT(job.data);
+    return job;
 }
 
 REGISTER_COMMAND(command_alternate_and_rfind_token_at_cursor);
@@ -145,19 +174,7 @@ void command_alternate_and_rfind_token_at_cursor(Editor* editor, Command_Source 
         buffer->contents.slice_into(cz::heap_allocator(), iterator, token.end, &token_contents);
     }
 
-    command_alternate(editor, source);
-
-    {
-        WITH_CONST_SELECTED_BUFFER(source.client);
-        kill_extra_cursors(window, source.client);
-        window->cursors[0].point = window->cursors[0].mark = 0;
-        window->show_marks = false;
-
-        Contents_Iterator iterator = buffer->contents.end();
-        if (basic::rfind_identifier(&iterator, token_contents)) {
-            window->cursors[0].point = iterator.position;
-        }
-    }
+    do_alternate(editor, source.client, callback_rsearch_for(token_contents));
 }
 
 }
