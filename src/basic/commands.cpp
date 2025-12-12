@@ -1565,12 +1565,11 @@ static void command_run_command_ignore_result_callback(Editor* editor,
         return;
     }
 
-    WITH_CONST_SELECTED_BUFFER(client);
-
     cz::Process process;
     cz::Input_File output;
 
     {
+        WITH_CONST_SELECTED_BUFFER(client);
         cz::Process_Options options;
         if (!create_process_output_pipe(&options.std_out, &output)) {
             client->show_message("Failed to create stdout/stderr pipe");
