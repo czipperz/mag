@@ -42,6 +42,10 @@ bool open_token_as_relpath(Editor* editor, Client* client, cz::Str directory, cz
                      (query.starts_with('\'') && query.ends_with('\'')) ||
                      (query.starts_with('<') && query.ends_with('>'));
     if (is_string) {
+        if (query.len == 1) {
+            client->show_message("String must be paired");
+            return false;
+        }
         query = query.slice(1, query.len - 1);
     }
     if (is_string || query.contains(".") || query.contains('/')) {
