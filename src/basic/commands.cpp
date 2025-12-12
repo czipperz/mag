@@ -1446,11 +1446,25 @@ void command_redo_all(Editor* editor, Command_Source source) {
 // Run shell command
 ////////////////////////////////////////////////////////////////////////////////
 
+static cz::Str trim_whitespace(cz::Str script) {
+    while (script.len > 0 && cz::is_space(script.last()))
+        --script.len;
+    while (script.len > 0 && cz::is_space(script[0]))
+        script = script.slice_start(1);
+    return script;
+}
+
 template <bool in_vc_root>
 static void command_run_command_for_result_callback(Editor* editor,
                                                     Client* client,
                                                     cz::Str script,
                                                     void*) {
+    script = trim_whitespace(script);
+    if (script.len == 0) {
+        client->show_message("Must specify a non-empty script");
+        return;
+    }
+
     cz::String buffer_name = {};
     CZ_DEFER(buffer_name.drop(cz::heap_allocator()));
     buffer_name.reserve(cz::heap_allocator(), 6 + script.len);
@@ -1545,6 +1559,12 @@ static void command_run_command_ignore_result_callback(Editor* editor,
                                                        Client* client,
                                                        cz::Str script,
                                                        void*) {
+    script = trim_whitespace(script);
+    if (script.len == 0) {
+        client->show_message("Must specify a non-empty script");
+        return;
+    }
+
     WITH_CONST_SELECTED_BUFFER(client);
 
     cz::Process process;
