@@ -420,7 +420,7 @@ Mag: A customizable text editor.             gg\n\
          ^ggggggggggg^   ^gggggggg^   ^gggg^\n\
 \n\
 \n\
-Mag is a WSIWYG editor -- typing text inserts text in the buffer, using Control or Alt modifiers\n\
+Mag is a WYSIWYG editor -- typing text inserts text in the buffer; using Control or Alt modifiers\n\
 runs commands.  Control is written as C-* and Alt is written as A-*.  Mag is moderately similar\n\
 to Emacs but prefers Alt as a prefix over Control as it is easier to type on modern keyboards.\n\
 \n\
@@ -444,7 +444,7 @@ C-f     Forward char         C-b     Backward char\n\
 A-f     Forward word         A-b     Backward word\n\
 C-A-f   Forward token        C-A-b   Backward token\n\
 A-n     Forward line         A-p     Backward line          (Use C-A-* to create a cursor)\n\
-A-q     Match token forward  A-j     Match token backward   (Use C-* to create a cursor)\n\
+A-q     Match token forward  A-u     Match token backward   (Use C-* to create a cursor)\n\
 A-r     Search forward       C-r     Search backwards\n\
 \n\
 \n\
