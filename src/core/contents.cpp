@@ -309,7 +309,7 @@ void Contents::slice_into(cz::Allocator allocator,
                           uint64_t end,
                           cz::String* string) const {
     ZoneScoped;
-    string->reserve(allocator, end - start.position);
+    string->reserve_exact(allocator, end - start.position);
     slice_into(start, end, string);
 }
 
