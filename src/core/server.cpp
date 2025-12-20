@@ -411,7 +411,7 @@ static void run_command(Command command, Editor* editor, Command_Source source) 
     }
 
 #ifndef NDEBUG
-    static File_Wrapper log("log.txt", "a");
+    static File_Wrapper log("mag-key.log", "a");
     if (log.file) {
         fprintf(log.file, "%s\n", command.string);
     }

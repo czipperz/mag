@@ -1,7 +1,7 @@
 *~
 build
 color_test
-log.txt
+mag-key.log
 valgrind.txt
 .vs
 CMakeSettings.json
