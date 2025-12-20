@@ -313,6 +313,13 @@ void Contents::slice_into(cz::Allocator allocator,
     slice_into(start, end, string);
 }
 
+cz::Str Contents::slice_str(cz::Allocator allocator,
+                            Contents_Iterator start, uint64_t end) const {
+    cz::String string = {};
+    slice_into(allocator, start, end, &string);
+    return string;
+}
+
 char Contents::get_once(uint64_t pos) const {
     ZoneScoped;
 

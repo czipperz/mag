@@ -29,6 +29,7 @@ struct Contents {
     cz::String stringify(cz::Allocator allocator) const;
     void stringify_into(cz::Allocator allocator, cz::String* string) const;
     SSOStr slice(cz::Allocator allocator, Contents_Iterator start, uint64_t end) const;
+    cz::Str slice_str(cz::Allocator allocator, Contents_Iterator start, uint64_t end) const;
     void slice_into(Contents_Iterator start, uint64_t end, char* string) const;
     void slice_into(Contents_Iterator start, uint64_t end, cz::String* string) const;
     void slice_into(cz::Allocator allocator,
