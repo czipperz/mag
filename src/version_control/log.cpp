@@ -583,6 +583,29 @@ void command_line_history(Editor* editor, Command_Source source) {
 // Grep history
 ////////////////////////////////////////////////////////////////////////////////
 
+static bool extract_shell_command_if_prefix_matches(const Buffer* buffer,
+                                                    cz::Str prefix,
+                                                    cz::Str* old_command_suffix) {
+    if (buffer->type != Buffer::TEMPORARY || !buffer->name.starts_with('*') ||
+        !buffer->name.ends_with('*') || buffer->name.len < 2) {
+        return false;
+    }
+
+    cz::Str command = buffer->name.slice(1, buffer->name.len - 1);
+    if (command.starts_with("shell "))
+        command = command.slice_start(strlen("shell "));
+
+    if (!command.starts_with(prefix))
+        return false;
+    command = command.slice_start(prefix.len);
+
+    if (command.len == 0 || command[0] == ' ') {
+        *old_command_suffix = command;
+        return true;
+    }
+    return false;
+}
+
 static void command_git_log_add_filter_callback(Editor* editor,
                                                 Client* client,
                                                 cz::Str query,
@@ -594,16 +617,13 @@ static void command_git_log_add_filter_callback(Editor* editor,
 
     {
         WITH_CONST_SELECTED_BUFFER(client);
-        if (buffer->type != Buffer::TEMPORARY || !buffer->name.starts_with("*git log ") ||
-            !buffer->name.ends_with("*")) {
+        cz::Str old_command_suffix;
+        if (!extract_shell_command_if_prefix_matches(buffer, "git log", &old_command_suffix)) {
             client->show_message("Must be ran from a *git log ...* buffer");
             return;
         }
 
-        cz::Str old_command = buffer->name.slice(1, buffer->name.len - 1);
-        new_command = cz::format(old_command.slice_end(strlen("git log ")), "-G ",
-                                 cz::Process::escape_arg(query), " ",
-                                 old_command.slice_start(strlen("git log ")));
+        new_command = cz::format("git log -G ", cz::Process::escape_arg(query), old_command_suffix);
 
         directory = buffer->directory.clone_null_terminate_or_propagate_null(cz::heap_allocator());
     }
@@ -633,15 +653,13 @@ void command_git_log_add_follow(Editor* editor, Command_Source source) {
 
     {
         WITH_CONST_SELECTED_BUFFER(source.client);
-        if (buffer->type != Buffer::TEMPORARY || !buffer->name.starts_with("*git log ") ||
-            !buffer->name.ends_with("*")) {
+        cz::Str old_command_suffix;
+        if (!extract_shell_command_if_prefix_matches(buffer, "git log", &old_command_suffix)) {
             source.client->show_message("Must be ran from a *git log ...* buffer");
             return;
         }
 
-        cz::Str old_command = buffer->name.slice(1, buffer->name.len - 1);
-        new_command = cz::format(old_command.slice_end(strlen("git log ")), "--follow ",
-                                 old_command.slice_start(strlen("git log ")));
+        new_command = cz::format("git log --follow", old_command_suffix);
 
         directory = buffer->directory.clone_null_terminate_or_propagate_null(cz::heap_allocator());
     }
