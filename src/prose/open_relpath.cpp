@@ -38,15 +38,12 @@ void command_open_token_at_relpath(Editor* editor, Command_Source source) {
 }
 
 bool open_token_as_relpath(Editor* editor, Client* client, cz::Str directory, cz::Str query) {
-    bool is_string = (query.starts_with('"') && query.ends_with('"')) ||
-                     (query.starts_with('\'') && query.ends_with('\'')) ||
-                     (query.starts_with('<') && query.ends_with('>'));
+    bool is_string = query.len > 0 && cz::Str("\"'<").contains(query[0]);
     if (is_string) {
-        if (query.len == 1) {
-            client->show_message("String must be paired");
-            return false;
+        query = query.slice_start(1);
+        if (query.len > 0 && cz::Str("\"'>").contains(query[query.len - 1])) {
+            query = query.slice_end(query.len - 1);
         }
-        query = query.slice(1, query.len - 1);
     }
     if (is_string || query.contains(".") || query.contains('/')) {
         open_relpath(editor, client, directory, query);
