@@ -6,10 +6,12 @@
 #include <cz/heap.hpp>
 #include <cz/sort.hpp>
 #include <cz/string.hpp>
+#include "core/command_macros.hpp"
 #include "core/file.hpp"
 #include "core/match.hpp"
 #include "core/movement.hpp"
 #include "syntax/tokenize_build.hpp"
+#include "overlays/overlay_compiler_messages.hpp"
 
 namespace mag {
 namespace prose {
@@ -132,6 +134,20 @@ All_Messages parse_errors(Contents_Iterator link_start, cz::Allocator buffer_arr
     }
 
     return all_messages_builder.build(buffer_array_allocator);
+}
+
+static cz::Buffer_Array buffer_array = [] {
+    cz::Buffer_Array buffer_array;
+    buffer_array.init();
+    return buffer_array;
+}();
+Overlay* overlay_compiler_messages;
+
+REGISTER_COMMAND(command_load_global_compiler_messages);
+void command_load_global_compiler_messages(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    syntax::set_overlay_compiler_messages(overlay_compiler_messages,
+                                  parse_errors(buffer->contents.start(), buffer_array.allocator()));
 }
 
 }

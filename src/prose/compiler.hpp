@@ -7,6 +7,10 @@
 #include "core/contents.hpp"
 
 namespace mag {
+struct Command_Source;
+struct Editor;
+struct Overlay;
+
 namespace prose {
 
 struct Line_And_Column {
@@ -28,6 +32,9 @@ struct All_Messages {
 };
 
 All_Messages parse_errors(Contents_Iterator it, cz::Allocator buffer_array_allocator);
+
+extern Overlay* overlay_compiler_messages;
+void command_load_global_compiler_messages(Editor* editor, Command_Source source);
 
 }
 }

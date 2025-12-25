@@ -63,6 +63,7 @@
 #include "gnu_global/generic.hpp"
 #include "man/man.hpp"
 #include "overlays/overlay_build_severities.hpp"
+#include "overlays/overlay_compiler_messages.hpp"
 #include "overlays/overlay_highlight_string.hpp"
 #include "overlays/overlay_incorrect_indent.hpp"
 #include "overlays/overlay_matching_pairs.hpp"
@@ -738,9 +739,11 @@ static void create_theme(Theme& theme) {
     theme.decorations.push(syntax::decoration_read_only_indicator());
     theme.decorations.push(syntax::decoration_pinned_indicator());
 
-    theme.overlays.reserve(8);
+    theme.overlays.reserve(9);
     theme.overlays.push(syntax::overlay_matching_region({{}, 237, 0}));
     theme.overlays.push(syntax::overlay_preferred_column({{}, 21, 0}));
+    theme.overlays.push(syntax::overlay_compiler_messages());
+    prose::overlay_compiler_messages = &theme.overlays.last();
     for (const char* string : {"TODO", "Note", "NOCOMMIT"}) {
         for (Token_Type token_type : {Token_Type::COMMENT, Token_Type::DOC_COMMENT}) {
             theme.overlays.push(syntax::overlay_highlight_string(
