@@ -92,6 +92,9 @@ void Token::assert_valid(uint64_t contents_len) const {
         CZ_ASSERT(type < Token_Type::length);
 }
 
+bool Token::contains_position(uint64_t position) const {
+    return position >= start && position < end;
+}
 }
 
 namespace cz {

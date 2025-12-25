@@ -127,6 +127,8 @@ struct Token {
 
     bool is_valid(uint64_t contents_len) const;
     void assert_valid(uint64_t contents_len) const;
+
+    bool contains_position(uint64_t position) const;
 };
 
 constexpr Token INVALID_TOKEN = {(uint64_t)-1, (uint64_t)-1, Token_Type::length};
