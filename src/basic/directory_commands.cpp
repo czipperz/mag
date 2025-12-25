@@ -269,7 +269,7 @@ static bool copy_path(cz::String* path, cz::String* new_path) {
                 return false;
             }
 
-            char buffer[1024];
+            char buffer[4096];
             while (1) {
                 int64_t read = input.read(buffer, sizeof(buffer));
                 if (read > 0) {

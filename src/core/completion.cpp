@@ -534,7 +534,7 @@ bool Run_Command_For_Completion_Results::iterate(Completion_Engine_Context* cont
         context->results.len = 0;
     }
 
-    char buffer[1024];
+    char buffer[4096];
     bool done = false;
     while (1) {
         int64_t len = data->stdout_read.read_text(buffer, sizeof(buffer), &data->carry);

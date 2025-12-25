@@ -125,7 +125,7 @@ static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler* handler
     ZoneScoped;
 
     Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
-    char buf[1024];
+    char buf[4096];
     for (int reads = 0; reads < 128; ++reads) {
         int64_t read_result = data->std_out.read_text(buf, sizeof(buf), &data->carry);
         if (read_result > 0) {

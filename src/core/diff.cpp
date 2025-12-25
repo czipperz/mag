@@ -16,7 +16,7 @@ namespace mag {
 struct File_Wrapper {
     cz::Input_File file;
     cz::Carriage_Return_Carry carry;
-    char buffer[1024];
+    char buffer[4096];
     size_t index = 0;
     size_t len = 0;
 
