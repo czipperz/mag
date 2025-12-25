@@ -652,14 +652,6 @@ Open_File_Result open_file_buffer(Editor* editor,
     return result;
 }
 
-Synchronous_Job open_file_callback_do_nothing() {
-    Synchronous_Job job;
-    job.tick = [](Editor*, Client*, void*) { return Job_Tick_Result::FINISHED; };
-    job.kill = [](void*) {};
-    job.data = nullptr;
-    return job;
-}
-
 Open_File_Result open_file(Editor* editor,
                            Client* client,
                            cz::Str user_path,

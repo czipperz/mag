@@ -51,6 +51,22 @@ void Asynchronous_Job_Handler::show_message(cz::Str message) {
     add_synchronous_job(job);
 }
 
+Asynchronous_Job Asynchronous_Job::do_nothing() {
+    Asynchronous_Job job;
+    job.tick = [](Asynchronous_Job_Handler*, void*) { return Job_Tick_Result::FINISHED; };
+    job.kill = [](void*) {};
+    job.data = nullptr;
+    return job;
+}
+
+Synchronous_Job Synchronous_Job::do_nothing() {
+    Synchronous_Job job;
+    job.tick = [](Editor*, Client*, void*) { return Job_Tick_Result::FINISHED; };
+    job.kill = [](void*) {};
+    job.data = nullptr;
+    return job;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Job process append
 ////////////////////////////////////////////////////////////////////////////////

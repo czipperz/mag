@@ -129,7 +129,7 @@ static void do_alternate(Editor* editor, Client* client, Synchronous_Job callbac
 
 REGISTER_COMMAND(command_alternate);
 void command_alternate(Editor* editor, Command_Source source) {
-    do_alternate(editor, source.client, open_file_callback_do_nothing());
+    do_alternate(editor, source.client, Synchronous_Job::do_nothing());
 }
 
 static Synchronous_Job callback_rsearch_for(cz::Str token_contents) {

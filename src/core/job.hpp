@@ -90,6 +90,8 @@ struct Asynchronous_Job {
     void (*kill)(void* data);
 
     void* data;
+
+    static Asynchronous_Job do_nothing();
 };
 
 /// A `Synchronous_Job` represents a task to be performed on the main thread inbetween frames.
@@ -108,6 +110,8 @@ struct Synchronous_Job {
     void (*kill)(void* data);
 
     void* data;
+
+    static Synchronous_Job do_nothing();
 };
 
 Asynchronous_Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,

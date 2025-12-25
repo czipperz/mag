@@ -35,8 +35,6 @@ bool check_out_of_date_and_update_file_time(const char* path, cz::File_Time* fil
 
 bool reload_directory_buffer(Buffer* buffer);
 
-Synchronous_Job open_file_callback_do_nothing();
-
 /// Open the given file in a `Buffer` and replace the current `Window`.
 /// The `user_path` does *not* need to be standardized as `open_file` will handle that.
 ///
@@ -45,7 +43,7 @@ Synchronous_Job open_file_callback_do_nothing();
 Open_File_Result open_file(Editor* editor,
                            Client* client,
                            cz::Str user_path,
-                           Synchronous_Job callback = open_file_callback_do_nothing());
+                           Synchronous_Job callback = Synchronous_Job::do_nothing());
 
 /// Open file and position cursor at the line, column.
 Open_File_Result open_file_at(Editor* editor,
@@ -83,7 +81,7 @@ Open_File_Result open_file_buffer(Editor* editor,
                                   cz::Str standardized_path,
                                   cz::Arc<Buffer_Handle>* handle_out,
                                   cz::Vector<Key> unprocessed_keys = {},
-                                  Synchronous_Job callback = open_file_callback_do_nothing());
+                                  Synchronous_Job callback = Synchronous_Job::do_nothing());
 
 struct Open_File_Callback_Goto_Line_Column {
     uint64_t window_id;
