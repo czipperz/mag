@@ -9,9 +9,16 @@
 namespace mag {
 namespace prose {
 
+struct Line_And_Column {
+    uint64_t line;
+    uint64_t column;
+
+    bool operator==(const Line_And_Column&) const;
+    bool operator<(const Line_And_Column&) const;
+};
+
 struct File_Messages {
-    cz::Slice<uint64_t> lines;
-    cz::Slice<uint64_t> columns;
+    cz::Slice<Line_And_Column> lines_and_columns;
     cz::Slice<cz::Str> messages;
 };
 

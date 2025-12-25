@@ -22,10 +22,9 @@ src/custom/config-2.cpp:1190:39: error: message
     CHECK(all_messages.file_names[0] == "src/custom/config-2.cpp");
 
     REQUIRE(all_messages.file_messages.len == 1);
-    REQUIRE(all_messages.file_messages[0].lines.len == 1);
-    REQUIRE(all_messages.file_messages[0].columns.len == 1);
+    REQUIRE(all_messages.file_messages[0].lines_and_columns.len == 1);
     REQUIRE(all_messages.file_messages[0].messages.len == 1);
-    CHECK(all_messages.file_messages[0].lines[0] == 1190);
-    CHECK(all_messages.file_messages[0].columns[0] == 39);
+    CHECK(all_messages.file_messages[0].lines_and_columns[0].line == 1190);
+    CHECK(all_messages.file_messages[0].lines_and_columns[0].column == 39);
     CHECK(all_messages.file_messages[0].messages[0] == "error: message");
 }

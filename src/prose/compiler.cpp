@@ -14,6 +14,15 @@
 namespace mag {
 namespace prose {
 
+bool Line_And_Column::operator==(const Line_And_Column& other) const {
+    return line == other.line && column == other.column;
+}
+bool Line_And_Column::operator<(const Line_And_Column& other) const {
+    if (line != other.line)
+        return line < other.line;
+    return column < other.column;
+}
+
 static bool next_link(Contents_Iterator* it, Contents_Iterator* link_end) {
     while (1) {
         *link_end = *it;
@@ -55,12 +64,11 @@ struct All_Messages_Builder {
 
             all_messages.file_names[i] = this->file_names[i];
             all_messages.file_messages[i] = {
-                buffer_array_allocator.alloc_slice<uint64_t>(file_messages.len),
-                buffer_array_allocator.alloc_slice<uint64_t>(file_messages.len),
+                buffer_array_allocator.alloc_slice<Line_And_Column>(file_messages.len),
                 buffer_array_allocator.alloc_slice<cz::Str>(file_messages.len)};
             for (size_t j = 0; j < file_messages.len; ++j) {
-                all_messages.file_messages[i].lines[j] = file_messages[j].line;
-                all_messages.file_messages[i].columns[j] = file_messages[j].column;
+                all_messages.file_messages[i].lines_and_columns[j] = {file_messages[j].line,
+                                                                      file_messages[j].column};
                 all_messages.file_messages[i].messages[j] = file_messages[j].message;
             }
         }
