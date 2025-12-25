@@ -139,30 +139,23 @@ using Run_Console_Command_Result_::Run_Console_Command_Result;
 
 /// Run a console command in a buffer.  `run_console_command` will create a `Buffer` and
 /// `Window` for you whereas `run_console_command_in` requires injecting the `Buffer` to use.
-///
-/// `callback` is ran after the console command completes.  On `FAILED`
-/// / `false` (for `run_console_command_in`), `callback` is killed.
-Run_Console_Command_Result run_console_command(
-    Client* client,
-    Editor* editor,
-    const char* working_directory,
-    cz::Str script,
-    cz::Str buffer_name,
-    cz::Arc<Buffer_Handle>* handle_out = nullptr,
-    Synchronous_Job callback = Synchronous_Job::do_nothing());
-Run_Console_Command_Result run_console_command(
-    Client* client,
-    Editor* editor,
-    const char* working_directory,
-    cz::Slice<cz::Str> args,
-    cz::Str buffer_name,
-    cz::Arc<Buffer_Handle>* handle_out = nullptr,
-    Synchronous_Job callback = Synchronous_Job::do_nothing());
+Run_Console_Command_Result run_console_command(Client* client,
+                                               Editor* editor,
+                                               const char* working_directory,
+                                               cz::Str script,
+                                               cz::Str buffer_name,
+                                               cz::Arc<Buffer_Handle>* handle_out = nullptr);
+Run_Console_Command_Result run_console_command(Client* client,
+                                               Editor* editor,
+                                               const char* working_directory,
+                                               cz::Slice<cz::Str> args,
+                                               cz::Str buffer_name,
+                                               cz::Arc<Buffer_Handle>* handle_out = nullptr);
+
 bool run_console_command_in(Client* client,
                             Editor* editor,
                             cz::Arc<Buffer_Handle> buffer_id,
                             const char* working_directory,
-                            cz::Str script,
-                            Synchronous_Job callback = Synchronous_Job::do_nothing());
+                            cz::Str script);
 
 }

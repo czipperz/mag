@@ -309,8 +309,7 @@ Run_Console_Command_Result run_console_command(Client* client,
                                                const char* working_directory,
                                                cz::Str script,
                                                cz::Str buffer_name,
-                                               cz::Arc<Buffer_Handle>* handle_out,
-                                               Synchronous_Job callback) {
+                                               cz::Arc<Buffer_Handle>* handle_out) {
     ZoneScoped;
 
     cz::String working_directory_storage = {};
@@ -318,7 +317,6 @@ Run_Console_Command_Result run_console_command(Client* client,
     if (!working_directory) {
         if (!cz::get_working_directory(cz::heap_allocator(), &working_directory_storage)) {
             client->show_message("Failed to get working directory");
-            (*callback.kill)(callback.data);
             return Run_Console_Command_Result::FAILED;
         }
         working_directory = working_directory_storage.buffer;
@@ -349,7 +347,7 @@ Run_Console_Command_Result run_console_command(Client* client,
 
     client->select_window_for_buffer_or_replace_current(handle);
 
-    if (!run_console_command_in(client, editor, handle, working_directory, script, callback)) {
+    if (!run_console_command_in(client, editor, handle, working_directory, script)) {
         return Run_Console_Command_Result::FAILED;
     }
 
@@ -361,8 +359,7 @@ bool run_console_command_in(Client* client,
                             Editor* editor,
                             cz::Arc<Buffer_Handle> handle,
                             const char* working_directory,
-                            cz::Str script,
-                            Synchronous_Job callback) {
+                            cz::Str script) {
     ZoneScoped;
 
     cz::Process_Options options;
@@ -374,7 +371,6 @@ bool run_console_command_in(Client* client,
     cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
         client->show_message("Error: I/O operation failed");
-        (*callback.kill)(callback.data);
         return false;
     }
     stdout_read.set_non_blocking();
@@ -386,12 +382,11 @@ bool run_console_command_in(Client* client,
     if (!process.launch_script(script, options)) {
         client->show_message_format("Failed to run: ", script);
         stdout_read.close();
-        (*callback.kill)(callback.data);
         return false;
     }
 
     editor->add_asynchronous_job(
-        job_process_append(handle.clone_downgrade(), process, stdout_read, callback));
+        job_process_append(handle.clone_downgrade(), process, stdout_read));
     return true;
 }
 
@@ -400,13 +395,12 @@ Run_Console_Command_Result run_console_command(Client* client,
                                                const char* working_directory,
                                                cz::Slice<cz::Str> args,
                                                cz::Str buffer_name,
-                                               cz::Arc<Buffer_Handle>* handle_out,
-                                               Synchronous_Job callback) {
+                                               cz::Arc<Buffer_Handle>* handle_out) {
     cz::String script = {};
     CZ_DEFER(script.drop(cz::heap_allocator()));
     cz::Process::escape_args(args, &script, cz::heap_allocator());
     return run_console_command(client, editor, working_directory, script.buffer, buffer_name,
-                               handle_out, callback);
+                               handle_out);
 }
 
 }
