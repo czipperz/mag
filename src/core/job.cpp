@@ -68,23 +68,8 @@ Synchronous_Job Synchronous_Job::do_nothing() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Job process append
+// Job show message once no prompt
 ////////////////////////////////////////////////////////////////////////////////
-
-struct Process_Append_Job_Data {
-    cz::Arc_Weak<Buffer_Handle> buffer_handle;
-    cz::Process process;
-    cz::Carriage_Return_Carry carry;
-    cz::Input_File std_out;
-};
-
-static void process_append_job_kill(void* _data) {
-    Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
-    data->std_out.close();
-    data->process.kill();
-    data->buffer_handle.drop();
-    cz::heap_allocator().dealloc(data);
-}
 
 static void job_show_message_once_no_prompt_kill(void* _data) {
     cz::String* data = (cz::String*)_data;
@@ -113,6 +98,25 @@ static Synchronous_Job job_show_message_once_no_prompt(cz::String message) {
     job.tick = job_show_message_once_no_prompt_tick;
     job.kill = job_show_message_once_no_prompt_kill;
     return job;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Job process append
+////////////////////////////////////////////////////////////////////////////////
+
+struct Process_Append_Job_Data {
+    cz::Arc_Weak<Buffer_Handle> buffer_handle;
+    cz::Process process;
+    cz::Carriage_Return_Carry carry;
+    cz::Input_File std_out;
+};
+
+static void process_append_job_kill(void* _data) {
+    Process_Append_Job_Data* data = (Process_Append_Job_Data*)_data;
+    data->std_out.close();
+    data->process.kill();
+    data->buffer_handle.drop();
+    cz::heap_allocator().dealloc(data);
 }
 
 static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler* handler, void* _data) {
