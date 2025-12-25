@@ -11,8 +11,10 @@ namespace syntax {
 
 namespace {
 struct Data {
+    // Persistent state.
     prose::All_Messages all_messages;
 
+    // Per-window transient state.
     prose::File_Messages file_messages;
     Client* client;
     prose::Line_And_Column current_line_and_column;
