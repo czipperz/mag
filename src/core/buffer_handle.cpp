@@ -2,9 +2,6 @@
 
 #include <cz/assert.hpp>
 #include <cz/defer.hpp>
-#include <cz/heap.hpp>
-#include <cz/heap_vector.hpp>
-#include <cz/string.hpp>
 #include <tracy/Tracy.hpp>
 
 namespace mag {
@@ -68,18 +65,6 @@ static bool already_locked(cz::Slice<uint64_t> associated_threads, size_t* index
 }
 #endif
 
-#ifndef NDEBUG
-static thread_local cz::Heap_Vector<cz::String> acquired_buffers = {};
-
-static void push_acquired_buffer(Buffer* buffer) {
-    acquired_buffers.reserve(1);
-    cz::String name = {};
-    buffer->render_name(cz::heap_allocator(), &name);
-    name.realloc_null_terminate(cz::heap_allocator());
-    acquired_buffers.push(name);
-}
-#endif
-
 Buffer* Buffer_Handle::lock_writing() {
     ZoneScoped;
 
@@ -98,12 +83,6 @@ Buffer* Buffer_Handle::lock_writing() {
                 "Buffer_Handle::lock_writing: This thread has already "
                 "locked the Buffer_Handle so we are deadlocking");
         }
-
-        if (acquired_buffers.len != 0) {
-            CZ_PANIC(
-                "To prevent any potential deadlocks, each thread can only acquire a write lock on "
-                "a Buffer if it is not locking any other Buffers");
-        }
 #endif
 
         ++waiters_count;
@@ -116,9 +95,6 @@ Buffer* Buffer_Handle::lock_writing() {
         active_state = LOCKED_WRITING;
 
 #ifndef NDEBUG
-        push_acquired_buffer(&buffer);
-
-        associated_threads.reserve(cz::heap_allocator(), 1);
         associated_threads.push(tracy::GetThreadHandle());
 #endif
     }
@@ -174,8 +150,6 @@ const Buffer* Buffer_Handle::lock_reading() {
         }
 
 #ifndef NDEBUG
-        push_acquired_buffer(&buffer);
-
         associated_threads.reserve(cz::heap_allocator(), 1);
         associated_threads.push(tracy::GetThreadHandle());
 #endif
@@ -221,8 +195,6 @@ const Buffer* Buffer_Handle::try_lock_reading() {
         }
 
 #ifndef NDEBUG
-        push_acquired_buffer(&buffer);
-
         associated_threads.reserve(cz::heap_allocator(), 1);
         associated_threads.push(tracy::GetThreadHandle());
 #endif
@@ -325,9 +297,6 @@ void Buffer_Handle::unlock() {
         if (already_locked(associated_threads, &index)) {
             associated_threads.remove(index);
         }
-
-        CZ_ASSERT(acquired_buffers.len >= 1);
-        acquired_buffers.pop().drop(cz::heap_allocator());
 #endif
 
         CZ_DEBUG_ASSERT(active_state != UNLOCKED);
