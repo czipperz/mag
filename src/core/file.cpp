@@ -660,6 +660,7 @@ Open_File_Result open_file(Editor* editor,
 
     if (user_path.len == 0) {
         client->show_message("File path must not be empty");
+        (*callback.kill)(callback.data);
         return Open_File_Result::FAILURE;
     }
 
