@@ -31,7 +31,9 @@ struct All_Messages {
     cz::Slice<File_Messages> file_messages;
 };
 
-All_Messages parse_errors(Contents_Iterator it, cz::Allocator buffer_array_allocator);
+All_Messages parse_errors(Contents_Iterator it,
+                          cz::Str directory,
+                          cz::Allocator buffer_array_allocator);
 
 extern Overlay* overlay_compiler_messages;
 void command_load_global_compiler_messages(Editor* editor, Command_Source source);

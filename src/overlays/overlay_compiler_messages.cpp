@@ -30,8 +30,17 @@ static void overlay_compiler_messages_start_frame(Editor*,
     Data* data = (Data*)_data;
 
     data->file_messages = {};
+
+    if (buffer->type != Buffer::FILE)
+        return;
+
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    path.reserve_exact(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
+    path.append(buffer->directory);
+    path.append(buffer->name);
     for (size_t i = 0; i < data->all_messages.file_names.len; ++i) {
-        if (data->all_messages.file_names[i] == buffer->name) {
+        if (data->all_messages.file_names[i] == path) {
             data->file_messages = data->all_messages.file_messages[i];
             break;
         }

@@ -4,14 +4,16 @@
 #include <cz/binary_search.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
+#include <cz/path.hpp>
 #include <cz/sort.hpp>
 #include <cz/string.hpp>
 #include "core/command_macros.hpp"
 #include "core/file.hpp"
 #include "core/match.hpp"
 #include "core/movement.hpp"
-#include "syntax/tokenize_build.hpp"
 #include "overlays/overlay_compiler_messages.hpp"
+#include "prose/open_relpath.hpp"
+#include "syntax/tokenize_build.hpp"
 
 namespace mag {
 namespace prose {
@@ -88,12 +90,18 @@ struct All_Messages_Builder {
 };
 }
 
-All_Messages parse_errors(Contents_Iterator link_start, cz::Allocator buffer_array_allocator) {
+All_Messages parse_errors(Contents_Iterator link_start,
+                          cz::Str directory,
+                          cz::Allocator buffer_array_allocator) {
     All_Messages_Builder all_messages_builder = {};
     CZ_DEFER(all_messages_builder.drop());
 
     cz::String link_storage = {};
     CZ_DEFER(link_storage.drop(cz::heap_allocator()));
+    cz::String absolute_path_storage = {};
+    CZ_DEFER(absolute_path_storage.drop(cz::heap_allocator()));
+    cz::String vc_root = {};
+    CZ_DEFER(vc_root.drop(cz::heap_allocator()));
 
     for (Contents_Iterator link_end; next_link(&link_start, &link_end);
          end_of_line(&link_start), forward_char(&link_start)) {
@@ -113,15 +121,25 @@ All_Messages parse_errors(Contents_Iterator link_start, cz::Allocator buffer_arr
         link_start.contents->slice_into(cz::heap_allocator(), link_start, link_end.position,
                                         &link_storage);
 
-        cz::Str file;
+        cz::Str path;
         uint64_t line, column = -1;
-        if (!parse_file_arg_no_disk(link_storage, &file, &line, &column))
+        if (!parse_file_arg_no_disk(link_storage, &path, &line, &column))
             continue;
 
+        if (directory.len > 0) {
+            absolute_path_storage.len = 0;
+            vc_root.len = 0;
+            if (!get_relpath(directory, path, cz::heap_allocator(), &absolute_path_storage,
+                             &vc_root)) {
+                continue;
+            }
+            path = absolute_path_storage;
+        }
+
         size_t index;
-        if (!cz::binary_search(all_messages_builder.file_names, file, &index)) {
+        if (!cz::binary_search(all_messages_builder.file_names, path, &index)) {
             all_messages_builder.file_names.reserve(cz::heap_allocator(), 1);
-            all_messages_builder.file_names.insert(index, file.clone(buffer_array_allocator));
+            all_messages_builder.file_names.insert(index, path.clone(buffer_array_allocator));
             all_messages_builder.file_messages.reserve(cz::heap_allocator(), 1);
             all_messages_builder.file_messages.insert(index, {});
         }
@@ -146,8 +164,10 @@ Overlay* overlay_compiler_messages;
 REGISTER_COMMAND(command_load_global_compiler_messages);
 void command_load_global_compiler_messages(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
-    syntax::set_overlay_compiler_messages(overlay_compiler_messages,
-                                  parse_errors(buffer->contents.start(), buffer_array.allocator()));
+    buffer_array.clear();
+    syntax::set_overlay_compiler_messages(
+        overlay_compiler_messages,
+        parse_errors(buffer->contents.start(), buffer->directory, buffer_array.allocator()));
 }
 
 }
