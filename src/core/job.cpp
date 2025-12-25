@@ -109,6 +109,7 @@ struct Process_Append_Job_Data {
     cz::Process process;
     cz::Carriage_Return_Carry carry;
     cz::Input_File std_out;
+    Synchronous_Job callback;
 };
 
 static void process_append_job_kill(void* _data) {
@@ -116,6 +117,7 @@ static void process_append_job_kill(void* _data) {
     data->std_out.close();
     data->process.kill();
     data->buffer_handle.drop();
+    (*data->callback.kill)(data->callback.data);
     cz::heap_allocator().dealloc(data);
 }
 
@@ -163,6 +165,7 @@ static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler* handler
             data->std_out.close();
             data->process.join();
             data->buffer_handle.drop();
+            handler->add_synchronous_job(data->callback);
             cz::heap_allocator().dealloc(data);
             return Job_Tick_Result::FINISHED;
         } else {
@@ -177,13 +180,15 @@ static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler* handler
 
 Asynchronous_Job job_process_append(cz::Arc_Weak<Buffer_Handle> buffer_handle,
                                     cz::Process process,
-                                    cz::Input_File std_out) {
+                                    cz::Input_File std_out,
+                                    Synchronous_Job callback) {
     Process_Append_Job_Data* data = cz::heap_allocator().alloc<Process_Append_Job_Data>();
     CZ_ASSERT(data);
     data->buffer_handle = buffer_handle;
     data->process = process;
     data->carry = {};
     data->std_out = std_out;
+    data->callback = callback;
 
     Asynchronous_Job job;
     job.tick = process_append_job_tick;
@@ -304,7 +309,8 @@ Run_Console_Command_Result run_console_command(Client* client,
                                                const char* working_directory,
                                                cz::Str script,
                                                cz::Str buffer_name,
-                                               cz::Arc<Buffer_Handle>* handle_out) {
+                                               cz::Arc<Buffer_Handle>* handle_out,
+                                               Synchronous_Job callback) {
     ZoneScoped;
 
     cz::String working_directory_storage = {};
@@ -312,6 +318,7 @@ Run_Console_Command_Result run_console_command(Client* client,
     if (!working_directory) {
         if (!cz::get_working_directory(cz::heap_allocator(), &working_directory_storage)) {
             client->show_message("Failed to get working directory");
+            (*callback.kill)(callback.data);
             return Run_Console_Command_Result::FAILED;
         }
         working_directory = working_directory_storage.buffer;
@@ -342,7 +349,7 @@ Run_Console_Command_Result run_console_command(Client* client,
 
     client->select_window_for_buffer_or_replace_current(handle);
 
-    if (!run_console_command_in(client, editor, handle, working_directory, script)) {
+    if (!run_console_command_in(client, editor, handle, working_directory, script, callback)) {
         return Run_Console_Command_Result::FAILED;
     }
 
@@ -354,7 +361,8 @@ bool run_console_command_in(Client* client,
                             Editor* editor,
                             cz::Arc<Buffer_Handle> handle,
                             const char* working_directory,
-                            cz::Str script) {
+                            cz::Str script,
+                            Synchronous_Job callback) {
     ZoneScoped;
 
     cz::Process_Options options;
@@ -366,6 +374,7 @@ bool run_console_command_in(Client* client,
     cz::Input_File stdout_read;
     if (!create_process_output_pipe(&options.std_out, &stdout_read)) {
         client->show_message("Error: I/O operation failed");
+        (*callback.kill)(callback.data);
         return false;
     }
     stdout_read.set_non_blocking();
@@ -377,11 +386,12 @@ bool run_console_command_in(Client* client,
     if (!process.launch_script(script, options)) {
         client->show_message_format("Failed to run: ", script);
         stdout_read.close();
+        (*callback.kill)(callback.data);
         return false;
     }
 
     editor->add_asynchronous_job(
-        job_process_append(handle.clone_downgrade(), process, stdout_read));
+        job_process_append(handle.clone_downgrade(), process, stdout_read, callback));
     return true;
 }
 
@@ -390,12 +400,13 @@ Run_Console_Command_Result run_console_command(Client* client,
                                                const char* working_directory,
                                                cz::Slice<cz::Str> args,
                                                cz::Str buffer_name,
-                                               cz::Arc<Buffer_Handle>* handle_out) {
+                                               cz::Arc<Buffer_Handle>* handle_out,
+                                               Synchronous_Job callback) {
     cz::String script = {};
     CZ_DEFER(script.drop(cz::heap_allocator()));
     cz::Process::escape_args(args, &script, cz::heap_allocator());
     return run_console_command(client, editor, working_directory, script.buffer, buffer_name,
-                               handle_out);
+                               handle_out, callback);
 }
 
 }
