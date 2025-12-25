@@ -186,7 +186,9 @@ void client_created_callback(Editor* editor, Client* client) {
     }
 }
 
-bool find_relpath_in_directory(cz::Str directory, cz::Str path, cz::String* out) { return false; }
+bool find_relpath_in_directory(cz::Str directory, cz::Str path, cz::String* out) {
+    return false;
+}
 
 bool find_relpath_in_vc(cz::Str vc_dir, cz::Str directory, cz::Str path, cz::String* out) {
     if (path.starts_with("cz/")) {
