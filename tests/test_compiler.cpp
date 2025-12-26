@@ -17,8 +17,8 @@ src/custom/config-2.cpp:1190:39: error: message
     CZ_DEFER(buffer_array.drop());
 
     WITH_CONST_SELECTED_BUFFER(&tr.client);
-    prose::All_Messages all_messages =
-        prose::parse_errors(buffer->contents.start(), "", buffer_array.allocator());
+    prose::Buffer_Messages all_messages =
+        prose::parse_messages(buffer->contents.start(), "", buffer_array.allocator());
     REQUIRE(all_messages.file_names.len == 1);
     CHECK(all_messages.file_names[0] == "src/custom/config-2.cpp");
 

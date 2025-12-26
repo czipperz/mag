@@ -1,5 +1,6 @@
 #include "prose/compiler.hpp"
 
+#include <algorithm>
 #include <cz/assert.hpp>
 #include <cz/binary_search.hpp>
 #include <cz/defer.hpp>
@@ -11,7 +12,6 @@
 #include "core/file.hpp"
 #include "core/match.hpp"
 #include "core/movement.hpp"
-#include "overlays/overlay_compiler_messages.hpp"
 #include "prose/open_relpath.hpp"
 #include "syntax/tokenize_build.hpp"
 
@@ -52,12 +52,12 @@ struct File_Message_Builder {
     }
 };
 
-struct All_Messages_Builder {
+struct Buffer_Messages_Builder {
     cz::Vector<cz::Str> file_names;
     cz::Vector<cz::Vector<File_Message_Builder>> file_messages;
 
-    All_Messages build(cz::Allocator buffer_array_allocator) {
-        All_Messages all_messages = {
+    Buffer_Messages build(cz::Allocator buffer_array_allocator) {
+        Buffer_Messages all_messages = {
             buffer_array_allocator.alloc_slice<cz::Str>(this->file_names.len),
             buffer_array_allocator.alloc_slice<File_Messages>(this->file_messages.len),
         };
@@ -90,10 +90,10 @@ struct All_Messages_Builder {
 };
 }
 
-All_Messages parse_errors(Contents_Iterator link_start,
+Buffer_Messages parse_messages(Contents_Iterator link_start,
                           cz::Str directory,
                           cz::Allocator buffer_array_allocator) {
-    All_Messages_Builder all_messages_builder = {};
+    Buffer_Messages_Builder all_messages_builder = {};
     CZ_DEFER(all_messages_builder.drop());
 
     cz::String link_storage = {};
@@ -154,28 +154,61 @@ All_Messages parse_errors(Contents_Iterator link_start,
     return all_messages_builder.build(buffer_array_allocator);
 }
 
-static cz::Buffer_Array buffer_array = [] {
+struct Buffer_State {
+    cz::Arc_Weak<Buffer_Handle> buffer_handle;
     cz::Buffer_Array buffer_array;
-    buffer_array.init();
-    return buffer_array;
-}();
-Overlay* overlay_compiler_messages;
+    Buffer_Messages messages;
+};
+static cz::Vector<Buffer_State> buffer_states;
 
-REGISTER_COMMAND(command_load_global_compiler_messages);
-void command_load_global_compiler_messages(Editor* editor, Command_Source source) {
-    WITH_CONST_SELECTED_BUFFER(source.client);
-    buffer_array.clear();
-    syntax::set_overlay_compiler_messages(
-        overlay_compiler_messages,
-        parse_errors(buffer->contents.start(), buffer->directory, buffer_array.allocator()));
+File_Messages get_file_messages(cz::Str path) {
+    for (size_t i = buffer_states.len; i-- > 0;) {
+        Buffer_Messages messages = buffer_states[i].messages;
+        for (size_t j = 0; j < messages.file_names.len; ++j) {
+            if (messages.file_names[j] == path) {
+                return messages.file_messages[j];
+            }
+        }
+    }
+    return {};
 }
 
-void inject_global_compiler_messages(const Buffer* buffer,
-                                     const cz::Arc<Buffer_Handle>& buffer_handle) {
-    buffer_array.clear();
-    syntax::set_overlay_compiler_messages(
-        overlay_compiler_messages,
-        parse_errors(buffer->contents.start(), buffer->directory, buffer_array.allocator()));
+REGISTER_COMMAND(command_install_compiler_messages);
+void command_install_compiler_messages(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    install_messages(buffer, handle);
+}
+
+void install_messages(const Buffer* buffer, const cz::Arc<Buffer_Handle>& buffer_handle) {
+    // Parsing the file is only done periodically, clean up dead buffers.
+    for (size_t i = 0; i < buffer_states.len; ++i) {
+        if (!buffer_states[i].buffer_handle.still_alive()) {
+            buffer_states[i].buffer_handle.drop();
+            buffer_states[i].buffer_array.drop();
+            buffer_states.remove(i);
+        }
+    }
+
+    size_t i = 0;
+    for (; i < buffer_states.len; ++i) {
+        if (buffer_states[i].buffer_handle.ptr_equal(buffer_handle))
+            break;
+    }
+    if (i == buffer_states.len) {
+        buffer_states.reserve(cz::heap_allocator(), 1);
+        Buffer_State state = {};
+        state.buffer_handle = buffer_handle.clone_downgrade();
+        state.buffer_array.init();
+        buffer_states.push(state);
+    } else {
+        // Reorder the installed state last so it is found first in the loop above.
+        std::rotate(buffer_states.begin() + i, buffer_states.begin() + i + 1, buffer_states.end());
+    }
+
+    Buffer_State* state = &buffer_states.last();
+    state->buffer_array.clear();
+    state->messages =
+        parse_messages(buffer->contents.start(), buffer->directory, state->buffer_array.allocator());
 }
 
 }

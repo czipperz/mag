@@ -11,9 +11,6 @@ namespace syntax {
 
 namespace {
 struct Data {
-    // Persistent state.
-    prose::All_Messages all_messages;
-
     // Per-window transient state.
     prose::File_Messages file_messages;
     Client* client;
@@ -41,12 +38,7 @@ static void overlay_compiler_messages_start_frame(Editor*,
     path.reserve_exact(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
     path.append(buffer->directory);
     path.append(buffer->name);
-    for (size_t i = 0; i < data->all_messages.file_names.len; ++i) {
-        if (data->all_messages.file_names[i] == path) {
-            data->file_messages = data->all_messages.file_messages[i];
-            break;
-        }
-    }
+    data->file_messages = prose::get_file_messages(path);
 
     data->client = client;
 
@@ -156,16 +148,6 @@ Overlay overlay_compiler_messages() {
     CZ_ASSERT(data);
     *data = {};
     return {&vtable, data};
-}
-
-bool is_overlay_compiler_messages(const Overlay& overlay) {
-    return overlay.vtable == &vtable;
-}
-
-void set_overlay_compiler_messages(Overlay* overlay, prose::All_Messages all_messages) {
-    CZ_DEBUG_ASSERT(is_overlay_compiler_messages(*overlay));
-    Data* data = (Data*)overlay->data;
-    data->all_messages = all_messages;
 }
 
 }

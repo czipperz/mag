@@ -252,7 +252,7 @@ void console_command_finished_callback(Editor* editor, Client* client,
                                        const cz::Arc<Buffer_Handle>& buffer_handle) {
     WITH_CONST_BUFFER_HANDLE(buffer_handle);
     if (buffer->mode.next_token == syntax::build_next_token) {
-        prose::inject_global_compiler_messages(buffer, buffer_handle);
+        prose::install_messages(buffer, buffer_handle);
     }
 }
 
@@ -752,7 +752,6 @@ static void create_theme(Theme& theme) {
     theme.overlays.push(syntax::overlay_matching_region({{}, 237, 0}));
     theme.overlays.push(syntax::overlay_preferred_column({{}, 21, 0}));
     theme.overlays.push(syntax::overlay_compiler_messages());
-    prose::overlay_compiler_messages = &theme.overlays.last();
     for (const char* string : {"TODO", "Note", "NOCOMMIT"}) {
         for (Token_Type token_type : {Token_Type::COMMENT, Token_Type::DOC_COMMENT}) {
             theme.overlays.push(syntax::overlay_highlight_string(
