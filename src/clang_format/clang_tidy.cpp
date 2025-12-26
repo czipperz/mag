@@ -24,28 +24,18 @@ struct Buffer_State {
 
 cz::Heap_Vector<Buffer_State> buffer_states;
 
+void reset_buffer(const cz::Arc<Buffer_Handle> handle, cz::Str script) {
+    WITH_BUFFER_HANDLE(handle);
+    buffer->contents.remove(0, buffer->contents.len);
+    buffer->contents.append(script);
+    buffer->contents.append("\n");
+}
+
 void run_clang_tidy(Editor* editor,
                     Client* client,
                     const Buffer* buffer,
                     Buffer_State* state,
                     bool force_create_buffer) {
-    cz::Arc<Buffer_Handle> clang_tidy_buffer_handle;
-    if (force_create_buffer || !state->clang_tidy_buffer.upgrade(&clang_tidy_buffer_handle)) {
-        cz::Heap_String buffer_name =
-            cz::format("clang-tidy ", buffer->directory, buffer->name);
-        CZ_DEFER(buffer_name.drop());
-        if (!find_temp_buffer(editor, client, buffer_name, cz::Str{buffer->directory},
-                              &clang_tidy_buffer_handle)) {
-            clang_tidy_buffer_handle =
-                editor->create_buffer(create_temp_buffer(buffer_name, cz::Str{buffer->directory}));
-        }
-
-        if (!force_create_buffer) {
-            state->clang_tidy_buffer.drop();
-        }
-        state->clang_tidy_buffer = clang_tidy_buffer_handle.clone_downgrade();
-    }
-
     state->running = true;  // Note don't retry if setting up the command fails.
     state->last_saved_commit_id = buffer->saved_commit_id;
 
@@ -58,6 +48,24 @@ void run_clang_tidy(Editor* editor,
     CZ_DEFER(script.drop());
     if (!custom::clang_tidy_script(vc_root, buffer, &script))
         return;
+
+    cz::Arc<Buffer_Handle> clang_tidy_buffer_handle;
+    if (force_create_buffer || !state->clang_tidy_buffer.upgrade(&clang_tidy_buffer_handle)) {
+        cz::Heap_String buffer_name = cz::format("clang-tidy ", buffer->directory, buffer->name);
+        CZ_DEFER(buffer_name.drop());
+        if (!find_temp_buffer(editor, client, buffer_name, cz::Str{vc_root},
+                              &clang_tidy_buffer_handle)) {
+            clang_tidy_buffer_handle =
+                editor->create_buffer(create_temp_buffer(buffer_name, cz::Str{vc_root}));
+        }
+
+        if (!force_create_buffer) {
+            state->clang_tidy_buffer.drop();
+        }
+        state->clang_tidy_buffer = clang_tidy_buffer_handle.clone_downgrade();
+    }
+
+    reset_buffer(clang_tidy_buffer_handle, script);
 
     // TODO track if clang-tidy is installed / not setup correctly and stop running it.
     run_console_command_in(client, editor, clang_tidy_buffer_handle, vc_root.buffer, script);
