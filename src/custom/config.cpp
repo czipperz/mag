@@ -205,6 +205,13 @@ bool find_relpath_in_vc(cz::Str vc_dir, cz::Str directory, cz::Str path, cz::Str
         }
     }
 
+    if (path.starts_with("tracy/")) {
+        cz::Heap_String cz_dir = {};
+        CZ_DEFER(cz_dir.drop());
+        cz_dir = cz::format(vc_dir, "/tracy/public");
+        return prose::try_relative_to(cz_dir, path, out);
+    }
+
     cz::Heap_String src_dir = cz::format(vc_dir, "/src");
     CZ_DEFER(src_dir.drop());
     return prose::try_relative_to(src_dir, path, out);
