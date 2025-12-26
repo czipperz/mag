@@ -18,6 +18,7 @@
 #include "core/token_iterator.hpp"
 #include "core/tracy_format.hpp"
 #include "core/visible_region.hpp"
+#include "custom/config.hpp"
 #include "version_control/version_control.hpp"
 
 namespace mag {
@@ -1505,6 +1506,8 @@ void render_to_cells(Cell* cells,
                      Client* client,
                      bool* any_animated_scrolling) {
     ZoneScoped;
+
+    custom::rendering_frame_callback(editor, client);
 
     if (client->_message.tag != Message::NONE) {
         total_rows = draw_mini_buffer(cells, window_cache, mini_buffer_window_cache, total_rows,

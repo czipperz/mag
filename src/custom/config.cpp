@@ -47,6 +47,7 @@
 #include "basic/window_completion_commands.hpp"
 #include "basic/xclip.hpp"
 #include "clang_format/clang_format.hpp"
+#include "clang_format/clang_tidy.hpp"
 #include "core/command_macros.hpp"
 #include "core/decoration.hpp"
 #include "core/file.hpp"
@@ -255,11 +256,27 @@ bool find_tags(cz::Str directory, tags::Engine* engine, cz::String* found_direct
     return false;
 }
 
-void console_command_finished_callback(Editor* editor, Client* client,
+void console_command_finished_callback(Editor* editor,
+                                       Client* client,
                                        const cz::Arc<Buffer_Handle>& buffer_handle) {
     WITH_CONST_BUFFER_HANDLE(buffer_handle);
     if (buffer->mode.next_token == syntax::build_next_token) {
         prose::install_messages(buffer, buffer_handle);
+        mark_clang_tidy_done(buffer_handle);
+    }
+}
+
+void rendering_frame_callback(Editor* editor, Client* client) {
+    run_clang_tidy_forall_changed_buffers(editor, client);
+}
+
+bool clang_tidy_script(cz::Str vc_root, const Buffer* buffer, cz::Heap_String* script) {
+    if (vc_root.ends_with("/mag")) {
+        cz::append(script, "clang-tidy ", buffer->directory, buffer->name,
+                   " -checks='bugprone-*,readability-*' -p build/debug", cz::null_terminate());
+        return true;
+    } else {
+        return false;
     }
 }
 
@@ -1150,7 +1167,8 @@ void buffer_created_callback(Editor* editor,
             buffer->mode.next_token = syntax::search_next_token;
             buffer->mode.perform_iteration = basic::search_buffer_iterate;
             search_key_map(buffer->mode.key_map);
-        } else if (buffer->name.starts_with("*build ")) {
+        } else if (buffer->name.starts_with("*build ") ||
+                   buffer->name.starts_with("*clang-tidy ")) {
             build_log_mode(buffer->mode);
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
         }
