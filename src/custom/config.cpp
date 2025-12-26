@@ -273,7 +273,7 @@ void rendering_frame_callback(Editor* editor, Client* client) {
 bool clang_tidy_script(cz::Str vc_root, const Buffer* buffer, cz::Heap_String* script) {
     if (vc_root.ends_with("/mag")) {
         cz::append(script, "clang-tidy ", buffer->directory, buffer->name,
-                   " -checks='bugprone-*,readability-*' -p build/debug", cz::null_terminate());
+                   " -p build/debug", cz::null_terminate());
         return true;
     } else {
         return false;

@@ -1,0 +1,15 @@
+---
+Checks: >
+    -*,
+    clang-diagnostic-*,
+    clang-analyzer-*,
+    bugprone-*,
+    performance-*,
+    -bugprone-easily-swappable-parameters
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+AnalyzeTemporaryDtors: false
+FormatStyle:     none
+CheckOptions:    none
+...
+
