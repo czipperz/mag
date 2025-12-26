@@ -91,8 +91,8 @@ struct Buffer_Messages_Builder {
 }
 
 Buffer_Messages parse_messages(Contents_Iterator link_start,
-                          cz::Str directory,
-                          cz::Allocator buffer_array_allocator) {
+                               cz::Str directory,
+                               cz::Allocator buffer_array_allocator) {
     Buffer_Messages_Builder all_messages_builder = {};
     CZ_DEFER(all_messages_builder.drop());
 
@@ -144,11 +144,16 @@ Buffer_Messages parse_messages(Contents_Iterator link_start,
             all_messages_builder.file_messages.insert(index, {});
         }
 
+        const cz::Str message = message_start.contents->slice_str(
+            buffer_array_allocator, message_start, message_end.position);
+        if ((message.starts_with("error: included header ") ||
+             message.starts_with("warning: included header ")) &&
+            message.contains(" is not used directly [misc-include-cleaner")) {
+            column += strlen("#include ");
+        }
+
         all_messages_builder.file_messages[index].reserve(cz::heap_allocator(), 1);
-        all_messages_builder.file_messages[index].push(
-            {line, column,
-             message_start.contents->slice_str(buffer_array_allocator, message_start,
-                                               message_end.position)});
+        all_messages_builder.file_messages[index].push({line, column, message});
     }
 
     return all_messages_builder.build(buffer_array_allocator);
@@ -207,8 +212,8 @@ void install_messages(const Buffer* buffer, const cz::Arc<Buffer_Handle>& buffer
 
     Buffer_State* state = &buffer_states.last();
     state->buffer_array.clear();
-    state->messages =
-        parse_messages(buffer->contents.start(), buffer->directory, state->buffer_array.allocator());
+    state->messages = parse_messages(buffer->contents.start(), buffer->directory,
+                                     state->buffer_array.allocator());
 }
 
 }
