@@ -110,9 +110,12 @@ void run_clang_tidy_forall_changed_buffers_in_window(Editor* editor, Client* cli
 void cleanup() {
     for (size_t i = buffer_states.len; i-- > 0;) {
         if (!buffer_states[i].code_buffer.still_alive() ||
-            !buffer_states[i].clang_tidy_buffer.still_alive()) {
+            (buffer_states[i].clang_tidy_buffer.is_null() ||
+             !buffer_states[i].clang_tidy_buffer.still_alive())) {
             buffer_states[i].code_buffer.drop();
-            buffer_states[i].clang_tidy_buffer.drop();
+            if (buffer_states[i].clang_tidy_buffer.is_not_null()) {
+                buffer_states[i].clang_tidy_buffer.drop();
+            }
             buffer_states.remove(i);
         }
     }
