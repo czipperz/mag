@@ -2,11 +2,14 @@
 
 #include <stdint.h>
 #include <cz/allocator.hpp>
+#include <cz/arc.hpp>
 #include <cz/slice.hpp>
 #include <cz/str.hpp>
 #include "core/contents.hpp"
 
 namespace mag {
+struct Buffer;
+struct Buffer_Handle;
 struct Command_Source;
 struct Editor;
 struct Overlay;
@@ -37,6 +40,9 @@ All_Messages parse_errors(Contents_Iterator it,
 
 extern Overlay* overlay_compiler_messages;
 void command_load_global_compiler_messages(Editor* editor, Command_Source source);
+
+void inject_global_compiler_messages(const Buffer* buffer,
+                                     const cz::Arc<Buffer_Handle>& buffer_handle);
 
 }
 }

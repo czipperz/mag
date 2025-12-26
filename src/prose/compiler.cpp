@@ -170,5 +170,13 @@ void command_load_global_compiler_messages(Editor* editor, Command_Source source
         parse_errors(buffer->contents.start(), buffer->directory, buffer_array.allocator()));
 }
 
+void inject_global_compiler_messages(const Buffer* buffer,
+                                     const cz::Arc<Buffer_Handle>& buffer_handle) {
+    buffer_array.clear();
+    syntax::set_overlay_compiler_messages(
+        overlay_compiler_messages,
+        parse_errors(buffer->contents.start(), buffer->directory, buffer_array.allocator()));
+}
+
 }
 }

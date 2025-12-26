@@ -47,6 +47,7 @@
 #include "basic/window_completion_commands.hpp"
 #include "basic/xclip.hpp"
 #include "clang_format/clang_format.hpp"
+#include "core/command_macros.hpp"
 #include "core/decoration.hpp"
 #include "core/file.hpp"
 #include "core/match.hpp"
@@ -245,6 +246,14 @@ bool find_tags(cz::Str directory, tags::Engine* engine, cz::String* found_direct
     }
 
     return false;
+}
+
+void console_command_finished_callback(Editor* editor, Client* client,
+                                       const cz::Arc<Buffer_Handle>& buffer_handle) {
+    WITH_CONST_BUFFER_HANDLE(buffer_handle);
+    if (buffer->mode.next_token == syntax::build_next_token) {
+        prose::inject_global_compiler_messages(buffer, buffer_handle);
+    }
 }
 
 static void create_key_remap(Key_Remap& key_remap) {

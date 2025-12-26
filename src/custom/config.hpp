@@ -35,6 +35,9 @@ void buffer_created_callback(Editor* editor,
                              Buffer* buffer,
                              const cz::Arc<Buffer_Handle>& buffer_handle);
 
+void console_command_finished_callback(Editor* editor, Client* client,
+                                       const cz::Arc<Buffer_Handle>& buffer_handle);
+
 /// Attempt to find a file based on `path` that comes from a substring of a buffer in `directory`.
 /// Note that `vc_dir` and `directory` are automatically tested by `prose::open_relpath`.
 /// These functions are tried from top to bottom.  The first one to return true will be opened.

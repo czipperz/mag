@@ -10,6 +10,7 @@
 #include "core/command_macros.hpp"
 #include "core/editor.hpp"
 #include "core/file.hpp"
+#include "custom/config.hpp"
 
 namespace mag {
 
@@ -301,6 +302,46 @@ Asynchronous_Job job_process_show_message_with_file_contents(cz::Process process
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Job run console command callback
+////////////////////////////////////////////////////////////////////////////////
+
+struct Run_Console_Command_Callback_Job_Data {
+    cz::Arc_Weak<Buffer_Handle> buffer_handle;
+};
+
+static void run_console_command_callback_job_kill(void* _data) {
+    Run_Console_Command_Callback_Job_Data* data = (Run_Console_Command_Callback_Job_Data*)_data;
+    data->buffer_handle.drop();
+    cz::heap_allocator().dealloc(data);
+}
+
+static Job_Tick_Result run_console_command_callback_job_tick(Editor* editor,
+                                                             Client* client,
+                                                             void* _data) {
+    Run_Console_Command_Callback_Job_Data* data = (Run_Console_Command_Callback_Job_Data*)_data;
+    cz::Arc<Buffer_Handle> buffer_handle;
+    if (data->buffer_handle.upgrade(&buffer_handle)) {
+        CZ_DEFER(buffer_handle.drop());
+        custom::console_command_finished_callback(editor, client, buffer_handle);
+    }
+    run_console_command_callback_job_kill(_data);
+    return Job_Tick_Result::FINISHED;
+}
+
+static Synchronous_Job job_run_console_command_callback(cz::Arc_Weak<Buffer_Handle> buffer_handle) {
+    Run_Console_Command_Callback_Job_Data* data =
+        cz::heap_allocator().alloc<Run_Console_Command_Callback_Job_Data>();
+    CZ_ASSERT(data);
+    data->buffer_handle = buffer_handle;
+
+    Synchronous_Job job;
+    job.tick = run_console_command_callback_job_tick;
+    job.kill = run_console_command_callback_job_kill;
+    job.data = data;
+    return job;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Run console command
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -386,7 +427,8 @@ bool run_console_command_in(Client* client,
     }
 
     editor->add_asynchronous_job(
-        job_process_append(handle.clone_downgrade(), process, stdout_read));
+        job_process_append(handle.clone_downgrade(), process, stdout_read,
+                           job_run_console_command_callback(handle.clone_downgrade())));
     return true;
 }
 
