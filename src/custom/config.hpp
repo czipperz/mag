@@ -40,6 +40,7 @@ void console_command_finished_callback(Editor* editor, Client* client,
 
 void rendering_frame_callback(Editor* editor, Client* client);
 
+bool should_run_clang_tidy(const Buffer* buffer);
 bool clang_tidy_script(cz::Str vc_root, const Buffer* buffer, cz::Heap_String* script);
 
 /// Attempt to find a file based on `path` that comes from a substring of a buffer in `directory`.

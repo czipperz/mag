@@ -270,10 +270,20 @@ void rendering_frame_callback(Editor* editor, Client* client) {
     run_clang_tidy_forall_changed_buffers(editor, client);
 }
 
+static bool is_cplusplus(cz::Str name) {
+    return name.ends_with(".c") || name.ends_with(".h") || name.ends_with(".cc") ||
+           name.ends_with(".hh") || name.ends_with(".cpp") || name.ends_with(".hpp") ||
+           name.ends_with(".cxx") || name.ends_with(".hxx") || name.ends_with(".tpp");
+}
+
+bool should_run_clang_tidy(const Buffer* buffer) {
+    return is_cplusplus(buffer->name);
+}
+
 bool clang_tidy_script(cz::Str vc_root, const Buffer* buffer, cz::Heap_String* script) {
     if (vc_root.ends_with("/mag")) {
-        cz::append(script, "clang-tidy ", buffer->directory, buffer->name,
-                   " -p build/debug", cz::null_terminate());
+        cz::append(script, "clang-tidy ", buffer->directory, buffer->name, " -p build/debug",
+                   cz::null_terminate());
         return true;
     } else {
         return false;
@@ -1214,10 +1224,7 @@ void buffer_created_callback(Editor* editor,
             name.len -= 3;
         }
 
-        if (name.ends_with(".c") || name.ends_with(".h") || name.ends_with(".cc") ||
-            name.ends_with(".hh") || name.ends_with(".cpp") || name.ends_with(".hpp") ||
-            name.ends_with(".cxx") || name.ends_with(".hxx") || name.ends_with(".tpp") ||
-            name.ends_with(".glsl") ||
+        if (is_cplusplus(name) || name.ends_with(".glsl") ||
             // Java / C# aren't really C but meh they're close.
             // Note: '.idl' = C# Interface Definition Language.
             name.ends_with(".java") || name.ends_with(".cs") || name.ends_with(".idl")) {

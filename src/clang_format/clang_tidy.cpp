@@ -77,7 +77,7 @@ void run_clang_tidy_forall_changed_buffers_in_window_unified(Editor* editor,
     WITH_CONST_WINDOW_BUFFER(window, client);
 
     // TODO make into custom predicate
-    if (buffer->type != Buffer::FILE || !buffer->name.ends_with(".cpp")) {
+    if (buffer->type != Buffer::FILE || !custom::should_run_clang_tidy(buffer)) {
         return;
     }
 
