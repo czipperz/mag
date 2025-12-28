@@ -16,6 +16,7 @@
 #include "core/editor.hpp"
 #include "core/file.hpp"
 #include "core/program_info.hpp"
+#include "custom/config.hpp"
 
 namespace mag {
 
@@ -470,6 +471,10 @@ bool buffer_completion_engine(Editor* editor,
     for (size_t i = 0; i < editor->buffers.len; ++i) {
         Buffer_Handle* handle = editor->buffers[i].get();
         WITH_CONST_BUFFER_HANDLE(handle);
+
+        if (custom::should_hide_buffer_from_completion(buffer)) {
+            continue;
+        }
 
         cz::String result = {};
         buffer->render_name(context->results_buffer_array.allocator(), &result);

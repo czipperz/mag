@@ -43,6 +43,8 @@ void rendering_frame_callback(Editor* editor, Client* client);
 bool should_run_clang_tidy(const Buffer* buffer);
 bool clang_tidy_script(cz::Str vc_root, const Buffer* buffer, cz::Heap_String* script);
 
+bool should_hide_buffer_from_completion(const Buffer* buffer);
+
 /// Attempt to find a file based on `path` that comes from a substring of a buffer in `directory`.
 /// Note that `vc_dir` and `directory` are automatically tested by `prose::open_relpath`.
 /// These functions are tried from top to bottom.  The first one to return true will be opened.

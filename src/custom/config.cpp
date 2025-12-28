@@ -290,6 +290,10 @@ bool clang_tidy_script(cz::Str vc_root, const Buffer* buffer, cz::Heap_String* s
     }
 }
 
+bool should_hide_buffer_from_completion(const Buffer* buffer) {
+    return buffer->type == Buffer::TEMPORARY && buffer->name.starts_with("*clang-tidy ");
+}
+
 static void create_key_remap(Key_Remap& key_remap) {
     ZoneScoped;
 
