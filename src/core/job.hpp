@@ -158,4 +158,8 @@ bool run_console_command_in(Client* client,
                             const char* working_directory,
                             cz::Str script);
 
+/// Waits until there is no message being shown then shows the given
+/// message.  Takes ownership of `message` which should be heap allocated.
+Synchronous_Job job_show_message_once_no_prompt(cz::String message);
+
 }

@@ -91,7 +91,7 @@ static Job_Tick_Result job_show_message_once_no_prompt_tick(Editor* editor,
     }
 }
 
-static Synchronous_Job job_show_message_once_no_prompt(cz::String message) {
+Synchronous_Job job_show_message_once_no_prompt(cz::String message) {
     cz::String* data = cz::heap_allocator().clone(message);
     CZ_ASSERT(data);
     Synchronous_Job job;
@@ -142,27 +142,6 @@ static Job_Tick_Result process_append_job_tick(Asynchronous_Job_Handler* handler
             continue;
         } else if (read_result == 0) {
             // End of file
-
-            // Show a message that the command finished.
-            {
-                cz::Arc<Buffer_Handle> handle;
-                if (!data->buffer_handle.upgrade(&handle)) {
-                    process_append_job_kill(data);
-                    return Job_Tick_Result::FINISHED;
-                }
-                CZ_DEFER(handle.drop());
-
-                cz::String message = {};
-                CZ_DEFER(message.drop(cz::heap_allocator()));
-                {
-                    WITH_CONST_BUFFER_HANDLE(handle);
-                    message = cz::format("Finished: ", buffer->name);
-                }
-                handler->add_synchronous_job(job_show_message_once_no_prompt(message));
-                message = {};
-            }
-
-            // Cleanup.
             data->std_out.close();
             data->process.join();
             data->buffer_handle.drop();

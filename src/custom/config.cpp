@@ -262,8 +262,16 @@ void console_command_finished_callback(Editor* editor,
     WITH_CONST_BUFFER_HANDLE(buffer_handle);
     if (buffer->mode.next_token == syntax::build_next_token) {
         prose::install_messages(buffer, buffer_handle);
-        mark_clang_tidy_done(buffer_handle);
+
+        if (buffer->type == Buffer::TEMPORARY && buffer->name.starts_with("*clang-tidy ") &&
+            buffer->name.ends_with('*')) {
+            mark_clang_tidy_done(buffer_handle);
+            return;  // Don't show finished message.
+        }
     }
+
+    editor->add_synchronous_job(
+        job_show_message_once_no_prompt(cz::format("Finished: ", buffer->name)));
 }
 
 void rendering_frame_callback(Editor* editor, Client* client) {
