@@ -67,6 +67,10 @@ public:
     /// `increase_reading_to_writing` was stalled similarly to a compare and swap operation.
     Buffer* increase_reading_to_writing();
 
+    /// Assumes `buffer` is controlled by a `cz::Arc<Buffer_Handle>`
+    /// and reinterpret casts it back so the `cz::Arc` can be used.
+    static cz::Arc<Buffer_Handle> cast_to_arc_handle_no_inc(const Buffer* buffer);
+
     /// Unlock the buffer.
     ///
     /// Note: If this thread is a reader then this only actually unlocks

@@ -6,6 +6,7 @@
 #include "core/buffer.hpp"
 #include "core/client.hpp"
 #include "core/command_macros.hpp"
+#include "core/decoration.hpp"
 #include "core/editor.hpp"
 #include "core/file.hpp"
 #include "core/window.hpp"
@@ -162,6 +163,35 @@ void command_alternate_clang_tidy(Editor* editor, Command_Source source) {
     } else {
         source.client->show_message("Unsupported file type");
     }
+}
+
+static bool decoration_clang_tidy_append(Editor* editor,
+                                         Client* client,
+                                         const Buffer* buffer,
+                                         Window_Unified* window,
+                                         cz::Allocator allocator,
+                                         cz::String* string,
+                                         void* _data) {
+    for (size_t i = 0; i < buffer_states.len; ++i) {
+        cz::Arc<Buffer_Handle> handle = Buffer_Handle::cast_to_arc_handle_no_inc(buffer);
+        if (!handle.ptr_equal(buffer_states[i].code_buffer) &&
+            !handle.ptr_equal(buffer_states[i].clang_tidy_buffer)) {
+            continue;
+        }
+
+        if (buffer_states[i].running) {
+            cz::append(allocator, string, "clang-tidy...");
+        }
+        return true;
+    }
+    return false;
+}
+static void decoration_clang_tidy_cleanup(void* _data) {}
+
+Decoration decoration_clang_tidy() {
+    static const Decoration::VTable vtable = {decoration_clang_tidy_append,
+                                              decoration_clang_tidy_cleanup};
+    return {&vtable, nullptr};
 }
 
 }

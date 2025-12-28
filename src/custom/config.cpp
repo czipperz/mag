@@ -1246,6 +1246,8 @@ void buffer_created_callback(Editor* editor,
             BIND(buffer->mode.key_map, "A-x y", cpp::command_copy_path_as_include);
 
             if (is_cplusplus(name)) {
+                buffer->mode.decorations.reserve(1);
+                buffer->mode.decorations.push(decoration_clang_tidy());
                 BIND(buffer->mode.key_map, "A-g l", command_alternate_clang_tidy);
             } else if (name.ends_with(".java")) {
                 BIND(buffer->mode.key_map, "A-g A-t", command_java_open_token_at_point);

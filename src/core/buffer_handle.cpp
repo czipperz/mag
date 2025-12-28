@@ -320,6 +320,11 @@ void Buffer_Handle::unlock() {
     }
 }
 
+cz::Arc<Buffer_Handle> Buffer_Handle::cast_to_arc_handle_no_inc(const Buffer* buffer) {
+    return cz::Arc<Buffer_Handle>::cast_to_arc_no_inc(
+        (Buffer_Handle*)((const char*)buffer - offsetof(Buffer_Handle, buffer)));
+}
+
 cz::Arc<Buffer_Handle> create_buffer_handle(Buffer buffer) {
     cz::Arc<Buffer_Handle> buffer_handle;
     buffer_handle.init_emplace();
