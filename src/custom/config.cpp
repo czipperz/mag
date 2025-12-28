@@ -259,7 +259,11 @@ bool find_tags(cz::Str directory, tags::Engine* engine, cz::String* found_direct
 void console_command_finished_callback(Editor* editor,
                                        Client* client,
                                        const cz::Arc<Buffer_Handle>& buffer_handle) {
-    WITH_CONST_BUFFER_HANDLE(buffer_handle);
+    WITH_BUFFER_HANDLE(buffer_handle);
+
+    // Allow for auto-detection of buffer type based on contents.
+    basic::reset_mode(editor, buffer, buffer_handle);
+
     if (buffer->mode.next_token == syntax::build_next_token) {
         prose::install_messages(buffer, buffer_handle);
 
