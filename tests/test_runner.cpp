@@ -5,10 +5,9 @@
 
 namespace mag {
 
-Test_Runner::Test_Runner() {
+Test_Runner::Test_Runner() : server{} {
     buffer_array.init();
 
-    server = {};
     server.init();
 
     Buffer test_buffer = create_temp_buffer("test");
