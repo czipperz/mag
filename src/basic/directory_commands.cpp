@@ -486,6 +486,8 @@ static void command_directory_rename_path_callback(Editor* editor,
         buffer->name.len = 0;
         buffer->name.reserve(cz::heap_allocator(), name.len);
         buffer->name.append(name);
+
+        reset_mode(editor, buffer, handle);
     }
 }
 
