@@ -1181,6 +1181,9 @@ void buffer_created_callback(Editor* editor,
                    buffer->name.starts_with("*clang-tidy ")) {
             build_log_mode(buffer->mode);
             BIND(buffer->mode.key_map, "g", command_search_buffer_reload);
+            if (buffer->name.starts_with("*clang-tidy ")) {
+                BIND(buffer->mode.key_map, "A-g l", command_alternate_clang_tidy);
+            }
         }
         break;
     }
@@ -1238,7 +1241,9 @@ void buffer_created_callback(Editor* editor,
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
             BIND(buffer->mode.key_map, "A-x y", cpp::command_copy_path_as_include);
 
-            if (name.ends_with(".java")) {
+            if (is_cplusplus(name)) {
+                BIND(buffer->mode.key_map, "A-g l", command_alternate_clang_tidy);
+            } else if (name.ends_with(".java")) {
                 BIND(buffer->mode.key_map, "A-g A-t", command_java_open_token_at_point);
             }
 

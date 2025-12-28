@@ -71,15 +71,10 @@ void run_clang_tidy(Editor* editor,
     run_console_command_in(client, editor, clang_tidy_buffer_handle, vc_root.buffer, script);
 }
 
-void run_clang_tidy_forall_changed_buffers_in_window_unified(Editor* editor,
-                                                             Client* client,
-                                                             Window_Unified* window) {
-    WITH_CONST_WINDOW_BUFFER(window, client);
-
-    if (buffer->type != Buffer::FILE || !custom::should_run_clang_tidy(buffer)) {
-        return;
-    }
-
+void rerun_clang_tidy(Editor* editor,
+                      Client* client,
+                      const cz::Arc<Buffer_Handle>& handle,
+                      const Buffer* buffer) {
     for (size_t i = 0; i < buffer_states.len; ++i) {
         if (handle.ptr_equal(buffer_states[i].code_buffer)) {
             if (buffer->saved_commit_id != buffer_states[i].last_saved_commit_id &&
@@ -97,8 +92,11 @@ void run_clang_tidy_forall_changed_buffers_in_window_unified(Editor* editor,
 
 void run_clang_tidy_forall_changed_buffers_in_window(Editor* editor, Client* client, Window* w) {
     if (w->tag == Window::UNIFIED) {
-        return run_clang_tidy_forall_changed_buffers_in_window_unified(editor, client,
-                                                                       (Window_Unified*)w);
+        WITH_CONST_WINDOW_BUFFER((Window_Unified*)w, client);
+        if (buffer->type != Buffer::FILE || !custom::should_run_clang_tidy(buffer)) {
+            return;
+        }
+        rerun_clang_tidy(editor, client, handle, buffer);
     } else {
         Window_Split* window = (Window_Split*)w;
         run_clang_tidy_forall_changed_buffers_in_window(editor, client, window->first);
@@ -133,6 +131,31 @@ void mark_clang_tidy_done(const cz::Arc<Buffer_Handle>& buffer_handle) {
             buffer_states[i].running = false;
             break;
         }
+    }
+}
+
+REGISTER_COMMAND(command_alternate_clang_tidy);
+void command_alternate_clang_tidy(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    if (buffer->type == Buffer::FILE && custom::should_run_clang_tidy(buffer)) {
+        rerun_clang_tidy(editor, source.client, handle, buffer);
+
+        for (size_t i = 0; i < buffer_states.len; ++i) {
+            if (handle.ptr_equal(buffer_states[i].code_buffer)) {
+                cz::Arc<Buffer_Handle> clang_tidy_buffer_handle;
+                if (buffer_states[i].clang_tidy_buffer.upgrade(&clang_tidy_buffer_handle)) {
+                    CZ_DEFER(clang_tidy_buffer_handle.drop());
+                    source.client->set_selected_buffer(clang_tidy_buffer_handle);
+                }
+                break;
+            }
+        }
+    } else if (buffer->type == Buffer::TEMPORARY && buffer->name.starts_with("*clang-tidy ") &&
+               buffer->name.ends_with('*')) {
+        open_file(editor, source.client,
+                  buffer->name.slice(strlen("*clang-tidy "), buffer->name.len - 1));
+    } else {
+        source.client->show_message("Unsupported file type");
     }
 }
 
