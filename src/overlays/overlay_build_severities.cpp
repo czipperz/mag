@@ -23,7 +23,7 @@ static Face recalculate_face(Contents_Iterator it) {
     if (looking_at(it, ": error:") || looking_at(it, ": fatal error:")) {
         return {1, 0, {}};
     } else if (looking_at(it, ": warning:")) {
-        return {7, 0, {}};
+        return {99, 0, {}};
     } else if (looking_at(it, ": note:")) {
         return {100, 0, {}};
     } else {
