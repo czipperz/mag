@@ -104,13 +104,18 @@ void run_clang_tidy_forall_changed_buffers_in_window(Editor* editor, Client* cli
     }
 }
 
-void cleanup() {
+void cleanup(Editor* editor) {
     for (size_t i = buffer_states.len; i-- > 0;) {
         if (!buffer_states[i].code_buffer.still_alive() ||
             (buffer_states[i].clang_tidy_buffer.is_null() ||
              !buffer_states[i].clang_tidy_buffer.still_alive())) {
             buffer_states[i].code_buffer.drop();
             if (buffer_states[i].clang_tidy_buffer.is_not_null()) {
+                cz::Arc<Buffer_Handle> clang_tidy_buffer_handle;
+                if (buffer_states[i].clang_tidy_buffer.upgrade(&clang_tidy_buffer_handle)) {
+                    CZ_DEFER(clang_tidy_buffer_handle.drop());
+                    editor->kill(clang_tidy_buffer_handle.get());
+                }
                 buffer_states[i].clang_tidy_buffer.drop();
             }
             buffer_states.remove(i);
@@ -121,7 +126,7 @@ void cleanup() {
 
 void run_clang_tidy_forall_changed_buffers(Editor* editor, Client* client) {
     ZoneScoped;
-    cleanup();
+    cleanup(editor);
     run_clang_tidy_forall_changed_buffers_in_window(editor, client, client->window);
 }
 
