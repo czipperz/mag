@@ -12,6 +12,7 @@ namespace mag {
 
 void Editor::create() {
     copy_buffer.init();
+    num_uncompleted_async_jobs = 0;
 }
 
 void Editor::drop() {

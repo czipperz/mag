@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <stdint.h>
 #include <cz/arc.hpp>
 #include <cz/buffer_array.hpp>
@@ -27,6 +28,7 @@ struct Editor {
 
     cz::Vector<Asynchronous_Job> pending_jobs;
     cz::Vector<Synchronous_Job> synchronous_jobs;
+    std::atomic_size_t num_uncompleted_async_jobs;
 
     void create();
     void drop();

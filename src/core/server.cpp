@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cz/char_type.hpp>
 #include <cz/defer.hpp>
@@ -34,6 +35,7 @@ struct Run_Jobs_Data {
     cz::Vector<Asynchronous_Job> jobs;
     cz::Vector<Synchronous_Job> pending_jobs;
     cz::String message;
+    std::atomic_size_t* num_uncompleted_async_jobs;
     bool stop;
 
     Async_Context async_context;
@@ -109,6 +111,7 @@ struct Run_Jobs {
                 }
 
                 if (remove) {
+                    --*data->num_uncompleted_async_jobs;
                     data->jobs.remove(job_index);
                     remove = false;
                 }
@@ -222,6 +225,8 @@ void Server::init() {
     data->added_asynchronous_job_signal.init(0);
     data->mutex.init();
 
+    data->num_uncompleted_async_jobs = &editor.num_uncompleted_async_jobs;
+
     data->async_context.mutex.init();
     data->async_context.permitted = false;
 
@@ -281,6 +286,7 @@ bool Server::slurp_jobs() {
     data->jobs.reserve(cz::heap_allocator(), editor.pending_jobs.len);
     data->jobs.append(editor.pending_jobs);
     if (editor.pending_jobs.len > 0) {
+        editor.num_uncompleted_async_jobs += editor.pending_jobs.len;
         data->added_asynchronous_job_signal.release();
     }
     editor.pending_jobs.len = 0;

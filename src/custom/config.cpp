@@ -60,6 +60,7 @@
 #include "decorations/decoration_line_ending_indicator.hpp"
 #include "decorations/decoration_line_number.hpp"
 #include "decorations/decoration_max_line_number.hpp"
+#include "decorations/decoration_num_jobs.hpp"
 #include "decorations/decoration_pinned_indicator.hpp"
 #include "decorations/decoration_read_only_indicator.hpp"
 #include "gnu_global/generic.hpp"
@@ -791,12 +792,13 @@ static void create_theme(Theme& theme) {
 
     theme.token_faces[Token_Type::BUFFER_TEMPORARY_NAME] = {177, {}, 0};
 
-    theme.decorations.reserve(5);
+    theme.decorations.reserve(6);
     theme.decorations.push(syntax::decoration_line_number());
     theme.decorations.push(syntax::decoration_column_number());
     theme.decorations.push(syntax::decoration_cursor_count());
     theme.decorations.push(syntax::decoration_read_only_indicator());
     theme.decorations.push(syntax::decoration_pinned_indicator());
+    theme.decorations.push(syntax::decoration_num_jobs());
 
     theme.overlays.reserve(9);
     theme.overlays.push(syntax::overlay_matching_region({{}, 237, 0}));
