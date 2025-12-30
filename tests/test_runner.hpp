@@ -22,6 +22,10 @@ struct Test_Runner {
     /// Set a custom tokenizer.
     void set_tokenizer(Tokenizer tokenizer);
 
+    /// Appends the given `text` to the buffer; holds pointer to `text.buffer`.
+    void append(cz::Str text);
+    void append(Window_Unified* window, Buffer* buffer, cz::Str text);
+
     /// `input` should have `|` to represent cursors;
     /// other characters will be inserted into the buffer.
     void setup(cz::Str input);

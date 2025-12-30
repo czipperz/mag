@@ -35,12 +35,29 @@ Test_Runner::~Test_Runner() {
     buffer_array.drop();
 }
 
-void Test_Runner::setup(cz::Str input) {
+void Test_Runner::append(cz::Str text) {
     WITH_SELECTED_BUFFER(&client);
+    append(window, buffer, text);
+}
 
+void Test_Runner::append(Window_Unified* window, Buffer* buffer, cz::Str text) {
     Transaction transaction;
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
+
+    Edit edit;
+    edit.value = SSOStr::from_constant(text);
+    edit.position = 0;
+    edit.flags = Edit::INSERT;
+    transaction.push(edit);
+
+    transaction.commit(&client);
+
+    window->change_index = buffer->changes.len;
+}
+
+void Test_Runner::setup(cz::Str input) {
+    WITH_SELECTED_BUFFER(&client);
 
     cz::String contents = {};
 
@@ -53,7 +70,7 @@ void Test_Runner::setup(cz::Str input) {
             window->cursors.push(cursor);
             ++offset;
         } else {
-            contents.reserve(transaction.value_allocator(), 1);
+            contents.reserve(buffer->commit_buffer_array.allocator(), 1);
             contents.push(input[i]);
         }
     }
@@ -63,16 +80,8 @@ void Test_Runner::setup(cz::Str input) {
     }
 
     if (contents.len > 0) {
-        Edit edit;
-        edit.value = SSOStr::from_constant(contents);
-        edit.position = 0;
-        edit.flags = Edit::INSERT;
-        transaction.push(edit);
+        append(window, buffer, contents);
     }
-
-    transaction.commit(&client);
-
-    window->change_index = buffer->changes.len;
 }
 
 void Test_Runner::setup_region(cz::Str input) {
