@@ -3,20 +3,38 @@
 
 using namespace mag;
 
-TEST_CASE("realign_table") {
+TEST_CASE("realign_table basic") {
     Test_Runner test_runner;
     test_runner.append(
-        "|a|123|\n"
+        "| a | 123 |\n"
         "|-\n"
-        "|bc|45|\n"
-        "|def|6|\n");
+        "| bc | 45 |\n"
+        "| def | 6 |\n");
 
     test_runner.run(basic::command_realign_table);
 
     WITH_CONST_SELECTED_BUFFER(&test_runner.client);
     CHECK(buffer->contents.stringify(test_runner.buffer_array.allocator()) ==
-          "|a   |123 |\n"
-          "|----|----|\n"
-          "|bc  |45  |\n"
-          "|def |6   |\n");
+          "| a   | 123 |\n"
+          "|-----|-----|\n"
+          "| bc  | 45  |\n"
+          "| def | 6   |\n");
+}
+
+TEST_CASE("realign_table missing trailing pipe") {
+    Test_Runner test_runner;
+    test_runner.append(
+        "| a | 123\n"
+        "|-\n"
+        "| bc | 45\n"
+        "| def | 6\n");
+
+    test_runner.run(basic::command_realign_table);
+
+    WITH_CONST_SELECTED_BUFFER(&test_runner.client);
+    CHECK(buffer->contents.stringify(test_runner.buffer_array.allocator()) ==
+          "| a   | 123 |\n"
+          "|-----|-----|\n"
+          "| bc  | 45  |\n"
+          "| def | 6   |\n");
 }

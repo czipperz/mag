@@ -31,7 +31,8 @@ static void rfind_start_of_table(Contents_Iterator* start) {
 
 static void find_all_pipes(Contents_Iterator it,
                            cz::Vector<uint64_t>* pipe_positions,
-                           cz::Vector<size_t>* line_pipe_index) {
+                           cz::Vector<size_t>* line_pipe_index,
+                           cz::Vector<bool>* lines_needing_additional_trailing_pipe) {
     line_pipe_index->reserve(cz::heap_allocator(), 1);
     line_pipe_index->push(0);
 
@@ -56,16 +57,21 @@ static void find_all_pipes(Contents_Iterator it,
         line_pipe_index->reserve(cz::heap_allocator(), 1);
         line_pipe_index->push(pipe_positions->len);
 
+        lines_needing_additional_trailing_pipe->reserve(cz::heap_allocator(), 1);
+        lines_needing_additional_trailing_pipe->push(pipe_positions->last() + 1 < eol.position);
+
         it = eol;
         forward_char(&it);
     }
 }
 
-static uint64_t get_max_pipes_per_line(cz::Slice<uint64_t> line_pipe_index) {
+static uint64_t get_max_pipes_per_line(cz::Slice<uint64_t> line_pipe_index,
+                                       cz::Slice<bool> lines_needing_additional_trailing_pipe) {
     uint64_t max_pipes_per_line = 0;
     for (size_t i = 1; i < line_pipe_index.len; ++i) {
         max_pipes_per_line =
-            cz::max(max_pipes_per_line, line_pipe_index[i] - line_pipe_index[i - 1]);
+            cz::max(max_pipes_per_line, line_pipe_index[i] - line_pipe_index[i - 1] +
+                                            lines_needing_additional_trailing_pipe[i - 1]);
     }
     return max_pipes_per_line;
 }
@@ -254,10 +260,14 @@ void command_realign_table(Editor* editor, Command_Source source) {
     CZ_DEFER(pipe_positions.drop(cz::heap_allocator()));
     cz::Vector<size_t> line_pipe_index = {};
     CZ_DEFER(line_pipe_index.drop(cz::heap_allocator()));
+    cz::Vector<bool> lines_needing_additional_trailing_pipe = {};
+    CZ_DEFER(lines_needing_additional_trailing_pipe.drop(cz::heap_allocator()));
 
-    find_all_pipes(start, &pipe_positions, &line_pipe_index);
+    find_all_pipes(start, &pipe_positions, &line_pipe_index,
+                   &lines_needing_additional_trailing_pipe);
 
-    size_t max_pipes_per_line = get_max_pipes_per_line(line_pipe_index);
+    size_t max_pipes_per_line =
+        get_max_pipes_per_line(line_pipe_index, lines_needing_additional_trailing_pipe);
     if (max_pipes_per_line == 0) {
         source.client->show_message("Couldn't find the table to realign");
         return;
