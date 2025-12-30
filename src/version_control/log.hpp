@@ -44,6 +44,7 @@ void command_git_log_add_filter(Editor* editor, Command_Source source);
 void command_git_log_add_follow(Editor* editor, Command_Source source);
 
 void command_git_diff_master(Editor* editor, Command_Source source);
+void command_git_diff_master_this_file(Editor* editor, Command_Source source);
 
 }
 }
