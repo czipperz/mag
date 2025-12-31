@@ -222,6 +222,7 @@ static void create_edits(Contents_Iterator it,
                 has_starting_space = looking_at(it2, ' ');
             }
             if (!has_starting_space && !all_dashes) {
+                // Insert space immediately after the opening |.
                 ++width;
                 Edit edit;
                 edit.flags = Edit::INSERT;
@@ -231,12 +232,11 @@ static void create_edits(Contents_Iterator it,
                 offset += edit.value.len();
             }
 
+            // Remove trailing padding that is no longer necessary.
             if (width > desired) {
-                // Make the padding string.
                 uint64_t padding = width - desired;
                 cz::Str str = base_string.slice_end(padding);
 
-                // Remove padding.
                 Edit edit;
                 edit.flags = Edit::REMOVE;
                 edit.position = end + offset - str.len;
@@ -249,13 +249,12 @@ static void create_edits(Contents_Iterator it,
                     width = desired;
             }
 
+            // Insert trailing padding to align the column and an empty cell if one doesn't exist.
             if (width < desired || !has_pipe) {
-                // Make the padding string.
                 uint64_t padding = desired - width;
                 cz::Str str = (has_pipe ? base_string.slice_end(padding)
                                         : base_string.slice_start(base_string.len - padding - 1));
 
-                // Insert padding.
                 Edit edit;
                 edit.flags = Edit::INSERT;
                 edit.position = end + offset;
