@@ -128,6 +128,12 @@ static void calculate_desired_widths_for_each_column(Contents_Iterator it,
             if (actual_width > (*actual_widths)[i - 1])
                 (*actual_widths)[i - 1] = actual_width;
 
+            bool has_starting_space = false;
+            if (base_index + i - 1 < end_index) {
+                it2.advance_to(start);
+                has_starting_space = looking_at(it2, ' ');
+            }
+
             if (base_index + i < end_index) {
                 it2.advance_to(end);
                 while (!it2.at_bob()) {
@@ -140,7 +146,7 @@ static void calculate_desired_widths_for_each_column(Contents_Iterator it,
                 end = it2.position;
             }
 
-            uint64_t desired_width = end - start + 1;
+            uint64_t desired_width = end - start + 1 + !has_starting_space;
             if (desired_width > (*desired_widths)[i - 1])
                 (*desired_widths)[i - 1] = desired_width;
         }
@@ -157,7 +163,7 @@ static void allocate_strings_of_biggest_width(cz::Slice<uint64_t> actual_widths,
     uint64_t biggest_width = 0;
     CZ_DEBUG_ASSERT(actual_widths.len == desired_widths.len);
     for (size_t i = 0; i < desired_widths.len; ++i) {
-        if (actual_widths[i] - desired_widths[i] > biggest_width)
+        if (actual_widths[i] > biggest_width + desired_widths[i])
             biggest_width = actual_widths[i] - desired_widths[i];
         if (desired_widths[i] > biggest_width)
             biggest_width = desired_widths[i];
@@ -190,6 +196,7 @@ static void create_edits(Contents_Iterator it,
     for (size_t l = 0; l < line_pipe_index.len - 1; ++l) {
         size_t base_index = line_pipe_index[l];
         size_t end_index = line_pipe_index[l + 1];
+        Contents_Iterator it2 = it;
 
         // Look for any non-dash characters in the line.
         bool all_dashes = look_for_any_non_dash_characters_and_go_to_end_of_line(&it);
@@ -208,6 +215,21 @@ static void create_edits(Contents_Iterator it,
             uint64_t desired = desired_widths[i - 1];
             if (has_pipe && width == desired)
                 continue;
+
+            bool has_starting_space = false;
+            if (base_index + i - 1 < end_index) {
+                it2.advance_to(start);
+                has_starting_space = looking_at(it2, ' ');
+            }
+            if (!has_starting_space && !all_dashes) {
+                ++width;
+                Edit edit;
+                edit.flags = Edit::INSERT;
+                edit.position = start + offset;
+                edit.value = SSOStr::from_constant(" ");
+                transaction->push(edit);
+                offset += edit.value.len();
+            }
 
             if (width > desired) {
                 // Make the padding string.
