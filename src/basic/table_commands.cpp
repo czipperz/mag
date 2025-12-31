@@ -118,12 +118,13 @@ static void calculate_desired_widths_for_each_column(Contents_Iterator it,
         }
 
         for (size_t i = 1; i < max_pipes_per_line; ++i) {
-            uint64_t start = (base_index + i - 1 < end_index ? pipe_positions[base_index + i - 1]
-                                                             : it.position - 1);
+            uint64_t start =
+                (base_index + i - 1 < end_index ? pipe_positions[base_index + i - 1] + 1
+                                                : it.position);
             uint64_t end = (base_index + i < end_index ? pipe_positions[base_index + i]  //
                                                        : it.position);
 
-            uint64_t actual_width = end - start;
+            uint64_t actual_width = end - start + 1;
             if (actual_width > (*actual_widths)[i - 1])
                 (*actual_widths)[i - 1] = actual_width;
 
@@ -139,7 +140,7 @@ static void calculate_desired_widths_for_each_column(Contents_Iterator it,
                 end = it2.position;
             }
 
-            uint64_t desired_width = end - start;
+            uint64_t desired_width = end - start + 1;
             if (desired_width > (*desired_widths)[i - 1])
                 (*desired_widths)[i - 1] = desired_width;
         }
