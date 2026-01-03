@@ -1196,6 +1196,13 @@ void buffer_created_callback(Editor* editor,
             buffer->mode.next_token = syntax::search_next_token;
             buffer->mode.perform_iteration = basic::search_buffer_iterate;
             search_key_map(buffer->mode.key_map);
+            if (buffer->name.starts_with("*ag ") && buffer->name.ends_with('*')) {
+                buffer->mode.overlays.reserve(1);
+                buffer->mode.overlays.push(syntax::overlay_highlight_string(
+                    editor->theme.special_faces[Face_Type::SEARCH_MODE_RESULT_HIGHLIGHT],
+                    buffer->name.slice(strlen("*ag "), buffer->name.len - 1),
+                    Case_Handling::CASE_SENSITIVE, Token_Type::SEARCH_RESULT));
+            }
         } else if (buffer->name.starts_with("*build ") ||
                    buffer->name.starts_with("*clang-tidy ")) {
             build_log_mode(buffer->mode);

@@ -7,9 +7,7 @@
 #include "core/command_macros.hpp"
 #include "core/file.hpp"
 #include "core/movement.hpp"
-#include "core/overlay.hpp"
 #include "core/token.hpp"
-#include "overlays/overlay_highlight_string.hpp"
 #include "prose/helpers.hpp"
 
 namespace mag {
@@ -55,16 +53,7 @@ void run_search(Client* client,
 
     client->close_fused_paired_windows();
 
-    cz::Arc<Buffer_Handle> handle;
-    if (run_console_command(client, editor, directory, args, buffer_name, &handle) ==
-        Run_Console_Command_Result::SUCCESS_NEW_BUFFER) {
-        Buffer* buffer = handle->lock_writing();
-        CZ_DEFER(handle->unlock());
-        buffer->mode.overlays.reserve(1);
-        buffer->mode.overlays.push(syntax::overlay_highlight_string(
-            editor->theme.special_faces[Face_Type::SEARCH_MODE_RESULT_HIGHLIGHT], query,
-            Case_Handling::CASE_SENSITIVE, Token_Type::SEARCH_RESULT));
-    }
+    run_console_command(client, editor, directory, args, buffer_name);
 }
 
 template <bool copy_directory(Client*, cz::Str, cz::String*), bool query_word>
