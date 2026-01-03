@@ -26,6 +26,9 @@ void command_search_buffer_open_selected(Editor* editor, Command_Source source);
 void command_search_buffer_open_next(Editor* editor, Command_Source source);
 void command_search_buffer_open_previous(Editor* editor, Command_Source source);
 
+void command_search_buffer_next_file(Editor* editor, Command_Source source);
+void command_search_buffer_previous_file(Editor* editor, Command_Source source);
+
 void search_buffer_iterate(Editor* editor, Client* client, bool select_next);
 
 }

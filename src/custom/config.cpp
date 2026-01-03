@@ -874,6 +874,9 @@ static void search_key_map(Key_Map& key_map) {
     BIND(key_map, "p", command_search_buffer_open_previous_no_swap);
     BIND(key_map, "N", command_forward_line);
     BIND(key_map, "P", command_backward_line);
+
+    BIND(key_map, "f", command_search_buffer_next_file);
+    BIND(key_map, "F", command_search_buffer_previous_file);
 }
 
 static void mini_buffer_key_map(Key_Map& key_map) {

@@ -281,6 +281,75 @@ void command_search_buffer_open_previous(Editor* editor, Command_Source source) 
     toggle_cycle_window(source.client);
 }
 
+REGISTER_COMMAND(command_search_buffer_next_file);
+void command_search_buffer_next_file(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    if (buffer->mode.next_token != syntax::search_next_token) {
+        source.client->show_message("Error: trying to parse buffer not in search mode");
+        return;
+    }
+
+    Contents_Iterator it = buffer->contents.end();
+    for (size_t c = window->cursors.len; c-- > 0;) {
+        it.retreat_to(window->cursors[c].point);
+        start_of_line(&it);
+        Contents_Iterator baseline = it;
+        Contents_Iterator baseline_end = baseline;
+        (void)find_this_line(&baseline_end, ':');
+
+        while (1) {
+            end_of_line(&it);
+            forward_char(&it);
+            if (it.at_eob())
+                break;
+
+            Contents_Iterator it_end = it;
+            (void)find_this_line(&it_end, ':');
+            if (!matches(baseline, baseline_end.position, it, it_end.position))
+                break;
+        }
+
+        window->cursors[c].point = it.position;
+    }
+}
+
+REGISTER_COMMAND(command_search_buffer_previous_file);
+void command_search_buffer_previous_file(Editor* editor, Command_Source source) {
+    WITH_CONST_SELECTED_BUFFER(source.client);
+    if (buffer->mode.next_token != syntax::search_next_token) {
+        source.client->show_message("Error: trying to parse buffer not in search mode");
+        return;
+    }
+
+    Contents_Iterator it = buffer->contents.start();
+    for (size_t c = 0; c < window->cursors.len; ++c) {
+        it.advance_to(window->cursors[c].point);
+        start_of_line(&it);
+        backward_char(&it);
+        start_of_line(&it);
+
+        Contents_Iterator baseline = it;
+        Contents_Iterator baseline_end = baseline;
+        (void)find_this_line(&baseline_end, ':');
+
+        while (1) {
+            backward_char(&it);
+            start_of_line(&it);
+            if (it.at_bob())
+                break;
+
+            Contents_Iterator it_end = it;
+            (void)find_this_line(&it_end, ':');
+            if (!matches(baseline, baseline_end.position, it, it_end.position))
+                break;
+        }
+
+        end_of_line(&it);
+        forward_char(&it);
+        window->cursors[c].point = it.position;
+    }
+}
+
 void search_buffer_iterate(Editor* editor, Client* client, bool select_next) {
     if (select_next)
         search_open_next_no_swap(editor, client);
