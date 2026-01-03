@@ -1192,8 +1192,7 @@ void buffer_created_callback(Editor* editor,
             BIND(buffer->mode.key_map, "ENTER", version_control::command_show_commit_in_blame);
             BIND(buffer->mode.key_map, "A-j", version_control::command_show_commit_in_blame);
             BIND(buffer->mode.key_map, "g", version_control::command_blame_reload);
-        } else if (buffer->name.starts_with("*git grep ") || buffer->name.starts_with("*ag ") ||
-                   buffer->name.starts_with("*shell ")) {
+        } else if (buffer->name.starts_with("*ag ") || buffer->name.starts_with("*shell ")) {
             buffer->mode.next_token = syntax::search_next_token;
             buffer->mode.perform_iteration = basic::search_buffer_iterate;
             search_key_map(buffer->mode.key_map);
