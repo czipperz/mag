@@ -9,5 +9,7 @@ namespace basic {
 
 void command_realign_table(Editor* editor, Command_Source source);
 
+void command_csv_to_table(Editor* editor, Command_Source source);
+
 }
 }

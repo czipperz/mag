@@ -269,13 +269,7 @@ static void create_edits(Contents_Iterator it,
     }
 }
 
-REGISTER_COMMAND(command_realign_table);
-void command_realign_table(Editor* editor, Command_Source source) {
-    WITH_SELECTED_BUFFER(source.client);
-
-    // Assume for now that all cursors are in the same table.
-    Contents_Iterator start =
-        buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+static bool realign_table(Client* client, Contents_Iterator start, Transaction* transaction) {
     rfind_start_of_table(&start);
 
     cz::Vector<uint64_t> pipe_positions = {};
@@ -291,8 +285,7 @@ void command_realign_table(Editor* editor, Command_Source source) {
     size_t max_pipes_per_line =
         get_max_pipes_per_line(line_pipe_index, lines_needing_additional_trailing_pipe);
     if (max_pipes_per_line == 0) {
-        source.client->show_message("Couldn't find the table to realign");
-        return;
+        return false;
     }
 
     // Calculate the maximum actual and desired width of each column.
@@ -303,12 +296,105 @@ void command_realign_table(Editor* editor, Command_Source source) {
     calculate_desired_widths_for_each_column(start, pipe_positions, line_pipe_index,
                                              max_pipes_per_line, &actual_widths, &desired_widths);
 
+    create_edits(start, pipe_positions, line_pipe_index, max_pipes_per_line, actual_widths,
+                 desired_widths, transaction);
+    return true;
+}
+
+REGISTER_COMMAND(command_realign_table);
+void command_realign_table(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
     Transaction transaction;
     transaction.init(buffer);
     CZ_DEFER(transaction.drop());
 
-    create_edits(start, pipe_positions, line_pipe_index, max_pipes_per_line, actual_widths,
-                 desired_widths, &transaction);
+    // Assume for now that all cursors are in the same table.
+    Contents_Iterator start =
+        buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
+    if (!realign_table(source.client, start, &transaction)) {
+        source.client->show_message("Couldn't find the table to realign");
+        return;
+    }
+
+    transaction.commit(source.client);
+}
+
+static void replace_commas_with_pipes_and_install_at_sol(Contents_Iterator it,
+                                                         uint64_t end,
+                                                         Transaction* transaction) {
+    bool after_newline = true;
+    uint64_t offset = 0;
+
+    Edit insert_pipe;
+    insert_pipe.flags = Edit::INSERT;
+    insert_pipe.value = SSOStr::from_char('|');
+
+    Edit remove_comma;
+    remove_comma.flags = Edit::REMOVE;
+    remove_comma.value = SSOStr::from_char(',');
+
+    for (; it.position < end; it.advance()) {
+        if (after_newline) {
+            insert_pipe.position = it.position + offset;
+            transaction->push(insert_pipe);
+            ++offset;
+            after_newline = false;
+        }
+        char ch = it.get();
+        if (ch == ',') {
+            remove_comma.position = it.position + offset;
+            insert_pipe.position = it.position + offset;
+            transaction->push(remove_comma);
+            transaction->push(insert_pipe);
+        } else if (ch == '\n') {
+            insert_pipe.position = it.position + offset;
+            transaction->push(insert_pipe);
+            ++offset;
+            after_newline = true;
+        }
+    }
+}
+
+REGISTER_COMMAND(command_csv_to_table);
+void command_csv_to_table(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction;
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    if (!window->show_marks) {
+        source.client->show_message("Must select region to make into table");
+        return;
+    }
+
+    // Assume for now that all cursors are in the same table.
+    Contents_Iterator start = buffer->contents.iterator_at(window->sel().start());
+    Contents_Iterator end = buffer->contents.iterator_at(window->sel().end());
+    start_of_line(&start);
+    if (!at_start_of_line(end)) {
+        end_of_line(&end);
+        forward_char(&end);
+    }
+
+    replace_commas_with_pipes_and_install_at_sol(start, end.position, &transaction);
+
+    if (transaction.edits.len == 0) {
+        source.client->show_message("Couldn't find csv table to realign");
+        return;
+    }
+
+    if (!transaction.commit(source.client)) {
+        return;
+    }
+
+    if (!realign_table(source.client, start, &transaction)) {
+        source.client->show_message("Couldn't find the table to realign");
+        return;
+    }
+
+    buffer->undo();
 
     transaction.commit(source.client);
 }

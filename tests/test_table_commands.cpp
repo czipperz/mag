@@ -56,3 +56,19 @@ TEST_CASE("realign_table no whitespace") {
           "| bc  | 45  |\n"
           "| def | 6   |\n");
 }
+
+TEST_CASE("csv_to_table") {
+    Test_Runner test_runner;
+    test_runner.setup_region(
+        "|a,123\n"
+        "bc,45\n"
+        "def,6\n)");
+
+    test_runner.run(basic::command_csv_to_table);
+
+    WITH_CONST_SELECTED_BUFFER(&test_runner.client);
+    CHECK(buffer->contents.stringify(test_runner.buffer_array.allocator()) ==
+          "| a   | 123 |\n"
+          "| bc  | 45  |\n"
+          "| def | 6   |\n");
+}
