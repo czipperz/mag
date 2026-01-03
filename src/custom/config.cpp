@@ -1190,6 +1190,11 @@ void buffer_created_callback(Editor* editor,
             BIND(buffer->mode.key_map, "P", version_control::command_git_log_previous_diff);
             BIND(buffer->mode.key_map, "ENTER",
                  version_control::command_git_log_open_selected_commit_or_diff);
+
+            BIND(buffer->mode.key_map, "w",
+                 version_control::command_git_diff_add_ignore_whitespace);
+            BIND(buffer->mode.key_map, "W",
+                 version_control::command_git_diff_remove_ignore_whitespace);
         } else if (buffer->name.starts_with("*git blame ")) {
             buffer->mode.next_token = version_control::git_blame_next_token;
             BIND(buffer->mode.key_map, "ENTER", version_control::command_show_commit_in_blame);

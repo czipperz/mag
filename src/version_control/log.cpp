@@ -713,5 +713,79 @@ void command_git_diff_master_this_file(Editor* editor, Command_Source source) {
     run_console_command(source.client, editor, root.buffer, command, name);
 }
 
+namespace {
+struct InplaceCommand {
+    cz::String script;
+    cz::String directory;
+    cz::String name;
+    cz::Str prefix;
+
+    void drop() {
+        script.drop(cz::heap_allocator());
+        directory.drop(cz::heap_allocator());
+        name.drop(cz::heap_allocator());
+    }
+
+    bool init(Client* client) {
+        {
+            WITH_CONST_SELECTED_BUFFER(client);
+
+            if (buffer->type != Buffer::TEMPORARY || buffer->directory.len == 0 ||
+                buffer->name.len < 2) {
+                client->show_message("Error: must be ran from valid temporary buffer");
+                return false;
+            }
+
+            Contents_Iterator start = buffer->contents.start();
+            Contents_Iterator end = start;
+            end_of_line(&end);
+            buffer->contents.slice_into(cz::heap_allocator(), start, end.position, &script);
+
+            directory = buffer->directory.clone_null_terminate(cz::heap_allocator());
+            name = buffer->name.slice(1, buffer->name.len - 1).clone(cz::heap_allocator());
+        }
+
+        if (script == "git diff" || script.starts_with("git diff ")) {
+            prefix = "git diff";
+        } else if (script == "git log" || script.starts_with("git log ")) {
+            prefix = "git log";
+        } else {
+            client->show_message("Error: couldn't recognize command line");
+            return false;
+        }
+
+        return true;
+    }
+};
+}
+
+REGISTER_COMMAND(command_git_diff_add_ignore_whitespace);
+void command_git_diff_add_ignore_whitespace(Editor* editor, Command_Source source) {
+    InplaceCommand cmd = {};
+    CZ_DEFER(cmd.drop());
+    if (!cmd.init(source.client))
+        return;
+
+    cmd.script.reserve_exact(cz::heap_allocator(), strlen(" -w"));
+    cmd.script.insert(cmd.prefix.len, " -w");
+
+    run_console_command(source.client, editor, cmd.directory.buffer, cmd.script, cmd.name);
+}
+
+REGISTER_COMMAND(command_git_diff_remove_ignore_whitespace);
+void command_git_diff_remove_ignore_whitespace(Editor* editor, Command_Source source) {
+    InplaceCommand cmd = {};
+    CZ_DEFER(cmd.drop());
+    if (!cmd.init(source.client))
+        return;
+
+    cz::Str suffix = cmd.script.slice_start(cmd.prefix.len);
+    if (!suffix.starts_with(" -w"))
+        return;
+    cmd.script.remove_many(cmd.prefix.len, strlen(" -w"));
+
+    run_console_command(source.client, editor, cmd.directory.buffer, cmd.script, cmd.name);
+}
+
 }
 }
