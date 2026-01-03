@@ -1,5 +1,6 @@
 #include "test_runner.hpp"
 
+#include <stdio.h>
 #include <cz/sort.hpp>
 #include "syntax/tokenize_general.hpp"
 
@@ -210,6 +211,17 @@ void Test_Runner::run(Command_Function command) {
     Command_Source source = {};
     source.client = &client;
     command(&server.editor, source);
+
+    if (client._message.tag != Message::NONE) {
+        WITH_CONST_BUFFER_HANDLE(client.messages_buffer_handle);
+        SSOStr message = buffer->contents.slice(cz::heap_allocator(),
+                                                buffer->contents.iterator_at(client._message.start),
+                                                client._message.end);
+        CZ_DEFER(message.drop(cz::heap_allocator()));
+        fputs("Client has message: ", stdout);
+        fwrite(message.buffer(), 1, message.len(), stdout);
+        putchar('\n');
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
