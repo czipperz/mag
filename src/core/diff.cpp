@@ -292,10 +292,13 @@ const char* reload_file(Buffer* buffer) {
     }
 
     char diff_file[L_tmpnam];
+    char stderr_file[L_tmpnam];
     {
         if (!tmpnam(diff_file)) {
-            // Couldn't create a temp file.
             return "Error: couldn't create a temp file";
+        }
+        if (!tmpnam(stderr_file)) {
+            return "Error: couldn't create a stderr file";
         }
 
         cz::Process_Options options;
@@ -312,7 +315,10 @@ const char* reload_file(Buffer* buffer) {
         }
         CZ_DEFER(options.std_out.close());
 
-        options.std_err = cz::std_err_file();
+        if (!options.std_err.open(stderr_file)) {
+            return "Error creating temp file to store diff stderr in";
+        }
+        CZ_DEFER(options.std_err.close());
 
         cz::String buffer_path = {};
         CZ_DEFER(buffer_path.drop(cz::heap_allocator()));
@@ -325,6 +331,15 @@ const char* reload_file(Buffer* buffer) {
             return "Error launching diff";
         }
         process.join();
+    }
+
+    cz::String std_err = {};
+    CZ_DEFER(std_err.drop(cz::heap_allocator()));
+    if (!cz::read_to_string(stderr_file, cz::heap_allocator(), &std_err)) {
+        return "Error opening stderr file";
+    }
+    if (std_err.len != 0) {
+        return "Error: diff stderr was nonempty";  // TODO propagate stderr
     }
 
     cz::Input_File file;
