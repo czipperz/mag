@@ -669,7 +669,7 @@ void command_git_log_add_follow(Editor* editor, Command_Source source) {
 
 static const char* git_dm_command =
     "git diff \"$(git merge-base origin/\"$(git symbolic-ref refs/remotes/origin/HEAD | sed "
-    "'s@^refs/remotes/origin/@@')\"  HEAD)\"";
+    "'s@^refs/remotes/origin/@@')\" HEAD)\"";
 
 REGISTER_COMMAND(command_git_diff_master);
 void command_git_diff_master(Editor* editor, Command_Source source) {
