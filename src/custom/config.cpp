@@ -1274,6 +1274,7 @@ void buffer_created_callback(Editor* editor,
             BIND(buffer->mode.key_map, "A-x e", cpp::command_extract_variable);
             BIND(buffer->mode.key_map, "ENTER", command_insert_newline_split_pairs);
             BIND(buffer->mode.key_map, "A-x y", cpp::command_copy_path_as_include);
+            BIND(buffer->mode.key_map, "A-x A-y", cpp::command_paste_as_include_path);
 
             if (is_cplusplus(name)) {
                 buffer->mode.decorations.reserve(1);

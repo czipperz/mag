@@ -13,6 +13,7 @@
 #include "core/match.hpp"
 #include "core/movement.hpp"
 #include "core/transaction.hpp"
+#include "core/token_iterator.hpp"
 #include "core/window.hpp"
 #include "prose/alternate.hpp"
 #include "reformat_commands.hpp"
@@ -534,6 +535,63 @@ void command_copy_path_as_include(Editor* editor, Command_Source source) {
     basic::save_copy(&source.client->global_copy_chain, editor,
                      SSOStr::from_constant(cz::format("#include \"", relative_path, "\"\n")),
                      source.client);
+}
+
+static Contents_Iterator skip_comments_at_start_of_file(const Buffer* buffer) {
+    Forward_Token_Iterator it;
+    if (!it.init_at_or_after(buffer, 0))
+        return buffer->contents.start();
+
+    while (it.token().type == Token_Type::COMMENT || it.token().type == Token_Type::DOC_COMMENT) {
+        uint64_t end = it.token().end;
+        if (!it.next()) {
+            it.tokenization_iterator.retreat_to(end);
+            return it.tokenization_iterator;
+        }
+    }
+    return it.iterator_at_token_start();
+}
+
+static void skip_over_existing_includes(Contents_Iterator* it) {
+    Contents_Iterator check_point = *it;
+    while (1) {
+        while (!it->at_eob() && cz::is_space(it->get()))
+            it->advance();
+        if (!looking_at(*it, '#'))
+            break;
+        it->advance();
+
+        forward_through_whitespace(it);
+        if (!looking_at(*it, "include"))
+            break;
+        end_of_line(it);
+        check_point = *it;
+    }
+
+    *it = check_point;
+    end_of_line(it);
+    forward_char(it);
+}
+
+REGISTER_COMMAND(command_paste_as_include_path);
+void command_paste_as_include_path(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+
+    Transaction transaction = {};
+    transaction.init(buffer);
+    CZ_DEFER(transaction.drop());
+
+    Contents_Iterator it = skip_comments_at_start_of_file(buffer);
+    skip_over_existing_includes(&it);
+
+    Edit insert;
+    insert.value = source.client->global_copy_chain->value;
+    insert.position = it.position;
+    insert.flags = Edit::INSERT;
+    transaction.push(insert);
+
+    if (!transaction.commit(source.client))
+        return;
 }
 
 REGISTER_COMMAND(command_insert_divider_60);
