@@ -69,7 +69,8 @@ struct Buffer_Messages_Builder {
             all_messages.file_names[i] = this->file_names[i];
             all_messages.file_messages[i] = {
                 buffer_array_allocator.alloc_slice<Line_And_Column>(file_messages.len),
-                buffer_array_allocator.alloc_slice<cz::Str>(file_messages.len)};
+                buffer_array_allocator.alloc_slice<cz::Str>(file_messages.len), (size_t)-1,
+                buffer_array_allocator.alloc_slice<uint64_t>(file_messages.len)};
             for (size_t j = 0; j < file_messages.len; ++j) {
                 all_messages.file_messages[i].lines_and_columns[j] = {file_messages[j].line,
                                                                       file_messages[j].column};
@@ -166,11 +167,30 @@ struct Buffer_State {
 };
 static cz::Vector<Buffer_State> buffer_states;
 
-File_Messages get_file_messages(cz::Str path) {
+static void resolve_positions(const Buffer* buffer, File_Messages* file_messages) {
+    if (file_messages->resolved_change_index == (size_t)-1) {
+        for (size_t i = 0; i < file_messages->lines_and_columns.len; ++i) {
+            file_messages->resolved_positions[i] =
+                iterator_at_line_column(buffer->contents, file_messages->lines_and_columns[i].line,
+                                        file_messages->lines_and_columns[i].column)
+                    .position;
+        }
+    } else {
+        cz::Slice<const Change> changes =
+            buffer->changes.slice_start(file_messages->resolved_change_index);
+        for (size_t i = 0; i < file_messages->lines_and_columns.len; ++i) {
+            position_after_changes(changes, &file_messages->resolved_positions[i]);
+        }
+    }
+    file_messages->resolved_change_index = buffer->changes.len;
+}
+
+File_Messages get_file_messages(const Buffer* buffer, cz::Str path) {
     for (size_t i = buffer_states.len; i-- > 0;) {
         Buffer_Messages messages = buffer_states[i].messages;
         for (size_t j = 0; j < messages.file_names.len; ++j) {
             if (messages.file_names[j] == path) {
+                resolve_positions(buffer, &messages.file_messages[j]);
                 return messages.file_messages[j];
             }
         }

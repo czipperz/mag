@@ -14,7 +14,6 @@ struct Data {
     // Per-window transient state.
     prose::File_Messages file_messages;
     Client* client;
-    prose::Line_And_Column current_line_and_column;
     uint64_t message_index;
     Forward_Token_Iterator token_it;
 };
@@ -38,19 +37,14 @@ static void overlay_compiler_messages_start_frame(Editor*,
     path.reserve_exact(cz::heap_allocator(), buffer->directory.len + buffer->name.len);
     path.append(buffer->directory);
     path.append(buffer->name);
-    data->file_messages = prose::get_file_messages(path);
+    data->file_messages = prose::get_file_messages(buffer, path);
 
     data->client = client;
 
-    Contents_Iterator sol = iterator;
-    start_of_line(&sol);
-    data->current_line_and_column = {iterator.get_line_number(),
-                                     iterator.position - sol.position + 1};
-
-    data->message_index = std::lower_bound(data->file_messages.lines_and_columns.begin(),
-                                           data->file_messages.lines_and_columns.end(),
-                                           data->current_line_and_column) -
-                          data->file_messages.lines_and_columns.begin();
+    data->message_index =
+        std::lower_bound(data->file_messages.resolved_positions.begin(),
+                         data->file_messages.resolved_positions.end(), iterator.position) -
+        data->file_messages.resolved_positions.begin();
 
     data->token_it = {};
     data->token_it.init_at_or_after(buffer, iterator.position);
@@ -62,18 +56,9 @@ static Face overlay_compiler_messages_get_face_and_advance(
     Contents_Iterator current_position_iterator,
     void* _data) {
     Data* data = (Data*)_data;
-    if (data->message_index >= data->file_messages.lines_and_columns.len) {
+    if (data->message_index >= data->file_messages.resolved_positions.len) {
         return {};
     }
-
-    CZ_DEFER({
-        if (current_position_iterator.get() == '\n') {
-            ++data->current_line_and_column.line;
-            data->current_line_and_column.column = 1;
-        } else {
-            ++data->current_line_and_column.column;
-        }
-    });
 
     // One message per token.  We want to keep showing the message & overlay until
     // the end of the token thus don't advance the message until that point.
@@ -81,24 +66,18 @@ static Face overlay_compiler_messages_get_face_and_advance(
         !data->token_it.token().contains_position(current_position_iterator.position)) {
         data->token_it.find_at_or_after(current_position_iterator.position);
 
-        while (data->file_messages.lines_and_columns[data->message_index] <
-               data->current_line_and_column) {
+        while (data->file_messages.resolved_positions[data->message_index] <
+               current_position_iterator.position) {
             ++data->message_index;
-            if (data->message_index == data->file_messages.lines_and_columns.len)
+            if (data->message_index == data->file_messages.resolved_positions.len)
                 return {};
         }
     }
 
     if (data->token_it.has_token() &&
         data->token_it.token().contains_position(current_position_iterator.position) &&
-        data->current_line_and_column.line ==
-            data->file_messages.lines_and_columns[data->message_index].line &&
-        data->current_line_and_column.column -
-                (current_position_iterator.position - data->token_it.token().start) <=
-            data->file_messages.lines_and_columns[data->message_index].column &&
-        data->current_line_and_column.column +
-                (data->token_it.token().end - current_position_iterator.position) >
-            data->file_messages.lines_and_columns[data->message_index].column) {
+        data->token_it.token().contains_position(
+            data->file_messages.resolved_positions[data->message_index])) {
         if (data->client->_message.tag == Message::NONE &&
             data->client->selected_window() == window &&
             window->sel().point == current_position_iterator.position) {
@@ -122,10 +101,7 @@ static void overlay_compiler_messages_skip_forward_same_line(const Buffer*,
                                                              Window_Unified*,
                                                              Contents_Iterator start,
                                                              uint64_t end,
-                                                             void* _data) {
-    Data* data = (Data*)_data;
-    data->current_line_and_column.column += end - start.position;
-}
+                                                             void* _data) {}
 
 static void overlay_compiler_messages_end_frame(void*) {}
 

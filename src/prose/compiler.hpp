@@ -26,6 +26,8 @@ struct Line_And_Column {
 struct File_Messages {
     cz::Slice<Line_And_Column> lines_and_columns;
     cz::Slice<cz::Str> messages;
+    size_t resolved_change_index;
+    cz::Slice<uint64_t> resolved_positions;
 };
 
 struct Buffer_Messages {
@@ -37,7 +39,7 @@ Buffer_Messages parse_messages(Contents_Iterator it,
                                cz::Str directory,
                                cz::Allocator buffer_array_allocator);
 
-File_Messages get_file_messages(cz::Str path);
+File_Messages get_file_messages(const Buffer* buffer, cz::Str path);
 
 void command_install_compiler_messages(Editor* editor, Command_Source source);
 
