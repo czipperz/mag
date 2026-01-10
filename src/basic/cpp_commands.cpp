@@ -528,6 +528,9 @@ void command_copy_path_as_include(Editor* editor, Command_Source source) {
     else if (relative_path.starts_with("include/"))
         relative_path.remove_many(0, strlen("include/"));
 
+    if (relative_path.ends_with(".cpp"))
+        relative_path[relative_path.len - 3] = 'h';
+
     basic::save_copy(&source.client->global_copy_chain, editor,
                      SSOStr::from_constant(cz::format("#include \"", relative_path, "\"\n")),
                      source.client);
