@@ -28,7 +28,7 @@ void Buffer_Handle::init(Buffer buffer) {
     context->CustomName(buffer.name.buffer, buffer.name.len);
 #endif
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
     associated_threads = {};
     associated_threads.reserve(cz::heap_allocator(), 1);
 #endif
@@ -40,7 +40,7 @@ void Buffer_Handle::init(Buffer buffer) {
 void Buffer_Handle::drop() {
     buffer.drop();
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
     associated_threads.drop(cz::heap_allocator());
 #endif
 
@@ -52,7 +52,7 @@ void Buffer_Handle::drop() {
 #endif
 }
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
 static bool already_locked(cz::Slice<uint64_t> associated_threads, size_t* index) {
     uint64_t value = tracy::GetThreadHandle();
     for (size_t i = 0; i < associated_threads.len; ++i) {
@@ -76,7 +76,7 @@ Buffer* Buffer_Handle::lock_writing() {
         mutex.lock();
         CZ_DEFER(mutex.unlock());
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
         size_t index;
         if (already_locked(associated_threads, &index)) {
             CZ_PANIC(
@@ -94,7 +94,7 @@ Buffer* Buffer_Handle::lock_writing() {
 
         active_state = LOCKED_WRITING;
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
         associated_threads.push(tracy::GetThreadHandle());
 #endif
     }
@@ -119,7 +119,7 @@ const Buffer* Buffer_Handle::lock_reading() {
         mutex.lock();
         CZ_DEFER(mutex.unlock());
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
         if (active_state == LOCKED_WRITING) {
             size_t index;
             if (already_locked(associated_threads, &index)) {
@@ -149,7 +149,7 @@ const Buffer* Buffer_Handle::lock_reading() {
             ++active_state;
         }
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
         associated_threads.reserve(cz::heap_allocator(), 1);
         associated_threads.push(tracy::GetThreadHandle());
 #endif
@@ -194,7 +194,7 @@ const Buffer* Buffer_Handle::try_lock_reading() {
             ++active_state;
         }
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
         associated_threads.reserve(cz::heap_allocator(), 1);
         associated_threads.push(tracy::GetThreadHandle());
 #endif
@@ -292,7 +292,7 @@ void Buffer_Handle::unlock() {
         mutex.lock();
         CZ_DEFER(mutex.unlock());
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
         size_t index;
         if (already_locked(associated_threads, &index)) {
             associated_threads.remove(index);

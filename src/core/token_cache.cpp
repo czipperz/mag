@@ -183,7 +183,7 @@ bool Token_Cache::update(const Buffer* buffer) {
 
             bool has_token = false;
             while (iterator.position < end_position) {
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
                 token = INVALID_TOKEN;
 #endif
 
@@ -192,7 +192,7 @@ bool Token_Cache::update(const Buffer* buffer) {
                     break;
                 }
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
                 token.assert_valid(buffer->contents.len);
 #endif
             }
@@ -262,7 +262,7 @@ bool Token_Cache::next_check_point(const Buffer* buffer,
 
         Token token;
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
         token = INVALID_TOKEN;
 #endif
 
@@ -270,7 +270,7 @@ bool Token_Cache::next_check_point(const Buffer* buffer,
             break;
         }
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
         token.assert_valid(buffer->contents.len);
 #endif
     }

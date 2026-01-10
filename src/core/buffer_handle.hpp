@@ -22,7 +22,7 @@ private:
     tracy::SharedLockableCtx* context;
 #endif
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
     cz::Vector<uint64_t> associated_threads;
 #endif
 

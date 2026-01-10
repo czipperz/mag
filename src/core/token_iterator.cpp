@@ -24,7 +24,7 @@ bool Forward_Token_Iterator::init_after(const Buffer* buffer, uint64_t position)
 
 bool Forward_Token_Iterator::next() {
     bool found = (*tokenizer)(&tokenization_iterator, &token_, &state);
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
     if (found) {
         token_.assert_valid(tokenization_iterator.contents->len);
     }

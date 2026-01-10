@@ -367,7 +367,7 @@ Client Server::make_client() {
     return client;
 }
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
 struct File_Wrapper {
     FILE* file;
 
@@ -416,7 +416,7 @@ static void run_command(Command command, Editor* editor, Command_Source source) 
         source.client->show_message(ex.what());
     }
 
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
     static File_Wrapper log("mag-key.log", "a");
     if (log.file) {
         fprintf(log.file, "%s\n", command.string);

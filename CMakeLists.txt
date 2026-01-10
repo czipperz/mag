@@ -15,6 +15,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Define TRACY_INCLUDE_DIRS for cz to use.
 set(TRACY_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/tracy/public)
 
+if (NOT DEFINED CZ_DEBUG_ASSERTIONS AND CMAKE_BUILD_TYPE MATCHES Debug)
+  set(CZ_DEBUG_ASSERTIONS 1)
+endif()
+if (CZ_DEBUG_ASSERTIONS EQUAL 1)
+  add_definitions(-DCZ_DEBUG_ASSERTIONS=1)
+endif()
 add_subdirectory(cz)
 
 include_directories(cz/include)

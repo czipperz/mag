@@ -1271,7 +1271,7 @@ void run(Server* server, Client* client) {
     float old_dpi_scale = dpi_scale;
 
     const char* window_name = "Mag";
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
     window_name = "Mag [DEBUG]";
 #endif
 

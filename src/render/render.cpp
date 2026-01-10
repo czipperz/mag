@@ -262,13 +262,13 @@ static Contents_Iterator update_cursors_and_run_animated_scrolling(Editor* edito
     window->update_cursors(buffer, client);
 
 // If we're in debug mode assert that we're sorted.  In release mode we just sort the cursors.
-#ifdef NDEBUG
-    cz::sort(window->cursors,
-             [](const Cursor* left, const Cursor* right) { return left->point < right->point; });
-#else
+#ifdef CZ_DEBUG_ASSERTIONS
     CZ_DEBUG_ASSERT(cz::is_sorted(window->cursors, [](const Cursor* left, const Cursor* right) {
         return left->point < right->point;
     }));
+#else
+    cz::sort(window->cursors,
+             [](const Cursor* left, const Cursor* right) { return left->point < right->point; });
 #endif
 
     // Try to deal with out of bounds cursors and positions.
@@ -1371,11 +1371,11 @@ static void draw_mini_buffer_results(Cell* cells,
         Contents_Iterator token_iterator = contents.start();
         uint64_t state = 0;
         Token token;
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
         token = INVALID_TOKEN;
 #endif
         bool has_token = minibuffer_next_token(&token_iterator, &token, &state);
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
         if (has_token) {
             token.assert_valid(contents.len);
         }
@@ -1404,11 +1404,11 @@ static void draw_mini_buffer_results(Cell* cells,
                     break;
                 } else {
                     // Go to the next token.
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
                     token = INVALID_TOKEN;
 #endif
                     has_token = minibuffer_next_token(&token_iterator, &token, &state);
-#ifndef NDEBUG
+#ifdef CZ_DEBUG_ASSERTIONS
                     if (has_token) {
                         token.assert_valid(contents.len);
                     }
