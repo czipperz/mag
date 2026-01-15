@@ -16,29 +16,34 @@ enum State {
 };
 }
 
-// Note: ignore the '    Start #3000: test_name' headers because they don't really matter.
 // '1/5 Test #3: TestName'
+// '          Start   30: TestName'
 // '   1/5000 Test   #30: TestName'
 static bool looking_at_test_file_result_start(Contents_Iterator iterator) {
     forward_through_whitespace(&iterator);
 
-    if (!eat_number(&iterator))
-        return false;
-    if (!eat_character(&iterator, '/'))
-        return false;
-    if (!eat_number(&iterator))
-        return false;
-    if (!eat_character(&iterator, ' '))
-        return false;
+    if (eat_string(&iterator, "Start ")) {
+        while (eat_character(&iterator, ' ')) {
+        }
+    } else {
+        if (!eat_number(&iterator))
+            return false;
+        if (!eat_character(&iterator, '/'))
+            return false;
+        if (!eat_number(&iterator))
+            return false;
+        if (!eat_character(&iterator, ' '))
+            return false;
 
-    if (!looking_at(iterator, "Test "))
-        return false;
-    iterator.advance(strlen("Test "));
-    while (eat_character(&iterator, ' ')) {
+        if (!eat_string(&iterator, "Test "))
+            return false;
+        while (eat_character(&iterator, ' ')) {
+        }
+
+        if (!eat_character(&iterator, '#'))
+            return false;
     }
 
-    if (!eat_character(&iterator, '#'))
-        return false;
     if (!eat_number(&iterator))
         return false;
 
