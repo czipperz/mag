@@ -787,5 +787,120 @@ void command_git_diff_remove_ignore_whitespace(Editor* editor, Command_Source so
     run_console_command(source.client, editor, cmd.directory.buffer, cmd.script, cmd.name);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// command_git_diff_go_to_file
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+struct Command_Git_Diff_Go_To_File_Completion_Engine_Data {
+    cz::Arc_Weak<Buffer_Handle> handle;
+};
+}
+
+static bool find_next_file(Contents_Iterator* it, Contents_Iterator* eol) {
+    while (1) {
+        while (1) {
+            if (!find(it, "diff --git "))
+                break;
+            if (at_start_of_line(*it))
+                break;
+            it->advance();
+        }
+        if (it->at_eob())
+            return false;
+
+        it->advance(strlen("diff --git "));
+        *eol = *it;
+        end_of_line(eol);
+        if ((eol->position - it->position) % 2 != 1 || (eol->position - it->position) < 3)
+            continue;
+
+        return true;
+    }
+}
+
+static cz::Str get_prefix(Contents_Iterator it) {
+    if (looking_at(it, "a/"))
+        return "a/";
+    else
+        return "";
+}
+
+static bool command_git_diff_go_to_file_completion_engine(Editor* editor,
+                                                          Completion_Engine_Context* context,
+                                                          bool) {
+    if (context->results.len > 0)
+        return false;
+
+    context->results_buffer_array.clear();
+    context->results.len = 0;
+
+    auto data = (Command_Git_Diff_Go_To_File_Completion_Engine_Data*)context->data;
+    cz::Arc<Buffer_Handle> handle;
+    if (!data->handle.upgrade(&handle))
+        return false;
+    CZ_DEFER(handle.drop());
+
+    WITH_CONST_BUFFER_HANDLE(handle);
+    Contents_Iterator it = buffer->contents.start();
+    while (1) {
+        Contents_Iterator eol;
+        if (!find_next_file(&it, &eol))
+            return true;
+
+        uint64_t end = it.position + (eol.position - it.position) / 2;
+        it.advance(get_prefix(it).len);
+        context->results.reserve(1);
+        context->results.push(
+            buffer->contents.slice_str(context->results_buffer_array.allocator(), it, end));
+    }
+}
+
+static void command_git_diff_go_to_file_callback(Editor* editor,
+                                                 Client* client,
+                                                 cz::Str query,
+                                                 void*) {
+    WITH_CONST_SELECTED_BUFFER(client);
+    Contents_Iterator it = buffer->contents.start();
+    Contents_Iterator eol;
+    if (!find_next_file(&it, &eol))
+        return;
+
+    cz::Str prefix = get_prefix(it);
+    cz::String search_term = cz::format("diff --git ", prefix, query, " ", prefix, query);
+    CZ_DEFER(search_term.drop(cz::heap_allocator()));
+
+    it = buffer->contents.start();
+    find(&it, search_term);
+    window->cursors[window->selected_cursor].point = it.position;
+    window->start_position = window->cursors[window->selected_cursor].point;
+    window->column_offset = 0;
+}
+
+REGISTER_COMMAND(command_git_diff_go_to_file);
+void command_git_diff_go_to_file(Editor* editor, Command_Source source) {
+    auto data = cz::heap_allocator().alloc<Command_Git_Diff_Go_To_File_Completion_Engine_Data>();
+    CZ_ASSERT(data);
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        data->handle = handle.clone_downgrade();
+    }
+
+    Dialog dialog = {};
+    dialog.prompt = "git diff go to file: ";
+    dialog.completion_engine = command_git_diff_go_to_file_completion_engine;
+    dialog.response_callback = command_git_diff_go_to_file_callback;
+    source.client->show_dialog(dialog);
+
+    source.client->mini_buffer_completion_cache.engine_context.reset();
+
+    source.client->mini_buffer_completion_cache.engine_context.data = data;
+    source.client->mini_buffer_completion_cache.engine_context.cleanup = [](void* _data) {
+        auto data = (Command_Git_Diff_Go_To_File_Completion_Engine_Data*)_data;
+        data->handle.drop();
+        cz::heap_allocator().dealloc(data);
+    };
+}
+
 }
 }

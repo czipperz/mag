@@ -49,5 +49,8 @@ void command_git_diff_master_this_file(Editor* editor, Command_Source source);
 void command_git_diff_add_ignore_whitespace(Editor* editor, Command_Source source);
 void command_git_diff_remove_ignore_whitespace(Editor* editor, Command_Source source);
 
+/// Prompts for a file to navigate to inside of the current diff buffer.
+void command_git_diff_go_to_file(Editor* editor, Command_Source source);
+
 }
 }
