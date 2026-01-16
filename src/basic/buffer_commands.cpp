@@ -718,5 +718,11 @@ void command_reload_buffer(Editor* editor, Command_Source source) {
         source.client->show_message(message);
 }
 
+REGISTER_COMMAND(command_delete_buffer_mode_keybinds);
+void command_delete_buffer_mode_keybinds(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    buffer->mode.key_map.bindings.len = 0;
+}
+
 }
 }

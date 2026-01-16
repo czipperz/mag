@@ -39,5 +39,7 @@ void command_diff_buffer_contents_against(Editor* editor, Command_Source source)
 
 void command_reload_buffer(Editor* editor, Command_Source source);
 
+void command_delete_buffer_mode_keybinds(Editor* editor, Command_Source source);
+
 }
 }
