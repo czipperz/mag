@@ -6,7 +6,7 @@
 namespace mag {
 namespace version_control {
 
-const char* open_diff_buffer_and_lookup_cursor(Editor* editor, Client* client, bool select_next);
+const char* iterate_changed_line_using_git_dm(Editor* editor, Client* client, bool select_next);
 
 /// Show an individual commit.
 void command_show_last_commit_to_file(Editor* editor, Command_Source source);
@@ -53,6 +53,8 @@ void command_git_diff_remove_ignore_whitespace(Editor* editor, Command_Source so
 
 /// Prompts for a file to navigate to inside of the current diff buffer.
 void command_git_diff_go_to_file(Editor* editor, Command_Source source);
+
+void command_open_git_dm_and_lookup_cursor(Editor* editor, Command_Source source);
 
 }
 }

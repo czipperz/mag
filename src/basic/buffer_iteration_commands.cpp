@@ -30,7 +30,7 @@ static void perform_iteration(Editor* editor, Client* client, bool select_next) 
 
     toggle_cycle_window(client);
     const char* error =
-        version_control::open_diff_buffer_and_lookup_cursor(editor, client, select_next);
+        version_control::iterate_changed_line_using_git_dm(editor, client, select_next);
     if (error) {
         client->show_message(error);
     }

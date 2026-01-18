@@ -451,7 +451,95 @@ void log_buffer_iterate(Editor* editor, Client* client, bool select_next) {
         select_next ? SelectedCommitOrDiff::NEXT_DIFF : SelectedCommitOrDiff::PREVIOUS_DIFF);
 }
 
-const char* open_diff_buffer_and_lookup_cursor(Editor* editor, Client* client, bool select_next) {
+static const char* open_git_dm_and_lookup_cursor(Editor* editor, Client* client) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    uint64_t cursor_line;
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        if (buffer->type != Buffer::FILE)
+            return "Couldn't find iterable buffer";
+        CZ_ASSERT(buffer->get_path(cz::heap_allocator(), &path));
+        cursor_line = buffer->contents.get_line_number(window->sel().point);
+    }
+
+    cz::String vc_root = {};
+    CZ_DEFER(vc_root.drop(cz::heap_allocator()));
+    if (!version_control::get_root_directory(path, cz::heap_allocator(), &vc_root))
+        return "Couldn't find version control root directory";
+
+    vc_root.push('/');
+    cz::Arc<Buffer_Handle> diff_handle;
+    if (!find_temp_buffer(editor, client, "git dm", vc_root.as_str(), &diff_handle))
+        return "Couldn't find *git dm*";
+
+    uint64_t match;
+    {
+        WITH_CONST_BUFFER_HANDLE(diff_handle);
+        Contents_Iterator it = buffer->contents.start();
+        end_of_line(&it);
+        forward_char(&it);
+        if (!looking_at(it, "diff --git "))
+            return "Couldn't find first diff header in *git dm*";
+        it.advance(strlen("diff --git "));
+
+        CZ_ASSERT(path.starts_with(vc_root));
+        cz::String search_term = cz::format("\ndiff --git ", version_control::get_first_prefix(it),
+                                            path.slice_start(vc_root.len), " ");
+        CZ_DEFER(search_term.drop(cz::heap_allocator()));
+
+        it = buffer->contents.start();
+        if (!find(&it, search_term))
+            return "Couldn't find file in *git dm*";
+        it.advance();
+
+        Contents_Iterator end = it;
+        find(&end, "\ndiff --git ");
+
+        match = it.position;
+        bool first = true;
+
+        while (1) {
+            if (!find_before(&it, end.position, "\n@@ "))
+                break;
+            it.advance();
+
+            if (first) {
+                match = it.position;
+                first = false;
+            }
+
+            uint64_t line, column;
+            version_control::find_line_number(it, &line, &column);
+
+            // Assumes select_next=false.
+            if (line <= cursor_line) {
+                match = it.position;
+            } else {
+                break;
+            }
+        }
+    }
+
+    client->select_window_for_buffer_or_replace_current(diff_handle);
+    Window_Unified* window = client->selected_normal_window;
+    kill_extra_cursors(window, client);
+    window->cursors[0].point = match;
+    {
+        WITH_CONST_BUFFER_HANDLE(diff_handle);
+        basic::center_selected_cursor(editor, window, buffer);
+    }
+    return nullptr;
+}
+
+REGISTER_COMMAND(command_open_git_dm_and_lookup_cursor);
+void command_open_git_dm_and_lookup_cursor(Editor* editor, Command_Source source) {
+    const char* error = open_git_dm_and_lookup_cursor(editor, source.client);
+    if (error)
+        source.client->show_message(error);
+}
+
+const char* iterate_changed_line_using_git_dm(Editor* editor, Client* client, bool select_next) {
     cz::String path = {};
     CZ_DEFER(path.drop(cz::heap_allocator()));
     uint64_t cursor_line;

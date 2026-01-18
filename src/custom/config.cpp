@@ -660,6 +660,8 @@ static void create_key_map(Key_Map& key_map) {
     BIND(key_map, "A-g A-c", tags::command_complete_at_point);
     BIND(key_map, "MOUSE3", tags::command_move_mouse_and_lookup_at_point);
 
+    BIND(key_map, "A-g A-l", version_control::command_open_git_dm_and_lookup_cursor);
+
     BIND(key_map, "C-c", command_complete_at_point_nearest_matching_before_after);
     BIND(key_map, "C-A-c", command_complete_at_point_prompt_identifiers);
     BIND(key_map, "A-,", command_copy_rest_of_line_from_nearest_matching_identifier);
