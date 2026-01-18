@@ -16,6 +16,13 @@
 namespace mag {
 namespace version_control {
 
+static cz::Str get_first_prefix(Contents_Iterator it) {
+    if (looking_at(it, "a/"))
+        return "a/";
+    else
+        return "";
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // command_show_last_commit_to_file
 ///////////////////////////////////////////////////////////////////////////////
@@ -353,15 +360,12 @@ static SelectedCommitOrDiffResult get_selected_commit_or_diff(Editor* editor,
         if (!rfind(&iterator, "\ndiff --git "))
             return SelectedCommitOrDiffResult::FAILURE;
         iterator.advance(strlen("\ndiff --git "));
-        if (!find_this_line(&iterator, ' '))
+        Contents_Iterator end = iterator;
+        if (!find_this_line(&end, ' '))
             return SelectedCommitOrDiffResult::FAILURE;
-        iterator.advance();
-        if (looking_at(iterator, "a/") || looking_at(iterator, "b/"))
-            iterator.advance(2);
-        Contents_Iterator eol = iterator;
-        end_of_line(&eol);
+        iterator.advance(get_first_prefix(iterator).len);
         cz::append(path, buffer->directory);
-        buffer->contents.slice_into(cz::heap_allocator(), iterator, eol.position, path);
+        buffer->contents.slice_into(cz::heap_allocator(), iterator, end.position, path);
     }
 
     return SelectedCommitOrDiffResult::DIFF;
@@ -819,13 +823,6 @@ static bool find_next_file(Contents_Iterator* it, Contents_Iterator* eol) {
     }
 }
 
-static cz::Str get_prefix(Contents_Iterator it) {
-    if (looking_at(it, "a/"))
-        return "a/";
-    else
-        return "";
-}
-
 static bool command_git_diff_go_to_file_completion_engine(Editor* editor,
                                                           Completion_Engine_Context* context,
                                                           bool) {
@@ -849,7 +846,7 @@ static bool command_git_diff_go_to_file_completion_engine(Editor* editor,
             return true;
 
         uint64_t end = it.position + (eol.position - it.position) / 2;
-        it.advance(get_prefix(it).len);
+        it.advance(get_first_prefix(it).len);
         context->results.reserve(1);
         context->results.push(
             buffer->contents.slice_str(context->results_buffer_array.allocator(), it, end));
@@ -866,8 +863,8 @@ static void command_git_diff_go_to_file_callback(Editor* editor,
     if (!find_next_file(&it, &eol))
         return;
 
-    cz::Str prefix = get_prefix(it);
-    cz::String search_term = cz::format("diff --git ", prefix, query, " ", prefix, query);
+    cz::Str prefix = get_first_prefix(it);
+    cz::String search_term = cz::format("diff --git ", prefix, query, " ");
     CZ_DEFER(search_term.drop(cz::heap_allocator()));
 
     it = buffer->contents.start();
