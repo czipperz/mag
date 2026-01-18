@@ -716,6 +716,7 @@ void command_reload_buffer(Editor* editor, Command_Source source) {
     const char* message = reload_file(buffer);
     if (message)
         source.client->show_message(message);
+    custom::buffer_reload_callback(editor, source.client, handle, buffer);
 }
 
 REGISTER_COMMAND(command_delete_buffer_mode_keybinds);

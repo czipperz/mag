@@ -35,10 +35,16 @@ void buffer_created_callback(Editor* editor,
                              Buffer* buffer,
                              const cz::Arc<Buffer_Handle>& buffer_handle);
 
-void console_command_finished_callback(Editor* editor, Client* client,
+void console_command_finished_callback(Editor* editor,
+                                       Client* client,
                                        const cz::Arc<Buffer_Handle>& buffer_handle);
 
 void rendering_frame_callback(Editor* editor, Client* client);
+
+void buffer_reload_callback(Editor* editor,
+                            Client* client,
+                            const cz::Arc<Buffer_Handle>& buffer_handle,
+                            Buffer* buffer);
 
 bool should_run_clang_tidy(const Buffer* buffer);
 bool clang_tidy_script(cz::Str vc_root, const Buffer* buffer, cz::Heap_String* script);

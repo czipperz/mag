@@ -71,16 +71,20 @@ void run_clang_tidy(Editor* editor,
     // TODO track if clang-tidy is installed / not setup correctly and stop running it.
     run_console_command_in(client, editor, clang_tidy_buffer_handle, vc_root.buffer, script);
 }
+}
 
 void rerun_clang_tidy(Editor* editor,
                       Client* client,
                       const cz::Arc<Buffer_Handle>& handle,
-                      const Buffer* buffer) {
+                      const Buffer* buffer,
+                      bool pretend_buffer_changed) {
     for (size_t i = 0; i < buffer_states.len; ++i) {
         if (handle.ptr_equal(buffer_states[i].code_buffer)) {
-            if (buffer->saved_commit_id != buffer_states[i].last_saved_commit_id &&
-                !buffer_states[i].running) {
-                run_clang_tidy(editor, client, buffer, &buffer_states[i], false);
+            if (!buffer_states[i].running) {
+                if (pretend_buffer_changed ||
+                    buffer->saved_commit_id != buffer_states[i].last_saved_commit_id) {
+                    run_clang_tidy(editor, client, buffer, &buffer_states[i], false);
+                }
             }
             return;
         }
@@ -91,13 +95,14 @@ void rerun_clang_tidy(Editor* editor,
     run_clang_tidy(editor, client, buffer, &buffer_states.last(), true);
 }
 
+namespace {
 void run_clang_tidy_forall_changed_buffers_in_window(Editor* editor, Client* client, Window* w) {
     if (w->tag == Window::UNIFIED) {
         WITH_CONST_WINDOW_BUFFER((Window_Unified*)w, client);
         if (buffer->type != Buffer::FILE || !custom::should_run_clang_tidy(buffer)) {
             return;
         }
-        rerun_clang_tidy(editor, client, handle, buffer);
+        rerun_clang_tidy(editor, client, handle, buffer, /*pretend_buffer_changed=*/false);
     } else {
         Window_Split* window = (Window_Split*)w;
         run_clang_tidy_forall_changed_buffers_in_window(editor, client, window->first);
@@ -144,7 +149,7 @@ REGISTER_COMMAND(command_alternate_clang_tidy);
 void command_alternate_clang_tidy(Editor* editor, Command_Source source) {
     WITH_CONST_SELECTED_BUFFER(source.client);
     if (buffer->type == Buffer::FILE && custom::should_run_clang_tidy(buffer)) {
-        rerun_clang_tidy(editor, source.client, handle, buffer);
+        rerun_clang_tidy(editor, source.client, handle, buffer, /*pretend_buffer_changed=*/false);
 
         for (size_t i = 0; i < buffer_states.len; ++i) {
             if (handle.ptr_equal(buffer_states[i].code_buffer)) {

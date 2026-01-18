@@ -283,6 +283,15 @@ void rendering_frame_callback(Editor* editor, Client* client) {
     run_clang_tidy_forall_changed_buffers(editor, client);
 }
 
+void buffer_reload_callback(Editor* editor,
+                            Client* client,
+                            const cz::Arc<Buffer_Handle>& buffer_handle,
+                            Buffer* buffer) {
+    if (should_run_clang_tidy(buffer)) {
+        rerun_clang_tidy(editor, client, buffer_handle, buffer, /*pretend_buffer_changed=*/true);
+    }
+}
+
 static bool is_cplusplus(cz::Str name) {
     return name.ends_with(".c") || name.ends_with(".h") || name.ends_with(".cc") ||
            name.ends_with(".hh") || name.ends_with(".cpp") || name.ends_with(".hpp") ||
