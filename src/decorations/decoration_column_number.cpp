@@ -21,16 +21,20 @@ static bool decoration_column_number_append(Editor*,
                                             cz::Allocator allocator,
                                             cz::String* string,
                                             void* _data) {
-    ZoneScoped;
-
-    Contents_Iterator iterator =
-        buffer->contents.iterator_at(window->cursors[window->selected_cursor].point);
-
-    Contents_Iterator line_start = iterator;
-    start_of_line(&line_start);
-
-    cz::append(allocator, string, "C", iterator.position - line_start.position + 1);
-
+    Cursor cursor = window->cursors[window->selected_cursor];
+    if (window->show_marks) {
+        Contents_Iterator start_sol = buffer->contents.iterator_at(cursor.start());
+        start_of_line(&start_sol);
+        Contents_Iterator end_sol = start_sol;
+        end_sol.advance_to(cursor.end());
+        start_of_line(&end_sol);
+        cz::append(allocator, string, 'C', cursor.start() - start_sol.position + 1, '-',
+                   cursor.end() - end_sol.position + 1);
+    } else {
+        Contents_Iterator sol = buffer->contents.iterator_at(cursor.point);
+        start_of_line(&sol);
+        cz::append(allocator, string, 'C', cursor.point - sol.position + 1);
+    }
     return true;
 }
 
