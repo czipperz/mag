@@ -451,6 +451,90 @@ void log_buffer_iterate(Editor* editor, Client* client, bool select_next) {
         select_next ? SelectedCommitOrDiff::NEXT_DIFF : SelectedCommitOrDiff::PREVIOUS_DIFF);
 }
 
+const char* open_diff_buffer_and_lookup_cursor(Editor* editor, Client* client, bool select_next) {
+    cz::String path = {};
+    CZ_DEFER(path.drop(cz::heap_allocator()));
+    uint64_t cursor_line;
+    {
+        WITH_CONST_SELECTED_BUFFER(client);
+        if (buffer->type != Buffer::FILE)
+            return "Couldn't find iterable buffer";
+        CZ_ASSERT(buffer->get_path(cz::heap_allocator(), &path));
+        cursor_line = buffer->contents.get_line_number(window->sel().point);
+    }
+
+    cz::String vc_root = {};
+    CZ_DEFER(vc_root.drop(cz::heap_allocator()));
+    if (!version_control::get_root_directory(path, cz::heap_allocator(), &vc_root))
+        return "Couldn't find version control root directory";
+
+    vc_root.push('/');
+    cz::Arc<Buffer_Handle> diff_handle;
+    if (!find_temp_buffer(editor, client, "git dm", vc_root.as_str(), &diff_handle))
+        return "Couldn't find *git dm*";
+
+    bool has_match = false;
+    uint64_t match_line, match_column;
+
+    {
+        WITH_CONST_BUFFER_HANDLE(diff_handle);
+        Contents_Iterator it = buffer->contents.start();
+        end_of_line(&it);
+        forward_char(&it);
+        if (!looking_at(it, "diff --git "))
+            return "Couldn't find first diff header in *git dm*";
+        it.advance(strlen("diff --git "));
+
+        CZ_ASSERT(path.starts_with(vc_root));
+        cz::String search_term = cz::format("\ndiff --git ", version_control::get_first_prefix(it),
+                                            path.slice_start(vc_root.len), " ");
+        CZ_DEFER(search_term.drop(cz::heap_allocator()));
+
+        it = buffer->contents.start();
+        if (!find(&it, search_term))
+            return "Couldn't find file in *git dm*";
+        it.advance();
+
+        Contents_Iterator end = it;
+        find(&end, "\ndiff --git ");
+
+        while (1) {
+            if (!find_before(&it, end.position, "\n@@ "))
+                break;
+            it.advance();
+
+            uint64_t line, column;
+            version_control::find_line_number(it, &line, &column);
+
+            if (select_next) {
+                if (line > cursor_line) {
+                    has_match = true;
+                    match_line = line;
+                    match_column = column;
+                    break;
+                }
+            } else {
+                if (line < cursor_line) {
+                    has_match = true;
+                    match_line = line;
+                    match_column = column;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        if (!has_match)
+            return "Couldn't find another patch";
+    }
+
+    WITH_CONST_SELECTED_BUFFER(client);
+    kill_extra_cursors(window, client);
+    window->cursors[0].point =
+        iterator_at_line_column(buffer->contents, match_line, match_column).position;
+    return nullptr;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // File history
 ////////////////////////////////////////////////////////////////////////////////

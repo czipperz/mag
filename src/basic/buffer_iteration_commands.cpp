@@ -1,6 +1,7 @@
 #include "basic/buffer_iteration_commands.hpp"
 
 #include "core/command_macros.hpp"
+#include "version_control/log.hpp"
 
 namespace mag {
 namespace basic {
@@ -28,7 +29,11 @@ static void perform_iteration(Editor* editor, Client* client, bool select_next) 
     }
 
     toggle_cycle_window(client);
-    client->show_message("Couldn't find iterable buffer");
+    const char* error =
+        version_control::open_diff_buffer_and_lookup_cursor(editor, client, select_next);
+    if (error) {
+        client->show_message(error);
+    }
 }
 
 void command_iteration_next(Editor* editor, Command_Source source) {
