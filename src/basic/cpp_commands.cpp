@@ -562,7 +562,7 @@ static void skip_over_existing_includes(Contents_Iterator* it) {
         it->advance();
 
         forward_through_whitespace(it);
-        if (!looking_at(*it, "include"))
+        if (!looking_at(*it, "include") && !looking_at(*it, "pragma once\n"))
             break;
         end_of_line(it);
         check_point = *it;
