@@ -66,8 +66,17 @@ static void overlay_preferred_column_skip_forward_same_line(const Buffer* buffer
                                                             uint64_t end,
                                                             void* _data) {
     ZoneScoped;
-    // TODO -- if preferred_column==-1 or column>=preferred_column then just do data->column
-    // += end - start.  Otherwise I'd just estimate width=1 unless the jump is very small.
+
+    Data* data = (Data*)_data;
+
+    // Tabs are always >=1 column wide.  If we skip over the preferred_column
+    // then set the column to some moderately high number and continue.
+    if (buffer->mode.preferred_column == (uint64_t)-1 ||
+        data->column + end - start.position > buffer->mode.preferred_column) {
+        data->column += (end - start.position);
+        return;
+    }
+
     while (start.position != end) {
         overlay_preferred_column_get_face_and_advance(buffer, window, start, _data);
         start.advance();
