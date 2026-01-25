@@ -6,10 +6,12 @@
 #include <tracy/Tracy.hpp>
 #include "core/buffer.hpp"
 #include "core/editor.hpp"
+#include "core/match.hpp"
 #include "core/movement.hpp"
 #include "core/overlay.hpp"
 #include "core/theme.hpp"
 #include "core/token.hpp"
+#include "core/token_iterator.hpp"
 #include "core/window.hpp"
 
 namespace mag {
@@ -32,13 +34,13 @@ struct Data {
     bool enabled;
     bool token_matches;
 
+    /// At initialization we find the token the cursor is at.
     Contents_Iterator cursor_token_iterator;
     uint64_t cursor_token_length;
     Token_Type cursor_token_type;
 
-    Contents_Iterator iterator;
-    Token token;
-    uint64_t state;
+    /// Then we compare it to the token at the render point.
+    Forward_Token_Iterator iterator;
 };
 }
 using namespace overlay_matching_tokens_impl;
@@ -46,21 +48,15 @@ using namespace overlay_matching_tokens_impl;
 static void set_token_matches(Data* data) {
     data->token_matches = false;
 
-    if ((data->token.type == Token_Type::DEFAULT) !=
-            (data->cursor_token_type == Token_Type::DEFAULT) ||
-        data->token.end - data->token.start != data->cursor_token_length) {
+    if ((data->iterator.token().type == Token_Type::DEFAULT) !=
+        (data->cursor_token_type == Token_Type::DEFAULT)) {
         return;
     }
 
-    Contents_Iterator it1 = data->cursor_token_iterator;
-    Contents_Iterator it2 = data->iterator;
-    it2.retreat_to(data->token.start);
-    for (size_t i = 0; i < data->cursor_token_length; ++i) {
-        if (it1.get() != it2.get()) {
-            return;
-        }
-        it1.advance();
-        it2.advance();
+    if (!matches(data->cursor_token_iterator,
+                 data->cursor_token_iterator.position + data->cursor_token_length,
+                 data->iterator.iterator_at_token_start(), data->iterator.token().end)) {
+        return;
     }
 
     data->token_matches = true;
@@ -70,7 +66,7 @@ static void overlay_matching_tokens_start_frame(Editor* editor,
                                                 Client*,
                                                 const Buffer* buffer,
                                                 Window_Unified* window,
-                                                Contents_Iterator iterator,
+                                                Contents_Iterator start_position_iterator,
                                                 void* _data) {
     ZoneScoped;
 
@@ -85,8 +81,10 @@ static void overlay_matching_tokens_start_frame(Editor* editor,
         return;
     }
 
-    Contents_Iterator visible_start_iterator = iterator;
-    Contents_Iterator visible_end_iterator = iterator;
+    // If we're animating scrolling then `window->start_position` is much later
+    // than the start position and we can just disable until that finishes.
+    Contents_Iterator visible_start_iterator = start_position_iterator;
+    Contents_Iterator visible_end_iterator = start_position_iterator;
     forward_visual_line(window, buffer->mode, editor->theme, &visible_end_iterator,
                         window->rows() - 1);
     backward_visual_line(window, buffer->mode, editor->theme, &visible_start_iterator,
@@ -100,68 +98,39 @@ static void overlay_matching_tokens_start_frame(Editor* editor,
 
     // The token cache is updated in the main render loop.
     CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
-    Tokenizer_Check_Point check_point =
-        buffer->token_cache.find_check_point(window->start_position);
 
-    // Use `go_to` because if we're animating then
-    // `window->start_position` is much later than the start position.
-    iterator.go_to(check_point.position);
-    uint64_t state = check_point.state;
-    Token token;
+    if (!data->iterator.init_at_or_after(buffer, window->start_position)) {
+        return;
+    }
 
-    bool found_token = false;
-
-    while (1) {
-        if (!buffer->mode.next_token(&iterator, &token, &state)) {
-            break;
-        }
-
-        // Find the first token on the screen.
-        if (!found_token && token.end >= window->start_position) {
-            found_token = true;
-            data->iterator = iterator;
-            data->token = token;
-            data->state = state;
-        }
-
-        // If the cursor is before the first token then there is no token to match against.
-        if (cursor_point < token.start) {
-            break;
-        }
-
-        // Find the token the cursor is at.
-        if (token.start <= cursor_point && cursor_point <= token.end) {
-            if (!is_matching_token(data->token_types, token.type)) {
-                continue;
-            }
-
-            // If the cursor is right after the token, see if another valid matching token is right
-            // after the current token.
-            if (cursor_point == token.end) {
-                Contents_Iterator iterator2 = iterator;
-                uint64_t state2 = state;
-                Token token2;
-                if (buffer->mode.next_token(&iterator2, &token2, &state2)) {
-                    if (cursor_point == token2.start &&
-                        is_matching_token(data->token_types, token2.type)) {
-                        iterator = iterator2;
-                        state = state2;
-                        token = token2;
-                    }
-                }
-            }
-
-            data->cursor_token_iterator = iterator;
-            data->cursor_token_iterator.retreat_to(token.start);
-            data->cursor_token_length = token.end - token.start;
-            data->cursor_token_type = token.type;
-
-            set_token_matches(data);
-
-            data->enabled = true;
-            break;
+    Forward_Token_Iterator cursor_iterator;
+    // We want to be able to use the token immediately before the cursor or
+    // the one that the cursor is in.  Thus we do 'cursor_point - 1' here.
+    if (!cursor_iterator.init_at_or_after(buffer, cursor_point - 1) ||
+        cursor_iterator.token().start > cursor_point) {
+        return;
+    }
+    // If the cursor is right after the token, see if another
+    // valid matching token is right after the current token.
+    if (cursor_point == cursor_iterator.token().end) {
+        Forward_Token_Iterator cursor_iterator2 = cursor_iterator;
+        if (cursor_iterator2.next() && cursor_point == cursor_iterator2.token().start &&
+            is_matching_token(data->token_types, cursor_iterator2.token().type)) {
+            cursor_iterator = cursor_iterator2;
         }
     }
+
+    if (!is_matching_token(data->token_types, cursor_iterator.token().type)) {
+        return;
+    }
+
+    data->cursor_token_iterator = cursor_iterator.iterator_at_token_start();
+    data->cursor_token_length = cursor_iterator.token().end - cursor_iterator.token().start;
+    data->cursor_token_type = cursor_iterator.token().type;
+
+    set_token_matches(data);
+
+    data->enabled = true;
 }
 
 static Face overlay_matching_tokens_get_face_and_advance(const Buffer* buffer,
@@ -176,8 +145,8 @@ static Face overlay_matching_tokens_get_face_and_advance(const Buffer* buffer,
     }
 
     // Find the next token if we are overlaying past the current token.
-    while (iterator.position >= data->token.end) {
-        if (!buffer->mode.next_token(&data->iterator, &data->token, &data->state)) {
+    if (iterator.position >= data->iterator.token().end) {
+        if (!data->iterator.next()) {
             data->enabled = false;
             return {};
         }
@@ -185,8 +154,8 @@ static Face overlay_matching_tokens_get_face_and_advance(const Buffer* buffer,
     }
 
     // Check if the overlay token matches the cursor token.
-    if (data->token_matches && data->token.start <= iterator.position &&
-        iterator.position < data->token.end) {
+    if (data->token_matches && data->iterator.token().start <= iterator.position &&
+        iterator.position < data->iterator.token().end) {
         return data->face;
     } else {
         return {};
