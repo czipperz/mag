@@ -106,7 +106,7 @@ static void overlay_matching_tokens_start_frame(Editor* editor,
     Forward_Token_Iterator cursor_iterator;
     // We want to be able to use the token immediately before the cursor or
     // the one that the cursor is in.  Thus we do 'cursor_point - 1' here.
-    if (!cursor_iterator.init_at_or_after(buffer, cursor_point - 1) ||
+    if (!cursor_iterator.init_at_or_after(buffer, cz::max(cursor_point, (uint64_t)1) - 1) ||
         cursor_iterator.token().start > cursor_point) {
         return;
     }
