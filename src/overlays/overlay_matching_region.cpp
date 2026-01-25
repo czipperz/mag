@@ -138,8 +138,26 @@ static void overlay_matching_region_skip_forward_same_line(const Buffer* buffer,
                                                            uint64_t end,
                                                            void* _data) {
     ZoneScoped;
-    // TODO -- subtract from countdown_cursor_region.  If exhausted, jump to end - (use_prompt
-    // ?  prompt.len : end_marked_region - start_marked_region) and iterate from there.
+
+    Data* data = (Data*)_data;
+    if (!data->enabled)
+        return;
+
+    if (data->countdown_cursor_region > end - start.position) {
+        data->countdown_cursor_region -= (end - start.position);
+        return;
+    }
+
+    start.advance(data->countdown_cursor_region);
+    data->countdown_cursor_region = 0;
+
+    uint64_t match_length = data->use_prompt
+                                ? data->prompt.len
+                                : window->sel().end() - data->start_marked_region.position;
+    if (start.position + match_length < end) {
+        start.advance_to(end - match_length);
+    }
+
     while (start.position != end) {
         overlay_matching_region_get_face_and_advance(buffer, window, start, _data);
         start.advance();
