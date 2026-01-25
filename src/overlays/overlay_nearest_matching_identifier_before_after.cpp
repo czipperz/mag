@@ -82,6 +82,13 @@ static void overlay_nearest_matching_identifier_before_after_start_frame(Editor*
     }
 }
 
+static void set_countdown(Data* data, Contents_Iterator iterator) {
+    Contents_Iterator end = iterator;
+    forward_through_identifier(&end);
+    data->countdown = end.position - iterator.position;
+    data->countdown_highlight = matches(data->start, data->end, iterator, end.position);
+}
+
 static Face overlay_nearest_matching_identifier_before_after_get_face_and_advance(
     const Buffer* buffer,
     Window_Unified* window,
@@ -96,11 +103,7 @@ static Face overlay_nearest_matching_identifier_before_after_get_face_and_advanc
         char first = iterator.get();
         if (!cz::is_alnum(first) && first != '_')
             return {};
-
-        Contents_Iterator end = iterator;
-        forward_through_identifier(&end);
-        data->countdown = end.position - iterator.position;
-        data->countdown_highlight = matches(data->start, data->end, iterator, end.position);
+        set_countdown(data, iterator);
     }
 
     --data->countdown;
@@ -125,14 +128,28 @@ static void overlay_nearest_matching_identifier_before_after_skip_forward_same_l
     uint64_t end,
     void* _data) {
     ZoneScoped;
-    // TODO -- jump to end.  If end - start.position < countdown then
-    // just subtract from countdown and return.  If in identifier then
-    // go backwards to start and set countdown and countdown_highlight.
-    while (start.position != end) {
-        overlay_nearest_matching_identifier_before_after_get_face_and_advance(buffer, window, start,
-                                                                              _data);
-        start.advance();
+
+    Data* data = (Data*)_data;
+
+    if (data->end == 0)
+        return;
+
+    if (end - start.position < data->countdown) {
+        data->countdown -= (end - start.position);
+        return;
     }
+
+    data->countdown = 0;
+    start.advance_to(end);
+    if (start.at_eob())
+        return;
+
+    char first = start.get();
+    if (!cz::is_alnum(first) && first != '_')
+        return;
+
+    backward_through_identifier(&start);
+    set_countdown(data, start);
 }
 
 static void overlay_nearest_matching_identifier_before_after_end_frame(void* _data) {}
