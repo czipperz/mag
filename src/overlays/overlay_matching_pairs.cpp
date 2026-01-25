@@ -1,6 +1,7 @@
 #include "overlay_matching_pairs.hpp"
 
 #include <stdlib.h>
+#include <cz/binary_search.hpp>
 #include <cz/dedup.hpp>
 #include <cz/defer.hpp>
 #include <cz/heap.hpp>
@@ -193,11 +194,10 @@ static void overlay_matching_pairs_skip_forward_same_line(const Buffer* buffer,
                                                           uint64_t end,
                                                           void* _data) {
     ZoneScoped;
-    // TODO -- quick iterate over data->points until we reach end
-    while (start.position != end) {
-        overlay_matching_pairs_get_face_and_advance(buffer, window, start, _data);
-        start.advance();
-    }
+    Data* data = (Data*)_data;
+    size_t rel_index;
+    cz::binary_search(data->points.slice_start(data->index), end, &rel_index);
+    data->index += rel_index;
 }
 
 static void overlay_matching_pairs_end_frame(void* _data) {}
