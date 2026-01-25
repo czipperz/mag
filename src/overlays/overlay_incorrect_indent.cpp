@@ -96,8 +96,13 @@ static void overlay_incorrect_indent_skip_forward_same_line(const Buffer* buffer
                                                             uint64_t end,
                                                             void* _data) {
     ZoneScoped;
-    // TODO unless jump is tiny: set not at start of line, set coundown=0
+    Data* data = (Data*)_data;
     while (start.position != end) {
+        if (!cz::is_blank(start.get())) {
+            data->at_start_of_line = false;
+            data->highlight_countdown = 0;
+            break;
+        }
         overlay_incorrect_indent_get_face_and_advance(buffer, window, start, _data);
         start.advance();
     }
