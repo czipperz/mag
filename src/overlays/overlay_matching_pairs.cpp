@@ -24,6 +24,11 @@ struct Data {
     Face face;
     size_t index;
     cz::Vector<uint64_t> points;
+
+    cz::Vector<Token> tokens;
+    uint64_t cache_start_position;
+    uint64_t cache_end_position;
+    size_t cache_change_index;
 };
 }
 using namespace overlay_matching_pairs_impl;
@@ -76,10 +81,11 @@ static void overlay_matching_pairs_start_frame(Editor* editor,
     Tokenizer_Check_Point check_point =
         buffer->token_cache.find_check_point(start_position_iterator.position);
 
-    cz::Vector<Token> tokens = {};
-    tokens.reserve(cz::heap_allocator(), 8);
-    CZ_DEFER(tokens.drop(cz::heap_allocator()));
-    {
+    if (data->cache_start_position != start_position_iterator.position ||
+        data->cache_end_position != end_iterator.position ||
+        data->cache_change_index != buffer->token_cache.change_index) {
+        data->tokens.len = 0;
+
         Token token;
         token.end = check_point.position;
         Contents_Iterator token_iterator = start_position_iterator;
@@ -91,8 +97,8 @@ static void overlay_matching_pairs_start_frame(Editor* editor,
                 if (token.type == Token_Type::OPEN_PAIR || token.type == Token_Type::CLOSE_PAIR ||
                     token.type == Token_Type::PREPROCESSOR_IF ||
                     token.type == Token_Type::PREPROCESSOR_ENDIF) {
-                    tokens.reserve(cz::heap_allocator(), 1);
-                    tokens.push(token);
+                    data->tokens.reserve(cz::heap_allocator(), 1);
+                    data->tokens.push(token);
                 }
             } else {
                 break;
@@ -100,30 +106,36 @@ static void overlay_matching_pairs_start_frame(Editor* editor,
         }
     }
 
+    data->cache_start_position = start_position_iterator.position;
+    data->cache_end_position = end_iterator.position;
+    data->cache_change_index = buffer->token_cache.change_index;
+
     cz::Slice<Cursor> cursors = window->cursors;
     data->points.reserve(cz::heap_allocator(), cursors.len * sizeof(uint64_t));
     for (size_t c = 0; c < cursors.len; ++c) {
         size_t token_index;
-        if (binary_search(tokens, cursors[c].point, &token_index)) {
+        if (binary_search(data->tokens, cursors[c].point, &token_index)) {
             data->points.reserve(cz::heap_allocator(),
-                                 tokens[token_index].end - tokens[token_index].start);
-            for (uint64_t pos = tokens[token_index].start; pos < tokens[token_index].end; ++pos) {
+                                 data->tokens[token_index].end - data->tokens[token_index].start);
+            for (uint64_t pos = data->tokens[token_index].start;
+                 pos < data->tokens[token_index].end; ++pos) {
                 data->points.push(pos);
             }
 
             size_t depth = 1;
-            if (tokens[token_index].type == Token_Type::OPEN_PAIR ||
-                tokens[token_index].type == Token_Type::PREPROCESSOR_IF) {
-                for (size_t i = token_index + 1; i < tokens.len; ++i) {
-                    if (tokens[i].type == Token_Type::OPEN_PAIR ||
-                        tokens[i].type == Token_Type::PREPROCESSOR_IF) {
+            if (data->tokens[token_index].type == Token_Type::OPEN_PAIR ||
+                data->tokens[token_index].type == Token_Type::PREPROCESSOR_IF) {
+                for (size_t i = token_index + 1; i < data->tokens.len; ++i) {
+                    if (data->tokens[i].type == Token_Type::OPEN_PAIR ||
+                        data->tokens[i].type == Token_Type::PREPROCESSOR_IF) {
                         ++depth;
                     } else {
                         --depth;
                         if (depth == 0) {
                             data->points.reserve(cz::heap_allocator(),
-                                                 tokens[i].end - tokens[i].start);
-                            for (uint64_t pos = tokens[i].start; pos < tokens[i].end; ++pos) {
+                                                 data->tokens[i].end - data->tokens[i].start);
+                            for (uint64_t pos = data->tokens[i].start; pos < data->tokens[i].end;
+                                 ++pos) {
                                 data->points.push(pos);
                             }
                             break;
@@ -132,15 +144,16 @@ static void overlay_matching_pairs_start_frame(Editor* editor,
                 }
             } else {
                 for (size_t i = token_index; i-- > 0;) {
-                    if (tokens[i].type == Token_Type::CLOSE_PAIR ||
-                        tokens[i].type == Token_Type::PREPROCESSOR_ENDIF) {
+                    if (data->tokens[i].type == Token_Type::CLOSE_PAIR ||
+                        data->tokens[i].type == Token_Type::PREPROCESSOR_ENDIF) {
                         ++depth;
                     } else {
                         --depth;
                         if (depth == 0) {
                             data->points.reserve(cz::heap_allocator(),
-                                                 tokens[i].end - tokens[i].start);
-                            for (uint64_t pos = tokens[i].start; pos < tokens[i].end; ++pos) {
+                                                 data->tokens[i].end - data->tokens[i].start);
+                            for (uint64_t pos = data->tokens[i].start; pos < data->tokens[i].end;
+                                 ++pos) {
                                 data->points.push(pos);
                             }
                             break;
@@ -222,6 +235,7 @@ Overlay overlay_matching_pairs(Face face) {
     CZ_ASSERT(data);
     *data = {};
     data->face = face;
+    data->cache_start_position = -1;
     return {&vtable, data};
 }
 
