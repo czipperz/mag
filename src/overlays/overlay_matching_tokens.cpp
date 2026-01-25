@@ -175,11 +175,14 @@ static void overlay_matching_tokens_skip_forward_same_line(const Buffer* buffer,
                                                            uint64_t end,
                                                            void* _data) {
     ZoneScoped;
-    // TODO -- convert to Forward_Token_Iterator, use init_at_or_after, set_token_matches
-    while (start.position != end) {
-        overlay_matching_tokens_get_face_and_advance(buffer, window, start, _data);
-        start.advance();
+    Data* data = (Data*)_data;
+    if (!data->enabled)
+        return;
+    if (!data->iterator.init_at_or_after(buffer, end)) {
+        data->enabled = false;
+        return;
     }
+    set_token_matches(data);
 }
 
 static void overlay_matching_tokens_end_frame(void* _data) {}
