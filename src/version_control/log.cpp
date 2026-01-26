@@ -846,6 +846,7 @@ void command_git_log_add_follow(Editor* editor, Command_Source source) {
 static const char* git_dm_command =
     "git diff \"$(git merge-base origin/\"$(git symbolic-ref refs/remotes/origin/HEAD | sed "
     "'s@^refs/remotes/origin/@@')\" HEAD)\"";
+static const char* git_dh_command = "git diff HEAD";
 
 REGISTER_COMMAND(command_git_diff_master);
 void command_git_diff_master(Editor* editor, Command_Source source) {
@@ -884,6 +885,48 @@ void command_git_diff_master_this_file(Editor* editor, Command_Source source) {
 
         command = cz::format(git_dm_command, " ", buffer->directory, buffer->name);
         name = cz::format("git dm ", buffer->directory, buffer->name);
+    }
+
+    run_console_command(source.client, editor, root.buffer, command, name);
+}
+
+REGISTER_COMMAND(command_git_diff_head);
+void command_git_diff_head(Editor* editor, Command_Source source) {
+    cz::String root = {};
+    CZ_DEFER(root.drop(cz::heap_allocator()));
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        if (!get_root_directory(buffer->directory, cz::heap_allocator(), &root)) {
+            source.client->show_message("Error: couldn't find vc root");
+            return;
+        }
+    }
+
+    run_console_command(source.client, editor, root.buffer, git_dh_command, "git dh");
+}
+
+REGISTER_COMMAND(command_git_diff_head_this_file);
+void command_git_diff_head_this_file(Editor* editor, Command_Source source) {
+    cz::String root = {};
+    CZ_DEFER(root.drop(cz::heap_allocator()));
+    cz::Heap_String command = {};
+    CZ_DEFER(command.drop());
+    cz::Heap_String name = {};
+    CZ_DEFER(name.drop());
+    {
+        WITH_CONST_SELECTED_BUFFER(source.client);
+        if (buffer->type != Buffer::FILE) {
+            source.client->show_message("Error: must be a file");
+            return;
+        }
+
+        if (!get_root_directory(buffer->directory, cz::heap_allocator(), &root)) {
+            source.client->show_message("Error: couldn't find vc root");
+            return;
+        }
+
+        command = cz::format(git_dh_command, " ", buffer->directory, buffer->name);
+        name = cz::format("git dh ", buffer->directory, buffer->name);
     }
 
     run_console_command(source.client, editor, root.buffer, command, name);

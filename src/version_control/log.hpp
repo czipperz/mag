@@ -48,6 +48,9 @@ void command_git_log_add_follow(Editor* editor, Command_Source source);
 void command_git_diff_master(Editor* editor, Command_Source source);
 void command_git_diff_master_this_file(Editor* editor, Command_Source source);
 
+void command_git_diff_head(Editor* editor, Command_Source source);
+void command_git_diff_head_this_file(Editor* editor, Command_Source source);
+
 void command_git_diff_add_ignore_whitespace(Editor* editor, Command_Source source);
 void command_git_diff_remove_ignore_whitespace(Editor* editor, Command_Source source);
 
