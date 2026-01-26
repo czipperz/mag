@@ -14,6 +14,7 @@
 #include "core/overlay.hpp"
 #include "core/theme.hpp"
 #include "core/token.hpp"
+#include "core/token_iterator.hpp"
 #include "core/window.hpp"
 
 namespace mag {
@@ -76,32 +77,20 @@ static void overlay_matching_pairs_start_frame(Editor* editor,
     Contents_Iterator end_iterator = start_position_iterator;
     forward_visual_line(window, buffer->mode, editor->theme, &end_iterator, window->rows() - 1);
 
-    // Note: we update the token cache in the render loop.
-    CZ_DEBUG_ASSERT(buffer->token_cache.change_index == buffer->changes.len);
-    Tokenizer_Check_Point check_point =
-        buffer->token_cache.find_check_point(start_position_iterator.position);
-
     if (data->cache_start_position != start_position_iterator.position ||
         data->cache_end_position != end_iterator.position ||
         data->cache_change_index != buffer->token_cache.change_index) {
         data->tokens.len = 0;
 
-        Token token;
-        token.end = check_point.position;
-        Contents_Iterator token_iterator = start_position_iterator;
-        token_iterator.retreat_to(token.end);
-        uint64_t state = check_point.state;
-        while (end_iterator.position >= token.end) {
-            bool has_token = buffer->mode.next_token(&token_iterator, &token, &state);
-            if (has_token) {
-                if (token.type == Token_Type::OPEN_PAIR || token.type == Token_Type::CLOSE_PAIR ||
-                    token.type == Token_Type::PREPROCESSOR_IF ||
-                    token.type == Token_Type::PREPROCESSOR_ENDIF) {
-                    data->tokens.reserve(cz::heap_allocator(), 1);
-                    data->tokens.push(token);
-                }
-            } else {
-                break;
+        Forward_Token_Iterator it;
+        it.init_at_or_after(buffer, start_position_iterator.position);
+        for (; it.has_token() && end_iterator.position >= it.token().end; it.next()) {
+            if (it.token().type == Token_Type::OPEN_PAIR ||
+                it.token().type == Token_Type::CLOSE_PAIR ||
+                it.token().type == Token_Type::PREPROCESSOR_IF ||
+                it.token().type == Token_Type::PREPROCESSOR_ENDIF) {
+                data->tokens.reserve(cz::heap_allocator(), 1);
+                data->tokens.push(it.token());
             }
         }
     }
