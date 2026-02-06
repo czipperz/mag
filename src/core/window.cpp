@@ -64,26 +64,24 @@ void Window_Unified::update_cursors(const Buffer* buffer, Client* client) {
 
     cz::Slice<const Change> new_changes = buffer->changes.slice_start(change_index);
 
+    if (new_changes.len != 0) {
+        clear_show_marks_temporarily();
+    }
+
     cz::Slice<Cursor> cursors = this->cursors;
     for (size_t c = 0; c < cursors.len; ++c) {
         position_after_changes(new_changes, &cursors[c].point);
         position_after_changes(new_changes, &cursors[c].mark);
     }
 
-    if (new_changes.len != 0) {
-        clear_show_marks_temporarily();
-    }
-
-    bool was_0 = start_position == 0;
-    position_after_changes(new_changes, &start_position);
-    if (was_0) {
+    if (start_position != 0) {
         // The only case where we can insert before the start position is if we are at the start of
         // the file.  This hack will cause the algorithm in `render/render.cpp:draw_buffer_contents`
         // (commit 5374379) to refit the start position to the cursor if the changes are larger than
         // one screen height.  This fixes the bug where opening a new file and pasting will make it
         // appear that the file is empty because `start_position` is updated to the cursor's
         // position instead of being at the top of the file.
-        start_position = 0;
+        position_after_changes(new_changes, &start_position);
     }
 
     this->change_index = buffer->changes.len;
