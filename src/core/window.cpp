@@ -69,8 +69,10 @@ static uint64_t effective_position(const Edit edit) {
 static bool edits_are_ascending(cz::Slice<const Edit> edits) {
     ZoneScoped;
     for (size_t i = 0; i + 1 < edits.len; ++i) {
-        if (effective_position(edits[i + 1]) <= effective_position(edits[i]))
+        if (effective_position(edits[i + 1]) <= effective_position(edits[i])) {
+            ZoneValue(i);
             return false;
+        }
     }
     return true;
 }
@@ -136,6 +138,7 @@ void Window_Unified::update_cursors(const Buffer* buffer, Client* client) {
     }
 
     for (const Change& change : new_changes) {
+        ZoneScopedN("per-change");
         if (change.is_redo && edits_are_ascending(change.commit.edits)) {
             redo_ascending_edits(change.commit.edits, positions);
         } else {
@@ -401,6 +404,7 @@ void kill_cursor(Window_Unified* window, Client* client, size_t index) {
 }
 
 void kill_cursors_at_same_point(Window_Unified* window, Client* client) {
+    ZoneScoped;
     for (size_t i = 0; i + 1 < window->cursors.len;) {
         if (window->cursors[i].point == window->cursors[i + 1].point) {
             if (window->cursors.len == 2) {

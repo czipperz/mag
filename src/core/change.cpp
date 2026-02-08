@@ -1,8 +1,10 @@
 #include "change.hpp"
+#include <tracy/Tracy.hpp>
 
 namespace mag {
 
 void position_after_change(const Change& change, uint64_t* position) {
+    ZoneScoped;
     if (change.is_redo) {
         position_after_edits(change.commit.edits, position);
     } else {
@@ -11,6 +13,7 @@ void position_after_change(const Change& change, uint64_t* position) {
 }
 
 void position_before_change(const Change& change, uint64_t* position) {
+    ZoneScoped;
     if (change.is_redo) {
         position_before_edits(change.commit.edits, position);
     } else {
