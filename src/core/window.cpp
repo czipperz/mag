@@ -162,9 +162,12 @@ void Window_Unified::update_cursors(const Buffer* buffer, Client* client) {
 
     this->change_index = buffer->changes.len;
 
+    CZ_DEBUG_ASSERT(start_position <= buffer->contents.len);
     start_position = std::min(start_position, buffer->contents.len);
 
     for (size_t c = 0; c < cursors.len; ++c) {
+        CZ_DEBUG_ASSERT(cursors[c].mark <= buffer->contents.len);
+        CZ_DEBUG_ASSERT(cursors[c].point <= buffer->contents.len);
         cursors[c].mark = std::min(cursors[c].mark, buffer->contents.len);
         cursors[c].point = std::min(cursors[c].point, buffer->contents.len);
     }
