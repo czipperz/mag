@@ -54,6 +54,20 @@ TEST_CASE("update_cursors replace multiple") {
     CHECK(window->cursors[0].point == 1);
     CHECK(window->cursors[1].mark == 3);
     CHECK(window->cursors[1].point == 3);
+
+    buffer->undo();
+    window->update_cursors(buffer, &tr.client);
+    CHECK(window->cursors[0].mark == 0);
+    CHECK(window->cursors[0].point == 0);
+    CHECK(window->cursors[1].mark == 1);
+    CHECK(window->cursors[1].point == 1);
+
+    buffer->undo();
+    window->update_cursors(buffer, &tr.client);
+    CHECK(window->cursors[0].mark == 1);
+    CHECK(window->cursors[0].point == 1);
+    CHECK(window->cursors[1].mark == 3);
+    CHECK(window->cursors[1].point == 3);
 }
 
 TEST_CASE("update_cursors insert after") {
@@ -85,4 +99,11 @@ TEST_CASE("update_cursors insert after") {
     CHECK(window->cursors[0].point == 1);
     CHECK(window->cursors[1].mark == 4);
     CHECK(window->cursors[1].point == 5);
+
+    buffer->undo();
+    window->update_cursors(buffer, &tr.client);
+    CHECK(window->cursors[0].mark == 0);
+    CHECK(window->cursors[0].point == 1);
+    CHECK(window->cursors[1].mark == 2);
+    CHECK(window->cursors[1].point == 3);
 }

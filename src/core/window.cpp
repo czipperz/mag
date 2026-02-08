@@ -109,6 +109,11 @@ static void redo_ascending_edits(cz::Slice<const Edit> edits, cz::Slice<uint64_t
         *positions[p] += offset;
     }
 }
+static void undo_ascending_edits(cz::Slice<const Edit> edits, cz::Slice<uint64_t*> positions) {
+    for (uint64_t* position : positions) {
+        position_before_edits(edits, position);
+    }
+}
 
 void Window_Unified::update_cursors(const Buffer* buffer, Client* client) {
     ZoneScoped;
@@ -139,8 +144,12 @@ void Window_Unified::update_cursors(const Buffer* buffer, Client* client) {
 
     for (const Change& change : new_changes) {
         ZoneScopedN("per-change");
-        if (change.is_redo && edits_are_ascending(change.commit.edits)) {
-            redo_ascending_edits(change.commit.edits, positions);
+        if (edits_are_ascending(change.commit.edits)) {
+            if (change.is_redo) {
+                redo_ascending_edits(change.commit.edits, positions);
+            } else {
+                undo_ascending_edits(change.commit.edits, positions);
+            }
         } else {
             for (Cursor& cursor : cursors) {
                 position_after_change(change, &cursor.point);
