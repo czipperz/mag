@@ -4,11 +4,13 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <cz/heap.hpp>
+#include <cz/sort.hpp>
 #include <tracy/Tracy.hpp>
 #include "core/buffer.hpp"
 #include "core/change.hpp"
 #include "core/client.hpp"
 #include "core/command_macros.hpp"
+#include "core/edit.hpp"
 #include "core/editor.hpp"
 #include "core/match.hpp"
 #include "core/movement.hpp"
@@ -59,21 +61,70 @@ Window_Unified* Window_Unified::clone(uint64_t new_id) {
     return window;
 }
 
+static uint64_t effective_position(const Edit edit) {
+    if ((edit.flags & Edit::INSERT_MASK) && (edit.flags & Edit::AFTER_POSITION_MASK))
+        return edit.position + 1;
+    return edit.position;
+}
+static bool edits_are_ascending(cz::Slice<const Edit> edits) {
+    ZoneScoped;
+    for (size_t i = 0; i + 1 < edits.len; ++i) {
+        if (effective_position(edits[i + 1]) <= effective_position(edits[i]))
+            return false;
+    }
+    return true;
+}
+static void redo_ascending_edits(cz::Slice<const Edit> edits, cz::Slice<uint64_t*> positions) {
+    ZoneScoped;
+    cz::sort(positions, [](uint64_t* const* l, uint64_t* const* r) { return **l < **r; });
+
+    size_t p = 0;
+    size_t e = 0;
+    int64_t offset = 0;
+    while (p != positions.len && e != edits.len) {
+        if (effective_position(edits[e]) > *positions[p] + offset) {
+            *positions[p] += offset;
+            ++p;
+            continue;
+        }
+
+        if (edits[e].flags & Edit::INSERT_MASK) {
+            offset += edits[e].value.len();
+            ++e;
+        } else {
+            for (; p < positions.len &&
+                   *positions[p] + offset <= edits[e].position + edits[e].value.len();
+                 ++p) {
+                *positions[p] = edits[e].position;
+            }
+            offset -= edits[e].value.len();
+            ++e;
+        }
+    }
+
+    // No more edits, offset remaining positions the same way.
+    for (; p != positions.len; ++p) {
+        *positions[p] += offset;
+    }
+}
+
 void Window_Unified::update_cursors(const Buffer* buffer, Client* client) {
     ZoneScoped;
 
     cz::Slice<const Change> new_changes = buffer->changes.slice_start(change_index);
 
     if (new_changes.len != 0) {
+        ZoneValue(new_changes.len);
         clear_show_marks_temporarily();
     }
 
-    cz::Slice<Cursor> cursors = this->cursors;
-    for (size_t c = 0; c < cursors.len; ++c) {
-        position_after_changes(new_changes, &cursors[c].point);
-        position_after_changes(new_changes, &cursors[c].mark);
+    cz::Vector<uint64_t*> positions = {};
+    CZ_DEFER(positions.drop(cz::heap_allocator()));
+    positions.reserve_exact(cz::heap_allocator(), cursors.len * 2 + (start_position != 0));
+    for (Cursor& cursor : cursors) {
+        positions.push(&cursor.point);
+        positions.push(&cursor.mark);
     }
-
     if (start_position != 0) {
         // The only case where we can insert before the start position is if we are at the start of
         // the file.  This hack will cause the algorithm in `render/render.cpp:draw_buffer_contents`
@@ -81,7 +132,20 @@ void Window_Unified::update_cursors(const Buffer* buffer, Client* client) {
         // one screen height.  This fixes the bug where opening a new file and pasting will make it
         // appear that the file is empty because `start_position` is updated to the cursor's
         // position instead of being at the top of the file.
-        position_after_changes(new_changes, &start_position);
+        positions.push(&start_position);
+    }
+
+    for (const Change& change : new_changes) {
+        if (change.is_redo && edits_are_ascending(change.commit.edits)) {
+            redo_ascending_edits(change.commit.edits, positions);
+        } else {
+            for (Cursor& cursor : cursors) {
+                position_after_change(change, &cursor.point);
+                position_after_change(change, &cursor.mark);
+            }
+            if (positions.len % 2 != 0)
+                position_after_change(change, &start_position);
+        }
     }
 
     this->change_index = buffer->changes.len;
