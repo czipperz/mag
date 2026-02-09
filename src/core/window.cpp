@@ -61,15 +61,20 @@ Window_Unified* Window_Unified::clone(uint64_t new_id) {
     return window;
 }
 
-static uint64_t effective_position(const Edit edit) {
-    if ((edit.flags & Edit::INSERT_MASK) && (edit.flags & Edit::AFTER_POSITION_MASK))
-        return edit.position + 1;
+static uint64_t effective_position(const Edit& edit, bool is_redo) {
+    if (is_redo) {
+        if ((edit.flags & Edit::INSERT_MASK) && (edit.flags & Edit::AFTER_POSITION_MASK))
+            return edit.position + 1;
+    } else {
+        if (!(edit.flags & Edit::INSERT_MASK) && (edit.flags & Edit::AFTER_POSITION_MASK))
+            return edit.position + 1;
+    }
     return edit.position;
 }
-static bool edits_are_ascending(cz::Slice<const Edit> edits) {
+static bool edits_are_ascending(cz::Slice<const Edit> edits, bool is_redo) {
     ZoneScoped;
     for (size_t i = 0; i + 1 < edits.len; ++i) {
-        if (effective_position(edits[i + 1]) <= effective_position(edits[i])) {
+        if (effective_position(edits[i + 1], is_redo) <= effective_position(edits[i], is_redo)) {
             ZoneValue(i);
             return false;
         }
@@ -84,7 +89,7 @@ static void redo_ascending_edits(cz::Slice<const Edit> edits, cz::Slice<uint64_t
     size_t e = 0;
     int64_t offset = 0;
     while (p != positions.len && e != edits.len) {
-        if (effective_position(edits[e]) > *positions[p] + offset) {
+        if (effective_position(edits[e], true) > *positions[p] + offset) {
             *positions[p] += offset;
             ++p;
             continue;
@@ -137,7 +142,7 @@ static void undo_ascending_edits(cz::Slice<const Edit> edits, cz::Slice<uint64_t
             }
             --e1;
         } else {
-            if (effective_position(edits[e1 - 1]) <= *positions[p1 - 1]) {
+            if (effective_position(edits[e1 - 1], false) <= *positions[p1 - 1]) {
                 *positions[p1 - 1] -= offset;
                 --p1;
                 continue;
@@ -177,7 +182,7 @@ void Window_Unified::update_cursors(const Buffer* buffer, Client* client) {
 
     for (const Change& change : new_changes) {
         ZoneScopedN("per-change");
-        if (edits_are_ascending(change.commit.edits)) {
+        if (edits_are_ascending(change.commit.edits, change.is_redo)) {
             if (change.is_redo) {
                 redo_ascending_edits(change.commit.edits, positions);
             } else {
