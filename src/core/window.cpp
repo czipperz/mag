@@ -110,8 +110,41 @@ static void redo_ascending_edits(cz::Slice<const Edit> edits, cz::Slice<uint64_t
     }
 }
 static void undo_ascending_edits(cz::Slice<const Edit> edits, cz::Slice<uint64_t*> positions) {
-    for (uint64_t* position : positions) {
-        position_before_edits(edits, position);
+    ZoneScoped;
+    cz::sort(positions, [](uint64_t* const* l, uint64_t* const* r) { return **l < **r; });
+
+    int64_t offset = 0;
+    for (const Edit& edit : edits) {
+        if (edit.flags & Edit::INSERT_MASK) {
+            offset += edit.value.len();
+        } else {
+            offset -= edit.value.len();
+        }
+    }
+
+    size_t p1 = positions.len;
+    size_t e1 = edits.len;
+    while (p1 != 0 && e1 != 0) {
+        if (edits[e1 - 1].flags & Edit::INSERT_MASK) {
+            for (; p1 != 0 &&
+                   *positions[p1 - 1] >= edits[e1 - 1].position + edits[e1 - 1].value.len();
+                 --p1) {
+                *positions[p1 - 1] -= offset;
+            }
+            offset -= edits[e1 - 1].value.len();
+            for (; p1 != 0 && *positions[p1 - 1] >= edits[e1 - 1].position; --p1) {
+                *positions[p1 - 1] = edits[e1 - 1].position - offset;
+            }
+            --e1;
+        } else {
+            if (effective_position(edits[e1 - 1]) <= *positions[p1 - 1]) {
+                *positions[p1 - 1] -= offset;
+                --p1;
+                continue;
+            }
+            offset += edits[e1 - 1].value.len();
+            --e1;
+        }
     }
 }
 
