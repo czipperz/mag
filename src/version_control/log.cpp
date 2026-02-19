@@ -23,6 +23,31 @@ static cz::Str get_first_prefix(Contents_Iterator it) {
         return "";
 }
 
+static bool get_file_start_end(Contents_Iterator* it, Contents_Iterator* eol) {
+    it->advance(strlen("diff --git "));
+    *eol = *it;
+    end_of_line(eol);
+    if (!find_before(it, eol->position, ' '))
+        return false;
+    it->advance();
+    return true;
+}
+
+static bool find_next_file(Contents_Iterator* it, Contents_Iterator* eol) {
+    while (1) {
+        while (1) {
+            if (!find(it, "diff --git "))
+                return false;
+            if (at_start_of_line(*it))
+                break;
+            it->advance();
+        }
+
+        if (get_file_start_end(it, eol))
+            return true;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // command_show_last_commit_to_file
 ///////////////////////////////////////////////////////////////////////////////
@@ -359,13 +384,13 @@ static SelectedCommitOrDiffResult get_selected_commit_or_diff(Editor* editor,
     {
         if (!rfind(&iterator, "\ndiff --git "))
             return SelectedCommitOrDiffResult::FAILURE;
-        iterator.advance(strlen("\ndiff --git "));
-        Contents_Iterator end = iterator;
-        if (!find_this_line(&end, ' '))
+        iterator.advance();
+        Contents_Iterator eol;
+        if (!get_file_start_end(&iterator, &eol))
             return SelectedCommitOrDiffResult::FAILURE;
         iterator.advance(get_first_prefix(iterator).len);
         cz::append(path, buffer->directory);
-        buffer->contents.slice_into(cz::heap_allocator(), iterator, end.position, path);
+        buffer->contents.slice_into(cz::heap_allocator(), iterator, eol.position, path);
     }
 
     return SelectedCommitOrDiffResult::DIFF;
@@ -476,23 +501,18 @@ static const char* open_git_dm_and_lookup_cursor(Editor* editor, Client* client)
     uint64_t match;
     {
         WITH_CONST_BUFFER_HANDLE(diff_handle);
-        Contents_Iterator it = buffer->contents.start();
-        end_of_line(&it);
-        forward_char(&it);
-        if (!looking_at(it, "diff --git "))
-            return "Couldn't find first diff header in *git dm*";
-        it.advance(strlen("diff --git "));
-
         CZ_ASSERT(path.starts_with(vc_root));
-        cz::String search_term = cz::format("\ndiff --git ", version_control::get_first_prefix(it),
-                                            path.slice_start(vc_root.len), " ");
-        CZ_DEFER(search_term.drop(cz::heap_allocator()));
-
-        it = buffer->contents.start();
-        if (!find(&it, search_term))
-            return "Couldn't find file in *git dm*";
-        it.advance();
-
+        cz::Str query = path.slice_start(vc_root.len);
+        Contents_Iterator it = buffer->contents.start();
+        Contents_Iterator eol;
+        while (1) {
+            if (!find_next_file(&it, &eol))
+                return "Couldn't find file in *git dm*";
+            it.advance(get_first_prefix(it).len);
+            if (matches(it, eol.position, query))
+                break;
+        }
+        start_of_line(&it);
         Contents_Iterator end = it;
         find(&end, "\ndiff --git ");
 
@@ -566,23 +586,18 @@ const char* iterate_changed_line_using_git_dm(Editor* editor, Client* client, bo
 
     {
         WITH_CONST_BUFFER_HANDLE(diff_handle);
-        Contents_Iterator it = buffer->contents.start();
-        end_of_line(&it);
-        forward_char(&it);
-        if (!looking_at(it, "diff --git "))
-            return "Couldn't find first diff header in *git dm*";
-        it.advance(strlen("diff --git "));
-
         CZ_ASSERT(path.starts_with(vc_root));
-        cz::String search_term = cz::format("\ndiff --git ", version_control::get_first_prefix(it),
-                                            path.slice_start(vc_root.len), " ");
-        CZ_DEFER(search_term.drop(cz::heap_allocator()));
-
-        it = buffer->contents.start();
-        if (!find(&it, search_term))
-            return "Couldn't find file in *git dm*";
-        it.advance();
-
+        cz::Str query = path.slice_start(vc_root.len);
+        Contents_Iterator it = buffer->contents.start();
+        Contents_Iterator eol;
+        while (1) {
+            if (!find_next_file(&it, &eol))
+                return "Couldn't find file in *git dm*";
+            it.advance(get_first_prefix(it).len);
+            if (matches(it, eol.position, query))
+                break;
+        }
+        start_of_line(&it);
         Contents_Iterator end = it;
         find(&end, "\ndiff --git ");
 
@@ -1016,28 +1031,6 @@ struct Command_Git_Diff_Go_To_File_Completion_Engine_Data {
 };
 }
 
-static bool find_next_file(Contents_Iterator* it, Contents_Iterator* eol) {
-    while (1) {
-        while (1) {
-            if (!find(it, "diff --git "))
-                break;
-            if (at_start_of_line(*it))
-                break;
-            it->advance();
-        }
-        if (it->at_eob())
-            return false;
-
-        it->advance(strlen("diff --git "));
-        *eol = *it;
-        end_of_line(eol);
-        if ((eol->position - it->position) % 2 != 1 || (eol->position - it->position) < 3)
-            continue;
-
-        return true;
-    }
-}
-
 static bool command_git_diff_go_to_file_completion_engine(Editor* editor,
                                                           Completion_Engine_Context* context,
                                                           bool) {
@@ -1055,17 +1048,14 @@ static bool command_git_diff_go_to_file_completion_engine(Editor* editor,
 
     WITH_CONST_BUFFER_HANDLE(handle);
     Contents_Iterator it = buffer->contents.start();
-    while (1) {
-        Contents_Iterator eol;
-        if (!find_next_file(&it, &eol))
-            return true;
-
-        uint64_t end = it.position + (eol.position - it.position) / 2;
+    Contents_Iterator eol;
+    while (find_next_file(&it, &eol)) {
         it.advance(get_first_prefix(it).len);
         context->results.reserve(1);
-        context->results.push(
-            buffer->contents.slice_str(context->results_buffer_array.allocator(), it, end));
+        context->results.push(buffer->contents.slice_str(context->results_buffer_array.allocator(),
+                                                         it, eol.position));
     }
+    return true;
 }
 
 static void command_git_diff_go_to_file_callback(Editor* editor,
@@ -1075,18 +1065,16 @@ static void command_git_diff_go_to_file_callback(Editor* editor,
     WITH_CONST_SELECTED_BUFFER(client);
     Contents_Iterator it = buffer->contents.start();
     Contents_Iterator eol;
-    if (!find_next_file(&it, &eol))
-        return;
-
-    cz::Str prefix = get_first_prefix(it);
-    cz::String search_term = cz::format("diff --git ", prefix, query, " ");
-    CZ_DEFER(search_term.drop(cz::heap_allocator()));
-
-    it = buffer->contents.start();
-    find(&it, search_term);
-    window->cursors[window->selected_cursor].point = it.position;
-    window->start_position = window->cursors[window->selected_cursor].point;
-    window->column_offset = 0;
+    while (find_next_file(&it, &eol)) {
+        it.advance(get_first_prefix(it).len);
+        if (!looking_at(it, query))
+            continue;
+        start_of_line(&it);
+        window->cursors[window->selected_cursor].point = it.position;
+        window->start_position = window->cursors[window->selected_cursor].point;
+        window->column_offset = 0;
+        break;
+    }
 }
 
 REGISTER_COMMAND(command_git_diff_go_to_file);
