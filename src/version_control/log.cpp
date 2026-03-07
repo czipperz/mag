@@ -633,8 +633,11 @@ const char* iterate_changed_line_using_git_dm(Editor* editor, Client* client, bo
 
     WITH_CONST_SELECTED_BUFFER(client);
     kill_extra_cursors(window, client);
-    window->cursors[0].point =
-        iterator_at_line_column(buffer->contents, match_line, match_column).position;
+    Contents_Iterator iterator =
+        iterator_at_line_column(buffer->contents, match_line, match_column);
+    window->cursors[0].point = iterator.position;
+    center_in_window(window, buffer->mode, editor->theme, iterator);
+    window->show_marks = false;
     return nullptr;
 }
 
