@@ -264,8 +264,8 @@ void backward_to(Editor* editor, Client* client, Token_Type token_type) {
 
     Backward_Token_Iterator token_iterator = {};
     CZ_DEFER(token_iterator.drop(cz::heap_allocator()));
-    token_iterator.init_before(cz::heap_allocator(), buffer,
-                               window->cursors[window->selected_cursor].point);
+    token_iterator.init_at_or_before(cz::heap_allocator(), buffer,
+                                     window->cursors[window->selected_cursor].point);
 
     // We want to select the last token in each block of the same token and thus if we're already
     // in a block then we should retreat to before it so we can go to the previous block.
