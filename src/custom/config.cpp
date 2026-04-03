@@ -1003,6 +1003,8 @@ static void build_log_mode(Mode& mode) {
     BIND(mode.key_map, "F", command_build_previous_file);
     BIND(mode.key_map, "e", command_build_next_error);
     BIND(mode.key_map, "E", command_build_previous_error);
+
+    mode.wrap_long_lines = true;
 }
 
 static void ctest_log_mode(Mode& mode) {
@@ -1014,6 +1016,8 @@ static void ctest_log_mode(Mode& mode) {
     BIND(mode.key_map, "F", command_ctest_previous_file);
     BIND(mode.key_map, "t", command_ctest_next_test_case);
     BIND(mode.key_map, "T", command_ctest_previous_test_case);
+
+    mode.wrap_long_lines = true;
 }
 
 /// See if there are any C style comments at start of lines as a simple heuristic.
