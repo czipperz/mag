@@ -326,20 +326,21 @@ static Synchronous_Job job_run_console_command_callback(cz::Arc_Weak<Buffer_Hand
 
 Run_Console_Command_Result run_console_command(Client* client,
                                                Editor* editor,
-                                               const char* working_directory,
+                                               const char* working_directory_initial,
                                                cz::Str script,
                                                cz::Str buffer_name,
                                                cz::Arc<Buffer_Handle>* handle_out) {
     ZoneScoped;
 
-    cz::String working_directory_storage = {};
-    CZ_DEFER(working_directory_storage.drop(cz::heap_allocator()));
-    if (!working_directory) {
-        if (!cz::get_working_directory(cz::heap_allocator(), &working_directory_storage)) {
+    cz::String working_directory = {};
+    CZ_DEFER(working_directory.drop(cz::heap_allocator()));
+    if (working_directory_initial) {
+        working_directory = standardize_path(cz::heap_allocator(), working_directory_initial);
+    } else {
+        if (!cz::get_working_directory(cz::heap_allocator(), &working_directory)) {
             client->show_message("Failed to get working directory");
             return Run_Console_Command_Result::FAILED;
         }
-        working_directory = working_directory_storage.buffer;
     }
 
     {
@@ -349,8 +350,8 @@ Run_Console_Command_Result run_console_command(Client* client,
 
     bool created = false;
     cz::Arc<Buffer_Handle> handle;
-    if (!find_temp_buffer(editor, client, buffer_name, cz::Str{working_directory}, &handle)) {
-        handle = editor->create_buffer(create_temp_buffer(buffer_name, cz::Str{working_directory}));
+    if (!find_temp_buffer(editor, client, buffer_name, working_directory.as_str(), &handle)) {
+        handle = editor->create_buffer(create_temp_buffer(buffer_name, working_directory.as_str()));
         created = true;
     }
 
@@ -367,7 +368,7 @@ Run_Console_Command_Result run_console_command(Client* client,
 
     client->select_window_for_buffer_or_replace_current(handle);
 
-    if (!run_console_command_in(client, editor, handle, working_directory, script)) {
+    if (!run_console_command_in(client, editor, handle, working_directory.buffer, script)) {
         return Run_Console_Command_Result::FAILED;
     }
 
