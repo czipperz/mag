@@ -178,7 +178,7 @@ static void overlay_matching_tokens_skip_forward_same_line(const Buffer* buffer,
     Data* data = (Data*)_data;
     if (!data->enabled)
         return;
-    if (!data->iterator.init_at_or_after(buffer, end)) {
+    if (!data->iterator.reinit_at_or_after(buffer, end)) {
         data->enabled = false;
         return;
     }

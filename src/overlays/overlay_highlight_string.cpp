@@ -143,7 +143,7 @@ static void overlay_highlight_string_skip_forward_same_line(const Buffer* buffer
 
     // Big jump.
     if (data->token_type != Token_Type::length) {
-        data->token_it.init_at_or_after(buffer, target);
+        data->token_it.reinit_at_or_after(buffer, target);
     }
     data->countdown_cursor_region = 0;
     start.advance_to(target);

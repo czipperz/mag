@@ -10,6 +10,10 @@ struct Forward_Token_Iterator {
     bool init_at_or_after(const Buffer* buffer, uint64_t position);
     bool init_after(const Buffer* buffer, uint64_t position);
 
+    /// Requires Forward_Token_Iterator was previously initialized.
+    /// Assumes that `position` is after the current tokenization point.
+    bool reinit_at_or_after(const Buffer* buffer, uint64_t position);
+
     bool next();
     bool find_at_or_after(uint64_t position);
     bool find_after(uint64_t position);

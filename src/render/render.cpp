@@ -787,7 +787,7 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
                 overlay->skip_forward_same_line(buffer, window, iterator, eol.position);
             }
 
-            token_it.init_at_or_after(buffer, eol.position);
+            token_it.reinit_at_or_after(buffer, eol.position);
 
             if (window->show_marks) {
                 for (size_t c = 0; c < cursors.len; ++c) {

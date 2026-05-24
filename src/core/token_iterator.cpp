@@ -22,6 +22,16 @@ bool Forward_Token_Iterator::init_after(const Buffer* buffer, uint64_t position)
     return find_after(position);
 }
 
+bool Forward_Token_Iterator::reinit_at_or_after(const Buffer* buffer, uint64_t position) {
+    Tokenizer_Check_Point check_point = buffer->token_cache.find_check_point(position);
+    if (check_point.position > tokenization_iterator.position) {
+        token_ = INVALID_TOKEN;
+        tokenization_iterator.advance_to(check_point.position);
+        state = check_point.state;
+    }
+    return find_at_or_after(position);
+}
+
 bool Forward_Token_Iterator::next() {
     bool found = (*tokenizer)(&tokenization_iterator, &token_, &state);
 #ifdef CZ_DEBUG_ASSERTIONS
