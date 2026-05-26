@@ -37,6 +37,12 @@ void command_toggle_render_bucket_boundaries(Editor* editor, Command_Source sour
     buffer->mode.render_bucket_boundaries = !buffer->mode.render_bucket_boundaries;
 }
 
+REGISTER_COMMAND(command_toggle_render_token_boundaries);
+void command_toggle_render_token_boundaries(Editor* editor, Command_Source source) {
+    WITH_SELECTED_BUFFER(source.client);
+    buffer->mode.render_token_boundaries = !buffer->mode.render_token_boundaries;
+}
+
 REGISTER_COMMAND(command_toggle_use_tabs);
 void command_toggle_use_tabs(Editor* editor, Command_Source source) {
     WITH_SELECTED_BUFFER(source.client);
@@ -163,6 +169,9 @@ static void command_configure_callback(Editor* editor, Client* client, cz::Str q
     } else if (query == "buffer render bucket boundaries") {
         WITH_SELECTED_BUFFER(client);
         buffer->mode.render_bucket_boundaries = !buffer->mode.render_bucket_boundaries;
+    } else if (query == "buffer render token boundaries") {
+        WITH_SELECTED_BUFFER(client);
+        buffer->mode.render_token_boundaries = !buffer->mode.render_token_boundaries;
     } else if (query == "buffer wrap long lines") {
         WITH_SELECTED_BUFFER(client);
         buffer->mode.wrap_long_lines = !buffer->mode.wrap_long_lines;
@@ -212,6 +221,7 @@ static bool configurations_completion_engine(Editor* editor,
     context->results.push("buffer preferred column");
     context->results.push("buffer read only");
     context->results.push("buffer render bucket boundaries");
+    context->results.push("buffer render token boundaries");
     context->results.push("buffer wrap long lines");
     context->results.push("animated scrolling");
     context->results.push("draw line numbers");

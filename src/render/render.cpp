@@ -681,6 +681,21 @@ static void draw_buffer_contents(const DrawingContext& drawing_context,
             }
         }
 
+        if (buffer->mode.render_token_boundaries &&
+            iterator.position == buffer->token_cache.find_check_point(iterator.position).position) {
+            Face bucket_boundary_face = {};
+            bucket_boundary_face.background = {1};
+            char ch = '<';
+            if (buffer->token_cache.check_points.len > 0 &&
+                buffer->token_cache.check_points.last().position == iterator.position) {
+                ch = '>';
+            }
+            if (!addch(drawing_context, editor, buffer, draw_line_numbers, line_number_buffer.cap,
+                       window, &y, &x, &column, {bucket_boundary_face, ch})) {
+                return;
+            }
+        }
+
         Face face = calculate_face(editor, buffer, window, has_cursor, has_selected_cursor,
                                    mark_depth, selected_mark_depth, token_it, iterator);
 
