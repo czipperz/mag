@@ -112,10 +112,12 @@ static Job_Tick_Result load_text_file_chunk(Buffer* buffer,
 
                     cz::strip_carriage_returns(buf, &str.len, carry);
                     buffer->contents.append(str);
+                    buffer->token_cache.ran_to_end = false;
                     *first_line = false;
                     break;
                 }
                 buffer->contents.append(str);
+                buffer->token_cache.ran_to_end = false;
             } else if (res == 0) {
                 return Job_Tick_Result::FINISHED;
             } else {
@@ -128,6 +130,7 @@ static Job_Tick_Result load_text_file_chunk(Buffer* buffer,
         int64_t res = file.read_strip_carriage_returns(buf, sizeof(buf), carry);
         if (res > 0) {
             buffer->contents.append({buf, (size_t)res});
+            buffer->token_cache.ran_to_end = false;
         } else if (res == 0) {
             return Job_Tick_Result::FINISHED;
         } else {
